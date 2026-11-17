@@ -92,15 +92,6 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 13:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 13:51
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.76 > 0.85)'
-- at: 2026-11-08 13:52
-  from: chaba
-  text: 'idc02 defers: runner at cap (3/3)'
-- at: 2026-11-08 13:53
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.70 > 0.85)'
 - at: 2026-11-08 13:53
   from: devin
   text: '[devin] root cause found: mddb-ops /add latency is 2-6s/doc (17GB db + box load ~9 from mddb-embed retry
@@ -109,35 +100,13 @@ comms:
     (~0.09s/doc via /v1/ingest) + per-batch cursor checkpoint.'
 - at: 2026-11-08 13:54
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.63 > 0.85)'
-- at: 2026-11-08 13:54
-  from: chaba
   text: started devin-task-20261108-135438-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
-- at: 2026-11-08 13:54
-  from: chaba
-  text: 'tony-macbook defers: runner at cap (2/2)'
 - at: 2026-11-08 13:54
   from: devin
   text: Investigating log-shipper.service timeout on idc03 (last run 09:31). Checking journal + unit definition.
-- at: 2026-11-08 13:54
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.54 > 0.85)'
-- at: 2026-11-08 13:56
-  from: chaba
-  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
-    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-- at: 2026-11-08 13:56
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.32 > 0.85)'
-- at: 2026-11-08 13:58
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.28 > 0.85)'
 - at: 2026-11-08 13:58
   from: chaba
   text: started devin-task-20261108-135803-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 13:59
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.17 > 0.85)'
 - at: 2026-11-08 13:59
   from: chaba
   text: started devin-task-20261108-135904-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -151,42 +120,18 @@ comms:
 - at: 2026-11-08 14:00
   from: chaba
   text: started devin-task-20261108-140053-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:00
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.94 > 0.85)'
 - at: 2026-11-08 14:01
   from: devin
   text: '[devin] dispatch picked up — investigating log-shipper.service timeout (last run 11-08 09:31) on idc03'
-- at: 2026-11-08 14:01
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.96 > 1.0)'
-- at: 2026-11-08 14:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.20 > 1.0)'
 - at: 2026-11-08 14:01
   from: chaba
   text: started devin-task-20261108-140138-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:01
   from: devin
   text: Dispatch started on idc02 — investigating log-shipper.service timeout on idc03 (last run 11-08 09:31, result=timeout).
-- at: 2026-11-08 14:02
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.09 > 1.0)'
-- at: 2026-11-08 14:05
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.95 > 0.85)'
-- at: 2026-11-08 14:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
-- at: 2026-11-08 14:06
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.86 > 0.8)'
 - at: 2026-11-08 14:06
   from: chaba
   text: started devin-task-20261108-140635-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:06
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.97 > 1.0)'
 - at: 2026-11-08 14:06
   from: devin
   text: '[devin idc02 dispatch] investigating recurrence — 13:10 run also timed out after mddb-embed restart; pulling
@@ -194,250 +139,70 @@ comms:
 - at: 2026-11-08 14:07
   from: chaba
   text: started devin-task-20261108-140727-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:07
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.85 > 0.85)'
-- at: 2026-11-08 14:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.12 > 1.0)'
-- at: 2026-11-08 14:08
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.67 > 0.85)'
-- at: 2026-11-08 14:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.27 > 1.0)'
-- at: 2026-11-08 14:09
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 2.12 > 1.0)'
-- at: 2026-11-08 14:09
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.51 > 0.85)'
-- at: 2026-11-08 14:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.65 > 1.0)'
-- at: 2026-11-08 14:10
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 2.09 > 1.0)'
-- at: 2026-11-08 14:10
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.31 > 0.85)'
-- at: 2026-11-08 14:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.40 > 1.0)'
-- at: 2026-11-08 14:11
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.96 > 1.0)'
 - at: 2026-11-08 14:11
   from: chaba
   text: started devin-task-20261108-141128-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:11
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.15 > 0.85)'
-- at: 2026-11-08 14:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.05 > 1.0)'
-- at: 2026-11-08 14:12
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.06 > 0.85)'
-- at: 2026-11-08 14:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.77 > 1.0)'
 - at: 2026-11-08 14:12
   from: chaba
   text: started devin-task-20261108-141250-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 14:13
-  from: chaba
-  text: 'tony-macbook defers: runner at cap (2/2)'
-- at: 2026-11-08 14:13
   from: devin
   text: investigating log-shipper.service timeout on idc03 (last run 11-08 09:31)
-- at: 2026-11-08 14:13
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.86 > 1.0)'
-- at: 2026-11-08 14:13
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.96 > 0.85)'
-- at: 2026-11-08 14:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.59 > 1.0)'
-- at: 2026-11-08 14:14
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.99 > 0.8)'
 - at: 2026-11-08 14:14
   from: chaba
   text: started devin-task-20261108-141437-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:14
   from: devin
   text: '[devin] investigating log-shipper.service timeout on idc03 — pulling journal + job spec'
-- at: 2026-11-08 14:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
-- at: 2026-11-08 14:14
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.90 > 0.85)'
 - at: 2026-11-08 14:15
   from: chaba
   text: started devin-task-20261108-141533-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:15
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.90 > 1.0)'
-- at: 2026-11-08 14:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.35 > 1.0)'
-- at: 2026-11-08 14:15
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.85 > 0.85)'
 - at: 2026-11-08 14:16
   from: chaba
   text: started devin-task-20261108-141637-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:17
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.36 > 1.0)'
-- at: 2026-11-08 14:17
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.69 > 0.85)'
-- at: 2026-11-08 14:19
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.73 > 1.0)'
-- at: 2026-11-08 14:19
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.97 > 0.8)'
-- at: 2026-11-08 14:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.99 > 1.0)'
 - at: 2026-11-08 14:20
   from: chaba
   text: started devin-task-20261108-142013-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:20
   from: devin
   text: investigating log-shipper.service timeout on idc03 (last run 09:31 result=timeout)
-- at: 2026-11-08 14:21
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.77 > 0.85)'
-- at: 2026-11-08 14:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.68 > 1.0)'
-- at: 2026-11-08 14:21
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.65 > 1.0)'
-- at: 2026-11-08 14:22
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.74 > 0.85)'
 - at: 2026-11-08 14:22
   from: chaba
   text: started devin-task-20261108-142215-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.49 > 1.0)'
-- at: 2026-11-08 14:23
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.76 > 0.85)'
 - at: 2026-11-08 14:23
   from: chaba
   text: started devin-task-20261108-142314-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:23
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.52 > 1.0)'
-- at: 2026-11-08 14:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.34 > 1.0)'
-- at: 2026-11-08 14:24
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.70 > 0.85)'
 - at: 2026-11-08 14:24
   from: chaba
   text: started devin-task-20261108-142427-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.69 > 1.0)'
 - at: 2026-11-08 14:25
   from: chaba
   text: started devin-task-20261108-142512-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:25
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
-- at: 2026-11-08 14:25
-  from: chaba
   text: started devin-task-20261108-142507-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 14:25
   from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.40 > 1.0)'
-- at: 2026-11-08 14:25
-  from: chaba
   text: 'tony-macbook defers: runner at cap (2/2)'
-- at: 2026-11-08 14:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.63 > 1.0)'
-- at: 2026-11-08 14:26
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.62 > 0.85)'
-- at: 2026-11-08 14:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.80 > 1.0)'
-- at: 2026-11-08 14:27
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.36 > 1.0)'
-- at: 2026-11-08 14:27
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.59 > 0.85)'
 - at: 2026-11-08 14:27
   from: chaba
   text: started devin-task-20261108-142726-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.51 > 1.0)'
-- at: 2026-11-08 14:28
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.54 > 0.85)'
 - at: 2026-11-08 14:28
   from: chaba
   text: started devin-task-20261108-142828-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:28
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.13 > 1.0)'
-- at: 2026-11-08 14:28
-  from: chaba
   text: started devin-task-20261108-142843-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 14:29
   from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.38 > 1.0)'
-- at: 2026-11-08 14:29
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.48 > 0.85)'
-- at: 2026-11-08 14:29
-  from: chaba
   text: started devin-task-20261108-142926-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
 - at: 2026-11-08 14:29
   from: devin
   text: '[still suspicious] Last run (11-08 14:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-08 14:30
   from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.11 > 1.0)'
-- at: 2026-11-08 14:30
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.51 > 0.85)'
-- at: 2026-11-08 14:30
-  from: chaba
   text: started devin-task-20261108-143036-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
-- at: 2026-11-08 14:31
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.55 > 0.85)'
-- at: 2026-11-08 14:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.49 > 1.0)'
-- at: 2026-11-08 14:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.33 > 1.0)'
-- at: 2026-11-08 14:34
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.34 > 0.85)'
 - at: 2026-11-08 14:34
   from: chaba
   text: started devin-task-20261108-143402-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -447,48 +212,21 @@ comms:
 - at: 2026-11-08 14:34
   from: chaba
   text: started devin-task-20261108-143409-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
-- at: 2026-11-08 14:34
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.32 > 0.85)'
-- at: 2026-11-08 14:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.68 > 1.0)'
 - at: 2026-11-08 14:35
   from: chaba
   text: started devin-task-20261108-143552-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 14:36
   from: chaba
   text: started devin-task-20261108-143559-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.40 > 1.0)'
-- at: 2026-11-08 14:36
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.27 > 0.85)'
 - at: 2026-11-08 14:37
   from: chaba
   text: started devin-task-20261108-143654-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
-- at: 2026-11-08 14:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.05 > 1.0)'
 - at: 2026-11-08 14:37
   from: chaba
   text: started devin-task-20261108-143713-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:37
   from: chaba
   text: started devin-task-20261108-143736-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 14:37
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.20 > 0.85)'
-- at: 2026-11-08 14:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.77 > 1.0)'
-- at: 2026-11-08 14:38
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.22 > 0.85)'
-- at: 2026-11-08 14:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.56 > 1.0)'
 - at: 2026-11-08 14:39
   from: chaba
   text: started devin-task-20261108-143906-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -501,61 +239,28 @@ comms:
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-08 14:39
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.17 > 0.85)'
-- at: 2026-11-08 14:39
-  from: chaba
   text: started devin-task-20261108-143949-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 14:40
   from: chaba
   text: started devin-task-20261108-144009-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:40
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.42 > 1.0)'
-- at: 2026-11-08 14:40
-  from: chaba
   text: started devin-task-20261108-144036-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 14:40
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.18 > 0.85)'
 - at: 2026-11-08 14:41
   from: chaba
   text: started devin-task-20261108-144113-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 14:41
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
 - at: 2026-11-08 14:42
   from: chaba
   text: started devin-task-20261108-144213-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:42
   from: chaba
   text: started devin-task-20261108-144215-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 14:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.52 > 1.0)'
-- at: 2026-11-08 14:42
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.18 > 0.85)'
-- at: 2026-11-08 14:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.64 > 1.0)'
-- at: 2026-11-08 14:43
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
 - at: 2026-11-08 14:43
   from: chaba
   text: started devin-task-20261108-144354-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 14:44
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.36 > 1.0)'
-- at: 2026-11-08 14:44
-  from: chaba
   text: started devin-task-20261108-144415-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:44
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.12 > 0.85)'
 - at: 2026-11-08 14:44
   from: chaba
   text: started devin-task-20261108-144452-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
@@ -565,49 +270,22 @@ comms:
 - at: 2026-11-08 14:45
   from: chaba
   text: started devin-task-20261108-144522-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 14:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.01 > 1.0)'
-- at: 2026-11-08 14:45
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.20 > 0.85)'
 - at: 2026-11-08 14:46
   from: chaba
   text: started devin-task-20261108-144616-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.77 > 1.0)'
-- at: 2026-11-08 14:46
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.19 > 0.85)'
 - at: 2026-11-08 14:47
   from: chaba
   text: started devin-task-20261108-144657-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 14:49
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.57 > 1.0)'
-- at: 2026-11-08 14:49
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.46 > 0.85)'
 - at: 2026-11-08 14:50
   from: devin
   text: '[still suspicious] Last run (11-08 14:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 14:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.46 > 1.0)'
 - at: 2026-11-08 14:51
   from: chaba
   text: started devin-task-20261108-145102-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 14:51
   from: chaba
   text: started devin-task-20261108-145118-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.48 > 1.0)'
-- at: 2026-11-08 14:52
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.55 > 0.85)'
 - at: 2026-11-08 14:52
   from: chaba
   text: started devin-task-20261108-145234-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -617,51 +295,24 @@ comms:
 - at: 2026-11-08 14:52
   from: chaba
   text: started devin-task-20261108-145236-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
-- at: 2026-11-08 14:52
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.22 > 1.0)'
 - at: 2026-11-08 14:53
   from: chaba
   text: started devin-task-20261108-145319-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:53
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.57 > 0.85)'
-- at: 2026-11-08 14:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.04 > 1.0)'
 - at: 2026-11-08 14:54
   from: chaba
   text: started devin-task-20261108-145419-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 14:54
   from: chaba
   text: started devin-task-20261108-145442-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 14:54
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.66 > 0.85)'
 - at: 2026-11-08 14:55
   from: chaba
   text: started devin-task-20261108-145533-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 14:56
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.72 > 0.85)'
 - at: 2026-11-08 14:56
   from: chaba
   text: started devin-task-20261108-145614-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 14:56
   from: chaba
   text: started devin-task-20261108-145634-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.53 > 1.0)'
-- at: 2026-11-08 14:57
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
 - at: 2026-11-08 14:57
   from: chaba
   text: started devin-task-20261108-145730-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -673,28 +324,13 @@ comms:
   text: started devin-task-20261108-145804-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 14:58
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.19 > 1.0)'
-- at: 2026-11-08 14:58
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.71 > 0.85)'
-- at: 2026-11-08 14:58
-  from: chaba
   text: started devin-task-20261108-145836-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 14:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.72 > 1.0)'
 - at: 2026-11-08 14:59
   from: chaba
   text: started devin-task-20261108-145932-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 14:59
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.66 > 0.85)'
-- at: 2026-11-08 14:59
-  from: chaba
   text: started devin-task-20261108-145941-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.70 > 1.0)'
 - at: 2026-11-08 15:01
   from: chaba
   text: started devin-task-20261108-150119-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -702,21 +338,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 14:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 15:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.26 > 1.0)'
-- at: 2026-11-08 15:01
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.54 > 0.85)'
 - at: 2026-11-08 15:04
   from: chaba
   text: started devin-task-20261108-150257-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:04
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.93 > 1.0)'
-- at: 2026-11-08 15:05
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.40 > 0.85)'
 - at: 2026-11-08 15:05
   from: chaba
   text: started devin-task-20261108-150519-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
@@ -725,22 +349,10 @@ comms:
   text: started devin-task-20261108-150558-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:06
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.57 > 1.0)'
-- at: 2026-11-08 15:06
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.22 > 0.85)'
-- at: 2026-11-08 15:06
-  from: chaba
   text: started devin-task-20261108-150633-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:07
   from: chaba
   text: started devin-task-20261108-150701-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
-- at: 2026-11-08 15:07
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.06 > 0.85)'
 - at: 2026-11-08 15:07
   from: chaba
   text: started devin-task-20261108-150757-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
@@ -750,129 +362,51 @@ comms:
 - at: 2026-11-08 15:08
   from: chaba
   text: started devin-task-20261108-150809-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:08
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.98 > 0.85)'
-- at: 2026-11-08 15:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.08 > 1.0)'
-- at: 2026-11-08 15:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
-- at: 2026-11-08 15:09
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.93 > 0.85)'
 - at: 2026-11-08 15:09
   from: chaba
   text: started devin-task-20261108-150934-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:10
   from: chaba
   text: started devin-task-20261108-150959-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:10
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.86 > 0.85)'
-- at: 2026-11-08 15:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.51 > 1.0)'
 - at: 2026-11-08 15:11
   from: chaba
   text: started devin-task-20261108-151104-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:11
   from: chaba
   text: started devin-task-20261108-151115-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:11
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.83 > 0.85)'
-- at: 2026-11-08 15:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.18 > 1.0)'
-- at: 2026-11-08 15:12
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.78 > 0.85)'
-- at: 2026-11-08 15:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
 - at: 2026-11-08 15:12
   from: chaba
   text: started devin-task-20261108-151245-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:13
   from: chaba
   text: started devin-task-20261108-151318-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:13
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
-- at: 2026-11-08 15:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
 - at: 2026-11-08 15:14
   from: chaba
   text: started devin-task-20261108-151401-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:14
   from: chaba
   text: started devin-task-20261108-151409-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:14
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.52 > 0.85)'
-- at: 2026-11-08 15:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.72 > 1.0)'
-- at: 2026-11-08 15:15
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.46 > 0.85)'
 - at: 2026-11-08 15:15
   from: chaba
   text: started devin-task-20261108-151535-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.89 > 1.0)'
 - at: 2026-11-08 15:16
   from: chaba
   text: started devin-task-20261108-151612-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:16
   from: chaba
   text: started devin-task-20261108-151610-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
-- at: 2026-11-08 15:16
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.40 > 0.85)'
-- at: 2026-11-08 15:16
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.07 > 1.0)'
 - at: 2026-11-08 15:17
   from: chaba
   text: started devin-task-20261108-151722-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:17
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.63 > 1.0)'
-- at: 2026-11-08 15:19
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.44 > 0.85)'
 - at: 2026-11-08 15:19
   from: chaba
   text: started devin-task-20261108-151946-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
-- at: 2026-11-08 15:20
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.49 > 0.85)'
-- at: 2026-11-08 15:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
 - at: 2026-11-08 15:21
   from: chaba
   text: started devin-task-20261108-152120-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:21
   from: chaba
   text: started devin-task-20261108-152119-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:21
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.54 > 0.85)'
-- at: 2026-11-08 15:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.51 > 1.0)'
-- at: 2026-11-08 15:22
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
 - at: 2026-11-08 15:22
   from: chaba
   text: started devin-task-20261108-152246-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
@@ -881,237 +415,90 @@ comms:
   text: started devin-task-20261108-152257-timer-log-shipper-on-idc03-fai on tony-macbook (dispatch)
 - at: 2026-11-08 15:23
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.27 > 1.0)'
-- at: 2026-11-08 15:23
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.82 > 0.8)'
-- at: 2026-11-08 15:23
-  from: chaba
   text: started devin-task-20261108-152326-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:23
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.57 > 0.85)'
 - at: 2026-11-08 15:24
   from: chaba
   text: started devin-task-20261108-152412-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.90 > 1.0)'
-- at: 2026-11-08 15:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
 - at: 2026-11-08 15:25
   from: chaba
   text: started devin-task-20261108-152530-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:25
   from: chaba
   text: started devin-task-20261108-152534-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:25
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.56 > 0.85)'
-- at: 2026-11-08 15:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.44 > 1.0)'
-- at: 2026-11-08 15:26
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.85 > 0.8)'
-- at: 2026-11-08 15:26
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
-- at: 2026-11-08 15:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.09 > 1.0)'
 - at: 2026-11-08 15:27
   from: chaba
   text: started devin-task-20261108-152735-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:27
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.47 > 0.85)'
-- at: 2026-11-08 15:27
-  from: chaba
   text: started devin-task-20261108-152754-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.79 > 1.0)'
-- at: 2026-11-08 15:28
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.43 > 0.85)'
-- at: 2026-11-08 15:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.58 > 1.0)'
 - at: 2026-11-08 15:29
   from: chaba
   text: started devin-task-20261108-152925-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:29
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.42 > 0.85)'
-- at: 2026-11-08 15:29
   from: devin
   text: '[still suspicious] Last run (11-08 15:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 15:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.42 > 1.0)'
 - at: 2026-11-08 15:30
   from: chaba
   text: started devin-task-20261108-153055-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:31
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.55 > 0.85)'
-- at: 2026-11-08 15:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.45 > 1.0)'
-- at: 2026-11-08 15:31
-  from: chaba
   text: started devin-task-20261108-153141-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:32
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.47 > 0.85)'
-- at: 2026-11-08 15:32
-  from: chaba
   text: started devin-task-20261108-153224-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.11 > 1.0)'
-- at: 2026-11-08 15:34
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.41 > 0.85)'
-- at: 2026-11-08 15:34
-  from: chaba
-  text: 'tony-macbook defers: host overloaded (5m load/core 0.83 > 0.8)'
-- at: 2026-11-08 15:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.61 > 1.0)'
 - at: 2026-11-08 15:35
   from: chaba
   text: started devin-task-20261108-153529-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:35
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
-- at: 2026-11-08 15:35
-  from: chaba
   text: started devin-task-20261108-153546-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
-- at: 2026-11-08 15:36
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.41 > 0.85)'
 - at: 2026-11-08 15:36
   from: chaba
   text: started devin-task-20261108-153640-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:37
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.01 > 1.0)'
-- at: 2026-11-08 15:37
-  from: chaba
   text: started devin-task-20261108-153724-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:37
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.35 > 0.85)'
-- at: 2026-11-08 15:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.81 > 1.0)'
 - at: 2026-11-08 15:38
   from: chaba
   text: started devin-task-20261108-153837-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:38
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.33 > 0.85)'
-- at: 2026-11-08 15:38
-  from: chaba
   text: started devin-task-20261108-153850-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
-- at: 2026-11-08 15:39
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.85)'
 - at: 2026-11-08 15:39
   from: devin
   text: '[still suspicious] Last run (11-08 15:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-08 15:40
   from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.89 > 1.0)'
-- at: 2026-11-08 15:40
-  from: chaba
   text: started devin-task-20261108-154026-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:40
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.18 > 0.85)'
-- at: 2026-11-08 15:40
-  from: chaba
   text: started devin-task-20261108-154040-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.52 > 1.0)'
-- at: 2026-11-08 15:41
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
-- at: 2026-11-08 15:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.03 > 1.0)'
 - at: 2026-11-08 15:42
   from: chaba
   text: started devin-task-20261108-154212-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
 - at: 2026-11-08 15:42
   from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.16 > 0.85)'
-- at: 2026-11-08 15:42
-  from: chaba
   text: started devin-task-20261108-154245-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.62 > 1.0)'
 - at: 2026-11-08 15:43
   from: chaba
   text: 'tony-macbook defers: host overloaded (5m load/core 0.88 > 0.8)'
 - at: 2026-11-08 15:43
   from: chaba
   text: started devin-task-20261108-154336-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:43
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.20 > 0.85)'
-- at: 2026-11-08 15:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.30 > 1.0)'
-- at: 2026-11-08 15:44
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.85)'
 - at: 2026-11-08 15:44
   from: chaba
   text: started devin-task-20261108-154450-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
 - at: 2026-11-08 15:45
   from: chaba
   text: started devin-task-20261108-154505-timer-log-shipper-on-idc03-fai on tony-omen (dispatch)
-- at: 2026-11-08 15:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
-- at: 2026-11-08 15:45
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.34 > 0.85)'
-- at: 2026-11-08 15:46
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.36 > 0.85)'
 - at: 2026-11-08 15:46
   from: chaba
   text: started devin-task-20261108-154649-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.68 > 1.0)'
-- at: 2026-11-08 15:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.15 > 1.0)'
-- at: 2026-11-08 15:50
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
 - at: 2026-11-08 15:50
   from: chaba
   text: started devin-task-20261108-155022-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.43 > 1.0)'
 - at: 2026-11-08 15:50
   from: devin
   text: '[still suspicious] Last run (11-08 15:10) of `log-shipper.service` on `idc03` result=timeout — investigate
@@ -1119,945 +506,93 @@ comms:
 - at: 2026-11-08 15:51
   from: chaba
   text: started devin-task-20261108-155125-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.06 > 1.0)'
-- at: 2026-11-08 15:51
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.77 > 0.85)'
-- at: 2026-11-08 15:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.82 > 1.0)'
-- at: 2026-11-08 15:53
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.34 > 0.85)'
-- at: 2026-11-08 15:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.52 > 1.0)'
 - at: 2026-11-08 15:55
   from: chaba
   text: started devin-task-20261108-155458-timer-log-shipper-on-idc03-fai on idc02 (dispatch)
-- at: 2026-11-08 15:55
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.67 > 0.85)'
-- at: 2026-11-08 15:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.41 > 1.0)'
-- at: 2026-11-08 15:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
-- at: 2026-11-08 15:57
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.08 > 0.85)'
-- at: 2026-11-08 15:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.46 > 1.0)'
-- at: 2026-11-08 15:58
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.18 > 1.0)'
-- at: 2026-11-08 15:59
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.12 > 0.85)'
-- at: 2026-11-08 16:00
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.88 > 1.0)'
 - at: 2026-11-08 16:01
   from: devin
   text: '[still suspicious] Last run (11-08 15:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 16:01
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.89 > 0.85)'
-- at: 2026-11-08 16:02
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
-- at: 2026-11-08 16:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.15 > 1.0)'
-- at: 2026-11-08 16:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.46 > 1.0)'
-- at: 2026-11-08 16:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
-- at: 2026-11-08 16:08
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.78 > 0.85)'
-- at: 2026-11-08 16:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 16:10
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.42 > 0.85)'
-- at: 2026-11-08 16:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
-- at: 2026-11-08 16:11
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 3.18 > 0.85)'
-- at: 2026-11-08 16:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
-- at: 2026-11-08 16:12
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.96 > 0.85)'
-- at: 2026-11-08 16:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.37 > 1.0)'
-- at: 2026-11-08 16:13
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.67 > 0.85)'
-- at: 2026-11-08 16:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
-- at: 2026-11-08 16:14
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.44 > 0.85)'
-- at: 2026-11-08 16:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.80 > 1.0)'
-- at: 2026-11-08 16:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.71 > 1.0)'
-- at: 2026-11-08 16:15
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.40 > 0.85)'
-- at: 2026-11-08 16:18
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.34 > 1.0)'
-- at: 2026-11-08 16:18
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.30 > 0.85)'
-- at: 2026-11-08 16:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.82 > 1.0)'
-- at: 2026-11-08 16:21
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.36 > 0.85)'
-- at: 2026-11-08 16:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.47 > 1.0)'
-- at: 2026-11-08 16:23
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.56 > 0.85)'
-- at: 2026-11-08 16:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.73 > 1.0)'
-- at: 2026-11-08 16:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.38 > 1.0)'
-- at: 2026-11-08 16:24
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.65 > 0.85)'
-- at: 2026-11-08 16:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.06 > 1.0)'
-- at: 2026-11-08 16:26
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.73 > 0.85)'
-- at: 2026-11-08 16:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
-- at: 2026-11-08 16:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
-- at: 2026-11-08 16:28
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.69 > 0.85)'
-- at: 2026-11-08 16:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.48 > 1.0)'
-- at: 2026-11-08 16:29
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.64 > 0.85)'
 - at: 2026-11-08 16:30
   from: devin
   text: '[still suspicious] Last run (11-08 16:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 16:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.29 > 1.0)'
-- at: 2026-11-08 16:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.74 > 1.0)'
-- at: 2026-11-08 16:31
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.85 > 0.85)'
-- at: 2026-11-08 16:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
-- at: 2026-11-08 16:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.88 > 1.0)'
-- at: 2026-11-08 16:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
-- at: 2026-11-08 16:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.48 > 1.0)'
-- at: 2026-11-08 16:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.37 > 1.0)'
-- at: 2026-11-08 16:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
-- at: 2026-11-08 16:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.67 > 1.0)'
 - at: 2026-11-08 16:40
   from: devin
   text: '[still suspicious] Last run (11-08 16:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 16:40
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.38 > 1.0)'
-- at: 2026-11-08 16:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.06 > 1.0)'
-- at: 2026-11-08 16:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
-- at: 2026-11-08 16:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 16:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
-- at: 2026-11-08 16:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.07 > 1.0)'
-- at: 2026-11-08 16:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.50 > 1.0)'
 - at: 2026-11-08 16:50
   from: devin
   text: '[still suspicious] Last run (11-08 16:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 16:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.78 > 1.0)'
-- at: 2026-11-08 16:52
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.56 > 1.0)'
-- at: 2026-11-08 16:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.39 > 1.0)'
-- at: 2026-11-08 16:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.27 > 1.0)'
-- at: 2026-11-08 16:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.50 > 1.0)'
-- at: 2026-11-08 16:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.65 > 1.0)'
-- at: 2026-11-08 16:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.29 > 1.0)'
-- at: 2026-11-08 16:58
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 16:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.74 > 1.0)'
 - at: 2026-11-08 16:59
   from: devin
   text: '[still suspicious] Last run (11-08 16:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 17:00
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.69 > 1.0)'
-- at: 2026-11-08 17:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
-- at: 2026-11-08 17:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.86 > 1.0)'
-- at: 2026-11-08 17:06
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.40 > 1.0)'
-- at: 2026-11-08 17:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.06 > 1.0)'
-- at: 2026-11-08 17:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.75 > 1.0)'
-- at: 2026-11-08 17:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.56 > 1.0)'
-- at: 2026-11-08 17:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
-- at: 2026-11-08 17:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.49 > 1.0)'
-- at: 2026-11-08 17:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.15 > 1.0)'
-- at: 2026-11-08 17:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.09 > 1.0)'
-- at: 2026-11-08 17:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.75 > 1.0)'
-- at: 2026-11-08 17:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.37 > 1.0)'
-- at: 2026-11-08 17:18
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.07 > 1.0)'
-- at: 2026-11-08 17:19
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 17:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.80 > 1.0)'
-- at: 2026-11-08 17:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.59 > 1.0)'
-- at: 2026-11-08 17:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.12 > 1.0)'
-- at: 2026-11-08 17:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.65 > 1.0)'
-- at: 2026-11-08 17:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.30 > 1.0)'
-- at: 2026-11-08 17:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 17:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.73 > 1.0)'
-- at: 2026-11-08 17:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.54 > 1.0)'
-- at: 2026-11-08 17:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.32 > 1.0)'
-- at: 2026-11-08 17:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.15 > 1.0)'
 - at: 2026-11-08 17:29
   from: devin
   text: '[still suspicious] Last run (11-08 17:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 17:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.87 > 1.0)'
-- at: 2026-11-08 17:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.46 > 1.0)'
-- at: 2026-11-08 17:33
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
-- at: 2026-11-08 17:33
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.68 > 1.0)'
-- at: 2026-11-08 17:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.49 > 1.0)'
-- at: 2026-11-08 17:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.36 > 1.0)'
-- at: 2026-11-08 17:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.75 > 1.0)'
-- at: 2026-11-08 17:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.44 > 1.0)'
-- at: 2026-11-08 17:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.05 > 1.0)'
 - at: 2026-11-08 17:39
   from: devin
   text: '[still suspicious] Last run (11-08 17:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 17:40
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.56 > 1.0)'
-- at: 2026-11-08 17:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.23 > 1.0)'
-- at: 2026-11-08 17:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.92 > 1.0)'
-- at: 2026-11-08 17:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
-- at: 2026-11-08 17:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
-- at: 2026-11-08 17:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.55 > 1.0)'
-- at: 2026-11-08 17:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.20 > 1.0)'
-- at: 2026-11-08 17:49
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
-- at: 2026-11-08 17:49
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.02 > 1.0)'
 - at: 2026-11-08 17:50
   from: devin
   text: '[still suspicious] Last run (11-08 17:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 17:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.74 > 1.0)'
-- at: 2026-11-08 17:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.55 > 1.0)'
-- at: 2026-11-08 17:52
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.38 > 1.0)'
-- at: 2026-11-08 17:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.92 > 1.0)'
-- at: 2026-11-08 17:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.13 > 1.0)'
-- at: 2026-11-08 17:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
-- at: 2026-11-08 17:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.26 > 1.0)'
-- at: 2026-11-08 17:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.99 > 1.0)'
-- at: 2026-11-08 17:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.81 > 1.0)'
-- at: 2026-11-08 18:00
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.59 > 1.0)'
 - at: 2026-11-08 18:01
   from: devin
   text: '[still suspicious] Last run (11-08 17:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 18:02
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.09 > 1.0)'
-- at: 2026-11-08 18:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.18 > 1.0)'
-- at: 2026-11-08 18:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.35 > 1.0)'
-- at: 2026-11-08 18:06
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.06 > 1.0)'
-- at: 2026-11-08 18:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 18:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 18:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
-- at: 2026-11-08 18:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.25 > 1.0)'
-- at: 2026-11-08 18:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.38 > 1.0)'
-- at: 2026-11-08 18:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.87 > 1.0)'
-- at: 2026-11-08 18:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.44 > 1.0)'
-- at: 2026-11-08 18:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.09 > 1.0)'
-- at: 2026-11-08 18:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
-- at: 2026-11-08 18:18
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 18:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.59 > 1.0)'
-- at: 2026-11-08 18:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.08 > 1.0)'
-- at: 2026-11-08 18:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.60 > 1.0)'
-- at: 2026-11-08 18:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.23 > 1.0)'
-- at: 2026-11-08 18:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.90 > 1.0)'
-- at: 2026-11-08 18:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.69 > 1.0)'
-- at: 2026-11-08 18:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.75 > 1.0)'
-- at: 2026-11-08 18:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.24 > 1.0)'
-- at: 2026-11-08 18:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.33 > 1.0)'
-- at: 2026-11-08 18:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
 - at: 2026-11-08 18:30
   from: devin
   text: '[still suspicious] Last run (11-08 18:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 18:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.42 > 1.0)'
-- at: 2026-11-08 18:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.08 > 1.0)'
-- at: 2026-11-08 18:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.81 > 1.0)'
-- at: 2026-11-08 18:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.59 > 1.0)'
-- at: 2026-11-08 18:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.52 > 1.0)'
-- at: 2026-11-08 18:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.12 > 1.0)'
-- at: 2026-11-08 18:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.66 > 1.0)'
-- at: 2026-11-08 18:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
 - at: 2026-11-08 18:40
   from: devin
   text: '[still suspicious] Last run (11-08 18:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 18:40
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.96 > 1.0)'
-- at: 2026-11-08 18:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
-- at: 2026-11-08 18:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.53 > 1.0)'
-- at: 2026-11-08 18:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.51 > 1.0)'
-- at: 2026-11-08 18:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.31 > 1.0)'
-- at: 2026-11-08 18:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.29 > 1.0)'
-- at: 2026-11-08 18:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.89 > 1.0)'
-- at: 2026-11-08 18:48
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.43 > 1.0)'
-- at: 2026-11-08 18:49
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.86 > 1.0)'
 - at: 2026-11-08 18:50
   from: devin
   text: '[still suspicious] Last run (11-08 18:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 18:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.68 > 1.0)'
-- at: 2026-11-08 18:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.76 > 1.0)'
-- at: 2026-11-08 18:52
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.92 > 1.0)'
-- at: 2026-11-08 18:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.96 > 1.0)'
-- at: 2026-11-08 18:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.52 > 1.0)'
-- at: 2026-11-08 18:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.19 > 1.0)'
-- at: 2026-11-08 18:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.88 > 1.0)'
-- at: 2026-11-08 18:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.68 > 1.0)'
-- at: 2026-11-08 18:58
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.49 > 1.0)'
-- at: 2026-11-08 18:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.77 > 1.0)'
 - at: 2026-11-08 19:00
   from: devin
   text: '[still suspicious] Last run (11-08 18:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 19:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.02 > 1.0)'
-- at: 2026-11-08 19:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.07 > 1.0)'
-- at: 2026-11-08 19:03
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.60 > 1.0)'
-- at: 2026-11-08 19:03
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.23 > 1.0)'
-- at: 2026-11-08 19:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.91 > 1.0)'
-- at: 2026-11-08 19:06
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.45 > 1.0)'
-- at: 2026-11-08 19:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.13 > 1.0)'
-- at: 2026-11-08 19:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.32 > 1.0)'
-- at: 2026-11-08 19:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.41 > 1.0)'
-- at: 2026-11-08 19:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.87 > 1.0)'
-- at: 2026-11-08 19:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.43 > 1.0)'
-- at: 2026-11-08 19:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
-- at: 2026-11-08 19:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.90 > 1.0)'
-- at: 2026-11-08 19:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.72 > 1.0)'
-- at: 2026-11-08 19:16
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.26 > 1.0)'
-- at: 2026-11-08 19:19
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
-- at: 2026-11-08 19:19
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.10 > 1.0)'
-- at: 2026-11-08 19:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
-- at: 2026-11-08 19:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.33 > 1.0)'
-- at: 2026-11-08 19:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.00 > 1.0)'
-- at: 2026-11-08 19:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.75 > 1.0)'
-- at: 2026-11-08 19:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 19:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
-- at: 2026-11-08 19:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.32 > 1.0)'
-- at: 2026-11-08 19:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.85 > 1.0)'
-- at: 2026-11-08 19:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.47 > 1.0)'
-- at: 2026-11-08 19:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.13 > 1.0)'
 - at: 2026-11-08 19:30
   from: devin
   text: '[still suspicious] Last run (11-08 19:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 19:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
-- at: 2026-11-08 19:33
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
-- at: 2026-11-08 19:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.63 > 1.0)'
-- at: 2026-11-08 19:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.12 > 1.0)'
-- at: 2026-11-08 19:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.60 > 1.0)'
-- at: 2026-11-08 19:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.24 > 1.0)'
-- at: 2026-11-08 19:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.91 > 1.0)'
-- at: 2026-11-08 19:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.70 > 1.0)'
 - at: 2026-11-08 19:40
   from: devin
   text: '[still suspicious] Last run (11-08 19:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 19:40
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.54 > 1.0)'
-- at: 2026-11-08 19:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.74 > 1.0)'
-- at: 2026-11-08 19:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.66 > 1.0)'
-- at: 2026-11-08 19:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.20 > 1.0)'
-- at: 2026-11-08 19:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.68 > 1.0)'
-- at: 2026-11-08 19:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.28 > 1.0)'
-- at: 2026-11-08 19:47
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 19:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.60 > 1.0)'
 - at: 2026-11-08 19:50
   from: devin
   text: '[still suspicious] Last run (11-08 19:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 19:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 4.07 > 1.0)'
-- at: 2026-11-08 19:52
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.53 > 1.0)'
-- at: 2026-11-08 19:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.01 > 1.0)'
-- at: 2026-11-08 19:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.57 > 1.0)'
-- at: 2026-11-08 19:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.19 > 1.0)'
-- at: 2026-11-08 19:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.88 > 1.0)'
-- at: 2026-11-08 19:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.63 > 1.0)'
-- at: 2026-11-08 19:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.60 > 1.0)'
-- at: 2026-11-08 20:00
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.46 > 1.0)'
 - at: 2026-11-08 20:00
   from: devin
   text: '[still suspicious] Last run (11-08 19:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 20:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.91 > 1.0)'
-- at: 2026-11-08 20:02
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.48 > 1.0)'
-- at: 2026-11-08 20:03
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
-- at: 2026-11-08 20:05
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
-- at: 2026-11-08 20:06
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.14 > 1.0)'
-- at: 2026-11-08 20:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.25 > 1.0)'
-- at: 2026-11-08 20:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.39 > 1.0)'
-- at: 2026-11-08 20:09
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.82 > 1.0)'
-- at: 2026-11-08 20:10
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.53 > 1.0)'
-- at: 2026-11-08 20:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.17 > 1.0)'
-- at: 2026-11-08 20:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.86 > 1.0)'
-- at: 2026-11-08 20:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.62 > 1.0)'
-- at: 2026-11-08 20:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.28 > 1.0)'
-- at: 2026-11-08 20:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.00 > 1.0)'
-- at: 2026-11-08 20:17
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.99 > 1.0)'
-- at: 2026-11-08 20:18
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.59 > 1.0)'
-- at: 2026-11-08 20:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.23 > 1.0)'
-- at: 2026-11-08 20:20
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.76 > 1.0)'
-- at: 2026-11-08 20:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.57 > 1.0)'
-- at: 2026-11-08 20:22
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.42 > 1.0)'
-- at: 2026-11-08 20:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.07 > 1.0)'
-- at: 2026-11-08 20:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.22 > 1.0)'
-- at: 2026-11-08 20:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.70 > 1.0)'
-- at: 2026-11-08 20:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.29 > 1.0)'
-- at: 2026-11-08 20:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 20:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.73 > 1.0)'
-- at: 2026-11-08 20:30
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.52 > 1.0)'
 - at: 2026-11-08 20:30
   from: devin
   text: '[still suspicious] Last run (11-08 20:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 20:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.57 > 1.0)'
-- at: 2026-11-08 20:33
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.43 > 1.0)'
-- at: 2026-11-08 20:34
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.08 > 1.0)'
-- at: 2026-11-08 20:35
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.65 > 1.0)'
-- at: 2026-11-08 20:36
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.30 > 1.0)'
-- at: 2026-11-08 20:37
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 20:38
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.70 > 1.0)'
-- at: 2026-11-08 20:39
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
 - at: 2026-11-08 20:40
   from: devin
   text: '[still suspicious] Last run (11-08 20:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 20:40
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.21 > 1.0)'
-- at: 2026-11-08 20:41
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.70 > 1.0)'
-- at: 2026-11-08 20:42
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.17 > 1.0)'
-- at: 2026-11-08 20:43
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.67 > 1.0)'
-- at: 2026-11-08 20:44
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
-- at: 2026-11-08 20:45
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
-- at: 2026-11-08 20:46
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
-- at: 2026-11-08 20:49
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
 - at: 2026-11-08 20:50
   from: devin
   text: '[still suspicious] Last run (11-08 20:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 20:50
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.17 > 1.0)'
-- at: 2026-11-08 20:51
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
-- at: 2026-11-08 20:53
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.31 > 1.0)'
-- at: 2026-11-08 20:54
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
-- at: 2026-11-08 20:55
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
-- at: 2026-11-08 20:56
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.35 > 1.0)'
-- at: 2026-11-08 20:57
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
-- at: 2026-11-08 20:58
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.48 > 1.0)'
-- at: 2026-11-08 20:59
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.95 > 1.0)'
 - at: 2026-11-08 21:01
   from: devin
   text: '[still suspicious] Last run (11-08 20:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-08 21:01
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.53 > 1.0)'
-- at: 2026-11-08 21:02
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.10 > 1.0)'
 - at: 2026-11-08 21:30
   from: devin
   text: '[still suspicious] Last run (11-08 21:10) of `log-shipper.service` on `idc03` result=timeout — investigate
@@ -2250,18 +785,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-09 08:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-09 09:07
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.08 > 0.85)'
-- at: 2026-11-09 09:07
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.00 > 1.0)'
 - at: 2026-11-09 09:08
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
-- at: 2026-11-09 09:08
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
 - at: 2026-11-09 09:09
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
@@ -2269,109 +795,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-- at: 2026-11-09 09:11
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.95 > 1.0)'
-- at: 2026-11-09 09:11
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.28 > 0.85)'
-- at: 2026-11-09 09:12
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.98 > 1.0)'
-- at: 2026-11-09 09:13
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.49 > 1.0)'
-- at: 2026-11-09 09:13
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.25 > 0.85)'
-- at: 2026-11-09 09:14
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.12 > 1.0)'
-- at: 2026-11-09 09:14
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.03 > 0.85)'
-- at: 2026-11-09 09:15
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.86 > 1.0)'
-- at: 2026-11-09 09:15
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.86 > 0.85)'
-- at: 2026-11-09 09:16
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.67 > 1.0)'
-- at: 2026-11-09 09:16
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.70 > 0.85)'
-- at: 2026-11-09 09:17
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.48 > 1.0)'
-- at: 2026-11-09 09:21
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.57 > 1.0)'
-- at: 2026-11-09 09:21
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
-- at: 2026-11-09 09:23
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.58 > 0.85)'
-- at: 2026-11-09 09:23
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.19 > 1.0)'
-- at: 2026-11-09 09:23
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.39 > 1.0)'
-- at: 2026-11-09 09:24
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.51 > 0.85)'
-- at: 2026-11-09 09:24
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.90 > 1.0)'
-- at: 2026-11-09 09:25
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.50 > 0.85)'
-- at: 2026-11-09 09:25
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 1.59 > 1.0)'
-- at: 2026-11-09 09:25
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.61 > 1.0)'
-- at: 2026-11-09 09:26
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.45 > 0.85)'
-- at: 2026-11-09 09:26
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.48 > 1.0)'
-- at: 2026-11-09 09:27
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.41 > 0.85)'
-- at: 2026-11-09 09:27
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
-- at: 2026-11-09 09:28
-  from: chaba
-  text: 'tony-omen defers: host overloaded (5m load/core 1.73 > 1.0)'
-- at: 2026-11-09 09:28
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
-- at: 2026-11-09 09:28
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 3.11 > 1.0)'
-- at: 2026-11-09 09:29
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 1.32 > 0.85)'
-- at: 2026-11-09 09:29
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.66 > 1.0)'
 - at: 2026-11-09 09:31
   from: devin
   text: '[still suspicious] Last run (11-09 09:10) of `log-shipper.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-09 09:31
-  from: chaba
-  text: 'idc03 defers: host overloaded (5m load/core 2.16 > 0.85)'
-- at: 2026-11-09 09:31
-  from: chaba
-  text: 'mn01 defers: host overloaded (5m load/core 2.05 > 1.0)'
 - at: 2026-11-09 09:31
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 2.01 > 1.0)'
