@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 13:52
+updated: 2026-11-17 13:56
 priority: medium
 program: ai-workforce
 tags:
@@ -530,6 +530,13 @@ comms:
   from: devin
   text: 'raised request consult-per-call-cap: Choose the per-call estimated USD ceiling, separate from the 30-day
     virtual-key budget. The code preflights a conservati'
+- at: 2026-11-17 13:56
+  from: devin
+  text: 'Follow-up pushed to the same PR #12 head at 388c342 (no force push). Per-call guard now preflights a conservative
+    UTF-8-byte input ceiling plus output-token ceiling against ADA_CONSULT_MAX_USD (default/recommended $0.10);
+    model-specific rates are required and missing rates fail closed. Full Ada suite after this change: 1761 passed,
+    4 skipped; tool-lint clean. No live provider call or deploy. Still blocked from enabling: dedicated consult-flash
+    alias and LITELLM_KEY_CONSULT with the selected mont'
 action:
   type: dispatch
   repo: ada-voice
