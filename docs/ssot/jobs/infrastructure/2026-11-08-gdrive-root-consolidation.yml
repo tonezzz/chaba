@@ -1,0 +1,68 @@
+# OPS-1187 — gdrive root consolidation (2026-11-08)
+# Phase A executed by earlier session same day; this dispatch verified it
+# server-side from idc02 and completed the phase-B consumer audit that was
+# posted truncated on the card.
+title: Gdrive root consolidation — phase A verified, phase B gated (all remaining roots are live)
+card: gdrive-root-consolidation-archive-dead-p-9c04d1
+date: 2026-11-08
+mode: "audit + decision doc (dispatch worktree; rclone read-only vs gdrive, no moves)"
+
+phase_a_verification:
+  method: "rclone lsd/lsf gdrive: from idc02 (read-only)"
+  moved_to_ada_nest_archive:
+    - ada-nest-cline-pilot
+    - ada-nest-cline-pilot-rerun-20261028-ada
+    - ada-nest-cline-test-run-20261029-r1
+    - ada-nest-kk-mac-docpilot-static-qc-ops0904-20261031
+    - ada-nest-kk-mac-pilot
+    - ada-nest-kk-mac-render-smoke-20261031
+  removed_from_root: [tmp, tmp-test]
+  discrepancy_resolved: >-
+    comm said appsheet was RETAINED, but root listing showed it gone — it was
+    actually moved to gdrive:archive/appsheet at 13:27 (kept, just relocated
+    into the root cold-archive dir, not ada-nest/archive).
+  root_dirs_now: 63  # was ~73; includes Tony's personal/year/Google-app dirs
+
+phase_b_consumer_audit:
+  # refs counted across scripts/, stacks/, systemd/, evals/, tests/, docs/ live tree
+  ada-nest:                {verdict: "KEEP — canonical root", consumers: "colab job-console notebook (MyDrive/ada-nest/queue), queue-mgr, nest-queue-*, video_queue_status, ~all colab packs"}
+  ada-nest-adobe-stock:    {size: "39 obj / 0.08 GB", verdict: "live remote root", consumers: "8 scripts/adobe-stock/* (campaign-status, lane-watcher, picker-server, inbox-processor, land-render, publish-previews, reindex-sync + ADA_ADOBE_STOCK_REMOTE env, build_adobe_stock_indexes)"}
+  ada-nest-devnest:        {size: "210 obj", verdict: "live remote root", consumers: "devnest_capacity_broker (source remote), kk_mac_plan_validator, devnest_report_feed"}
+  ada-nest-kk-llm:         {size: "453 obj", verdict: "live remote root — REMOTE WORKER ACTIVE on kk-mac", consumers: "kk_mac_metrics, kk_mac_capacity_producer, capacity_broker kk_remote, tests/test_nest_worker_scan; live nest-worker.py --remote gdrive:ada-nest-kk-llm"}
+  ada-nest-kk-mac-video-pilot: {size: "329 obj / 9.61 GB", verdict: "live remote root — active video queue (54 packages)", consumers: "video_queue_status default remote, queue/dispatcher consumers, kk-mac video lane"}
+  ada-documents:           {size: "557 obj / 2.81 GB", verdict: "live service root", consumers: "idc01 doc-archive service (DRIVE_ROOT=ada-documents), scripts/gdrive-archive.py, ada-voice ada_doc_* tools, MDDB documents bank"}
+  archive:                 {size: "36 obj / 14.8 GB", verdict: "live cold tier — keep", consumers: "holds mddb-bench, mddb-idc01-leader-final, mddb-tony-dell, jev-student, cold-restore-test, appsheet; referenced in restore docs/ssot.nest-brains"}
+  backups:                 {size: "36 obj / 193.76 GB", verdict: "HIGHEST RISK — DR path, do NOT move unattended", consumers: "mddb-gdrive-tier.service + mddb-standby-pull.service (dell/idc03/omen), backups/devin sessions.db, tony-omen partition snapshots, cold-restore runbooks"}
+  chaba:                   {size: "5 obj", verdict: "semi-live", consumers: "deploy-card.sh gdrive deploy-tier target gdrive:chaba/bundles/ — configured but bundles/ never created (no verified deploy archived yet); 2 legacy xlsx + colabgpu/kk2 at root"}
+  chaba-media-corpus:      {size: "6579 obj / 10 GB", verdict: "live — HOST MOUNT PATH", consumers: "ada-ha.container Volume=/home/tony/GoogleDrive/chaba-media-corpus/yt-live-media on tony-dell (moving breaks the quadlet mount), yt-voice-dub-test corpus backup"}
+  colab-cache:             {size: "1 obj / 0.17 GB", verdict: "live per docs", consumers: "docs/kb/colab-gdrive-cache.md + ssot.procedures colab-gdrive-cache (verified 2026-10-13) — MyDrive/colab-cache/ is the documented cache root, colab-batch-jobs cifar10"}
+  cold-storage:            {size: "1805 obj / 144.86 GB", verdict: "live cold tier — external producer (idc02 backups), zero repo refs", consumers: "off-repo writer"}
+  nest:                    {size: "7 obj", verdict: "live, DR-adjacent", consumers: "nest-brain-pack.sh/nest-brain-restore.sh (gdrive:nest/brains), ssot.nest-brains schema, gcrypt env on tony-dell"}
+  notebooklm:              {size: "458 obj", verdict: "live", consumers: "notebooklm-kb-sync.py (gdrive:notebooklm/chaba collection path)"}
+
+phase_b_decision:
+  recommendation: >-
+    STOP at phase A. All 13 remaining chaba-managed root dirs are live service
+    roots — none are dead. The four ada-nest-* siblings are independent
+    remote-worker roots, not clutter; consolidating them under ada-nest/
+    buys cosmetics at the cost of a coordinated multi-host migration
+    (script defaults + a live kk-mac worker + colab notebook + host mounts).
+    backups/, nest/, chaba-media-corpus/, colab-cache/ must never be moved
+    by an unattended session (DR path / host mount / notebook mount).
+  if_tony_wants_fewer_roots:
+    order: "ada-nest-adobe-stock -> ada-nest-devnest -> ada-nest-kk-llm -> ada-nest-kk-mac-video-pilot (ascending blast radius)"
+    per_dir_checklist:
+      - "rclone move gdrive:<old> -> gdrive:ada-nest/remotes/<name> (server-side, verified)"
+      - "update every --remote default + env var in scripts/"
+      - "restart/point live remote workers (kk-mac nest-worker for kk-llm)"
+      - "update colab notebook cells that mount MyDrive/<old>"
+      - "card comms + this file updated"
+    never_move: [backups, nest, chaba-media-corpus, colab-cache, archive, cold-storage, ada-documents, notebooklm]
+  housekeeping_followups:
+    - "gdrive:chaba/bundles/ has never been written — deploy-tier is configured but unproven; verify next home-assistant deploy actually archives (card gdrive-deploy-tier)"
+    - "ada-nest/kk-llm vs root ada-nest-kk-llm: identical inbox files + identical newest mtimes (2026-11-06) in both trees — looks like Drive multi-parenting of a SUBSET (208 vs 453 obj), not a stale copy. Root ada-nest-kk-llm is canonical (all script defaults). DO NOT rclone-delete ada-nest/kk-llm — removing a parent dir of multi-parented files can strip them from both locations; if cleanup wanted, inspect with rclone --drive-list-helpers / Drive API parents first."
+
+verification:
+  - "rclone lsd gdrive: — 63 root dirs; 6 pilots under ada-nest/archive/, tmp/tmp-test/appsheet gone from root"
+  - "rclone lsf/lsd per live dir — contents + sizes table above"
+  - "rg 'gdrive:<dir>' repo-wide — consumer lists above"

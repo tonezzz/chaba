@@ -30,7 +30,8 @@ def _load_ssot_values():
 _NOTEBOOKLM = _load_ssot_values().get("notebooklm", {})
 _SYNC = _NOTEBOOKLM.get("sync", {})
 _COLLECTION = _NOTEBOOKLM.get("collections", {}).get("chaba", {})
-_COLLECTION_PATH = _COLLECTION.get("path", "gdrive:notebooklm/chaba")
+_COLLECTION_PATH = os.environ.get("NOTEBOOKLM_KB_COLLECTION") or _COLLECTION.get(
+    "path", "gdrive:notebooklm/chaba")
 
 NOTEBOOK_ID = os.environ.get("NOTEBOOKLM_KB_NOTEBOOK") or _SYNC.get(
     "notebook_id", "fdfd3483-6b7e-4cb0-85f3-7f060698769c"

@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -46,7 +47,7 @@ def board_comment(text: str) -> str:
 
 
 CAMPAIGN = "AS-2026-11-05-REMOTE-WORK-001"
-REMOTE = "gdrive:ada-nest-adobe-stock"
+REMOTE = os.environ.get("ADA_ADOBE_STOCK_REMOTE", "gdrive:ada-nest/adobe-stock")
 CAMPAIGN_STATUS_CANDIDATES = [
     Path(__file__).resolve().parent / "campaign-status.py",
     Path.home() / "CascadeProjects/chaba/scripts/adobe-stock/campaign-status.py",

@@ -9,13 +9,13 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 python3 "$HERE/publish-previews.py" --reindex-only \
-  --remote "${ADA_ADOBE_STOCK_REMOTE:-gdrive:ada-nest-adobe-stock}" \
+  --remote "${ADA_ADOBE_STOCK_REMOTE:-gdrive:ada-nest/adobe-stock}" \
   | tee "$WORK/reindex.json"
 
 # publish-previews writes indexes inside its own tempdir; re-fetch from
 # the remote so this script stays decoupled from its internals.
 for f in assets campaigns prompt-patterns rejection-patterns; do
-  rclone copyto "${ADA_ADOBE_STOCK_REMOTE:-gdrive:ada-nest-adobe-stock}/indexes/$f.json" "$WORK/$f.json"
+  rclone copyto "${ADA_ADOBE_STOCK_REMOTE:-gdrive:ada-nest/adobe-stock}/indexes/$f.json" "$WORK/$f.json"
   scp -q -o BatchMode=yes "$WORK/$f.json" \
     "idc02:.local/share/ada-opencode/workspace/.adobe-stock/indexes/$f.json"
 done

@@ -1,0 +1,84 @@
+# gdrive: root-dir registry — chaba/ada-owned top-level dirs on Tony's Drive.
+# Created 2026-11-08 (OPS-1187 phase-B audit); updated 2026-11-17 closeout.
+# Verdict layer only; consumer map + procedure: docs/kb/gdrive-root-consolidation.md;
+# execution log: docs/ssot/jobs/infrastructure/2026-11-17-gdrive-root-consolidation-closeout.yml
+#
+# Principle: every remaining top-level dir is a NAMED API ROOT — consumed by
+# hardcoded `gdrive:<dir>` strings in scripts/systemd/quadlets, by colab
+# notebooks outside this repo, and by the whole-Drive FUSE mount
+# (~/GoogleDrive on tony-dell). Root renames are contract changes, not tidying.
+#
+# phase-A (done 2026-11-08): 6 dead pilot dirs -> ada-nest/archive/, tmp/tmp-test removed.
+# phase-B (executed 2026-11-08, closed out 2026-11-17): live roots folded —
+# see per-dir 'moved' markers below.
+roots:
+  - id: ada-nest
+    size: "~large (main store)"
+    consumers: "queue-mgr, colab notebook MyDrive/ada-nest/queue, ~all nest jobs; packs/ queue/ reports/ archive/"
+    verdict: keep-root  # canonical store; also absorbs the folded lanes below
+  - id: ada-nest/ada-documents
+    moved: "gdrive:ada-documents -> gdrive:ada-nest/ada-documents (2026-11-08 fold; dir renamed back to ada-documents 2026-11-17 — DRIVE_ROOT lookup is by folder NAME, not path)"
+    size: 2.62GB/557f
+    consumers: "stacks/idc01/doc-archive/doc_archive.py (DRIVE_ROOT=ada-documents), scripts/gdrive-archive.py, MDDB documents bank"
+    verdict: folded
+  - id: ada-nest/adobe-stock
+    moved: "gdrive:ada-nest-adobe-stock -> gdrive:ada-nest/adobe-stock (fold 2026-11-08; stragglers caught up 2026-11-17; repo defaults repointed 2026-11-17)"
+    size: 82MB/41f
+    consumers: "scripts/adobe-stock/* all take ADA_ADOBE_STOCK_REMOTE / --remote (default gdrive:ada-nest/adobe-stock)"
+    verdict: folded-pending-drain  # old root still receives dell timer writes until exec checkout syncs; then rclone move drains it
+  - id: ada-nest/devnest
+    moved: "gdrive:ada-nest-devnest -> gdrive:ada-nest/devnest (2026-11-08)"
+    consumers: "scripts/devnest/{devnest_capacity_broker,devnest_report_feed,kk_mac_plan_validator}.py"
+    verdict: folded
+  - id: ada-nest/kk-llm
+    moved: "gdrive:ada-nest-kk-llm -> gdrive:ada-nest/kk-llm (2026-11-08)"
+    consumers: "scripts/devnest/{kk_mac_metrics,kk_mac_capacity_producer,devnest_capacity_broker}.py; kk-mac workers poll inbox/"
+    verdict: folded
+  - id: ada-nest/kk-mac-video-pilot
+    moved: "gdrive:ada-nest-kk-mac-video-pilot -> gdrive:ada-nest/kk-mac-video-pilot (2026-11-08)"
+    consumers: "scripts/devnest/video_queue_status.py (KK_MAC_VIDEO_PILOT_REMOTE, default new path); Mac Studio render workers"
+    verdict: folded
+  - id: nest
+    size: 474KB/7f
+    consumers: "scripts/{nest-brain-pack,nest-brain-restore}.sh (NEST_BRAINS_REMOTE, default gdrive:nest/brains); planned gcrypt parent on tony-dell"
+    verdict: keep-root  # approved move to ada-nest/brains is gated on dell gcrypt env repoint — see closeout doc
+  - id: backups
+    size: 162GB+/33f
+    consumers: "systemd/{mddb-standby-pull,mddb-gdrive-tier}.service, cold-restore runbooks, omen partition snapshots, backups/devin"
+    verdict: keep-root  # HIGHEST RISK — DR path; never rename
+  - id: archive
+    size: "~160GB"
+    consumers: "cold tier root — absorbed appsheet, chaba (2 xlsx), colabgpu, cold-storage, chaba-media-corpus on 2026-11-08; deploy-card.sh now archives bundles under archive/chaba/bundles (CHABA_GDRIVE_BUNDLES)"
+    verdict: keep-root
+  - id: archive/chaba-media-corpus
+    moved: "gdrive:chaba-media-corpus -> gdrive:archive/chaba-media-corpus (2026-11-08)"
+    consumers: "FUSE path ~/GoogleDrive/archive/chaba-media-corpus/yt-live-media -> stacks/tony-dell/ada-ha/ada-ha.container Volume= (repointed 2026-11-17; needs quadlet redeploy+restart on dell)"
+    verdict: folded
+  - id: archive/cold-storage
+    moved: "gdrive:cold-storage -> gdrive:archive/cold-storage (2026-11-08)"
+    consumers: "idc02 backup cold tier writer (off-repo)"
+    verdict: folded
+  - id: colab-cache
+    size: 170MB/1f
+    consumers: "colab notebooks (outside repo) MyDrive/colab-cache/<name>/ — docs/kb/colab-gdrive-cache.md"
+    verdict: keep-root  # notebook contract
+  - id: notebooklm
+    size: 458-obj (mostly sizeless gdocs)
+    consumers: "scripts/notebooklm-kb-sync.py (NOTEBOOKLM_KB_COLLECTION, default gdrive:notebooklm/chaba)"
+    verdict: keep-root
+  - id: "Tony AI/backup/chaba"
+    size: n/a (subdir of 'Tony AI')
+    consumers: "dell FUSE path ~/GoogleDrive/Tony AI/backup/chaba — daily docker vol/pg dumps (ssot.automation.yml backup_root)"
+    verdict: keep-root
+removed_or_folded:
+  - "appsheet -> archive/appsheet (2026-11-08)"
+  - "DevinBackups -> backups/devin (2026-11-08)"
+  - "chaba -> archive/chaba (2026-11-08; bundles/ never existed — deploy-card.sh repointed to archive/chaba/bundles)"
+  - "chaba/colabgpu -> archive/colabgpu (2026-11-08)"
+  - "cold-storage -> archive/cold-storage (2026-11-08)"
+  - "chaba-media-corpus -> archive/chaba-media-corpus (2026-11-08)"
+  - "ada-documents -> ada-nest/ada-documents (2026-11-08 + rename-fix 2026-11-17)"
+  - "ada-nest-{adobe-stock,devnest,kk-llm,kk-mac-video-pilot} -> ada-nest/<lane> (2026-11-08)"
+  - "tmp-sc-test removed (2026-11-17 — empty stampede scratch dir)"
+card: gdrive-root-consolidation-archive-dead-p-9c04d1
+updated: 2026-11-17

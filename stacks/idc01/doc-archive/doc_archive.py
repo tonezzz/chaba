@@ -2,7 +2,7 @@
 
 POST /v1/archive: base64 page images -> sha256 + dhash -> dedup check against
 the MDDB `documents` collection -> resumable upload to
-gdrive:ada-documents/<YYYY>/<slug>/ + manifest.json -> one metadata doc in
+gdrive:ada-nest/ada-documents/<YYYY>/<slug>/ + manifest.json -> one metadata doc in
 MDDB (metadata only — page bytes never go to MDDB).
 
 Design: docs/kb/document-archive-service.md (RAM-only, direct Drive REST,

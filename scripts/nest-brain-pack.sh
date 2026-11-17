@@ -28,7 +28,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REMOTE="gdrive:nest/brains"
+REMOTE="${NEST_BRAINS_REMOTE:-gdrive:nest/brains}"
 ENTITY=""; REPO=""; SRC=""; EPOCH=""; KEEP=""; NOTES=""
 VERIFY=1; PRUNE=1; DRY=0
 

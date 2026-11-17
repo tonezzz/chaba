@@ -28,7 +28,7 @@ INBOX = Path.home() / "adobe-work/inbox"
 PICKER_DIR = Path.home() / "adobe-work/picker"
 LAND = Path(__file__).resolve().parent / "land-render.py"
 CAMPAIGN = "AS-2026-11-05-REMOTE-WORK-001"
-REMOTE = "gdrive:ada-nest-adobe-stock"
+REMOTE = os.environ.get("ADA_ADOBE_STOCK_REMOTE", "gdrive:ada-nest/adobe-stock")
 GEMINI_MODEL = "gemini-2.5-flash-image"
 
 

@@ -19,6 +19,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -387,7 +388,8 @@ def main() -> int:
     p.add_argument("--campaign", required=True)
     p.add_argument("--asset-id", default="")
     p.add_argument("--request-id", default="")
-    p.add_argument("--remote", default="gdrive:ada-nest-adobe-stock")
+    p.add_argument("--remote", default=os.environ.get(
+        "ADA_ADOBE_STOCK_REMOTE", "gdrive:ada-nest/adobe-stock"))
     p.add_argument("--status-only", action="store_true")
     p.add_argument("--timeout-s", type=int, default=TIMEOUT_S)
     args = p.parse_args()

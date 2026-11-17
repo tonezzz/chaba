@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Archive a document set to gdrive:ada-documents/<YYYY>/<slug>/ via REST, RAM-only.
+"""Archive a document set to gdrive:ada-nest/ada-documents/<YYYY>/<slug>/ via REST, RAM-only.
 
 Reads files from a local dir, computes sha256 + dhash per image, uploads each
 page + manifest.json via resumable uploads, prints the folder ID.
@@ -81,7 +81,8 @@ def main():
     cp = configparser.ConfigParser(); cp.read(CONF)
     d = Drive(token(cp))
 
-    root = d.find("ada-documents") or d.mkdir("ada-documents")
+    root_name = os.environ.get("DRIVE_ROOT", "ada-documents")
+    root = d.find(root_name) or d.mkdir(root_name)
     year = d.find(str(datetime.date.today().year), root) or d.mkdir(str(datetime.date.today().year), root)
     existing = d.find(a.slug, year)
     if existing:

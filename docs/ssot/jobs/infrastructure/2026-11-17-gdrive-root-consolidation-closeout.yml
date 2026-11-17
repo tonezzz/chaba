@@ -1,0 +1,73 @@
+title: gdrive root consolidation — phase-B closeout + consumer-repoint repair
+ref: OPS-1187
+card: gdrive-root-consolidation-archive-dead-p-9c04d1
+date: 2026-11-17
+session: dispatch/20261117-085929-gdrive-root-consolidation-arch (idc02)
+
+context: >-
+  Phase B was executed 2026-11-08 by a stampede of ~8 concurrent dispatch
+  sessions after Tony answered "proceed" on every gate request. The folds
+  mostly landed, but three consumer-side breaks were left behind plus the
+  audit/plan docs sat unmerged in dead dispatch branches. This session
+  verified real state server-side and repaired the fallout.
+
+verified_state_2026-11-17:
+  root_listing: "rclone lsd gdrive: — chaba-owned roots now: ada-nest, ada-nest-adobe-stock (pending drain), archive, backups, colab-cache, nest, notebooklm"
+  folded_11-08:
+    ada-nest/devnest: "from ada-nest-devnest — 210 obj"
+    ada-nest/kk-llm: "from ada-nest-kk-llm — 453 obj"
+    ada-nest/kk-mac-video-pilot: "from ada-nest-kk-mac-video-pilot — 329 obj / ~9.6GB"
+    ada-nest/ada-documents: "from ada-documents — 557 obj / 2.62 GiB (see repair #1)"
+    ada-nest/adobe-stock: "from ada-nest-adobe-stock — 41 obj / 81.9 MiB after straggler catch-up"
+    archive/appsheet: "23f/1.1MB"
+    archive/chaba: "2 xlsx only — bundles/ never existed under chaba root"
+    archive/colabgpu: "from chaba/colabgpu"
+    archive/cold-storage: "~145GB idc02 cold tier"
+    archive/chaba-media-corpus: "6579f/9.3GB"
+    backups/devin: "from DevinBackups — 31.8GB session-DB backups"
+
+repairs_this_session:
+  drive_side:
+    - "rmdir gdrive:tmp-sc-test — empty scratch dir left by a stampede session (2026-11-08 13:31)"
+    - "rename gdrive:ada-nest/documents -> ada-nest/ada-documents — doc_archive.py + gdrive-archive.py resolve the root by folder NAME (drive.find('ada-documents') is a global name query); the 'documents' rename would have made the service mkdir a fresh empty ada-documents root and split-brain the archive"
+    - "rclone copy gdrive:ada-nest-adobe-stock -> ada-nest/adobe-stock — caught up 4 stragglers written post-fold (SESSION.json, 40-qc-review.md, comparison-e-cf-inpaint-wheels.{png,manifest.json}) + refreshed indexes; new dir now matches old root 41 obj / 81.867 MiB exactly"
+  repo_side:
+    repointed_to_post_fold_paths:
+      - "scripts/adobe-stock/{campaign-status,inbox-processor,land-render,lane-watcher,picker-server,publish-previews}.py + reindex-sync.sh — ADA_ADOBE_STOCK_REMOTE default now gdrive:ada-nest/adobe-stock (was hardcoded/leftover gdrive:ada-nest-adobe-stock)"
+      - "scripts/devnest/video_queue_status.py — KK_MAC_VIDEO_PILOT_REMOTE default gdrive:ada-nest/kk-mac-video-pilot (old root gone — default was broken)"
+      - "scripts/home-assistant/deploy-card.sh — CHABA_GDRIVE_BUNDLES default gdrive:archive/chaba/bundles (chaba root gone; a deploy would have resurrected a root dir)"
+      - "scripts/gdrive-archive.py — DRIVE_ROOT env override, default 'ada-documents' (name-keyed)"
+      - "stacks/tony-dell/ada-ha/ada-ha.container — yt-corpus Volume -> ~/GoogleDrive/archive/chaba-media-corpus/yt-live-media"
+      - "tests/ada/test_nest_worker_scan.py + scripts/colab/packs/kk-mac-image-render-poc/* — comment/usage refs updated"
+      - "stacks/idc01/doc-archive/* + docs/kb/document-archive-service.md + ssot.apps.ada-memory-banks.yml — documented path now gdrive:ada-nest/ada-documents/"
+    env_knobs_defaults_unchanged:
+      - "scripts/nest-brain-{pack,restore}.sh — NEST_BRAINS_REMOTE (default gdrive:nest/brains)"
+      - "scripts/notebooklm-kb-sync.py — NOTEBOOKLM_KB_COLLECTION (default gdrive:notebooklm/chaba)"
+    docs_restored_from_unmerged_branches:
+      - "docs/ssot/infrastructure/ssot.gdrive-roots.yml — updated to final state"
+      - "docs/kb/gdrive-root-consolidation.md — status + verdict updated"
+      - "docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-phase-b-audit.yml (as-committed)"
+      - "docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation-phase-b.yml (as-committed)"
+      - "docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation.yml (as-committed)"
+
+remaining_host_gated:
+  - id: adobe-stock-drain
+    what: "rclone move gdrive:ada-nest-adobe-stock gdrive:ada-nest/adobe-stock then rmdir"
+    gate: "tony-dell reindex-sync.timer writes indexes to the old root until chaba-repo-sync.timer pulls the repoint (~15-60min post-merge). Draining early just recreates the root with stragglers."
+    verify: "rclone lsl gdrive:ada-nest-adobe-stock — once newest mtime predates merge+sync, drain is safe"
+  - id: nest-brains-move
+    what: "approved (req 167376): gdrive:nest/brains -> gdrive:ada-nest/brains"
+    gate: "tony-dell gcrypt env wraps the remote — repoint gcrypt target + set NEST_BRAINS_REMOTE on dell BEFORE the move, else the crypt layer writes a fresh nest/brains root"
+  - id: ada-ha-corpus-mount
+    what: "ada-ha.container Volume= repointed in repo"
+    gate: "quadlet redeploy + `systemctl --user restart ada-ha` on tony-dell (host-gated)"
+  - id: doc-archive-daily-verify
+    what: "no code change needed (name-lookup fixed by the ada-documents rename) — confirm next real POST /v1/archive lands under ada-nest/ada-documents/<YYYY>/"
+    gate: "none — first organic run proves it"
+
+verification_done:
+  - "rclone lsd gdrive: — root set matches registry"
+  - "rclone size old-vs-new adobe-stock — 41 obj / 81.867 MiB both sides"
+  - "rclone lsd gdrive:ada-nest — all folded lanes present incl renamed ada-documents (557 obj)"
+  - "rg 'gdrive:<old-root>' scripts/ stacks/ systemd/ tests/ apps/ — zero stale refs"
+  - "python3 -m unittest tests.devnest.test_gdrive_roots — pass"
