@@ -1,7 +1,7 @@
 id: board-api-lock-convoy-cross-checkout
 title: 'board-api write convoy: shared /tmp locks across checkouts + lock-ordering stall'
 column: done
-updated: 2026-11-17 18:23
+updated: 2026-11-17 18:24
 priority: medium
 tags:
 - board-api
@@ -40,5 +40,9 @@ comms:
     checkout sentinel) that only reached the running service at the 18:04 restart. Remaining real gap fixed now:
     git-safe-pull took /tmp/board-render.lock unconditionally, so the exec checkout''s chaba-repo-sync queued >60s
     behind served renders while writes piled up. Commit f6036a47'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
