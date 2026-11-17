@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-09 16:54 +07",
+  "generated": "2026-11-17 18:37 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -79,9 +79,9 @@
     },
     "ada-pi-pwa": {
       "host": "idc03",
-      "listen": "127.0.0.1:8001",
+      "listen": "127.0.0.1:8002",
       "tailnet": "https://idc03.taila0626a.ts.net/",
-      "status": "retired 2026-10-23 — unit stopped+disabled; shared pool replaced by per-lane stores (card per-instance-secret-stores-migration)"
+      "status": "PWA surface alias served by ada-ha-tony; separate :8001 service removed 2026-11-17"
     },
     "tony-ha": {
       "host": "tony-omen",
@@ -265,6 +265,17 @@
     "system-report": {
       "kind": "static",
       "path": "/apps/system-report",
+      "owner": "chaba"
+    },
+    "or-panel-api": {
+      "kind": "proxy",
+      "path": "/apps/or-panel/api",
+      "owner": "chaba",
+      "http": "https://idc03.taila0626a.ts.net:18443/apps/or-panel/api"
+    },
+    "or-panel": {
+      "kind": "static",
+      "path": "/apps/or-panel",
       "owner": "chaba"
     },
     "usage-feed": {

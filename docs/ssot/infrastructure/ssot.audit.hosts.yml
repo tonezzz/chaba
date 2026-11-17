@@ -1602,8 +1602,8 @@ hosts:
                     # ssh dead, excluded from the daily audit fleet
     tailscale_ip: 100.74.146.0
     description: "RETIRED public VPS — ssh dead 2026-10-12. Was warm-DR node
-      since the 2026-10-05/06 idc03 migration (mddb-follower, standby
-      caddy-edge, warm ada-pi-pwa — all assumed lost with the host). Sole
+      since the 2026-10-05/06 idc03 migration (mddb-follower and standby
+      caddy-edge — all assumed lost with the host; no PWA standby is retained). Sole
       item of value: frozen jev-corpus archive; live corpus is on idc03.
       Rescue-or-cancel tracked on card idc01-teardown (OPS-0520)."
     role: retired
@@ -1711,12 +1711,6 @@ hosts:
         expected_state: active
         critical: false
         note: "apps/cms-render FastAPI on tailnet 100.102.134.91:8010 — live MDDB->HTML surface; public cms.surf-thailand.com via idc02 edge (card cmssurface-render-digest)"
-      - name: ada-pi-pwa.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: Ada PWA on 127.0.0.1:8001 — tailnet serve root + public edge
       - name: ada-ha-tony.service
         type: service
         scope: user
@@ -2053,6 +2047,10 @@ hosts:
       - {name: yomi-mddb-digest.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-update-active.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-update-all.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+    expected_absent:
+      - name: ada-pi-pwa.service
+        scope: user
+        note: "Retired 2026-11-17; PWA root and public API are served by ada-ha-tony on :8002. Preserve its legacy env file for scripts; no unit or listener on :8001."
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service

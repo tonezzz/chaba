@@ -17,7 +17,7 @@
 set -u
 
 DEPLOY_POINTS="
-idc03|~/CascadeProjects/ada-voice|ada-ha-tony.service ada-ai-kraut.service ada-pi-pwa.service ada-dev.service ada-kk.service ada-kk-dev.service ada-line-relay.service ada-tg-relay.service
+idc03|~/CascadeProjects/ada-voice|ada-ha-tony.service ada-ai-kraut.service ada-dev.service ada-kk.service ada-kk-dev.service ada-line-relay.service ada-tg-relay.service
 idc03|~/CascadeProjects/chaba|
 tony-dell|~/CascadeProjects/ada-voice|
 tony-dell|~/CascadeProjects/chaba-tony-dell|chaba-board-api.service chaba-monitoring-dashboard.service

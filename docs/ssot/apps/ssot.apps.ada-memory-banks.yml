@@ -62,8 +62,8 @@ sections:
         text: ada_session_recall gains a bank param (superset of today's group). MDDB semantic search on the bank's collection first; low confidence or explicit detail requests escalate to the bank's notebook (~20s, background) — same tiered policy as now.
       - label: Introspection
         text: GET /api/memory/banks returns the banks assigned to the running instance with collection/notebook resolution for debugging.
-      - label: ada-pi-pwa
-        text: Runs ADA_INSTANCE_ID=tony, so it automatically sees every bank assigned to tony — consistent with today's shared-memory behavior.
+      - label: Tony PWA surface
+        text: Served by ada-ha-tony (ADA_INSTANCE_ID=tony), so it sees every bank assigned to tony. The separate ada-pi-pwa service on :8001 is retired.
       - label: Dev lane
         text: "Dev/staging backends (ada-dev.service ADA_INSTANCE_ID=dev; lane twins tony-dev/ada-dev per ha-lanes) write only to the dev-scratch bank and mount prod banks read-only via instances_readonly. Their operational collections (ada-ha-events-<instance>, snapshots, recall-summary) suffix per instance as usual, so test telemetry stays out of prod feeds."
   - title: NotebookLM Tier

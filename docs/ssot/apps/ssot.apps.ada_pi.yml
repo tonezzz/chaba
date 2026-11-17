@@ -22,8 +22,8 @@ sections:
         text: Caddy vhost for tony-omen exposing /apps/ada_pi/ on port 8082.
       - label: /home/tony/CascadeProjects/ada-voice/pwa_server.py
         text: FastAPI backend that re-uses backend/realtime_provider for Gemini Live.
-      - label: /home/tony/.config/systemd/user/ada-pi-pwa.service
-        text: User systemd unit running uvicorn on port 8000.
+      - label: Retired idc03 service unit
+        text: "The separate ada-pi-pwa.service on :8001 was removed 2026-11-17 after the consumer audit; the PWA/API surface remains served by ada-ha-tony.service on :8002."
       - label: /home/tony/.config/systemd/user/caddy-tony-omen.service
         text: User systemd unit running Caddy with Caddyfile.tony-omen.
   - title: Deployment
@@ -31,9 +31,9 @@ sections:
     layout: list
     items:
       - label: Live services running pwa_server.py
-        text: "ada-pi-pwa on idc03 :8001 RETIRED 2026-10-23 (unit stopped+disabled; shared key pool replaced by per-lane stores — root tailnet + api.surf-thailand.com now proxy to ada-ha-tony :8002), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on idc03 :8002 and ada-ha-michael on idc03 :8003 (tailscale serve path mounts /apps/ha/ada-*/; idc01 units stopped+disabled 2026-10-06 — mn01 standby units were already stopped, mn01/idc01 Caddy aliases are dead unless repointed)."
+        text: "The separate ada-pi-pwa.service on idc03 :8001 was stopped, disabled, and removed after the consumer audit; the root tailnet and api.surf-thailand.com PWA/API surface is served by ada-ha-tony :8002. Preserve ~/.config/secrets/ada-pi-pwa.env for legacy helper scripts. chaba-guest runs on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF); ada-ha-michael runs on idc03 :8003 (tailscale serve path mounts /apps/ha/ada-*/; idc01 units stopped+disabled 2026-10-06 — mn01/idc01 Caddy aliases are dead unless repointed)."
       - label: Tailnet URLs
-        text: "https://idc03.taila0626a.ts.net/ (standalone PWA, tailnet only), https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/. idc01.taila0626a.ts.net aliases now 502 (backend stopped); idc02 edge /cms* + /api/cms* repointed to idc03 2026-10-06."
+        text: "https://idc03.taila0626a.ts.net/ (Ada PWA served by ada-ha-tony, tailnet only), https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/. idc01.taila0626a.ts.net aliases now 502 (backend stopped); idc02 edge /cms* + /api/cms* repointed to idc03 2026-10-06."
       - label: Registry
         text: Listed in docs/ssot/apps/ssot.apps.yml.
   - title: Frontend surfaces — retirement audit (2026-09-23)

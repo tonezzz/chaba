@@ -37,7 +37,7 @@ host_config() {
     # ladder — dev lanes first, relays, member lanes, tony lanes last — and
     # ada-kk-dev/ada-tg-relay-kk joined the set (same fresh-code rationale;
     # every unit left out drifts on old code silently).
-    idc03)     echo "ada-dev.service,ada-kk-dev.service,ada-line-relay.service,ada-tg-relay.service,ada-tg-relay-kk.service,ada-kk.service,ada-ha-michael.service,ada-pi-pwa.service,ada-ha-tony.service|8005,8009,,,,8007,8003,8001,8002" ;;
+    idc03)     echo "ada-dev.service,ada-kk-dev.service,ada-line-relay.service,ada-tg-relay.service,ada-tg-relay-kk.service,ada-kk.service,ada-ha-michael.service,ada-ha-tony.service|8005,8009,,,,8007,8003,8002" ;;
   esac
 }
 

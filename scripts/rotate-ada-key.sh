@@ -6,9 +6,10 @@ set -euo pipefail
 
 instance="${1:-}"
 case "$instance" in
-  tony)    host=mn01;      env_name=ada-ha-tony.env;    svc=ada-ha-tony.service ;;
-  michael) host=mn01;      env_name=ada-ha-michael.env; svc=ada-ha-michael.service ;;
-  ada-voice)  host=idc03;     env_name=ada-pi-pwa.env;     svc=ada-pi-pwa.service ;;
+  tony)    host=idc03; env_name=tony-ha/backend.env;    svc=ada-ha-tony.service ;;
+  michael) host=idc03; env_name=michael-ha/backend.env; svc=ada-ha-michael.service ;;
+  # The root PWA is now served by the Tony lane; no separate ada-voice unit exists.
+  ada-voice) host=idc03; env_name=tony-ha/backend.env; svc=ada-ha-tony.service ;;
   *) echo "usage: $0 <tony|michael|ada-voice>" >&2; exit 2 ;;
 esac
 

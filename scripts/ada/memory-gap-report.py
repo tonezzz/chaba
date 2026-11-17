@@ -17,7 +17,7 @@ Usage:
   memory-gap-report.py --dry-run              # report only, no writes
   memory-gap-report.py --emit                 # also chaba-event on new gaps
   memory-gap-report.py --since '7 days ago' --min-misses 2
-  memory-gap-report.py --ssh idc03 --units ada-pi-pwa.service
+  memory-gap-report.py --ssh idc03 --units ada-ha-tony.service
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ UNIT_INSTANCE_RE = re.compile(r"ada-ha-([a-z0-9_-]+)\.service")
 
 
 def unit_instance(unit: str) -> str:
-    """ada-ha-michael.service -> michael; anything else (ada-pi-pwa) -> tony."""
+    """ada-ha-michael.service -> michael; other supported Ada units -> tony."""
     m = UNIT_INSTANCE_RE.search(unit)
     return m.group(1) if m else "tony"
 

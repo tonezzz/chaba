@@ -16,9 +16,10 @@ naming: >-
   family = assistant provider (ada = Gemini Live stack; future providers
   get their own family, e.g. adam-ai-chaba for a ChatGPT-backed chaba),
   role = household persona (chaba/kraut/kaewta/member), -dev = that
-  backend's dev twin (on-demand, free-tier keys). Base `ada-ai` = the
-  member/guest surface (was ada-pi-pwa); `ada-ai-dev` = lab backend (was
-  ada-dev.service). Hyphens, never underscores — DNS-safe. Physical
+  backend's dev twin (on-demand, free-tier keys). The member/guest PWA
+  surface is served by ada-ha-tony, not a separate ada-ai unit;
+  `ada-ai-dev` = lab backend (was ada-dev.service). Hyphens, never
+  underscores — DNS-safe. Physical
   unit/dir names predate this scheme — renames are carded migrations
   (grand-rename card, subsumes OPS-0726).
 
@@ -126,15 +127,6 @@ personas:
     tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-dev
     home: ada-ha
     keys: [gemini-ada, litellm-vkey-bench]
-  - id: ada-pi-pwa
-    label: PWA/guest surface (voice+chat, member keys)
-    unit: ada-pi-pwa.service
-    host: idc03
-    listen: 127.0.0.1:8001
-    tailnet: https://idc03.taila0626a.ts.net/
-    home: tony-ha                    # shares tony identity for now
-    keys: [gemini-tony-paid, litellm-vkey-chaba, ada-device-keys]
-
 # ---------------------------------------------------------------------------
 # LAYER 3 — Edge & messaging plumbing (how traffic reaches personas)
 # ---------------------------------------------------------------------------
@@ -235,7 +227,6 @@ data:
 # ---------------------------------------------------------------------------
 rename_map:
   units:
-    - {now: ada-pi-pwa.service,     to: ada-ai.service,           port_now: 8001, port_target: 8001, note: "family root — member/guest surface; catch-all on app.surf-thailand.com + legacy /api/cms*; ADA_INSTANCE_ID=tony"}
     - {now: ada-ha-tony.service,    to: ada-ai-chaba.service,     port_now: 8002, port_target: 8002}
     - {now: ada-ha-michael.service, to: ada-ai-kraut.service,     port_now: 8003, port_target: 8003, status: "DONE 2026-10-16 — unit/env/keys.json renamed, ADA_KEYS_FILE pinned, ADA_INSTANCE_ID=michael kept (pins MDDB banks), /ai/kraut alias live, old path kept during transition"}
     - {now: ada-dev.service,        to: ada-ai-dev.service,       port_now: 8005, port_target: 8005, note: "lab backend — the name finally says what it is"}
@@ -249,7 +240,7 @@ rename_map:
   open_decisions:
     - "RESOLVED kraut — confirmed (sauerkraut, Michael likes Sour Kraut)"
     - "RESOLVED ports — sort to slot convention approved (8007->8004, 8009->8014 when that lane migrates)"
-    - "RESOLVED surface name — family-first scheme makes ada-pi-pwa -> ada-ai"
+    - "PWA service retired 2026-11-17; member/guest root remains served by ada-ha-tony :8002, with no separate ada-ai unit"
     - "cutover: alias grace chosen in practice (old serve path kept alongside /ai/kraut)"
 
 notes:
