@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-log-shipper-severe
 title: Timer log-shipper-severe on tony-omen failing
 column: done
-updated: 2026-11-17 18:40
+updated: 2026-11-17 21:06
 priority: high
 tags:
 - timer-alert
@@ -790,6 +790,10 @@ comms:
 - at: 2026-11-17 18:40
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-omen` by inspecting the systemd
   user journal via `journalctl --user -u log-shipper-severe.service`. The target host is `tony-omen`. Constraints
