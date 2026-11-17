@@ -1,0 +1,20 @@
+id: ada-ocb-board-read-latency
+title: 'ada-ocb: fast board reads for kanban tools (compact+projected snapshots)'
+column: review
+updated: 2026-11-17 21:33
+brief: ada_status/card_context/card_pick/next_card hit the 9MB /cards dump (13-16s) exceeding the OpenCode MCP timeout;
+  calls completed server-side but agents saw timeouts. Route through compact index + projected snapshot + single-card
+  hydration; guard string comms/requests/action rows.
+priority: high
+tags:
+- ada
+- opencode
+- kanban
+- smoke
+spec: 'Verified: find_card ADA-0167 2.6s cold/0s cached (was 11-14s); card_pick 2.3s (was 13-17s). ada-voice ff2d6a1
+  deployed idc03, 1760 tests pass; DevNest bridge synced 7c2f380; OpenChamber restarted.'
+ref: ADA-0172
+comms:
+- at: 2026-11-17 21:33
+  from: tony
+  text: card captured via board-api
