@@ -48,9 +48,15 @@ Endpoints (after prefix strip):
       ask.status=answered + answer + answered_at, writes the resolved
       label to comms.
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
-      when the card's action.status=='running', comments from ada|tony
-      are also pushed into the live session as kind:"comment" lines in
-      answers.jsonl — card comms the session weighs as review input
+      {request_id?} stamps the comms entry so a retry after a client
+      timeout dedupes instead of double-posting; without one, the same
+      (from, text) inside BOARD_API_COMMENT_DEDUP_S (default 120s) also
+      dedupes — a 200 {deduped:true} is returned, no write. dedupe:false
+      bypasses. Session delivery (ada|tony -> answers.jsonl) now runs
+      off the request lock on a worker; its note lands in comms via a
+      second write. When the card's action.status=='running', comments
+      from ada|tony are also pushed into the live session as kind:"comment"
+      lines in answers.jsonl — card comms the session weighs as review input
       (Tony's notes, Ada's [opinion]-tagged takes;
       report-loop-comment-delivery). devin|chaba comments are never
       echoed back: a session must not get its own progress posts, and
@@ -142,7 +148,12 @@ Endpoints (after prefix strip):
 Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
 outside it (scripts, dispatch rails, hand fixes) must hold LOCK
-(/tmp/board-api.lock) first or it races the server.
+(/tmp/board-api.lock) first or it races the server. The acquire is
+bounded (BOARD_API_LOCK_WAIT_S, default 25s): a saturated lock answers
+503 + retry_after BEFORE any mutation, so a client timeout can't leave
+a write landing silently behind it; waits/holds past BOARD_API_LOCK_SLOW_S
+(5s) log to the journal. The lock's protected checkout is declared in
+/tmp/board-api.lock.repo so pulls of other checkouts don't contend.
 
 Unified mutation door (card nest-api-unified-mutation-service): the
 namespaced write endpoints beyond card files — WP lesson/nest_job CPTs,
@@ -171,6 +182,7 @@ import hashlib
 import hmac
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
@@ -213,6 +225,22 @@ ATTACH_EXTS = {
 RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
+# Bounded write-lock wait (OPS-1314, 2026-11-16 incident): an unbounded
+# LOCK_EX queues a writer behind git-safe-pull's whole pull phase
+# (1-6min when upstream moved) — the client's 30-60s timeout dies first,
+# the write then lands anyway → duplicate comms and phantom "failed"
+# posts. Wait up to LOCK_WAIT_S, then answer 503 BEFORE any mutation so
+# a retry can't duplicate. LOCK_SLOW_S is the journal-side measurement:
+# waits/holds past it log wait= held= per request.
+LOCK_WAIT_S = float(os.environ.get("BOARD_API_LOCK_WAIT_S", "25"))
+LOCK_SLOW_S = float(os.environ.get("BOARD_API_LOCK_SLOW_S", "5"))
+# Sentinel naming the checkout this lock protects. git-safe-pull reads
+# it and skips the shared lock when pulling a DIFFERENT checkout (e.g.
+# the exec tree on the board host) — that pull's autostash window is in
+# its own tree and stealing the lock for minutes stalls every API write
+# for zero protection (2026-11-16: repo-sync + kanban-commit pull phases
+# back-to-back queued writers for minutes).
+LOCK_REPO_SENTINEL = Path(str(LOCK) + ".repo")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
@@ -449,6 +477,76 @@ def ref_cat(card: dict, body: dict) -> str:
     return REF_DEFAULT
 
 
+def acquire_lock(path: Path, timeout_s: float):
+    """Bounded LOCK_EX acquire — fcntl.flock has no timeout, so retry
+    LOCK_NB until the deadline. Returns (open file, wait_seconds) or
+    None when the lock stayed contended. A None answer MUST happen
+    before any mutation so the caller can 503 and a retry can't
+    duplicate a write (the 2026-11-16 stall mode)."""
+    lf = path.open("w")
+    t0 = time.monotonic()
+    while True:
+        try:
+            fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return lf, time.monotonic() - t0
+        except BlockingIOError:
+            if time.monotonic() - t0 >= timeout_s:
+                lf.close()
+                return None
+            time.sleep(0.25)
+
+
+def _append_comms_note(cid: str, text: str) -> None:
+    """Fold a post-lock note (session delivery/hide results) into comms
+    via a second locked write — the work that produced it ran off the
+    request path so it never stalled writers. Never raises."""
+    try:
+        p = card_path(cid)
+    except Exception:
+        return
+    got = acquire_lock(LOCK, LOCK_WAIT_S)
+    if got is None:
+        sys.stderr.write(
+            f"board-api post-write note skipped (lock busy): {text[:80]}\n")
+        return
+    lf, _w = got
+    try:
+        card = load(p)
+        comms_add(card, "chaba", text)
+        card["updated"] = now()
+        save(p, card)
+    except Exception as e:
+        sys.stderr.write(f"board-api post-write note failed: {e}\n")
+    finally:
+        lf.close()
+    render_async()
+
+
+_post_write_q = queue.Queue()
+_post_write_started = False
+
+
+def queue_post_write(fn) -> None:
+    """Serialize slow request side-effects (ssh session deliveries, db
+    hides) on one daemon worker — they must not run inside the card
+    flock (~15-30s per unreachable host) nor keep a handler thread busy
+    after the response is already sent."""
+    global _post_write_started
+    if not _post_write_started:
+        threading.Thread(target=_post_write_loop, daemon=True).start()
+        _post_write_started = True
+    _post_write_q.put(fn)
+
+
+def _post_write_loop() -> None:
+    while True:
+        fn = _post_write_q.get()
+        try:
+            fn()
+        except Exception as e:
+            sys.stderr.write(f"board-api post-write task failed: {e}\n")
+
+
 def load(p: Path) -> dict:
     d = yaml.load(p.read_text(), Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) or {}
     if not isinstance(d, dict):
@@ -545,10 +643,38 @@ def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
         sys.stderr.write(f"board-api commit skipped: {e}\n")
 
 
-def comms_add(card: dict, frm: str, text: str) -> None:
-    card.setdefault("comms", []).append(
-        {"at": now(), "from": frm, "text": text[:500]}
-    )
+def comms_add(card: dict, frm: str, text: str, req: str = "") -> None:
+    e = {"at": now(), "from": frm, "text": text[:500]}
+    if req:
+        e["req"] = req[:120]
+    card.setdefault("comms", []).append(e)
+
+
+COMMENT_DEDUP_S = int(os.environ.get("BOARD_API_COMMENT_DEDUP_S", "120"))
+
+
+def dup_comment(card: dict, frm: str, text: str, req: str) -> bool:
+    """True when this comment is already recorded — a client whose
+    timeout died mid-write retries and, without a dedupe, lands the same
+    line twice (2026-11-16 incident: curls timed out at 30-60s while the
+    write completed server-side → duplicate comms). An explicit
+    request_id matches the entry's `req` stamp; without one, the same
+    (from, text) inside COMMENT_DEDUP_S counts as one logical comment —
+    reposts past the window always write."""
+    comms = card.get("comms") or []
+    if req:
+        return any(isinstance(e, dict) and e.get("req") == req
+                   for e in comms)
+    text = text[:500]
+    cutoff = (datetime.now(timezone(timedelta(hours=7)))
+              - timedelta(seconds=COMMENT_DEDUP_S)) \
+        .strftime("%Y-%m-%d %H:%M")
+    for e in comms[-25:]:
+        if isinstance(e, dict) and e.get("from") == frm \
+                and str(e.get("text") or "") == text \
+                and str(e.get("at") or "") >= cutoff:
+            return True
+    return False
 
 
 def actor(body: dict, default: str = "tony") -> str:
@@ -657,19 +783,34 @@ def _hide_remote_session(tid: str, host: str) -> str:
 
 def hide_dispatch_session(card: dict) -> None:
     """On close/done: mark the dispatch task's Devin session hidden=1 in
-    sessions.db so finished jobs stop cluttering the session list. The
-    card's action.task_id names the task dir; transcript.json carries the
-    session_id. Tries the local db first, then remote runner hosts.
-    Best-effort — never blocks the close."""
+    sessions.db so finished jobs stop cluttering the session list.
+    Queues the hide on the post-write worker — each remote attempt is an
+    ssh round-trip that must not sit inside the request flock
+    (2026-11-16: writers queued minutes). The 'hidden' comms note lands
+    in a second locked write via _append_comms_note."""
+    cid = str(card.get("id") or "")
+    snap = {"id": cid, "action": dict(card.get("action") or {})}
+
+    def work():
+        note = _hide_dispatch_session_now(snap)
+        if note:
+            _append_comms_note(cid, note)
+
+    queue_post_write(work)
+
+
+def _hide_dispatch_session_now(card: dict) -> str:
+    """The hide itself: local db first, then remote runner hosts (ssh,
+    ~30s timeout each). Returns the comms note text, '' on nothing to
+    report. Never raises."""
     try:
         a = card.get("action") or {}
         tid = a.get("task_id") or ""
         if not tid:
-            return
+            return ""
         sid = _hide_local_session(tid)
         if sid:
-            comms_add(card, "chaba", f"session {sid}… hidden")
-            return
+            return f"session {sid}… hidden"
         hosts = []
         runner = (a.get("runner") or "").strip()
         if runner and runner != HOST:
@@ -681,11 +822,10 @@ def hide_dispatch_session(card: dict) -> None:
             except Exception:
                 continue
             if sid:
-                comms_add(card, "chaba",
-                          f"session {sid}… hidden on {host}")
-                return
+                return f"session {sid}… hidden on {host}"
     except Exception:
         pass
+    return ""
 
 
 def queue_starve_warn(card: dict) -> str:
@@ -1261,6 +1401,24 @@ def deliver_comment(card: dict, frm: str, text: str) -> str:
         return ""
     return _deliver_to_session(
         card, {"from": frm, "kind": "comment", "text": text[:500]})
+
+
+def queue_delivery(card: dict, record: dict) -> None:
+    """Enqueue a session delivery off the request path. _deliver_to_session
+    pays ~5-15s per unreachable runner host over ssh — inside the request
+    flock that stalls every other writer (2026-11-16: writes queued for
+    minutes). The delivery itself is lock-free; only its result note needs
+    the lock, appended by _append_comms_note in a second short write."""
+    cid = str(card.get("id") or "")
+    snap = {"id": cid, "action": dict(card.get("action") or {})}
+    rec = dict(record)
+
+    def work():
+        note = _deliver_to_session(snap, rec)
+        if note:
+            _append_comms_note(cid, note)
+
+    queue_post_write(work)
 
 
 _RELAY_SHA_RE = re.compile(r"^[0-9a-f]{6,64}$")
@@ -3559,8 +3717,11 @@ def _pub_board_send(ev: dict, frm: str) -> dict:
     _pending_label = f"publish {ev['event_id']}"
     # lock order WP_LOCK -> LOCK; no path takes LOCK then WP_LOCK, so
     # this nested take cannot deadlock.
-    with LOCK.open("w") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
+    got = acquire_lock(LOCK, LOCK_WAIT_S)
+    if got is None:
+        raise pub.DeliveryError("board write lock saturated")
+    lf, _w = got
+    try:
         try:
             p = card_path(cid)
         except ValueError as e:
@@ -3573,6 +3734,8 @@ def _pub_board_send(ev: dict, frm: str) -> dict:
         comms_add(card, frm, text)
         card["updated"] = now()
         save(p, card)
+    finally:
+        lf.close()
     return {"ref": f"card:{cid}"}
 
 
@@ -3957,6 +4120,13 @@ def queue_view() -> dict:
 
 
 class H(BaseHTTPRequestHandler):
+    def setup(self):
+        super().setup()
+        # a dead/half-open client must not pin a handler thread forever —
+        # threads piling up on stalled sockets was part of the 2026-11-16
+        # thread-count symptom
+        self.connection.settimeout(120)
+
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False, default=str).encode()
         try:
@@ -4038,9 +4208,16 @@ class H(BaseHTTPRequestHandler):
         # own flock; no card writes, no re-render, no upstream calls
         if path == "/ready":
             try:
-                with READY_LOCK.open("w") as lf:
-                    fcntl.flock(lf, fcntl.LOCK_EX)
+                got = acquire_lock(READY_LOCK, 10)
+                if got is None:
+                    return self._send(503, {
+                        "error": "ready lock busy — retry",
+                        "retry_after_s": 5})
+                lf, _w = got
+                try:
                     msg = do_ready(body)
+                finally:
+                    lf.close()
                 return self._send(200, {"ok": True, "message": msg,
                                         "via": ident})
             except ValueError as e:
@@ -4058,8 +4235,15 @@ class H(BaseHTTPRequestHandler):
                                    "/wiki/news-review",
                                    "/wiki/news-diagnose", "/wiki/page")
                        else actor(body))
-                with WP_LOCK.open("w") as lf:
-                    fcntl.flock(lf, fcntl.LOCK_EX)
+                got = acquire_lock(
+                    WP_LOCK,
+                    float(os.environ.get("BOARD_API_WP_LOCK_WAIT_S", "75")))
+                if got is None:
+                    return self._send(503, {
+                        "error": "remote write lock busy — retry",
+                        "retry_after_s": 10})
+                lf, _w = got
+                try:
                     if path == "/lesson":
                         res = (do_lesson_topics(body, frm)
                                if body.get("op") == "topics"
@@ -4081,6 +4265,8 @@ class H(BaseHTTPRequestHandler):
                         res = do_wiki_page(body, frm)
                     else:
                         res = do_report(body, frm)
+                finally:
+                    lf.close()
                 msg = res.pop("message")
                 return self._send(200, {"ok": True, "message": msg,
                                         "via": ident, **res})
@@ -4094,8 +4280,17 @@ class H(BaseHTTPRequestHandler):
         notify_req = None
         resp_extra = {}
         global _pending_label
-        with LOCK.open("w") as lf:
-            fcntl.flock(lf, fcntl.LOCK_EX)
+        t_lock = time.monotonic()
+        got = acquire_lock(LOCK, LOCK_WAIT_S)
+        if got is None:
+            sys.stderr.write(
+                f"board-api lock wait >{LOCK_WAIT_S:.0f}s "
+                f"path={path} — 503\n")
+            return self._send(503, {
+                "error": "board write lock saturated — retry",
+                "retry_after_s": 5})
+        lf, wait_s = got
+        try:
             _pending_label = (
                 f"{path.lstrip('/')} "
                 f"{body.get('id') or body.get('card') or ''}").strip()
@@ -4136,13 +4331,17 @@ class H(BaseHTTPRequestHandler):
                     p = card_path(body.get("id") or body.get("card") or "")
                     card = load(p)
                     msg = do_respond(card, body, frm)
-                    note = deliver_answer(
-                        card, frm,
-                        str(body.get("request_id") or "").strip() or "ask",
-                        str(body.get("answer") or "").strip())
-                    if note:
-                        comms_add(card, "chaba", note)
-                        msg += f" — {note}"
+                    # session delivery runs off-lock (queue_delivery) —
+                    # ssh round-trips must not stall other writers; its
+                    # result note lands in comms via a second write
+                    queue_delivery(
+                        card, {"from": frm, "kind": "answer",
+                               "request_id":
+                                   str(body.get("request_id") or "").strip()
+                                   or "ask",
+                               "answer":
+                                   str(body.get("answer") or "")
+                                   .strip()[:500]})
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/comment":
@@ -4152,19 +4351,25 @@ class H(BaseHTTPRequestHandler):
                         raise ValueError("text required")
                     p = card_path(body.get("id", ""))
                     card = load(p)
-                    comms_add(card, frm, text)
-                    # runner defer notes can raise the triage flag in the
-                    # same write (fleet-unclaimable cards need a human to
-                    # fix labels/pins — OPS-1097)
-                    if body.get("awaiting_action"):
-                        card["awaiting_action"] = True
-                    msg = "comment added"
-                    note = deliver_comment(card, frm, text)
-                    if note:
-                        comms_add(card, "chaba", note)
-                        msg += f" — {note}"
-                    card["updated"] = now()
-                    save(p, card)
+                    req = str(body.get("request_id") or "").strip()
+                    if body.get("dedupe") is not False \
+                            and dup_comment(card, frm, text, req):
+                        msg = "comment already recorded (dedup)"
+                        resp_extra = {"deduped": True}
+                    else:
+                        comms_add(card, frm, text, req=req)
+                        # runner defer notes can raise the triage flag in the
+                        # same write (fleet-unclaimable cards need a human to
+                        # fix labels/pins — OPS-1097)
+                        if body.get("awaiting_action"):
+                            card["awaiting_action"] = True
+                        msg = "comment added"
+                        if frm in COMMENT_DELIVER_FROM:
+                            queue_delivery(
+                                card, {"from": frm, "kind": "comment",
+                                       "text": text[:500]})
+                        card["updated"] = now()
+                        save(p, card)
                 elif path == "/patch-relay":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
@@ -4214,6 +4419,13 @@ class H(BaseHTTPRequestHandler):
                 return self._send(400, {"error": str(e)})
             except Exception as e:
                 return self._send(500, {"error": str(e)})
+        finally:
+            hold_s = time.monotonic() - t_lock - wait_s
+            lf.close()
+            if wait_s >= LOCK_SLOW_S or hold_s >= LOCK_SLOW_S:
+                sys.stderr.write(
+                    f"board-api lock wait={wait_s:.1f}s "
+                    f"held={hold_s:.1f}s path={path}\n")
         # card lock released — queue the push (debounced, best-effort) and
         # render under its own lock so neither stalls other writers
         if notify_req:
@@ -4364,6 +4576,61 @@ def _selftest() -> None:
     assert n_lines() == n
     assert deliver_comment({"action": {"status": "done"}},
                            "tony", "late note") == ""
+
+    # off-lock delivery (OPS-1314): queue_delivery runs the ssh-capable
+    # _deliver_to_session on the post-write worker — the request path
+    # never holds the card flock across it
+    qcard = {"id": "zz-test",
+             "action": {"status": "running", "task_id": sess.name,
+                        "runner": HOST}}
+    n = n_lines()
+    queue_delivery(qcard, {"from": "tony", "kind": "comment",
+                           "text": "async note"})
+    for _ in range(50):
+        if n_lines() > n:
+            break
+        time.sleep(0.1)
+    assert n_lines() == n + 1, "queued delivery never landed"
+    rec = json.loads((sess / "answers.jsonl").read_text().splitlines()[-1])
+    assert rec["kind"] == "comment" and rec["text"] == "async note"
+    # hide path never raises and does not block the caller
+    hide_dispatch_session({"id": "zz-test",
+                           "action": {"status": "done", "task_id": ""}})
+
+    # /comment dedupe (OPS-1314): a request_id stamps the entry and
+    # dedupes forever; same (from, text) inside COMMENT_DEDUP_S dedupes;
+    # past the window or a different text writes
+    c0 = {"comms": []}
+    comms_add(c0, "tony", "x", req="r9")
+    assert c0["comms"][0]["req"] == "r9"
+    comms_add(c0, "tony", "y")
+    assert "req" not in c0["comms"][1]
+    assert dup_comment({"comms": c0["comms"]}, "tony", "x", "r9") is True
+    assert dup_comment({"comms": c0["comms"]}, "tony", "x", "r8") is False
+    dcard = {"comms": [{"at": now(), "from": "devin", "text": "hi"}]}
+    assert dup_comment(dcard, "devin", "hi", "") is True
+    assert dup_comment(dcard, "ada", "hi", "") is False
+    assert dup_comment(dcard, "devin", "other", "") is False
+    old = (datetime.now(timezone(timedelta(hours=7)))
+           - timedelta(seconds=COMMENT_DEDUP_S + 300)) \
+        .strftime("%Y-%m-%d %H:%M")
+    assert dup_comment(
+        {"comms": [{"at": old, "from": "devin", "text": "hi"}]},
+        "devin", "hi", "") is False
+
+    # bounded acquire — a held flock yields None after the deadline,
+    # never a silent queue (the pre-fix stall mode)
+    lpath = tmp / "t.lock"
+    held_fd = lpath.open("w")
+    fcntl.flock(held_fd, fcntl.LOCK_EX)
+    t0 = time.monotonic()
+    assert acquire_lock(lpath, 0.5) is None
+    assert 0.4 <= time.monotonic() - t0 < 5
+    fcntl.flock(held_fd, fcntl.LOCK_UN)
+    got = acquire_lock(lpath, 1)
+    assert got is not None
+    got[0].close()
+    held_fd.close()
 
     # /patch-relay (runner-push-cred-gap): a runner that can't push
     # relays its session head as a git bundle into PATCH_INBOX; the
@@ -4519,15 +4786,18 @@ def _selftest() -> None:
                      "queue": True}, "devin")
     assert res["status"] == "queued" and "(queued)" in res["message"]
     c3 = mkfile("spawn-3")
-    assert c3["action"] == {"type": "dispatch", "repo": "chaba",
-                            "status": "queued"}
+    # spoofed status dropped + queued; the queue-time classifier may add
+    # lane/executor/task_class pins on top (OPS-0838)
+    assert {k: c3["action"][k] for k in ("type", "repo", "status")} \
+        == {"type": "dispatch", "repo": "chaba", "status": "queued"}
     # manual type accepted; queue:true with no action arms a dispatch card
     do_create({"title": "t", "id": "spawn-man",
                "action": {"type": "manual"}}, "devin")
     assert mkfile("spawn-man")["action"] == {"type": "manual"}
     do_create({"title": "t", "id": "spawn-4", "queue": True}, "devin")
-    assert mkfile("spawn-4")["action"] == {"type": "dispatch",
-                                           "status": "queued"}
+    assert {k: mkfile("spawn-4")["action"][k]
+            for k in ("type", "status")} \
+        == {"type": "dispatch", "status": "queued"}
     # pass-through fields
     rejects(lambda: do_create({"title": "t", "id": "s5",
                                "priority": "urgent"}, "devin"),
@@ -4946,4 +5216,11 @@ if __name__ == "__main__":
         _selftest()
         sys.exit(0)
     CARD_DIR.mkdir(parents=True, exist_ok=True)
+    # Declare which checkout /tmp/board-api.lock protects — git-safe-pull
+    # on a different checkout reads this and skips the shared lock rather
+    # than stalling every write across its whole pull phase.
+    try:
+        LOCK_REPO_SENTINEL.write_text(str(REPO.resolve()) + "\n")
+    except OSError:
+        pass
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

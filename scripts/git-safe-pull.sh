@@ -63,6 +63,10 @@
 # Wait is bounded (SAFE_PULL_BOARD_LOCK_WAIT_S, default 60s): a wedged
 # writer must not deadlock pull convergence — on timeout it pulls
 # anyway and logs. Hosts without board-api just create+hold the file.
+# Lock scoping: when board-api has written <lock>.repo (its served
+# checkout path), a pull of a DIFFERENT checkout skips the lock — the
+# autostash window it guards lives in the served tree, and stealing the
+# lock for a whole pull phase stalls every API write (2026-11-16).
 #
 # Usage:  git-safe-pull.sh [repo-dir]
 # Env:    SAFE_PULL_UPSTREAM          upstream ref (default: @{upstream}
@@ -472,6 +476,21 @@ if [ -n "$RENDER_LOCK" ] && command -v flock >/dev/null 2>&1; then
 fi
 
 BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
+# Lock scoping (OPS-1314, 2026-11-16 incident): board-api declares the
+# checkout the lock protects in <lock>.repo (written at service start).
+# A pull of a DIFFERENT checkout — e.g. the exec tree on the board host,
+# synced by chaba-repo-sync — holding this shared lock stalls every API
+# write for the whole pull phase for zero protection: the autostash
+# window the lock guards lives in the served tree, not this one.
+# Absent/empty sentinel -> hold (conservative, pre-sentinel behavior).
+if [ -n "$BOARD_LOCK" ] && [ -f "$BOARD_LOCK.repo" ]; then
+  _api_repo="$(head -1 "$BOARD_LOCK.repo" 2>/dev/null || true)"
+  _repo_real="$(cd "$REPO" 2>/dev/null && pwd -P || echo "$REPO")"
+  if [ -n "$_api_repo" ] && [ "$_api_repo" != "$_repo_real" ]; then
+    echo "git-safe-pull: board lock protects $_api_repo — pull of $REPO skips it" >&2
+    BOARD_LOCK=""
+  fi
+fi
 SAFE_PULL_LOCK_FD=""
 if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   # Brace group: a bare `exec {fd}>file 2>/dev/null` would redirect the
@@ -481,9 +500,12 @@ if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   { exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK"; } 2>/dev/null \
     || SAFE_PULL_LOCK_FD=""
   if [ -n "$SAFE_PULL_LOCK_FD" ]; then
+    _lw_t0=$SECONDS
     if flock -w "${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}" "$SAFE_PULL_LOCK_FD" \
       2>/dev/null; then
       BOARD_LOCK_HELD=1
+      [ $((SECONDS - _lw_t0)) -ge 5 ] \
+        && echo "git-safe-pull: board lock acquired after $((SECONDS - _lw_t0))s wait" >&2
     else
       echo "git-safe-pull: board lock $BOARD_LOCK held >${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}s — pulling anyway" >&2
     fi
@@ -549,7 +571,13 @@ COLGUARD="$REPO/scripts/board/card-column-guard.py"
 }
 
 if _pull_needed; then
+  _pp_t0=$SECONDS
   _pull_phase
+  # Journal-side hold measurement (OPS-1314): the board lock stays held
+  # for this whole phase — log its duration so write-latency stalls have
+  # a measurable counterpart in the unit log.
+  [ $((SECONDS - _pp_t0)) -ge 5 ] \
+    && echo "git-safe-pull: pull phase took $((SECONDS - _pp_t0))s${BOARD_LOCK_HELD:+ — board lock held throughout}" >&2
 elif [ -n "${FETCH_FAILED:-}" ]; then
   # The stale local upstream ref passing the ancestor check is what makes
   # a dead fetch look like "nothing to do" — exec checkouts sat 4.75h
