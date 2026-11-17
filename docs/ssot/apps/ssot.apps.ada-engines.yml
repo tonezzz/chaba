@@ -1,0 +1,250 @@
+title: AI Engine Lines — personas as versioned, swappable engines
+subtitle: Lane = stable persona/home identity. Engine = versioned implementation
+  behind the lane contract. Engine release = lane config swap, not new infra.
+icon: 🧠
+version: 1
+last_updated: "2026-11-17"
+card: ai-engine-lines
+ref: OPS-0466
+
+# ---------------------------------------------------------------------------
+# Tony's direction (2026-10-11): think of Ada as an ENGINE, not a single
+# persona — engine LINES like sci-fi AI product families. Each lane/persona
+# (ada-ha, tony-ha/chaba, kk-ha, mn-ha, future ones) is an engine INSTANCE;
+# engines are versioned and swappable behind the same lane contract
+# (WS backend + caller keys + tier policy).
+# Unblocked by line-multihome-group (done): the mention router already proves
+# per-lane isolated backends — one relay fanning out to independent WS
+# backends selected by config is exactly the swap point this model needs.
+# ---------------------------------------------------------------------------
+
+the_model:
+  shift: |
+    Today every lane runs the same implicit engine (the shared ada-voice
+    checkout on idc03) and differs only in env — so "engine" isn't a thing
+    you can name, version, or swap. This file makes it one: the LANE is the
+    stable identity a person/household talks to; the ENGINE is the
+    versioned backend implementation behind it; an engine LINE is a product
+    family of engines sharing internals and a release cadence.
+  terms:
+    lane: |
+      The persona/home binding — a named presence (chaba, kaewta, kraut,
+      chaba-ops…) with its own port, env, keys file, banks, tool profile,
+      relay routes, and authority matrix. Stable across engine swaps —
+      callers never see the engine change, only better/worse answers.
+      Registry of lanes: ssot.apps.ada-persona-lanes.yml.
+    engine: |
+      One deployable backend build implementing the lane contract —
+      (code artifact, model stack, tool surface, instructions machinery).
+      Identified as <line>-<version> (e.g. ada-1.x). What ada-voice repo
+      builds today is the ada line at version 1.x; "Ada2" is a future
+      major version on the same line.
+    engine_line: |
+      A product family: engines sharing internals and evolving together —
+      e.g. the ada line (voice+home companion, Gemini Live realtime), a
+      future ops/docs line, a small edge/home line. Different lines may
+      have completely different internals; what makes them interchangeable
+      is implementing the same contract.
+    engine_release: |
+      A lane config swap — point the lane at a different engine instance
+      and restart the relay. Versioned, instant, reversible. Never new
+      infrastructure per release: the runtime slot model below already
+      exists (env + keys + unit + port).
+    contract: |
+      The lane-facing surface every engine must implement to be
+      substitutable. Versioned independently of engines (contract v1 =
+      today's implicit protocol). A lane may bind any engine whose
+      contract major matches.
+
+contract_v1:
+  summary: |
+    What stays fixed when an engine is swapped. Derived from what the
+    relays, scenario driver, voice card, and key tooling already require
+    of every ada-* backend today — NOT aspirational.
+  transport:
+    session_ws: |
+      ws://<host>:<port>/ws carrying the session protocol — text turns and
+      (on voice lanes) audio. scripts/scenario-live.py is the machine
+      check: it drives a real backend over /ws?api_key=<key> and asserts on
+      trace events (tool_call / tool_result) + transcripts.
+    health: |
+      GET /api/health — consumer probes (live-canary, health.yml) hit
+      this; a swapped-in engine must answer it or every watchdog fires.
+    http_surface: |
+      Required today per lane role: /api/auth/* (key mint/import),
+      /api/chat/transcript, /api/tools/* where the lane's tools live.
+      Capability routes (/api/memory/*, /api/cms/*, /api/home-assistant/*,
+      /api/speakers/*, /api/documents/*, /api/decision/*) are per-lane —
+      a minimal engine may omit a capability but must fail loudly
+      (401/501 + tool-declared-unavailable), never silently no-op.
+  auth:
+    caller_keys: |
+      Per-backend keys file under ~/.config/secrets/ resolved by
+      ADA_INSTANCE_ID (ada-ha-<lane>-keys.json shape). Keys mint via
+      POST /api/auth/keys; auth.import_key enrolls the SAME key value on
+      multiple backends — that is what makes a backend swap transparent
+      to existing callers (multihome lesson 2026-10-13).
+    caller_binding: |
+      A caller key resolves to a person (registry:
+      ssot.apps.ada-persons.yml) — never to the channel/group. Senders
+      must be capturable-and-mappable before their policy works.
+  tier_policy:
+    enforcement: |
+      owner | member | guest per (lane, person) — enforced SERVER-SIDE by
+      the engine from the caller key, never by relay prompt wording
+      (spec v3 on line-multihome-group). The relay routes; the engine
+      gates. A swapped engine that weakens this is a contract violation.
+    matrix: |
+      Declared per lane in the person registry + lane SSOT; e.g. ada-ha:
+      tony=owner kk/nhong=guest; kk-ha: kk=owner tony/nhong=member.
+  sessions:
+    scoping: |
+      Per (channel, room, sender, persona) — concurrent senders on one
+      lane never share context. Replies are tagged [persona->sender] so
+      multi-persona rooms stay readable.
+  proactive:
+    outbound: |
+      Engines reach the channel only through the lane's relay send URL
+      (ADA_TG_SEND_URL / LINE relay /send) — never call Telegram/LINE
+      APIs directly. chat_send or equivalent must honor lane-lock
+      rewriting (LINE_LANE_LOCK) until targeting is stable.
+  voice_lanes:
+    extra: |
+      Audio in/out per the session protocol; per-instance voice config
+      (voice-<ADA_INSTANCE_ID>.json / ada_set_voice). Text-only engines
+      are valid on text lanes — the contract degrades by capability,
+      not by refusal to serve.
+
+engine_registry:
+  description: |
+    Engines deployed or proposed. The lane map records declared bindings,
+    not a live service inventory. Today the declared fleet is ada-1 — the
+    registry exists so the FIRST non-ada-1 engine has somewhere to land.
+  engines:
+    ada-1:
+      line: ada
+      status: live
+      impl: |
+        ada-voice repo (tonezzz/ada-voice): pwa_server.py +
+        backend/realtime_provider (Gemini Live full-duplex) + tools.d
+        manifest tools + MDDB banks + person-aware session instructions.
+        "Version" today = deployed upstream commit/drop — needs the
+        self-report field (gap below) to become auditable.
+      runs_on: one shared checkout + .venv on idc03 serves all instances
+      lanes: [ada-dev, ada-ha-ada, ada-ha-tony, ada-ai-kraut, ada-kk,
+              ada-kk-dev, ada-chaba, chaba-guest]
+    ada-2:
+      line: ada
+      status: proposed
+      impl: |
+        Next-gen Ada engine — new model/provider/components behind the
+        identical contract (Tony direction 1). Released through the
+        standard variant→scenario→swap loop; no new lane, no new
+        callers, no new relay.
+    chaba-ops-0:
+      line: chaba-ops
+      status: idea
+      impl: |
+        Ops/docs engine line (Tony direction 2) — kanban/SSOT/report
+        brain behind the same contract; could be text-first rather than
+        realtime-voice. ada-chaba :8008 is the seed lane TODAY running
+        ada-1 with an ops persona — proof the persona and the engine
+        are already separable.
+    edge-0:
+      line: edge
+      status: idea
+      impl: |
+        Small local engine (cheap/free model, offline-capable) for
+        degraded-mode house answers when cloud engines or quota fail —
+        the ada-gemini-quota-breaker incident is the motivating case.
+
+lane_bindings:
+  description: |
+    Which engine each live lane runs. Swap = change the target + restart
+    relay. All ada-1 today.
+  bindings:
+    ada-dev:      {host: idc03, port: 8005, engine: ada-1, role: shared lab/dev}
+    ada-ha-ada:   {host: idc03, port: 8006, engine: ada-1, role: ada-ha lab home}
+    ada-ha-tony:  {host: idc03, port: 8002, engine: ada-1, role: tony personal / LINE chaba persona}
+    ada-ai-kraut: {host: idc03, port: 8003, engine: ada-1, role: mn-ha lane / persona kraut}
+    ada-kk:       {host: idc03, port: 8007, engine: ada-1, role: kk-ha lane / persona kaewta}
+    ada-kk-dev:   {host: idc03, port: 8009, engine: ada-1, role: kk dev twin}
+    ada-chaba:    {host: idc03, port: 8008, engine: ada-1, role: house/ops brain; seed lane for chaba-ops line}
+    chaba-guest:  {host: tony-dell, port: 8014, engine: ada-1, role: guest lane (CHABA_MEMORY mode)}
+  retired:
+    ada-pi-pwa:   {was: idc03:8001, note: "marked retired after shared key pool retirement 2026-10-23; ada-pi-pwa.service was still active on idc03 during the 2026-11-17 review, so reconcile runtime intent before treating this lane as retired"}
+
+release_model:
+  procedure: |
+    Engine release = lane config swap (Tony direction 3 — already true at
+    whole-lane granularity today):
+    1. Stand up the new engine on a free port — env + keys + unit, the
+       same slot shape every lane already uses (ha-ada-isolation.md caps).
+    2. Import the lane's caller keys onto it (auth.import_key) so callers
+       don't re-pair.
+    3. Run the contract suite + the lane's scenario pack against the
+       variant port (persona-eval-ab.md §1-2; dev lane is the tripwire).
+    4. Flip the pointer: LINE_NAME_BACKENDS persona entry (line-bot.env),
+       TG relay backend env, or tailnet-serve /apps/ha/ada-* mount —
+       restart only the relay/proxy.
+    5. Soak + compare (benchmark docs per persona-eval-ab.md §4), then
+       adopt (keep pointer) or roll back (pointer back — instant).
+  granularity: |
+    Whole-lane today — every caller on the lane moves together.
+    Per-caller engine pinning (tony->ada-2, everyone else->ada-1) needs
+    card persona-ab-split-routing-relay — the relay override that makes
+    true concurrent A/B possible.
+  what_is_NOT_config_swap_today: |
+    One honest limit: every instance shares the idc03 ada-voice checkout,
+    so fleet-wide the engine version is single — lanes can't run
+    DIFFERENT engine versions simultaneously. Parallel engine versions
+    (the whole point of lines) need per-engine runtimes: own
+    checkout+venv or quadlet image per <line>@<version>. One-time infra,
+    not per-release — see gaps.
+
+versioning:
+  scheme: |
+    <line>-<major>.<minor>[.<patch>] — e.g. ada-1.x (current drops),
+    ada-2.0 (next-gen). Contract versions bump on MAJOR only when the
+    required surface changes; engines declare the contract they
+    implement.
+  rules:
+    - "A lane binds one engine at a time; binding is config, not code."
+    - "Contract-major mismatch = never bind silently; the contract suite
+      is the gate."
+    - "Engine self-report (gap) makes 'which engine answered this turn'
+      auditable — required before Ada2 can be measured honestly."
+    - "Model/prompt/tool-profile changes INSIDE an engine are minor
+      releases of that engine — the ada-text-model-promotion-path card
+      is that loop; they don't create new lines."
+
+engine_line_naming:
+  decision: codename-per-line
+  stable_functional_ids: true
+  rule: >-
+    Keep functional slugs (ada, chaba-ops, edge) stable in config, service,
+    and code references. A line codename is descriptive metadata/display
+    only; assign its specific value when a proposed line is accepted for
+    implementation rather than renaming existing functional IDs.
+
+gaps_to_card:
+  new_cards:
+    ada-engine-self-report: |
+      Engines don't announce who they are. Add {engine_line,
+      engine_version, contract_version} to /api/health + the session
+      hello/ready event — makes swaps verifiable and transcripts
+      attributable. ada-voice repo.
+    ada-engine-contract-suite: |
+      No named conformance pack exists. Tag a subset of
+      tests/scenarios-live as "contract" — ws auth + tier refusal, trace
+      events, tagged reply, health, honest tool surface — the suite any
+      engine must pass before a lane may bind it. ada-voice repo.
+    ada-engine-runtimes: |
+      Parallel engine versions need per-engine runtime dirs or quadlet
+      images (one shared checkout = one version fleet-wide today).
+      Host-hygiene: declared units, cgroup caps per ha-ada-isolation.
+  existing_related:
+    - persona-ab-split-routing-relay — per-caller engine pinning
+    - persona-eval-ab.md — the variant/A-B/adopt loop this model formalizes
+    - ada-text-model-promotion-path — minor-release loop inside a line
+    - ha-ada-isolation.md — isolation/caps standard every engine slot follows
