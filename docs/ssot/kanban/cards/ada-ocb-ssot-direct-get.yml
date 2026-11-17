@@ -1,7 +1,7 @@
 id: ada-ocb-ssot-direct-get
 title: 'ada-ocb: direct SSOT get for exact host/spec lookups'
 column: doing
-updated: 2026-11-17 18:44
+updated: 2026-11-17 19:42
 brief: OpenChamber/Ada finds the right SSOT docs via ada_context_pack but still answers with excerpts/metadata instead
   of exact values. Add a bounded read-only direct-get path so once a canonical SSOT key is discovered the agent
   can fetch the exact document/block instead of issuing repeated broad semantic searches.
@@ -36,3 +36,9 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:42
+  from: devin
+  text: 'Implemented ada_ssot_get(collection,key,selector?,max_chars?) in ada-voice 07e6866. Gates: tool-lint clean
+    + 1757 tests passed on idc03 deploy; services active. Smoke: ada_ssot_get(infrastructure-ssot, host-roles, selector=host=tony-macbook)
+    returned the tony-macbook block (tailnet 100.77.76.112, LAN 192.168.2.88, Ubuntu 26.04.1) with mutations_performed=[]
+    and calls.jsonl ok=true. DevNest bridge+instructions synced in 15e8cab; OpenChamber guest instructions updated.'
