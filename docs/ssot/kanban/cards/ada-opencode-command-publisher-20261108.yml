@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-17 23:37
+updated: 2026-11-17 23:38
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -119,6 +119,10 @@ comms:
 - at: 2026-11-17 23:37
   from: chaba
   text: started devin-task-20261117-233712-canonicalize-the-opencode-ada- on tony-omen (dispatch)
+- at: 2026-11-17 23:38
+  from: tony-omen
+  text: 'finished (failed): exit=1 devin-task-20261117-233712-canonicalize-the-opencode-ada-.service: Failed with
+    result ''exit-code''. | devin-task-2'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -139,7 +143,10 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   runner: tony-omen
+  result: 'exit=1 devin-task-20261117-233712-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233712-canonicalize-the-opencode-ada-.service: Consumed 1.108s CPU time over 9.469s wall
+    clock time, 68.5M memory peak.'
