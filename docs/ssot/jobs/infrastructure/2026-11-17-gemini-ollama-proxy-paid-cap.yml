@@ -1,0 +1,89 @@
+id: 2026-11-17-gemini-ollama-proxy-paid-cap
+kind: change-record
+title: Paid-Gemini fallback capped (hourly + daily) — uncontrolled spend stopped
+card: idc03-gemini-ollama-proxy-paid-fallback-2fa021
+ref: ADA-0150
+date: 2026-11-17
+host: idc03
+summary: >-
+  Observed 2026-11-16 ~20:54 ICT: gemini-ollama-proxy served EVERY embed via
+  the paid Gemini leg (~0.3–0.7/s sustained, bursts to several/s).
+  Free-tier key is permanently quota-dead (free quota ~1000 embeds/day vs
+  ~58k requests/day demand) and OR_FALLBACK_DAILY_CAP=5000 exhausts mid-day,
+  so the "outage-window" paid leg became de-facto primary.
+measurements:
+  paid_calls_24h: 39283   # journalctl "served via paid Gemini fallback", last 24h
+  paid_calls_today: 33523 # UTC-local day at observation time
+  hourly_profile: "1,200–2,300 paid calls/hour sustained, 12h window"
+  or_calls_today: 5001    # OR cap 5000 hit — OR leg skipped all afternoon
+  est_daily_cost: "~$3.80/day (incident rate ~$0.097/1k calls from the 2026-11-12 OR storm) ≈ ~$115/mo"
+caller_analysis:
+  finding: >-
+    NOT a retry/bug loop — the volume is legitimate embed traffic.
+    mddb :11023 + mddb-cms :11027 both point MDDB_EMBEDDING_API_URL at
+    127.0.0.1:11435; every doc write embeds its chunks and every vector
+    search embeds its query server-side.
+  burst_source: >-
+    mddb-cms generated pages republish on schedules (cam-walls, ops-health,
+    reports-index, cctv-walls, nest pages, timer timelines — confirmed by
+    loopback tcpdump of :11435 payloads). Each republish re-embeds ALL
+    ~1500-char chunks of the page (~150–170 calls in a tight burst) — this
+    is the "multiple times per second" pattern in the journal.
+    ada-cms-pages: 9 docs / ~1,500 chunks / 20k revisions.
+  backlog: none — /v1/stats indexing pendingEmbeddings=0, progress=1.
+  residual_volume: >-
+    ~38–58k embeds/day total demand after device-telemetry was moved to
+    mddb-ops (embeddings off) on 2026-11-13. Structural — exceeds any
+    free-tier quota permanently.
+changes:
+  - file: scripts/mddb/gemini-ollama-proxy.mjs
+    what: >-
+      Paid-leg spend firewall mirroring OR_FALLBACK_DAILY_CAP:
+      PAID_GEMINI_HOURLY_CAP + PAID_GEMINI_DAILY_CAP envs (0=uncapped).
+      paidCapHit() checks windows before the paid leg runs; only
+      successful billed calls increment. Cap-hit throws like an open
+      circuit → hard-fail, and emits ops-event embed_paid_cap (damped
+      15min). Both paid-leg call sites (OR-primary chain and free-first
+      chain) route through fetchPaidGeminiBatch. /health gains
+      paid_daily_cap/paid_calls_today/paid_hourly_cap/paid_calls_hour;
+      hard-fail messages name the cap.
+  - file: scripts/ops-digest.py
+    what: "FLAGGED += embed_paid_cap (nightly digest surfaces cap events)"
+  - file: docs/kb/mddb-embedding-providers.md
+    what: >-
+      Document the paid caps, current env values, and the degrade
+      decision: ollama nomic-embed-text is NEVER a substitute (different
+      vector space) — bounded-fail is the designed degrade.
+  - file: docs/ssot/infrastructure/ssot.services.yml
+    what: gemini-ollama-proxy environment section lists the caps.
+deploy:
+  - "scp proxy .mjs → idc03:~/.config/containers/mddb/proxy/ (md5 verified)"
+  - "PAID_GEMINI_HOURLY_CAP=150 + PAID_GEMINI_DAILY_CAP=2000 appended to idc03 ~/.config/secrets/mddb-gemini.env"
+  - "systemctl --user restart gemini-ollama-proxy — active, /health shows caps"
+  - "idc01 standby copy NOT synced — host unreachable over tailscale (retired/off)"
+verify:
+  - >-
+    Throwaway instance (:11499, bogus free key + dead OR + real paid key,
+    caps=1): req1 served via gemini-embedding-2-paid; req2/3 refused with
+    "all same-space providers down (OR circuit-open + Gemini failed +
+    paid daily-cap 1 hit)"; /health paid_calls_today=1. Verified live.
+  - >-
+    Production after restart: OR leg serving again (or_calls_today reset
+    by restart — expected, bounded at 5000/day); free circuit re-opened
+    (key still quota-dead); paid_calls_today=0 until needed.
+bound_spend: >-
+  Paid Gemini now bounded at ≤150 billed calls/hour AND ≤2000/day ≈
+  ≤~$0.20/day (~$6/mo) during a sustained outage. Plus OR ≤5000/day
+  (~$0.50/day) — unchanged.
+degrade_decision: >-
+  Task Q4 — degrade embeddings to local ollama (nomic-embed-text) instead
+  of paid Gemini: NO. Different vector space (cos ≈ 0.00 measured); a
+  wrong-space write corrupts the index and wrong-space queries return
+  garbage scores. Designed degrade = bounded paid trickle + hard-fail;
+  failed doc embeddings are retryable on provider recovery; semantic
+  search 502s until a leg recovers.
+followups:
+  - "OR key top-up still needed (Tony — see mddb-embed-spend-cap): OR limit ~$7, usage_daily ~$1.69; when OR dies, only the 150/hr paid trickle remains"
+  - "Caller-side volume: generated CMS pages (cam-walls, ops-health, indexes) re-embed every republish — per-collection embed-disable or write-to-mddb-ops for filter-query collections would cut demand structurally (needs mddb feature or writer repointing)"
+  - "idc01 standby proxy copy is now stale — sync when host returns"
+  - "embed-free-lane-daily-budget card still open — free lane reservation design"

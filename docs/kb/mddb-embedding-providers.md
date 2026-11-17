@@ -19,22 +19,39 @@ corpus must stay on ONE path or scores collapse to ~0.
 - Proxy: `scripts/mddb/gemini-ollama-proxy.mjs` (deployed to
   `idc01:~/.config/containers/mddb/proxy/`, quadlet
   `systemd/gemini-ollama-proxy.container`).
-- Env (`idc01:~/.config/secrets/mddb-gemini.env`):
+- Env (`idc03:~/.config/secrets/mddb-gemini.env`):
   - `OPENROUTER_API_KEY` — enables the OR tier.
-  - `OPENROUTER_PRIMARY=1` — OR serves every request; Gemini/Ollama
-    are degraded fallbacks only.
+  - `OPENROUTER_PRIMARY` — `1` = OR serves every request (Gemini/Ollama
+    degraded fallbacks only); `0` = free-Gemini first, OR during outage
+    (current: `0`).
+  - `OR_FALLBACK_DAILY_CAP` — max billed OR batches per UTC day
+    (current `5000`), then OR is skipped like an open circuit.
+  - `PAID_GEMINI_HOURLY_CAP` / `PAID_GEMINI_DAILY_CAP` (added
+    2026-11-17, card idc03-gemini-ollama-proxy-paid-fallback) — max
+    billed calls on the `GEMINI_API_KEY_PAID` leg per UTC hour/day
+    (current `150`/`2000` ≈ ≤$0.20/day). Beyond it the paid leg refuses
+    before any API call and embeds hard-fail (mddb marks the doc's
+    embedding failed — retryable on recovery) instead of draining the
+    key. Counters reset on window roll or proxy restart; live values in
+    `/health` (`paid_calls_hour`/`paid_calls_today`).
 - Provider pin: `provider.order: ["Google"], allow_fallbacks: false` —
   OR's default `Google AI Studio` upstream is broken
   (`API_KEY_INVALID`) and is a different vector space anyway.
-- Fallback chain: OR → direct Gemini → Ollama `nomic-embed-text`.
-  Both fallbacks are different spaces — degraded-emergency only.
+- Fallback chain (free-first mode): free Gemini → OR → paid Gemini
+  (`GEMINI_API_KEY_PAID`, capped) → hard-fail. Ollama `nomic-embed-text`
+  is NEVER a substitute — different vector space, wrong-space writes
+  poison the index and wrong-space queries return garbage scores.
+  Degrading to local ollama for these collections is therefore a
+  deliberate non-option; bounded-fail is the designed degrade.
 - Response `fallback` field reports which provider served each request
   (`google/gemini-embedding-2` = OR, `nomic-embed-text` = Ollama).
 - Ops paging (2026-11-12, card mddb-circuit-open-page): the proxy emits
   ops-event docs into `ada-ha-events-tony` at failure time —
   `embed_circuit_open` when a provider circuit trips closed→open,
   `embed_providers_down` after `EMBED_FAIL_ALERT_AFTER` (3) consecutive
-  failed embed requests, `embed_provider_restored` on recovery. Emits
+  failed embed requests, `embed_provider_restored` on recovery, and
+  `embed_paid_cap` (2026-11-17) when a paid-fallback cap starts
+  refusing. Emits
   are fire-and-forget POSTs to `MDDB_OPS_URL` (default
   `http://100.102.134.91:11023`), rate-limited `OPS_ALERT_MIN_MS`
   (15min) per type, and `/health` exposes `embed.consecutive_failures`

@@ -31,7 +31,7 @@ COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 WINDOW_H = int(os.environ.get("OPS_WINDOW_H", "24"))
 FLAGGED = {"tool_storm", "actuation_cap", "confirm_strip", "voiceprint_drift",
            "embed_queue_saturated", "embed_queue_drops", "embed_outage",
-           "embed_providers_down", "embed_circuit_open"}
+           "embed_providers_down", "embed_circuit_open", "embed_paid_cap"}
 
 
 def fetch() -> list[dict]:
