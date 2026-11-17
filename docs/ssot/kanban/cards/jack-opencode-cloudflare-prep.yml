@@ -21,11 +21,12 @@ action:
   type: dispatch
   repo: chaba
   host: tony-dell
-  status: running
+  status: failed
   lane: free_lane
   attempts: 1
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
 ref: OPS-0954
 comms:
 - at: 2026-10-27 19:37
@@ -78,3 +79,7 @@ comms:
 - at: 2026-11-17 19:18
   from: tony-dell
   text: claimed
+- at: 2026-11-17 19:18
+  from: tony-dell
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
+    dispatch is held'
