@@ -1,0 +1,58 @@
+title: Narrated comms digest — per-lane persona reads tony-team-digest into TG
+id: 2026-11-17-narrated-comms-digest
+status: completed
+owner: devin
+project: chaba
+started: "2026-11-17"
+completed: "2026-11-17"
+card: narrated-comms-digest
+
+summary: |
+  After daily-brief publishes ada-cms-pages/tony-team-digest (07:05/19:05
+  on idc03), each live TG lane posts a persona-voiced ≤10-line narration
+  via loopback POST /send: [ada] -> Tony DM (:8911), [kaewta] -> KK-HA
+  (:8913). chaba skipped — its LINE lane is still blocked (Yomi token
+  revoked); the PENDING registry entry picks it up once a relay exists.
+
+implementation:
+  - "scripts/report-comms-narrate.py — new. Fetches the digest (stdin > \
+    --md-file > live CMS page), generates one narration per lane via \
+    scripts/ada/litellm_chat.py on the gateway `chat` alias \
+    (gemini-3.5-flash -> free -> OpenRouter -> lite -> local chain — \
+    'Gemini normally, OpenRouter when billing is down' per spec), \
+    composes '[<tag>] ...' + detail-link line, POSTs {text} to the \
+    lane's TG_WEBHOOK_LISTEN /send (default chat = relay's first \
+    allowed: Tony DM for ada, KK-HA group for kaewta)."
+  - "scripts/report-daily-brief.py — calls the narrate script as a \
+    subprocess right after the comms CMS publish, piping comms_md on \
+    stdin; --no-narrate opts out; failures are warn-only (the brief \
+    never fails on narration)."
+  - "Never-silence: a lane whose generation fails still POSTs \
+    '[<tag>] (digest narration failed — model unavailable)' to its own \
+    channel; a dead relay only warns (nothing can post)."
+  - "Env knobs: COMMS_NARRATE_MODEL/LANES/PAGE_URL, \
+    COMMS_NARRATE_SEND_<LANE>, COMMS_NARRATE_CHAT_<LANE>."
+
+verified:
+  - "2026-11-17 live run on idc03 (/tmp copy, no deploy): real narrations \
+    generated + posted — [ada] 9-line English summary -> Tony DM, \
+    [kaewta] 9-line Thai summary -> KK-HA group. Both relays active."
+  - "First automatic run: next daily-brief.timer fire (19:05 +07) after \
+    this branch merges."
+  - "tests/test_comms_narrate.py — 14 unit tests (format contract, \
+    never-silence, lane routing, CLI flags), all network mocked."
+
+gotchas:
+  - "Gateway `chat` upstreams are thinking models: reasoning tokens eat \
+    the max_tokens budget (~10:1 seen). max_tokens=500 truncated replies \
+    to 1-2 lines; 3000 is the working budget."
+  - "Model sometimes returns lines wrapped in quotes or its own [tag] — \
+    compose() strips both before posting."
+  - "/send default chat = relay's first allowed chat; only set \
+    COMMS_NARRATE_CHAT_<LANE> to override."
+  - "board-api (:10000 via tailnet) was unreachable from the tony-macbook \
+    runner — card comms for this session post via ssh->idc03 loopback."
+
+docs:
+  - docs/ssot/infrastructure/ssot.comms-digest.yml (narration_delivery.implementation)
+  - docs/kb/msg-lane-standard.md (lane contract — unchanged)
