@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-report-feed
 title: Timer chaba-report-feed on tony-omen failing
 column: done
-updated: 2026-11-17 18:17
+updated: 2026-11-17 18:37
 priority: high
 tags:
 - timer-alert
@@ -55,6 +55,10 @@ comms:
 - at: 2026-11-17 18:17
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the `chaba-report-feed.service` user timer on `tony-omen`, which exited with a
   non-zero exit code during the 11-14 14:00 run. Inspect the logs on the host using `journalctl --user -u chaba-report-feed.service`
