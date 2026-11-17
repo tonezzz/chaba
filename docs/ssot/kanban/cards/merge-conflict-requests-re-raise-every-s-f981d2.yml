@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: doing
-updated: 2026-11-17 23:25
+updated: 2026-11-17 23:34
 priority: high
 tags:
 - board
@@ -39,10 +39,13 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: codemod
   lane_source: kw
   runner: idc02
+  result: 'exit=1  devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''.
+    | devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Consumed 1min 9.340s CPU time, 280.9M memory
+    peak, 0B memory swap peak.'
 ref: KNB-0178
 comms:
 - at: 2026-11-17 22:19
@@ -74,6 +77,10 @@ comms:
   from: devin
   text: dispatch started — implementing the suggested fix-approach option (signature-dedupe + execute-answer) plus
     idempotent /respond. fix-approach request still open; will re-check answers.jsonl before finishing.
+- at: 2026-11-17 23:34
+  from: idc02
+  text: 'finished (failed): exit=1  devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Failed with
+    result ''exit-code''. | devin-task-'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
