@@ -1,7 +1,7 @@
 id: openchamber-devnest-project-path
 title: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
 column: review
-updated: 2026-11-16 18:46
+updated: 2026-11-17 18:08
 brief: OpenChamber settings.json registers only /home/tony/DevNest-ada-agent, which no longer exists; the live checkout
   is /home/tony/DevNest.
 priority: medium
@@ -38,4 +38,8 @@ comms:
   text: 'Fixed ~/.config/openchamber/settings.json projects[0] -> /home/tony/DevNest (backup: settings.json.bak-devnest-path).
     Verified file state and OpenChamber readSettingsFromDiskMigrated path; loopback /api/config/settings returns
     401 without UI auth, so consumer proof is pending in the OpenChamber UI/session create.'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
