@@ -543,6 +543,12 @@ comms:
 - at: 2026-11-17 15:22
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-17 15:22
+  from: tony
+  text: 'answered consult-per-call-cap: cap-010-call — $0.10 / call — recommended'
+- at: 2026-11-17 15:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: ada-voice
@@ -585,7 +591,7 @@ requests:
     a conservative UTF-8-byte input ceiling plus max output tokens using per-alias rates, and refuses if the bound
     exceeds the cap. Recommendation is $0.10/call; $0.25 allows larger consult-pro/consult-claude calls. Missing
     rate config fails closed.
-  status: open
+  status: answered
   at: 2026-11-17 13:52
   from: devin
   options:
@@ -596,4 +602,5 @@ requests:
   - id: other-call-cap
     label: Other amount
   suggested: cap-010-call
+  answer: cap-010-call — $0.10 / call — recommended
 awaiting_action: true
