@@ -268,6 +268,28 @@ def _services() -> dict:
             if v is not None:
                 entry[k] = str(v)[:80]
         svcs["nest-worker"] = entry
+    # nest-mgr (DevNest manager daemon) keeps manager-state.json —
+    # summarize node counts so dashboards see fleet state at a glance
+    mgr = os.path.expanduser("~/.local/share/nest/manager-state.json")
+    if os.path.exists(mgr):
+        try:
+            with open(mgr) as f:
+                m = json.load(f)
+            nodes = m.get("nodes") or {}
+            counts = {}
+            for n in nodes.values():
+                s = n.get("state") or "unknown"
+                counts[s] = counts.get(s, 0) + 1
+            age = int(time.time()) - int(os.path.getmtime(mgr))
+            svcs["nest-mgr"] = {
+                "state": "running" if age <= 600 else "stale",
+                "age_s": age,
+                "nodes": str(len(nodes)),
+                "active": str(sum(v for k, v in counts.items()
+                                  if k not in ("parked", "unknown"))),
+            }
+        except Exception:
+            pass
     return svcs
 
 
