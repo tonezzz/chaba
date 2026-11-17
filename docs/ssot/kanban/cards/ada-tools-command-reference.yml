@@ -27,7 +27,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
@@ -37,6 +37,9 @@ action:
     Consumed 1.606s CPU time over 1h 23.099s wall clock time, 15.1M memory peak, 744K'
   attempts: 2
   runner: tony-omen
+  result: 'journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ada-tools-command-reference-1794918380.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-tools-command-reference-1794918380.service:
+    Failed with result ''exit-code''.'
 ref: ADA-1285
 comms:
 - at: 2026-11-09 17:24
@@ -194,3 +197,7 @@ comms:
 - at: 2026-11-17 19:26
   from: chaba
   text: started devin-task-ada-tools-command-reference-1794918380 on tony-omen (dispatch executor=jules)
+- at: 2026-11-17 19:26
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ada-tools-command-reference-1794918380.service:
+    Main '
