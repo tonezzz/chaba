@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 17:35
+updated: 2026-11-17 17:36
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -141,6 +141,13 @@ comms:
   from: devin
   text: 'raised request pi-pwa-lane-classification: Before enabling the dev/test archive, how should ada-pi-pwa
     be handled? The answered default named it as dev/test, but c'
+- at: 2026-11-17 17:36
+  from: devin
+  text: 'ADA-0478 offline review: pushed c86b904 on fix/ada-0478-lane-retention; draft PR #182 opened. 24 focused
+    tests pass; job renderer check passes; full SSOT validation is 4,874/4,874 valid (217 warnings). Unmapped transcripts
+    now stay local, and dev mapping is limited to ada-dev/ada-kk-dev. ada-pi-pwa is excluded pending request pi-pwa-lane-classification
+    because SSOT says retired/ADA_INSTANCE_ID=tony while idc03 systemd reports active. The ~5d source-loss claim
+    remains unverified against local-fil'
 action:
   type: dispatch
   repo: chaba
