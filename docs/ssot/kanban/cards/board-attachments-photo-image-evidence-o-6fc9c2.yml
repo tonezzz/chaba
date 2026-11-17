@@ -182,6 +182,13 @@ comms:
 - at: 2026-11-17 09:25
   from: chaba
   text: pushed dispatch/20261117-085459-goal-implement-photo-and-image to origin
+- at: 2026-11-17 09:25
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 62.2s)
 spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via board-api and render thumbnails
   in the Board UI. Host/Repo: tony-dell / chaba. Constraints: Provide POST /upload or /attach accepting id, filename,
   and payload, storing files under docs/ssot/kanban/attachments/<card-id>/ while linking them via comms entries,
