@@ -1,7 +1,7 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
 column: backlog
-updated: 2026-11-16 20:23
+updated: 2026-11-17 17:12
 spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
   since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
   behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
@@ -25,3 +25,15 @@ comms:
     timeouts) — by design (autostash protection, board-api-writes-eaten-by-autostash-pops-515009). External contender:
     git-safe-pull.sh holds the SAME flock across the whole pull+rebase+reconcile phase; when origin moved (frequent,
     multi-host repo) the pull takes 1-6min and ALL writes q'
+- at: 2026-11-17 17:11
+  from: devin
+  text: 'FIXED in dispatch wt 20261117-165539 (job rec docs/ssot/jobs/kanban/2026-11-17-board-api-lock-latency.yml).
+    Root causes: (1) git-safe-pull held the same flock across whole pull/rebase/reconcile (minutes when upstream
+    moved); (2) immediate git commit per write inside lock (BOARD_API_COMMIT, ~10-20s); (3) session-hide + session-delivery
+    ran SSH/SQLite under the request lock; (4) no dedupe so timed-out retries double-posted. Render was ALREADY
+    async — not the cause. Fixes: bounded LOCK_NB acquire on every lock site -> HTTP 503 BEFORE mutation (BOARD_API_LOCK_WAIT_S=25s
+    default) so retries can''t double-apply; wait/hold timing logs >5s; SSH/session side effects moved to post-write
+    daemon queue; /comment dedupe by request_id (stamps comms req) + same(from,text) 120s window, dedupe:false bypasses,
+    reply {deduped:true}; handler socket timeout 120s; git-safe-pull now reads /tmp/board-api.lock.repo sentinel
+    — pulls of other checkouts skip the served lock, lock-wait/pull-phase logged >=5s. Verified: selftest ok, kanban-commit
+    59/59, sandboxed HTTP smoke (503 in ~3s under held lock, 1 comm entry after deduped retries).'

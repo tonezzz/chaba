@@ -1,0 +1,89 @@
+title: board-api write-lock latency — bounded acquire, dedupe, off-lock side effects
+subtitle: 503-before-mutation + comms dedupe + sentinel-scoped pull lock
+icon: git
+version: 1
+
+card: board-api-write-latency
+date: 2026-11-17
+dispatch: 20261117-165539-observed-2026-11-16-19-00-19-2
+ops: OPS-1314
+
+summary: |
+  Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out:
+  GET /health|/cards were instant but POST /comment|/action queued behind
+  /tmp/board-api.lock for minutes. Client curls timed out at 30-60s while
+  server handlers eventually completed (BrokenPipeError, then duplicate
+  comms on retry). ~10 handler threads blocked in locks_lock_inode_wait;
+  4 external python clients queued too. Writes did complete (~10-20s each).
+
+  Root causes, in weight order:
+  1. git-safe-pull.sh holds the SAME /tmp/board-api.lock across its entire
+     pull/rebase/autostash/reconcile phase — minutes when upstream moved.
+     kanban-commit's 15-min timer + ExecStartPost sync meant most ticks
+     briefly held it; a pull with content held it for minutes.
+  2. board-api immediate commits: every card POST ran rev-parse/add/commit
+     (timeouts 10/15/15s) inside the lock — ~10-20s per write confirmed
+     by journal.
+  3. hide_dispatch_session() + _deliver_to_session() ran SQLite and SSH
+     (per remote host, ~15s each) inside the request lock.
+  4. No dedupe: timed-out clients retried → duplicate comms.
+
+fixes: |
+  scripts/board/board-api.py:
+  - acquire_lock(): bounded LOCK_NB polling flock; every lock site
+    (card write, /ready, remote-backed writes, _pub_board_send) now
+    waits at most BOARD_API_LOCK_WAIT_S (default 25s; wp lock uses
+    BOARD_API_WP_LOCK_WAIT_S default 75s) and returns HTTP 503
+    BEFORE mutating, so a retry cannot double-apply.
+  - Lock wait + hold durations logged when > BOARD_API_LOCK_SLOW_S (5s).
+  - Session delivery (answers/comment→tasks/<id>/answers.jsonl + SSH
+    to remote dispatch hosts) and hide_dispatch_session moved to a
+    daemon post-write queue; handler snapshots card id + action data,
+    releases the lock, worker does the I/O and appends any resulting
+    comms note via a second short bounded locked write.
+  - /comment dedupe: optional request_id field stamps comms item `req`
+    and dedupes forever; without it, same (from,text) within
+    BOARD_API_COMMENT_DEDUP_S (default 120s) dedupes; `dedupe:false`
+    bypasses. Deduped replies return {deduped:true} without writing.
+  - Handler socket timeout 120s so dead clients can't pin threads.
+  - On startup writes the served-checkout realpath to
+    /tmp/board-api.lock.repo (sentinel for git-safe-pull scoping).
+
+  scripts/git-safe-pull.sh:
+  - Reads the .repo sentinel; when the pull targets a DIFFERENT checkout
+    than the board-api served tree, skips the shared board lock entirely
+    (exec/job/mirror checkouts stop queueing behind each other and stop
+    holding the served lock). Absent/empty sentinel = conservative
+    (lock kept). Lock wait and pull-phase durations logged >=5s with
+    whether the board lock was held.
+
+  Invariants preserved:
+  - Async render design unchanged (render_async + board-render.lock);
+    render was already outside the card lock — not the cause.
+  - BOARD_API_COMMIT=1 default (immediate commit) kept; =0 restores
+    sweep-only. Lock order in safe-pull (render lock before board lock)
+    unchanged for the served checkout.
+  - card-union merge dedupe key (at,from,text) unaffected by new `req`.
+
+verify: |
+  python3 -m py_compile scripts/board/board-api.py
+  python3 scripts/board/board-api.py --selftest        # ok
+  bash tests/test-kanban-commit.sh                     # 59 passed
+  # sandboxed HTTP smoke (mktemp repo, BOARD_API_LOCK_WAIT_S=3):
+  #   POST /comment x3 -> 1 comm entry (req dedupe + window dedupe)
+  #   flock /tmp/board-api.lock held -> POST returns 503 in ~3s
+  #   POST after release -> 200, comm lands
+  # NOTE: live idc03 board-api was itself saturated during this session;
+  # progress curls to it timed out — the sandbox verifies the new
+  # behavior; production verification = journal lines
+  # "board-api lock wait >Ns ... — 503" and no new duplicate comms.
+
+residual: |
+  Immediate commit (git add+commit per write) still runs inside the lock
+  by design (BOARD_API_COMMIT) — it is 1-3s locally; the dominant
+  multi-minute holder was safe-pull's cross-checkout scoping, now fixed.
+  If per-write commit cost regresses, BOARD_API_COMMIT=0 falls back to
+  kanban-commit sweep-only.
+  Thundering-herd GET /cards is served without the lock and stayed fast;
+  the ~92% do_poll CPU is the epoll loop on keep-alive connections, not
+  lock contention. Thread count growth was a symptom of long lock holds.
