@@ -109,6 +109,10 @@ comms:
   text: 'Design locked. Scripts: ada/lane-retention.py (per-lane transcript->NLM archive w/ journald sid->lane map
     + nlm-via-mn01 + state dedup), prune-old-docs.py extended to all lanes/dual-base, extract supersede-merge into
     <bank>/<slug> canonicals. 4 weekly systemd jobs on idc03. One batched request raised for policy defaults.'
+- at: 2026-11-17 09:19
+  from: devin
+  text: 'raised request 4-policy-defaults-for-the-weekly-lane-re-686e16: 4 policy defaults for the weekly lane-retention
+    job (reply e.g. "defaults"): (1) After a transcript archives to Notebook'
 action:
   type: dispatch
   repo: chaba
@@ -127,3 +131,20 @@ action:
   attempts: 2
   runner: idc02
 claim: {}
+requests:
+- id: 4-policy-defaults-for-the-weekly-lane-re-686e16
+  ask: '4 policy defaults for the weekly lane-retention job (reply e.g. "defaults"): (1) After a transcript archives
+    to NotebookLM: ★A keep the local ~/.local/share/ada/transcripts copy (cheap, ~2MB total, needed by transcript
+    audits; deletion is irreversible) vs B purge local file after N days. (2) Merged canonical memory docs: ★A new
+    canonicals keep status=draft UNLESS all merged extracts were already active (preserves the human-review gate
+    and recall state); merge-into-existing-active-canonical stays active vs B everything auto-active vs C everything
+    draft. (3) Schedule: ★A Sunday 04:15/04:30/04:45 ICT on idc03 (tony/kk/michael, staggered so NLM uploads dont
+    overlap) vs B different day/time. (4) Dev/test lane transcripts (ada-dev, ada-kk-dev, ada-pi-pwa on idc03):
+    ★A archive to the shared Tony-Memory notebook tagged lane=dev (matches what the dead per-session upload used
+    to do) vs B skip dev transcripts entirely.'
+  status: open
+  at: 2026-11-17 09:19
+  from: devin
+  options:
+  - proceed
+  - hold
