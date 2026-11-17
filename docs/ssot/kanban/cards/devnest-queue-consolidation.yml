@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: doing
-updated: 2026-11-17 18:53
+column: review
+updated: 2026-11-17 19:07
 priority: high
 tags:
 - devnest
@@ -66,9 +66,12 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: tony-omen
+  result: 'exit=0  full detail in `dispatch-outcome-20261117-185221-assessment-2026-11-09-verified.md`. | devin-task-20261117-185221-assessment-2026-11-09-verified.service:
+    Consumed 1min 11.026s CPU time over 6min 14.726s wall clock time, 900.2M memory peak.'
+  verified: false
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -158,3 +161,9 @@ comms:
   text: Tracker claimed on tony-omen (dispatch session). Card was decomposed 2026-11-09 into OPS-1247..1252 and
     marked do-not-dispatch; re-verifying each consolidation item vs current repo+live state and will post an updated
     tracker status.
+- at: 2026-11-17 19:07
+  from: tony-omen
+  text: 'finished (ok): exit=0  full detail in `dispatch-outcome-20261117-185221-assessment-2026-11-09-verified.md`.
+    | devin-task-20261117-18522'
+review_kind: verify
+claim: {}
