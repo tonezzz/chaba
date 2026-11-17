@@ -1,7 +1,7 @@
 id: dispatch-lane-classifier-spend-false-manual
 title: 'lane classifier: bare keyword spend forces manual — false-positives dispatchable cards'
 column: backlog
-updated: 2026-11-17 20:35
+updated: 2026-11-17 20:37
 brief: 'LANE_KW[manual] in scripts/board/dispatch_repos.py contains bare "spend" — any card spec mentioning spend
   (even "spend scope", "uncontrolled spend", "cap paid spend") classifies manual at conf 1.0 and can never be dispatched.
   Hit twice 2026-11-17: idc03-gemini-ollama-proxy-paid-fallback-2fa021 (work IS fixing spend) and ada-real-card-sweep-scenario-20261108
@@ -23,3 +23,10 @@ comms:
 - at: 2026-11-17 20:35
   from: tony
   text: card captured via board-api
+- at: 2026-11-17 20:37
+  from: chaba
+  text: classified as manual (kw conf 1.00)
+action:
+  type: dispatch
+  status: idle
+  lane: manual
