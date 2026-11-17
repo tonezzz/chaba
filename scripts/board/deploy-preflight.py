@@ -99,7 +99,11 @@ def now() -> str:
 
 
 def load(p: Path) -> dict:
-    return yaml.safe_load(p.read_text()) or {}
+    # phase-1 scans every card under the board flock — libyaml keeps that
+    # hold to ~1.4s vs ~15s with the pure loader (2026-11-17 convoy)
+    return yaml.load(p.read_text(),
+                     Loader=getattr(yaml, "CSafeLoader",
+                                    yaml.SafeLoader)) or {}
 
 
 def save(p: Path, card: dict) -> None:
@@ -253,9 +257,12 @@ def raise_request(cid: str, dep: dict, ev: dict) -> None:
     })
 
 
-def decide(card: dict, cid: str) -> tuple[str, dict | None]:
+def decide(card: dict, cid: str,
+           pre_ev: dict | None = None) -> tuple[str, dict | None]:
     """Return (action, payload). Actions: skip, wait, held, preflight,
-    deploy, error. File mutations are applied by caller under lock."""
+    deploy, error. File mutations are applied by caller under lock.
+    `pre_ev` = evidence precomputed lock-free by the phase-0 prescan;
+    without it the git probes run inline (only safe outside the flock)."""
     dep = card.get("deploy")
     if not isinstance(dep, dict):
         return "skip", {"why": "no-deploy-block"}
@@ -293,7 +300,8 @@ def decide(card: dict, cid: str) -> tuple[str, dict | None]:
         if st == "preflight":
             # status set but request missing (raise raced/lost) -> retry
             pass
-        ev = preflight_evidence(card, cid, dep)
+        ev = pre_ev if pre_ev is not None \
+            else preflight_evidence(card, cid, dep)
         dep["status"] = "preflight"
         dep["preflight"] = ev
         dep["request_id"] = f"deploy-{cid}"
@@ -341,6 +349,20 @@ def main() -> int:
             print("another deploy-preflight run holds the lock")
             return 0
 
+        # Phase 0 (no lock): run decide() on throwaway card dicts so the
+        # git probes inside preflight_evidence (git log/show, 30s
+        # timeouts) never execute under the card flock (2026-11-17
+        # convoy, OPS-0725). Evidence is cached per cid; phase-1 cards
+        # that changed since the prescan just get mildly stale evidence.
+        ev_cache = {}
+        for p in sorted(CARD_DIR.glob("*.yml")):
+            try:
+                act, pl = decide(load(p), p.stem)
+            except Exception:
+                continue
+            if act == "preflight":
+                ev_cache[p.stem] = pl["ev"]
+
         # Phase 1 (lock): decide + apply file mutations, collect effects.
         effects = []   # (kind, cid, payload)
         with LOCK.open("w") as lock:
@@ -349,7 +371,8 @@ def main() -> int:
                 cid = p.stem
                 try:
                     card = load(p)
-                    action, pl = decide(card, cid)
+                    action, pl = decide(card, cid,
+                                        pre_ev=ev_cache.get(cid))
                 except Exception as e:
                     print(f"{cid}: decide error {e}", file=sys.stderr)
                     continue

@@ -74,7 +74,9 @@ try:
             if card_path.exists() else {}
         if not isinstance(card, dict):
             card = {}
-        comms = card.setdefault("comms", [])
+        comms = card.get("comms")
+        if not isinstance(comms, list):
+            card["comms"] = comms = []
         if card.get("column") == "done" or card.get("note") != note[:500]:
             comms.append({"at": now, "from": "chaba",
                           "text": f"commit refused ({reason}): {note}"[:500]})
@@ -156,7 +158,10 @@ try:
             if card_path.exists() else {}
         if not isinstance(card, dict):
             card = {}
-        card.setdefault("comms", []).append(
+        comms = card.get("comms")
+        if not isinstance(comms, list):
+            card["comms"] = comms = []
+        comms.append(
             {"at": now, "from": "chaba",
              "text": f"recovered after {n} consecutive failed ticks"})
         card.update(id=cid, updated=now)

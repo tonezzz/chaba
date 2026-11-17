@@ -171,10 +171,13 @@ class FileSink(Sink):
                 self._path(cid).write_text(
                     yaml.safe_dump(card, allow_unicode=True,
                                    sort_keys=False, width=110))
-            if self.render and RENDER.exists():
-                subprocess.run([sys.executable, str(RENDER)],
-                               cwd=REPO, check=False,
-                               capture_output=True, timeout=60)
+        # Render AFTER releasing the card flock — a ~15-60s full-board
+        # render inside the lock stalls every board-api writer behind it
+        # (2026-11-17 convoy, OPS-0725).
+        if self.render and RENDER.exists():
+            subprocess.run([sys.executable, str(RENDER)],
+                           cwd=REPO, check=False,
+                           capture_output=True, timeout=60)
 
 
 class ApiSink(Sink):

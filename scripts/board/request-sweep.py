@@ -128,8 +128,9 @@ def main(cards=None) -> int:
               f" overdue across {len(candidates)} card(s)")
         return 0
 
-    # pass 2 (locked): re-verify fresh state, push, then stamp
-    stamped = 0
+    # pass 2 (locked): re-verify fresh state and collect — the bn.send
+    # network call must NOT sit inside the card flock (2026-11-17 convoy:
+    # a slow push held every board writer behind it, OPS-0725)
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         lines = []
@@ -146,31 +147,48 @@ def main(cards=None) -> int:
                 lines.append(
                     f"• {cid}: {str(r.get('ask'))[:80]} ({age:.0f}h)")
             touched.append((p, card, [r.get("id") for r, _ in hits]))
-        if not touched:
-            print("request-sweep: overdue requests resolved before lock")
-            return 0
-        n = sum(len(ids) for _, _, ids in touched)
-        if n == 1:
-            p, card, ids = touched[0]
-            req = next(r for r in card["requests"] if r.get("id") == ids[0])
-            ok = bn.send(
-                f"Board request unanswered >{AGE_H:g}h",
-                f"{card.get('id') or p.stem}: {str(req.get('ask'))[:180]}")
-        else:
-            ok = bn.send(f"Board: {n} requests waiting >{AGE_H:g}h",
-                         "\n".join(lines[:10])
-                         + (f"\n… +{n - 10} more" if n > 10 else ""))
-        if not ok:
-            print("request-sweep: push failed — nothing stamped, "
-                  "retrying next tick")
-            return 1
-        stamp = ref.strftime("%Y-%m-%d %H:%M")
-        for p, card, ids in touched:
+    if not touched:
+        print("request-sweep: overdue requests resolved before lock")
+        return 0
+    n = sum(len(ids) for _, _, ids in touched)
+    if n == 1:
+        p, card, ids = touched[0]
+        req = next(r for r in card["requests"] if r.get("id") == ids[0])
+        ok = bn.send(
+            f"Board request unanswered >{AGE_H:g}h",
+            f"{card.get('id') or p.stem}: {str(req.get('ask'))[:180]}")
+    else:
+        ok = bn.send(f"Board: {n} requests waiting >{AGE_H:g}h",
+                     "\n".join(lines[:10])
+                     + (f"\n… +{n - 10} more" if n > 10 else ""))
+    if not ok:
+        print("request-sweep: push failed — nothing stamped, "
+              "retrying next tick")
+        return 1
+    # pass 3 (locked): re-load + re-verify before stamping — a request
+    # answered between send and stamp keeps its open state un-touched.
+    stamped = 0
+    stamp = ref.strftime("%Y-%m-%d %H:%M")
+    with LOCK.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        for p, _old, ids in touched:
+            try:
+                card = yaml.safe_load(p.read_text()) or {}
+            except Exception:
+                continue
+            hits = overdue_requests(card, ref)
+            still = {r.get("id") for r, _ in hits}
+            ids = [i for i in ids if i in still]
+            if not ids:
+                continue
             for r in card.get("requests") or []:
                 if r.get("id") in ids:
                     r["escalated_at"] = stamp
                     stamped += 1
-            card.setdefault("comms", []).append({
+            comms = card.get("comms")
+            if not isinstance(comms, list):
+                card["comms"] = comms = []
+            comms.append({
                 "at": stamp, "from": "chaba",
                 "text": f"request-sweep: {len(ids)} request(s) unanswered "
                         f">{AGE_H:g}h — escalation pushed"})

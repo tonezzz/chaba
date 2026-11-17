@@ -105,11 +105,27 @@ RECONCILE="$REPO/scripts/board/reconcile-local-conflicts.py"
 # files their resolved steps produced. Best-effort: a reconcile
 # failure never fails the pull — the conflict file stays and the card
 # is flagged in review (card kanban-local-conflict-reconciler).
+# Children MUST NOT inherit the board lock fds (SAFE_PULL_LOCK_FD /
+# SAFE_PULL_RENDER_FD): an inherited fd keeps the flock held even after
+# this script exits, so a backgrounded helper (git gc --auto, an ssh
+# ControlPersist) would stall every board-api writer behind a dead lock
+# — the 2026-11-17 convoy listed render/dispatch pids as lock holders
+# for exactly this reason. `nf` runs its argument in a subshell with
+# both fds closed.
+nf() {
+  ( [ -n "${SAFE_PULL_LOCK_FD:-}" ] \
+      && exec {SAFE_PULL_LOCK_FD}>&- || true
+    [ -n "${SAFE_PULL_RENDER_FD:-}" ] \
+      && exec {SAFE_PULL_RENDER_FD}>&- || true
+    "$@" )
+}
+
 _post_pull_reconcile() {
   [ "$REPO_OK" = 1 ] && [ -f "$RECONCILE" ] || return 0
   # BOARD_LOCK_HELD tells reconcile it already runs under the parent's
   # flock — its own LOCK_EX open would self-deadlock (2026-10-22).
-  RECONCILE_LOCK_HELD=${BOARD_LOCK_HELD:-} python3 "$RECONCILE" "$REPO" || true
+  RECONCILE_LOCK_HELD=${BOARD_LOCK_HELD:-} nf python3 "$RECONCILE" "$REPO" \
+    || true
 }
 trap _post_pull_reconcile EXIT
 
@@ -518,53 +534,54 @@ if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   fi
 fi
 
-_arm_card_union_driver
-_resolve_untracked_collisions
+nf _arm_card_union_driver
+nf _resolve_untracked_collisions
 
 # Snapshot the stash tip pre-pull so post-pop code can tell the entry
 # this pull's autostash created from pre-existing stashes.
-PRE_STASH_SHA="$(git rev-parse -q --verify refs/stash 2>/dev/null || true)"
+PRE_STASH_SHA="$(nf git rev-parse -q --verify refs/stash 2>/dev/null || true)"
 
 rebase_failed=""
 if [ "${SAFE_PULL_NO_REBASE:-0}" != "1" ]; then
-  git pull --rebase --autostash "$REMOTE" ${REF:+"$REF"} >/dev/null 2>&1 || true
+  nf git pull --rebase --autostash "$REMOTE" ${REF:+"$REF"} \
+    >/dev/null 2>&1 || true
 
   guard=0
   while _rebase_in_progress; do
     guard=$((guard + 1))
     if [ $guard -gt 25 ]; then
-      git rebase --abort >/dev/null 2>&1
+      nf git rebase --abort >/dev/null 2>&1
       echo "git-safe-pull: too many conflicted steps — aborted" >&2
       rebase_failed="too many conflicted steps"
       break
     fi
-    if [ -n "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
-      if ! _resolve_generated_conflicts; then
-        git rebase --abort >/dev/null 2>&1
+    if [ -n "$(nf git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
+      if ! nf _resolve_generated_conflicts; then
+        nf git rebase --abort >/dev/null 2>&1
         rebase_failed="conflict outside generated paths"
         break
       fi
-      GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
-        || { git rebase --abort >/dev/null 2>&1; \
+      GIT_EDITOR=true nf git rebase --continue >/dev/null 2>&1 \
+        || { nf git rebase --abort >/dev/null 2>&1; \
              rebase_failed="rebase --continue failed"; break; }
     else
       # resolved or empty step — continue; if the commit became empty, skip it
-      GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
-        || git rebase --skip >/dev/null 2>&1 \
-        || { git rebase --abort >/dev/null 2>&1; \
+      GIT_EDITOR=true nf git rebase --continue >/dev/null 2>&1 \
+        || nf git rebase --skip >/dev/null 2>&1 \
+        || { nf git rebase --abort >/dev/null 2>&1; \
              rebase_failed="rebase --continue/--skip failed"; break; }
     fi
   done
 fi
 
-_resolve_autostash_pop
+nf _resolve_autostash_pop
 
 # Deadlock breaker (incident 2026-10-23): when the rebase could not
 # complete — most commonly >25 conflicted steps replaying a big
 # divergence on a card that differed on both sides — merge upstream in
 # one shot instead of re-aborting every tick forever.
 if [ -n "$rebase_failed" ] || [ "${SAFE_PULL_NO_REBASE:-0}" = "1" ]; then
-  _merge_fallback "${rebase_failed:-rebase skipped}" || exit 1
+  nf _merge_fallback "${rebase_failed:-rebase skipped}" || exit 1
 fi
 
 # Autostash pops merge cleanly even when they shouldn't — the stash's
@@ -573,7 +590,7 @@ fi
 # git-autostash-column-guard). HEAD's committed column wins; everything
 # else the pop merged stays.
 COLGUARD="$REPO/scripts/board/card-column-guard.py"
-[ -f "$COLGUARD" ] && python3 "$COLGUARD" "$REPO" || true
+[ -f "$COLGUARD" ] && nf python3 "$COLGUARD" "$REPO" || true
 }
 
 if _pull_needed; then
@@ -602,7 +619,7 @@ fi
 # runs this every ~15min, satellites hit it through git-safe-push. Stash
 # refs only, never touches the worktree or board files — safe outside
 # the board lock and on no-op ticks.
-_gc_autostash
+nf _gc_autostash
 
 # Success means upstream is now an ancestor of HEAD (or unresolvable).
 if git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 \

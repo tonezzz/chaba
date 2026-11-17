@@ -134,6 +134,18 @@ def _ensure_act(card: dict) -> dict:
         card["action"] = a
     return a
 
+
+def _claim(card: dict) -> dict:
+    c = card.get("claim")
+    return c if isinstance(c, dict) else {}
+
+
+def _ensure_claim(card: dict) -> dict:
+    c = _claim(card)
+    if c is not card.get("claim"):
+        card["claim"] = c
+    return c
+
 import os
 import re
 import subprocess
@@ -938,7 +950,7 @@ def fail_attempt(card: dict, why: str, dry: bool,
         a["last_failure"] = why[:280]
         if zero_commit:
             a.setdefault("sweep", {})["zero_commit"] = now()
-        c.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(c).pop("session", None)
         # attempts is counted at claim time (mark_start) — a gate failure
         # requeues while attempts_used < max_attempts (max_attempts =
         # total dispatches incl. retries; merge_pending_one now uses the
@@ -1148,7 +1160,7 @@ def task_id_for(card: dict, runner: str) -> str:
     tid = str(a.get("task_id") or "").strip()
     if tid:
         return tid
-    tid = str((card.get("claim") or {}).get("session") or "").strip()
+    tid = str(_claim(card).get("session") or "").strip()
     if tid:
         return tid
     for m in card.get("comms") or []:
@@ -1244,7 +1256,7 @@ def drain_verified(card: dict, dry: bool) -> bool:
         a = _ensure_act(c)
         changed = a.get("status") != "done"
         a["status"] = "done"
-        c.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(c).pop("session", None)
         hold = close_hold_reason(c)
         out["hold"] = hold
         if hold:
@@ -1469,7 +1481,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
                 a = _ensure_act(c)
                 a["verified"] = True
                 a["status"] = "done"
-                c.setdefault("claim", {}).pop("session", None)
+                _ensure_claim(c).pop("session", None)
                 hold = close_hold_reason(c)
                 if hold:
                     held["why"] = hold
@@ -1629,7 +1641,7 @@ def main(cards=None) -> int:
     runners = set()
     for c in cards:
         a = _act(c)
-        tid = str(a.get("task_id") or (c.get("claim") or {})
+        tid = str(a.get("task_id") or _claim(c)
                   .get("session") or "")
         if not tid:
             for m in c.get("comms") or []:
