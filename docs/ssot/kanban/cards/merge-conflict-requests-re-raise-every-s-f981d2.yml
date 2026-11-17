@@ -1,0 +1,46 @@
+id: merge-conflict-requests-re-raise-every-s-f981d2
+title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
+column: backlog
+updated: 2026-11-17 22:19
+priority: high
+tags:
+- board
+- merge-sweep
+- dispatch
+spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up with new unanswered requests.
+
+
+  Root cause verified on idc03 served checkout:
+
+  - merge-sweep.py raises merge-conflict-N requests when a dispatch branch conflicts (stop-and-report policy).
+
+  - Tony answers (e.g. option 0: let devin resolve the conflict and land it).
+
+  - answer-sweep.py skips merge-conflict* via OWNED_PREFIXES assuming merge-sweep owns the lifecycle; merge-sweep
+  never reads answers — open_conflict_req() only checks status!=answered.
+
+  - Next 15-min pass: no open request -> card_request() fires again with conflict_rid() -> merge-conflict-N+1. Infinite
+  re-ask loop.
+
+
+  Evidence: kk-mac-routing-proposal-fold-local-qwen2-4d513b has 13 merge-conflict requests (12 answered, 1 open);
+  trade-lesson-ui-integration 3; trade-lesson-workflows-automation 2. board-api log shows /respond 400s when re-answering
+  already-answered requests.
+
+
+  Secondary: answered merge-conflict requests sit unexecuted -> awaiting_action stays True forever (answer-sweep
+  skips owned prefixes, nothing else clears it).
+
+
+  Fix directions (pick via request): (a) signature-dedupe — only re-raise when conflict signature (head sha + conflicted
+  paths) changes; (b) execute the answer — map options to actions (devin-resolve -> queue a merge-resolution dispatch,
+  drop -> mark for fresh re-dispatch, hold -> suppress re-raise); (c) both. Also consider making /respond idempotent
+  on already-answered (200 not 400) to stop UI error noise.'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-0178
+comms:
+- at: 2026-11-17 22:19
+  from: tony
+  text: card captured via board-api
