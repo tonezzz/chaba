@@ -1,8 +1,8 @@
 id: render-board-worktree-rglob-slow
 title: render-board.py _outcome_index rglobs docs/ssot/jobs across every dispatch-wt-* — ~60-100s per render on
   worktree-heavy hosts
-column: backlog
-updated: 2026-11-17 18:08
+column: doing
+updated: 2026-11-17 18:09
 brief: 'Found via OPS-0127 test profiling: kanban-dispatch runs render-board.py after every card mutation; _outcome_index()
   does root.rglob(''dispatch-outcome-*.md'') for EVERY dispatch-wt-* sibling of the repo. On hosts with 15+ worktrees
   this is ~60-100s per render, every dispatch pass. Tests now noop it; production still pays it.'
@@ -26,7 +26,11 @@ comms:
 - at: 2026-11-17 18:08
   from: devin
   text: queued for processing
+- at: 2026-11-17 18:09
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
+  runner: idc02
