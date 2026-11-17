@@ -1,24 +1,21 @@
 id: cms-auto-kanban-digest
 title: CMS automation `kanban-digest` stale
-brief: A scheduled report-page job ('kanban-digest') is stale. Re-run it or check
-  the generator — details in the note.
+brief: A scheduled report-page job ('kanban-digest') is stale. Re-run it or check the generator — details in the
+  note.
 column: done
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'Auto-recovered 2026-11-16: kanban-digest healthy for 2 consecutive ticks (status=ok,
-  state=ok).'
-help: 'Trigger a manual regen: cms_automation run_now for ''kanban-digest'' (or POST
-  /api/cms/pages/kanban-digest/regenerate). If it repeats, check the page''s generator
-  command in the registry doc.'
-updated: '2026-11-16'
+note: 'Auto-recovered 2026-11-16: kanban-digest healthy for 2 consecutive ticks (status=ok, state=ok).'
+help: 'Trigger a manual regen: cms_automation run_now for ''kanban-digest'' (or POST /api/cms/pages/kanban-digest/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-17 18:08
 comms:
 - at: 2026-11-07 16:50
   from: devin
-  text: '[KNB-1098] verified healthy: registry last_run=2026-11-07T06:05Z status=ok
-    for `kanban-digest` ran in the family batch (registry status=ok) (interval 1440m),
-    pages regenerated today (e.g. kanban-digest 13:00, general-digest 11:04 ICT).
-    The alert stamp predates the 06:05Z regen. Closing.'
+  text: '[KNB-1098] verified healthy: registry last_run=2026-11-07T06:05Z status=ok for `kanban-digest` ran in the
+    family batch (registry status=ok) (interval 1440m), pages regenerated today (e.g. kanban-digest 13:00, general-digest
+    11:04 ICT). The alert stamp predates the 06:05Z regen. Closing.'
 - at: 2026-11-07 16:50
   from: devin
   text: closed by devin
@@ -29,6 +26,10 @@ comms:
 - at: 2026-11-14 14:10
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
