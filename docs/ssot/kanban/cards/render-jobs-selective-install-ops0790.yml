@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
-column: doing
-updated: 2026-11-17 19:40
+column: review
+updated: 2026-11-17 19:43
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -26,9 +26,13 @@ action:
   - cpu
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
-  status: running
+  status: done
   lane: devin
   runner: idc02
+  result: 'exit=0 d), and the outcome is written to `dispatch-outcome-20261117-193648-follow-up-to-the-accepted-ops-.md`.
+    | devin-task-20261117-193648-follow-up-to-the-accepted-ops-.service: Consumed 18.832s CPU time, 340.8M memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0992
 comms:
 - at: 2026-10-30 01:26
@@ -118,3 +122,9 @@ comms:
     end-to-end with mocked subprocess + fake HOME, proving a selected id never reaches enable --now for unrelated
     timers and chaba-jobs.* stays untouched under --ids. Also fixed --manifest (was parsed but ignored). Report
     updated; scoped per-host rollout commands + chaba-jobs.timer ke'
+- at: 2026-11-17 19:43
+  from: idc02
+  text: 'finished (ok): exit=0 d), and the outcome is written to `dispatch-outcome-20261117-193648-follow-up-to-the-accepted-ops-.md`.
+    | devin-t'
+review_kind: verify
+claim: {}
