@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: doing
-updated: 2026-11-17 21:12
+updated: 2026-11-17 21:19
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -94,11 +94,15 @@ comms:
   from: devin
   text: 'Dispatch session started on tony-omen: auditing render-board.py compute_checks hardening + render-board2
     CPU/lock profile + lock-split options + wait-histogram metric.'
+- at: 2026-11-17 21:19
+  from: tony-omen
+  text: 'finished (failed): exit=1 -20261117-211227-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''.
+    | devin-task-20261117-21'
 requests: []
 action:
   lane: paid_frontier
   type: dispatch
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-17 21:09
   last_failure: 'exit=1 devin-task-20261117-203613-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''.
@@ -107,5 +111,7 @@ action:
   attempts: 1
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=1 -20261117-211227-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''. | devin-task-20261117-211227-symptom-2026-11-17-18-20-ict-i.service:
+    Consumed 5min 12.863s CPU time over 7min 1.542s wall clock time, 1.7G memory peak.'
 review_kind: triage
 claim: {}
