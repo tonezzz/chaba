@@ -45,6 +45,10 @@ comms:
 - at: 2026-11-17 16:56
   from: tony
   text: moved done -> backlog
+- at: 2026-11-17 16:56
+  from: devin
+  text: '[reopened — condition recurred] Last run (-) of `cms-h3-publish.service` on `tony-dell` result=success
+    — investigate journal: `journalctl --user -u cms-h3-publish.service` on the host. See CMS `timer-timeline-tony-dell`.'
 spec: Investigate the failure of `cms-h3-publish.service` on `tony-dell` by examining the systemd user journal via
   `journalctl --user -u cms-h3-publish.service` and referencing the CMS `timer-timeline-tony-dell`. Resolve the
   underlying cause of the exit-code failure and ensure the service runs successfully. The done-condition is verified
