@@ -251,7 +251,9 @@ def rot_requeue(card_path: Path, cid: str, failed: list) -> bool:
         with BOARD_LOCK.open("w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
             card = yaml.safe_load(card_path.read_text()) or {}
-            a = card.setdefault("action", {})
+            a = card.get("action")
+            if not isinstance(a, dict):
+                card["action"] = a = {}
             if a.get("status") == "queued":
                 return True  # already looped back
             a["last_failure"] = detail

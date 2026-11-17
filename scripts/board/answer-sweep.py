@@ -88,6 +88,14 @@ def _ensure_act(card: dict) -> dict:
         card["action"] = a
     return a
 
+
+def _ensure_claim(card: dict) -> dict:
+    """Write-path claim normalizer — scalar claim replaced by {}."""
+    c = card.get("claim")
+    if not isinstance(c, dict):
+        card["claim"] = c = {}
+    return c
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
     import dispatch_repos as dr
@@ -288,7 +296,7 @@ def apply_verb(card: dict, verb: str) -> str:
             return f"DEFER:{why}"
         card["column"] = "done"
         a["status"] = "done"
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
         return "moved to done"
     if verb == "hold":
         a["status"] = "idle"

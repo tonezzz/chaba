@@ -64,6 +64,15 @@ def _ensure_act(card: dict) -> dict:
         card["action"] = a
     return a
 
+
+def _ensure_claim(card: dict) -> dict:
+    """Same normalization for card['claim'] — a scalar here used to
+    TypeError every session-pop (2026-11-17 marker-card audit)."""
+    c = card.get("claim")
+    if not isinstance(c, dict):
+        card["claim"] = c = {}
+    return c
+
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 RENDER = REPO / "scripts/render-board.py"
@@ -257,7 +266,7 @@ def requeue_dead(path: Path, host: str) -> str:
         a["status"] = "queued"
         a.pop("runner", None)
         a.pop("task_id", None)
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
         comms_add(card, "chaba",
                   f"runner {host} unreachable {REQUEUE_AFTER} passes "
                   f"— requeued")
@@ -447,9 +456,10 @@ def ops_event(detail: str) -> None:
 
 
 def comms_add(card: dict, frm: str, text: str) -> None:
-    card.setdefault("comms", []).append(
-        {"at": now(), "from": frm, "text": text[:500]}
-    )
+    comms = card.get("comms")
+    if not isinstance(comms, list):
+        card["comms"] = comms = []
+    comms.append({"at": now(), "from": frm, "text": text[:500]})
 
 
 def sh(cmd: list, timeout=60, **kw) -> subprocess.CompletedProcess:
@@ -542,19 +552,34 @@ def save_card(path: Path, card: dict) -> None:
 def mark_start(path: Path, card: dict) -> None:
     """Phase-A claim (under the lock): transient 'starting' state keeps the
     card out of other dispatchers' reach; phase B runs the slow start."""
-    a = card["action"]
+    a = _ensure_act(card)
     card.pop("awaiting_action", None)  # being dispatched = triaged
     a["status"] = "starting"
     a["runner"] = HOST
     a["attempts"] = int(a.get("attempts") or 0) + 1
 
 
-def finish_one(path: Path, card: dict) -> str:
+def finish_one(path: Path, card: dict,
+               probe: tuple | None = None) -> str:
     """Phase-A finish (under the lock): cheap status flip only. A clean
-    finish defers the git merge to phase B (merge_pending flag)."""
-    a = card["action"]
-    tid = a.get("task_id") or ""
-    state = unit_state(tid) if tid else "unknown"
+    finish defers the git merge to phase B (merge_pending flag).
+
+    `probe` = the phase-A0 survey's (task_id, unit_state, ex_ok, ex_ev,
+    session_probe) for this card — systemctl/journalctl/git calls run
+    BEFORE the flock so a slow systemd or fat journal never extends the
+    hold (2026-11-17 convoy: these probes were the >25s lock holds,
+    OPS-0725)."""
+    a = _ensure_act(card)
+    tid = str(a.get("task_id") or "")
+    sess_probe = None
+    if probe and probe[0] == tid:
+        state, ex_ok, ex_ev = probe[1], probe[2], probe[3]
+        sess_probe = probe[4] if len(probe) > 4 else None
+    else:
+        # card flipped to running between survey and lock — probe now;
+        # rare enough to keep inside the lock
+        state = unit_state(tid) if tid else "unknown"
+        ex_ok = ex_ev = None
     if state in ("active", "activating"):
         return "still running"
     if state == "failed":
@@ -562,7 +587,7 @@ def finish_one(path: Path, card: dict) -> str:
         # hold partial work; card stays in doing with a retry affordance
         a["status"] = "failed"
         a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
         _notify("fail", card.get("id") or path.stem,
                 "unit failed — see devin-dispatch logs")
@@ -588,13 +613,14 @@ def finish_one(path: Path, card: dict) -> str:
     # dispatch-empty-closeout-verification-gap burns: 'Failed with
     # result' sessions still recorded 'finished (ok)'). Check the real
     # exit evidence before calling anything finished.
-    ex_ok, ex_ev = (dr.unit_exit_evidence(tid) if tid
-                    else (None, "no task_id"))
+    if ex_ok is None and ex_ev is None:
+        ex_ok, ex_ev = (dr.unit_exit_evidence(tid) if tid
+                        else (None, "no task_id"))
     if ex_ok is False:
         a["status"] = "failed"
         a["result"] = (f"{tid} FAILED ({ex_ev}) — see "
                        f"`devin-dispatch logs {tid}`")
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
         comms_add(card, "chaba",
                   f"run failed ({ex_ev}) — check logs, then retry")
         return "failed"
@@ -612,39 +638,60 @@ def finish_one(path: Path, card: dict) -> str:
     a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
     card["column"] = "review"
     card.setdefault("review_kind", "verify")  # close-out contract — without it the ssot-optimize gate fails commits repo-wide
-    card.setdefault("claim", {}).pop("session", None)
+    _ensure_claim(card).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
     _notify("finish", card.get("id") or path.stem,
             f"finished ({state}) → review")
     if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
         a["merge_pending"] = True  # merged outside the lock in phase B
     else:
-        for n in session_end_notes(card):
+        for n in session_end_notes(card, sess_probe):
             comms_add(card, "chaba", n)
     return "finished"
 
 
-def session_end_notes(card: dict) -> list:
-    """Comms lines for leftover work at session end (merge-guard spec c):
-    dirty worktree file count, plus commits not yet in the default branch
-    (the same condition the board-api close gate blocks on)."""
-    notes = []
+def session_probe(card: dict) -> dict:
+    """Git-side session facts for session_end_notes — resolved OUTSIDE
+    the card flock (session()/dirty_count()/merge_state() are several
+    git subprocesses each; the merge_pending_one write-back used to run
+    them under the lock, 2026-11-17 convoy)."""
+    out = {"session": {}, "dirty": None, "merge": {}}
     try:
         s = dr.session(card)
-        if s["worktree"]:
-            dirty = dr.dirty_count(s["worktree"])
-            if dirty:
-                notes.append(
-                    f"session end: worktree {s['worktree'].name} dirty — "
-                    f"{dirty} uncommitted file(s); commit or clean before "
-                    f"pruning")
-        if s["head"] and s["base_ref"]:
-            m = dr.merge_state(s["repo_root"], s["head"], s["base_ref"])
-            if m.get("checked") and not m["ancestor"]:
-                notes.append(
-                    f"session end: {m['unmerged']} commit(s) on "
-                    f"{s['branch']} not in {s['base_ref']} — close will "
-                    f"block until merged")
+        out["session"] = s
+        if s.get("worktree"):
+            out["dirty"] = dr.dirty_count(s["worktree"])
+        if s.get("head") and s.get("base_ref"):
+            out["merge"] = dr.merge_state(
+                s["repo_root"], s["head"], s["base_ref"])
+    except Exception:
+        pass
+    return out
+
+
+def session_end_notes(card: dict, probe: dict | None = None) -> list:
+    """Comms lines for leftover work at session end (merge-guard spec c):
+    dirty worktree file count, plus commits not yet in the default branch
+    (the same condition the board-api close gate blocks on). `probe` is
+    the pre-lock session_probe() result; absent → probed inline (only
+    callers already outside the flock should rely on that)."""
+    notes = []
+    try:
+        probe = probe or session_probe(card)
+        s = probe.get("session") or {}
+        dirty = probe.get("dirty")
+        if s.get("worktree") and dirty:
+            notes.append(
+                f"session end: worktree {s['worktree'].name} dirty — "
+                f"{dirty} uncommitted file(s); commit or clean before "
+                f"pruning")
+        m = probe.get("merge") or {}
+        if s.get("head") and s.get("base_ref") \
+                and m.get("checked") and not m["ancestor"]:
+            notes.append(
+                f"session end: {m['unmerged']} commit(s) on "
+                f"{s['branch']} not in {s['base_ref']} — close will "
+                f"block until merged")
     except Exception:
         pass
     return notes
@@ -763,7 +810,7 @@ classify_lane = dr.classify_lane
 def start_pending(path: Path) -> str:
     """Phase B: devin-dispatch start (slow, no lock), then write back."""
     card = load_card(path)  # read-only peek for spec/task build
-    a = card["action"]
+    a = _ensure_act(card)
     repo = a.get("repo", "chaba")
     task = build_task(card)
     ex = str(a.get("executor") or "").strip()
@@ -824,7 +871,7 @@ def start_pending(path: Path) -> str:
         a["status"] = "running"
         a["task_id"] = task_id
         a["runner"] = HOST
-        card.setdefault("claim", {})["session"] = task_id
+        _ensure_claim(card)["session"] = task_id
         card["claim"]["since"] = now()
         blurb = dr.executor_blurb(card)
         comms_add(card, "chaba",
@@ -861,6 +908,9 @@ def merge_pending_one(path: Path) -> str:
     # (systemctl/journalctl are the slow part, same rule as the merge).
     ex_ok, ex_ev = dr.unit_exit_evidence(
         str(((res.get("session") or {}).get("task_id")) or ""))
+    # session_end_notes' git probes — likewise surveyed before the
+    # write-back lock, not inside it.
+    sess_probe = session_probe(load_card(path))
 
     def apply():
         card = load_card(path)
@@ -913,7 +963,7 @@ def merge_pending_one(path: Path) -> str:
             comms_add(card, "chaba", n)
         for n in gc_notes:
             comms_add(card, "chaba", n)
-        for n in session_end_notes(card):
+        for n in session_end_notes(card, sess_probe):
             comms_add(card, "chaba", n)
         if not res.get("merged") and not res.get("noop"):
             _notify("fail", card.get("id") or path.stem,
@@ -930,35 +980,73 @@ def merge_pending_one(path: Path) -> str:
 def main() -> int:
     starts, merges, remote = [], [], []
     changed = False
+    # Phase A0 — lock-free: every probe that used to run under the card
+    # flock (systemctl/journalctl per running card, git push --dry-run,
+    # SSOT fleet parse, env preflight). Stacked across cards they were
+    # the >25s holds that 503'd board-api writes (2026-11-17 convoy,
+    # OPS-0725). Everything below is read-only on shared state.
+    pol = load_policy()
+    kill = Path(pol.get("kill_switch") or "/tmp/no-kanban-dispatch")
+    budget = int(pol.get("sessions_per_day") or 0)
+    state_file = Path(pol.get("state_file")
+                      or "/tmp/kanban-dispatch-state.json")
+    max_tier = TIER_ORDER.get(str(pol.get("max_autonomy") or "t3"), 3)
+    retry_cap = int(pol.get("retries_per_card") or 2)
+    can_claim = not overloaded()
+    if not can_claim:
+        print(f"load gate: load5/cpu > {MAX_LOAD_PC} — not claiming")
+    if kill.exists():
+        can_claim = False
+        print(f"kill switch {kill} present — not claiming")
+    if in_quiet_hours(pol.get("quiet_hours") or ""):
+        can_claim = False
+        print(f"quiet hours {pol['quiet_hours']} — not claiming")
+    # waiting_cards preflight (KNB-0928): kill switch + deploy lock +
+    # disk headroom are pass-level gates — any failure stops ALL
+    # claims, not just one card.
+    pf_env = wc.local_env(host=HOST, path=REPO)
+    pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
+    if pf_fails:
+        can_claim = False
+        print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
+              " — not claiming")
+    # Declared fleet claim surface for the unclaimable flag — parsed
+    # once per pass; {} when the SSOT is unreadable (never flags).
+    try:
+        fleet = dr.fleet_capabilities()
+    except Exception:
+        fleet = {}
+    active_base = active_tasks()
+    # Probe survey for cards currently 'running' on THIS host:
+    # unit_state (systemctl is-active), exit evidence (systemctl show /
+    # journalctl) and the git session probe — finish_one consumes them
+    # inside the flock instead of spawning under it. Cards that flip to
+    # running between survey and lock take the inline fallback.
+    prescan = load_dispatch_cards()
+    unit_survey = {}
+    for _p, _c in prescan:
+        _a = _act(_c)
+        if _a.get("status") != "running" \
+                or (_a.get("runner") and _a["runner"] != HOST):
+            continue
+        _tid = str(_a.get("task_id") or "")
+        _st = unit_state(_tid) if _tid else "unknown"
+        _ex = (dr.unit_exit_evidence(_tid)
+               if _tid and _st not in ("active", "activating")
+               else (None, "not surveyed"))
+        # session_end_notes git probes — only needed on the no-automerge
+        # finish path (merge_pending_one surveys its own)
+        _sess = session_probe(_c) \
+            if os.environ.get("KANBAN_AUTOMERGE", "1") == "0" else None
+        unit_survey[_tid] = (_tid, _st, _ex[0], _ex[1], _sess)
+    # Warm the push-probe cache for every repo in play — the claim gates
+    # inside the lock then read cache, never the 45s network probe.
+    for _p, _c in prescan:
+        push_capable(str((_act(_c)).get("repo") or "chaba"))
     # Phase A — under the lock: cheap card mutations only (no network/git).
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         claimed = 0
-        pol = load_policy()
-        kill = Path(pol.get("kill_switch") or "/tmp/no-kanban-dispatch")
-        budget = int(pol.get("sessions_per_day") or 0)
-        state_file = Path(pol.get("state_file")
-                          or "/tmp/kanban-dispatch-state.json")
-        max_tier = TIER_ORDER.get(str(pol.get("max_autonomy") or "t3"), 3)
-        retry_cap = int(pol.get("retries_per_card") or 2)
-        can_claim = not overloaded()
-        if not can_claim:
-            print(f"load gate: load5/cpu > {MAX_LOAD_PC} — not claiming")
-        if kill.exists():
-            can_claim = False
-            print(f"kill switch {kill} present — not claiming")
-        if in_quiet_hours(pol.get("quiet_hours") or ""):
-            can_claim = False
-            print(f"quiet hours {pol['quiet_hours']} — not claiming")
-        # waiting_cards preflight (KNB-0928): kill switch + deploy lock +
-        # disk headroom are pass-level gates — any failure stops ALL
-        # claims, not just one card.
-        pf_env = wc.local_env(host=HOST, path=REPO)
-        pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
-        if pf_fails:
-            can_claim = False
-            print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
-                  " — not claiming")
         # Priority-aware drain (card dispatch-priority-order): claimable
         # queued cards are visited starved-first -> priority rank ->
         # oldest `updated`; all other cards keep filename order. The
@@ -970,12 +1058,6 @@ def main() -> int:
             in ("queued", "starting"))]
         queued.sort(key=lambda pc: dr.claim_sort_key(
             pc[1], starve_hours=STARVE_HOURS))
-        # Declared fleet claim surface for the unclaimable flag — parsed
-        # once per pass; {} when the SSOT is unreadable (never flags).
-        try:
-            fleet = dr.fleet_capabilities()
-        except Exception:
-            fleet = {}
         rest = [pc for pc in loaded if (
             (_act(pc[1])).get("status")
             not in ("queued", "starting"))]
@@ -1096,7 +1178,7 @@ def main() -> int:
                 # logs the verdict — the undeclared backlog predates
                 # the contract).
                 if WAITING_GATE != "off":
-                    env = dict(pf_env, claimed=active_tasks() + claimed,
+                    env = dict(pf_env, claimed=active_base + claimed,
                                cap=HOST_CAP)
                     verdict = wc.evaluate(card, env=env,
                                           push_probe=push_capable)
@@ -1117,7 +1199,7 @@ def main() -> int:
                     if _flag_unclaimable(p, card, fleet) == "new":
                         changed = True
                     continue  # claimed/starting on another host
-                if active_tasks() + claimed >= HOST_CAP:
+                if active_base + claimed >= HOST_CAP:
                     print(f"{card['id']}: skipped — host cap {HOST_CAP}")
                     continue
                 mark_start(p, card)
@@ -1132,7 +1214,9 @@ def main() -> int:
                     remote.append((p, card.get("id") or p.stem,
                                    a["runner"]))
                     continue  # runs on another host — don't touch its unit
-                msg = finish_one(p, card)
+                msg = finish_one(
+                    p, card,
+                    probe=unit_survey.get(str(a.get("task_id") or "")))
                 if msg == "still running":
                     continue
                 save_card(p, card)

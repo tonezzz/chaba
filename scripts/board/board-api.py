@@ -496,6 +496,36 @@ def acquire_lock(path: Path, timeout_s: float):
             time.sleep(0.25)
 
 
+# Lock-wait telemetry (card board-api-lock-contention): per-endpoint
+# histogram of seconds spent acquiring the card flock, so a convoy
+# regression is one GET /lock-stats away instead of a journal grep.
+_LOCK_STAT_BUCKETS = (0.05, 0.25, 1, 2, 5, 10, 25)
+_lock_stats: dict = {}
+_lock_stats_mu = threading.Lock()
+
+
+def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
+               timeout: bool = False) -> None:
+    b = next((f"<{x:g}s" for x in _LOCK_STAT_BUCKETS if wait_s < x),
+             f">={_LOCK_STAT_BUCKETS[-1]:g}s")
+    hb = next((f"h<{x:g}s" for x in _LOCK_STAT_BUCKETS if hold_s < x),
+              f"h>={_LOCK_STAT_BUCKETS[-1]:g}s")
+    with _lock_stats_mu:
+        st = _lock_stats.setdefault(
+            path, {"n": 0, "timeouts": 0,
+                   "wait_s_total": 0.0, "wait_s_max": 0.0,
+                   "hold_s_total": 0.0, "hold_s_max": 0.0})
+        st["n"] += 1
+        st["wait_s_total"] = round(st["wait_s_total"] + wait_s, 3)
+        st["wait_s_max"] = max(st["wait_s_max"], round(wait_s, 3))
+        st["hold_s_total"] = round(st["hold_s_total"] + hold_s, 3)
+        st["hold_s_max"] = max(st["hold_s_max"], round(hold_s, 3))
+        st[b] = st.get(b, 0) + 1
+        st[hb] = st.get(hb, 0) + 1
+        if timeout:
+            st["timeouts"] += 1
+
+
 def _append_comms_note(cid: str, text: str) -> None:
     """Fold a post-lock note (session delivery/hide results) into comms
     via a second locked write — the work that produced it ran off the
@@ -600,6 +630,34 @@ def _ensure_act(card: dict) -> dict:
     return a
 
 
+def _claim(card: dict) -> dict:
+    """card['claim'] read accessor — same scalar-tolerance as _act."""
+    c = card.get("claim")
+    return c if isinstance(c, dict) else {}
+
+
+def _ensure_claim(card: dict) -> dict:
+    c = _claim(card)
+    if c is not card.get("claim"):
+        card["claim"] = c
+    return c
+
+
+def _reqs(card: dict) -> list:
+    """card['requests'] read accessor — dict entries only; scalar/garbage
+    rows are invisible instead of crashing .get() callers."""
+    r = card.get("requests")
+    return [x for x in r if isinstance(x, dict)] \
+        if isinstance(r, list) else []
+
+
+def _ensure_reqs(card: dict) -> list:
+    r = card.get("requests")
+    if not isinstance(r, list):
+        card["requests"] = r = []
+    return r
+
+
 def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
     """Commit a card write immediately. An uncommitted card edit in the
     served checkout is autostash bait — a pull --rebase stashes it and a
@@ -665,7 +723,10 @@ def comms_add(card: dict, frm: str, text: str, req: str = "") -> None:
     e = {"at": now(), "from": frm, "text": text[:500]}
     if req:
         e["req"] = req[:120]
-    card.setdefault("comms", []).append(e)
+    comms = card.get("comms")
+    if not isinstance(comms, list):
+        card["comms"] = comms = []
+    comms.append(e)
 
 
 COMMENT_DEDUP_S = int(os.environ.get("BOARD_API_COMMENT_DEDUP_S", "120"))
@@ -1005,7 +1066,7 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
         card.setdefault("review_kind", "verify")
     if col == "done":
         _ensure_act(card)["status"] = "done"
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
         hide_dispatch_session(card)
     comms_add(card, frm, f"moved {old} -> {col}")
     return f"moved to {col}"
@@ -1172,7 +1233,7 @@ def do_finish(card: dict, body: dict) -> str:
         # gate fails commits repo-wide (recurring kanban-commit breakage —
         # verify = the human confirms the work, the safe default)
         card.setdefault("review_kind", "verify")
-        card.setdefault("claim", {}).pop("session", None)
+        _ensure_claim(card).pop("session", None)
     comms_add(card, host,
               f"finished ({'ok' if ok else 'failed'})"
               + (f": {result[:120]}" if result else ""))
@@ -1254,7 +1315,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
         # requiring the caller to know request_id. Requests written
         # directly into card YAML (agent edits, escalations) can lack
         # id/status; heal the id so the request stays referenceable.
-        open_reqs = [r for r in card.get("requests") or []
+        open_reqs = [r for r in _reqs(card)
                      if r.get("status") not in ("answered", "closed")]
         if len(open_reqs) == 1:
             r = open_reqs[0]
@@ -1268,7 +1329,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
         # option-index responds work against requests[] too — the voice/UI
         # path posts {option: N} for whichever ask is open; map the index to
         # the option's value (same 'id — label' composite as the ask: path).
-        for r in card.get("requests") or []:
+        for r in _reqs(card):
             if r.get("id") == rid:
                 opts = r.get("options") or []
                 try:
@@ -1284,7 +1345,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 break
     if not answer:
         raise ValueError("answer required")
-    for r in card.get("requests") or []:
+    for r in _reqs(card):
         if r.get("id") == rid:
             verb = "answered"
             if r.get("status") == "answered":
@@ -1557,8 +1618,8 @@ def do_request(card: dict, body: dict) -> str:
     if to not in ACTORS:
         raise ValueError(f"to must be one of {sorted(ACTORS)}")
     rid = str(body.get("request_id") or "").strip() or slugify(ask)
-    reqs = card.setdefault("requests", [])
-    if any(r.get("id") == rid for r in reqs):
+    reqs = _ensure_reqs(card)
+    if any(r.get("id") == rid for r in _reqs(card)):
         raise ValueError(f"duplicate request id {rid}")
     req = {"id": rid, "ask": ask, "status": "open",
            "at": now(), "from": frm}
@@ -4142,7 +4203,7 @@ def queue_view() -> dict:
             "title": c.get("title") or "",
             "status": a.get("status"),
             "host": rep.get("host") or a.get("runner")
-                    or (c.get("claim") or {}).get("host") or "",
+                    or _claim(c).get("host") or "",
             "unit": rep.get("unit") or a.get("task_id") or "",
             "at": rep.get("at") or "",
             "repo": a.get("repo") or ""})
@@ -4216,6 +4277,13 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, queue_view())
             except Exception as e:
                 return self._send(500, {"error": str(e)})
+        if path == "/lock-stats":
+            with _lock_stats_mu:
+                snap = json.loads(json.dumps(_lock_stats))
+            return self._send(200, {
+                "ok": True,
+                "buckets_s": list(_LOCK_STAT_BUCKETS),
+                "paths": snap})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -4314,6 +4382,8 @@ class H(BaseHTTPRequestHandler):
         t_lock = time.monotonic()
         got = acquire_lock(LOCK, LOCK_WAIT_S)
         if got is None:
+            wait_t = time.monotonic() - t_lock
+            _lock_stat(path, wait_t, timeout=True)
             sys.stderr.write(
                 f"board-api lock wait >{LOCK_WAIT_S:.0f}s "
                 f"path={path} — 503\n")
@@ -4423,7 +4493,7 @@ class H(BaseHTTPRequestHandler):
                     msg = do_request(card, body)
                     card["updated"] = now()
                     save(p, card)
-                    req = card["requests"][-1]
+                    req = _reqs(card)[-1]
                     if request_needs_notify(req):
                         notify_req = (card.get("id") or body.get("id"), req)
                         msg += " — notify queued"
@@ -4453,6 +4523,7 @@ class H(BaseHTTPRequestHandler):
         finally:
             hold_s = time.monotonic() - t_lock - wait_s
             lf.close()
+            _lock_stat(path, wait_s, hold_s)
             if wait_s >= LOCK_SLOW_S or hold_s >= LOCK_SLOW_S:
                 sys.stderr.write(
                     f"board-api lock wait={wait_s:.1f}s "

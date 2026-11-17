@@ -1006,7 +1006,7 @@ def _mirror_attachments(src: Path, dst: Path) -> int:
 
 
 def main():
-    man = yaml.safe_load(MANIFEST.read_text())
+    man = yaml.load(MANIFEST.read_text(), Loader=_rb._YAML_LOADER)
     card_dir = REPO / man["card_dir"]
     out_path = REPO / "stacks/web/public/apps/board2/index.html"
 
@@ -1031,7 +1031,7 @@ def main():
     adir = card_dir / "archive"
     if adir.is_dir():
         for p in sorted(adir.glob("*.yml")):
-            c = yaml.safe_load(p.read_text())
+            c = yaml.load(p.read_text(), Loader=_rb._YAML_LOADER)
             if not isinstance(c, dict):
                 c = {}
             c.setdefault("id", p.stem)
@@ -1046,7 +1046,9 @@ def main():
         checks = _rb.compute_checks(c, runs_by_slug, outcomes)
         if checks:
             c["checks"] = checks
-    limit = man.get("rules", {}).get("doing_limit", 2)
+    _rules = man.get("rules")
+    limit = (_rules if isinstance(_rules, dict) else {}) \
+        .get("doing_limit", 2)
 
     ts = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 

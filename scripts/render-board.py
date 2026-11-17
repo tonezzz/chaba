@@ -14,6 +14,7 @@ which writes back into the card YAML and re-runs this renderer.
 Usage: render-board.py [--if-changed]   (--if-changed skips when the
 card-dir manifest hash is unchanged — cheap for the 60s timer run.)
 """
+import functools
 import hashlib
 import html
 import json
@@ -24,6 +25,12 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import yaml
+
+# libyaml cuts the 900+-card corpus parse ~10x (14.9s -> 1.4s measured
+# 2026-11-17) — the dominant cost of every full render and the reason a
+# burst of card writes kept render-board2 pinned at ~93% CPU. Fall back
+# to the pure loader on hosts without libyaml.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "docs/ssot/kanban/ssot.kanban.yml"
@@ -86,10 +93,13 @@ def _run_branches() -> dict:
     return out
 
 
+@functools.lru_cache(maxsize=None)
 def _branch_merged(br: str) -> bool:
     """True if br's work is on origin/master — by ancestry, or by patch
     (a plain `git rebase` linearizes merge commits, so ancestry alone
-    lies after an autostash rebase; git cherry catches that)."""
+    lies after an autostash rebase; git cherry catches that). Memoized
+    per process — one render can ask about the same run branch for
+    several cards (multi-run retries)."""
     if _git("merge-base", "--is-ancestor", br, "origin/master")[0] == 0:
         return True
     rc, out = _git("cherry", "origin/master", br)
@@ -171,8 +181,11 @@ def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
     # the outcome/deploy comms heuristics (a goal that ran is real signal;
     # a comms regex is a claim)
     pipe = c.get("pipeline") if isinstance(c.get("pipeline"), dict) else {}
-    pv = pipe.get("verify") or {}
-    vgoals = pv.get("goals") or []
+    _pv = pipe.get("verify")
+    pv = _pv if isinstance(_pv, dict) else {}
+    _vg = pv.get("goals")
+    vgoals = [g for g in _vg if isinstance(g, dict)] \
+        if isinstance(_vg, list) else []
     if not runs and a.get("status") not in ("done", "failed", "error") \
             and not vgoals:
         return []
@@ -252,7 +265,7 @@ def load_cards(man: dict) -> list:
         # parses to None or a scalar — crashing here wedges the WHOLE
         # render, not just that card (2026-11-07: one transient file ->
         # rc=1 + stale board, OPS-1107).
-        c = yaml.safe_load(p.read_text())
+        c = yaml.load(p.read_text(), Loader=_YAML_LOADER)
         if not isinstance(c, dict):
             c = {}
         c.setdefault("id", p.stem)
@@ -261,7 +274,7 @@ def load_cards(man: dict) -> list:
 
 
 def main():
-    man = yaml.safe_load(MANIFEST.read_text())
+    man = yaml.load(MANIFEST.read_text(), Loader=_YAML_LOADER)
     card_dir = REPO / man["card_dir"]
     out_path = REPO / man["board_output"]
 
@@ -289,10 +302,13 @@ def main():
         if checks:
             c["checks"] = checks
     cols = man["columns"]
-    limit = man.get("rules", {}).get("doing_limit", 2)
+    _rules = man.get("rules")
+    limit = (_rules if isinstance(_rules, dict) else {}) \
+        .get("doing_limit", 2)
     doing_sessions = {}
     for c in cards:
-        s = (c.get("claim") or {}).get("session")
+        _cl = c.get("claim")
+        s = _cl.get("session") if isinstance(_cl, dict) else None
         if c.get("column") == "doing" and s:
             doing_sessions[s] = doing_sessions.get(s, 0) + 1
     over = [s for s, n in doing_sessions.items() if n > limit]
