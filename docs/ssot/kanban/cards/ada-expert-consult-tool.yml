@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 13:40
+updated: 2026-11-17 13:50
 priority: medium
 program: ai-workforce
 tags:
@@ -519,6 +519,13 @@ comms:
   from: devin
   text: 'raised request consult-key-budget-cap: Choose the hard max_budget for the new LITELLM_KEY_CONSULT before
     provisioning or live smoke. Evidence: current gateway '
+- at: 2026-11-17 13:50
+  from: devin
+  text: 'Hardening pushed to the existing PR #12 head: 776c2ef (branch ada-consult-pr12-edit; fast-forward only).
+    Changes: text-channel-only gate with per-call channel context, required context classification, raw transcript/secret
+    guard, bounded question/context/output tokens/wall time, question-hash and token usage events, safe provider
+    errors, allowlisted consult aliases, and exact LITELLM_KEY_CONSULT transport override. Full Ada suite: 1760
+    passed, 4 skipped; tool-lint clean. No provider call or depl'
 action:
   type: dispatch
   repo: ada-voice
