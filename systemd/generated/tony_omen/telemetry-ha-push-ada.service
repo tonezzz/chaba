@@ -1,0 +1,11 @@
+[Unit]
+Description=Device telemetry -> ada-ha sensor mirror (job:telemetry-ha-push-ada, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=60
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
+Environment="TELEMETRY_DEVICES=tony-dell,tony-omen,tony-macbook,kk-mac,idc02,idc03,mn01,con01"
+Environment="TELEMETRY_MDBB=http://100.102.134.91:11026/v1"
+Environment="HA_URL=http://127.0.0.1:8125"
+Environment="HA_TOKEN_FILE=%h/.config/secrets/ada-ha-token.env"
