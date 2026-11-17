@@ -10,7 +10,7 @@ priority: high
 note: 'Auto-recovered 2026-10-22: `relay` check passing again.'
 help: 'Relay is a podman quadlet on idc03 (100.102.134.91:3010, tailnet-bound). Check: ssh idc03 systemctl --user
   status input-bridge; logs: journalctl --user -u input-bridge -n 50; edge route is /api/input-bridge/* in stacks/web/Caddyfile'
-updated: 2026-11-17 18:16
+updated: 2026-11-17 18:37
 review_kind: triage
 ref: MED-0305
 comms:
@@ -32,4 +32,8 @@ comms:
 - at: 2026-11-17 18:16
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
