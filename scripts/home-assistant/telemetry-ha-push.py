@@ -144,6 +144,14 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
         })
+    elif doc.get("temp_c") is None:
+        # host reports no thermal zones — clear any stale temps state
+        # (e.g. leftover from a previous agent/doc) instead of leaving it
+        _push(token, f"sensor.{eid}_temps", "unknown", {
+            "friendly_name": f"{dev} temps",
+            "icon": "mdi:thermometer-lines",
+            **common_attrs(doc, age),
+        })
     for key, suffix, label, icon in (
             ("net_rx_b", "net_rx", "net rx", "mdi:download-network"),
             ("net_tx_b", "net_tx", "net tx", "mdi:upload-network")):
