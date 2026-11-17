@@ -78,6 +78,9 @@ os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 API = os.environ.get("BOARD_API", "http://127.0.0.1:8787")
 HOST = os.uname().nodename
 SESSION = f"kanban-dispatch@{HOST}"
+INDEX_FILE = Path(os.environ.get(
+    "KANBAN_DISPATCH_INDEX",
+    f"/tmp/kanban-dispatch-index-{os.getuid()}-{HOST}.json"))
 # Per-host concurrency: count of active devin-task-* units we won't exceed.
 # tony-dell is RAM-tight (dispatch-queue.sh used CAP=3); other hosts raise it
 # via env until a per-host table lands in ssot.kanban.yml rules.
@@ -474,6 +477,56 @@ def load_card(path: Path) -> dict:
     card = yaml.safe_load(path.read_text()) or {}
     card.setdefault("id", path.stem)
     return card
+
+
+def load_dispatch_cards(card_dir: Path = CARD_DIR,
+                        cache_path: Path = INDEX_FILE) -> list:
+    root = str(card_dir.resolve())
+    try:
+        payload = json.loads(cache_path.read_text())
+        previous = (payload.get("cards") if payload.get("version") == 1
+                    and payload.get("root") == root else {})
+        if not isinstance(previous, dict):
+            previous = {}
+    except (OSError, ValueError, AttributeError):
+        previous = {}
+    current = {}
+    loaded = []
+    for path in sorted(card_dir.glob("*.yml")):
+        stat = path.stat()
+        signature = [stat.st_mtime_ns, stat.st_ctime_ns,
+                     stat.st_ino, stat.st_size]
+        cached = previous.get(path.name) or {}
+        if not isinstance(cached, dict):
+            cached = {}
+        card = None
+        if cached.get("signature") == signature and "status" in cached:
+            status = cached["status"]
+        else:
+            card = load_card(path)
+            status = _act(card).get("status")
+        current[path.name] = {"signature": signature, "status": status}
+        if status in ("queued", "starting", "running"):
+            if card is None:
+                card = load_card(path)
+            loaded.append((path, card))
+    if current != previous:
+        temp_path = cache_path.with_name(
+            f"{cache_path.name}.{os.getpid()}.tmp")
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path.write_text(json.dumps(
+                {"version": 1, "root": root, "cards": current},
+                separators=(",", ":")))
+            os.replace(temp_path, cache_path)
+        except OSError as exc:
+            print(f"warn: dispatch card index write failed: {exc}",
+                  file=sys.stderr)
+            try:
+                temp_path.unlink()
+            except OSError:
+                pass
+    return loaded
 
 
 def save_card(path: Path, card: dict) -> None:
@@ -907,8 +960,7 @@ def main() -> int:
         # oldest `updated`; all other cards keep filename order. The
         # gates below still filter per card — order never overrides
         # eligibility.
-        loaded = [(p, load_card(p))
-                  for p in sorted(CARD_DIR.glob("*.yml"))]
+        loaded = load_dispatch_cards()
         queued = [pc for pc in loaded if (
             (_act(pc[1])).get("status")
             in ("queued", "starting"))]
