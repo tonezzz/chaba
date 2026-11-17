@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
 column: doing
-updated: 2026-11-17 19:12
+updated: 2026-11-17 19:14
 priority: medium
 tags:
 - mddb
@@ -72,10 +72,16 @@ comms:
   text: 'DONE on dispatch branch: _docs paginates by offset until short page (server cap 1000, verified live). Backfill:
     3115+198 docs delivered, 0 failed. Key-set diff over contentMd docs = 0 on all 24 BANK_COLLS; queue dropped=0.
     Residual 142 src docs lack contentMd — uncopyable by design. Trail: docs/ssot/jobs/mddb/2026-11-17-embed-lane-banks-search-pagination.yml'
+- at: 2026-11-17 19:14
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261117-184837-scripts-embed-embed-lane-py-do.service: '
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: codemod
   executor: devin
   runner: idc02
+  result: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261117-184837-scripts-embed-embed-lane-py-do.service:
+    Failed with result ''exit-code''. | devin-task-20261117-184837-scripts-embed-embed-lane-py-do.service: Consumed
+    42.457s CPU time.'
