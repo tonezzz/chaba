@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
-column: doing
-updated: 2026-11-17 21:15
+column: backlog
+updated: 2026-11-17 22:11
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -204,6 +204,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: moved doing -> backlog
 action:
   type: dispatch
   repo: chaba
@@ -260,4 +263,3 @@ requests:
     label: Override and treat as dev
   suggested: exclude
   answer: exclude — Keep excluded until reconciled
-awaiting_action: true
