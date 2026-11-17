@@ -1,7 +1,7 @@
 id: node-red-devnest-visual-map
 title: 'Node-RED DevNest visual map: observe first, allowlisted control second'
 column: done
-updated: 2026-11-17 18:59
+updated: 2026-11-17 20:09
 brief: 'Use Node-RED as a visual mental model for DevNest: cards -> JEV -> lanes -> runners -> verifiers -> Education,
   with safe controls later.'
 priority: medium
@@ -207,6 +207,11 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:09
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
