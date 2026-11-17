@@ -1,14 +1,14 @@
 id: timer-alert-tony-dell-dell-restic-home
 title: Timer dell-restic-home on tony-dell failing
 column: backlog
-updated: 2026-11-16 15:11
+updated: 2026-11-17 18:07
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-16 14:40) of `dell-restic-home.service` on `tony-dell` result=exit-code — investigate
-  journal: `journalctl --user -u dell-restic-home.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-16 14:40) of `dell-restic-home.service` on `tony-dell` result=exit-code — investigate journal:
+  `journalctl --user -u dell-restic-home.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-0139
 comms:
 - at: 2026-11-16 14:55
@@ -21,7 +21,11 @@ comms:
 - at: 2026-11-16 19:21
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate why the user systemd service `dell-restic-home.service` failed with an exit code on
-  host `tony-dell` during its run on 11-16 at 14:40. Inspect the logs using `journalctl --user -u dell-restic-home.service`
-  on `tony-dell` and cross-reference the CMS `timer-timeline-tony-dell` as noted. The done-condition is
-  verified when the root cause of the failure is identified and documented in the card comments.
+- at: 2026-11-17 18:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate why the user systemd service `dell-restic-home.service` failed with an exit code on host `tony-dell`
+  during its run on 11-16 at 14:40. Inspect the logs using `journalctl --user -u dell-restic-home.service` on `tony-dell`
+  and cross-reference the CMS `timer-timeline-tony-dell` as noted. The done-condition is verified when the root
+  cause of the failure is identified and documented in the card comments.
