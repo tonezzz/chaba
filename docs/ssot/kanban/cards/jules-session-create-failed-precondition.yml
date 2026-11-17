@@ -1,0 +1,27 @@
+id: jules-session-create-failed-precondition
+title: 'Jules executor: session creation returns FAILED_PRECONDITION on tony-omen'
+column: backlog
+updated: 2026-11-17 10:17
+brief: 'Two independent Jules dispatch attempts on tony-omen failed before agent work on 2026-11-17: ADA-1279 at
+  09:01 and ADA-1084 at 09:14 ICT. Both journaled HTTP 400 POST /sessions with status FAILED_PRECONDITION. OPS-1049
+  (executor wiring) is done; OPS-1295 covers a different case after a session exists (AWAITING_USER_FEEDBACK). Determine
+  the failing precondition across both repo sources and make the launcher surface useful diagnostics instead of
+  opaque failure.'
+priority: high
+tags:
+- ops
+- dispatch
+- jules
+- runner
+spec: 'Inspect the exact POST /sessions sourceContext, connected Jules sources, startingBranch, API account/authorization,
+  and runner configuration on tony-omen; compare against a known successful create without exposing credentials.
+  Identify and fix the common precondition (or split into distinct causes if evidence differs). Add a deterministic
+  preflight/test for request construction and useful sanitized error reporting. Do not run a live Jules session
+  as a probe without explicit approval; if a provider-backed validation is required, request it and declare quota/cost
+  first. Done when: root cause is evidenced; a no-spend test covers the diagnosed failure path; and the approved
+  validation shows both chaba and ada-voice session creation pass or the affected repo is clearly identified.'
+ref: OPS-0156
+comms:
+- at: 2026-11-17 10:17
+  from: tony
+  text: card captured via board-api
