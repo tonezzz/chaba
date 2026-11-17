@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 10:22
+updated: 2026-11-17 15:42
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -131,6 +131,12 @@ comms:
     passes 23/23. Task transcript reports one real kk transcript upload succeeded; timers are not deployed. Four-policy
     request remains open; implementation default retains local transcripts (no purge). Hold retry for policy response
     and capacity; resume the same worktre'
+- at: 2026-11-17 15:42
+  from: tony
+  text: 'answered 4-policy-defaults-for-the-weekly-lane-re-686e16: proceed'
+- at: 2026-11-17 15:42
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: chaba
@@ -164,9 +170,11 @@ requests:
     overlap) vs B different day/time. (4) Dev/test lane transcripts (ada-dev, ada-kk-dev, ada-pi-pwa on idc03):
     ★A archive to the shared Tony-Memory notebook tagged lane=dev (matches what the dead per-session upload used
     to do) vs B skip dev transcripts entirely.'
-  status: open
+  status: answered
   at: 2026-11-17 09:19
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
+awaiting_action: true
