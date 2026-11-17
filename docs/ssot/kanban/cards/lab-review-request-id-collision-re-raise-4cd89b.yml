@@ -1,0 +1,27 @@
+id: lab-review-request-id-collision-re-raise-4cd89b
+title: lab-review request id collision — re-raised lab-review unreachable by /respond (always 400 already-answered)
+column: backlog
+updated: 2026-11-17 23:23
+priority: medium
+tags:
+- board
+- lab-review
+- bug
+spec: 'Card lab-meshtastic-th carries TWO requests[] entries both with id=lab-review: the Oct cycle (status=answered)
+  and the Nov-01 cycle (status=open). do_respond matches the FIRST entry with the id -> always hits the answered
+  one -> 400 already answered, with or without request_id (the no-request_id path heals/uses the same colliding
+  id). The new open lab review can never be answered via board-api.
+
+
+  Fix: lab-review-sweep (or whichever writer re-raises) must mint unique ids per cycle (lab-review, lab-review-2,
+  ...) like merge-sweep.conflict_rid does; and/or do_respond should prefer the open entry when ids collide. Evidence:
+  board-api log 2026-11-17 19:02/20:04/22:14/23:18 repeated 400s on lab-meshtastic-th; card YAML shows duplicate
+  id=lab-review entries.'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-0179
+comms:
+- at: 2026-11-17 23:23
+  from: tony
+  text: card captured via board-api
