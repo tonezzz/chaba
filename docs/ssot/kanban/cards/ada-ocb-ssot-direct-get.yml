@@ -1,0 +1,26 @@
+id: ada-ocb-ssot-direct-get
+title: 'ada-ocb: direct SSOT get for exact host/spec lookups'
+column: doing
+updated: 2026-11-17 18:39
+brief: OpenChamber/Ada finds the right SSOT docs via ada_context_pack but still answers with excerpts/metadata instead
+  of exact values. Add a bounded read-only direct-get path so once a canonical SSOT key is discovered the agent
+  can fetch the exact document/block instead of issuing repeated broad semantic searches.
+priority: high
+program: ai-workforce
+tags:
+- ada
+- opencode
+- ssot
+- mddb
+- ada-ocb
+spec: 'In ada-voice opencode/ada_mcp.py add ada_ssot_get (or equivalent) accepting collection + canonical key/doc
+  id/path and optional selector such as host=tony-macbook. Resolve through MDDB /get or deterministic doc lookup;
+  return exact structured values plus provenance and mutations_performed=[]. Update OpenChamber/Ada guest instructions:
+  search/discovery first via ada_context_pack, then call ada_ssot_get for the exact key/block. Verify "find the
+  spec of tony-macbook from ssot" returns concrete cpu/memory/disk/tailnet/role values, not only document titles.
+  Keep read-only boundaries; no household/personal memory banks.'
+ref: ADA-0167
+comms:
+- at: 2026-11-17 18:39
+  from: tony
+  text: card captured via board-api
