@@ -1,7 +1,7 @@
 id: runner-agent-primer-coverage
 title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
 column: doing
-updated: 2026-11-17 09:26
+updated: 2026-11-17 09:39
 brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
   — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
   no primer at all. Wire the primer into the runner-agent devin path.'
@@ -43,7 +43,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-17 09:26
@@ -53,6 +53,8 @@ action:
     time, 1.1G memory peak, 0B memory swap peak.'
   attempts: 1
   runner: tony-macbook
+  result: 'exit=1 0261117-091539-evidence-reports-primer-effica.service: Failed with result ''exit-code''. | devin-task-20261117-091539-evidence-reports-primer-effica.service:
+    Consumed 16min 21.692s CPU time over 21min 6.133s wall clock time, 485M memory peak.'
 ref: OPS-1280
 comms:
 - at: 2026-11-09 16:54
@@ -120,3 +122,7 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261109-181749-evidence-reports-primer-effica on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-17 09:39
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261117-091539-evidence-reports-primer-effica.service: Failed with result ''exit-code''.
+    | devin-task-20261117-0915'
