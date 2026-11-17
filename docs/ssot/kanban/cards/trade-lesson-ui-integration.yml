@@ -178,6 +178,10 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261116-202622-free-lane-draft-publish-for-tr conflicts with origin/master: scripts/lesson-drift-map.yml
     — merge aborted, card stays for human resolution'
+- at: 2026-11-17 22:10
+  from: chaba
+  text: 'raised request merge-conflict-3: merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr:
+    2 commit(s) conflict with origin/master '
 review_kind: verify
 claim: {}
 requests:
@@ -207,4 +211,16 @@ requests:
   - hold the card
   suggested: let devin resolve the conflict and land it ★
   answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-3
+  ask: 'merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/lesson-drift-map.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261116-202622-free-lane-draft-publish-for-tr
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-17 22:10
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
 awaiting_action: true
