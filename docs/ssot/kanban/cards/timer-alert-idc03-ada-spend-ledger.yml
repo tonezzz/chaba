@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-spend-ledger
 title: Timer ada-spend-ledger on idc03 failing
 column: done
-updated: 2026-11-17 18:38
+updated: 2026-11-17 21:05
 priority: high
 tags:
 - timer-alert
@@ -1228,6 +1228,10 @@ comms:
 - at: 2026-11-17 18:38
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `ada-spend-ledger.service` on host `idc03` resulting from resource constraints
   by inspecting the systemd user journal via `journalctl --user -u ada-spend-ledger.service` and referencing CMS
