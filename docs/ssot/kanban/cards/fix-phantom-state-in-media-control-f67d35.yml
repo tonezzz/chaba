@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
 column: backlog
-updated: 2026-11-17 21:13
+updated: 2026-11-17 23:31
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -65,6 +65,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:31
+  from: chaba
+  text: classified as devin (fallback conf 0.20)
+- at: 2026-11-17 23:31
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -92,3 +98,9 @@ requests:
   suggested: ada-voice — media tool must verify media_player state after the call, on idc03
   answer: ada-voice — media tool must verify media_player state after the call, on idc03
 awaiting_action: true
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: devin
+  lane_source: fallback
