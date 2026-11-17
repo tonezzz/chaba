@@ -141,6 +141,12 @@ comms:
   from: devin
   text: 'building: scripts/report-comms-narrate.py (gateway chat alias = gemini w/ OR fallback) + hook in report-daily-brief.py
     after comms publish. Lanes ada:8911 + kaewta:8913; chaba pending per spec.'
+- at: 2026-11-17 09:24
+  from: devin
+  text: 'shipped: scripts/report-comms-narrate.py + hook in report-daily-brief.py (--no-narrate). Verified LIVE
+    on idc03: [ada]->Tony DM, [kaewta]->KK-HA posted real narrations of this morning digest via /send on :8911/:8913.
+    chaba skipped (LINE blocked). Gotcha: gateway chat upstreams are thinking models - max_tokens must be >=~3000
+    or reasoning eats the budget.'
 action:
   type: dispatch
   status: running
@@ -152,4 +158,4 @@ action:
     2.618s CPU time.'
   attempts: 1
   runner: tony-macbook
-updated: 2026-11-17 09:17
+updated: 2026-11-17 09:24
