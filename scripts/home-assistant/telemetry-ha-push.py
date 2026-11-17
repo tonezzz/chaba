@@ -152,6 +152,26 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
         })
+    for sname, sinfo in (doc.get("services") or {}).items():
+        sid = "".join(c if c.isalnum() else "_"
+                      for c in sname.lower()).strip("_")
+        _push(token, f"binary_sensor.{eid}_svc_{sid}",
+              "on" if sinfo.get("state") == "running" else "off", {
+                  "friendly_name": f"{dev} {sname}",
+                  "device_class": "running",
+                  **common_attrs(doc, age),
+              })
+        for mk, mv in sinfo.items():
+            if mk in ("state", "age_s") or mv is None:
+                continue
+            msuf = "".join(c if c.isalnum() else "_"
+                           for c in mk.lower()).strip("_")
+            attrs = {"friendly_name": f"{dev} {sname} {mk}",
+                     "icon": "mdi:information-outline",
+                     **common_attrs(doc, age)}
+            if isinstance(mv, (int, float)):
+                attrs["state_class"] = "measurement"
+            _push(token, f"sensor.{eid}_svc_{sid}_{msuf}", mv, attrs)
     for key, suffix, label, icon in (
             ("net_rx_b", "net_rx", "net rx", "mdi:download-network"),
             ("net_tx_b", "net_tx", "net tx", "mdi:upload-network")):

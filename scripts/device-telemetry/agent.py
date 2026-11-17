@@ -244,6 +244,33 @@ def _net() -> tuple[int | None, int | None]:
 
 
 
+def _services() -> dict:
+    """Chaba service probes — what our own daemons are doing.
+
+    device-telemetry reports itself trivially; other services (nest-worker
+    etc.) drop status.json into their workdir under ~/.cache/*/ which we
+    pick up here. Kept small: state + a few scalar metrics."""
+    svcs = {"device-telemetry": {"state": "running"}}
+    for p in sorted(__import__("glob").glob(
+            os.path.expanduser("~/.cache/*/status.json"))):
+        try:
+            with open(p) as f:
+                st = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(st, dict) or "worker" not in st:
+            continue
+        age = int(time.time()) - int(st.get("ts") or 0)
+        entry = {"state": "running" if age <= 300 else "stale",
+                 "age_s": age}
+        for k in ("pending", "job", "last"):
+            v = (st.get("claimed") or "idle") if k == "job" else st.get(k)
+            if v is not None:
+                entry[k] = str(v)[:80]
+        svcs["nest-worker"] = entry
+    return svcs
+
+
 def collect() -> dict:
     boot = _run(["/usr/sbin/sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
@@ -271,6 +298,7 @@ def collect() -> dict:
         "battery": _battery(),
         "tailnet": _tailnet(),
         "wan": _wan(),
+        "services": _services(),
     }
     return d
 

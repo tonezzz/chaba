@@ -276,6 +276,23 @@ def say(msg):
     print(f'{time.strftime("%H:%M:%S")} {msg}', flush=True)
 
 
+STATUS = {'ts': 0, 'worker': '', 'pending': 0, 'claimed': None,
+          'last': None}
+
+
+def write_status():
+    """Drop a small status.json next to the workdir so the telemetry
+    beacon (and dashboards) can see what the worker is doing without
+    parsing logs."""
+    STATUS['ts'] = int(time.time())
+    try:
+        os.makedirs(WORKDIR, exist_ok=True)
+        with open(os.path.join(WORKDIR, 'status.json'), 'w') as f:
+            json.dump(STATUS, f)
+    except Exception:
+        pass
+
+
 def glob_remote(remote_root, pattern):
     """{relpath: size} for glob vs ada-nest root — remote truth."""
     parent, _, pat = pattern.rpartition('/')
@@ -429,6 +446,8 @@ def main():
         args.remote, args.stale_claim_min)
     say(f'discovery: {len(candidates)} pending, {len(releases)} stale '
         f'claims, {time.time() - t0:.1f}s')
+    STATUS.update(worker=WORKER, pending=len(candidates))
+    write_status()
     if args.scan_only:
         for d, c, age in releases:
             say(f'{d}: stale claim {c} ({age:.0f}s) — would release')
@@ -464,7 +483,12 @@ def main():
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
             continue
         say(f'{d}: CLAIMED — running')
+        STATUS['claimed'] = d
+        write_status()
         ok, info = run_pack(d, spec, args.remote)
+        STATUS['claimed'] = None
+        STATUS['last'] = f'{d} {"DONE" if ok else "FAIL"} {info}'[:120]
+        write_status()
         if ok:
             rcat(f'{pdir}/done', f'{info} worker={WORKER}')
             say(f'{d}: DONE {info}')
@@ -475,6 +499,7 @@ def main():
             rcat(f'{pdir}/failed', f'{info} worker={WORKER}')
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
     say('pass complete')
+    write_status()
 
 
 if __name__ == '__main__':
