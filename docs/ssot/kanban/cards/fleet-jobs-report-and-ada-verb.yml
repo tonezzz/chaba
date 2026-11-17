@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-17 09:08
+updated: 2026-11-17 09:09
 priority: high
 tags:
 - devnest
@@ -27,7 +27,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
@@ -37,6 +37,9 @@ action:
     Consumed 1.719s CPU time over 1h 16.033s wall clock time, 18.7M memory peak, 120K'
   attempts: 1
   runner: tony-omen
+  result: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1794880881.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1794880881.service:
+    Failed with result ''exit-code''.'
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -117,3 +120,7 @@ comms:
 - at: 2026-11-17 09:08
   from: chaba
   text: started devin-task-fleet-jobs-report-and-ada-verb-1794880881 on tony-omen (dispatch executor=jules)
+- at: 2026-11-17 09:09
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1794880881.service:
+    Main pro'
