@@ -1,0 +1,37 @@
+id: ada-ocb-answer-eval
+title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
+column: backlog
+updated: 2026-11-17 22:11
+brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
+  eval set that asserts answer quality end-to-end.
+priority: high
+tags:
+- ada
+- opencode
+- kanban
+- testing
+- benchmark
+- eval
+spec: 'Extends the ocb-smoke/bench harness (ADA-0174). Create tests/eval_ocb/ (or scripts/ocb-eval.py) with ~10
+  curated cases covering the failure modes we actually hit:
+
+
+  - ''find the spec of tony-macbook from ssot'' -> must cite host-roles/host-capacity values (cpu/mem/tailnet),
+  not doc titles
+
+  - ''status of ADA-0172'' -> must return real column/ref, not timeout
+
+  - ''what cards need attention'' -> must use attention/next-card path, not guess
+
+  - SSOT deploy-flow question -> must hit vector-search docs, not collection head
+
+
+  Each case: prompt -> run bridge tools (or recorded session replay) -> assert on ANSWER content (required substrings/sources),
+  not just ok=true. Score per case, write kind:benchmark doc to ada-ha-scenario-reports MDDB with per-case results
+  so regressions show as score drops. Keep cases read-only; no mutations. Pair with ADA-0174''s ocb-smoke.py — share
+  the harness.'
+ref: ADA-0175
+comms:
+- at: 2026-11-17 22:11
+  from: devin
+  text: card captured via board-api
