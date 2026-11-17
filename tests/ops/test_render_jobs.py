@@ -14,10 +14,16 @@ migration swept out.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+
+import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/render-jobs.py"
@@ -242,6 +248,128 @@ class SelectiveInstall(unittest.TestCase):
         units = {"a.service": "", "a.timer": "", "b.service": "",
                  "b.timer": "", "notes.txt": ""}
         self.assertEqual(mod.timer_units(units), ["a.timer", "b.timer"])
+
+
+class InstallPath(unittest.TestCase):
+    """main() --install end-to-end: the rollout guarantee lives at the
+    systemctl boundary. A scoped install must write/reload/enable only the
+    selected job's pair — unrelated timers must never appear in any
+    systemctl argv (OPS-0993; render-layer scoping alone would not catch a
+    regression in main()'s enable list)."""
+
+    ENABLE = ["systemctl", "--user", "enable", "--now"]
+    RELOAD = ["systemctl", "--user", "daemon-reload"]
+
+    def _manifest(self, root):
+        p = root / "jobs.yml"
+        p.write_text(yaml.safe_dump({
+            "config": {"repo": {"h1": "%h/x", "h2": "%h/x"},
+                       "generated_dir": "gen",
+                       "dispatcher_tick": "1min"},
+            "jobs": [
+                base_job("sel", host="h1"),
+                base_job("other", host="h1"),
+                # a dispatcher job on h1 renders chaba-jobs.* in the
+                # unfiltered path — the unit a scoped install must spare.
+                {"id": "dsp", "name": "dsp", "host": "h1",
+                 "dispatch": "dispatcher", "every": "5m",
+                 "exec": "/bin/true"},
+                base_job("remote", host="h2"),
+            ],
+        }))
+        return p
+
+    def _install(self, root, *argv):
+        """Run main() with a synthetic manifest + fake $HOME; returns
+        (rc, systemctl argv lists, written unit names)."""
+        home = root / "home"
+        with mock.patch.object(mod.subprocess, "run") as run, \
+                mock.patch.object(Path, "home", return_value=home), \
+                mock.patch.object(sys, "argv", ["render-jobs.py", *argv]), \
+                contextlib.redirect_stdout(io.StringIO()):
+            run.return_value.returncode = 0
+            rc = mod.main()
+        cmds = [c.args[0] for c in run.call_args_list]
+        dest = home / ".config/systemd/user"
+        written = sorted(p.name for p in dest.iterdir()) \
+            if dest.is_dir() else []
+        return rc, cmds, written
+
+    def test_ids_install_enables_only_the_selected_timer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            man = self._manifest(root)
+            rc, cmds, written = self._install(
+                root, "--manifest", str(man), "--host", "h1",
+                "--ids", "sel", "--install")
+        self.assertEqual(rc, 0)
+        self.assertEqual(cmds.count(self.RELOAD), 1)
+        enables = [c for c in cmds if c[:4] == self.ENABLE]
+        self.assertEqual(enables, [self.ENABLE + ["sel.timer"]])
+        for unit in ("other.service", "other.timer",
+                     "remote.service", "remote.timer"):
+            self.assertFalse(any(unit in c for c in cmds), unit)
+        self.assertEqual(written, ["sel.service", "sel.timer"])
+
+    def test_ids_install_never_touches_dispatcher_tick(self):
+        # The rollout keeps chaba-jobs.timer live until every migrated
+        # timer verifies — a selective install must neither rewrite nor
+        # re-arm it even though h1 still has a dispatcher job.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            man = self._manifest(root)
+            rc, cmds, written = self._install(
+                root, "--manifest", str(man), "--host", "h1",
+                "--ids", "sel", "--install")
+        self.assertEqual(rc, 0)
+        self.assertFalse(
+            any("chaba-jobs.timer" in c or "chaba-jobs.service" in c
+                for c in cmds))
+        self.assertNotIn("chaba-jobs.timer", written)
+        self.assertNotIn("chaba-jobs.service", written)
+
+    def test_full_install_without_ids_still_arms_every_timer(self):
+        # No selector -> preserved whole-host behavior, dispatcher tick
+        # units included.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            man = self._manifest(root)
+            rc, cmds, written = self._install(
+                root, "--manifest", str(man), "--host", "h1", "--install")
+        self.assertEqual(rc, 0)
+        enables = [c for c in cmds if c[:4] == self.ENABLE]
+        self.assertEqual(enables, [self.ENABLE + [
+            "chaba-jobs.timer", "other.timer", "sel.timer"]])
+        self.assertEqual(written, [
+            "chaba-jobs.service", "chaba-jobs.timer",
+            "other.service", "other.timer",
+            "sel.service", "sel.timer"])
+
+    def test_unknown_id_aborts_before_any_write_or_systemctl(self):
+        # A typo'd rollout command must fail loudly, not silently install
+        # nothing or — worse — fall back to a full install.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            man = self._manifest(root)
+            rc, cmds, written = self._install(
+                root, "--manifest", str(man), "--host", "h1",
+                "--ids", "bogus", "--install")
+        self.assertEqual(rc, 2)
+        self.assertEqual(cmds, [])
+        self.assertEqual(written, [])
+
+    def test_ids_matching_no_job_on_host_runs_no_systemctl(self):
+        # 'remote' lives on h2 — on h1 the install must not even
+        # daemon-reload.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            man = self._manifest(root)
+            rc, cmds, written = self._install(
+                root, "--manifest", str(man), "--host", "h1",
+                "--ids", "remote", "--install")
+        self.assertEqual(rc, 0)
+        self.assertEqual(cmds, [])
+        self.assertEqual(written, [])
 
 
 class GeneratedTree(unittest.TestCase):

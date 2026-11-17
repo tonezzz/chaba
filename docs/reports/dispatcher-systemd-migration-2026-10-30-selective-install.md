@@ -1,7 +1,9 @@
 # Selective `--install` for rendered timers (OPS-0993)
 
-Date: 2026-10-30 · Card: `render-jobs-selective-install-ops0790-tonydell` ·
-Parent: `dispatcher-systemd-migration-2026-10-29` (OPS-0790)
+Date: 2026-10-30 · Cards: `render-jobs-selective-install-ops0790` (original,
+idc02) / `render-jobs-selective-install-ops0790-tonydell` (reroute that
+landed the code) · Parent: `dispatcher-systemd-migration-2026-10-29`
+(OPS-0790)
 
 Code/tests only — no live unit install, enable, start, or disable.
 
@@ -32,6 +34,9 @@ started once by `--now`. The old command never actually armed a timer.
   instead of silently skipping.
 - `timer_units(units)` keeps the `.timer` suffix for `enable --now`
   (fixes the never-armed-timer bug above).
+- `--manifest` is now honored (`load_manifest(path)`; it was parsed but
+  ignored — a latent dead flag). The install-path tests use it to run
+  `main()` against a synthetic manifest.
 
 ## Scoped rollout commands
 
@@ -52,7 +57,7 @@ Then per job: `systemctl --user list-timers <id>.timer` plus one forced
 rollout plan. `chaba-jobs.timer` stays active until all eight pass, then
 the disable/cleanup step in the parent report applies.
 
-## Tests (`tests/ops/test_render_jobs.py`, +6 → 22 total)
+## Tests (`tests/ops/test_render_jobs.py`, +11 → 27 total)
 
 - `--ids` render on `tony_dell` returns exactly the selected pairs.
 - No unrelated `*.timer` appears in a selective render (the enable input
@@ -62,6 +67,15 @@ the disable/cleanup step in the parent report applies.
 - Ids from another host render nothing (and the CLI reports the miss).
 - `timer_units()` keeps the `.timer` suffix (enable targets timers, not
   static services).
+- `InstallPath` class (added 2026-11-17): runs `main() --install`
+  end-to-end — synthetic `--manifest`, fake `$HOME`, mocked
+  `subprocess.run` — and proves the guarantee at the systemctl boundary,
+  not just the render dict: `enable --now` receives exactly the selected
+  `.timer`; unrelated units never appear in any systemctl argv;
+  `chaba-jobs.*` is neither written nor armed under `--ids`; a no-selector
+  install still arms the full host set including the tick; unknown ids
+  abort rc 2 before any write or systemctl call; and a host matching no
+  selected id runs zero systemctl calls (not even daemon-reload).
 - Incidental: the pre-existing `GeneratedTree` drift was caught while
   running this suite — 5 manifest jobs lacked committed units; re-rendered
   (`devnest-capacity-broker`, `devnest-report-feed`,
@@ -71,8 +85,8 @@ the disable/cleanup step in the parent report applies.
 ## Verification
 
 ```
-python3 -m unittest tests.ops.test_render_jobs   # 22 tests OK
-python3 scripts/render-jobs.py --check           # OK 92 jobs, 8 hosts
+python3 -m unittest tests.ops.test_render_jobs   # 27 tests OK
+python3 scripts/render-jobs.py --check           # OK 106 jobs, 8 hosts
 python3 scripts/render-jobs.py --host tony_dell --ids bad-id
 # ERR unknown job ids: bad-id  (rc=2, no writes, no systemctl)
 ```
