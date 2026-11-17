@@ -1,7 +1,7 @@
 id: mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c
 title: mddb 2.15.4 -> v2.18.10 upgrade (custom -lsn/-breaker builds)
 column: backlog
-updated: 2026-11-17 18:45
+updated: 2026-11-17 18:55
 brief: All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images — upgrade means
   rebasing local patches onto 2.18.x and rebuilding, not a pull.
 ref: MEM-0024
@@ -60,3 +60,10 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:55
+  from: devin
+  text: 'Board-state reconcile 2026-11-17: live verification confirms the upgrade is deployed and healthy on every
+    plane — leader idc03:11023 wr healthy durable v2.18.10 (Gemini index ready, queue 0); followers idc02:11023
+    + con01:11123 read-only healthy v2.18.10; ops :11026 and CMS :11027 v2.18.10; BGE plane idc02:11028 healthy
+    v2.18.10 (BGE-M3 1024-dim, index ready). con01 replication healthy LSN-matched; idc02 follower self-reports
+    unhealthy (~93s lag at 18:5x) — tracked under MEM-0799 recurrence comm'
