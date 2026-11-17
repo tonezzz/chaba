@@ -1,7 +1,7 @@
 id: dispatch-retry-storm-worktree-flood
 title: Dispatch retry loop spawned ~125 worktrees on omen (Nov 8-9) — needs dedupe/backoff
 column: review
-updated: 2026-11-17 19:13
+updated: 2026-11-17 19:25
 priority: high
 tags:
 - dispatch
@@ -85,6 +85,10 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261117-184818-goal-implement-per-card-backof — close will block
     until merged'
+- at: 2026-11-17 19:25
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261117-184818-goal-implement-per-card-backof on
+    idc02 — if the work was never pushed it may be gone'
 spec: 'Goal: Implement per-card backoff and a live retry cap in the dispatch loop on tony-omen to prevent worktree
   floods like the ~130 accumulated on Nov 8-9 for cards such as timer-log-shipper-severe and ada-proactive-digest-morning-b.
   Host/repo: tony-omen, chaba. Constraints: Prevent rapid continuous re-dispatching of failed cards without backoff
