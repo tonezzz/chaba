@@ -1,7 +1,7 @@
 id: pytest-ada-voice-clone-per-test
 title: tests/ada patch-gate tests clone ada-voice ~65MB each — share one clone per session
 column: done
-updated: 2026-11-17 22:01
+updated: 2026-11-17 22:05
 priority: low
 spec: '~10 tests/ada/test_*.py patch-gate tests each run git clone --depth 1 of the ada-voice checkout into tmp_path
   (~65MB incl .git packs + 23MB wasm vendor) = ~680MB per suite run on tmpfs /tmp. tmpfiles.d 2d aging (installed
@@ -25,5 +25,9 @@ comms:
     tests refactored; 2 copytree helpers now skip voice-corpus. Patch tri-state (applied/merged/diverged) unchanged
     — each test still gets its own mutable tree. Measured: 203MB/run vs ~679MB before (~70% cut). 42 tests pass
     in 15s. tmpfiles 2d aging remains as backstop.'
+- at: 2026-11-17 22:05
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
