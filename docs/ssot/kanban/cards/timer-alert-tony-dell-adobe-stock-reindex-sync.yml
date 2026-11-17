@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-adobe-stock-reindex-sync
 title: Timer adobe-stock-reindex-sync on tony-dell failing
 column: done
-updated: 2026-11-17 18:39
+updated: 2026-11-17 21:06
 priority: high
 tags:
 - timer-alert
@@ -1650,6 +1650,10 @@ comms:
 - at: 2026-11-17 18:39
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failing systemd user timer and service 'adobe-stock-reindex-sync.service' on host 'tony-dell'.
   Access the host via SSH and inspect the recent journal logs using the command 'journalctl --user -u adobe-stock-reindex-sync.service'
