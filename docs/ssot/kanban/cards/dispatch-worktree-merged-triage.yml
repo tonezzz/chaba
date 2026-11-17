@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
 column: doing
-updated: 2026-11-17 22:19
+updated: 2026-11-17 22:21
 priority: medium
 tags:
 - devnest
@@ -15,10 +15,13 @@ spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 mer
   documented; matching card comms on the cards that spawned them.'
 action:
   type: dispatch
-  status: running
+  status: failed
   executor: devin
   repo: chaba
   runner: tony-omen
+  result: 'exit=1 ask-20261117-221333-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
+    | devin-task-20261117-221333-triage-2026-11-09-cascadeproje.service: Consumed 2.301s CPU time over 6min 55.410s
+    wall clock time, 102.6M memory peak.'
 ref: OPS-1288
 comms:
 - at: 2026-11-09 17:39
@@ -102,3 +105,7 @@ comms:
     1) -> merged-equivalent drop; 2 merged+transient-dirty -> drop; feat/card-run-lifecycle patch already upstream
     as f7b7c83 -> drop; 2 abandoned-partial being salvaged: 092521 devin-cli outcome+jobs yml, 203758 gemini-proxy
     outcome md. Salvage lands via my dispatch branch, then drops do'
+- at: 2026-11-17 22:21
+  from: tony-omen
+  text: 'finished (failed): exit=1 ask-20261117-221333-triage-2026-11-09-cascadeproje.service: Failed with result
+    ''exit-code''. | devin-task-20261117'
