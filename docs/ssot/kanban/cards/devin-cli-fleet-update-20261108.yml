@@ -127,6 +127,9 @@ comms:
 - at: 2026-11-17 09:25
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
+- at: 2026-11-17 09:25
+  from: tony-dell
+  text: claimed
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -168,7 +171,7 @@ requests:
   executed: 2026-11-09 queue
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 10:06
@@ -176,3 +179,4 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service: Consumed
     3.959s CPU time.'
   attempts: 1
+  runner: tony-dell
