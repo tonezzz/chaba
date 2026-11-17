@@ -233,7 +233,7 @@
                 "sensor.con01_swap",
                 "sensor.con01_temps"
               ],
-              "content": "| host | online | load | mem | disk | swap | temps |\n|---|---|---|---|---|---|---|\n{% for d in ['kk_mac','tony_omen','tony_macbook','tony_dell','idc02','idc03','mn01','con01'] %}| {{ d.replace('_','-') }} | {{ 'on' if is_state('binary_sensor.'~d~'_online','on') else 'off' }} | {{ states('sensor.'~d~'_load') }} | {{ states('sensor.'~d~'_mem') }}% | {{ states('sensor.'~d~'_disk') }}% | {{ states('sensor.'~d~'_swap') }}% | {{ states('sensor.'~d~'_temps') if states('sensor.'~d~'_temps') not in ['unknown','unavailable'] else '—' }} |\n{% endfor %}"
+              "content": "| sync | host | online | load | mem | disk | swap | temps |\n|---|---|---|---|---|---|---|---|\n{% for d in ['kk_mac','tony_omen','tony_macbook','tony_dell','idc02','idc03','mn01','con01'] %}{% set ls = state_attr('sensor.'~d~'_load','last_seen') %}| {{ ls[:10].replace('-','') ~ '-' ~ ls[11:16] if ls else '—' }} | {{ d.replace('_','-') }} | {{ 'on' if is_state('binary_sensor.'~d~'_online','on') else 'off' }} | {{ states('sensor.'~d~'_load') }} | {{ states('sensor.'~d~'_mem') }}% | {{ states('sensor.'~d~'_disk') }}% | {{ states('sensor.'~d~'_swap') }}% | {{ states('sensor.'~d~'_temps') if states('sensor.'~d~'_temps') not in ['unknown','unavailable'] else '—' }} |\n{% endfor %}"
             },
             {
               "type": "custom:layout-card",
