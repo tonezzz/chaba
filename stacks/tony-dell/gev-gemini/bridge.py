@@ -272,6 +272,20 @@ async def pump_responses(session, websocket, state):
                     pass
                 continue
 
+            mt = getattr(sc, 'model_turn', None)
+            if mt is not None:
+                # Gemini Live audio out: 24 kHz PCM16 chunks -> binary ws
+                # frames. The GEV page sets binaryType=arraybuffer and plays
+                # them; JSON control frames share the socket, split by type.
+                # Clients on an unpatched bundle ignore non-text frames.
+                for part in (getattr(mt, 'parts', None) or []):
+                    data = getattr(getattr(part, 'inline_data', None), 'data', None)
+                    if data:
+                        try:
+                            await websocket.send(data)
+                        except Exception:
+                            pass
+
             ot = getattr(sc, 'output_transcription', None)
             if ot and getattr(ot, 'text', None):
                 try:

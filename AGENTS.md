@@ -283,11 +283,12 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
 Source and build: `/home/tony/gods-eye-view`
 
 - Build: `npm run build` (requires Vite base `/apps/gev/`).
-- After every build, patch `dist/assets/index-*.js`:
+- After every build, patch `dist/assets/index-*.js` — codified + idempotent in `stacks/web/scripts/gev-patch-dist.mjs` (run it; `--check` verifies, exit 2 = anchor drift after a rebuild):
   - `/api/*` -> `/apps/gev/api/*`
   - `/models/*` -> `/apps/gev/models/*`
   - `msaaSamples:4` -> `/iPad|iPhone|iPod/.test(navigator.userAgent)?1:4`
-- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`.
+  - voice playback patch (binary PCM16@24k ws frames -> `playGeminiAudio`, `interrupted` flush, ctx cleanup)
+- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`. Patched bundles keep the `-vN` filename suffix (`index-<hash>-vN.js`); update the `index.html` script tag.
 
 Infrastructure:
 
@@ -300,7 +301,8 @@ Infrastructure:
 Voice controller (`src/voice/gevGeminiRealtime.js`):
 
 - Connects to `/apps/gev-live/ws`, captures mic audio as 16kHz PCM mono.
-- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough.
+- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough. Regression check: `node stacks/web/input-bridge/gev-voice-check.mjs` (asserts muted => zero outbound PCM frames, incl. a flag-stripped mutation run).
+- Inbound model audio arrives as binary ws frames (24kHz PCM16, forwarded by `bridge.py` from `model_turn` parts); `playGeminiAudio` queues them on a 24kHz AudioContext. `{type:interrupted}` flushes the queue.
 
 Service worker / PWA:
 
@@ -316,9 +318,9 @@ Test commands:
 
 Caveats:
 
-- iOS microphone works in Safari, not in standalone home-screen PWA mode.
+- iOS microphone works in Safari, not in standalone home-screen PWA mode — `apple-mobile-web-app-capable=no` is deliberate; do not flip it without a mic fallback.
 - iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
-- Current implementation uses Gemini output transcription text only; no audio playback.
+- Playback path: bridge forwards `model_turn` audio as binary frames (unit check: `stacks/tony-dell/gev-gemini/audio-forward-check.py`); page-side playback lives in the bundle patch (`gev-patch-dist.mjs`) — a fresh `npm run build` drops it until repatched.
 
 # Devin on tony-dell — crash/runbook (2026-09-12)
 
