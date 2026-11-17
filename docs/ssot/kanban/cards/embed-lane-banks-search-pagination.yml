@@ -1,0 +1,24 @@
+id: embed-lane-banks-search-pagination
+title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
+column: backlog
+updated: 2026-11-17 09:15
+priority: medium
+tags:
+- mddb
+- bge
+- embed-lane
+- coverage
+- kanban
+spec: 'scripts/embed/embed-lane.py::_docs fetches /v1/search once with limit=10000 and no offset; the server caps
+  a page at 1000 docs, so collections larger than 1000 are treated as fully synced after the first page. Verified
+  live 2026-11-17: key-set diff source->mddb-embed :11028 shows missing docs in ada-ha-bank-devin-handoff (3261
+  src vs 1829 bge, -1432), infrastructure-ssot (7146 vs 6014, -1132), ada-cms-pages (1360 vs 1338, -22), plus smaller
+  gaps in kb-operations/devin-tony/documents. embed-lane-banks.service runs daily and reports success because it
+  only compares the first 1000 keys. Fix: paginate _docs with offset until a short page (pattern in scripts/devnest/mddb_probe.py),
+  then re-run `embed-lane.py banks` to backfill the missing keys and verify key-set diff is empty for BANK_COLLS
+  with queue dropped=0. Blocks honest BGE production-readiness coverage (ADA-1299/MEM-1129/MEM-0805).'
+ref: MEM-0152
+comms:
+- at: 2026-11-17 09:15
+  from: devin
+  text: card captured via board-api
