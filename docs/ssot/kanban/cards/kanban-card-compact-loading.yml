@@ -1,7 +1,7 @@
 id: kanban-card-compact-loading
 title: Compact Kanban comms and accelerate dispatch scans
 column: doing
-updated: 2026-11-17 17:39
+updated: 2026-11-17 17:41
 brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
 priority: medium
 tags:
@@ -18,3 +18,9 @@ comms:
 - at: 2026-11-17 17:39
   from: tony
   text: card captured via board-api
+- at: 2026-11-17 17:41
+  from: devin
+  text: Started in worktree dispatch-wt-20261117-card-compact-loading (branch feat/kanban-card-size-efficiency).
+    Added persistent rebuildable dispatch status index and dynamic-load/capacity deferral dedupe. New focused tests
+    pass; py_compile and diff check pass. Broader board tests stalled without output, so verification remains limited.
+    No history deletion, commit, push, or deploy.
