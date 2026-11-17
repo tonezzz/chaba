@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: doing
-updated: 2026-11-17 20:46
+updated: 2026-11-17 20:53
 priority: high
 tags:
 - idc03
@@ -160,6 +160,13 @@ comms:
     paid-leg burn. CALLER: not a bug — mddb :11023 + mddb-cms :11027 embed-on-write (cms generated pages: cam-walls/ops-health/reports-index/nest,
     each republish = ~150-170 chunk embeds in a burst — the multi-per-second pattern) + server-side query embeds.
     No backlog (pendingEmbeddings='
+- at: 2026-11-17 20:53
+  from: devin
+  text: 'DEPLOYED + VERIFIED 2026-11-17 ~21:05 ICT. (1) MEASURED: 39,283 paid calls/24h, 1,200-2,300/hr sustained
+    ≈ ~$3.80/day ≈ $115/mo. OR 5,001 calls today (cap 5000 hit); free key permanently quota-dead (1k/day vs ~58k).
+    (2) CALLER: not a bug — mddb :11023 + mddb-cms :11027 embed-on-write + query embeds; bursts = generated CMS
+    pages (cam-walls/ops-health/indexes) re-embedding ~150-170 chunks per republish (tcpdump-verified). (3) FIX:
+    PAID_GEMINI_HOURLY_CAP=150 + PAID_GEMINI_DAILY_CAP=2000 in proxy (s'
 action:
   type: dispatch
   status: running
