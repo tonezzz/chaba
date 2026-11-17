@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-17 08:59
+updated: 2026-11-17 09:01
 priority: high
 tags:
 - devnest
@@ -27,7 +27,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: queued
+  status: running
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
@@ -36,6 +36,7 @@ action:
     |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-fleet-jobs-report-and-ada-verb-1794223109.service:
     Consumed 1.719s CPU time over 1h 16.033s wall clock time, 18.7M memory peak, 120K'
   attempts: 1
+  runner: tony-omen
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -106,3 +107,6 @@ comms:
 - at: 2026-11-17 08:59
   from: tony
   text: retry requested
+- at: 2026-11-17 09:01
+  from: tony-omen
+  text: claimed
