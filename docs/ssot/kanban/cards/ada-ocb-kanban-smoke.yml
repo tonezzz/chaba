@@ -1,7 +1,7 @@
 id: ada-ocb-kanban-smoke
 title: 'ada-ocb kanban smoke: read-only card workflow verification'
-column: doing
-updated: 2026-11-17 21:48
+column: review
+updated: 2026-11-17 21:53
 brief: Smoke card verifying the ada-ocb kanban tool path end-to-end without mutating the board.
 priority: low
 tags:
@@ -33,10 +33,14 @@ spec: 'Read-only verification only — no dispatch, queue, hold, move, merge, de
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-omen
+  result: 'exit=0  the full report is in `dispatch-outcome-20261117-214623-read-only-verification-only-no.md`. |
+    devin-task-20261117-214623-read-only-verification-only-no.service: Consumed 34.518s CPU time over 2min 37.102s
+    wall clock time, 939M memory peak.'
+  verified: true
 comms:
 - at: 2026-11-17 21:45
   from: chaba
@@ -69,4 +73,10 @@ comms:
     pick, mutations_performed=[].
 
     4. _context_card(''ada-ocb-kanban-smoke'''
+- at: 2026-11-17 21:53
+  from: tony-omen
+  text: 'finished (ok): exit=0  the full report is in `dispatch-outcome-20261117-214623-read-only-verification-only-no.md`.
+    | devin-task-2026111'
 ref: ADA-0173
+review_kind: verify
+claim: {}
