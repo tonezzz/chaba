@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: review
-updated: 2026-11-17 21:08
+updated: 2026-11-17 21:11
 priority: high
 tags:
 - idc03
@@ -206,20 +206,24 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:15
+  from: devin
+  text: 'lane re-pinned devin->paid_frontier: free-tier rate limit killed 2 consecutive dispatches; litellm/gemini-2.5-flash
+    avoids Devin quota (Tony approved)'
+- at: 2026-11-17 21:11
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
-  lane: devin
+  status: queued
+  lane: paid_frontier
   sweep:
     failed_noted: 2026-11-17 19:40
     stale_running: 2026-11-17 20:40
     zero_commit: 2026-11-17 20:40
     no_repo: 2026-11-17 20:54
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  attempts: 1
-  verified: false
-  runner: tony-omen
-  result: 'exit=1 ved-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''. | devin-task-20261117-204041-observed-2026-11-16-20-54-ict-.service:
+  last_failure: 'exit=1 ved-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''. | devin-task-20261117-204041-observed-2026-11-16-20-54-ict-.service:
     Consumed 1min 4.143s CPU time over 19min 54.468s wall clock time, 1G memory peak, 4.5M memory swap peak.'
+  attempts: 2
 claim: {}
 review_kind: verify
