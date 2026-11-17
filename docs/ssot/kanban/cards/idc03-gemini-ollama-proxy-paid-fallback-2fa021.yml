@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: review
-updated: 2026-11-17 21:31
+updated: 2026-11-17 21:43
 priority: high
 tags:
 - idc03
@@ -239,9 +239,13 @@ comms:
 - at: 2026-11-17 21:31
   from: chaba
   text: started devin-task-20261117-213058-observed-2026-11-16-20-54-ict- on tony-omen (dispatch)
+- at: 2026-11-17 21:43
+  from: tony-omen
+  text: 'finished (failed): exit=1 n-task-20261117-213058-observed-2026-11-16-20-54-ict-.service: Failed with result
+    ''exit-code''. | devin-task-20261'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   sweep:
     failed_noted: 2026-11-17 19:40
@@ -254,5 +258,8 @@ action:
   attempts: 3
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=1 n-task-20261117-213058-observed-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''.
+    | devin-task-20261117-213058-observed-2026-11-16-20-54-ict-.service: Consumed 1.574s CPU time over 3min 11.451s
+    wall clock time, 77M memory peak.'
 claim: {}
 review_kind: verify
