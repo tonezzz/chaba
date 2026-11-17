@@ -1,0 +1,46 @@
+id: ada-ocb-kanban-smoke
+title: 'ada-ocb kanban smoke: read-only card workflow verification'
+column: backlog
+updated: 2026-11-17 21:45
+brief: Smoke card verifying the ada-ocb kanban tool path end-to-end without mutating the board.
+priority: low
+tags:
+- ada
+- opencode
+- kanban
+- smoke
+- read-only
+spec: 'Read-only verification only — no dispatch, queue, hold, move, merge, deploy, credentials, or destructive
+  ops.
+
+
+  From an ada-voice checkout/worktree, import opencode/ada_mcp.py and exercise the board read path against the live
+  board-api:
+
+  1. find_card on this card id and on ADA-0172 — expect ok resolution, elapsed well under 10s (post-ff2d6a1 snapshots).
+
+  2. _board_cards() and _compact_cards() — expect ~910 rows, seconds not tens of seconds.
+
+  3. _pick_cards(strategy=''sweep''|''queue'', limit=3) — expect picks with selection tokens, no exceptions.
+
+  4. _context_card(''<this card ref>'') — expect full card fields incl comms.
+
+  5. Confirm no call returns mutations/mutations_performed non-empty.
+
+
+  Then post ONE evidence comment on this card via board-api /comment listing each step, elapsed time, and ok status,
+  and finish. If any step fails, record the error verbatim in the comment and finish — do not retry mutations.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: devin
+  lane_source: kw
+comms:
+- at: 2026-11-17 21:45
+  from: chaba
+  text: classified as devin (kw:end-to-end conf 1.00)
+- at: 2026-11-17 21:45
+  from: devin
+  text: card captured via board-api
+ref: ADA-0173
