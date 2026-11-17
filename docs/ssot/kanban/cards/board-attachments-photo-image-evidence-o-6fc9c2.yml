@@ -1,7 +1,7 @@
 id: board-attachments-photo-image-evidence-o-6fc9c2
 title: 'board attachments: photo/image evidence on cards'
-column: doing
-updated: 2026-11-17 09:19
+column: review
+updated: 2026-11-17 09:24
 tags:
 - board
 - feature
@@ -172,6 +172,10 @@ comms:
   text: 'implemented + e2e-verified in worktree: POST /attach (alias /upload) {id,filename,b64} -> docs/ssot/kanban/attachments/<cid>/
     + comms link, one commit; render-board2 mirrors into apps/board2/attachments/ and renders tile badge + modal
     strip + inline comms thumbs. 27/27 mutation tests, 593 board tests pass. Live once merged + board-api restarts.'
+- at: 2026-11-17 09:24
+  from: idc02
+  text: 'finished (ok): exit=0 art; multipart isn''t supported (JSON base64 only) — a board upload button is a natural
+    follow-up. | devin-task-20'
 spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via board-api and render thumbnails
   in the Board UI. Host/Repo: tony-dell / chaba. Constraints: Provide POST /upload or /attach accepting id, filename,
   and payload, storing files under docs/ssot/kanban/attachments/<card-id>/ while linking them via comms entries,
@@ -180,7 +184,7 @@ spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via
   thumbnail in the board UI.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -192,3 +196,9 @@ action:
     2.040s CPU time.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 art; multipart isn''t supported (JSON base64 only) — a board upload button is a natural follow-up.
+    | devin-task-20261117-085459-goal-implement-photo-and-image.service: Consumed 13min 58.490s CPU time, 573.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
