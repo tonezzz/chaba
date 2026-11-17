@@ -307,12 +307,14 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._saved_env = os.environ.get("JEV_LANE")
         os.environ["JEV_LANE"] = "1"
         self._saved = {k: getattr(m, k) for k in
-                       ("DISPATCH",)}
+                       ("DISPATCH", "RETRY_FILE")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("api", "start_task", "push_capable",
                            "gpu_preflight", "classify_lane", "dr_module",
                            "overloaded", "note_defer")}
         m.DISPATCH = str(SCRIPT)  # exists -> dispatch executor present
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
         m.dr_module = lambda: None
         m.push_capable = lambda repo: True
         m.gpu_preflight = lambda card: ""
@@ -342,6 +344,7 @@ class ClaimPassLaneTest(unittest.TestCase):
             setattr(m, k, v)
         for k, v in self._saved_fn.items():
             setattr(m, k, v)
+        self._tmpdir.cleanup()
 
     def _claim_bodies(self):
         return [b for p, b in self.posts
@@ -389,12 +392,15 @@ class ClaimPassScriptOnlyTest(unittest.TestCase):
         m = self.mod
         self._saved_env = os.environ.get("JEV_LANE")
         os.environ["JEV_LANE"] = "0"
-        self._saved = {k: getattr(m, k) for k in ("DISPATCH",)}
+        self._saved = {k: getattr(m, k) for k in
+                       ("DISPATCH", "RETRY_FILE")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("api", "start_task", "push_capable",
                            "gpu_preflight", "classify_lane", "dr_module",
                            "overloaded", "note_defer")}
         m.DISPATCH = str(SCRIPT)
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
         m.dr_module = lambda: None
         m.push_capable = lambda repo: True
         m.gpu_preflight = lambda card: ""
@@ -423,6 +429,7 @@ class ClaimPassScriptOnlyTest(unittest.TestCase):
             setattr(m, k, v)
         for k, v in self._saved_fn.items():
             setattr(m, k, v)
+        self._tmpdir.cleanup()
 
     def _two_cards(self):
         sc = _card(type="script")

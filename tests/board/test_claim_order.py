@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import types
 import unittest
 from datetime import datetime, timedelta
@@ -131,9 +132,11 @@ class RunnerAgentClaimOrderTest(unittest.TestCase):
         m = self.mod
         self.claimed = []
         self._saved = (m.api, m.claimable, m.start_task, m.gpu_preflight,
-                       m.overloaded, m.CAP, m.STARVE_HOURS)
+                       m.overloaded, m.CAP, m.STARVE_HOURS, m.RETRY_FILE)
         m.CAP = 10
         m.STARVE_HOURS = 12
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
         # the claim ORDER is under test — the live load gate isn't
         m.overloaded = lambda: False
         self.cards = []
@@ -151,7 +154,8 @@ class RunnerAgentClaimOrderTest(unittest.TestCase):
     def tearDown(self):
         (self.mod.api, self.mod.claimable, self.mod.start_task,
          self.mod.gpu_preflight, self.mod.overloaded, self.mod.CAP,
-         self.mod.STARVE_HOURS) = self._saved
+         self.mod.STARVE_HOURS, self.mod.RETRY_FILE) = self._saved
+        self._tmpdir.cleanup()
 
     def test_claims_drain_in_priority_order(self):
         self.cards = [

@@ -1,0 +1,92 @@
+title: "runner-agent per-card retry backoff + live cap — worktree flood fix"
+subtitle: >-
+  The remote claim loop retried failed cards with zero backoff: producers
+  re-armed them (on_exists=queue 're-spawned from report page', sentinel
+  re-opens) every ~15-30min and each claim spawned a fresh worktree —
+  ~130 accumulated on tony-omen Nov 8-9. runner-agent now keeps a
+  per-card failure ledger: exponential backoff between claims and a hard
+  hold after RETRY_MAX consecutive failures until a deliberate re-arm.
+icon: 🧯
+id: 2026-11-17-runner-agent-retry-backoff-cap
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-retry-storm-worktree-flood
+started: "2026-11-17"
+completed: "2026-11-17"
+
+context:
+  bug: >-
+    board-api do_finish sets action.status=failed; kanban-dispatch's
+    retries_per_card policy + mark_start attempts counter never applied to
+    runner-agent claims (they go through /action do=claim, which does not
+    count attempts). Re-arm producers then re-queued the card and the
+    runner claimed it on the very next pass — timer-log-shipper-severe,
+    timer-ada-scenario-smoke, ada-proactive-digest-morning-b etc. each
+    spawned ~30+ worktrees in 36h before the 131-worktree sweep on
+    2026-11-12.
+  scope: >-
+    The ledger lives in the runner's own state dir (per-host): a hold on
+    one host never pins the card — another runner may still claim it.
+    Fleet-wide dispatch count per persistently-failing card is bounded by
+    RETRY_MAX x live runners, which is what the worktree flood needed.
+
+semantics:
+  ledger: >-
+    RUNNER_STATE/retry-ledger.json: {cid: {fails, last_fail, next_ok,
+    rearms}}. Written on every claim-time failure (finish_pass terminal
+    drop with ok:false, start_task failure, zombie-claim restart
+    failure); cleared on a successful finish.
+  backoff: >-
+    next_ok = last_fail + min(RETRY_BACKOFF_MAX_S, RETRY_BASE_S *
+    2^(fails-1)) — defaults 30m then 1h (cap 6h). One comms note per
+    recorded failure, so the note stream is bounded by RETRY_MAX.
+  cap: >-
+    At RETRY_MAX (default 3) consecutive failures the card is held on
+    this host: claim_pass skips it, /ready verdicts report the reason,
+    and a comms note + awaiting_action flag calls for human triage.
+  forgive: >-
+    Only a deliberate re-arm resets the ledger — the retry/queue verbs'
+    comms markers ('retry requested', 're-queued', 'queued for
+    processing'), detected by COUNT (timestamp-free; board clock skew
+    can't corrupt it). Producer re-arms ('re-spawned from report page')
+    and automated claim attempts-bumps are deliberately NOT forgive
+    signals — the first is the flood driver, the second would let the
+    flood ping-pong between dispatchers.
+  disable: >-
+    RUNNER_RETRY_MAX=0 disables the whole gate; entries idle
+    RETRY_TTL_S (default 30d) are pruned so stale fails never shadow a
+    card re-queued months later.
+
+files:
+- scripts/board/runner-agent.py
+- tests/board/test_runner_agent_retry.py
+- tests/board/test_runner_agent_reconcile.py   (RETRY_FILE isolation)
+- tests/board/test_runner_agent_lane.py        (RETRY_FILE isolation)
+- tests/board/test_claim_order.py              (RETRY_FILE isolation)
+
+verified:
+- >-
+  python3 -m pytest tests/board/test_runner_agent_retry.py
+  test_runner_agent_reconcile.py test_runner_agent_lane.py
+  test_claim_order.py — 56 passed; full tests/board suite 608 passed.
+  Cases cover: exponential backoff math, cap + awaiting note, producer
+  re-spawn never forgiving, retry/queue comms forgiving,
+  attempts-bump NOT forgiving, missing-baseline entries, disabled gate,
+  claim_pass never POSTing a claim while held.
+- >-
+  Deploy path: no manual scp needed — _self_update installs the repo
+  copy on the next runner-agent tick after merge + chaba-repo-sync
+  (byte-compiles first, never downgrades).
+
+notes:
+- >-
+  kanban-dispatch's separate retries_per_card park + the
+  kanban-parked-retry-dead-end finding (attempts never resets) are
+  untouched — this change is runner-local and shares no counter with
+  them.
+- >-
+  A held card re-arms via the board ↺ Retry button (posts 'retry
+  requested' comms) or a do=queue action. Hand-edited YAML re-arms are
+  invisible to the ledger — the cap note on the card says which button
+  to press, and wiping the ledger file is the ops escape hatch.

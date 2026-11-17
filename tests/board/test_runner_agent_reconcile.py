@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -42,10 +43,14 @@ class ReconcilePassTest(unittest.TestCase):
 
     def setUp(self):
         m = self.mod
-        self._saved = {k: getattr(m, k) for k in ("HOST", "CAP")}
+        self._saved = {k: getattr(m, k) for k in
+                       ("HOST", "CAP", "STATE_DIR", "RETRY_FILE")}
         self.m = m
         m.HOST = "testhost"
         m.CAP = 3
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.STATE_DIR = Path(self._tmpdir.name)
+        m.RETRY_FILE = m.STATE_DIR / "retry-ledger.json"
         self.posts = []
         self.units_out = ""
         m.api = lambda path, body=None: (
@@ -62,6 +67,7 @@ class ReconcilePassTest(unittest.TestCase):
     def tearDown(self):
         for k, v in self._saved.items():
             setattr(self.m, k, v)
+        self._tmpdir.cleanup()
 
     def test_adopts_live_unit_for_untracked_claim(self):
         self._cards = [_card()]

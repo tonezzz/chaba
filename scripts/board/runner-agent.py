@@ -63,6 +63,19 @@ Env:
   RUNNER_STARVE_HOURS  queued-card age that outranks fresh higher-
                  priority cards (default 12; 0 disables — priority is a
                  bias, not a ban)
+  RUNNER_RETRY_MAX   consecutive per-card failures before this host
+                 stops claiming the card (default 3; 0 disables the
+                 whole retry gate). Re-arm is a deliberate act — the
+                 retry/queue verbs leave a comms marker that forgives
+                 the ledger. Producer re-arms ('re-spawned from
+                 report page', sentinel re-opens) do NOT forgive.
+  RUNNER_RETRY_BACKOFF_S  first backoff after a failure (default
+                 1800 — the Nov 8-9 flood re-dispatched every
+                 ~15-30min; 30m+ breaks that cadence)
+  RUNNER_RETRY_BACKOFF_MAX_S  backoff ceiling (default 21600)
+  RUNNER_RETRY_TTL_S   ledger entries idle this long are dropped
+                 (default 30d — a stale fail must not shadow a card
+                 re-queued months later)
 
 Interactive-host guards (card omen-gpu-display-wedge — on when the host
 carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
@@ -398,6 +411,22 @@ TASK_IO_WEIGHT = os.environ.get("RUNNER_TASK_IO_WEIGHT", "50")
 GPU_MIN_FREE_MB = int(os.environ.get("RUNNER_GPU_MIN_FREE_MB", "512"))
 GPU_DEFER_SECS = int(os.environ.get("RUNNER_GPU_DEFER_SECS", "21600"))
 DEFER_FILE = STATE_DIR / "gpu-defer.json"
+# --- per-card retry backoff + cap (dispatch-retry-storm-worktree-flood)
+# A failed claim used to requeue instantly: producers re-arm failed
+# cards (on_exists=queue 're-spawned from report page', sentinel
+# re-opens) on ~15-30min cadence and every claim spawned a fresh
+# worktree — ~130 accumulated on tony-omen Nov 8-9. The runner keeps
+# a per-card failure ledger in RETRY_FILE: consecutive fails back off
+# exponentially (RETRY_BASE_S * 2^(n-1), capped at RETRY_MAX_S), and at
+# RETRY_MAX consecutive fails the card is held on THIS host until a
+# deliberate re-arm (see retry_gate). The ledger is per-host — another
+# runner may still claim; a hold here never pins the card.
+RETRY_FILE = STATE_DIR / "retry-ledger.json"
+RETRY_MAX = int(os.environ.get("RUNNER_RETRY_MAX", "3"))
+RETRY_BASE_S = int(os.environ.get("RUNNER_RETRY_BACKOFF_S", "1800"))
+RETRY_MAX_S = int(os.environ.get("RUNNER_RETRY_BACKOFF_MAX_S", "21600"))
+RETRY_TTL_S = int(os.environ.get("RUNNER_RETRY_TTL_S",
+                                str(30 * 86400)))
 WD_ON = _env_on("RUNNER_GPU_WATCHDOG")
 WD_NICE = int(os.environ.get("RUNNER_WATCHDOG_NICE", "19"))
 WD_CPU_QUOTA = os.environ.get("RUNNER_WATCHDOG_CPU_QUOTA", "30%")
@@ -2143,6 +2172,133 @@ def note_gpu_defer(card: dict, reason: str) -> None:
     note_defer(card, "gpu", f"gpu preflight: {reason}")
 
 
+# --- per-card retry ledger --------------------------------------------
+# Comms texts that count as a deliberate re-arm. 'retry requested' and
+# 're-queued' come from the retry verb (board button / answer-sweep),
+# 'queued for processing' from the queue verb. action.attempts is NOT
+# a forgive signal: it also bumps on kanban-dispatch's automated
+# mark_start claim, so an interleaving sibling dispatcher would keep
+# 'forgiving' the ledger and the flood would ping-pong between hosts.
+# The producer re-arm 're-spawned from report page' (on_exists=queue)
+# is deliberately absent too — that path IS the flood driver.
+RETRY_REARM_TEXTS = ("retry requested", "queued for processing",
+                     "re-queued")
+
+
+def _retry_ledger() -> dict:
+    try:
+        log = json.loads(RETRY_FILE.read_text())
+    except Exception:
+        return {}
+    if not isinstance(log, dict):
+        return {}
+    cutoff = time.time() - RETRY_TTL_S
+    return {k: v for k, v in log.items()
+            if isinstance(v, dict)
+            and float(v.get("last_fail") or 0) > cutoff}
+
+
+def _retry_save(log: dict) -> None:
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        RETRY_FILE.write_text(json.dumps(log, indent=1))
+    except OSError:
+        pass
+
+
+def _rearm_count(card: dict) -> int:
+    """Deliberate re-arms visible in comms — timestamp-free, so board
+    clock skew never enters the compare."""
+    return sum(1 for c in (card.get("comms") or [])
+               if str((c or {}).get("text") or "") in RETRY_REARM_TEXTS)
+
+
+def retry_record_failure(cid: str, card: dict | None = None) -> None:
+    """Bump the consecutive-failure count and set next_ok (exponential,
+    capped). One comms note per failure — bounded by RETRY_MAX, so the
+    note stream can't flood the way the worktrees did."""
+    if RETRY_MAX <= 0 or not cid:
+        return
+    log = _retry_ledger()
+    ent = log.get(cid) or {}
+    fails = int(ent.get("fails") or 0) + 1
+    now = time.time()
+    ent["fails"] = fails
+    ent["last_fail"] = int(now)
+    ent["next_ok"] = int(now + min(RETRY_MAX_S,
+                                  RETRY_BASE_S * (2 ** (fails - 1))))
+    if card is not None:
+        ent["rearms"] = _rearm_count(card)
+    log[cid] = ent
+    _retry_save(log)
+    if fails >= RETRY_MAX:
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"{HOST} retry cap: {fails} "
+                                 "consecutive failures — held on this "
+                                 "host; a manual ↺ retry re-arms "
+                                 "(RUNNER_RETRY_MAX)",
+                         "awaiting_action": True})
+    else:
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"{HOST} retry backoff: fail "
+                                 f"{fails}/{RETRY_MAX} — next claim "
+                                 "not before "
+                                 f"{datetime.fromtimestamp(ent['next_ok']):%m-%d %H:%M}"})
+
+
+def retry_record_success(cid: str) -> None:
+    log = _retry_ledger()
+    if cid in log:
+        log.pop(cid)
+        _retry_save(log)
+
+
+def retry_gate(card: dict) -> str:
+    """"" when this host may claim now, else the hold reason —
+    'retry backoff until …' below RETRY_MAX fails, 'retry cap' at it.
+    A deliberate re-arm since the last recorded failure forgives the
+    ledger (a fresh re-arm comms note — see RETRY_REARM_TEXTS);
+    producer re-arms do not. Called from claim_pass AND verdict_pass
+    so /ready reports the real reason a queued card waits."""
+    if RETRY_MAX <= 0:
+        return ""
+    cid = card.get("id") or ""
+    ent = _retry_ledger().get(cid)
+    if not ent:
+        return ""
+    rearms = _rearm_count(card)
+    erms = ent.get("rearms")
+    # A missing baseline means the entry was recorded before the card
+    # was visible — establish it below without forgiving (an old
+    # 'queued for processing' comms must not count as a fresh re-arm).
+    if erms is not None and rearms > int(erms):
+        log = _retry_ledger()
+        log.pop(cid, None)
+        _retry_save(log)
+        return ""                      # deliberate re-arm — fresh slate
+    fails = int(ent.get("fails") or 0)
+    if fails >= RETRY_MAX:
+        note_defer(card, "retry-cap",
+                   f"retry cap: {fails} consecutive failures on this "
+                   "host — held; a manual ↺ retry re-arms",
+                   awaiting=True)
+        return f"retry cap ({fails} fails)"
+    nxt = int(ent.get("next_ok") or 0)
+    if time.time() < nxt:
+        return (f"retry backoff until "
+                f"{datetime.fromtimestamp(nxt):%m-%d %H:%M} "
+                f"(fail {fails}/{RETRY_MAX})")
+    # eligible again — establish/refresh the re-arm baseline so the
+    # NEXT forgive still needs a re-arm after this point
+    if erms != rearms:
+        log = _retry_ledger()
+        e2 = log.get(cid)
+        if e2 is not None:
+            e2["rearms"] = rearms
+            _retry_save(log)
+    return ""
+
+
 # --- presentation watchdog --------------------------------------------
 
 def _x_displays() -> list:
@@ -3569,6 +3725,16 @@ def finish_pass(st: dict) -> bool:
                 or "no card" in err:
             del st[cid]  # reported, or card moved on — stop tracking
             changed = True
+            if ok:
+                retry_record_success(cid)
+            else:
+                # fetch the card once for the re-arm baseline — the
+                # ledger records the comms marker count so a later
+                # manual retry is distinguishable from a re-spawn
+                if cards is None:
+                    cards = {c.get("id"): c for c in
+                             (api("/cards") or {}).get("cards") or []}
+                retry_record_failure(cid, cards.get(cid))
             _notify(cid, "finish" if ok else "fail",
                     result[:160] if not ok else "")
             print(f"{cid}: finish {'ok' if ok else 'failed'} — {err or 'reported'}")
@@ -3685,6 +3851,7 @@ def reconcile_pass(st: dict) -> bool:
                             "ok": False,
                             "result": "zombie claim: restart failed: "
                                       f"{err or 'no unit'}"})
+            retry_record_failure(cid, c)
             api("/comment", {"id": cid, "from": "chaba",
                              "text": "zombie claim released — task "
                                      "restart failed"})
@@ -3886,6 +4053,10 @@ def claim_pass(st: dict) -> bool:
             continue
         if script_only and typ != "script":
             continue  # heavyweight gate holds for non-script claims
+        rg = retry_gate(card)
+        if rg:
+            print(f"{cid}: {rg}")
+            continue  # failed-card backoff/cap — see comms note
         if card.get("blocked_by"):
             blocker = by_id.get(card["blocked_by"]) or {}
             if not blocker_released(blocker):
@@ -3972,6 +4143,7 @@ def claim_pass(st: dict) -> bool:
         if err:
             api("/action", {"id": cid, "do": "finish", "host": HOST,
                             "ok": False, "result": f"start failed: {err}"})
+            retry_record_failure(cid, card)
             continue
         detail = typ
         if ex_decl:
@@ -4017,6 +4189,12 @@ def verdict_pass(st: dict) -> None:
             cap = _capacity_reason(st)
             if cap:
                 verdicts[cid] = {"ok": False, "reason": cap}
+                continue
+            # retry gate mirrors claim_pass position (before blocked_by)
+            # so /queue shows a held card's real reason, not 'eligible'
+            rg = retry_gate(c)
+            if rg:
+                verdicts[cid] = {"ok": False, "reason": rg}
                 continue
             blocker = by_id.get(c.get("blocked_by") or "") or {}
             if c.get("blocked_by") and not blocker_released(blocker):
