@@ -1,7 +1,7 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
 column: backlog
-updated: 2026-11-16 20:23
+updated: 2026-11-17 16:54
 spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
   since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
   behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
@@ -25,3 +25,11 @@ comms:
     timeouts) — by design (autostash protection, board-api-writes-eaten-by-autostash-pops-515009). External contender:
     git-safe-pull.sh holds the SAME flock across the whole pull+rebase+reconcile phase; when origin moved (frequent,
     multi-host repo) the pull takes 1-6min and ALL writes q'
+- at: 2026-11-17 16:54
+  from: devin
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
