@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-17 22:12
+updated: 2026-11-17 22:14
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -43,3 +43,8 @@ comms:
 - at: 2026-11-17 22:12
   from: chaba
   text: started devin-task-20261117-221256-in-ada-voice-opencode-ada-mcp- on tony-dell (dispatch)
+- at: 2026-11-17 22:14
+  from: devin
+  text: 'implementing: BRIDGE_VERSION resolution (env > VERSION file > git describe > content-hash), top-level bridge
+    envelope injected in the existing call-audit wrapper, ada_bridge_info tool, calls.jsonl bridge_version field
+    + startup event'
