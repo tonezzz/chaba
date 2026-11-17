@@ -1,7 +1,7 @@
 id: kanban-card-compact-loading
 title: Compact Kanban comms and accelerate dispatch scans
 column: doing
-updated: 2026-11-17 18:43
+updated: 2026-11-17 18:47
 brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
 priority: medium
 tags:
@@ -45,3 +45,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:47
+  from: devin
+  text: 'Latest verification: all 4 new index/dedupe tests pass; kanban-dispatch rails tests pass with KANBAN_PRIMER=0
+    and KANBAN_PRIMER_GOOD=0. Queue-starvation emitted 5 passing tests but its process did not exit. Worktree is
+    2339 commits behind origin/master and has unrelated card-file changes; I preserved them and will not commit/PR
+    from this checkout.'
