@@ -118,6 +118,22 @@ from __future__ import annotations
 import fcntl
 import importlib.util
 import json
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
+
+def _ensure_act(card: dict) -> dict:
+    """Write-path twin of _act: materializes action as a dict (scalar
+    marker replaced) so mutations persist."""
+    a = _act(card)
+    if a is not card.get("action"):
+        card["action"] = a
+    return a
+
 import os
 import re
 import subprocess
@@ -672,7 +688,7 @@ def stamp(cid: str, key: str, val, dry: bool) -> None:
     def add(c):
         if terminal(c):
             return False
-        a = c.setdefault("action", {})
+        a = _ensure_act(c)
         a.setdefault("sweep", {})[key] = val
     locked_edit(cid, add, touch=False)
 
@@ -759,7 +775,7 @@ def unit_exit(probe: dict, card: dict) -> tuple:
             word = hit.group(1)
             return (word in ("ok", "inactive", "exited")), \
                 f"finish report '{word}'"
-    if (card.get("action") or {}).get("status") == "done":
+    if (_act(card)).get("status") == "done":
         # weakest tier: the finish path only reaches done for units that
         # weren't in failed state. Pre-exit_code-era tasks have nothing
         # better; (b) still requires a real deliverable.
@@ -917,7 +933,7 @@ def fail_attempt(card: dict, why: str, dry: bool,
     def apply(c):
         if terminal(c):
             return False  # closed mid-pass — never rewrite a done card
-        a = c.setdefault("action", {})
+        a = _ensure_act(c)
         a["verified"] = False  # checked, and NOT verified
         a["last_failure"] = why[:280]
         if zero_commit:
@@ -1128,7 +1144,7 @@ def gc_runner_worktree(card: dict, runner: str, probe: dict,
 def task_id_for(card: dict, runner: str) -> str:
     """action.task_id -> claim.session -> comms 'devin-task-<id>' line ->
     runner-agent state.json on the runner host."""
-    a = card.get("action") or {}
+    a = _act(card)
     tid = str(a.get("task_id") or "").strip()
     if tid:
         return tid
@@ -1143,7 +1159,7 @@ def task_id_for(card: dict, runner: str) -> str:
 
 
 def runner_for(card: dict, tid: str) -> str:
-    a = card.get("action") or {}
+    a = _act(card)
     r = str(a.get("runner") or "").strip()
     if r:
         return r
@@ -1161,7 +1177,7 @@ def flag_once(card: dict, key: str, text: str, dry: bool,
     """Post comms only the first time a condition is seen (action.sweep
     stamp); returns True when it fired. Silent on terminal cards — the
     sweep does not annotate cards it did not open."""
-    a = card.get("action") or {}
+    a = _act(card)
     if (a.get("sweep") or {}).get(key):
         return False
     if terminal(card):
@@ -1225,7 +1241,7 @@ def drain_verified(card: dict, dry: bool) -> bool:
         if terminal(c) or reopened_after_close(c):
             out["skip"] = True
             return False
-        a = c.setdefault("action", {})
+        a = _ensure_act(c)
         changed = a.get("status") != "done"
         a["status"] = "done"
         c.setdefault("claim", {}).pop("session", None)
@@ -1267,7 +1283,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
     skip in-flight sessions. `by_id` = all cards for auto_done_when
     checks (card_done/verified_true:<id>). True when the board
     changed."""
-    a = card.get("action") or {}
+    a = _act(card)
     cid = card.get("id") or "?"
     st = a.get("status")
     if card.get("column") not in ("doing", "review"):
@@ -1450,7 +1466,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
                 # it did not open
                 if terminal(c) or reopened_after_close(c):
                     return False
-                a = c.setdefault("action", {})
+                a = _ensure_act(c)
                 a["verified"] = True
                 a["status"] = "done"
                 c.setdefault("claim", {}).pop("session", None)
@@ -1612,7 +1628,7 @@ def main(cards=None) -> int:
     by_tid = {}
     runners = set()
     for c in cards:
-        a = c.get("action") or {}
+        a = _act(c)
         tid = str(a.get("task_id") or (c.get("claim") or {})
                   .get("session") or "")
         if not tid:
@@ -1649,7 +1665,7 @@ def main(cards=None) -> int:
     by_id = {c.get("id"): c for c in cards if c.get("id")}
     in_scope = [c for c in cards
                 if c.get("column") in ("doing", "review")
-                and (c.get("action") or {}).get("type") == "dispatch"]
+                and (_act(c)).get("type") == "dispatch"]
     for c in in_scope:
         try:
             changed |= sweep_card(c, active, dry, by_id)

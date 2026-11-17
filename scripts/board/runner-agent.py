@@ -203,12 +203,18 @@ def _host_key() -> str:
 
 
 def _act(card: dict) -> dict:
-    """card['action'] normalized to a dict. Marker cards carry a scalar
-    (e.g. action: 'spec-review'); normalize in place so read AND
-    mutation paths share the same object."""
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
     a = card.get("action")
-    if not isinstance(a, dict):
-        a = {}
+    return a if isinstance(a, dict) else {}
+
+
+def _ensure_act(card: dict) -> dict:
+    """Write-path twin of _act: materializes action as a dict (scalar
+    marker replaced) so mutations persist."""
+    a = _act(card)
+    if a is not card.get("action"):
         card["action"] = a
     return a
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
@@ -3519,7 +3525,7 @@ def finish_pass(st: dict) -> bool:
                 # the bounded lane declined after starting — mark the
                 # executor consumed on the local copy and run the next
                 # lane now; the card never requeues for it.
-                (_act(card))["kk_mac_tried"] = True
+                (_ensure_act(card))["kk_mac_tried"] = True
                 u2, t2, e2 = start_task(card, "dispatch")
                 if e2 or not u2:
                     notes.append(f"kk_mac_local fell back ({kk_fb}) but "
@@ -3925,7 +3931,7 @@ def claim_pass(st: dict) -> bool:
         # the routing decision — classification stays out of it.
         if typ == "dispatch" and not ex_decl \
                 and os.environ.get("JEV_LANE", "0") == "1":
-            a = _act(card)
+            a = _ensure_act(card)
             # An explicit action.lane (pinned in the card YAML, e.g. the
             # OPS-0885 pilot cards) wins over claim-time classification —
             # re-classifying here clobbered pinned free_lane cards into

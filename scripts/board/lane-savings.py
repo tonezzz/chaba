@@ -39,6 +39,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 CARDS_DIR = REPO / "docs" / "ssot" / "kanban" / "cards"
 
@@ -87,7 +94,7 @@ def load_cards(cards_dir: Path) -> list[dict]:
 def card_month(card: dict) -> str | None:
     """Best evidence of WHEN the action ran: task-id date in result >
     auto_close.at > action.claim.since > card.updated."""
-    a = card.get("action") or {}
+    a = _act(card)
     res = str(a.get("result") or "")
     m = TASK_DATE.search(res)
     if m:
@@ -100,7 +107,7 @@ def card_month(card: dict) -> str | None:
 def card_lane(card: dict) -> str:
     """Attribute the execution lane. Explicit action.lane wins; then the
     opencode step-finish signature in action.result; then executor type."""
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("lane"):
         return str(a["lane"])
     res = str(a.get("result") or "")
@@ -118,7 +125,7 @@ def card_lane(card: dict) -> str:
 
 def card_evidence(card: dict) -> list[str]:
     """Which usage evidence the card carries."""
-    a = card.get("action") or {}
+    a = _act(card)
     ev = []
     res = str(a.get("result") or "")
     if res.strip():
@@ -189,7 +196,7 @@ def build(month: str, cards_dir: Path, repo: Path) -> dict:
     lanes: dict[str, dict] = {}
     monthly_cards = 0
     for c in cards:
-        a = c.get("action") or {}
+        a = _act(c)
         if not a.get("type"):
             continue
         mm = card_month(c)

@@ -38,6 +38,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 INBOX = REPO / "docs/ssot/focus-inbox"
@@ -124,7 +131,7 @@ def check_cards():
                         f"{cid}: done+verify:, no evidence-tagged comm "
                         "— lifecycle will bounce")
 
-        act = c.get("action") or {}
+        act = _act(c)
         last = last_comm_at(c)
         if act.get("status") == "running" and last:
             age_h = (now - last).total_seconds() / 3600

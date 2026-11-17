@@ -27,6 +27,13 @@ from datetime import datetime, timezone
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from importlib import import_module  # noqa: E402
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 _board_cli = import_module("board-cli")
 
 
@@ -55,7 +62,7 @@ def is_actionable(card: dict) -> tuple[bool, str]:
     for r in card.get("requests") or []:
         if r.get("status") not in ("answered", "closed"):
             return False, f"open request {r.get('id', '?')}"
-    action = card.get("action") or {}
+    action = _act(card)
     if action.get("status") in ("claimed", "running"):
         return False, f"action {action.get('status')}"
     return True, "ok"
@@ -75,7 +82,7 @@ def pick(cards: list[dict], strategy: str, days: int,
         age = (now - parse_ts(c)).days
         col = c.get("column") or "backlog"
         if strategy == "queue":
-            action = c.get("action") or {}
+            action = _act(c)
             if action.get("status") == "queued":
                 scored.append((c, "queued for dispatch"))
             continue

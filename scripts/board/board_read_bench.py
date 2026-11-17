@@ -41,6 +41,13 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from time import perf_counter
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 CALL_ENVELOPE_CHARS = 60  # per-call JSON-RPC/tool envelope, bench convention
 
@@ -145,7 +152,7 @@ SCENARIOS = {
         "manual_path": "/cards",
         "manual_reduce": lambda cards: [
             c for c in cards
-            if (c.get("action") or {}).get("status") == "queued"],
+            if (_act(c)).get("status") == "queued"],
         "manual_calls": 1,
         "new_path": "/cards?action_status=queued&fields=" +
                     ",".join(CLAIM_FIELDS),

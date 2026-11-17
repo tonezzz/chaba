@@ -38,6 +38,13 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
 try:
     import goals as goallib  # scripts/lib/goals.py — expected_goals exec
@@ -169,20 +176,20 @@ HOST_ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
 
 def card_executor(card: dict) -> str:
     """Declared executor contract, '' when the card carries none."""
-    return str((card.get("action") or {}).get("executor") or "").strip()
+    return str((_act(card)).get("executor") or "").strip()
 
 
 def card_profile(card: dict) -> str:
     """Declared OpenCode task profile: action.agent_profile (the
     contract name) wins; action.profile is the pre-contract alias."""
-    a = card.get("action") or {}
+    a = _act(card)
     return str(a.get("agent_profile") or a.get("profile") or "").strip()
 
 
 def card_target_host(card: dict) -> str:
     """Declared executor host pin (action.target_host) — independent of
     action.host; both must be satisfied for a claim."""
-    return str((card.get("action") or {}).get("target_host") or "").strip()
+    return str((_act(card)).get("target_host") or "").strip()
 
 
 def card_subject_host(card: dict) -> str:
@@ -191,13 +198,13 @@ def card_subject_host(card: dict) -> str:
     profiles diagnose a remote host while running locally; hijacking
     target_host for that collided with the claim pin and made the card
     unclaimable fleet-wide)."""
-    return str((card.get("action") or {}).get("subject_host") or "").strip()
+    return str((_act(card)).get("subject_host") or "").strip()
 
 
 def card_task_class(card: dict) -> str:
     """Declared bounded task class (action.task_class) — required when
     executor=kk_mac_local; ignored by every other executor."""
-    return str((card.get("action") or {}).get("task_class") or "").strip()
+    return str((_act(card)).get("task_class") or "").strip()
 
 
 def model_provider(model: str) -> str:
@@ -213,7 +220,7 @@ def executor_blurb(card: dict) -> str:
     """Short executor/provider/model/profile phrase for comms lines —
     'executor=opencode provider=litellm model=litellm/g-3.5 profile=ops'
     or '' when nothing is declared."""
-    a = card.get("action") or {}
+    a = _act(card)
     bits = []
     ex = card_executor(card)
     if ex:
@@ -344,7 +351,7 @@ def kk_mac_prompt(card: dict) -> str:
     """The prompt the kk_mac lane would run — same resolution order as
     runner-agent.start_kk_mac_lane: action.prompt, then spec, then
     title+note."""
-    a = card.get("action") or {}
+    a = _act(card)
     return (str(a.get("prompt") or "").strip()
             or str(card.get("spec") or "").strip()
             or f"{card.get('title', '')}\n\n{card.get('note', '')}"
@@ -366,7 +373,7 @@ def kk_mac_route(card: dict) -> str:
       - no mutation/side-effect intent in the card text;
       - the resolved prompt fits the lane's 6000-char budget.
     """
-    a = card.get("action") or {}
+    a = _act(card)
     if str(a.get("type") or "dispatch") != "dispatch":
         return ""
     if a.get("executor") or a.get("lane"):
@@ -465,7 +472,7 @@ def session(card: dict) -> dict:
 
     Returns {task_id, branch, worktree, repo_root, head, default_branch,
     base_ref}; fields are None when unresolvable."""
-    a = card.get("action") or {}
+    a = _act(card)
     tid = a.get("task_id") or ""
     out = {"task_id": tid, "branch": None, "worktree": None,
            "repo_root": None, "head": None, "default_branch": None,
@@ -620,7 +627,7 @@ def unit_exit_evidence(task_id: str) -> tuple:
 
 def guard(card: dict) -> dict:
     """review->done gate. {allowed, summary, note} — note is comms-worthy."""
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("type") != "dispatch" or not a.get("task_id"):
         return {"allowed": True, "summary": "", "note": ""}
     s = session(card)
@@ -816,7 +823,7 @@ def unsatisfiable_reasons(card: dict, fleet: dict | None = None,
     remote probe results are the runners' /ready verdicts and defer
     notes, not knowable here, so 'unproven' push never flags alone
     unless the card has exactly one eligible runner."""
-    a = card.get("action") or {}
+    a = _act(card)
     typ = str(a.get("type") or "dispatch")
     if typ not in SERVED_TYPES:
         return []                # the type warn / manual lane owns this
@@ -1737,7 +1744,7 @@ def bank_outcome_lessons(card: dict, s: dict) -> dict:
             return {"ran": True, "docs": 0}
         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
         repo = str(s.get("repo_name") or
-                   (card.get("action") or {}).get("repo") or "")
+                   (_act(card)).get("repo") or "")
         cid = str(card.get("id") or "")
         posted = 0
         for n, line in enumerate(lines):

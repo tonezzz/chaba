@@ -53,6 +53,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 POLICY_FILE = REPO / "docs/ssot/infrastructure/ssot.devin-autonomy.yml"
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
@@ -84,7 +91,7 @@ def load_policy() -> dict:
 
 
 def _action(card: dict) -> dict:
-    return card.get("action") or {}
+    return _act(card)
 
 
 def autonomy_tier(card: dict) -> str:

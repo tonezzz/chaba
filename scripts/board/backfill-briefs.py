@@ -19,6 +19,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 CARD_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -219,7 +226,7 @@ def open_requests(card: dict) -> list:
 
 def expected_action(card: dict) -> str:
     col = card.get("column") or "backlog"
-    act = card.get("action") or {}
+    act = _act(card)
     status = act.get("status") or ""
     blocked = card.get("blocked_by")
 

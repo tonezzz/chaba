@@ -37,6 +37,13 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import waiting_cards as wc
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 REPORT_DIR = Path(os.environ.get(
@@ -71,14 +78,14 @@ def collect() -> dict:
         c = _load(f)
         if not c.get("id"):
             continue
-        a = c.get("action") or {}
+        a = _act(c)
         st = str(a.get("status") or "").lower()
         if st in ("queued", "starting", "running", "held") \
                 or _day(c) == _today():
             cards.append(c)
     env = wc.local_env()
     verdicts = [wc.evaluate(c, env=env) for c in cards
-                if str((c.get("action") or {}).get("status") or "")
+                if str((_act(c)).get("status") or "")
                 in ("queued", "starting")]
     return {"cards": cards, "verdicts": verdicts, "env": env}
 
@@ -91,7 +98,7 @@ def render(snap: dict) -> str:
 
     by_status: dict = {}
     for c in cards:
-        st = str((c.get("action") or {}).get("status") or "-")
+        st = str((_act(c)).get("status") or "-")
         by_status[st] = by_status.get(st, 0) + 1
 
     lines = [
@@ -141,7 +148,7 @@ def render(snap: dict) -> str:
     today_cards = [c for c in cards if _day(c) == today]
     if today_cards:
         for c in today_cards[:40]:
-            a = c.get("action") or {}
+            a = _act(c)
             lines.append(
                 f"- `{c['id']}` — column={c.get('column')}, "
                 f"status={a.get('status') or '-'}, "

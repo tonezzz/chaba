@@ -72,6 +72,22 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
+
+def _ensure_act(card: dict) -> dict:
+    """Write-path twin of _act: materializes action as a dict (scalar
+    marker replaced) so mutations persist."""
+    a = _act(card)
+    if a is not card.get("action"):
+        card["action"] = a
+    return a
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
     import dispatch_repos as dr
@@ -225,7 +241,7 @@ def pending(card: dict) -> list[dict]:
 def close_ok(card: dict) -> tuple[bool, str]:
     """Merge-guard for the close verb — stricter than the board button:
     an unresolvable guard defers instead of allowing."""
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("type") != "dispatch" or not a.get("task_id") or dr is None:
         return True, ""
     try:
@@ -241,7 +257,7 @@ def close_ok(card: dict) -> tuple[bool, str]:
 
 def apply_verb(card: dict, verb: str) -> str:
     """do_action equivalents; returns the comms-worthy outcome."""
-    a = card.setdefault("action", {})
+    a = _ensure_act(card)
     if verb in ("queue", "retry") and a.get("type") not in (None,
                                                           "dispatch"):
         # a 'queue' answer must not flip a manual/container/script card
@@ -287,7 +303,7 @@ def triage_card(card: dict, ref: str, budget: list[int]) -> tuple[list, list]:
     reqs = pending(card)
     if not reqs:
         return [], []
-    a = card.get("action") or {}
+    a = _act(card)
     # busy = a dispatch is claimed/in flight — verbs defer rather than
     # race the runner. 'queued' is NOT busy: a hold/close answer disarms
     # it (the answer IS the triage), matching the board buttons.

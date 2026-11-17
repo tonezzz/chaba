@@ -48,6 +48,22 @@ import dispatch_repos as dr
 import lesson_primer as lp
 import waiting_cards as wc
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
+
+def _ensure_act(card: dict) -> dict:
+    """Write-path twin of _act: materializes action as a dict (scalar
+    marker replaced) so mutations persist."""
+    a = _act(card)
+    if a is not card.get("action"):
+        card["action"] = a
+    return a
+
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 RENDER = REPO / "scripts/render-board.py"
@@ -202,7 +218,7 @@ def _blocker_released(blocker_id: str) -> bool:
     b = load_card(bp)
     if b.get("column") == "done":
         return True
-    ba = b.get("action") or {}
+    ba = _act(b)
     return ba.get("status") == "done" and ba.get("verified") is not False
 
 
@@ -216,7 +232,7 @@ def _blocker_released(blocker_id: str) -> bool:
     b = load_card(bp)
     if b.get("column") == "done":
         return True
-    ba = b.get("action") or {}
+    ba = _act(b)
     return ba.get("status") == "done" and ba.get("verified") is not False
 
 
@@ -232,7 +248,7 @@ def requeue_dead(path: Path, host: str) -> str:
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         card = load_card(path)
-        a = card.get("action") or {}
+        a = _act(card)
         if a.get("status") != "running" or a.get("runner") != host:
             return "resolved itself"
         a["status"] = "queued"
@@ -365,7 +381,7 @@ def build_task(card: dict) -> str:
     spec = (card.get("spec") or "").strip() \
         or f"{card.get('title','')}\n\n{card.get('note','')}"
     task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
-    repo = (card.get("action") or {}).get("repo", "chaba")
+    repo = (_act(card)).get("repo", "chaba")
     LAST_PRIMER_LINES.clear()
     LAST_GOOD_LINES.clear()
     if os.environ.get("KANBAN_PRIMER", "1") != "0":
@@ -383,7 +399,7 @@ def build_task(card: dict) -> str:
             print(f"warn: good primer failed: {e}", file=sys.stderr)
     if LAST_GOOD_LINES:
         task += "\n\n" + lp.format_good_block(LAST_GOOD_LINES)
-    a = card.get("action") or {}
+    a = _act(card)
     attempts = int(a.get("attempts") or 0)
     if attempts > 0 or a.get("last_failure"):
         task += "\n\n" + RETRY_RAILS.format(
@@ -740,7 +756,7 @@ def start_pending(path: Path) -> str:
 
     def apply():
         card = load_card(path)  # re-read — API may have touched the card
-        a = card.setdefault("action", {})
+        a = _ensure_act(card)
         if r.returncode != 0:
             a["status"] = "failed"
             a["result"] = f"dispatch failed: {(r.stderr or r.stdout).strip()[:300]}"
@@ -791,7 +807,7 @@ def merge_pending_one(path: Path) -> str:
 
     def apply():
         card = load_card(path)
-        a = card.get("action") or {}
+        a = _act(card)
         a.pop("merge_pending", None)
         if res.get("merged"):
             # verified = "the dispatch delivered": a merge whose session
@@ -894,7 +910,7 @@ def main() -> int:
         loaded = [(p, load_card(p))
                   for p in sorted(CARD_DIR.glob("*.yml"))]
         queued = [pc for pc in loaded if (
-            (pc[1].get("action") or {}).get("status")
+            (_act(pc[1])).get("status")
             in ("queued", "starting"))]
         queued.sort(key=lambda pc: dr.claim_sort_key(
             pc[1], starve_hours=STARVE_HOURS))
@@ -905,10 +921,10 @@ def main() -> int:
         except Exception:
             fleet = {}
         rest = [pc for pc in loaded if (
-            (pc[1].get("action") or {}).get("status")
+            (_act(pc[1])).get("status")
             not in ("queued", "starting"))]
         for p, card in queued + rest:
-            a = card.get("action") or {}
+            a = _act(card)
             st = a.get("status")
             if st in ("queued", "starting"):  # 'starting' = crashed mid-start
                 if not can_claim:
@@ -1065,7 +1081,7 @@ def main() -> int:
                     continue
                 save_card(p, card)
                 changed = True
-                if (card.get("action") or {}).get("merge_pending"):
+                if (_act(card)).get("merge_pending"):
                     merges.append(p)
                 print(f"{card['id']}: {msg}")
     # Phase B — lock released: slow ops (devin-dispatch start, git merge,

@@ -49,6 +49,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(os.environ.get(
     "CHABA_REPO", str(Path(__file__).resolve().parents[2])))
 CARD_DIR = REPO / "docs" / "ssot" / "kanban" / "cards"
@@ -264,7 +271,7 @@ def decide(card: dict, cid: str) -> tuple[str, dict | None]:
         return "skip", {"why": "t4"}
     if card.get("column") not in ("review", "done"):
         return "skip", {"why": f"column={card.get('column')}"}
-    if (card.get("action") or {}).get("status") != "done":
+    if (_act(card)).get("status") != "done":
         return "skip", {"why": "action-not-done"}
     st = str(dep.get("status") or "")
     if st in ("deployed", "held"):

@@ -63,6 +63,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(os.environ.get(
     "CHABA_REPO", str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
@@ -685,7 +692,7 @@ def queue_satisfiability(probes: dict) -> int:
             card = yaml.safe_load(p.read_text()) or {}
         except Exception:
             continue
-        a = card.get("action") or {}
+        a = _act(card)
         if a.get("status") != "queued" or (a.get("type") or "dispatch") \
                 not in ("dispatch", "container", "script", "devin"):
             continue

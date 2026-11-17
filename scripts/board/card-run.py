@@ -28,6 +28,13 @@ from pathlib import Path
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from importlib import import_module  # noqa: E402
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 _board_cli = import_module("board-cli")
 _context = import_module("card-context")
 
@@ -81,7 +88,7 @@ def _card_blocked_reason(card: dict, host: str) -> str | None:
     for r in card.get("requests") or []:
         if r.get("status") not in ("answered", "closed"):
             return f"open request {r.get('id', '?')}"
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("status") in ("claimed", "running"):
         runner = str(a.get("runner") or "")
         if runner.split(".")[0] == host:
@@ -124,7 +131,7 @@ def lifecycle(args) -> int:
 
     stage = "claim"
     try:
-        a = card.get("action") or {}
+        a = _act(card)
         ours = a.get("status") == "running" and \
             str(a.get("runner") or "").split(".")[0] == host
         if not ours:
@@ -243,8 +250,8 @@ def lifecycle(args) -> int:
         bad_ws = _git(wt, "diff", "--check").stdout.strip()
         if bad_ws:
             notes.append("diff --check warnings present")
-        verify_cmd = (card.get("action") or {}).get("verify") \
-            or (card.get("action") or {}).get("verifier")
+        verify_cmd = (_act(card)).get("verify") \
+            or (_act(card)).get("verifier")
         if verify_cmd and not str(verify_cmd).startswith("profile:"):
             v = _sh(["bash", "-lc", str(verify_cmd)], cwd=wt, timeout=600)
             notes.append(f"verify `{verify_cmd}` rc={v.returncode}")

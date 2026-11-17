@@ -33,6 +33,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR = Path(os.environ.get(
     "KANBAN_CARD_DIR", REPO / "docs/ssot/kanban/cards"))
@@ -66,7 +73,7 @@ def scan(days: float) -> tuple[int, list[dict]]:
                        if isinstance(r, dict))
         out.append({"id": c.get("id") or p.stem, "file": p.name,
                     "updated": upd, "open_req": open_req,
-                    "verified": bool((c.get("action") or {}).get("verified")),
+                    "verified": bool((_act(c)).get("verified")),
                     "title": str(c.get("title") or "")[:70]})
     out.sort(key=lambda c: c["updated"])
     return total, out

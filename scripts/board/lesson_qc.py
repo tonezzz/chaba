@@ -60,6 +60,13 @@ from pathlib import Path
 
 import yaml
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ICT = timezone(timedelta(hours=7))
 
@@ -268,7 +275,7 @@ def harvest(root: Path) -> list:
         except Exception:
             continue
         card_files += 1
-        action = doc.get("action") or {}
+        action = _act(doc)
         card_repo = (action.get("repo") if isinstance(action, dict)
                      else None)
         for c in (doc.get("comms") or []):

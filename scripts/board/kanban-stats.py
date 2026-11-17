@@ -39,6 +39,13 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from lib.report import append_timeline, now_iso, write_meta  # noqa: E402
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — schema says dict, but marker cards
+    carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
+    writing, so read-only passes don't stamp action:{} onto cards."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
 NODE = "kanban"
 LAYER = "L2-domain"
 PURPOSE = ("Board health — column counts, dispatch throughput, open "
@@ -130,7 +137,7 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
         col = str(c.get("column") or "backlog")
         columns[col] = columns.get(col, 0) + 1
 
-        a = c.get("action") or {}
+        a = _act(c)
         st = str(a.get("status")) if a.get("status") else "none"
         action_status[st] = action_status.get(st, 0) + 1
 
