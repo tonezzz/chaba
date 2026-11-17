@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-17 19:05
+updated: 2026-11-17 19:47
 priority: high
 tags:
 - ada
@@ -54,3 +54,10 @@ comms:
     shadow` log lines to date — not a bug, a traffic drought: (1) ada-dev sees only dev-scratch (instances_readonly
     still inert pending ada-memory-dev-lane-runtime), so model calls for tony-projects/cms banks fail ACL before
     memory_search; (2) the one real bank=''all'' query on 202'
+- at: 2026-11-17 19:47
+  from: devin
+  text: '2026-11-17 ~19:45 ICT: shadow ENABLED on production ada-ha-tony per Tony''s approval — appended the 5 ADA_BGE_SHADOW_*
+    vars to ~/.config/secrets/tony-ha/backend.env (same values as ada-dev: :11028 BGE plane, omen reranker + bearer
+    token, timeout 5s), restarted ada-ha-tony.service at active_sessions=0. Verified: unit active, all 5 vars present
+    in /proc environ, /api/health ok. Result-invisible by design (async, max 2 inflight, 5s cap, no writes, Gemini
+    baseline untouched). Rollback = delete the 5 '
