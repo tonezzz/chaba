@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: backlog
-updated: 2026-11-17 21:14
+updated: 2026-11-17 23:32
 brief: probe
 ref: OPS-0812
 comms:
@@ -60,6 +60,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:32
+  from: chaba
+  text: classified as free_lane (kw:probe conf 1.00)
+- at: 2026-11-17 23:32
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -93,3 +99,10 @@ requests:
   answer: 'repo-ssot-readonly — Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba
     checkout; report raw timings only, no writes.'
 awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
