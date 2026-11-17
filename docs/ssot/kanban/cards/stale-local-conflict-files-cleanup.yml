@@ -1,7 +1,7 @@
 id: stale-local-conflict-files-cleanup
 title: stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever
 column: backlog
-updated: 2026-11-17 21:14
+updated: 2026-11-17 21:20
 spec: 'Found during OPS-1314 (board-api write latency). Permanent .local-conflict-* files never auto-resolve (they
   are flagged "needs manual reconcile" by design) and every git-safe-pull on every checkout re-flags them via reconcile-local-conflicts.py
   -> board comms. Census 2026-11-17: chaba-tony-dell (served) 18 files, chaba exec checkout on idc03 140 files,
@@ -40,3 +40,10 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:20
+  from: devin
+  text: 'DONE 2026-11-17: 158 stale .local-conflict-* artifacts removed — 26 tracked via commit 724478136b7 on origin/master
+    (18 focus-inbox report-watch conflicts + dispatch-outcome artifact; canonicals verified present, upstream-wins
+    per generated-path policy) plus ~132 untracked swept on idc03 exec + kanban-sync checkouts. Other hosts auto-clean
+    on next pull (tracked files) — verified 0 remaining on served checkout. Reconcile re-flagging stops fleet-wide.
+    Note: canonicals all existed; no substantive c'
