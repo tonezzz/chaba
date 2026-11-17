@@ -1,7 +1,7 @@
 id: ops-macbook-nestmgr-install
 title: 'tony-macbook: install nest-mgr.service (host asleep)'
 column: backlog
-updated: 2026-11-17 18:10
+updated: 2026-11-17 18:21
 priority: low
 spec: 'tony-macbook is Linux (Linux 7.0.0-42-generic) but offline/asleep (tailscale ping no reply, ssh timeout,
   beacon stale ~20min as of 2026-11-17 ~17:45). When it wakes: cd ~/CascadeProjects/chaba && git pull; bash stacks/services/nest-mgr/install.sh
@@ -16,3 +16,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:21
+  from: chaba
+  text: classified as devin (kw conf 1.00)
+- at: 2026-11-17 18:21
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
