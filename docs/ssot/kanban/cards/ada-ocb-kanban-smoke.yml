@@ -1,6 +1,6 @@
 id: ada-ocb-kanban-smoke
 title: 'ada-ocb kanban smoke: read-only card workflow verification'
-column: backlog
+column: doing
 updated: 2026-11-17 21:46
 brief: Smoke card verifying the ada-ocb kanban tool path end-to-end without mutating the board.
 priority: low
@@ -33,9 +33,10 @@ spec: 'Read-only verification only — no dispatch, queue, hold, move, merge, de
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
+  runner: tony-omen
 comms:
 - at: 2026-11-17 21:45
   from: chaba
@@ -46,4 +47,7 @@ comms:
 - at: 2026-11-17 21:46
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 2.12 > 0.85)'
+- at: 2026-11-17 21:46
+  from: tony-omen
+  text: claimed
 ref: ADA-0173
