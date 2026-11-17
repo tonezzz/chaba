@@ -185,9 +185,12 @@ def _temps() -> tuple[float | None, dict]:
     for z in sorted(__import__("glob").glob(
             "/sys/class/thermal/thermal_zone*/temp")):
         v = _run(["cat", z])
-        if v.isdigit():
-            name = z.split("thermal_zone")[1].split("/")[0]
-            zones[f"zone{name}"] = round(int(v) / 1000.0, 1)
+        if not v.isdigit():
+            continue
+        idx = z.split("thermal_zone")[1].split("/")[0]
+        ztype = _run(["cat", z.replace("/temp", "/type")]).strip()
+        name = (ztype or f"zone{idx}")[:24]
+        zones[name] = round(int(v) / 1000.0, 1)
     if zones:
         return round(max(zones.values()), 1), zones
     if platform.system() == "Darwin":

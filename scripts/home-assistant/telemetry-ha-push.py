@@ -129,6 +129,17 @@ def push_device(dev: str, token: str) -> str:
     _metric("swap_pct", "swap", "swap", "%", "mdi:swap-horizontal")
     _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
             {"temps": doc.get("temp_zones") or {}})
+    zones = doc.get("temp_zones") or {}
+    if zones:
+        short = {"x86_pkg_temp": "pkg"}
+        parts = [f"{short.get(k, k)} {v:g}°"
+                 for k, v in sorted(zones.items(),
+                                    key=lambda kv: -kv[1])[:5]]
+        _push(token, f"sensor.{eid}_temps", " · ".join(parts)[:200], {
+            "friendly_name": f"{dev} temps",
+            "icon": "mdi:thermometer-lines",
+            **common_attrs(doc, age),
+        })
     for key, suffix, label, icon in (
             ("net_rx_b", "net_rx", "net rx", "mdi:download-network"),
             ("net_tx_b", "net_tx", "net tx", "mdi:upload-network")):
