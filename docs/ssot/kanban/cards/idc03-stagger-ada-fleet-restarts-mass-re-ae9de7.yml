@@ -1,0 +1,23 @@
+id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
+title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
+column: backlog
+updated: 2026-11-17 09:09
+priority: high
+tags:
+- idc03
+- ada
+- capacity
+- bug
+spec: 'Observed 2026-11-16 20:56:53 ICT: ada-dev, ada-ha-tony, ada-kk, ada-kk-dev, ada-pi-pwa (+relays) all stopped+started
+  in the same second — 6 fresh pwa_server uvicorns ~615MB each = ~3.7GB instant demand on a 15GB/4-core box with
+  (until today) no swap. Load spiked to 11.8, dispatch load-gate starved the queue for ~30min. TASK: find what issued
+  the mass restart (check journal around the timestamp — candidates: ada-voice deploy script, chaba-repo-sync ExecStartPost,
+  systemctl restart ada-*.service wildcard, deploy-preflight). Then make restarts staggered: either the deploy path
+  restarts serially with sleep, or units get restart jitter. ALSO reduce peak: consider whether all 6 pwa_server
+  instances must run on idc03 simultaneously (ada-dev/ada-kk-dev are lab twins — candidates to move to mn01/omen).
+  Done when: a fleet restart event shows serialized starts in journal and peak memory delta <1GB.'
+ref: ADA-0149
+comms:
+- at: 2026-11-17 09:09
+  from: tony
+  text: card captured via board-api
