@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-14 14:14
+updated: 2026-11-17 08:56
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -76,22 +76,22 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 08:56
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
     zero_commit: 2026-11-09 19:49
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  attempts: 1
-  verified: false
-  runner: idc02
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-194957-scheduled-per-lane-retention-j.service:
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-194957-scheduled-per-lane-retention-j.service:
     Failed with result ''exit-code''. | devin-task-20261109-194957-scheduled-per-lane-retention-j.service: Consumed
     7.389s CPU time.'
+  attempts: 2
 claim: {}
