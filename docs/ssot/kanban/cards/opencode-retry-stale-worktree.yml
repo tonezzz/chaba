@@ -421,6 +421,10 @@ comms:
 - at: 2026-11-17 09:40
   from: idc02
   text: claimed
+- at: 2026-11-17 09:40
+  from: idc02
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
+    dispatch is held'
 action:
   type: dispatch
   repo: chaba
@@ -436,7 +440,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: failed
   labels:
   - push:chaba
   sweep:
@@ -449,6 +453,7 @@ action:
   button: test-key-alias
   attempts: 1
   runner: idc02
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
