@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-17 19:47
+updated: 2026-11-17 21:07
 priority: high
 tags:
 - ada
@@ -61,3 +61,7 @@ comms:
     token, timeout 5s), restarted ada-ha-tony.service at active_sessions=0. Verified: unit active, all 5 vars present
     in /proc environ, /api/health ok. Result-invisible by design (async, max 2 inflight, 5s cap, no writes, Gemini
     baseline untouched). Rollback = delete the 5 '
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
