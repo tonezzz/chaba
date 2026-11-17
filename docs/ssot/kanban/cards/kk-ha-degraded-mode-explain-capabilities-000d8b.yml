@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
 column: backlog
-updated: 2026-11-17 21:13
+updated: 2026-11-17 23:32
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -56,6 +56,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:32
+  from: chaba
+  text: classified as codemod (kw:cap conf 1.00)
+- at: 2026-11-17 23:32
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -71,3 +77,9 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Use repo chaba on host tony-dell to implement the degraded-mode LLM failure notice
 awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: codemod
+  lane_source: kw
