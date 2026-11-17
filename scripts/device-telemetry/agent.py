@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import shutil
 import socket
 import subprocess
@@ -205,6 +206,18 @@ def _temps() -> tuple[float | None, dict]:
 
 
 
+def _thermal_pressure() -> str | None:
+    # Apple Silicon exposes no die temps via powermetrics — only the
+    # thermal pressure level. Needs the NOPASSWD sudoers drop-in
+    # (scripts/device-telemetry/sudoers-device-telemetry).
+    if platform.system() != "Darwin":
+        return None
+    out = _run(["sudo", "-n", "/usr/bin/powermetrics",
+                "--samplers", "thermal", "-n", "1"], timeout=15)
+    m = re.search(r"Current pressure level:\s*(\S+)", out)
+    return m.group(1) if m else None
+
+
 def _swap_pct() -> float | None:
     if os.path.exists("/proc/meminfo"):
         kv = {}
@@ -316,6 +329,7 @@ def collect() -> dict:
         "net_tx_b": tx,
         "temp_c": temps[0],
         "temp_zones": temps[1],
+        "thermal_pressure": _thermal_pressure(),
         "top_procs": _procs(),
         "battery": _battery(),
         "tailnet": _tailnet(),

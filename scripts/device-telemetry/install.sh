@@ -54,6 +54,11 @@ PL
   launchctl unload "$PLIST" 2>/dev/null || true
   launchctl load "$PLIST"
   echo "installed: launchd $PLIST — every ${INT}min"
+  # Apple Silicon has no unprivileged temps — thermal pressure probe needs
+  # (replace `tony` in the sudoers file with the local account, e.g. kkkakk):
+  #   sudo sh -c "sed 's/^tony /$(whoami) /' '$DIR/sudoers-device-telemetry' > /etc/sudoers.d/device-telemetry"
+  #   sudo chmod 440 /etc/sudoers.d/device-telemetry
+  #   sudo visudo -cf /etc/sudoers.d/device-telemetry
 else
   SDIR="$HOME/.config/systemd/user"
   mkdir -p "$SDIR"

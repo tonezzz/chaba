@@ -152,6 +152,13 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
         })
+    tp = doc.get("thermal_pressure")
+    if tp:
+        _push(token, f"sensor.{eid}_thermal", str(tp), {
+            "friendly_name": f"{dev} thermal",
+            "icon": "mdi:thermometer-alert",
+            **common_attrs(doc, age),
+        })
     for sname, sinfo in (doc.get("services") or {}).items():
         sid = "".join(c if c.isalnum() else "_"
                       for c in sname.lower()).strip("_")
