@@ -1,7 +1,7 @@
 id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
 title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
 column: doing
-updated: 2026-11-17 09:39
+updated: 2026-11-17 09:40
 priority: high
 tags:
 - idc03
@@ -60,8 +60,21 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261117-092442-observed-2026-11-16-20-56-53-i no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-17 09:40
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-17 09:40
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   status: running
   lane: codemod
-  runner: tony-dell
+  sweep:
+    stale_running: 2026-11-17 09:39
+    zero_commit: 2026-11-17 09:40
+  verified: false
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  runner: tony-omen
+claim: {}
