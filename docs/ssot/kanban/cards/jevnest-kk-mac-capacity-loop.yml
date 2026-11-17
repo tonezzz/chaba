@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: doing
-updated: 2026-11-17 21:04
+updated: 2026-11-17 22:11
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -112,3 +112,8 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: 'Verified live 2026-11-17: launchd worker net.adanest.kk-llm-worker cycling 60s on kk-mac, admission gates
+    enforced (memory_preload_floor/load_high fallbacks holding correctly), JEV promotion approved, and first real
+    pack kk-mac-task-report-review-b3167e32709d CLAIMED->DONE 22:02 Mac time. Capacity loop is in production.'
