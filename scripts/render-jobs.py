@@ -40,8 +40,8 @@ def systemd_dur(v) -> str:
     return f"{s}s" if s < 60 else f"{s // 60}min" if s % 60 == 0 else f"{s}s"
 
 
-def load_manifest():
-    return yaml.safe_load(MANIFEST.read_text())
+def load_manifest(path=MANIFEST):
+    return yaml.safe_load(Path(path).read_text())
 
 
 def job_execs(j):
@@ -215,7 +215,7 @@ def main():
     ap.add_argument("--manifest", default=str(MANIFEST))
     args = ap.parse_args()
 
-    man = load_manifest()
+    man = load_manifest(args.manifest)
     errs = validate(man)
     if errs:
         for e in errs:
