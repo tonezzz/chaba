@@ -1,7 +1,7 @@
 id: ada-ocb-context-windowed-excerpts
 title: 'Context pack: window SSOT excerpts around query matches (spec data is mid-doc)'
 column: review
-updated: 2026-11-17 18:23
+updated: 2026-11-17 18:34
 brief: 'ada_context_pack excerpts were content[:1200] — the head of each MDDB doc. Host specs (tony-macbook block
   in host-roles/host-capacity, macbook deep in 116KB audit.hosts) sit mid-doc, so agents got metadata but never
   the data and re-queried ~15x (seen in ~/.local/share/ada-control/calls.jsonl for ses kind-engine). Fixed via _excerpt_window
@@ -30,4 +30,8 @@ comms:
 - at: 2026-11-17 18:23
   from: devin
   text: moved doing -> review
+- at: 2026-11-17 18:34
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
