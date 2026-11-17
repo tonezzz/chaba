@@ -205,8 +205,29 @@ if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
     exit 1
 fi
 
+# index.lock contention: board-api._commit_write runs git add/commit per
+# card write while this sweep does bulk add+commit — the loser sees
+# "Unable to create index.lock". board-api treats its commit as
+# best-effort; this sweep is the durability path, so retry briefly
+# instead of failing the whole tick (2026-11-17: repeated tick failures
+# while the 2179-commit backlog pushed).
+git_lock_retry() {
+    local attempt=0 out
+    while [ $attempt -lt 8 ]; do
+        out="$("$@" 2>&1)"; rc=$?
+        if [ $rc -eq 0 ]; then printf '%s' "$out"; return 0; fi
+        case "$out" in
+            *index.lock*|*"Another git process"*)
+                attempt=$((attempt + 1)); sleep $((attempt % 3 + 1));;
+            *) printf '%s' "$out" >&2; return $rc;;
+        esac
+    done
+    printf '%s' "$out" >&2
+    return 1
+}
+
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/; do
-    [ -d "$d" ] && git add "$d" 2>/dev/null
+    [ -d "$d" ] && git_lock_retry git add "$d" >/dev/null 2>&1 || true
 done
 if git diff --cached --quiet; then
     rm -f "$STREAK_FILE"   # healthy tick, nothing pending — silent reset
@@ -257,7 +278,7 @@ if [ -n "$yml_bad" ]; then
     exit 1
 fi
 
-git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
+git_lock_retry git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
     commit -qm "board: live card updates ($(date '+%F %H:%M'))" \
     || { fail_tick "commit failed"; exit 1; }
 
