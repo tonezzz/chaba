@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: backlog
-updated: 2026-11-17 23:36
+column: doing
+updated: 2026-11-17 23:37
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -113,6 +113,9 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 23:37
+  from: tony-omen
+  text: claimed
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -130,10 +133,10 @@ requests:
     label: Keep manual Git flow; only make the command file versioned
   suggested: narrow
   answer: narrow
-awaiting_action: true
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-omen
