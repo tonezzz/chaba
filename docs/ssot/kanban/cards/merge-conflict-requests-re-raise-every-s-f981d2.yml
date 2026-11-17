@@ -44,3 +44,19 @@ comms:
 - at: 2026-11-17 22:19
   from: tony
   text: card captured via board-api
+- at: 2026-11-17 22:19
+  from: devin
+  text: 'raised request fix-approach: How should answered merge-conflict requests be handled?'
+requests:
+- id: fix-approach
+  ask: How should answered merge-conflict requests be handled?
+  status: open
+  at: 2026-11-17 22:19
+  from: devin
+  options:
+  - signature-dedupe + execute-answer — stop re-asking on the same conflict AND make the resolve option actually
+    queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
+  - signature-dedupe only — same conflict never re-asks; resolution stays manual
+  - execute-answer only — keep re-asking but each new conflict event still prompts
+  suggested: signature-dedupe + execute-answer — stop re-asking on the same conflict AND make the resolve option
+    actually queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
