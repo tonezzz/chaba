@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: backlog
-updated: 2026-11-17 22:11
+updated: 2026-11-17 23:34
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -207,27 +207,26 @@ comms:
 - at: 2026-11-17 22:11
   from: devin
   text: moved doing -> backlog
+- at: 2026-11-17 23:34
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
     zero_commit: 2026-11-09 19:49
     verify_hold: 2026-11-17 09:14
     session_gone: 2026-11-17 09:25
-  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-194957-scheduled-per-lane-retention-j.service:
-    Failed with result ''exit-code''. | devin-task-20261109-194957-scheduled-per-lane-retention-j.service: Consumed
-    7.389s CPU time.'
-  attempts: 2
-  runner: idc02
-  result: 'exit=1 devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Failed with result ''exit-code''.
+  last_failure: 'exit=1 devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Failed with result ''exit-code''.
     | devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Consumed 1min 48.096s CPU time, 245.7M
     memory peak, 0B memory swap peak.'
+  attempts: 3
 claim: {}
 requests:
 - id: 4-policy-defaults-for-the-weekly-lane-re-686e16
