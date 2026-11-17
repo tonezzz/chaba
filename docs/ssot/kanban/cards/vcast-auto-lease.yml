@@ -10,7 +10,7 @@ priority: high
 note: 'Auto-recovered 2026-11-16: `lease` check passing again.'
 help: Active /capture lease >6h or enabled camwall zone bound to an offline screen. This is the cast_recast_stale_lease
   regression surface — clear with POST /api/input-bridge/capture {screen:N,active:false} or /camwall {zone:Z,enabled:false}.
-updated: 2026-11-17 18:18
+updated: 2026-11-17 18:38
 review_kind: triage
 ref: MED-0304
 comms:
@@ -32,4 +32,8 @@ comms:
 - at: 2026-11-17 18:18
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
