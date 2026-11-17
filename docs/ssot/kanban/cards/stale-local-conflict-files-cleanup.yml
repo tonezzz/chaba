@@ -1,6 +1,6 @@
 id: stale-local-conflict-files-cleanup
 title: stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever
-column: backlog
+column: done
 updated: 2026-11-17 21:20
 spec: 'Found during OPS-1314 (board-api write latency). Permanent .local-conflict-* files never auto-resolve (they
   are flagged "needs manual reconcile" by design) and every git-safe-pull on every checkout re-flags them via reconcile-local-conflicts.py
@@ -47,3 +47,8 @@ comms:
     per generated-path policy) plus ~132 untracked swept on idc03 exec + kanban-sync checkouts. Other hosts auto-clean
     on next pull (tracked files) — verified 0 remaining on served checkout. Reconcile re-flagging stops fleet-wide.
     Note: canonicals all existed; no substantive c'
+- at: 2026-11-17 21:20
+  from: devin
+  text: closed by devin
+action:
+  status: done
