@@ -131,11 +131,17 @@ def push_device(dev: str, token: str) -> str:
             {"temps": doc.get("temp_zones") or {}})
     zones = doc.get("temp_zones") or {}
     if zones:
-        short = {"x86_pkg_temp": "pkg"}
-        parts = [f"{short.get(k, k)} {v:g}°"
-                 for k, v in sorted(zones.items(),
-                                    key=lambda kv: -kv[1])[:5]]
-        _push(token, f"sensor.{eid}_temps", " · ".join(parts)[:200], {
+        def _zname(k: str) -> str:
+            if k == "x86_pkg_temp":
+                return "pkg"
+            if k.startswith("pch_"):
+                return "pch"
+            return k
+        top = sorted(zones.items(), key=lambda kv: -kv[1])[:5]
+        labels = "/".join(_zname(k) for k, _ in top)
+        values = "/".join(f"{v:g}" for _, v in top)
+        _push(token, f"sensor.{eid}_temps",
+              f"{labels}: {values}°"[:200], {
             "friendly_name": f"{dev} temps",
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
