@@ -1,7 +1,7 @@
 id: cards-api-summary-gzip
 title: '/cards read door: gzip + summary projection + discoverable filters'
 column: backlog
-updated: 2026-11-17 18:40
+updated: 2026-11-17 18:43
 brief: GET /cards bare returns the full board (~15MB, ~2.6s) — card_query already supports id/column/action_status/since/offset/limit/fields
   but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.
 priority: medium
@@ -29,4 +29,8 @@ comms:
 - at: 2026-11-17 18:40
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
