@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 13:56
+updated: 2026-11-17 15:22
 priority: medium
 program: ai-workforce
 tags:
@@ -537,6 +537,12 @@ comms:
     model-specific rates are required and missing rates fail closed. Full Ada suite after this change: 1761 passed,
     4 skipped; tool-lint clean. No live provider call or deploy. Still blocked from enabling: dedicated consult-flash
     alias and LITELLM_KEY_CONSULT with the selected mont'
+- at: 2026-11-17 15:22
+  from: tony
+  text: 'answered consult-key-budget-cap: cap-5-30d — $5 / 30d — recommended'
+- at: 2026-11-17 15:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: ada-voice
@@ -562,7 +568,7 @@ requests:
     planned consult-flash alias will be pinned to Gemini Flash only and allowlisted on this dedicated key. Recommended
     lower bound is $5 per 30 days; $10 doubles the spend ceiling. No key or provider call will be made until this
     is decided.'
-  status: open
+  status: answered
   at: 2026-11-17 13:40
   from: devin
   options:
@@ -573,6 +579,7 @@ requests:
   - id: other-cap
     label: Other amount
   suggested: cap-5-30d
+  answer: cap-5-30d — $5 / 30d — recommended
 - id: consult-per-call-cap
   ask: Choose the per-call estimated USD ceiling, separate from the 30-day virtual-key budget. The code preflights
     a conservative UTF-8-byte input ceiling plus max output tokens using per-alias rates, and refuses if the bound
@@ -589,3 +596,4 @@ requests:
   - id: other-call-cap
     label: Other amount
   suggested: cap-010-call
+awaiting_action: true
