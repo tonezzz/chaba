@@ -1,7 +1,7 @@
 id: board-api-broken-pipe-noise
 title: 'board-api: swallow BrokenPipeError in _send (client-disconnect noise)'
 column: backlog
-updated: 2026-11-17 17:09
+updated: 2026-11-17 17:35
 priority: low
 tags:
 - board-api
@@ -19,3 +19,10 @@ comms:
 - at: 2026-11-17 17:09
   from: devin
   text: card captured via board-api
+- at: 2026-11-17 17:35
+  from: devin
+  text: 'Already fixed — df277fb30b4 (2026-11-17 08:01) wraps _send in try/except (BrokenPipeError, ConnectionResetError)
+    and logs ''reply dropped: client gone''. Verified live: since the 09:34 service restart there are 0 tracebacks
+    and 0 5xx in the journal (7973x200, 119x400, 195x404). The commit is local to the served checkout awaiting push
+    (writer was 182 ahead at 17:33 — push racing upstream commits, converging). Closing as done; the 24h 500-count
+    that motivated this card was all pre-fix noise.'
