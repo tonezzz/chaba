@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 09:10
+updated: 2026-11-17 09:11
 priority: medium
 program: ai-workforce
 tags:
@@ -477,15 +477,19 @@ comms:
   from: chaba
   text: 'tony-macbook defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key)
     — the card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 09:11
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
   lane: jules
   executor: jules
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-11 23:36
   last_failure: 'journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794469903.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-expert-consult-tool-1794469903.service:
     Failed with result ''exit-code''.'
   attempts: 2
+  runner: tony-omen
