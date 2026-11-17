@@ -7,9 +7,11 @@ Imports the dash-named module via importlib; no dispatch, no git.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/board/kanban-dispatch.py"
@@ -27,6 +29,16 @@ class BuildTaskRailsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = _load()
+        # build_task() runs the lesson primer — a full docs/ssot rescan +
+        # MDDB fetch per call (~100s). These tests assert rails text only;
+        # primer integration is covered by test_build_task_regressions.
+        cls._primer_off = mock.patch.dict(
+            os.environ, {"KANBAN_PRIMER": "0", "KANBAN_PRIMER_GOOD": "0"})
+        cls._primer_off.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._primer_off.stop()
 
     def test_report_rails_appended_when_report_set(self):
         card = {"id": "c1", "title": "t", "report": "dev-kanban",

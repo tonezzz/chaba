@@ -1,0 +1,7 @@
+[Unit]
+Description=chaba full pytest suite (nightly) (job:chaba-pytest-suite, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=7200
+ExecStart=/bin/bash -c 'cd %h/CascadeProjects/chaba && exec /usr/bin/python3 -m pytest tests -q'

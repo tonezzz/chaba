@@ -342,6 +342,11 @@ class DispatchUnclaimableFlagTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             m.CARD_DIR = Path(td)
             m.LOCK = Path(td) / "lock"
+            # render-board rglobs docs/ssot/jobs across every dispatch-wt-*
+            # sibling (~60-100s on a worktree-heavy host) — not under test
+            noop = Path(td) / "_render_noop.py"
+            noop.write_text("")
+            m.RENDER = noop
             for cid, fields in cards:
                 _write_card(Path(td), cid, **fields)
             saved = (m.load_policy, m.overloaded, m.active_tasks,
@@ -410,6 +415,9 @@ class DispatchUnclaimableFlagTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             m.CARD_DIR = Path(td)
             m.LOCK = Path(td) / "lock"
+            noop = Path(td) / "_render_noop.py"
+            noop.write_text("")
+            m.RENDER = noop
             (Path(td) / "c-exec.yml").write_text(
                 yaml.safe_dump(cards1["c-exec"]))
             saved = (m.load_policy, m.overloaded, m.active_tasks,

@@ -862,6 +862,11 @@ class KanbanDispatchContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             m.CARD_DIR = Path(td)
             m.LOCK = Path(td) / "lock"
+            # render-board rglobs docs/ssot/jobs across every dispatch-wt-*
+            # sibling (~60-100s on a worktree-heavy host) — not under test
+            noop = Path(td) / "_render_noop.py"
+            noop.write_text("")
+            m.RENDER = noop
             for cid, fields in cards:
                 _write_card(Path(td), cid, **fields)
             saved = (m.load_policy, m.overloaded, m.active_tasks,
@@ -935,7 +940,12 @@ class KanbanDispatchContractTest(unittest.TestCase):
                 calls.append(kw.get("env") or {})
                 or _proc(0, "tid-env-1\n"))
             try:
-                m.start_pending(Path(td) / "c-env.yml")
+                # start_pending -> build_task runs the lesson primer (full
+                # docs/ssot rescan + MDDB fetch); env vars under test only
+                with mock.patch.dict(
+                        os.environ,
+                        {"KANBAN_PRIMER": "0", "KANBAN_PRIMER_GOOD": "0"}):
+                    m.start_pending(Path(td) / "c-env.yml")
             finally:
                 (m.sh, m.DISPATCH) = saved
             self.assertTrue(calls)
@@ -1368,6 +1378,9 @@ class KkMacBoardApiTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             kd.CARD_DIR = Path(td)
             kd.LOCK = Path(td) / "lock"
+            noop = Path(td) / "_render_noop.py"
+            noop.write_text("")
+            kd.RENDER = noop
             _write_card(Path(td), "c-kkq",
                         action={"status": "queued",
                                 "executor": "kk_mac_local",
