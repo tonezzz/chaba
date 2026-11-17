@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: doing
-updated: 2026-11-17 09:41
+updated: 2026-11-17 09:42
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -121,9 +121,13 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-20261117-094144-corpus-18-jev-bench-cases-4-pi on tony-omen — claim
     committed but the response was lost (OPS-1071)
+- at: 2026-11-17 09:42
+  from: tony-omen
+  text: 'finished (failed): exit=1 in-task-20261117-094144-corpus-18-jev-bench-cases-4-pi.service: Failed with result
+    ''exit-code''. | devin-task-2026'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -135,3 +139,6 @@ action:
     Failed with result ''exit-code''.'
   attempts: 1
   runner: tony-omen
+  result: 'exit=1 in-task-20261117-094144-corpus-18-jev-bench-cases-4-pi.service: Failed with result ''exit-code''.
+    | devin-task-20261117-094144-corpus-18-jev-bench-cases-4-pi.service: Consumed 23.846s CPU time over 14.445s
+    wall clock time, 734.5M memory peak.'
