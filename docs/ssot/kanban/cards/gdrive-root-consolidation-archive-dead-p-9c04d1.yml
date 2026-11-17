@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
-column: doing
-updated: 2026-11-17 09:15
+column: review
+updated: 2026-11-17 09:17
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -1209,9 +1209,13 @@ comms:
   text: '[closeout 2026-11-17] Phase-B verified + consumer fallout repaired; repoints shipped (see closeout yml
     docs/ssot/jobs/infrastructure/2026-11-17-gdrive-root-consolidation-closeout.yml). Remaining: drain ada-nest-adobe-stock
     post-sync; nest/brains move needs dell gcrypt repoint; ada-ha restart for corpus mount.'
+- at: 2026-11-17 09:17
+  from: idc02
+  text: 'finished (ok): exit=0 s in the merged closeout docs and `dispatch-outcome-20261117-085929-gdrive-root-consolidation-arch.md`.
+    | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -1220,6 +1224,10 @@ action:
     2.172s CPU time.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 s in the merged closeout docs and `dispatch-outcome-20261117-085929-gdrive-root-consolidation-arch.md`.
+    | devin-task-20261117-085929-gdrive-root-consolidation-arch.service: Consumed 43.375s CPU time, 464.7M memory
+    peak, 0B memory swap peak.'
+  verified: true
 requests:
 - id: phase-b-every-remaining-root-dir-is-a-li-7a4820
   ask: 'Phase B: every remaining root dir is a live API (queues, DR tier, FUSE mounts, external workers). Options:
@@ -1295,3 +1303,5 @@ requests:
   - hold
   answer: proceed
   executed: 2026-11-08 queue
+review_kind: verify
+claim: {}
