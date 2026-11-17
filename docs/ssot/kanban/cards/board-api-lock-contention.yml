@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: doing
-updated: 2026-11-17 21:19
+updated: 2026-11-17 21:20
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -98,6 +98,9 @@ comms:
   from: tony-omen
   text: 'finished (failed): exit=1 -20261117-211227-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''.
     | devin-task-20261117-21'
+- at: 2026-11-17 21:20
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-17 21:50'
 requests: []
 action:
   lane: paid_frontier
