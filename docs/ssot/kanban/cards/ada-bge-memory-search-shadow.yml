@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-17 18:56
+updated: 2026-11-17 19:05
 priority: high
 tags:
 - ada
@@ -47,3 +47,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:05
+  from: devin
+  text: 'Soak status check 2026-11-17: shadow is armed on ada-dev (env verified in /proc: ENABLED=1, MDDB_URL=:11028,
+    RERANK_URL=omen:11555, TIMEOUT_S=5; deployed code through PR #15 cancellation-shadow). BUT zero `bge_memory_search
+    shadow` log lines to date — not a bug, a traffic drought: (1) ada-dev sees only dev-scratch (instances_readonly
+    still inert pending ada-memory-dev-lane-runtime), so model calls for tony-projects/cms banks fail ACL before
+    memory_search; (2) the one real bank=''all'' query on 202'
