@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
 column: doing
-updated: 2026-11-17 19:38
+updated: 2026-11-17 19:40
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -111,3 +111,10 @@ comms:
   text: Dispatched on idc02. The --ids implementation + report already landed via sibling card (commit 7b5f86014d,
     card render-jobs-selective-install-ops0790-tonydell, closed 11-07). Verifying suite is green, then adding CLI-level
     install tests that prove systemctl enable --now only receives selected timers.
+- at: 2026-11-17 19:40
+  from: devin
+  text: 'Done (dispatch branch ab5e075bd2). --ids selector + report had already landed via sibling card (7b5f86014d);
+    verified green, then closed the remaining gap: new InstallPath test class (22→27 tests) runs main() --install
+    end-to-end with mocked subprocess + fake HOME, proving a selected id never reaches enable --now for unrelated
+    timers and chaba-jobs.* stays untouched under --ids. Also fixed --manifest (was parsed but ignored). Report
+    updated; scoped per-host rollout commands + chaba-jobs.timer ke'
