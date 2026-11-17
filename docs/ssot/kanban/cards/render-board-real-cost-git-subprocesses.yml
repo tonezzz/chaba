@@ -1,0 +1,25 @@
+id: render-board-real-cost-git-subprocesses
+title: render-board real cost is load_cards YAML + compute_checks git subprocesses, not _outcome_index (~2min on
+  tony-omen)
+column: backlog
+updated: 2026-11-17 18:21
+brief: 'Measured while fixing render-board-worktree-rglob-slow (2026-11-17): on tony-omen a full render is 2m8s
+  — load_cards 43s (900 YAML parses), compute_checks 76s (a `git merge-base` + `git cherry` subprocess per dispatch
+  run branch per card). _outcome_index itself is now ~0.15s after the flat-glob fix. kanban-dispatch runs this inline
+  after every card mutation (kanban-dispatch.py:1081), so each dispatch pass pays it on the runner host.'
+priority: medium
+tags:
+- perf
+- board
+- dispatch
+spec: 'Optimize the real render hot paths in scripts/render-board.py: (1) compute_checks spawns `git merge-base
+  --is-ancestor` and `git cherry` per run-branch per card — batch it: one `git for-each-ref`/`merge-base` pass or
+  a `git branch --merged origin/master` set up front, then in-memory membership checks; cache per-branch results.
+  (2) load_cards yaml.safe_load per file is 11s on idc03 / 43s on omen — consider CSafeLoader when available (yaml.CSafeLoader,
+  libyaml) or a manifest+mtime cache. Measured: idc03 served full render 13.5s; tony-omen 2m8s; idc02 11.4s. Ref
+  card render-board-worktree-rglob-slow for the outcome-index half (fixed).'
+ref: KNB-0165
+comms:
+- at: 2026-11-17 18:21
+  from: devin
+  text: card captured via board-api
