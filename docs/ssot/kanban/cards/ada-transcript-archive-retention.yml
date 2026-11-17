@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
-column: backlog
-updated: 2026-11-17 23:34
+column: doing
+updated: 2026-11-17 23:45
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -213,13 +213,16 @@ comms:
 - at: 2026-11-17 23:34
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.56 > 1.5)'
+- at: 2026-11-17 23:45
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
@@ -230,6 +233,7 @@ action:
     | devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Consumed 1min 48.096s CPU time, 245.7M
     memory peak, 0B memory swap peak.'
   attempts: 3
+  runner: idc02
 claim: {}
 requests:
 - id: 4-policy-defaults-for-the-weekly-lane-re-686e16
