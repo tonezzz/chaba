@@ -41,6 +41,10 @@ if [[ "$(uname)" == "Darwin" ]]; then
   <key>ProgramArguments</key><array>
     <string>/usr/bin/python3</string><string>$DEST/agent.py</string>
   </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>DEVICE_TELEMETRY_NAME</key><string>$NAME</string>
+    <key>DEVICE_TELEMETRY_MDBB</key><string>${DEVICE_TELEMETRY_MDBB:-http://100.102.134.91:11026/v1}</string>
+  </dict>
   <key>StartInterval</key><integer>$((INT * 60))</integer>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>/dev/null</string>
@@ -60,6 +64,7 @@ Description=Device telemetry beacon
 Type=oneshot
 ExecStart=/usr/bin/python3 $DEST/agent.py
 Environment=DEVICE_TELEMETRY_NAME=$NAME
+Environment=DEVICE_TELEMETRY_MDBB=${DEVICE_TELEMETRY_MDBB:-http://100.102.134.91:11026/v1}
 SV
   cat > "$SDIR/device-telemetry.timer" <<TM
 [Unit]
