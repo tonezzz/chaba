@@ -328,6 +328,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 21:30
+  from: tony-omen
+  text: claimed
 requests:
 - id: which-1-3-real-card-ids-may-ada-verify-a-fe2a79
   ask: Which 1-3 real card IDs may Ada verify and finish in the live sweep, and should I run the live ada-dev scenario
@@ -346,7 +349,7 @@ requests:
   answer: safe-review — Select at most 3 review_kind:triage/verify cards after evidence review
 action:
   type: dispatch
-  status: queued
+  status: running
   last_failure: 'exit=1 evin-task-20261117-211341-run-ada-live-kanban-authority-.service: Failed with result ''exit-code''.
     | devin-task-20261117-211341-run-ada-live-kanban-authority-.service: Consumed 1.178s CPU time over 53.531s wall
     clock time, 87.4M memory peak.'
@@ -356,5 +359,6 @@ action:
     failed_noted: 2026-11-17 19:39
     stale_running: 2026-11-17 20:39
     zero_commit: 2026-11-17 20:39
+  runner: tony-omen
 claim: {}
 review_kind: verify
