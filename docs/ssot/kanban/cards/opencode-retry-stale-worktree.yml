@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-14 14:15
+updated: 2026-11-17 09:09
 priority: low
 tags:
 - opencode
@@ -412,6 +412,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:09
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
@@ -427,19 +430,18 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: failed
+  status: queued
   labels:
   - push:chaba
-  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
   sweep:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-06 20:32
     failed_noted: 2026-11-06 20:47
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  last_failure: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is
+    held'
   llm_key_alias: ada
   button: test-key-alias
-  verified: false
-  runner: idc02
+  attempts: 1
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
@@ -481,4 +483,3 @@ requests:
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
 claim: {}
-awaiting_action: true
