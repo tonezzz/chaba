@@ -1,7 +1,7 @@
 id: dispatch-lane-classifier-spend-false-manual
 title: 'lane classifier: bare keyword spend forces manual — false-positives dispatchable cards'
 column: doing
-updated: 2026-11-17 20:38
+updated: 2026-11-17 20:54
 brief: 'LANE_KW[manual] in scripts/board/dispatch_repos.py contains bare "spend" — any card spec mentioning spend
   (even "spend scope", "uncontrolled spend", "cap paid spend") classifies manual at conf 1.0 and can never be dispatched.
   Hit twice 2026-11-17: idc03-gemini-ollama-proxy-paid-fallback-2fa021 (work IS fixing spend) and ada-real-card-sweep-scenario-20261108
@@ -35,6 +35,12 @@ comms:
 - at: 2026-11-17 20:38
   from: chaba
   text: started devin-task-20261117-133819-fix-the-manual-lane-keyword-se on mn01 (dispatch)
+- at: 2026-11-17 20:54
+  from: devin
+  text: 'landed: bare spend -> 4 action phrases; manual kws title-only; explicit action.lane wins inside classify_lane;
+    lane_source provenance makes classifier stamps re-evaluable on requeue (unsticks old FPs); kw-manual comms now
+    name the matched kw + awaiting_action. Corpus sweep 909 cards: 0 regressions, 42 unstuck; both 2026-11-17 FP
+    cards re-classify dispatchable (codemod/devin). tests/board 612 run green.'
 action:
   type: dispatch
   status: running
