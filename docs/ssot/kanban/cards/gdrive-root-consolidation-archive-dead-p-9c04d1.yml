@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: review
-updated: 2026-11-17 09:18
+updated: 2026-11-17 09:19
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -1227,12 +1227,20 @@ comms:
 - at: 2026-11-17 09:18
   from: chaba
   text: pushed dispatch/20261117-085929-gdrive-root-consolidation-arch to origin
+- at: 2026-11-17 09:19
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 78.5s)
 action:
   type: dispatch
   status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
+    stale_running: 2026-11-17 09:18
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093935-gdrive-root-consolidation-arch.service:
     Failed with result ''exit-code''. | devin-task-20261109-093935-gdrive-root-consolidation-arch.service: Consumed
     2.172s CPU time.'
