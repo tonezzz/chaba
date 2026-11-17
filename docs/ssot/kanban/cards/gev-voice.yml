@@ -15,7 +15,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-d
   document the iOS constraint (mic works in Safari, not standalone PWA — apple-mobile-web-app-capable=no), and close
   the playback gap: Gemini output is currently transcription-text only, no audio playback path exists in the GEV
   page (vcast_say covers non-Latin TTS separately).'
-updated: 2026-11-14 14:11
+updated: 2026-11-17 08:55
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -396,17 +396,20 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 08:55
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service:
-    Failed with result ''exit-code''. | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service: Consumed
-    2.505s CPU time.'
+  status: queued
   sweep:
     no_repo: 2026-11-08 16:20
     failed_noted: 2026-11-09 09:49
   lane: codemod
-  runner: idc02
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service:
+    Failed with result ''exit-code''. | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service: Consumed
+    2.505s CPU time.'
+  attempts: 1
 requests:
 - id: arm-gev-dispatch-approve-deploy-1-add-go-53bf0b
   ask: Arm GEV dispatch + approve deploy? (1) add `gods-eye-view /home/tony/gods-eye-view main` to ~/.local/share/devin-dispatch/repos.conf
