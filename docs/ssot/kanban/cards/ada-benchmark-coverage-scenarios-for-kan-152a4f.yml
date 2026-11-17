@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
 column: doing
-updated: 2026-11-17 19:13
+updated: 2026-11-17 19:14
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -78,10 +78,17 @@ comms:
     dry-run + ssh stub. Gap confirmed: no board/dispatch fixtures exist. Adding FakeBoard + dispatch_ssh engine
     fixtures, then 5-6 scenario yamls covering kanban ops/move-gates, devin dispatch (board+playbook paths), wiki_extension,
     opencode budget gates.'
+- at: 2026-11-17 19:14
+  from: tony-macbook
+  text: 'finished (failed): exit=1 sk-20261117-190737-ada-benchmark-coverage-scenari.service: Failed with result
+    ''exit-code''. | devin-task-20261117-'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
+  result: 'exit=1 sk-20261117-190737-ada-benchmark-coverage-scenari.service: Failed with result ''exit-code''. |
+    devin-task-20261117-190737-ada-benchmark-coverage-scenari.service: Consumed 40.669s CPU time over 5min 47.782s
+    wall clock time, 630.3M memory peak.'
