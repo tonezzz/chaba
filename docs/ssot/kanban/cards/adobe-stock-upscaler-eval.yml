@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: doing
-updated: 2026-11-14 14:08
+updated: 2026-11-17 09:12
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -149,11 +149,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:12
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
-  runner: tony-omen
-  result: 'exit=1 e-the-standard-upsca.service: Failed with result ''exit-code''. | devin-task-20261109-090841-goal-choose-the-standard-upsca.service:
-    Consumed 34min 41.818s CPU time over 21min 47.609s wall clock time, 11.3G memory peak, 1.1G memory swap peak.'
+  status: queued
   sweep:
     failed_noted: 2026-11-09 09:33
+  last_failure: 'exit=1 e-the-standard-upsca.service: Failed with result ''exit-code''. | devin-task-20261109-090841-goal-choose-the-standard-upsca.service:
+    Consumed 34min 41.818s CPU time over 21min 47.609s wall clock time, 11.3G memory peak, 1.1G memory swap peak.'
+  attempts: 1
