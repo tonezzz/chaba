@@ -1,7 +1,7 @@
 id: chaba-nest-hosts-view-replace-tony-ha-if-053226
 title: chaba-nest hosts view — replace tony-ha iframe with native/mobile-friendly cards
 column: doing
-updated: 2026-11-17 19:00
+updated: 2026-11-17 19:06
 priority: medium
 spec: 'https://ada-ha.surf-thailand.com/chaba-nest/hosts is a panel view with one iframe -> https://tony-ha.surf-thailand.com/chaba-admin/hosts
   (lovelace.chaba_nest on ada-ha :8125). Problems: (1) double sidebar — full HA page iframed inside HA; (2) iframe
@@ -65,6 +65,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:06
+  from: devin
+  text: DONE — option (a) shipped. New telemetry-ha-push-ada timer (tony-omen, 5min) mirrors MDDB device-telemetry
+    into ada-ha :8125 (32→200 states); /hosts + /services are now native markdown+entities views (same cards as
+    tony-ha chaba-admin), /or-panel iframe repointed to Access-free idc02 origin. Live config has ZERO tony-ha.surf-thailand.com
+    refs, no aspect_ratio — single sidebar, no Access prompt, mobile-friendly. Verified via ws lovelace/config +
+    edge 200. Same defect was fixed for services+or-pan
 action:
   type: dispatch
   status: running
