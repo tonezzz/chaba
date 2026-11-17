@@ -140,14 +140,23 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261117-192654-observed-2026-11-16-20-54-ict- no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-17 20:40
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-17 20:40
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-17 19:40
-  last_failure: 'exit=1 sk-20261117-192654-observed-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''.
-    | devin-task-20261117-192654-observed-2026-11-16-20-54-ict-.service: Consumed 20.136s CPU time over 2min 37.939s
-    wall clock time, 593.8M memory peak.'
+    stale_running: 2026-11-17 20:40
+    zero_commit: 2026-11-17 20:40
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
-  runner: tony-dell
+  verified: false
+  runner: tony-omen
+claim: {}
