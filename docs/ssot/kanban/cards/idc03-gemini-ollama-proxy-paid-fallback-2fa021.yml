@@ -1,0 +1,24 @@
+id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
+title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
+column: backlog
+updated: 2026-11-17 09:10
+priority: high
+tags:
+- idc03
+- litellm
+- cost
+- bug
+spec: 'Observed 2026-11-16 ~20:54 ICT journal: gemini-ollama-proxy logging in a tight loop — "direct Gemini fallback
+  failed (free Gemini circuit open (quota breaker))" then "served via paid Gemini fallback (gemini-embedding-2)"
+  multiple times per second, sustained. The free-tier circuit breaker is open so EVERY request falls through to
+  the paid model — this is uncontrolled spend, not just load. TASK: (1) measure request rate + estimated daily cost
+  from journal/proxy logs; (2) find the caller(s) — likely an embedding loop in chaba/ada jobs hitting the proxy;
+  (3) fix at the right layer: back off the caller, tighten the circuit breaker, or cap paid fallback (e.g. max N
+  paid calls/hour then queue/degrade); (4) decide whether embeddings should degrade to a local model (ollama on
+  idc03) instead of paid Gemini. Done when paid-fallback rate is bounded and documented, and the caller loop is
+  fixed or rate-limited.'
+ref: ADA-0150
+comms:
+- at: 2026-11-17 09:10
+  from: tony
+  text: card captured via board-api
