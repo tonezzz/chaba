@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 09:19
+updated: 2026-11-17 09:25
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -113,6 +113,10 @@ comms:
   from: devin
   text: 'raised request 4-policy-defaults-for-the-weekly-lane-re-686e16: 4 policy defaults for the weekly lane-retention
     job (reply e.g. "defaults"): (1) After a transcript archives to Notebook'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261109-183239-scheduled-per-lane-retention-j on
+    idc02 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   repo: chaba
