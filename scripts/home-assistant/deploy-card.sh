@@ -112,21 +112,21 @@ deploy_to() {
 
 gdrive_archive() {
   # Cold artifact tier (card gdrive-deploy-tier): copy the deployed bundle
-  # to gdrive:chaba/bundles/ + refresh latest.yml — same latest-pointer
-  # contract as nest-brains. Offsite, tailscale-independent copy of every
-  # released bundle. Skips when rclone or the gdrive remote is absent and
-  # never fails a verified deploy.
+  # to gdrive:archive/chaba/bundles/ + refresh latest.yml — same
+  # latest-pointer contract as nest-brains. Offsite, tailscale-independent
+  # copy of every released bundle. Skips when rclone or the gdrive remote
+  # is absent and never fails a verified deploy.
   local file="$1" host="$2" local_md5="$3"
   command -v rclone >/dev/null || return 0
   rclone listremotes 2>/dev/null | grep -q '^gdrive:' || { echo "[gdrive] no gdrive: remote — cold tier skipped"; return 0; }
-  local sha bytes
+  local sha bytes remote="${CHABA_GDRIVE_BUNDLES:-gdrive:archive/chaba/bundles}"
   sha=$(sha256sum dist/pfg3d-card.js | cut -d' ' -f1)
   bytes=$(stat -c%s dist/pfg3d-card.js)
-  rclone copyto "dist/pfg3d-card.js" "gdrive:chaba/bundles/$file" -q \
+  rclone copyto "dist/pfg3d-card.js" "$remote/$file" -q \
     && echo "[gdrive] archived $file" || { echo "[gdrive] WARNING: bundle archive failed"; return 0; }
   printf 'bundle: %s\nsha256: %s\nbytes: %s\nmd5: %s\ndeployed_to: %s\ndeployed_at: %s\n' \
     "$file" "$sha" "$bytes" "$local_md5" "$host" "$(date -u +%FT%TZ)" \
-    | rclone rcat "gdrive:chaba/bundles/latest.yml" \
+    | rclone rcat "$remote/latest.yml" \
     && echo "[gdrive] latest.yml -> $file"
 }
 

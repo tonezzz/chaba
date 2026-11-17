@@ -6,12 +6,13 @@ SESSION.json, lists 30-candidates/ + 35-comparison-run/, extracts
 QC decision lines from 40-qc-review.md, and reports pending lane jobs.
 Output is a compact JSON receipt.
 
-Usage: campaign-status.py --campaign AS-... [--remote gdrive:ada-nest-adobe-stock]
+Usage: campaign-status.py --campaign AS-... [--remote gdrive:ada-nest/adobe-stock]
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -38,7 +39,8 @@ def main() -> int:
     global CAMP
     p = argparse.ArgumentParser()
     p.add_argument("--campaign", required=True)
-    p.add_argument("--remote", default="gdrive:ada-nest-adobe-stock")
+    p.add_argument("--remote", default=os.environ.get(
+        "ADA_ADOBE_STOCK_REMOTE", "gdrive:ada-nest/adobe-stock"))
     args = p.parse_args()
     CAMP = args.campaign
     root = f"{args.remote}/campaigns/{CAMP}"

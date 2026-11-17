@@ -24,7 +24,7 @@
 #                         [--from-dir DIR] [--remote R] [--force]
 set -euo pipefail
 
-REMOTE="gdrive:nest/brains"
+REMOTE="${NEST_BRAINS_REMOTE:-gdrive:nest/brains}"
 ENTITY=""; VERSION=""; DEST=""; FROMDIR=""; FORCE=0
 
 while [ $# -gt 0 ]; do

@@ -20,7 +20,7 @@ Related jobs: `document-print-pipeline` (P3 archive), `ada-devin-dispatch`.
 inbox (photos/scan/PDF) 
   → normalize: split spreads, trim, white-balance, levels, sharpen
   → emit: page JPEGs q92 + one PDF per set + manifest.json (fields, hashes)
-  → store: gdrive:ada-documents/<YYYY>/<set-slug>/
+  → store: gdrive:ada-nest/ada-documents/<YYYY>/<set-slug>/
   → index: metadata doc in MDDB `documents` bank (type, parties, numbers,
     dates, gdrive path) — "find my condo deed" via ada_memory_search
 ```
@@ -124,7 +124,7 @@ MDDB host, has backup timers) + optional encrypted rclone remote
     scratch dir gives recovery without real disk usage.
 - **Ada hookup** (later): `ada_document_archive` tool calls this API —
   same confirmed=true gate as print.
-- **Layout**: `gdrive:ada-documents/<YYYY>/<set-slug>/{pages/*.jpg,
+- **Layout**: `gdrive:ada-nest/ada-documents/<YYYY>/<set-slug>/{pages/*.jpg,
   set.pdf, manifest.json}`.
 
 ## 5. Decisions (2026-09-23)

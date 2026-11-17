@@ -14,7 +14,7 @@ Pinned here:
   - requires is re-checked at claim time (drain-in-one-pass preserved)
 
 Live timing:  python3 tests/ada/test_nest_worker_scan.py \
-                  --remote gdrive:ada-nest-kk-llm
+                  --remote gdrive:ada-nest/kk-llm
 """
 
 from __future__ import annotations

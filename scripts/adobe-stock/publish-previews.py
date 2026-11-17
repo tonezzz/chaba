@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish landed render candidates as Adobe Stock preview assets (OPS-1131).
 
-For one campaign under ``gdrive:ada-nest-adobe-stock/campaigns/<id>/``:
+For one campaign under ``gdrive:ada-nest/adobe-stock/campaigns/<id>/``:
 
 1. Find landed candidates in ``30-candidates/<asset-id>/`` that have an
    image (png/jpg) plus ``<asset-id>.manifest.json``.
@@ -20,12 +20,13 @@ https URLs minted here — never local paths or invented links.
 Usage:
   publish-previews.py --campaign AS-2026-11-05-REMOTE-WORK-001
   publish-previews.py --campaign AS-... --dry-run
-  publish-previews.py --reindex-only --remote gdrive:ada-nest-adobe-stock
+  publish-previews.py --reindex-only --remote gdrive:ada-nest/adobe-stock
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -33,7 +34,8 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-REMOTE_DEFAULT = "gdrive:ada-nest-adobe-stock"
+REMOTE_DEFAULT = os.environ.get("ADA_ADOBE_STOCK_REMOTE",
+                                "gdrive:ada-nest/adobe-stock")
 RELAY_HOST_DEFAULT = "idc03"
 ARCHIVE_DIR = "~/.local/share/ada/line-media/renders"
 PUBLIC_BASE = "https://157.85.102.125.sslip.io/relay-img"

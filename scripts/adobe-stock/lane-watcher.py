@@ -10,7 +10,7 @@ wake-ups are visible without manual checks.
 Registry entry:
   {"lane": "omen-sd"|"kk-mac-nest", "job": "...", "port": 8400,
    "campaign": "AS-...", "asset_id": "...", "request_id": "...",
-   "remote": "gdrive:ada-nest-adobe-stock", "label": "optional"}
+   "remote": "gdrive:ada-nest/adobe-stock", "label": "optional"}
 
 Usage:
   lane-watcher.py --pending ~/.local/state/adobe-stock-lane-watcher/pending.json
@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -33,6 +34,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LAND = HERE / "land-render.py"
 DEFAULT_PENDING = Path.home() / ".local/state/adobe-stock-lane-watcher/pending.json"
+REMOTE_DEFAULT = os.environ.get("ADA_ADOBE_STOCK_REMOTE",
+                                "gdrive:ada-nest/adobe-stock")
 
 
 def load_pending(path: Path) -> list[dict]:
@@ -62,7 +65,7 @@ def land_render_status(entry: dict) -> dict:
     if entry["lane"] == "kk-mac-nest":
         cmd += ["--pack", entry.get("pack") or entry["job"],
                 "--remote", entry.get("remote",
-                                     "gdrive:ada-nest-adobe-stock")]
+                                     REMOTE_DEFAULT)]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     try:
         return json.loads(r.stdout[r.stdout.index("{"):])
@@ -82,7 +85,7 @@ def land_render_full(entry: dict) -> dict:
     if entry["lane"] == "kk-mac-nest":
         cmd += ["--pack", entry.get("pack") or entry["job"],
                 "--remote", entry.get("remote",
-                                     "gdrive:ada-nest-adobe-stock")]
+                                     REMOTE_DEFAULT)]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     try:
         return json.loads(r.stdout[r.stdout.index("{"):])

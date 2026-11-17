@@ -2,7 +2,7 @@
 
 Document archiving API per `docs/kb/document-archive-service.md`: page images
 in (base64, RAM-only) → sha256 + dhash → dedup against MDDB → resumable
-upload to `gdrive:ada-documents/<YYYY>/<slug>/` → one metadata doc in the
+upload to `gdrive:ada-nest/ada-documents/<YYYY>/<slug>/` → one metadata doc in the
 MDDB `documents` collection. No page bytes ever hit idc03's disk or MDDB.
 
 Transport is direct Drive REST (resumable PUT + `alt=media` GET) with the
@@ -91,7 +91,7 @@ curl -s http://100.102.134.91:11025/v1/archive \
 | `RCLONE_CONF` | `~/.config/rclone/rclone.conf` | needs `[gdrive]` client_id/secret/token |
 | `MDDB_BASE` | `http://100.102.134.91:11023` | |
 | `MDDB_COLLECTION` | `documents` | |
-| `DRIVE_ROOT` | `ada-documents` | |
+| `DRIVE_ROOT` | `ada-documents` | root folder **name** (name-keyed lookup, not a path); lives at `ada-nest/ada-documents` since 2026-11 |
 | `DHASH_MAX_HAMMING` | `6` | near-dup threshold |
 | `DOC_ARCHIVE_MAX_FILES` | `50` | per request |
 

@@ -1,0 +1,22 @@
+title: Gdrive root consolidation — phase-B live-roots audit
+subtitle: OPS-1187 — every remaining root dir is a named API root; verdict hold, registry + runbook written
+icon: archive
+card: gdrive-root-consolidation-archive-dead-p-9c04d1
+
+state: audited  # decision requested on card: hold vs attended ada-nest-* nest-in
+
+audit_2026-11-08:
+  root_dirs_total: 65
+  chaba_owned_roots: 17  # incl Tony AI/backup/chaba subdir contract
+  dead_or_empty: 0       # phase A already removed the dead set
+  findings:
+    - "all remaining dirs have live consumers — hardcoded gdrive:<dir> strings (scripts/systemd/stacks), whole-Drive FUSE mount paths on tony-dell (~/GoogleDrive), or external consumers (colab notebooks, kk-mac/video workers, ada-voice repo)"
+    - "no central remote registry exists — each script hardcodes its remote default; a rename = repo-wide sed + chaba-repo-sync propagation window (~15-60min) where old code writes the old path"
+    - "backups/ = DR cold tier (162GB): mddb-standby-pull + mddb-gdrive-tier services write, cold-restore runbooks read — never rename"
+    - "chaba-media-corpus + 'Tony AI' = FUSE mount contracts (ada-ha.container Volume=, dell backup_root)"
+  artifacts:
+    - docs/ssot/infrastructure/ssot.gdrive-roots.yml   # per-dir registry
+    - docs/kb/gdrive-root-consolidation.md             # consumer map + safe-migration procedure
+  decision:
+    recommendation: "close phase B as hold — ada-nest-* prefix already groups queue roots; nest-in buys no operational value vs queue-stall risk"
+    alternative: "attended ada-nest-* nest-in migration (rclone moveto + repo sed + sync-window + external consumer fixes) — steps in kb doc"

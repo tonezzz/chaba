@@ -1,0 +1,122 @@
+title: gdrive root consolidation — phase-B live-dir migration plan
+ref: OPS-1187
+card: gdrive-root-consolidation-archive-dead-p-9c04d1
+updated: 2026-11-08
+status: awaiting layout decision + move approval (board request on card)
+
+context: >-
+  Phase A (done 2026-11-08): 6 dead pilot dirs -> gdrive:ada-nest/archive/,
+  2 truly-empty dirs removed, appsheet/cold-storage/archive retained (not
+  empty). Phase B = consolidate the ~10 remaining chaba-owned LIVE dirs at
+  root. Verified this session: every phase-B dir has >=1 live consumer, so
+  no move is free — each needs consumer switchover, not just rclone move.
+  rclone server-side move preserves file/dir IDs; only PATH-based
+  consumers break (rclone paths, colab MyDrive mounts, drive mounts).
+
+env_override_prep:
+  note: >-
+    This session made every repo-hardcoded phase-B root env-overridable,
+    defaults unchanged. After merge, a move = rclone move + set env on
+    consumer hosts (no code redeploy needed per host).
+  vars:
+    ADA_ADOBE_STOCK_REMOTE: gdrive:ada-nest-adobe-stock  # was already in reindex-sync.sh
+    DEVNEST_REMOTE: gdrive:ada-nest-devnest
+    KK_LLM_REMOTE: gdrive:ada-nest-kk-llm
+    KK_MAC_VIDEO_PILOT_REMOTE: gdrive:ada-nest-kk-mac-video-pilot
+    NEST_BRAINS_REMOTE: gdrive:nest/brains
+    CHABA_GDRIVE_BUNDLES: gdrive:chaba/bundles
+    DRIVE_ROOT: ada-documents          # doc_archive.py already had it; gdrive-archive.py aligned
+    NOTEBOOKLM_KB_COLLECTION: gdrive:notebooklm/chaba  # ssot fallback retained
+
+dirs:
+  ada-nest:
+    files: main root; ~35 repo refs
+    verdict: STAYS — canonical work root (queue, packs, datasets, projects)
+  ada-nest-adobe-stock:
+    files: 37 obj / 0.08 GiB; last write 2026-11-08 13:14 (LIVE today)
+    consumers: scripts/adobe-stock/* (repo); lane-watcher/reindex timers
+    proposed: gdrive:ada-nest/adobe-stock
+    risk: low — repo-only consumers; in-flight lane registry entries carry
+      "remote" field per job (old entries keep working via their own path
+      until they drain, or rewrite pending.json)
+  ada-nest-devnest:
+    files: 210 obj; last write 2026-10-31
+    consumers: devnest_report_feed, devnest_capacity_broker, kk_mac_plan_validator
+    proposed: gdrive:ada-nest/devnest
+    risk: low — repo-only
+  ada-nest-kk-llm:
+    files: 453 obj; last write 2026-11-06
+    consumers: kk_mac_capacity_producer/broker/metrics; KK-Mac worker
+      (external host) polls inbox/packs — verify KK side reads via rclone
+      path that can be re-pointed
+    proposed: gdrive:ada-nest/kk-llm
+    risk: medium — external KK-Mac consumer
+  ada-nest-kk-mac-video-pilot:
+    files: 329 obj / 8.95 GiB; last write 2026-11-04
+    consumers: video_queue_status default; queue claim docs; ~5 stale claims
+    proposed: gdrive:ada-nest/kk-mac-video-pilot
+    risk: medium — queue root w/ claim lifecycle; reconcile stale claims
+      first (evals/opencode-lane/out/video-stale-claim-*.md)
+  nest:
+    files: 7 obj; brains store
+    consumers: nest-brain-pack.sh, nest-brain-restore.sh (repo) + gcrypt
+      env on tony-dell (outside repo)
+    proposed: gdrive:ada-nest/nest/brains OR keep — DR-adjacent
+    risk: medium-high — portable-brains restore path
+  backups:
+    files: 33 obj / 150.85 GiB
+    consumers: cold-restore runbooks; ~49 refs on idc03 (units/env outside
+      repo); omen partition snapshots
+    proposed: KEEP AT ROOT — DR discoverability beats tidiness; a restore
+      under stress must not depend on remembering a nested path
+    risk: HIGH — do not move without Tony sign-off + runbook updates
+  chaba:
+    files: 5 obj (bundles + 2 stray xlsx)
+    consumers: deploy-card.sh gdrive_archive (repo) — cold artifact tier
+    proposed: keep at root OR gdrive:ada-nest/chaba-bundles; stray xlsx
+      (Chaba 001.xlsx, Hermes test.xlsx) are manual files — leave them
+    risk: low
+  ada-documents:
+    files: 557 obj / 2.62 GiB; last write 2026-09-23
+    consumers: doc-archive service on idc01 (DRIVE_ROOT env), gdrive-archive.py
+    proposed: keep at root (service surface) OR ada-nest/documents
+    risk: low-medium — env already configurable on idc01 unit
+  chaba-media-corpus:
+    files: 6579 obj / 9.31 GiB; last write 2026-10-05
+    consumers: tony-dell ada-ha.container bind-mounts
+      ~/GoogleDrive/chaba-media-corpus/yt-live-media:ro; idc02 /apps/yt-corpus
+      serves rsync snapshot — mount path breaks on move
+    proposed: keep at root (mounted name) until ada-ha volume is repointed
+    risk: medium — host mount contract, not just rclone
+  colab-cache:
+    files: 1 obj / 0.16 GiB (cifar10 tarball)
+    consumers: documented procedure colab-gdrive-cache; colab notebooks
+      mount MyDrive/colab-cache — external, path-hardcoded
+    proposed: keep at root — it's a cache, recreatable, procedure-documented
+    risk: low to keep; medium to move (notebook breakage)
+  notebooklm:
+    files: 458 obj; last write 2026-09-15
+    consumers: notebooklm-kb-sync.py (env now overridable); NotebookLM
+      source uploads likely reference these docs
+    proposed: keep at root — sync target, dormant
+    risk: low
+  appsheet/archive/cold-storage: retained per phase-A audit (not empty)
+
+migration_recipe: >-
+  Per dir, in order: (1) decide target layout (board request); (2) merge
+  env-override prep (this session); (3) set env=NEW path in consumer unit
+  env files / ad-hoc callers' env BEFORE move where possible, else rely on
+  code default flip after exec-checkout sync (hourly); (4) rclone move
+  gdrive:<old> gdrive:<new> (server-side, IDs preserved); (5) verify:
+  producer writes land at new path + consumer surface reads (timer log or
+  manual run); (6) grep repo+host artifacts for the old path; (7) card
+  comms. For kk-mac-video-pilot also reconcile the 5 stale claims first.
+  For chaba-media-corpus repoint the ada-ha bind-mount first.
+
+open_decisions:
+  - "layout: ada-nest-* dirs -> gdrive:ada-nest/<short-name> (recommended)
+    vs ada-nest/lanes/<name> vs keep flat"
+  - "service dirs (backups/chaba/ada-documents/chaba-media-corpus/
+    colab-cache/notebooklm/nest): keep at root with documented exceptions
+    (recommended) vs consolidate under a service root"
+  - "go-ahead to execute the 4 ada-nest-* moves after merge"

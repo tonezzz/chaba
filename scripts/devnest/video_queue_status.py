@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import re
 import subprocess
 import time
@@ -90,7 +91,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--remote", action="append",
-        default=["gdrive:ada-nest-kk-mac-video-pilot",
+        default=[os.environ.get("KK_MAC_VIDEO_PILOT_REMOTE",
+                                "gdrive:ada-nest/kk-mac-video-pilot"),
                  "gdrive:ada-nest"],
     )
     ap.add_argument("--stale-hours", type=float, default=2.0)
