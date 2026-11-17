@@ -1,7 +1,7 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
 column: doing
-updated: 2026-11-17 23:38
+updated: 2026-11-17 23:40
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
   pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
@@ -95,6 +95,11 @@ comms:
 - at: 2026-11-17 23:38
   from: chaba
   text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-18 00:08'
+- at: 2026-11-17 23:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233752-productionize-enriched-t1-dist failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-233752-productionize-enriched-t1-dist by
+    hand.'
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
