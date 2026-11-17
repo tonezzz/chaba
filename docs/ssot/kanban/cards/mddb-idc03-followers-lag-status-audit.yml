@@ -1,7 +1,7 @@
 id: mddb-idc03-followers-lag-status-audit
 title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
 column: done
-updated: 2026-11-17 18:55
+updated: 2026-11-17 21:07
 priority: high
 tags:
 - mddb
@@ -113,6 +113,10 @@ comms:
     leader view shows idc02 warning lag_ms ~4.6s, con01 healthy LSN-matched. HTTP /health 200 on all planes. Pattern
     matches the earlier diagnosis (metric/clock divergence + real lag spikes on idc02), but the spikes are now post-upgrade
     and matter if idc02 is ever used for production read'
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
