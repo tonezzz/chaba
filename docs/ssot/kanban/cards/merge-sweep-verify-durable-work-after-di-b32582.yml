@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
 column: done
-updated: 2026-11-17 18:40
+updated: 2026-11-17 20:08
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -136,6 +136,11 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:08
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
