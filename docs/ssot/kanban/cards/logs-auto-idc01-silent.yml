@@ -6,7 +6,7 @@ program: logs-digest
 priority: high
 note: 'Auto-recovered 2026-10-22: `idc01-silent` condition cleared — shipper healthy again.'
 help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
-updated: 2026-11-17 18:37
+updated: 2026-11-17 21:04
 brief: 'The log digest flagged something worth a look: logs `idc01` silent 16h. Read the note, then fix it or close
   the card.'
 ref: OPS-0178
@@ -37,5 +37,9 @@ comms:
 - at: 2026-11-17 18:37
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:04
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: triage
