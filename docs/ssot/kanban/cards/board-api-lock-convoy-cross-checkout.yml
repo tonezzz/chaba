@@ -33,5 +33,12 @@ comms:
 - at: 2026-11-17 18:23
   from: devin
   text: closed by devin
+- at: 2026-11-17 18:23
+  from: devin
+  text: 'Resolved 2026-11-17 evening. Findings: the 17:01-17:10 convoy ran on pre-hardening code — the served checkout
+    carried uncommitted lock fixes (bounded acquire_lock->503, BrokenPipe swallow df277fb30b4, board-api.lock.repo
+    checkout sentinel) that only reached the running service at the 18:04 restart. Remaining real gap fixed now:
+    git-safe-pull took /tmp/board-render.lock unconditionally, so the exec checkout''s chaba-repo-sync queued >60s
+    behind served renders while writes piled up. Commit f6036a47'
 action:
   status: done
