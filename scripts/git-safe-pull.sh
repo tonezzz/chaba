@@ -463,6 +463,28 @@ _pull_phase() {
 # card files stashed — that mid-pull render wrote a regressed cards.json
 # (queued cards visibly vanished, OPS-1107).
 RENDER_LOCK="${SAFE_PULL_RENDER_LOCK-/tmp/board-render.lock}"
+BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
+# Lock scoping (OPS-1314, 2026-11-16 incident): board-api declares the
+# checkout the locks protect in <board-lock>.repo (written at service
+# start). A pull of a DIFFERENT checkout — e.g. the exec tree on the
+# board host, synced by chaba-repo-sync — holding these shared locks
+# stalls every API write AND every board render for the whole pull
+# phase for zero protection: the autostash/render window the locks guard
+# lives in the served tree, not this one. The render flock gets the same
+# skip — it protects the same served checkout's render snapshot, so a
+# foreign pull has no business queueing behind it (2026-11-17 convoy:
+# exec-checkout safe-pull waited >60s on board-render.lock while
+# board-api writes piled up behind it). Absent/empty sentinel -> hold
+# both (conservative, pre-sentinel behavior).
+if [ -n "$BOARD_LOCK" ] && [ -f "$BOARD_LOCK.repo" ]; then
+  _api_repo="$(head -1 "$BOARD_LOCK.repo" 2>/dev/null || true)"
+  _repo_real="$(cd "$REPO" 2>/dev/null && pwd -P || echo "$REPO")"
+  if [ -n "$_api_repo" ] && [ "$_api_repo" != "$_repo_real" ]; then
+    echo "git-safe-pull: board locks protect $_api_repo — pull of $REPO skips them" >&2
+    RENDER_LOCK=""
+    BOARD_LOCK=""
+  fi
+fi
 SAFE_PULL_RENDER_FD=""
 if [ -n "$RENDER_LOCK" ] && command -v flock >/dev/null 2>&1; then
   { exec {SAFE_PULL_RENDER_FD}>"$RENDER_LOCK"; } 2>/dev/null \
@@ -475,22 +497,6 @@ if [ -n "$RENDER_LOCK" ] && command -v flock >/dev/null 2>&1; then
   fi
 fi
 
-BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
-# Lock scoping (OPS-1314, 2026-11-16 incident): board-api declares the
-# checkout the lock protects in <lock>.repo (written at service start).
-# A pull of a DIFFERENT checkout — e.g. the exec tree on the board host,
-# synced by chaba-repo-sync — holding this shared lock stalls every API
-# write for the whole pull phase for zero protection: the autostash
-# window the lock guards lives in the served tree, not this one.
-# Absent/empty sentinel -> hold (conservative, pre-sentinel behavior).
-if [ -n "$BOARD_LOCK" ] && [ -f "$BOARD_LOCK.repo" ]; then
-  _api_repo="$(head -1 "$BOARD_LOCK.repo" 2>/dev/null || true)"
-  _repo_real="$(cd "$REPO" 2>/dev/null && pwd -P || echo "$REPO")"
-  if [ -n "$_api_repo" ] && [ "$_api_repo" != "$_repo_real" ]; then
-    echo "git-safe-pull: board lock protects $_api_repo — pull of $REPO skips it" >&2
-    BOARD_LOCK=""
-  fi
-fi
 SAFE_PULL_LOCK_FD=""
 if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   # Brace group: a bare `exec {fd}>file 2>/dev/null` would redirect the

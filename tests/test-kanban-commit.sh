@@ -443,6 +443,50 @@ check "J: streak file cleared" "[ ! -f '$STREAK' ]"
 check "J: recovery noted on alert card" \
   "grep -q 'recovered after 3 consecutive failed ticks' '$TMP/served/docs/ssot/kanban/cards/ops-kanban-commit-guard.yml'"
 
+# --- K: repo-scoped board locks (2026-11-17 convoy) -------------------
+# board-api declares the checkout the locks protect in <lock>.repo. A
+# pull of a DIFFERENT checkout skips BOTH the board write flock and the
+# render flock — the autostash/render window lives in the served tree,
+# so a foreign pull queueing behind them protects nothing (the exec
+# checkout's chaba-repo-sync waited >60s on board-render.lock while
+# board-api writes piled up, 2026-11-17 17:01-17:10 +07).
+# Upstream change via the seed clone so BOTH checkouts are behind and
+# the pull phase (where locks live) actually runs — the fast path
+# skips locks entirely when upstream is already in HEAD.
+(
+  cd "$TMP/seed" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  echo "title: upstream-k" > "docs/ssot/kanban/cards/card-k.yml"
+  git add -A && git commit -qm "upstream change for K" || exit 1
+  git push -q origin master || exit 1
+)
+# sentinel names the served checkout as the lock owner
+( cd "$TMP/served" && pwd -P ) > "$TMP/board-api.lock.repo"
+# hold BOTH locks — a foreign pull must not queue behind either
+exec 8>"$TMP/board-render.lock"; exec 9>"$TMP/board-api.lock"
+flock 8; flock 9
+SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" \
+SAFE_PULL_RENDER_LOCK="$TMP/board-render.lock" \
+SAFE_PULL_BOARD_LOCK_WAIT_S=1 \
+  bash "$SAFE_PULL" "$TMP/other" >/dev/null 2>"$TMP/k1.err"; rc_k1=$?
+check "K: foreign-checkout pull exits 0 with locks held" "[ $rc_k1 -eq 0 ]"
+check "K: foreign pull logs the lock skip" \
+  "grep -q 'skips them' '$TMP/k1.err'"
+check "K: foreign pull never waited on the locks" \
+  "! grep -q 'pulling anyway' '$TMP/k1.err'"
+# the served checkout itself still takes both locks — bounded wait,
+# bypass warnings prove the flocks were really contended
+SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" \
+SAFE_PULL_RENDER_LOCK="$TMP/board-render.lock" \
+SAFE_PULL_BOARD_LOCK_WAIT_S=1 \
+  bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/k2.err"; rc_k2=$?
+check "K: served pull exits 0 with locks held" "[ $rc_k2 -eq 0 ]"
+check "K: served pull waited on render lock" \
+  "grep -q 'render lock .*pulling anyway' '$TMP/k2.err'"
+check "K: served pull waited on board lock" \
+  "grep -q 'board lock .*pulling anyway' '$TMP/k2.err'"
+flock -u 8; flock -u 9; exec 8>&- 9>&-
+
 echo
 echo "passed: $PASS  failed: $FAIL"
 [ $FAIL -eq 0 ]
