@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 18:07
+updated: 2026-11-17 18:10
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -155,6 +155,13 @@ comms:
     Recommendation: keep it excluded from dev transcript retention; separately audit local Caddy/app consumers,
     then stop+disable and update SSOT only if no consumers remain. No service change was made. Request pi-pwa-lane-classification
     remains open (suggested: exclude). PR #182 synt'
+- at: 2026-11-17 18:10
+  from: devin
+  text: 'Final offline checks: `pytest tests/ada -q` passes (294 passed, 1 skipped); PR #182 `syntax` passes. GitHub
+    `validate` fails only on the same two pre-existing missing verify.py references in ada-docs-search-drift.yml
+    and ops-event-plane-split-brain-audit.yml; full SSOT schema validation passes. Recommendation: keep retired
+    ada-pi-pwa excluded from dev retention. Its unit is still active on loopback :8001, but Tailscale Serve has
+    no :8001 route (root uses :8002); no service changes made. Audit lo'
 action:
   type: dispatch
   repo: chaba
