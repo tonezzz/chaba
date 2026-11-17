@@ -10,7 +10,7 @@ priority: high
 note: 100% used (0.0 GiB free)
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-11-17 21:04
+updated: 2026-11-17 21:28
 comms:
 - at: 2026-11-07 16:52
   from: devin
@@ -44,3 +44,8 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:28
+  from: devin
+  text: 'FALSE POSITIVE 2026-11-17: /System/Volumes/Data/home is a macOS autofs map entry (map auto_home, 0Bi, 100%)
+    — not real usage. Actual data volume /dev/disk3s5: 65Gi free, 85% used — well above the 20GB lane floor. disk-auto
+    probe should skip autofs/map mounts on macOS (filter fstype=autofs or the auto_home map). Closing.'
