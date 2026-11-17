@@ -34,12 +34,12 @@ run_check "recall canary" python3 "$ROOT/scripts/ada/recall-canary.py" --json /t
 # 3. Memory script unit tests
 run_check "memory unit tests" python3 -m pytest "$ROOT/tests/ada_memory/test_memory_scripts.py" -q || true
 
-# 4. Developer recall live scenario on ada-pi-pwa (tony instance)
+# 4. Developer recall live scenario on the Tony PWA surface (:8002)
 run_check "developer recall scenario" \
     ssh -o BatchMode=yes -o ConnectTimeout=10 idc03 \
-    "set -a; . /home/tony/.config/secrets/ada-pi-pwa.env; \
+    "set -a; . /home/tony/.config/secrets/tony-ha/backend.env; \
      $ADA_PI/.venv/bin/python $ADA_PI/scripts/scenario-live.py \
-       --url ws://127.0.0.1:8001/ws \
+       --url ws://127.0.0.1:8002/ws \
        $ADA_PI/tests/scenarios-live/developer_recall_runbook.yaml" || true
 
 TOTAL=${#SUMMARY[@]}

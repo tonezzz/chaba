@@ -41,7 +41,7 @@ CONSUMERS = {
     "ada-ha-michael.env": "ada-ha-michael.service",
     "ada-kk.env":       "ada-kk.service (Kaewta/kk-ha lane)",
     "ada-dev.env":      "ada-dev.service",
-    "ada-pi-pwa.env":   "ada-pi-pwa.service",
+    "ada-pi-pwa.env":   "legacy helper credentials (no active service unit)",
     "line-bot.env":     "ada-line-relay.service",
     "telegram-ada.env": "ada-tg-relay.service",
     "telegram-kk.env":  "ada-tg-relay-kk.service",

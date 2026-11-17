@@ -8,15 +8,15 @@ set -euo pipefail
 
 instance="${1:-}"; want_qr="${2:-}"
 case "$instance" in
-  tony)    host=idc03;     env_name=ada-ha-tony.env;    base=https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ ;;
-  michael) host=idc03;     env_name=ada-ha-michael.env; base=https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ ;;
-  ada-voice)  host=idc03;     env_name=ada-pi-pwa.env;     base=https://idc03.taila0626a.ts.net/ ;;
+  tony)    host=idc03; env_path=tony-ha/backend.env;    base=https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ ;;
+  michael) host=idc03; env_path=michael-ha/backend.env; base=https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ ;;
+  ada-voice) host=idc03; env_path=tony-ha/backend.env; base=https://idc03.taila0626a.ts.net/ ;;
   *) echo "usage: $0 <tony|michael|ada-voice> [--qr]" >&2; exit 2 ;;
 esac
 
-key="$(ssh "$host" "grep -oP '(?<=^ADA_API_KEY=).*' ~/.config/secrets/$env_name")"
+key="$(ssh "$host" "grep -oP '(?<=^ADA_API_KEY=).*' ~/.config/secrets/$env_path")"
 if [[ -z "$key" ]]; then
-  echo "no ADA_API_KEY in $host:~/.config/secrets/$env_name" >&2
+  echo "no ADA_API_KEY in $host:~/.config/secrets/$env_path" >&2
   exit 1
 fi
 

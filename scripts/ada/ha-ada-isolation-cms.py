@@ -40,7 +40,6 @@ CARD_REF = "kanban: ha-ada-isolation (HOM-0464)"
 # Ada backends on idc03 -> their env file + the HA lane they act on.
 BACKENDS = {
     "ada-ha-tony":    {"env": "ada-ha-tony.env",    "ha": "tony-ha",    "svc": "svc-ada"},
-    "ada-pi-pwa":     {"env": "ada-pi-pwa.env",     "ha": "tony-ha",    "svc": "svc-ada"},
     "ada-ha-michael": {"env": "ada-ha-michael.env", "ha": "michael-ha", "svc": "svc-ada-michael"},
     "ada-kk":         {"env": "ada-kk.env",         "ha": "kk-ha",      "svc": "svc-kaewta"},
     "ada-dev":        {"env": "ada-dev.env",        "ha": None,         "svc": None},
@@ -49,6 +48,7 @@ BACKENDS = {
 
 # Approved Gemini pool split (card ha-ada-isolation, decided 2026-10-11):
 # tony-lane envs may share a key with each other but never with member/dev.
+# The legacy PWA env remains available to batch helpers, but it is not a backend.
 TONY_ENVS = {"ada-ha-tony.env", "ada-pi-pwa.env"}
 
 
@@ -239,8 +239,6 @@ def assess(envs, units, users, services):
 COUPLING = [
     ("ada-ha-tony", "idc03:8002", "tony-ha (tailnet :8123)", "svc-ada LLAT (non-admin)",
      "REST /api/states+services (light/switch/fan/input_boolean/cover/button/media_player) + ~5s poller"),
-    ("ada-pi-pwa", "idc03:8001", "tony-ha (tailnet)", "svc-ada LLAT (non-admin)",
-     "CMS/enroll frontend + full tool set — only 2 exclusions (habit tools)"),
     ("ada-ha-michael", "idc03:8003", "michael-ha (tailnet)", "Michael OWNER LLAT — Phase B pending approval",
      "same tool set"),
     ("ada-kk", "idc03:8007", "kk-ha — no creds in env", "—", "voice card browser→/ada-ws/kk only"),

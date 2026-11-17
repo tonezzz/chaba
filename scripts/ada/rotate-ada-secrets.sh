@@ -10,8 +10,8 @@
 #   GEMINI_API_KEY ...UEQA  — exposed shared key (all ada services + mddb
 #                             embedding proxy). ...jjmw files are a separate
 #                             key and are NOT touched.
-#   HOME_ASSISTANT_TOKEN ...6823 — tony-ha token, remote URL (ada-ha-tony,
-#                             ada-pi-pwa on mn01/idc01/tony-dell)
+#   HOME_ASSISTANT_TOKEN ...6823 — tony-ha token, remote URL (ada-ha-tony;
+#                             legacy ada-pi-pwa.env is not a service unit)
 #   HOME_ASSISTANT_TOKEN ...d-uM — tony-ha token, loopback URL (ada-ha-pwa,
 #                             ada-ha-tony, chaba-guest on tony-dell)
 #   HOME_ASSISTANT_TOKEN ...M_sY — michael-ha token (ada-ha-michael)
@@ -51,8 +51,8 @@ HA_MICHAEL_SUFFIX="M_sY"
 restart_units() {
   case "$1" in
     mn01)      echo "ada-ha-tony.service ada-ha-michael.service" ;;
-    tony-dell) echo "ada-pi-pwa.service chaba-guest.service chaba-guest-lan.service" ;;
-    idc03)     echo "ada-ha-tony.service ada-ha-michael.service ada-pi-pwa.service gemini-ollama-proxy.service" ;;
+    tony-dell) echo "chaba-guest.service chaba-guest-lan.service" ;;
+    idc03)     echo "ada-ha-tony.service ada-ha-michael.service gemini-ollama-proxy.service" ;;
     idc02)     echo "ada-lab.service" ;;
     idc01)     echo "" ;;  # warm-DR: update standby envs, but units are masked — the is-active gate skips restarts
   esac

@@ -38,9 +38,9 @@ scenarios:
   - name: reusable-procedure
     instance: tony
     sessions:
-      - "Troubleshooting session: the ada service on tony-dell wasn't coming back after reboot. The fix was enabling linger and then 'systemctl --user restart ada-pi-pwa.service'. The user asked ada to remember the restart procedure."
+      - "Troubleshooting session: the Ada service on idc03 wasn't coming back after reboot. The fix was enabling linger and then running 'systemctl --user restart ada-ha-tony.service'. The user asked Ada to remember the restart procedure."
     expect:
-      - {contains: ["systemctl", "ada-pi-pwa"], kind: procedure}
+      - {contains: ["systemctl", "ada-ha-tony"], kind: procedure}
     max_extra: 1
 
   - name: person-fact

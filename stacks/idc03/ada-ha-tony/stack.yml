@@ -17,7 +17,8 @@ state:
 ports:
   - "127.0.0.1:8002 — uvicorn pwa_server"
 restore: >-
-  Same code path as ada-pi-pwa; envs portable. On failover start ada-*
+  Uses the shared PWA/API code path formerly run by ada-pi-pwa; envs portable.
+  On failover start ada-*
   units on idc01 in dependency order after mddb promote.
 related_cards: [idc01-return-role]
 status: deployed
