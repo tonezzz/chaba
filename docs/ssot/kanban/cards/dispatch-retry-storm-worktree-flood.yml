@@ -1,7 +1,7 @@
 id: dispatch-retry-storm-worktree-flood
 title: Dispatch retry loop spawned ~125 worktrees on omen (Nov 8-9) — needs dedupe/backoff
 column: doing
-updated: 2026-11-17 18:59
+updated: 2026-11-17 19:07
 priority: high
 tags:
 - dispatch
@@ -68,6 +68,12 @@ comms:
 - at: 2026-11-17 18:59
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 0.91 > 0.85)'
+- at: 2026-11-17 19:07
+  from: devin
+  text: 'Done: runner-agent.py now keeps a per-card failure ledger (retry-ledger.json) — exponential backoff 30m→1h→6h
+    cap, hard hold after 3 consecutive fails (RUNNER_RETRY_MAX). Producer re-arms (re-spawned-from-report-page,
+    sentinel) do NOT reset it; only deliberate retry/queue comms markers forgive. 36h flood sim: 3 claims vs ~144
+    before. 609 board tests pass (16 new retry cases). Dry-run verified.'
 spec: 'Goal: Implement per-card backoff and a live retry cap in the dispatch loop on tony-omen to prevent worktree
   floods like the ~130 accumulated on Nov 8-9 for cards such as timer-log-shipper-severe and ada-proactive-digest-morning-b.
   Host/repo: tony-omen, chaba. Constraints: Prevent rapid continuous re-dispatching of failed cards without backoff
