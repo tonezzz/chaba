@@ -1,7 +1,7 @@
 id: board-api-exec-checkout-mismatch
 title: board-api running from exec checkout — card writes not reaching served/web board
 column: done
-updated: 2026-11-17 18:14
+updated: 2026-11-17 18:35
 brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
   sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
   kanban page.'
@@ -59,6 +59,10 @@ comms:
 - at: 2026-11-17 18:14
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
