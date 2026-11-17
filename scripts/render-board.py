@@ -97,17 +97,39 @@ def _branch_merged(br: str) -> bool:
 
 
 def _outcome_index() -> dict:
-    """dispatch-outcome-*.md files, stem -> path. Scoped to docs/ssot/jobs
-    in the repo and each dispatch worktree — a full-tree rglob per card
-    made renders take ~17s."""
+    """dispatch-outcome-*.md files, stem -> path.
+
+    Sessions write outcomes at the worktree ROOT (the dispatch prompt's
+    ./dispatch-outcome-*.md contract, SESSION_SCRATCH_RE in
+    dispatch_repos) — they merge to repo root. So flat globs suffice;
+    the previous per-worktree rglob of docs/ssot/jobs scanned every file
+    under every dispatch-wt-* sibling (~60-100s on worktree-heavy hosts,
+    OPS-0127) AND missed the root files where outcomes actually land."""
     idx = {}
-    roots = [REPO / "docs/ssot/jobs"]
-    roots += [wt / "docs/ssot/jobs" for wt in REPO.parent.glob("dispatch-wt-*")]
-    for root in roots:
-        if not root.is_dir():
-            continue
-        for f in root.rglob("dispatch-outcome-*.md"):
+
+    def add_flat(root: Path):
+        for f in root.glob("dispatch-outcome-*.md"):
             idx.setdefault(f.stem, f)
+
+    add_flat(REPO)
+    # legacy filed location: a few outcomes live under
+    # docs/ssot/jobs/<domain>/. Repo scan is a full rglob (one tree,
+    # cheap); worktrees get a bounded 2-level glob — deeper copies are
+    # stale branch-time duplicates of repo files anyway.
+    jobs = REPO / "docs/ssot/jobs"
+    if jobs.is_dir():
+        for f in jobs.rglob("dispatch-outcome-*.md"):
+            idx.setdefault(f.stem, f)
+    for wt in REPO.parent.glob("dispatch-wt-*"):
+        if not wt.is_dir():
+            continue
+        add_flat(wt)
+        wj = wt / "docs/ssot/jobs"
+        if wj.is_dir():
+            add_flat(wj)
+            for d in wj.iterdir():
+                if d.is_dir():
+                    add_flat(d)
     return idx
 
 
