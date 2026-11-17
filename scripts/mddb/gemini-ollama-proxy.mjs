@@ -63,6 +63,37 @@ function orDailyCapHit() {
   if (today !== orCallsDay) { orCallsDay = today; orCallsToday = 0; }
   return OR_FALLBACK_DAILY_CAP > 0 && orCallsToday >= OR_FALLBACK_DAILY_CAP;
 }
+// Paid-Gemini spend firewall (2026-11-17, card
+// idc03-gemini-ollama-proxy-paid-fallback): the paid leg was designed for
+// short outage windows, but with the free key quota-dead ~1k/day against
+// ~58k requests and the OR cap burning out mid-day it became the de-facto
+// primary — ~39k billed calls/day (~$3.80/day). PAID_GEMINI_HOURLY_CAP
+// trickles service through a sustained outage; PAID_GEMINI_DAILY_CAP is
+// the absolute bound. Cap-hit skips the paid leg exactly like the OR cap
+// — the caller hard-fails (mddb marks the doc's embedding failed, which
+// is retryable on recovery) instead of draining the key. 0 = uncapped.
+const PAID_GEMINI_DAILY_CAP = parseInt(process.env.PAID_GEMINI_DAILY_CAP || "0", 10);
+const PAID_GEMINI_HOURLY_CAP = parseInt(process.env.PAID_GEMINI_HOURLY_CAP || "0", 10);
+let paidCallsToday = 0;
+let paidCallsDay = new Date().toISOString().slice(0, 10);
+let paidCallsThisHour = 0;
+let paidCallsHour = new Date().toISOString().slice(0, 13);
+function paidCapHit() {
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+  if (today !== paidCallsDay) { paidCallsDay = today; paidCallsToday = 0; }
+  const hour = now.slice(0, 13);
+  if (hour !== paidCallsHour) { paidCallsHour = hour; paidCallsThisHour = 0; }
+  if (PAID_GEMINI_DAILY_CAP > 0 && paidCallsToday >= PAID_GEMINI_DAILY_CAP)
+    return `daily-cap ${PAID_GEMINI_DAILY_CAP} hit`;
+  if (PAID_GEMINI_HOURLY_CAP > 0 && paidCallsThisHour >= PAID_GEMINI_HOURLY_CAP)
+    return `hourly-cap ${PAID_GEMINI_HOURLY_CAP} hit`;
+  return null;
+}
+function paidCallBilled() {
+  paidCallsToday += 1;
+  paidCallsThisHour += 1;
+}
 // Free-key quota breaker (ADA-0138, 2026-11-16): the free GEMINI_API_KEY
 // sat quota-exhausted for days — every request paid up to MAX_RETRIES
 // doomed calls in BOTH the primary leg and the backup chain's
@@ -294,6 +325,23 @@ async function fetchFreeGeminiBatch(texts, geminiModel, outputDimensionality, fa
   }
 }
 
+// Paid-Gemini leg with the spend firewall: only successful (billed)
+// calls count; a cap-hit refuses before any API call is made.
+async function fetchPaidGeminiBatch(texts, geminiModel, outputDimensionality) {
+  const capped = paidCapHit();
+  if (capped) {
+    emitOpsEvent("embed_paid_cap",
+      `Paid Gemini fallback ${capped} — paid leg skipped; embeds hard-fail ` +
+      `until the window resets (today ${paidCallsToday}/${PAID_GEMINI_DAILY_CAP}, ` +
+      `hour ${paidCallsThisHour}/${PAID_GEMINI_HOURLY_CAP})`);
+    throw new Error(`paid Gemini ${capped}`);
+  }
+  const out = await fetchGeminiBatch(
+    texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+  paidCallBilled();
+  return out;
+}
+
 async function fetchOllamaBatch(texts) {
   const resp = await fetch(`${OLLAMA_FALLBACK_BASE}/api/embed`, {
     method: "POST",
@@ -379,11 +427,12 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       }
     }
     // Paid-Gemini leg: same model/vector space as free — strictly better
-    // than the hard-fail below during a free-quota outage.
+    // than the hard-fail below during a free-quota outage. Spend-bounded
+    // by PAID_GEMINI_HOURLY_CAP / PAID_GEMINI_DAILY_CAP.
     if (GEMINI_API_KEY_PAID) {
       try {
-        const out = await fetchGeminiBatch(
-          texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+        const out = await fetchPaidGeminiBatch(
+          texts, geminiModel, outputDimensionality);
         lastBackupProvider = `${geminiModel}-paid`;
         console.log(`served via paid Gemini fallback (${geminiModel})`);
         return out;
@@ -394,7 +443,8 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     // Fail hard — wrong-space fallback is worse than surfacing the
     // failure to the caller.
     const orState = orCircuitOpen ? " circuit-open" : (orCapped ? ` daily-cap ${OR_FALLBACK_DAILY_CAP} hit` : "");
-    throw new Error(`all same-space providers down (OR${orState} + Gemini failed)`);
+    const paidState = GEMINI_API_KEY_PAID && paidCapHit() ? ` + paid ${paidCapHit()}` : "";
+    throw new Error(`all same-space providers down (OR${orState} + Gemini failed${paidState})`);
   }
   if (GEMINI_API_KEY && !skipGemini) {
     try {
@@ -411,11 +461,11 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   // Paid-Gemini leg: identical model + vector space as the free key, so
   // serving it during a free-quota outage keeps the index consistent —
   // strictly better than the different-space Ollama fallback below.
-  // Bounded spend: only reached after the free leg's retries are spent.
+  // Bounded spend: PAID_GEMINI_HOURLY_CAP / PAID_GEMINI_DAILY_CAP.
   if (GEMINI_API_KEY_PAID) {
     try {
-      const out = await fetchGeminiBatch(
-        texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+      const out = await fetchPaidGeminiBatch(
+        texts, geminiModel, outputDimensionality);
       lastBackupProvider = `${geminiModel}-paid`;
       console.log(`served via paid Gemini fallback (${geminiModel})`);
       return out;
@@ -424,7 +474,9 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     }
   }
   if (!OLLAMA_FALLBACK_BASE) {
-    throw new Error("no backup embedding provider configured");
+    const paidState = GEMINI_API_KEY_PAID && paidCapHit()
+      ? ` (paid ${paidCapHit()})` : "";
+    throw new Error(`no backup embedding provider configured${paidState}`);
   }
   console.log(`embedding ${texts.length} input(s) via Ollama ${OLLAMA_FALLBACK_MODEL}`);
   lastBackupProvider = OLLAMA_FALLBACK_MODEL;
@@ -602,6 +654,10 @@ const server = createServer((req, res) => {
         free_gemini_open: freeGeminiCircuitOpen(),
         or_daily_cap: OR_FALLBACK_DAILY_CAP || null,
         or_calls_today: orCallsToday,
+        paid_daily_cap: PAID_GEMINI_DAILY_CAP || null,
+        paid_calls_today: paidCallsToday,
+        paid_hourly_cap: PAID_GEMINI_HOURLY_CAP || null,
+        paid_calls_hour: paidCallsThisHour,
       },
       embed: {
         consecutive_failures: consecutiveEmbedFailures,
