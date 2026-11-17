@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
 column: doing
-updated: 2026-11-17 19:25
+updated: 2026-11-17 19:43
 priority: medium
 tags:
 - mddb
@@ -80,6 +80,13 @@ comms:
   text: 'merge-sweep: devin-task-20261117-184837-scripts-embed-embed-lane-py-do failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-184837-scripts-embed-embed-lane-py-do by
     hand.'
+- at: 2026-11-17 19:43
+  from: devin
+  text: 'Salvage + merge 2026-11-17: session did the work but the unit exited 1 at close-out (idc02 has no push
+    creds — branch stranded locally). Fetched dispatch/20261117-184837-... from idc02 via ssh, cherry-picked 33bec4adf2
+    onto latest origin/master as d317c76fecf, pushed to master. Independent verify of the claimed backfill on :11028
+    vector-stats: devin-handoff 1829->3768 docs (3741 embedded, draining), infrastructure-ssot 6014->7146 total
+    (matches source; 5845 embedded, queue draining), ada-cms-pag'
 action:
   type: dispatch
   repo: chaba
