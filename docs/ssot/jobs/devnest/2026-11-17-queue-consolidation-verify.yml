@@ -1,0 +1,59 @@
+id: 2026-11-17-queue-consolidation-verify
+title: devnest-queue-consolidation tracker — live re-verify + idc03 claim-plane vestige retire
+host: idc03
+card: devnest-queue-consolidation
+subs:
+  - ops-1244a-dispatcher-retire-watch-merge   # done
+  - ops-1244b-one-claimer-jules             # OPEN — jules lane EOL, reroute request raised
+  - ops-1244c-queue-time-classify           # done — _apply_classify_at_queue in board-api
+  - ops-1244d-janitor-merge                 # done — board-janitor job renders 15m on idc03
+  - ops-1244e-catalog-views                 # done — generated/jobs.<host>.yml, 8 files SUPERSEDED
+  - ops-1244f-timer-alert-retype            # done — sentinel emits no action block
+why: >-
+  The tracker card (marked do-not-dispatch after 2026-11-09 decomposition)
+  got claimed by the queue anyway; used the session to re-verify the
+  done-condition against live state on all 4 runners and close the two
+  remaining live vestiges.
+verified_2026_11_17:
+  claim_plane: >-
+    runner-agent.timer enabled+active on idc03/idc02/mn01/tony-omen;
+    installed ~/.local/bin/runner-agent md5 e17fb023... == repo
+    scripts/board/runner-agent.py on all 4 (morning drift defers fixed
+    ~18:40). Queue 25 -> 15, 6 claims running (idc02 x3, omen x2).
+  one_claimer: >-
+    kanban-dispatch.timer was STILL enabled on idc03 — service crashed
+    every 2min tick on the scalar `action:` in the served
+    nest-mgr-v2-actuation card (repo card fixed by 4eba1f957c; served
+    copy still scalar). Disabled --now this session; runner-agent is
+    the only claim unit family fleet-wide.
+  one_catalog: >-
+    repo: 0 dispatch:dispatcher jobs in ssot.jobs.yml; generated views
+    exist. live: chaba-jobs.timer was STILL enabled on idc03 firing a
+    no-job dispatcher tick every 1min (exits 0, pure noise). Disabled
+    --now this session.
+  nest_watch: one declared job, every 15m on idc03; live timer matches.
+  timer_alerts: >-
+    producer fixed — timer-sentinel card payload has no action block;
+    new alerts unclaimable. 24 legacy cards keep type=dispatch but all
+    status=done (cosmetic residue, never claimable).
+  classify: >-
+    queue-time classify live — queued cards carry lanes
+    (paid_frontier/jules/free_lane/manual/devin) at queue time.
+open_gaps:
+  - >-
+    focus-inbox: 1665 unprocessed top-level files (was 546 at the
+    2026-11-09 assessment; 974 Nov-dated) — file intake still
+    accumulates; /inbox fold not done. focus-dispatcher timers still
+    run (30min omen, 03:00 idc03).
+  - >-
+    ops-1244b (one long-running nest-runner.service + runner-agent in
+    render catalog): open; jules lane EOL — board request raised for
+    reroute (devin lane recommended).
+  - >-
+    served nest-mgr-v2-actuation card still has scalar action: —
+    breaks any consumer iterating raw card YAML expecting dict
+    (killed kanban-dispatch every tick). Needs the 4eba1f957c shape
+    live on the served checkout.
+rollback: >-
+  systemctl --user enable --now kanban-dispatch.timer chaba-jobs.timer
+  on idc03 (unit files left in place).
