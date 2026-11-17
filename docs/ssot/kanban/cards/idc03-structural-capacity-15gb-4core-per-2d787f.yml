@@ -1,0 +1,22 @@
+id: idc03-structural-capacity-15gb-4core-per-2d787f
+title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
+column: backlog
+updated: 2026-11-17 09:10
+priority: medium
+tags:
+- idc03
+- capacity
+- infra
+spec: 'idc03 runs: ~8 ada-* services (~4-5GB), MDDB x3 containers (~3.5GB), jev-student (1.6GB), board-api (1.9GB
+  RSS, growing — also investigate leak), litellm, doc-archive, nest-mgr, node, relays — ~13-14GB of 15GB, no headroom,
+  dispatch load-gate (load5/cpu>1.0) starves the kanban queue most of the time. OPTIONS: (a) resize VPS to 32GB
+  (costs money — Tony decision); (b) migrate 1-2 heavy residents to mn01/omen — candidates: jev-student (1.6GB),
+  doc-archive, lab twins ada-dev/ada-kk-dev (~1.2GB combined); (c) reduce MDDB container count if feasible; (d)
+  fix board-api memory growth first (may reclaim ~1GB). TASK: assess each option with real numbers (current RSS
+  per unit, target host free capacity), recommend, and implement the non-spend option(s). Done when idc03 has >=4GB
+  headroom or a documented decision to resize.'
+ref: SYS-0151
+comms:
+- at: 2026-11-17 09:10
+  from: tony
+  text: card captured via board-api
