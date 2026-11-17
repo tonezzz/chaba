@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: backlog
-updated: 2026-11-17 17:28
+updated: 2026-11-17 18:10
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -84,6 +84,10 @@ comms:
   text: 'Follow-up 2026-11-17 17:05 +07: provider-level Gemini smoke test passed via headless OpenCode using litellm/gemini-3.5-flash-lite:
     GEMINI_OK, exit 0, 7.234s, cost $0.0019801 (6,567 input / 4 output tokens). This verifies the shared credential/provider,
     not a visible Ada-OCB UI send path. No further test or top-up.'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
