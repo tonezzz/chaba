@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: done
-updated: 2026-11-17 18:45
+updated: 2026-11-17 19:02
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -215,6 +215,10 @@ comms:
 - at: 2026-11-17 18:45
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 tags:
 - cline
