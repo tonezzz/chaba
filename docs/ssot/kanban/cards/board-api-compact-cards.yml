@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
-column: backlog
-updated: 2026-11-17 22:12
+column: doing
+updated: 2026-11-17 22:13
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -19,9 +19,10 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-dell
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -43,3 +44,6 @@ comms:
 - at: 2026-11-17 22:12
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 2.59 > 0.85)'
+- at: 2026-11-17 22:13
+  from: tony-dell
+  text: claimed
