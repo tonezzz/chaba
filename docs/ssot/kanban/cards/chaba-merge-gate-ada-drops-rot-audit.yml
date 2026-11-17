@@ -1,7 +1,7 @@
 id: chaba-merge-gate-ada-drops-rot-audit
 title: Chaba merge gate still red — audit & repair all rotted ada-voice drops
 column: done
-updated: 2026-11-17 18:14
+updated: 2026-11-17 18:35
 brief: After ADA-0080's cast-loop repair the gate now fails on test_correction_command; 12 patches diverged vs ada-voice
   07119b1 — fix all rotted drops in one pass.
 priority: high
@@ -106,6 +106,10 @@ comms:
 - at: 2026-11-17 18:14
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
