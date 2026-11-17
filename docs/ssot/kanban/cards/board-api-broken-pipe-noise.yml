@@ -1,0 +1,21 @@
+id: board-api-broken-pipe-noise
+title: 'board-api: swallow BrokenPipeError in _send (client-disconnect noise)'
+column: backlog
+updated: 2026-11-17 17:09
+priority: low
+tags:
+- board-api
+- polish
+- observability
+spec: 'Found during board-api health verification 2026-11-17. scripts/board/board-api.py H._send writes the response
+  without handling client disconnect: loopback callers (timers/watchers with short timeouts) close the socket before
+  the response flushes, producing BrokenPipeError tracebacks in the journal and a misleading 500 count (~28x/24h,
+  nearly all cosmetic — the write usually succeeded). Fix: wrap send_response/end_headers/wfile.write in try/except
+  (BrokenPipeError, ConnectionResetError) and on failure just log one line (e.g. "client disconnected before response")
+  and return — do NOT attempt a second _send(500). Keep the log_message one-liner so journal stays greppable. Verify:
+  python3 scripts/board/board-api.py --selftest still passes; after deploy, journal shows no traceback for disconnects.'
+ref: KNB-0159
+comms:
+- at: 2026-11-17 17:09
+  from: devin
+  text: card captured via board-api
