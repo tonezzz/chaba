@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 08:56
+updated: 2026-11-17 08:59
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -79,13 +79,16 @@ comms:
 - at: 2026-11-17 08:56
   from: tony
   text: retry requested
+- at: 2026-11-17 08:59
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
@@ -94,4 +97,5 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-194957-scheduled-per-lane-retention-j.service: Consumed
     7.389s CPU time.'
   attempts: 2
+  runner: idc02
 claim: {}
