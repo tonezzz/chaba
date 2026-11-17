@@ -756,6 +756,10 @@ comms:
     timeout. Last dispatch (21:17) failed exit=1 consistent with unreachable host. Card is hardware-gated on KK
     powering on the Mac. The 10-29 full-day permission window has expired. Leaving in backlog; will keep failing
     cheap retries until host returns.'
+- at: 2026-11-17 23:35
+  from: devin
+  text: 'raised request kk-mac-is-offline-tailscale-ssh-both-dea-3b763f: kk-mac is offline (tailscale+ssh both dead).
+    Power it on when ready and this card can resume — or tell me to park it unt'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -832,6 +836,15 @@ requests:
   suggested: proxyjump-readonly
   answer: proxyjump-readonly — approve one read-only current status check via the documented tony-dell ProxyJump
     route. No key/config/service changes, model unload, or render launch.
+- id: kk-mac-is-offline-tailscale-ssh-both-dea-3b763f
+  ask: kk-mac is offline (tailscale+ssh both dead). Power it on when ready and this card can resume — or tell me
+    to park it until KK is back.
+  status: open
+  at: 2026-11-17 23:35
+  from: devin
+  options:
+  - I will power on kk-mac — keep card queued
+  - Park the card until KK confirms the Mac is available
 action:
   type: dispatch
   status: failed
