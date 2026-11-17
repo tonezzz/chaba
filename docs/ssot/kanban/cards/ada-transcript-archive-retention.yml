@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 15:42
+updated: 2026-11-17 17:35
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -137,6 +137,10 @@ comms:
 - at: 2026-11-17 15:42
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-17 17:35
+  from: devin
+  text: 'raised request pi-pwa-lane-classification: Before enabling the dev/test archive, how should ada-pi-pwa
+    be handled? The answered default named it as dev/test, but c'
 action:
   type: dispatch
   repo: chaba
@@ -177,4 +181,19 @@ requests:
   - proceed
   - hold
   answer: proceed
+- id: pi-pwa-lane-classification
+  ask: Before enabling the dev/test archive, how should ada-pi-pwa be handled? The answered default named it as
+    dev/test, but current SSOT assigns ADA_INSTANCE_ID=tony and marks the service retired; a read-only idc03 systemd
+    check reports it active/running. The draft excludes it to avoid mislabeling Tony sessions as dev.
+  status: open
+  at: 2026-11-17 17:35
+  from: devin
+  options:
+  - id: exclude
+    label: Keep excluded until reconciled
+  - id: tony
+    label: Treat as Tony lane
+  - id: dev
+    label: Override and treat as dev
+  suggested: exclude
 awaiting_action: true
