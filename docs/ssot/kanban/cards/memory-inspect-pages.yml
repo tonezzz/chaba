@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: backlog
-updated: 2026-11-17 21:10
+updated: 2026-11-17 23:31
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -58,6 +58,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:31
+  from: chaba
+  text: classified as paid_frontier (kw:construct conf 1.00)
+- at: 2026-11-17 23:31
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -77,3 +83,10 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
   tony-dell. The implementation must include functional memory-inspection pages that correctly snapshot per-lane
   bank states into the CMS. Verify completion by running the updated chaba test suite and confirming snapshot generation
   on tony-dell.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
