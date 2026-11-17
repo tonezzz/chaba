@@ -2,7 +2,7 @@ id: disk-auto-kk-mac-System-Volumes-Data-home
 title: Disk kk-mac /System/Volumes/Data/home critical
 brief: Disk space on kk-mac (/System/Volumes/Data/home) is running critically low — check the note for the rate
   and top growers, then free space or close the card.
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
@@ -49,3 +49,8 @@ comms:
   text: 'FALSE POSITIVE 2026-11-17: /System/Volumes/Data/home is a macOS autofs map entry (map auto_home, 0Bi, 100%)
     — not real usage. Actual data volume /dev/disk3s5: 65Gi free, 85% used — well above the 20GB lane floor. disk-auto
     probe should skip autofs/map mounts on macOS (filter fstype=autofs or the auto_home map). Closing.'
+- at: 2026-11-17 21:28
+  from: devin
+  text: closed by devin
+action:
+  status: done
