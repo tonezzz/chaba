@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-17 10:23
+updated: 2026-11-17 13:30
 priority: high
 tags:
 - devnest
@@ -130,3 +130,10 @@ comms:
     on POST /sessions (RCA tracked in OPS-0156). Existing script/manifest/docs are on master, but timer is not installed/active
     and no report artifact exists. Code gaps: no CMS page write, running action status is omitted, global claim
     counts repeat under each host, Lane Savings is a placeholder, and no tests found. Finish and verify before closing.'
+- at: 2026-11-17 13:30
+  from: devin
+  text: 'Progress: fix branch fix/fleet-jobs-report-accuracy pushed (2c9fa451b5f). It now reads compact/paginated
+    live board actions, counts running/claimed by host and lane, consumes evidence-bound lane-savings output, and
+    upserts one stable fleet-jobs-report page via board-api /report. Report search found no matching fleet-jobs
+    CMS page; the plan is one stable page, not a daily-page fork. Targeted tests 5/5 and full Chaba suite 1527 passed,
+    47 skipped. Not merged/deployed; timer remains inactive and no'
