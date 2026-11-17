@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval
 title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
 column: doing
-updated: 2026-11-17 22:12
+updated: 2026-11-17 22:21
 brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
   eval set that asserts answer quality end-to-end.
 priority: high
@@ -57,10 +57,17 @@ comms:
 - at: 2026-11-17 22:12
   from: chaba
   text: started devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha on tony-omen (dispatch)
+- at: 2026-11-17 22:21
+  from: tony-omen
+  text: 'finished (failed): exit=1 ask-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Failed with result
+    ''exit-code''. | devin-task-20261117'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=1 ask-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Failed with result ''exit-code''.
+    | devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Consumed 2.100s CPU time over 7min 58.348s
+    wall clock time, 111.4M memory peak.'
