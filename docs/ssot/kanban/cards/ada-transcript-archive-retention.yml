@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 18:44
+updated: 2026-11-17 18:53
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -178,6 +178,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:53
+  from: devin
+  text: 'Service retirement verified 2026-11-17: audited live Caddy/Tailscale routes, input-bridge, systemd dependencies,
+    and repo consumers. No consumer uses :8001; public/tailnet root routes to ada-ha-tony :8002. ada-pi-pwa.service
+    stopped with active_sessions=0, disabled and removed with its drop-ins; :8001 closed, :8002 and input-bridge
+    healthy. Preserved ada-pi-pwa.env (mode 600) and transcript data; no transcript uploads or provider calls. Chaba
+    PR #183 merged (0048562f); Ada PR #16 merged (eaf4eba'
 action:
   type: dispatch
   repo: chaba
