@@ -1,12 +1,12 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
 column: backlog
-updated: 2026-11-14 14:10
-brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held,
-  cap 20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos
-  this way (Oct 10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
-  + manifest line, same shape as LINE_MEDIA manifest) before returning, so archive/retry works after restart
-  and media-inbox can pick it up. ada-pi repo — pwa_server.py documents_intake + backend/document_check.py.'
+updated: 2026-11-17 18:08
+brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
+  20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
+  10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
+  + manifest line, same shape as LINE_MEDIA manifest) before returning, so archive/retry works after restart and
+  media-inbox can pick it up. ada-pi repo — pwa_server.py documents_intake + backend/document_check.py.'
 priority: medium
 tags:
 - ada
@@ -37,10 +37,14 @@ comms:
 - at: 2026-11-17 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-pwa-document-intake-featur-096c1f
-  ask: The PWA document intake feature loses uploaded files because originals are not persisted before
-    holding the result in RAM, but the target repository and host are not specified in the card details.
+  ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
+    result in RAM, but the target repository and host are not specified in the card details.
   options:
   - ★ use repo ada-voice on host tony-dell
   - use repo ada-pi on host tony-dell
@@ -50,8 +54,7 @@ requests:
   from: backlog-spec-enrich
   answer: ★ use repo ada-voice on host tony-dell
 awaiting_action: true
-spec: 'Goal: fix PWA document intake data loss by persisting original uploads before processing the RAM-held
-  result. Target host is tony-dell and target repo is ada-voice. Constraints: preserve existing intake
-  pathways while ensuring raw files hit disk storage first. Testable done-condition: automated or manual
-  file upload test confirms original files persist to disk before RAM processing completes without crashing
-  the intake flow.'
+spec: 'Goal: fix PWA document intake data loss by persisting original uploads before processing the RAM-held result.
+  Target host is tony-dell and target repo is ada-voice. Constraints: preserve existing intake pathways while ensuring
+  raw files hit disk storage first. Testable done-condition: automated or manual file upload test confirms original
+  files persist to disk before RAM processing completes without crashing the intake flow.'
