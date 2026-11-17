@@ -1,6 +1,6 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
-column: backlog
+column: doing
 updated: 2026-11-17 23:32
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
@@ -76,6 +76,9 @@ comms:
 - at: 2026-11-17 23:32
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.24 > 1.0)'
+- at: 2026-11-17 23:32
+  from: tony-omen
+  text: claimed
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -89,10 +92,10 @@ requests:
   at: 2026-10-27 01:21
   from: backlog-spec-enrich
   answer: ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
-awaiting_action: true
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-omen
