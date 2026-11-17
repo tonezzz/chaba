@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: doing
-updated: 2026-11-17 21:09
+updated: 2026-11-17 21:11
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -74,14 +74,23 @@ comms:
   text: 'merge-sweep: devin-task-20261117-203613-symptom-2026-11-17-18-20-ict-i failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-203613-symptom-2026-11-17-18-20-ict-i by
     hand.'
+- at: 2026-11-17 21:15
+  from: devin
+  text: 'lane re-pinned devin->paid_frontier: free-tier rate limit killed 2 consecutive dispatches; litellm/gemini-2.5-flash
+    avoids Devin quota (Tony approved)'
+- at: 2026-11-17 21:11
+  from: devin
+  text: retry requested
 requests: []
 action:
-  lane: devin
+  lane: paid_frontier
   type: dispatch
-  status: failed
-  runner: idc02
-  result: 'exit=1 devin-task-20261117-203613-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''.
+  status: queued
+  sweep:
+    failed_noted: 2026-11-17 21:09
+  last_failure: 'exit=1 devin-task-20261117-203613-symptom-2026-11-17-18-20-ict-i.service: Failed with result ''exit-code''.
     | devin-task-20261117-203613-symptom-2026-11-17-18-20-ict-i.service: Consumed 4min 54.026s CPU time, 412.4M
     memory peak, 0B memory swap peak.'
+  attempts: 1
 review_kind: triage
 claim: {}
