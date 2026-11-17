@@ -31,6 +31,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
+from tests.ada._checkout import materialize_head
 from tests.ada._drops import check_patch, drop_guard_ok
 
 REPO = Path(__file__).resolve().parents[2]
@@ -271,9 +272,7 @@ def test_patches_apply_clean(tmp_path):
     upstream; divergence only fails when nothing in the drop landed
     (pending drop on a rotted base — tests/ada/_drops.py)."""
     dst = tmp_path / "ada-voice"
-    subprocess.run(["git", "clone", "-q", "--depth", "1",
-                    ADA_PI.as_uri(), str(dst)],
-                   check=True, timeout=120)
+    materialize_head(dst, ADA_PI)
     states = {rel: check_patch(DROP / rel, dst) for rel in PATCHES}
     assert drop_guard_ok(states.values()), (
         f"drop rotted on its base — re-dispatch: {states}")
