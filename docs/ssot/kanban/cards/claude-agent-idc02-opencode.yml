@@ -1,7 +1,7 @@
 id: claude-agent-idc02-opencode
 title: Wire claude-agent into idc02 bare opencode serve
 column: doing
-updated: 2026-11-18 13:51
+updated: 2026-11-18 13:53
 brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
   verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
   provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
@@ -63,3 +63,10 @@ comms:
   from: devin
   text: '[dispatch] Session started on idc02. Investigating launch path of `opencode serve :4096` and checking claude-code
     install/auth prerequisites.'
+- at: 2026-11-18 13:53
+  from: devin
+  text: 'CORRECTION (2026-11-18): idc02 :4096 is NOT a stray bare opencode — both PIDs are podman containers: ada-code.service
+    (protected Ada OpenCode control-plane backend, was ada-opencode, isolated ada-code podnet) and jack-opencode.service
+    (isolated Jack IDE, jack-ide podnet). Each runs `opencode serve :4096` inside its own container netns. claude-agent
+    wiring here means injecting OPENCODE_CLAUDE_PATH into the container env-file (~/.config/secrets/ada-code.env
+    / jack-ide.env) + the claude binary insi'
