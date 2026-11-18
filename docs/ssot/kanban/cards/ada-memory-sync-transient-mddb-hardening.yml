@@ -1,7 +1,7 @@
 id: ada-memory-sync-transient-mddb-hardening
 title: 'ada-memory-sync: tolerate transient MDDB blips (retry/backoff or timeout bump)'
 column: doing
-updated: 2026-11-18 16:46
+updated: 2026-11-18 16:55
 priority: medium
 tags:
 - hardening
@@ -83,6 +83,10 @@ comms:
     crashes stay red). (3) timer OnCalendar hourly -> *:17:00, permanently off Sun-05:00 mddb-restart. ALSO applied
     a mild form of (2): read timeout 20s->60s, because retries under 20s cannot survive the documented ~30s/doc
     inline-embed stall — flag for revert if unwanted. Tests: 26 OK in'
+- at: 2026-11-18 16:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261118-164040-follow-up-from-timer-alert-idc no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
