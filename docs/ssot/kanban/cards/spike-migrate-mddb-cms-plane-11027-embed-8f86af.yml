@@ -1,0 +1,26 @@
+id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
+title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
+column: backlog
+updated: 2026-11-18 16:38
+priority: medium
+tags:
+- mddb
+- embedding
+- bge
+- spike
+spec: 'CONTEXT: 2026-11-18 embed quota outage (Gemini 429 + OR key limit + paid cap) took down all /v1/add writes
+  on mddb-cms for ~45min — 9.6k embed jobs dropped, producer jobs failed fleet-wide. Local bge-m3 upstreams (4 ollama
+  hosts behind embed-pool-shim :11436) are healthy and free. GOAL: prove a CMS-plane migration to local embedding
+  on a SCRATCH instance — no prod changes. SCOPE: (1) stand up a scratch mddb (idc02, separate data dir/port) with
+  MDDB_EMBEDDING_PROVIDER=ollama, MDDB_EMBEDDING_API_URL=<embed-pool-shim>, MDDB_EMBEDDING_MODEL=bge-m3, MDDB_EMBEDDING_DIMENSIONS=1024;
+  (2) load a sample of real CMS collections (ada-cms-pages subset, chaba-lessons, kb-*) and reindex; (3) measure:
+  embed throughput docs/min, vector-search recall vs the gemini-embedded :11027 on identical queries (top-10 overlap),
+  search latency; (4) document the exact env diff + reindex procedure + rollback for a future prod migration of
+  :11027, and note what leader :11023 would need (feeds MEM-1129). CONSTRAINTS: scratch only — do NOT touch :11023/:11027
+  prod containers; do NOT reindex prod; report findings on this card. INPUTS: embed-pool-shim races bge-m3 on idc02/idc03/omen/con01
+  ollama; BGE plane :11028 already runs bge-m3/1024 for banks — reuse its config as reference.'
+ref: MEM-0193
+comms:
+- at: 2026-11-18 16:38
+  from: tony
+  text: card captured via board-api
