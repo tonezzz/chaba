@@ -1,0 +1,158 @@
+title: mddb-cms :11027 gemini → bge-m3 migration — proven env diff + reindex runbook
+subtitle: spike verified on scratch mddb-scratch-embed (idc02 :11029);
+  feeds MEM-1129 (leader :11023 would follow the same pattern)
+icon: layers
+version: 1
+
+card: spike-migrate-mddb-cms-plane-11027-embed-8f86af
+date: 2026-11-18
+dispatch: 20261118-164045-context-2026-11-18-embed-quota (tony-omen)
+status: proven-on-scratch — NOT applied to prod
+
+# ------------------------------------------------------------- the spike
+spike: |
+  Context: 2026-11-18 embed quota outage (Gemini 429 + OR key limit + paid
+  cap) took down all /v1/add writes on mddb-cms for ~45min — 9.6k embed
+  jobs dropped, producer jobs failed fleet-wide. bge-m3 upstreams behind
+  embed-pool-shim are local and free of quota.
+
+  Scratch instance: mddb-scratch-embed on idc02, http://100.123.163.11:11029,
+  data ~/.config/containers/mddb-scratch-embed/data, quadlet copied
+  verbatim from the live mddb-embed :11028 unit (already the target env).
+  Same image as prod :11027 — localhost/mddb:2.18.10-merge.
+
+  Loaded 931 real CMS docs from :11027 (read-only /v1/search paging):
+  chaba-lessons 174, kb-development 11, kb-features 59, kb-operations 267,
+  kb-system 20, ada-cms-pages 400-doc subset (of 1390). 0 add failures,
+  0 queue drops. Docs embed async through the instance queue -> pool.
+
+# ------------------------------------------------------------- env diff
+env_diff: |
+  ~/.config/containers/systemd/mddb-cms.container on idc03 — ONLY the
+  embedding block changes; everything else (image, addr, volumes, queues)
+  stays byte-identical. This is exactly the env mddb-embed :11028 already
+  runs in production:
+
+    # current (gemini path — goes through gemini-ollama-proxy -> Google):
+    Environment=MDDB_EMBEDDING_API_URL=http://127.0.0.1:11435
+    Environment=MDDB_EMBEDDING_MODEL=gemini-embedding-2
+    Environment=MDDB_EMBEDDING_DIMENSIONS=768
+
+    # target (local bge-m3 via embed-pool-shim):
+    Environment=MDDB_EMBEDDING_API_URL=http://100.102.134.91:11436
+    Environment=MDDB_EMBEDDING_MODEL=bge-m3
+    Environment=MDDB_EMBEDDING_DIMENSIONS=1024
+
+  MDDB_EMBEDDING_PROVIDER=ollama stays — the shim speaks the ollama API.
+  NOTE: the API_URL points OFF-box to idc03's shim; :11027 already runs on
+  idc03 so 127.0.0.1:11436 is equivalent — either works, off-box form
+  survives a future host move.
+
+# ------------------------------------------------------------- reindex
+reindex_procedure: |
+  The stored 768-dim gemini vectors do NOT auto-convert. After the env
+  swap + restart, mddb's startup provenance check (embedding_provenance.go)
+  logs every collection as stale — expected, not an error.
+
+  Plain POST /v1/vector-reindex SKIPS docs whose stored content-hash
+  matches — that check is content-based, so it would skip every doc that
+  already has a (wrong-space) gemini vector. You MUST pass force:
+
+    for c in ada-cms-automation ada-cms-pages ada-cms-pages-kk \
+             ada-cms-pages-kk-dev ada-cms-pages-mn ada-ha-events-tony \
+             chaba-architecture chaba-archive chaba-docs chaba-glossary \
+             chaba-lessons devin-kb documents infrastructure-ssot \
+             kb-development kb-features kb-operations kb-system ssot; do
+      curl -s -X POST http://100.102.134.91:11027/v1/vector-reindex \
+        -H 'Content-Type: application/json' \
+        -d "{\"collection\":\"$c\",\"force\":true}"
+    done
+
+  Reindex is async — jobs queue behind live writes, workers=2 (hardcoded,
+  services/mddbd/vector_indexing.go:87). Watch drain:
+    curl -s -X POST http://100.102.134.91:11027/v1/vector-stats -d '{}' \
+      | jq '.queue, .collections[].embedded_documents'
+
+  Sizing from the spike: ~8.3 chunks/doc (1500c chunker), ~117 chunks/min
+  when the pool is warm => 9.8k docs * ~8 chunks ≈ 78k embed calls ≈
+  8-12h drain. Live writes keep working throughout (adds never block on
+  the embed queue until depth hits the 4000 cap).
+
+# ------------------------------------------------------------- throughput
+throughput_measured: |
+  Ingest (write path): 931 docs /add'ed in 104s = 538 docs/min, 0 failed.
+  Embed drain (queue->pool->bge-m3), full run 931 jobs/~3.8k chunks in
+  ~42 min wall clock:
+    - degraded pool (omen cold-loading, idc03/con01 >8s): ~2-3 docs/min
+    - warm pool (all upstreams keep-alive'd): ~20-36 docs/min,
+      ~117 chunks/min — bounded by mddb's 2 embed workers, not upstreams
+  Pool single-embed p50 ~1-4s warm; direct upstream: omen 1.3s (warm),
+  idc02 2.9s, idc03 12.4s, con01 13.8s (>8s shim deadline => always 504).
+
+# ------------------------------------------------------------- recall
+recall_measured: |
+  Identical top-10 vector-search queries vs gemini :11027 baseline
+  (pass-2, scratch corpus fully embedded):
+    - bge-scratch :11029: 36.3% overlap (61/168)
+    - bge-bank :11028 (same-space reference): 31.0% (52/168)
+    - on shared collections scratch==bank overlap per query — the
+      scratch exactly reproduces the production bge bank's retrieval.
+  Latency (pass-2): scratch mean 160ms / bank 32ms vs prod gemini
+  1099ms — local bge search is ~6-30x FASTER (query embed goes to a
+  warm local model instead of the remote API).
+  Interpretation: ~31-36% top-10 key overlap — a space change WILL
+  shift rankings. Not blocking (recall quality needs a golden-set eval
+  like docs/ssot/jobs/ada/2026-10-15-embed-space-eval.yml before prod),
+  but do NOT migrate expecting identical results. The 2026-10-15 eval
+  already found nomic at 86% of gemini recall@5 — run the same golden
+  set against the bge bank before cutting prod.
+
+# ------------------------------------------------------------- gotchas
+gotchas: |
+  * embed-pool-shim races EVERY call to ALL alive upstreams — 4x
+    duplicated compute by design; losing upstreams still burn the embed.
+    Aggregate capacity ~= fastest warm upstream, not the sum.
+  * Cold-model trap: an upstream whose bge-m3 keep_alive expired takes
+    ~21s to cold-load > 8s shim timeout => 3 consec fails => 60s dead
+    cooldown, and it can flap there indefinitely while its siblings
+    saturate. A per-upstream warm ping cron (embed "ping" every ~4min)
+    would keep the whole pool warm. Warming omen manually during the
+    spike moved drain 2->14 docs/min instantly.
+  * 8s shim deadline vs ambient upstream load: idc03+con01 were >8s for
+    whole windows today — under ambient load they count as dead weight
+    that still receives (and wastes) every raced call.
+  * Embed workers are hardcoded 2 in the fork — drain rate ceiling is
+    ~2/pool-latency; raising it needs an env knob (none exists:
+    MDDB_EMBEDDING_* covers queue/breaker/chunk/cache, not workers).
+  * Queue drops=0 throughout, retried=5, maxAttempts=50 — fail-closed
+    under provider failure, nothing lost, just slow. Exactly the
+    behavior wanted during a future outage.
+  * mddb-embed :11028 already proves long-term stability of this exact
+    env (running since 2026-10-25, relocated idc03->idc02 2026-11-12).
+
+# ------------------------------------------------------------- rollback
+rollback: |
+  Writes keep flowing the whole time (embed queue decouples writes from
+  vectors), so the only "migration state" is vector space. Rollback =
+  revert the 3 env lines to the gemini set, restart mddb-cms, then
+  force-reindex again to restore 768-dim vectors. Window risk: searches
+  between env-swap and reindex-complete return mixed/incomplete results —
+  schedule for a low-traffic window or front with the :11028 bank.
+  Data itself is untouched — docs/meta/revisions are never rewritten.
+
+# ------------------------------------------------------------- leader
+leader_11023_notes: |
+  MEM-1129 — the leader (:11023, ada memory banks) needs the SAME 3-line
+  env diff, plus:
+  * bigger stakes: ~12G DB, ada-ha-bank-* are recall-critical — run the
+    embed-space golden eval against the bge bank FIRST (the 2026-10-15
+    nomic eval is the template; bge-m3 likely scores better but prove it).
+  * its embed path goes through gemini-ollama-proxy.service (:11435);
+    after migration that proxy's only consumer is gone — keep it as the
+    declared fallback or retire per hygiene rules.
+  * leader also feeds followers idc02/con01 via gRPC replication — vector
+    reindex writes ride the binlog? VERIFY: followers are read-only and
+    load vectors from the replicated DB — check whether re-embedded
+    vectors replicate or each follower re-embeds (followers run their
+    own embed config — idc02 follower embeds? check its quadlet).
+  * leader has MDDB_SEARCH_MAX_CONCURRENT=4 + heavier GOMEMLIMIT — keep.
