@@ -322,6 +322,71 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.routes.yml
     children: []
+  # edge-upstreams/<host>: observed serve mounts + caddy reverse_proxy
+  # bindings on each host — the layer below route-health (checks the edge
+  # config itself, not the declared route). Runs on con01, ships metas to
+  # the served checkout. Card: edge-upstream-dead-port-audit (2026-11-18
+  # ada-ha :8125 dead-upstream incident).
+  - id: edge-upstreams/tony-omen
+    layer: L1-producer
+    purpose: tailscale serve mounts + caddy upstreams verified against live listeners
+    observe: remote
+    generator: scripts/audit-edge-upstreams.py --host tony-omen
+    cadence: 1h
+    output: reports/edge-upstreams
+    artifact_pattern: "tony-omen-*.yml"
+    meta: reports/edge-upstreams/meta.tony-omen.yml
+    references:
+      - docs/kb/edge-upstream-audit.md
+    children: []
+  - id: edge-upstreams/tony-dell
+    layer: L1-producer
+    purpose: tailscale serve mounts + caddy upstreams verified against live listeners
+    observe: remote
+    generator: scripts/audit-edge-upstreams.py --host tony-dell
+    cadence: 1h
+    output: reports/edge-upstreams
+    artifact_pattern: "tony-dell-*.yml"
+    meta: reports/edge-upstreams/meta.tony-dell.yml
+    references:
+      - docs/kb/edge-upstream-audit.md
+    children: []
+  - id: edge-upstreams/idc02
+    layer: L1-producer
+    purpose: tailscale serve mounts + caddy upstreams verified against live listeners
+    observe: remote
+    generator: scripts/audit-edge-upstreams.py --host idc02
+    cadence: 1h
+    output: reports/edge-upstreams
+    artifact_pattern: "idc02-*.yml"
+    meta: reports/edge-upstreams/meta.idc02.yml
+    references:
+      - docs/kb/edge-upstream-audit.md
+    children: []
+  - id: edge-upstreams/idc03
+    layer: L1-producer
+    purpose: tailscale serve mounts + caddy upstreams verified against live listeners
+    observe: remote
+    generator: scripts/audit-edge-upstreams.py --host idc03
+    cadence: 1h
+    output: reports/edge-upstreams
+    artifact_pattern: "idc03-*.yml"
+    meta: reports/edge-upstreams/meta.idc03.yml
+    references:
+      - docs/kb/edge-upstream-audit.md
+    children: []
+  - id: edge-upstreams/mn01
+    layer: L1-producer
+    purpose: tailscale serve mounts + caddy upstreams verified against live listeners
+    observe: remote
+    generator: scripts/audit-edge-upstreams.py --host mn01
+    cadence: 1h
+    output: reports/edge-upstreams
+    artifact_pattern: "mn01-*.yml"
+    meta: reports/edge-upstreams/meta.mn01.yml
+    references:
+      - docs/kb/edge-upstream-audit.md
+    children: []
   - id: host-loads
     layer: L1-producer
     purpose: Lightweight fleet load/mem/disk sampler (one SSH probe per host,

@@ -1,0 +1,9 @@
+[Unit]
+Description=Edge upstream audit — serve mounts + caddy reverse_proxy dead-port sweep (hourly) (job:audit-edge-upstreams, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnCalendar=*-*-* *:41:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

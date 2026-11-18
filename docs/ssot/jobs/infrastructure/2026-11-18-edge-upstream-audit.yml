@@ -1,0 +1,67 @@
+id: 2026-11-18-edge-upstream-audit
+title: Edge upstream audit — serve mounts + caddy reverse_proxy checked against live listeners
+domain: infrastructure
+date: 2026-11-18
+status: implemented
+cards:
+- edge-upstream-dead-port-audit
+
+summary: >
+  Same-day incident: tony-omen tailscale serve :8125 proxied to dead
+  127.0.0.1:8125 (tony-ha listens on :8123); caddy-edge on idc02 then 502'd
+  all of ada-ha.surf-thailand.com. Each watchdog saw one layer — declared
+  routes (check-routes.py), declared mounts on one host (check-serve-
+  config), end-to-end surfaces (ssot.health) — but nothing verified the
+  *observed binding* between every edge surface and its backend, on every
+  host.
+
+  scripts/audit-edge-upstreams.py closes it: per host, parses `tailscale
+  serve status --json` (background + foreground sessions) and verifies
+  every Web proxy / TCPForward target against the host's own `ss` listener
+  table (loopback) or an HTTP probe (remote); parses each host's Caddyfile
+  (~/.config/caddy — host-net edges; web-srv + camwall-edge — slirp
+  containers, loopback marked skipped) and probes every reverse_proxy
+  upstream per vhost (GET, expect non-5xx). Exit 1 on dead|degraded.
+
+changes:
+  - "scripts/audit-edge-upstreams.py — new sibling to audit-hosts.py.
+    Rows {host, surface, mount, upstream, status, evidence}; --json /
+    --write (artifacts + edge-upstreams/<host> metas via lib.report) /
+    --ship (rsync to served checkout = remote pushback) / --alert
+    (deduped board-api /inbox, 24h)."
+  - "tests/test_audit_edge_upstreams.py — 8 tests: serve-json parse
+    (incl. Foreground + TCPForward), the :8125->dead-:8125 incident
+    fixture, loopback-on-tailnet-IP-only case, caddy vhost/matcher/
+    multi-upstream parse, url-error classification."
+  - "docs/ssot/infrastructure/ssot.jobs.yml — audit-edge-upstreams on
+    con01, hourly *:41, rendered systemd/generated/con01/audit-edge-
+    upstreams.{service,timer}; catalog regen also picked up previously
+    un-rendered jobs (ada-retention-*, chaba-pytest-suite)."
+  - "docs/ssot/infrastructure/ssot.reports.yml — nodes
+    edge-upstreams/{tony-omen,tony-dell,idc02,idc03,mn01}, observe:remote."
+  - "docs/ssot/infrastructure/ssot.health.home.tailscale.yml — new http
+    check ada-ha-edge-8125 (end-to-end probe of the exact surface that
+    died; mcp-health surface for this class)."
+  - "docs/kb/edge-upstream-audit.md — runbook: incident, layering vs
+    existing watchdogs, usage, finding taxonomy, first-sweep findings."
+
+verification: >
+  Ran --all read-only from idc02: 118 ok / 2 degraded / 3 dead / 1
+  skipped across 5 hosts, exit 1. Would have caught the incident at BOTH
+  layers (serve mount dead + caddy upstream 502). Live findings flagged:
+  tony-omen :8444 -> dead :9005 (ha-live inactive; also dead as
+  100.75.102.88:9005 in web-srv and 502 via the idc02 :8444 shadow);
+  michael-dev.surf-thailand.com -> https://idc02...:8124 TLS mismatch
+  (serve :8124 mount missing; backend is plain HTTP on tailnet IP);
+  web-srv -> frigate:5000 (no frigate container on idc02).
+
+residuals:
+  - "Owner calls pending (flagged via --alert inbox once the job lands,
+    NOT fixed by this card): restore ha-live or drop :8444/:9005 edges;
+    add `tailscale serve --bg --https=8124 http://127.0.0.1:8124` on idc02
+    or repoint the michael-dev upstream to http://; repoint or drop the
+    /frigate/* route in the web origin."
+  - "Job not installed — rendered units land with the next
+    render-jobs --install on con01 (dispatch worktree; no deploys)."
+  - "tony-dell Foreground serve session (:8080) is ephemeral — audit
+    reports it as scope fg:<id>; harmless churn if it respawns."
