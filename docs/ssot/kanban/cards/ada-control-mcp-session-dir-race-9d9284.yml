@@ -1,7 +1,7 @@
 id: ada-control-mcp-session-dir-race-9d9284
 title: ada-control-mcp-session-dir-race
-column: doing
-updated: 2026-11-18 21:11
+column: review
+updated: 2026-11-18 21:14
 spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
   dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
   creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
@@ -61,11 +61,21 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261118-204709-ada-control-mcp-in-opencode-in on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-18 21:14
+  from: tony-omen
+  text: 'finished (ok): exit=0 x (materialize chat dir before session registration) is worth filing as a follow-up.
+    | devin-task-20261118-204709'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-omen
   sweep:
     stale_running: 2026-11-18 21:11
+    dirty: 1
+  result: 'exit=0 x (materialize chat dir before session registration) is worth filing as a follow-up. | devin-task-20261118-204709-ada-control-mcp-in-opencode-in.service:
+    Consumed 1min 45.730s CPU time over 17min 50.468s wall clock time, 884.5M memory peak.'
+  verified: false
+review_kind: verify
+claim: {}
