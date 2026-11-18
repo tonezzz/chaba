@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
-column: doing
-updated: 2026-11-18 16:50
+column: review
+updated: 2026-11-18 16:53
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -253,13 +253,17 @@ comms:
     TTL dual-base, extract supersede-merge. 24/24 tests, 5016/5016 SSOT valid, render-jobs OK. Not pushed/deployed
     — install: render-jobs.py --host idc03 --ids ada-retention-* --install then dry-run per lane. PR #182 redundant,
     close after merge.'
+- at: 2026-11-18 16:53
+  from: idc02
+  text: 'finished (ok): exit=0  ada-retention-* --install` followed by a per-lane dry-run, and PR #182 can be closed
+    as redundant. Outcome file '
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
@@ -270,10 +274,11 @@ action:
     | devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Consumed 1min 48.096s CPU time, 245.7M
     memory peak, 0B memory swap peak.'
   attempts: 3
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-234536-scheduled-per-lane-retention-j.service:
-    Failed with result ''exit-code''. | devin-task-20261117-234536-scheduled-per-lane-retention-j.service: Consumed
-    9.229s CPU time.'
+  result: 'exit=0  ada-retention-* --install` followed by a per-lane dry-run, and PR #182 can be closed as redundant.
+    Outcome file and board comments posted. | devin-task-20261118-164354-scheduled-per-lane-retention-j.service:
+    Consumed 1min 48.843s CPU time.'
   runner: idc02
+  verified: true
 claim: {}
 requests:
 - id: 4-policy-defaults-for-the-weekly-lane-re-686e16
@@ -310,3 +315,4 @@ requests:
     label: Override and treat as dev
   suggested: exclude
   answer: exclude — Keep excluded until reconciled
+review_kind: verify
