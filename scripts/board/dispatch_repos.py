@@ -150,6 +150,13 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              (create --auto-pr + wait) and Jules opens the
 #              GitHub PR itself — no local worktree, no push
 #              creds. Declared = fail closed like opencode.
+#   claude   — the claude-dispatch sibling lane (2026-11-18 eval:
+#              sonnet best tokens-per-verified-fix). Same contract as
+#              devin-dispatch — shared task dirs, devin-task-<id>
+#              units, dispatch-wt worktrees — so close-out is
+#              unchanged. Serving requires CLAUDE_LANES=1 on the
+#              runner plus an authed claude install; declared = fail
+#              closed like opencode, never falls back to devin.
 #   devin    — devin-dispatch, regardless of lane tables/env.
 #   script   — the action.script block via the runner's script path.
 #   manual   — Tony's hands; automation never claims it.
@@ -159,7 +166,7 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch"}
+            "jules", "nlm_batch", "claude"}
 # Bounded task classes the kk_mac_local executor may ever run — mirrors
 # scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
 # validates the contract without importing the devnest package).
