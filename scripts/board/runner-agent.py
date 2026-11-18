@@ -250,6 +250,8 @@ READY_FORCE_S = int(os.environ.get("RUNNER_READY_FORCE_S", "900"))
 STARVE_HOURS = float(os.environ.get("RUNNER_STARVE_HOURS", "12"))
 DISPATCH = os.environ.get(
     "DEVIN_DISPATCH", str(Path.home() / ".local/bin/devin-dispatch"))
+CLAUDE_DISPATCH = os.environ.get(
+    "CLAUDE_DISPATCH", str(Path.home() / ".local/bin/claude-dispatch"))
 
 # Lane -> cheapest model (jev-pilot Phase 2). Mirrors kanban-dispatch.
 LANE_MODELS = {
@@ -260,6 +262,12 @@ LANE_MODELS = {
     "paid_frontier": "litellm/gemini-2.5-flash",
 }
 OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
+# claude executor gate (claude-dispatch lane, 2026-11-18 eval):
+# CLAUDE_LANES=1 marks a host that can serve executor=claude cards —
+# needs ~/.local/bin/claude-dispatch + an authed claude install.
+# Off by default until the pilot cards prove out (eval: sonnet lane was
+# best tokens-per-verified-fix on runner-dispatch-no-timeout).
+CLAUDE_LANES = os.environ.get("CLAUDE_LANES", "0") == "1"
 # lane -> task-scoped opencode profile (opencode-task-agent-profiles).
 # The generic build agent is NEVER an unattended executor: a lane only
 # reaches opencode when a profile resolves (action.profile wins, else
@@ -274,7 +282,7 @@ LANE_PROFILES = {
 # dispatch_repos.EXECUTORS — kept local because this file deploys as a
 # single file and may run where dispatch_repos isn't importable.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch"}
+            "jules", "nlm_batch", "claude"}
 # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
 # bounded read-only LLM lane on KKs-Mac-Studio. Try-first, not strict —
 # the admitted task classes mirror kk_mac_llm.ALLOWED_TASKS; a card the
@@ -1701,7 +1709,16 @@ def _claimable(card: dict) -> tuple:
                             f"{a.get('repo') or 'chaba'} not in "
                             "JULES_REPO_MAP")
             return "dispatch", ""
-        if ex == "opencode":
+        if ex == "claude":
+            # Declared Claude executor: same contract as opencode —
+            # claimable only where the lane can actually run
+            # (CLAUDE_LANES=1 AND the claude-dispatch wrapper present).
+            # Anything less leaves the card queued for a capable host.
+            if not CLAUDE_LANES:
+                return "", "executor=claude but CLAUDE_LANES=0"
+            if not Path(CLAUDE_DISPATCH).exists():
+                return "", "executor=claude but no claude-dispatch on host"
+        elif ex == "opencode":
             # Declared OpenCode executor: this host may claim ONLY when
             # it is a compatible runner — OPENCODE_LANES=1 AND a real
             # opencode binary. Anything less leaves the card queued for
@@ -1781,6 +1798,17 @@ def executor_defer_reason(card: dict) -> str:
             return (f"executor=opencode declared but this runner can't "
                     f"serve it ({', '.join(missing)}) — the card stays "
                     "queued for an OpenCode-capable runner; it will "
+                    "never silently fall back to devin")
+    if ex == "claude":
+        missing = []
+        if not CLAUDE_LANES:
+            missing.append("CLAUDE_LANES=0")
+        if not Path(CLAUDE_DISPATCH).exists():
+            missing.append("no claude-dispatch on host")
+        if missing:
+            return (f"executor=claude declared but this runner can't "
+                    f"serve it ({', '.join(missing)}) — the card stays "
+                    "queued for a Claude-capable runner; it will "
                     "never silently fall back to devin")
     if ex == "kk_mac_local" and not a.get("kk_mac_tried"):
         if not kk_mac_contract_ok(a):
@@ -3565,7 +3593,14 @@ def start_task(card: dict, typ: str) -> tuple:
                             "devin-dispatch drives systemd-run "
                             "internally; this launchd runner serves "
                             "opencode/script/container lanes only")
-        argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
+        # executor=claude routes to the claude-dispatch sibling — same
+        # start contract, same devin-task-<id> unit/taskdir naming so
+        # finish_pass + merge-sweep work unchanged. action.model passes
+        # through DISPATCH_MODEL; claude-dispatch validates it against
+        # claude ids (sonnet|opus|haiku|claude-*) and falls back to its
+        # own default — litellm/lane ids never reach --model.
+        dispatch_bin = CLAUDE_DISPATCH if ex == "claude" else DISPATCH
+        argv = [dispatch_bin, "start", a.get("repo", "chaba"), task]
     env = dict(os.environ)
     if typ == "dispatch":
         # executor contract context — devin-dispatch._meta_write stamps
@@ -3610,8 +3645,16 @@ def start_task(card: dict, typ: str) -> tuple:
         # provider follows the RESOLVED model (action.model or the lane
         # mapping) — computed after the guard so litellm lane ids still
         # report provider=litellm on non-devin executors.
-        env["DISPATCH_PROVIDER"] = model_provider(
-            env.get("DISPATCH_MODEL") or "") or "devin"
+        if (env.get("DISPATCH_EXECUTOR") or "") == "claude":
+            env["DISPATCH_PROVIDER"] = "claude"
+            # claude-dispatch accepts --effort; action.effort is the
+            # card-level knob (eval-tuned: low skipped tests on a code
+            # card, so default stays unset = claude's own default).
+            if a.get("effort"):
+                env["DISPATCH_EFFORT"] = str(a["effort"])
+        else:
+            env["DISPATCH_PROVIDER"] = model_provider(
+                env.get("DISPATCH_MODEL") or "") or "devin"
     if typ == "dispatch" and LIMITS_ON:
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the
