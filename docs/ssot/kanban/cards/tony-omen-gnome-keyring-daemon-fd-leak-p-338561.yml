@@ -1,7 +1,7 @@
 id: tony-omen-gnome-keyring-daemon-fd-leak-p-338561
 title: tony-omen gnome-keyring-daemon fd leak — pegged at 1024/1024, 30% CPU
 column: done
-updated: 2026-11-18 18:05
+updated: 2026-11-18 18:07
 priority: high
 note: 'Found while investigating timer-alert-tony-dell-tony-dell-mcp-health. On tony-omen, gnome-keyring-daemon
   pid 9755 (up 4d9h) holds exactly 1024 fds = its soft nofile limit, burns ~30% CPU, and has spammed auth.log with
@@ -130,6 +130,10 @@ comms:
 - at: 2026-11-18 18:05
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:07
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Restart the gnome-keyring-daemon user service on host tony-omen to resolve the file descriptor leak and high
   CPU usage. Target host is tony-omen, addressing pid 9755 which is pegged at 1024 fds and spamming auth.log. Constraints
