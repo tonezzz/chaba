@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-18 16:16
+updated: 2026-11-18 16:43
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -230,13 +230,22 @@ comms:
   text: 'DECISION (Tony, 2026-11-18): pi-pwa-lane-classification = dev — ada-pi-pwa transcripts archive to the shared
     dev lane (lane=dev), superseding the earlier exclude answer. Note: retirement work already removed the live
     service; this only affects how its historical transcripts are classified in the retention job.'
+- at: 2026-11-18 16:42
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-18 16:42
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-18 16:43
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: failed
+  status: running
   sweep:
     failed_noted: 2026-11-09 18:49
     stale_running: 2026-11-09 19:49
@@ -247,10 +256,10 @@ action:
     | devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Consumed 1min 48.096s CPU time, 245.7M
     memory peak, 0B memory swap peak.'
   attempts: 3
-  runner: idc02
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-234536-scheduled-per-lane-retention-j.service:
     Failed with result ''exit-code''. | devin-task-20261117-234536-scheduled-per-lane-retention-j.service: Consumed
     9.229s CPU time.'
+  runner: idc02
 claim: {}
 requests:
 - id: 4-policy-defaults-for-the-weekly-lane-re-686e16
@@ -270,6 +279,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-18 queue
 - id: pi-pwa-lane-classification
   ask: Before enabling the dev/test archive, how should ada-pi-pwa be handled? The answered default named it as
     dev/test, but current SSOT assigns ADA_INSTANCE_ID=tony and marks the service retired; a read-only idc03 systemd
