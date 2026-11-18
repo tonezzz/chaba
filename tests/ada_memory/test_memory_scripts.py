@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts/ada"
 
@@ -203,6 +204,70 @@ class TestBackupRouting(unittest.TestCase):
                 self.assertEqual(want, "private")
                 return
         self.fail("personal bank not in registry")
+
+
+class _FakeResp:
+    def __init__(self, payload=None, status=200):
+        self.status_code = status
+        self._payload = payload or {}
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise sync.requests.HTTPError(response=self)
+
+    def json(self):
+        return self._payload
+
+
+class _FakeSession:
+    """Plays back a list of outcomes (response or exception) per post()."""
+    def __init__(self, outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = 0
+
+    def post(self, url, json=None, timeout=None):
+        self.calls += 1
+        outcome = self.outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+class TestMddbRetry(unittest.TestCase):
+    def _mddb(self, outcomes, attempts=3):
+        m = sync.Mddb("http://x", max_attempts=attempts)
+        m.s = _FakeSession(outcomes)
+        return m
+
+    def test_retries_transient_then_succeeds(self):
+        m = self._mddb([sync.requests.ConnectionError("reset"),
+                        sync.requests.ReadTimeout("slow"),
+                        _FakeResp({"ok": True})])
+        with mock.patch.object(sync.time, "sleep") as sleep:
+            self.assertEqual(m._post("/add", {}), {"ok": True})
+        self.assertEqual(m.s.calls, 3)
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [30, 60])
+
+    def test_exhausts_retries_and_raises(self):
+        m = self._mddb([sync.requests.ConnectionError("down")] * 3,
+                       attempts=3)
+        with mock.patch.object(sync.time, "sleep"):
+            self.assertRaises(sync.requests.ConnectionError,
+                              m._post, "/search", {})
+        self.assertEqual(m.s.calls, 3)
+
+    def test_4xx_fails_fast_no_retry(self):
+        m = self._mddb([_FakeResp(status=400), _FakeResp({"ok": True})])
+        with mock.patch.object(sync.time, "sleep") as sleep:
+            self.assertRaises(sync.requests.HTTPError, m._post, "/add", {})
+        self.assertEqual(m.s.calls, 1)
+        sleep.assert_not_called()
+
+    def test_5xx_is_retried(self):
+        m = self._mddb([_FakeResp(status=503), _FakeResp({"ok": True})])
+        with mock.patch.object(sync.time, "sleep"):
+            self.assertEqual(m._post("/add", {}), {"ok": True})
+        self.assertEqual(m.s.calls, 2)
 
 
 if __name__ == "__main__":
