@@ -4,7 +4,7 @@ brief: 'Recurring failure pattern: runners complete work but can''t push to GitH
   key via core.sshCommand, runners lack creds), so dispatch branches strand on remote hosts and cards can''t close.
   A periodic dell-side sweep can fetch branches over tailscale ssh, merge into the canonical branch, and unblock
   card closes — the exact salvage Devin did by hand six times on 2026-10-08.'
-column: doing
+column: backlog
 priority: high
 program: chaba-ci
 area: dispatch
@@ -28,7 +28,7 @@ help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. 
 updated: 2026-11-18 20:53
 action:
   type: dispatch
-  status: running
+  status: idle
   result: 'exit=0 hanges, no pushes). Open follow-up gaps are already tracked as separate cards (merge-conflict
     re-raise loop, test-gate fail-open), not this one. | devin-task-20261118-204621-sweep-script-scripts-board-mer.service:
     Consumed 25.668s CPU time.'
@@ -188,6 +188,9 @@ comms:
 - at: 2026-11-18 20:53
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.07 > 1.0)'
+- at: 2026-11-18 20:53
+  from: tony
+  text: put on hold
 ownership:
   owner: tony
 claim: {}
