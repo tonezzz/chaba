@@ -1,17 +1,17 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: backlog
-updated: 2026-11-17 21:09
+updated: 2026-11-18 17:22
 priority: medium
 tags:
 - infra
 - single-writer
 - git-safe-pull
-note: 'Incident 2026-11-09 (OPS-1261 follow-on): chaba-repo-sync on tony-omen autostash-popped onto upstream
-  that rewrote scripts/ada/timer-sentinel.py; the file is outside SAFE_PULL_GENERATED_RE so it was ''kept
-  for manual merge'' — leaving live conflict markers in a file a systemd job executes every 10min. The
-  14:00 sentinel run crashed (old bytecode + mid-run file swap) and every subsequent tick would SyntaxError
-  until manually resolved; chaba-repo-sync still reported Result=success. Same class hit id'
+note: 'Incident 2026-11-09 (OPS-1261 follow-on): chaba-repo-sync on tony-omen autostash-popped onto upstream that
+  rewrote scripts/ada/timer-sentinel.py; the file is outside SAFE_PULL_GENERATED_RE so it was ''kept for manual
+  merge'' — leaving live conflict markers in a file a systemd job executes every 10min. The 14:00 sentinel run crashed
+  (old bytecode + mid-run file swap) and every subsequent tick would SyntaxError until manually resolved; chaba-repo-sync
+  still reported Result=success. Same class hit id'
 ref: SYS-1267
 comms:
 - at: 2026-11-09 14:12
@@ -48,9 +48,13 @@ comms:
 - at: 2026-11-18 07:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict
-  markers on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within
-  SAFE_PULL_GENERATED_RE or handle autostash conflicts safely without leaving SyntaxError-inducing markers
-  in files executed by systemd jobs. Testable done-condition: A simulated autostash conflict on a non-generated
-  code file does not leave live conflict markers or trigger SyntaxErrors on execution checkouts, and chaba-repo-sync
-  reports failure instead of success when manual merge intervention is required.'
+- at: 2026-11-18 17:22
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
+  on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
+  or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
+  jobs. Testable done-condition: A simulated autostash conflict on a non-generated code file does not leave live
+  conflict markers or trigger SyntaxErrors on execution checkouts, and chaba-repo-sync reports failure instead of
+  success when manual merge intervention is required.'
