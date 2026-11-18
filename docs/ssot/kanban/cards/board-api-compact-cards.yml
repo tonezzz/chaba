@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
 column: doing
-updated: 2026-11-18 08:37
+updated: 2026-11-18 08:39
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -19,7 +19,7 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   sweep:
@@ -28,6 +28,9 @@ action:
     Consumed 1.813s CPU time over 7min 23.278s wall clock time, 85.7M memory peak, 29.6M memory swap peak.'
   attempts: 1
   runner: idc02
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) est coverage for the projection
+    paths. Let me find the right insertion point:Now restart the test server with the new code and run the selftest:
+    | devin-task-20261118-083559-in-scripts-board-board-api-py-.service: Consumed'
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -89,3 +92,7 @@ comms:
   from: devin
   text: dispatch picked up — verifying current /cards projection behavior first, then implementing comms_tail +
     compact=2
+- at: 2026-11-18 08:39
+  from: idc02
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) est coverage
+    for the projection paths. Let'
