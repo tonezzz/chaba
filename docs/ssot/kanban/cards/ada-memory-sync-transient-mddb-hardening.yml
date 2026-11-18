@@ -1,7 +1,7 @@
 id: ada-memory-sync-transient-mddb-hardening
 title: 'ada-memory-sync: tolerate transient MDDB blips (retry/backoff or timeout bump)'
 column: doing
-updated: 2026-11-18 16:41
+updated: 2026-11-18 16:46
 priority: medium
 tags:
 - hardening
@@ -76,6 +76,13 @@ comms:
   from: devin
   text: 'Dispatch session started on tony-omen. Implementing recommended fix: (1) bounded retry w/ backoff in sync-ada-memory-to-mddb.py
     _post + (3) move ada-memory-sync.timer off :00 to avoid Sun-05:00 mddb-restart collision.'
+- at: 2026-11-18 16:46
+  from: devin
+  text: 'DONE on dispatch branch 20261118-164040 (commit d88ead5, not pushed). (1) Mddb._post: 3 attempts, 30s/60s
+    backoff on ConnectionError/Timeout + HTTP 429/5xx; 4xx fail-fast, exhausted retries still exit nonzero (real
+    crashes stay red). (3) timer OnCalendar hourly -> *:17:00, permanently off Sun-05:00 mddb-restart. ALSO applied
+    a mild form of (2): read timeout 20s->60s, because retries under 20s cannot survive the documented ~30s/doc
+    inline-embed stall — flag for revert if unwanted. Tests: 26 OK in'
 action:
   type: dispatch
   status: running
