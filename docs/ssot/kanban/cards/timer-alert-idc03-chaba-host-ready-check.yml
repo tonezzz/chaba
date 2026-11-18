@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-host-ready-check
 title: Timer chaba-host-ready-check on idc03 failing
 column: backlog
-updated: 2026-11-18 17:17
+updated: 2026-11-18 18:05
 priority: high
 tags:
 - timer-alert
@@ -44,6 +44,10 @@ comms:
 - at: 2026-11-18 17:17
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:05
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the `chaba-host-ready-check.service` timer on host idc03, which exited with a non-zero
   exit code during the 11-15 06:02 run. The target host is idc03 and the relevant repository is chaba. Inspect the
