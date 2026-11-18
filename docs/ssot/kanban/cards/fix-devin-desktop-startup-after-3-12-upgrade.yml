@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: backlog
-updated: 2026-11-18 14:06
+updated: 2026-11-18 15:34
 priority: high
 tags:
 - devin
@@ -70,3 +70,10 @@ comms:
     .desktop clean, system .desktop ships clean Exec). Verified: relaunched on DISPLAY :20, window present, running
     clean — only benign GPU command-buffer warning. bashrc export remains commented pending Tony decision on the
     plaintext sk-ant key.'
+- at: 2026-11-18 15:34
+  from: devin
+  text: '2026-11-18 ROOT CAUSE NARROWED: kernel traps show devin-desktop Compositor (GPU process) dying with SIGILL
+    invalid-opcode — 6 traps today, all in devin-desktop binary mapping, zero in other apps. Crashes began after
+    glibc 2.43-2ubuntu2.7 security update (06:23 today; also happened Nov-12 so recurring class). Prime suspects:
+    (a) glibc 2.43 IFUNC/hwcap mis-selection on i7-9750H (no AVX512), (b) NVIDIA 595.99.02-open userspace GL path.
+    MITIGATIONS APPLIED: devin-desktop upgraded 3.11.238->3.14.3081'
