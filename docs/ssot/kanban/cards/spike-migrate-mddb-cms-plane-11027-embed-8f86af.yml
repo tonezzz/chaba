@@ -1,7 +1,7 @@
 id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
 title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
 column: doing
-updated: 2026-11-18 16:40
+updated: 2026-11-18 16:42
 priority: medium
 tags:
 - mddb
@@ -49,6 +49,11 @@ comms:
 - at: 2026-11-18 16:40
   from: chaba
   text: started devin-task-20261118-164045-context-2026-11-18-embed-quota on tony-omen (dispatch)
+- at: 2026-11-18 16:42
+  from: devin
+  text: '[spike start] idc02 already runs mddb-embed :11028 with the exact target env (ollama->embed-pool-shim :11436,
+    bge-m3, 1024d) — cloning that quadlet as mddb-scratch-embed :11029. Sample = chaba-lessons + kb-* + ada-cms-pages
+    subset from :11027 (read-only). Measurements: throughput, top-10 overlap vs :11027 gemini space, latency.'
 action:
   type: dispatch
   status: running
