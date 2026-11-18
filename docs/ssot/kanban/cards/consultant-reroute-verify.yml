@@ -1,6 +1,6 @@
 id: consultant-reroute-verify
 title: 'Verify consultant reroute: qwen3:8b first-filter + paid escalate'
-column: doing
+column: done
 updated: 2026-11-18 22:35
 priority: high
 program: devnest
@@ -110,9 +110,22 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261118-221706-post-merge-verification-for-ad no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-18 22:35
+  from: chaba
+  text: 'merge-sweep: merged 8b0394c9 (dispatch/20261118-221706-post-merge-verification-for-ad from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261118-221706-post-merge-verification-for-ad.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  sweep:
+    stale_running: 2026-11-18 22:35
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 22:35
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261118-221706-post-merge-verification-for-ad.md
