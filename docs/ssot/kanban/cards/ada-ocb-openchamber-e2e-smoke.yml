@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-18 14:13
+updated: 2026-11-18 14:46
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -45,3 +45,10 @@ comms:
     ada_preflight with the returned selection token but no native confirmation returned selection_confirmation_required
     (expected ADA-0783), so the confirmation gate is intact. Local OpenChamber / and /health return HTTP 200; unauthenticated
     /api/health returns 401, whic'
+- at: 2026-11-18 14:46
+  from: devin
+  text: '2026-11-18 14:46 ICT status update: defer the fresh UI smoke until OPS-0187 (OpenChamber pane migration
+    dell -> idc02) finishes and its cutover is verified, so we do not test the old pane mid-migration. OPS-0187
+    is currently doing/running on idc02; its runbook still has Tony gates for Claude OAuth and LiteLLM secret handling.
+    The earlier mn01 runner-agent drift appears cleared: installed and canonical SHA-256 hashes now match; mn01
+    heartbeat is fresh. Queue currently has ADA-0783 as manual-only '
