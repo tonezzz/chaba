@@ -1,7 +1,7 @@
 id: mddb-idc03-followers-lag-status-audit
 title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
 column: done
-updated: 2026-11-18 18:07
+updated: 2026-11-18 18:08
 priority: high
 tags:
 - mddb
@@ -124,6 +124,10 @@ comms:
 - at: 2026-11-18 18:07
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
