@@ -1,0 +1,54 @@
+id: claude-code-openchamber-provider-rollout
+title: Standardize claude-agent provider wiring across OpenChamber hosts
+column: backlog
+updated: 2026-11-18 12:39
+brief: OpenCode 2.2.3+ has a native claude-agent provider that runs the local Claude Code binary via the Agent SDK
+  — subscription auth, no API key, separate lane from LiteLLM. Wired and verified on tony-dell ada-ocb 2026-11-18;
+  needs to become the repeatable standard for every OpenChamber host.
+priority: medium
+program: devnest
+tags:
+- claude-code
+- openchamber
+- opencode
+- provider
+- standard
+spec: 'Turn the tony-dell wiring into a repeatable procedure + script, then roll out to other OpenChamber hosts.
+
+
+  Verified recipe on tony-dell (OpenChamber managed opencode, port varies):
+
+  1. Ensure pinned claude-code install exists: ~/CascadeProjects/tony-projects/claude-code (install.sh/update.sh
+  standard, exact pin 2.1.327) and `claude auth login` done on that host.
+
+  2. Register env var via OpenChamber API (NOT direct file write — the store is cached in memory): PUT http://127.0.0.1:3000/api/environment
+  {variables:{OPENCODE_CLAUDE_PATH:<abs path to node_modules/.bin/claude>}} — needs UI session JWT (mint HS256 from
+  ~/.config/openchamber/jwt-secret, cookie oc_ui_session_<port>) or do it in Settings > General > Environment variables.
+
+  3. POST /api/config/reload to restart managed opencode (defers while sessions busy).
+
+  4. `opencode auth login claude-agent` (non-interactive, records claude-login method).
+
+  5. Verify: GET /api/model shows claude-agent/{opus,sonnet,haiku} enabled; send a prompt via POST /api/session/<id>/prompt
+  after POST /api/session/<id>/model {model:{id:<bare model name e.g. haiku>,providerID:claude-agent,modelID:<same>}}
+  — NOTE: id must be the bare model id, NOT claude-agent/haiku (doubles the prefix and 400s).
+
+
+  Deliverables: scripts/claude-code/openchamber-wire.sh (or docs/kb runbook) in chaba repo + apply to remaining
+  OpenChamber hosts. Keep LiteLLM lane untouched — claude-agent is a separate provider, not routed through LiteLLM.'
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  labels:
+  - docs
+ref: OPS-0184
+comms:
+- at: 2026-11-18 12:39
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-18 12:39
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — tony-dell lacks labels [''docs'']. Fix action.labels/host
+    pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+awaiting_action: true
