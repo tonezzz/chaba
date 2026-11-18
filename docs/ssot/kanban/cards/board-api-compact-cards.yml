@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
-column: doing
-updated: 2026-11-18 14:51
+column: review
+updated: 2026-11-18 14:58
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -19,7 +19,7 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
@@ -31,6 +31,9 @@ action:
     run the selftest: | devin-task-20261118-083559-in-scripts-board-board-api-py-.service: Consumed'
   attempts: 2
   runner: tony-omen
+  result: 'exit=0 s updated — ada-voice `_board_cards`/`_compact_cards` can adopt once the branch merges. | devin-task-20261118-144240-in-scripts-board-board-api-py-.service:
+    Consumed 2min 11.064s CPU time over 9min 32.978s wall clock time, 1.1G memory peak.'
+  verified: false
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -139,3 +142,9 @@ comms:
     dump. Implemented compact=2 (id/ref/title/column/priority/updated/brief/spec/action_status) + comms_tail=N (0
     drops comms, stamps comms_total; /card/<id> too) + docstring + selftest coverage — selftest ok. Local verify
     on real 931-card data: compact=2 789KB/38ms, comms_tail=0'
+- at: 2026-11-18 14:58
+  from: tony-omen
+  text: 'finished (ok): exit=0 s updated — ada-voice `_board_cards`/`_compact_cards` can adopt once the branch merges.
+    | devin-task-20261118-144'
+review_kind: verify
+claim: {}
