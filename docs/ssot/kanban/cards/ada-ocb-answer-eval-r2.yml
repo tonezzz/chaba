@@ -1,0 +1,54 @@
+id: ada-ocb-answer-eval-r2
+title: ada-ocb answer-quality eval r2 (retry — r1 work lost to worktree GC)
+column: backlog
+updated: 2026-11-18 14:41
+brief: 'Re-run of ADA-0175: r1 produced a good harness (ocb-eval.py, 10 cases, tools-mode 10/10) but the branch
+  eval/ocb-answer-eval @442cfc7 lived in a scratch clone inside a GC''d worktree and is LOST. Rebuild it — the analysis
+  is in ADA-0175 comms.'
+priority: high
+tags:
+- ada
+- opencode
+- kanban
+- testing
+- benchmark
+- eval
+spec: 'Work in repo ada-voice (action.repo is set — do NOT work in a scratch clone; commit and PUSH your branch
+  before finishing or the work is lost again).
+
+
+  Build tests/eval_ocb/cases.yml (~10 cases) + scripts/ocb-eval.py with tools/live/replay modes, reusing the harness
+  style of scripts/ocb-smoke.py (now on main). Assert ANSWER content not just ok=true. Write kind:benchmark doc
+  to ada-ha-scenario-reports MDDB.
+
+
+  Known findings from r1 to encode as cases/regressions (see ADA-0175 comms):
+
+  - flash-lite gets hijacked by matching skills (ssot-search) and ignores the ada-control prompt — wrong-path failure
+  the eval must catch
+
+  - deployed workspace bridge was stale (21 vs 25 tools, missing ada_ssot_get/ada_context_pack) — bridge_version
+  (ADA-0177, now deployed) should detect this
+
+  - opencode v2.2.6 needs agent tools:false (not permission map) to block shell/read builtins in live mode
+
+  - live mode hit opencode free-quota 429 — mark live runs unscored/degraded rather than failing
+
+
+  Verify: tools mode 10/10 green; pytest incl. new offline schema test passes; branch pushed to origin; evidence
+  comment on this card.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
+comms:
+- at: 2026-11-18 14:41
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-18 14:41
+  from: devin
+  text: card captured via board-api
+ref: ADA-0188
