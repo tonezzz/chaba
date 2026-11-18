@@ -3,7 +3,7 @@
 
 Corpus: jev-bench confirm-gate (noul) + tool-routing (choice),
 doc-pilot pipeline-compat edges (noul), stagnation cases (noul).
-Backends: jev-student (idc03:8778), jevos (CPU binary, :8017),
+Backends: jev-student (tony-omen:8780), jevos (CPU binary, :8017),
 Laya (pip, local). Same wire shape /v1/systemone.
 
 Metrics: accuracy overall + per type, latency p50, cost estimate.
@@ -19,7 +19,7 @@ Env: JEV_STUDENT_URL / JEVOS_URL / LAYA_URL override backend bases.
 """
 import json, os, statistics, subprocess, sys, time, urllib.request
 
-STUDENT = os.environ.get("JEV_STUDENT_URL", "http://100.102.134.91:8778")
+STUDENT = os.environ.get("JEV_STUDENT_URL", "http://100.75.102.88:8780")
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 LAYA_URL = os.environ.get("LAYA_URL", "http://127.0.0.1:8021")
 
