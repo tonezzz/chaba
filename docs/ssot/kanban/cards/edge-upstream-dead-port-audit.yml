@@ -1,7 +1,7 @@
 id: edge-upstream-dead-port-audit
 title: Audit edge upstreams for dead-port drift (serve/caddy/systemd)
 column: doing
-updated: 2026-11-18 17:41
+updated: 2026-11-18 17:52
 brief: '2026-11-18 incident chain: three infra faults in ~35min — managed opencode crash (16:31), caddy-edge container
   restart (17:05), and a stale tailscale serve entry (:8125 -> dead 127.0.0.1:8125 while HA lives on :8123) that
   502d all of ada-ha.surf-thailand.com including the ada-ocb iframe. None were caught by existing audits. Build
@@ -83,3 +83,10 @@ comms:
   from: devin
   text: 'Dispatch picked up. Recon done: on idc02, ssh to fleet confirmed (omen/dell/idc03/mn01 reachable, idc02
     local). serve JSON shapes captured; Caddyfile parsed for design. Building scripts/audit-edge-upstreams.py next.'
+- at: 2026-11-18 17:52
+  from: devin
+  text: 'Built + verified. scripts/audit-edge-upstreams.py: per-host serve mounts (Web+Foreground+TCPForward) checked
+    vs host ss listeners / remote probes, plus every caddy reverse_proxy upstream per vhost (~/.config/caddy, web-srv,
+    camwall-edge). Exit 1 on dead|degraded. Live sweep from idc02: 118 ok / 3 dead / 2 degraded / 1 skipped — would
+    have caught the :8125 bug at BOTH layers. New real findings flagged (not fixed — owner call): (1) omen serve
+    :8444 -> dead :9005 (ha-live inactive; also 502 via idc'
