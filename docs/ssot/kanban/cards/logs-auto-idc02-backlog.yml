@@ -7,7 +7,7 @@ program: logs-digest
 priority: high
 note: 'Auto-recovered 2026-11-12: `idc02-backlog` condition cleared — shipper healthy again.'
 help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until it drains.
-updated: 2026-11-18 18:01
+updated: 2026-11-18 18:02
 action:
   status: done
 comms:
@@ -61,6 +61,10 @@ comms:
 - at: 2026-11-18 18:01
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-0084
 brief: 'The log digest flagged something worth a look: logs `idc02` backlog 700. Read the note, then fix it or close
