@@ -1,0 +1,41 @@
+id: memory-extract-merge-proposals
+title: Weekly extract→canonical merge proposals (recommend-mode) for Ada memory banks
+column: backlog
+updated: 2026-11-18 21:37
+brief: Surface probable canonical updates hidden in extract drafts as reviewable proposals — never auto-write. Builds
+  on memory-distill + consolidate-memory; closes the ADA-0478 leg-3 gap without giving up the human review gate
+  on memory writes.
+priority: medium
+program: ai-workforce
+tags:
+- ada-memory
+- memory-banks
+- distill
+- proposals
+spec: "CONTEXT\nAda memory pipeline today: memory-distill.py (Sun 09:45) extracts\ncandidate facts from session\
+  \ summaries into bank collections as\nsource=extract,status=draft docs; sync-ada-memory-to-mddb.py\n--export-inbox\
+  \ drops them in the vault inbox; consolidate-memory.py\npromotes reviewed notes to active canonicals. Dedup at\
+  \ DEDUP_SCORE=0.82\nskips near-duplicates entirely — so a draft that *updates* an existing\ncanonical (score ~0.82-0.95,\
+  \ same subject/attribute, different or\nnewer fact) is either skipped as 'known' or lands as a separate draft\n\
+  that never merges. Canonicals slowly drift stale.\n\nGOAL\nA weekly recommend-mode job that proposes merges for\
+  \ human approval.\nNo automatic writes to canonicals — ever, in v1.\n\nDESIGN\n1. New script scripts/ada/memory-merge-proposals.py,\
+  \ runs after\n   memory-distill in the Sunday pipeline (ssot.jobs.yml entry, idc03).\n2. For each writable bank:\
+  \ list active canonical docs + recent\n   source=extract drafts (last 14d). Vector-search each draft against\n\
+  \   its bank collection; candidates = hits scoring 0.82-0.95 on the\n   same subject/attribute (probable update/supersede,\
+  \ not duplicate\n   >=0.95 and not unrelated <0.82).\n3. Output: a merge-proposals report — CMS page (ada-cms-pages)\
+  \ +\n   board comment on this card. Each proposal: {canonical_key,\n   draft_key, shared subject/attribute, fact\
+  \ delta (what the draft\n   adds/changes), suggested action: update-in-place | supersede |\n   reject}.\n4. Apply\
+  \ path stays manual: Tony/Ada approves a proposal -> job (or\n   consolidate flow) applies it as a real supersede\
+  \ using the existing\n   supersedes/superseded_by schema links, bumps last_verified, marks\n   the draft merged.\
+  \ Rejected proposals mark the draft rejected so it\n   is not re-proposed.\n5. Metrics logged per run: proposals\
+  \ count, acceptance rate rolling.\n   If acceptance stays >80% for ~4 weeks, a follow-up card may spec\n   auto-apply\
+  \ for low-risk kinds (e.g. preference updates) — NOT in\n   this card.\n\nNON-GOALS\n- No LLM rewriting of canonical\
+  \ content in v1 — proposals quote the\n  draft fact verbatim; a human decides.\n- No writes to read-only banks\
+  \ or prod banks from dev instances.\n- No auto-apply, no bulk merge, no deletion of drafts.\n\nDONE WHEN\n- Timer\
+  \ runs weekly on idc03; first report published; at least one\n  real proposal reviewed end-to-end (approve or\
+  \ reject path exercised)."
+ref: MEM-0205
+comms:
+- at: 2026-11-18 21:37
+  from: tony
+  text: card captured via board-api
