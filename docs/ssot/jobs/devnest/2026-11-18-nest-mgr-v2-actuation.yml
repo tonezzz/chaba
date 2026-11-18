@@ -1,0 +1,125 @@
+# Job: nest-mgr v2 actuation plane — Phase 0 spec + recommend-mode implementation
+title: nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
+subtitle: card nest-mgr-v2-actuation, dispatch on tony-omen
+icon: gear
+
+planning:
+  goal: >-
+    Turn nest-mgr from observer-governor into a controlled actuator: act on
+    v1 census data through allowlisted, gated, audited actions only —
+    never a parallel scheduler, never bypassing owner/quota/leash gates.
+  scope: >-
+    In (Phase 0, this card): mode machinery monitor/recommend/guarded,
+    restart planner + never-list + throttles + circuit breakers, actions[]
+    audit ring, CMS Actuation section, svc_nest_mgr_* HA attributes,
+    gate-matrix test, this spec. Zero execution — recommend is the ceiling.
+    Out (later phases): guarded rollout per-host opt-in (Phase 1, 1-week
+    soak), broker-normalized work-stealing (Phase 2), expansion to
+    omen/idc03/dell (Phase 3, per-host opt-in only).
+  non_goals:
+    - no parallel queue — routing stays with devnest_capacity_broker
+    - no synthetic work, no bypassing owner/quota gates
+    - no actuation on production lanes (ssot.nest-training.yml promotion_gate binds)
+    - tony-macbook excluded until nest-mgr is installed there
+  success_criteria:
+    - mode resolves every tick from env NEST_MGR_MODE > mode file > monitor;
+      safety flags only ever LOWER the effective mode
+    - recommend mode emits planned restarts to actions[] + CMS page, executes nothing
+    - guarded cannot execute without actuation.on opt-in + all per-unit gates
+    - per-unit (2 fails/h), per-host (>5 execs/h), and global (actuation.off,
+      NEST_MGR_MODE=monitor) breakers all verified
+    - 21/21 gate-matrix tests pass (stacks/services/nest-mgr/test-actuation.py)
+  owner: tony
+  approval: >-
+    spec APPROVED by Tony 2026-11-18 (card comm). Deploy of v2 binary to
+    pilot hosts and any mode flip past monitor still need explicit approval.
+  related_focus:
+    - label: this card
+      file: docs/ssot/kanban/cards/nest-mgr-v2-actuation.yml
+    - label: runbook + operator flags
+      file: stacks/services/nest-mgr/README.md
+    - label: v1 card
+      file: docs/ssot/kanban/cards/nest-manager-node.yml
+
+decisions:
+  control_surface: >-
+    Flag files under ~/.local/share/nest/ — mode, actuation.off (kill),
+    actuation.on (guarded opt-in), host-circuit.open, manual-units,
+    restart-allowlist, circuit/<unit>.open. Chosen over DB/config service
+    because every host operator can rm/touch them with no creds, they are
+    checked every tick, and they degrade the daemon to v1 by deletion.
+  never_before_allow: >-
+    restart_gate checks the never-list (card-owned, unmanaged, self,
+    manual, prod, on-success, circuit-open) BEFORE the allowlist — an
+    allowlisted unit that is also card-owned still never restarts.
+  held_verdicts_audited: >-
+    Gates that block a candidate emit a `held` actions[] record (throttled
+    hourly) so the CMS page shows WHY nothing happened, not just silence.
+  recommend_is_phase0_ceiling: >-
+    Guarded code path ships but is inert: no host gets actuation.on in this
+    phase, and plan_only callers (--dry-run/--report) degrade guarded to
+    recommend so a preview can never execute.
+  pilot_hosts: >-
+    idc02 + con01 + mn01 (fresh installs, 0-2 active nodes). tony-omen and
+    idc03 stay monitor until pilot metrics look clean (Phase 1 gate).
+
+processing:
+  status: done-phase0
+  started_at: "2026-11-18T21:34+07:00"
+  steps:
+    - id: 1
+      label: v2 actuation plane in nest-mgr.py
+      status: done
+      notes: >-
+        +400 lines (1245 total): requested_mode/effective_mode resolution,
+        restart_gate never-list, throttle_gate (5min cooldown, 2/h/unit),
+        actuation_tick planner (monitor=recommend=guarded), unit + host
+        circuit breakers, actions[] ring (200), fail_ticks bookkeeping in
+        every mode. --actions CLI prints the audit tail.
+    - id: 2
+      label: audit surfaces
+      status: done
+      notes: >-
+        render_page gains the Actuation section (mode, flag posture,
+        lifetime counters, last-8 audit rows); fingerprint now shifts on
+        mode/actions/circuits so the CMS page republishes on actuation
+        events; device-telemetry agent.py surfaces mode/act_1h/circuit/last
+        into svc_nest_mgr_* HA sensors.
+    - id: 3
+      label: gate-matrix test
+      status: done
+      notes: >-
+        stacks/services/nest-mgr/test-actuation.py — 21 checks across
+        modes, every never-list gate, allowlist file, cooldown, guarded
+        opt-in, kill switch, unit + host circuits; tempdir-isolated with a
+        fake systemctl. 21/21 PASS on tony-omen.
+    - id: 4
+      label: docs + install updates
+      status: done
+      notes: >-
+        README rewritten for v2 (modes table, flag files, policy, rollout
+        commands); install.sh/verify.sh fleet list updated to the deployed
+        six (idc02 idc03 con01 mn01 tony-omen tony-dell), verify shows
+        mode/actions count.
+    - id: 5
+      label: deploy to pilot hosts
+      status: gated
+      notes: >-
+        NOT done — deploy is a production change needing explicit approval.
+        When approved: install.sh idc02 con01 mn01 (lands in monitor), then
+        `ssh <h> 'echo recommend > ~/.local/share/nest/mode'` per host.
+    - id: 6
+      label: Phase 2 work-stealing planner
+      status: deferred
+      notes: >-
+        Deliberately absent — plugs in as a second planner beside the
+        restart planner once the restart pilot proves out; needs broker
+        lease store in MDDB (idempotent key task_id+attempt).
+
+verification:
+  command: python3 stacks/services/nest-mgr/test-actuation.py
+  result: 21/21 PASS (2026-11-18, tony-omen worktree)
+  dry_run: >-
+    HOME=<tmp> python3 nest-mgr.py --once --dry-run writes state only under
+    the temp home; --report renders the page incl. Actuation section with
+    zero writes and zero execution.

@@ -108,6 +108,7 @@ Audit tail: `nest-mgr.py --actions`.
 ./install.sh                     # whole deployed fleet (monitor mode)
 ./install.sh idc02 con01 mn01    # pilot hosts only
 ./verify.sh                      # unit + state + CMS page per host
+python3 test-actuation.py        # gate-matrix test (tempdir-isolated, no systemd)
 ```
 
 Upgrading a v1 host to v2 lands in **monitor** — v1 behavior plus the
