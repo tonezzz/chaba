@@ -1,7 +1,7 @@
 id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
 title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
 column: doing
-updated: 2026-11-18 16:59
+updated: 2026-11-18 17:28
 priority: medium
 tags:
 - mddb
@@ -61,6 +61,13 @@ comms:
     Recall pass-1: bge bank :11028 vs gemini :11027 top-10 overlap = 20.1% — space change WILL shift rankings, needs
     golden-set eval before prod. Found pool fragility: cold bge-m3 upstream (omen ~21s load >8s deadline) flaps
     in dead-cooldown; warm ping cron per upstream woul'
+- at: 2026-11-18 17:28
+  from: devin
+  text: '[final] PROVEN on scratch (idc02 :11029, cloned :11028 env, same 2.18.10-merge image as prod). 931 real
+    CMS docs ingested at 538 docs/min, 0 fail; full embed drain in ~42min incl. a degraded window (warm pool: ~20-36
+    docs/min, ~117 chunks/min — bounded by mddb 2 hardcoded workers). Recall pass-2 vs gemini :11027: scratch 36.3%
+    / bank :11028 31.0% top-10 overlap — identical per-query on shared colls, so scratch==prod-bank retrieval; rankings
+    WILL shift ~2/3, needs golden-set eval before prod cuto'
 action:
   type: dispatch
   status: running
