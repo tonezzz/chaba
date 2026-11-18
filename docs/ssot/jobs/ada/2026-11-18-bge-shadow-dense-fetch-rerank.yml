@@ -1,0 +1,45 @@
+date: 2026-11-18
+title: BGE shadow retrieval restructure — dense includeContent=false + bounded /v1/get + rerank (MEM-1129 blocker)
+domain: ada
+job: dispatch
+cards: [bge-serving-path-dense-retrieval-with-in-b080f6]
+related: [MEM-1129, ADA-1299]
+host: idc02
+repo: ada-voice
+branch: dispatch/20261118-210023-blocker-for-mem-1129-productio
+summary: >
+  Fixed the MEM-1129 production-switch blocker: bge_memory_shadow's
+  per-collection /vector-search used includeContent=true, measured
+  ~4.2-6.6s per collection on mddb-embed :11028, so every production
+  shadow sample on ada-ha-tony logged status=empty/error TimeoutError
+  at the deadline. Retrieval is now three deadline-bounded phases:
+  dense /vector-search includeContent=false (topK=15/collection,
+  parallel x4), bounded /v1/get content fetch for the merged top-20
+  candidates (parallel x8), then the unchanged top-10 reranker path.
+  Shadow logs carry dense_ms/fetch_ms/rerank_ms + fetched_count/
+  fetch_errors; dense/fetch failures log phase-tagged error_type.
+
+findings:
+  - 'includeContent=false on ada-ha-bank-general: ~2ms warm vs 6.57s
+    with content — the server still returns key/lang/meta/score, only
+    contentMd is stripped. /v1/get per doc: ~7ms.'
+  - 'Cold-query server-side embedding can still push dense over the 3s
+    shadow deadline (first probe run: 4x ReadTimeout); warm runs are
+    ~300ms for 4 collections. ADA_BGE_SHADOW_TIMEOUT_S stays
+    configurable for the soak.'
+  - 'Reranker (:11555) is now the dominant phase: ~1.1s warm / ~2.5s
+    cold for 9 docs. Dense+fetch alone is ~390ms — inside the ~800ms
+    sync-serving target; rerank cost is external to this change.'
+
+verify:
+  - 'set -a; source ~/.config/secrets/ada-lab.env; set +a;
+    PYTHONPATH=. .venv/bin/python scripts/bge-shadow-probe.py —
+    expect status=ok total_ms<2000 warm.'
+  - '.venv/bin/python -m pytest tests/test_bge_memory_shadow.py -x -q (4 passed);
+    full suite 1813 passed; tool-lint clean.'
+
+measured:
+  live_warm: 'status=ok candidates=15 fetched=15 reranked=9 dense_ms=322 fetch_ms=66 rerank_ms=1078 total_ms=1470'
+  live_cold: 'status=ok dense_ms=309 fetch_ms=82 rerank_ms=2547 total_ms=2939 (reranker cold)'
+
+deploy: gated — no prod deploy from dispatch; deploy-ada.sh after merge approval.
