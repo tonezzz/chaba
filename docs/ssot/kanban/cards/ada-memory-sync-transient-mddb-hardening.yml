@@ -1,7 +1,7 @@
 id: ada-memory-sync-transient-mddb-hardening
 title: 'ada-memory-sync: tolerate transient MDDB blips (retry/backoff or timeout bump)'
 column: doing
-updated: 2026-11-18 16:40
+updated: 2026-11-18 16:41
 priority: medium
 tags:
 - hardening
@@ -72,6 +72,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 16:41
+  from: devin
+  text: 'Dispatch session started on tony-omen. Implementing recommended fix: (1) bounded retry w/ backoff in sync-ada-memory-to-mddb.py
+    _post + (3) move ada-memory-sync.timer off :00 to avoid Sun-05:00 mddb-restart collision.'
 action:
   type: dispatch
   status: running
