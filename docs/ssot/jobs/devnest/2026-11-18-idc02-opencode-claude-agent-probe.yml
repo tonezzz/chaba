@@ -1,0 +1,120 @@
+# Job: idc02 opencode claude-agent probe (follow-up to OPS-0184)
+title: idc02 `opencode serve :4096` launch path + claude-agent applicability
+subtitle: Follow-up to OPS-0184 — card claude-agent-idc02-opencode, dispatch on idc02
+icon: target
+
+planning:
+  goal: >-
+    Determine the launch path of `opencode serve --hostname 0.0.0.0 --port
+    4096` on idc02 and inject
+    OPENCODE_CLAUDE_PATH=~/CascadeProjects/tony-projects/claude-code/node_modules/.bin/claude
+    if the process is a real model-session surface; otherwise confirm it is
+    a relay/worker and document. Re-verify the tony-dell wiring via
+    scripts/claude-code/openchamber-wire.sh --check.
+  scope: >-
+    In: launch-path identification, claude-code/claude-auth prerequisite
+    probe on idc02, user-facing vs worker determination, KB correction,
+    tony-dell re-check. Out: LiteLLM lane, other hosts (none run
+    OpenChamber/opencode), any container image rebuild.
+  success_criteria:
+    - launch path of every :4096 opencode process on idc02 identified
+    - claude-agent applicability answered per instance
+    - docs/kb/openchamber-claude-agent-provider.md fleet table corrected
+    - openchamber-wire.sh --check re-run on tony-dell
+  owner: tony
+  related_focus:
+    - label: parent rollout card (OPS-0184)
+      file: docs/ssot/kanban/cards/claude-code-openchamber-provider-rollout.yml
+    - label: this card
+      file: docs/ssot/kanban/cards/claude-agent-idc02-opencode.yml
+
+processing:
+  status: completed
+  started_at: "2026-11-18T13:51+07:00"
+  steps:
+    - id: 1
+      label: launch-path identification
+      status: done
+      notes: >-
+        No host-level `opencode serve :4096` exists. Both matching
+        processes are inside rootless podman containers: ada-code (quadlet
+        ada-code.container, conmon parent, opencode v2.2.6) and
+        jack-opencode (quadlet jack-opencode.container, opencode 1.19.4).
+        A third process /tmp/ocv2/opencode-bin serve --service (loopback
+        :49374, orphaned to init since 2026-11-08, launch PWD =
+        ~/.local/share/ada-opencode/workspace, no children/connections) is
+        a dormant manual leftover — not the :4096 surface; cleanup
+        candidate noted to Tony.
+    - id: 2
+      label: prerequisite probe
+      status: done
+      notes: >-
+        idc02 host has NO pinned claude-code install
+        (~/CascadeProjects/tony-projects/claude-code missing) and NO claude
+        auth (~/.claude/.credentials.json absent). Install was skipped on
+        purpose: a host install cannot reach either container anyway, so
+        it would be undeclared host clutter (host-hygiene).
+    - id: 3
+      label: applicability determination
+      status: done
+      notes: >-
+        OPENCODE_CLAUDE_PATH=<host path> is a no-op for both containers —
+        the path is not mounted and container env comes only from quadlet
+        Environment=/EnvironmentFile. ada-code = Ada control-plane worker
+        (LiteLLM-keyed, restricted) — not user-facing, document+close.
+        jack-opencode = Jack's user-facing IDE but deliberately
+        LiteLLM-only + isolation posture forbids host mounts; its opencode
+        1.19.4 also predates the claude-agent provider (>= 2.2.x needed).
+        Wiring claude-agent there = design change: image rebuild, scoped
+        ro claude-code mount, OAuth inside disposable HOME (Tony
+        interactive or setup-token), anthropic egress from podnet.
+        Decision raised to Tony via board request; recommendation = keep
+        LiteLLM lane (LiteLLM Claude alias if Jack needs Claude-class).
+    - id: 4
+      label: tony-dell re-check
+      status: done
+      notes: >-
+        openchamber-wire.sh --host tony-dell --check — all green:
+        claude-code 2.1.327 pinned, oauth logged in, OPENCODE_CLAUDE_PATH
+        registered, claude-agent credential stored, models enabled
+        (claude-fable-5-2[1m], haiku, opus, sonnet). No periodic check
+        exists; --check is safe to re-run any time (read-only).
+  changes:
+    - docs/kb/openchamber-claude-agent-provider.md (idc02 fleet row +
+      containerized-workers note)
+    - docs/ssot/jobs/devnest/2026-11-18-idc02-opencode-claude-agent-probe.yml
+      (this file)
+
+followup:
+  - action: Tony decision on card request — close (claude-agent stays an
+      OpenChamber/tony-dell lane) vs wire jack-ide (design change listed
+      above) vs LiteLLM Claude alias for Jack
+  - action: cleanup candidate — kill/remove dormant
+      /tmp/ocv2/opencode-bin serve --service on idc02 if confirmed stray
+
+report:
+  summary: >-
+    The :4096 opencode processes on idc02 are both rootless-podman workers
+    on private podnets — ada-code (Ada control-plane, v2.2.6) and
+    jack-opencode (Jack isolated IDE, v1.19.4). Neither is an
+    OpenChamber-managed surface and neither can consume a host-path
+    OPENCODE_CLAUDE_PATH (no mount, quadlet-only env, no claude auth on
+    host). ada-code is definitively not user-facing; jack-opencode is
+    user-facing for Jack but LiteLLM-only by committed design — putting
+    claude-agent in it is a design change needing Tony's call (raised as a
+    board request with options). tony-dell wiring re-verified green via
+    openchamber-wire.sh --check.
+  evidence:
+    - 'podman ps: ada-code + jack-opencode containers up; conmon parents of
+      both :4096 PIDs'
+    - 'quadlets: ~/.config/containers/systemd/{ada-code,jack-opencode}.container
+      — env via EnvironmentFile only, no CascadeProjects volume'
+    - 'podman exec versions: ada-code opencode v2.2.6, jack-opencode 1.19.4'
+    - 'host: ~/CascadeProjects/tony-projects/claude-code MISSING, no
+      ~/.claude/.credentials.json, /usr/local/bin/opencode v2.2.7'
+    - 'openchamber-wire.sh --host tony-dell --check: all steps green'
+  how_to_verify: |
+    pgrep -af "opencode serve"            # both :4096 PIDs have conmon parents
+    podman exec jack-opencode opencode --version   # 1.19.4
+    podman exec ada-code opencode --version        # v2.2.6
+    scripts/claude-code/openchamber-wire.sh --host tony-dell --check

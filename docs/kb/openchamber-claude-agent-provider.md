@@ -98,7 +98,7 @@ Fallback: `POST /auth/session {password: $OPENCHAMBER_UI_PASSWORD}` (from
 | tony-dell | yes (:3000, `openchamber.service`) | 2.3.2 | 2.1.327 | yes — **wired + smoke-verified** |
 | tony-omen | no | no | yes | yes (.credentials.json) |
 | tony-macbook | no | yes (`~/.local/node/bin`) | no | no |
-| idc02 | no | yes (`/usr/local/bin`) | no | no |
+| idc02 | no | host bin v2.2.7 + 2 podman workers (see note) | no | no |
 | kk-mac | no | no | no | no |
 | mn01, idc03, con01, michael-ha | no | no | no | no |
 
@@ -109,6 +109,35 @@ host-hygiene rules), install pinned claude-code, `claude auth login` once,
 then run this script. Standalone `opencode serve` (no OpenChamber) can use
 the same provider by exporting `OPENCODE_CLAUDE_PATH` in its own environment
 plus step 3 — outside this script's scope.
+
+### idc02: no injection target (probe 2026-11-18, card claude-agent-idc02-opencode)
+
+There is **no host-level** `opencode serve --hostname 0.0.0.0 --port 4096`
+on idc02 — both matching processes live inside rootless podman containers
+on private podnets (quadlets in `~/.config/containers/systemd/`):
+
+- **ada-code** (opencode v2.2.6) — Ada's control-plane responder backend;
+  LiteLLM-keyed, tool-restricted. A worker, not a user-facing model surface.
+- **jack-opencode** (opencode **1.19.4** — predates the claude-agent
+  provider, which needs >= 2.2.x) — Jack's isolated web IDE, reachable only
+  through the jack-enroll gateway. LiteLLM-only by committed config
+  (`stacks/idc02/jack-ide/opencode/opencode.json`); its documented isolation
+  posture forbids host mounts beyond workspace + disposable home.
+
+`OPENCODE_CLAUDE_PATH=<host path>` cannot help either container: the host
+path is not mounted, container env comes only from quadlet
+`Environment=`/`EnvironmentFile`, and claude OAuth creds would have to live
+inside each container's HOME. Wiring claude-agent into jack-ide is a design
+change (image rebuild to opencode >= 2.2, scoped read-only claude-code
+mount, OAuth login inside the container, anthropic egress from the podnet)
+— a Tony decision, tracked on card `claude-agent-idc02-opencode`. If Jack
+needs Claude-class models without breaking isolation, the in-model path is
+a LiteLLM alias, not this provider.
+
+Also observed on idc02: a dormant leftover
+`/tmp/ocv2/opencode-bin serve --service` (loopback :49374, orphaned to init
+since 2026-11-08, launch PWD = ada-opencode workspace, no children, no
+connections) — not the :4096 surface; cleanup candidate.
 
 ## Gotchas
 
