@@ -32,6 +32,7 @@ rollup = load("rollup-summaries")
 drift = load("recall-drift-report")
 gaps = load("memory-gap-report")
 staleness = load("memory-staleness-sweep")
+merges = load("memory-merge-proposals")
 
 
 class TestSyncLogic(unittest.TestCase):
@@ -193,6 +194,96 @@ class TestStalenessSweep(unittest.TestCase):
         b = staleness.tag_for("ada-ha-bank-note-tony", "note/x")
         self.assertEqual(a, b)
         self.assertTrue(a.startswith("stale-"))
+
+
+class TestMergeProposals(unittest.TestCase):
+    def _doc(self, key, status="draft", source="extract", meta=None,
+             body="fact body"):
+        m = {"status": [status], "source": [source],
+             "last_verified": ["2026-11-18"], "valid_from": ["2026-11-18"]}
+        if meta:
+            m.update(meta)
+        return {"key": key, "contentMd": body, "meta": m}
+
+    def test_candidate_draft_requires_extract_and_recency(self):
+        d = self._doc("distill/x")
+        self.assertTrue(merges.is_candidate_draft(d, 14))
+        self.assertFalse(merges.is_candidate_draft(
+            self._doc("v/x", source="voice"), 14))
+        self.assertFalse(merges.is_candidate_draft(
+            self._doc("a/x", status="active"), 14))
+        self.assertFalse(merges.is_candidate_draft(
+            self._doc("r/x", meta={"merge_review": ["rejected"]}), 14))
+        old = self._doc("o/x", meta={"last_verified": ["2026-10-01"],
+                                     "valid_from": ["2026-10-01"]})
+        self.assertFalse(merges.is_candidate_draft(old, 14))
+
+    def test_same_slot_subject_and_attribute(self):
+        d = self._doc("d", meta={"subject": ["gate"], "attribute": ["loc"]})
+        same = self._doc("c", status="active",
+                         meta={"subject": ["gate"], "attribute": ["loc"]})
+        diff_attr = self._doc("c", status="active",
+                              meta={"subject": ["gate"], "attribute": ["code"]})
+        self.assertTrue(merges.same_slot(d, same))
+        self.assertFalse(merges.same_slot(d, diff_attr))
+        # missing meta falls back to score-only matching
+        nosubj = self._doc("c", status="active", meta={"subject": [""]})
+        self.assertTrue(merges.same_slot(d, nosubj))
+
+    def test_suggest_action(self):
+        canon = self._doc("c", status="active",
+                          meta={"subject": ["g"], "scope": ["shared"]},
+                          body="The gate remote is in the drawer.")
+        dup = self._doc("d", meta={"subject": ["g"], "scope": ["shared"]},
+                        body="the gate remote is in the drawer.")
+        self.assertEqual(merges.suggest_action(dup, canon), "reject")
+        upd = self._doc("d", meta={"subject": ["g"], "scope": ["shared"]},
+                        body="The gate remote moved to the cabinet.")
+        self.assertEqual(merges.suggest_action(upd, canon), "update-in-place")
+        rescope = self._doc("d", meta={"subject": ["g"], "scope": ["kk"]},
+                            body="The gate remote moved to the cabinet.")
+        self.assertEqual(merges.suggest_action(rescope, canon), "supersede")
+
+    def test_proposal_id_stable_and_unique(self):
+        a = merges.proposal_id("ada-ha-bank-general", "general/x", "distill/y")
+        b = merges.proposal_id("ada-ha-bank-general", "general/x", "distill/y")
+        c = merges.proposal_id("ada-ha-bank-general", "general/x", "distill/z")
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, c)
+        self.assertTrue(a.startswith("merge-"))
+
+    def test_draft_fact_strips_provenance_footer(self):
+        d = {"contentMd": "tony decided X.\n\n---\n_distilled from 2 session(s)_\n"}
+        self.assertEqual(merges.draft_fact(d), "tony decided X.")
+
+    def test_reconcile_marks_resolutions(self):
+        state = {"pairs": {"merge-1": {
+            "collection": "c", "draft": "d1", "canonical": "k",
+            "status": "proposed"}}}
+        docs = {"c": {"d1": self._doc(
+            "d1", status="superseded",
+            meta={"merge_review": ["applied"]})}}
+        merges.reconcile(state, docs)
+        self.assertEqual(state["pairs"]["merge-1"]["status"], "applied")
+
+    def test_reconcile_ignores_unscanned_collections(self):
+        state = {"pairs": {"merge-1": {
+            "collection": "other", "draft": "d1", "canonical": "k",
+            "status": "proposed"}}}
+        merges.reconcile(state, {})
+        self.assertEqual(state["pairs"]["merge-1"]["status"], "proposed")
+
+    def test_acceptance_rolling_window(self):
+        today = "2000-01-01"  # force outside the 90d window deterministically
+        state = {"pairs": {
+            "a": {"status": "applied", "resolved_at": today},
+            "b": {"status": "rejected", "resolved_at": today},
+            "c": {"status": "proposed"},
+        }}
+        acc = merges.acceptance(state)
+        self.assertEqual(acc["pending"], 1)
+        self.assertEqual(acc["lifetime"], {"applied": 1, "rejected": 1})
+        self.assertIsNone(acc["window_rate"])  # both resolved outside 90d
 
 
 class TestBackupRouting(unittest.TestCase):
