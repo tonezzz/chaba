@@ -151,6 +151,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -970,6 +971,11 @@ def fail_attempt(card: dict, why: str, dry: bool,
             a["status"] = "failed"
             text = (f"merge-sweep: verified gate failed — {why[:240]}; "
                     "attempt limit reached, needs a human")
+        # requeued/failed = no live claim — honest column is backlog,
+        # not doing/review (dispatch-failed-cards-park-in-doing)
+        if c.get("column") in ("doing", "review"):
+            c["column"] = "backlog"
+            text += " (column -> backlog)"
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba", "text": text[:500]})
     return locked_edit(cid, apply)
@@ -1604,6 +1610,188 @@ def sweep_zombies(host_units: dict, cards_by_tid: dict,
     return flagged
 
 
+# ------------------------------------------- stalled-claim reaper lane
+# Card dispatch-failed-cards-park-in-doing: 'doing' must mean a live
+# claim. Doing cards whose claim provably ended (failed/done/queued/
+# held/starting-settled, or no claim record at all past the orphan
+# horizon) move to the honest column — backlog for claimable/dead
+# work, review for runs that reported done. A status=running card with
+# neither a live devin-task unit nor a fresh runner heartbeat older
+# than STALLED_CLAIM_S gets FLAGGED (comms + sweep stamp +
+# awaiting_action) — never auto-requeued, because an ssh-unreachable
+# runner's session may still be alive and a second claim would
+# double-run it.
+STALLED_CLAIM_S = float(os.environ.get("STALLED_CLAIM_HOURS", "6")) * 3600
+ORPHAN_DOING_S = float(os.environ.get("ORPHAN_DOING_HOURS", "24")) * 3600
+STARTING_SETTLE_S = float(
+    os.environ.get("STARTING_SETTLE_MIN", "30")) * 60
+_CLAIM_COMM_RE = re.compile(
+    r"claimed|dispatched |started devin-task-")
+
+
+def _ts_epoch(raw) -> float | None:
+    """'YYYY-MM-DD HH:MM' (board-local) or ISO -> epoch; None if absent."""
+    s = str(raw or "").strip().strip("'\"")
+    if not s:
+        return None
+    try:
+        if "T" in s:
+            return datetime.fromisoformat(s).timestamp()
+        return datetime.strptime(s[:16], "%Y-%m-%d %H:%M").timestamp()
+    except ValueError:
+        return None
+
+
+def claim_age_s(card: dict) -> float:
+    """Seconds since the claim began — claim.since first, else the last
+    claim-shaped comms line, else card.updated. +inf when undatable:
+    a card we can't date reads as old, not young."""
+    t = _ts_epoch(_claim(card).get("since"))
+    if t is not None:
+        return max(0.0, time.time() - t)
+    for m in reversed(card.get("comms") or []):
+        if not isinstance(m, dict):
+            continue
+        if _CLAIM_COMM_RE.search(str(m.get("text") or "")):
+            t = _ts_epoch(m.get("at"))
+            if t is not None:
+                return max(0.0, time.time() - t)
+    t = _ts_epoch(card.get("updated"))
+    if t is not None:
+        return max(0.0, time.time() - t)
+    return float("inf")
+
+
+def api_get(path: str) -> dict:
+    try:
+        with urllib.request.urlopen(API + path, timeout=15) as r:
+            return json.loads(r.read())
+    except Exception:
+        return {}
+
+
+def live_claim_ids() -> set | None:
+    """Card ids a FRESH runner heartbeat still reports as active — the
+    /queue `claimed[].at`/`host` fields carry the runner's own report,
+    not just card status. None when board-api is unreachable: callers
+    then trust only the unit probe (never flag on an api outage)."""
+    q = api_get("/queue")
+    if not q.get("ok"):
+        return None
+    fresh = {h for h, hb in (q.get("hosts") or {}).items()
+             if not (hb or {}).get("stale")}
+    return {str(c.get("id")) for c in (q.get("claimed") or [])
+            if c.get("at") and str(c.get("host") or "") in fresh}
+
+
+def _reap_move(cid: str, why: str, dry: bool) -> bool:
+    """Column fix for a provably-dead claim — one locked write: reported-
+    done work goes to review, everything else back to backlog; `updated`
+    bumped (a real workflow mutation). Re-verifies under the lock that
+    the card is still doing and still unclaimed — the merge lane or a
+    fresh claim may have resolved it between the pass's scan and this
+    write."""
+    if dry:
+        print(f"  [dry] {cid}: doing -> backlog|review — {why[:110]}")
+        return True
+
+    def apply(c):
+        st = _act(c).get("status")
+        if terminal(c) or c.get("column") != "doing" \
+                or st in ("running", "claimed"):
+            return False
+        col_to = "review" if st == "done" else "backlog"
+        c["column"] = col_to
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba",
+             "text": (f"stalled-claim reaper: moved doing -> {col_to} "
+                      f"— {why}")[:500]})
+    return locked_edit(cid, apply)
+
+
+def _reap_flag(cid: str, text: str, dry: bool) -> bool:
+    """One-shot flag for a stale live-looking claim — comms +
+    action.sweep.stalled_claim + awaiting_action in one locked write;
+    bookkeeping (never crowns `updated`). Re-verifies under the lock
+    that the card still reads doing+running."""
+    if dry:
+        print(f"  [dry] {cid}: flag stalled claim — {text[:110]}")
+        return True
+
+    def apply(c):
+        a = _act(c)
+        if terminal(c) or c.get("column") != "doing" \
+                or a.get("status") not in ("running", "claimed") \
+                or (a.get("sweep") or {}).get("stalled_claim"):
+            return False
+        a.setdefault("sweep", {})["stalled_claim"] = now()
+        c["awaiting_action"] = True
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba", "text": text[:500]})
+    return locked_edit(cid, apply, touch=False)
+
+
+def reap_stalled_claims(cards: list, active: dict, live_ids,
+                        dry: bool) -> bool:
+    """Keep 'doing' honest. `active` = {task_id: info} from the zombie
+    probes (live devin-task units); `live_ids` = fresh-heartbeat active
+    reports (None = api unreachable — unit evidence only)."""
+    changed = False
+    for c in cards:
+        if terminal(c) or c.get("column") != "doing":
+            continue
+        a = _act(c)
+        st = a.get("status")
+        cid = c.get("id") or "?"
+        if st in ("running", "claimed"):
+            tid = task_id_for(c, str(a.get("runner") or ""))
+            if tid and tid in active:
+                continue  # the unit is genuinely alive somewhere
+            if live_ids is not None and cid in live_ids:
+                continue  # the runner still reports it in-flight
+            age = claim_age_s(c)
+            if age < STALLED_CLAIM_S:
+                continue  # settle window — may still be starting
+            runner = str(a.get("runner") or _claim(c).get("host")
+                         or "?")
+            changed |= _reap_flag(
+                cid,
+                f"stalled-claim reaper: status=running but no live "
+                f"devin-task unit ({tid or 'no task_id'}) and no fresh "
+                f"runner report for "
+                f">{int(STALLED_CLAIM_S / 3600)}h — runner={runner}. "
+                "If the session is dead, requeue via "
+                "/action do=queue.", dry)
+        elif st == "done":
+            changed |= _reap_move(
+                cid,
+                "run reported done with no live claim — the verified "
+                "gate owns the close decision", dry)
+        elif st in ("failed", "held"):
+            changed |= _reap_move(
+                cid,
+                f"status={st} with no live claim — /action do=retry "
+                "re-arms it", dry)
+        elif st == "queued":
+            changed |= _reap_move(
+                cid,
+                "status=queued — claimable work is not in-flight", dry)
+        elif st == "starting":
+            if claim_age_s(c) > STARTING_SETTLE_S:
+                changed |= _reap_move(
+                    cid,
+                    "status=starting past the settle window — a crashed "
+                    "start is not a live claim", dry)
+        else:  # idle/absent/unknown status — a manual claim
+            if claim_age_s(c) > ORPHAN_DOING_S:
+                changed |= _reap_move(
+                    cid,
+                    f"in doing >{int(ORPHAN_DOING_S / 3600)}h with no "
+                    "claim/runner/session — doing means a live claim "
+                    "exists", dry)
+    return changed
+
+
 def checkout_role(repo: Path) -> str:
     """<gitdir>/chaba-role (install-hooks.sh --role) — '' when unset."""
     r = sh(["git", "-C", str(repo), "rev-parse", "--absolute-git-dir"],
@@ -1685,6 +1873,13 @@ def main(cards=None) -> int:
             print(f"{c.get('id')}: sweep error {type(e).__name__}: {e}")
     zombies = sweep_zombies(host_units, by_tid, dry)
     changed |= bool(zombies)
+
+    # stalled-claim reaper (dispatch-failed-cards-park-in-doing): after
+    # the merge lane had its chance at in-flight work, keep 'doing'
+    # honest — dead statuses move to backlog/review, stale live-looking
+    # claims get flagged for a human.
+    live_ids = live_claim_ids()
+    changed |= reap_stalled_claims(cards, active, live_ids, dry)
 
     if changed and not dry and RENDER.exists():
         subprocess.run([sys.executable, str(RENDER)], cwd=CHABA_REPO,
