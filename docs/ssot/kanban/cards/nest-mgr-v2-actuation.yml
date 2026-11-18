@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: review
-updated: 2026-11-18 21:37
+updated: 2026-11-18 21:55
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -188,6 +188,9 @@ comms:
     tests pass (test-actuation.py added — every mode/gate/circuit path, tempdir-isolated fake systemctl), job spec
     docs/ssot/jobs/devnest/2026-11-18-nest-mgr-v2-actuation.yml written. Still zero execution — guarded ships inert
     pending per-host actuation.on + deploy approval.'
+- at: 2026-11-18 21:55
+  from: chaba
+  text: ran under executor=devin provider=devin
 action:
   type: dispatch
   status: done
