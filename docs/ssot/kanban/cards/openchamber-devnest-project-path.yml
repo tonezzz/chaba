@@ -1,7 +1,7 @@
 id: openchamber-devnest-project-path
 title: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
 column: done
-updated: 2026-11-18 17:24
+updated: 2026-11-18 18:15
 brief: OpenChamber settings.json registers only /home/tony/DevNest-ada-agent, which no longer exists; the live checkout
   is /home/tony/DevNest.
 priority: medium
@@ -73,6 +73,10 @@ comms:
 - at: 2026-11-18 17:24
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
