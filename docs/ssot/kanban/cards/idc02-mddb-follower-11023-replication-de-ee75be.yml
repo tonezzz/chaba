@@ -1,8 +1,8 @@
 id: idc02-mddb-follower-11023-replication-de-ee75be
 title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
   sees ~4.6s warning; LSN advances but health/lag metrics
-column: review
-updated: 2026-11-18 17:25
+column: done
+updated: 2026-11-18 17:27
 priority: medium
 tags:
 - mddb
@@ -83,6 +83,9 @@ comms:
 - at: 2026-11-18 17:25
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-18 17:27
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -94,3 +97,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 17:27
+  note: verified — evidence checks green, closing itself
