@@ -1,6 +1,6 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: backlog
+column: doing
 updated: 2026-11-18 21:02
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
@@ -122,10 +122,14 @@ comms:
 - at: 2026-11-18 21:02
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-18 21:02
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: tony-omen
 review_kind: design
 claim: {}
