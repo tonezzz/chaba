@@ -14,6 +14,12 @@ Config (env):
   EMBED_POOL_ADDR       listen addr           (default 127.0.0.1:11436)
   EMBED_POOL_TIMEOUT_S  per-upstream timeout  (default 8 — must stay under
                         mddb's internal embed deadline ~10s)
+  EMBED_POOL_LANE       optional lane marker forwarded to upstreams as the
+                        `x-embed-lane` header — set "bulk" on pool serving
+                        backfill banks so gemini-ollama-proxy budgets can
+                        protect the free lane (card
+                        embed-free-lane-daily-budget). A caller-set
+                        x-embed-lane header always wins.
 
 Endpoints:
   POST /api/embed            raced across all upstreams, first 200 wins
@@ -36,6 +42,9 @@ TIMEOUT = float(os.environ.get("EMBED_POOL_TIMEOUT_S", "8"))
 RACED = {"/api/embed", "/api/embeddings"}
 DEAD_AFTER = int(os.environ.get("EMBED_POOL_DEAD_AFTER", "3"))
 DEAD_COOLDOWN_S = float(os.environ.get("EMBED_POOL_DEAD_COOLDOWN_S", "60"))
+# Optional lane marker stamped on upstream calls (gemini-ollama-proxy
+# budgets bulk lanes; ollama upstreams ignore the header).
+LANE = os.environ.get("EMBED_POOL_LANE", "").strip() or None
 
 _stats = {u: {"wins": 0, "fails": 0, "last_ms": 0, "consec": 0,
               "dead_until": 0.0} for u in UPSTREAMS}
@@ -64,23 +73,25 @@ def _record(u, ok):
                 st["dead_until"] = time.time() + DEAD_COOLDOWN_S
 
 
-def _call(upstream, path, body):
+def _call(upstream, path, body, lane=None):
+    headers = {"Content-Type": "application/json"}
+    if lane:
+        headers["x-embed-lane"] = lane
     req = urllib.request.Request(
-        upstream + path, data=body,
-        headers={"Content-Type": "application/json"})
+        upstream + path, data=body, headers=headers)
     t0 = time.time()
     r = urllib.request.urlopen(req, timeout=TIMEOUT)
     data = r.read()
     return r.status, data, (time.time() - t0) * 1000
 
 
-def _race(path, body):
+def _race(path, body, lane=None):
     """Fan out to all upstreams; return the first 2xx result."""
     q = []
 
     def worker(u):
         try:
-            st, data, ms = _call(u, path, body)
+            st, data, ms = _call(u, path, body, lane)
             if 200 <= st < 300:
                 _record(u, True)
                 with _lock:
@@ -105,11 +116,11 @@ def _race(path, body):
     return (None, 504, b'{"error":"no upstream answered in time"}')
 
 
-def _first(path, body):
+def _first(path, body, lane=None):
     """Non-raced proxy: try each upstream in order until one answers."""
     for u in _alive_upstreams():
         try:
-            st, data, _ = _call(u, path, body)
+            st, data, _ = _call(u, path, body, lane)
             if 200 <= st < 400:
                 _record(u, True)
                 return u, st, data
@@ -131,23 +142,27 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _lane(self):
+        return self.headers.get("x-embed-lane") or LANE
+
     def do_GET(self):
         if self.path == "/health":
             with _lock:
                 st = {u: dict(s) for u, s in _stats.items()}
             return self._send(200, json.dumps(
                 {"ok": True, "upstreams": UPSTREAMS,
-                 "timeout_s": TIMEOUT, "stats": st}).encode())
+                 "timeout_s": TIMEOUT, "lane": LANE,
+                 "stats": st}).encode())
         # pass-through GETs (e.g. /api/tags, /api/ps, /api/version)
-        _, st, data = _first(self.path, None)
+        _, st, data = _first(self.path, None, self._lane())
         self._send(st, data)
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
         if self.path in RACED:
-            _, st, data = _race(self.path, body)
+            _, st, data = _race(self.path, body, self._lane())
         else:
-            _, st, data = _first(self.path, body)
+            _, st, data = _first(self.path, body, self._lane())
         self._send(st, data)
 
 
