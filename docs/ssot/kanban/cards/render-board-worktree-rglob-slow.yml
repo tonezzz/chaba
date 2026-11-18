@@ -2,7 +2,7 @@ id: render-board-worktree-rglob-slow
 title: render-board.py _outcome_index rglobs docs/ssot/jobs across every dispatch-wt-* — ~60-100s per render on
   worktree-heavy hosts
 column: done
-updated: 2026-11-18 17:24
+updated: 2026-11-18 18:15
 brief: 'Found via OPS-0127 test profiling: kanban-dispatch runs render-board.py after every card mutation; _outcome_index()
   does root.rglob(''dispatch-outcome-*.md'') for EVERY dispatch-wt-* sibling of the repo. On hosts with 15+ worktrees
   this is ~60-100s per render, every dispatch pass. Tests now noop it; production still pays it.'
@@ -119,6 +119,10 @@ comms:
 - at: 2026-11-18 17:24
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
