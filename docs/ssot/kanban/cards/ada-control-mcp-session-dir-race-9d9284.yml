@@ -1,0 +1,16 @@
+id: ada-control-mcp-session-dir-race-9d9284
+title: ada-control-mcp-session-dir-race
+column: backlog
+updated: 2026-11-18 20:45
+spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
+  dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
+  creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
+  server=ada-control status.error=NotFound:FileSystem.access(...session-XXX), interleaved with successful mcp connected
+  tools=26. Fix options: (a) opencode/OpenChamber pre-create session dir before MCP connect, (b) ada_mcp.py tolerate
+  missing cwd, (c) pin MCP cwd to stable dir. Repo: ada-voice (opencode/ada_mcp.py) + possibly openchamber upstream.
+  Done when: 20 consecutive session starts show zero mcp connect failures in opencode.log.'
+ref: ADA-0201
+comms:
+- at: 2026-11-18 20:45
+  from: tony
+  text: card captured via board-api
