@@ -1,8 +1,8 @@
 id: idc02-mddb-follower-11023-replication-de-ee75be
 title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
   sees ~4.6s warning; LSN advances but health/lag metrics
-column: backlog
-updated: 2026-11-18 16:45
+column: doing
+updated: 2026-11-18 16:47
 priority: medium
 tags:
 - mddb
@@ -45,8 +45,12 @@ comms:
 - at: 2026-11-18 16:45
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-18 16:47
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: tony-macbook
