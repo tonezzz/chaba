@@ -624,6 +624,27 @@ jobs:
     so an emptied serve config was invisible until a scenario probe caught
     it 2026-10-20. --alert drops one deduped focus-inbox file
     (serve-config-<host>.yml); self-heals the alert file on recovery.'
+- id: audit-edge-upstreams
+  name: Edge upstream audit — serve mounts + caddy reverse_proxy dead-port sweep (hourly)
+  host: con01
+  dispatch: systemd
+  on_calendar: '*-*-* *:41:00'
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/audit-edge-upstreams.py --all --write --ship --alert
+  note: 'card edge-upstream-dead-port-audit (2026-11-18 incident: omen serve
+    :8125 -> dead :8125 while tony-ha listened on :8123; idc02 caddy-edge
+    502''d ada-ha.surf-thailand.com). Per host: verifies every tailscale
+    serve Web proxy / TCPForward target against the host listener table
+    (loopback) or an HTTP probe (remote), and every caddy reverse_proxy
+    upstream in ~/.config/caddy/Caddyfile + web-srv/camwall-edge files per
+    vhost. check-routes.py sees declared routes on one edge; check-serve-
+    config sees declared mounts on one host — this sees the *observed*
+    bindings on every host''s edges, incl. stale mounts the registry
+    forgot. Runs on con01 beside chaba-system-report (same ssh fan-out);
+    --ship rsyncs reports/edge-upstreams/ to the idc03 served checkout
+    (remote pushback) so nodes edge-upstreams/<host> stay fresh; --alert
+    files deduped board-api /inbox entries (24h per surface).'
 - id: system-report-watchdog
   name: System-report freshness watchdog (stale-data / host-down alert)
   host: tony_dell

@@ -12,6 +12,10 @@ jobs:
   - id: cam-frame-refresh
     schedule: "every 5s"
     dispatch: "systemd"
+  - id: chaba-pytest-suite
+    schedule: "*-*-* 03:30:00"
+    dispatch: "systemd"
+    persistent: true
   - id: device-telemetry
     schedule: "*:0/5"
     dispatch: "systemd"

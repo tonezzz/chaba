@@ -1,0 +1,7 @@
+[Unit]
+Description=Edge upstream audit — serve mounts + caddy reverse_proxy dead-port sweep (hourly) (job:audit-edge-upstreams, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/audit-edge-upstreams.py --all --write --ship --alert

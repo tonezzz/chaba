@@ -13,6 +13,22 @@ jobs:
   - id: ada-nest-heartbeat-idc03
     schedule: "every 5m"
     dispatch: "systemd"
+  - id: ada-retention-dev
+    schedule: "Sun *-*-* 04:00:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-retention-kk
+    schedule: "Sun *-*-* 04:30:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-retention-michael
+    schedule: "Sun *-*-* 04:45:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-retention-tony
+    schedule: "Sun *-*-* 04:15:00"
+    dispatch: "systemd"
+    persistent: true
   - id: ada-tg-webhook-watch
     schedule: "every 5m"
     dispatch: "systemd"

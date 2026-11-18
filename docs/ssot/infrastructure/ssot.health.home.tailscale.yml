@@ -22,6 +22,29 @@ services:
       - "Check tailscale serve: tailscale serve status"
     host: tony_omen
 
+  - id: ada-ha-edge-8125
+    name: ada-ha tailnet edge (tony-omen serve :8125)
+    type: http
+    url: https://tony-omen.taila0626a.ts.net:8125/
+    expected_status: 200
+    timeout: 5
+    category: tailscale
+    profiles:
+      - home
+      - mobile
+    note: "Tailnet front for ada-ha.surf-thailand.com — tony-omen serve :8125
+      -> tony-ha 127.0.0.1:8123. 2026-11-18 incident: serve pointed at dead
+      :8125 (HA listens :8123); the public vhost 502'd for hours undetected.
+      This end-to-end probe is the mcp-health surface; the *binding* itself
+      is audited hourly by scripts/audit-edge-upstreams.py (con01)."
+    verification:
+      - "Test root: curl -sk -o /dev/null -w '%{http_code}' https://tony-omen.taila0626a.ts.net:8125/"
+      - "Check binding: ssh tony-omen tailscale serve status --json"
+    recovery_actions:
+      - "Repoint serve: tailscale ssh tony-omen tailscale serve --bg --https=8125 http://127.0.0.1:8123"
+      - "Fleet audit: python3 scripts/audit-edge-upstreams.py --host tony-omen"
+    host: tony_omen
+
   - id: michael-ha-tailscale
     name: michael-ha via Tailscale
     type: http

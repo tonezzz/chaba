@@ -6,6 +6,10 @@ jobs:
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
+  - id: audit-edge-upstreams
+    schedule: "*-*-* *:41:00"
+    dispatch: "systemd"
+    persistent: true
   - id: chaba-audit
     schedule: "Sun *-*-* 02:00:00"
     dispatch: "systemd"
