@@ -11,7 +11,7 @@ note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client
   become unnecessary).'
 help: backend/tools_loader.py contract; tool_runner/common.py ToolContext; backend/mddb_client.py read-routing;
   tools.d/ada_track_device.py current raw-httpx pattern; docs/ada-tool-dev.md
-updated: 2026-11-18 17:30
+updated: 2026-11-18 18:18
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -220,6 +220,10 @@ comms:
 - at: 2026-11-18 17:30
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
