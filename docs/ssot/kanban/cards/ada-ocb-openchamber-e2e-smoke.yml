@@ -1,0 +1,40 @@
+id: ada-ocb-openchamber-e2e-smoke
+title: 'Ada-OCB: fresh OpenChamber session smoke'
+column: backlog
+updated: 2026-11-18 14:13
+brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
+  MCP tools; separate from ADA-0173 direct-bridge verification.
+priority: low
+tags:
+- ada
+- opencode
+- openchamber
+- smoke
+- read-only
+spec: 'Read-only UI integration check. Do not dispatch, queue, claim, move, close, merge, deploy, or use any confirmed=true
+  action. Do not make a model/provider call unless a zero-cost local/free route is verified; if only a paid route
+  is available, stop for Tony approval.
+
+
+  1. In a fresh OpenChamber session, run /ada status ADA-0167 and compare the ref, title, column, and latency with
+  board state.
+
+  2. Call ada_card_context for ADA-0167 and verify the card fields, requests, and recent comms are returned.
+
+  3. Call ada_card_pick with strategy=queue and limit=1; record the selected ref and whether a selection token is
+  returned.
+
+  4. In that same session, exercise the read-only ada_preflight/plan gate only through the native confirmation UI;
+  do not forge or type a confirmation to bypass it. Stop before any workflow mutation. If the native flow is unavailable,
+  record the exact error.
+
+  5. Verify calls show mutations_performed=[] and capture the OpenChamber session ID and sanitized tool outcomes.
+
+
+  Existing direct MCP evidence: ADA-0173 tested bridge helpers only. The unresolved question is whether the fresh
+  OpenChamber UI/session routes instructions, tools, and same-process selection state correctly.'
+ref: ADA-0186
+comms:
+- at: 2026-11-18 14:13
+  from: devin
+  text: card captured via board-api
