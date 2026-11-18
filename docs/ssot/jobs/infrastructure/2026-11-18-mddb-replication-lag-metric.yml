@@ -1,0 +1,124 @@
+id: 2026-11-18-mddb-replication-lag-metric
+title: mddb replication lag — real commit-to-apply time, not LSN-diff×10
+date: 2026-11-18
+domain: infrastructure
+repo: mddb-fork
+cards: [idc02-mddb-follower-11023-replication-de-ee75be]
+related: [mddb-idc03-followers-lag-status-audit (MEM-0799), mddb-replication-heartbeat, mddb-follower-lsn-persist]
+
+root_cause:
+  summary: >-
+    /v1/replication/status disagreed with itself because THREE code paths
+    computed "lag" with two different definitions and raced on shared state.
+  details:
+    - >-
+      LEADER VIEW (replication_handlers.go + replication_server.go
+      ReplicationStatus): lag_ms = (leader_current_lsn −
+      follower_confirmed_lsn) × 10 — a fabricated "milliseconds" value:
+      LSN count × an assumed 10ms/entry. Under-reports real lag whenever
+      sustained write rate is below ~100 entries/s.
+    - >-
+      FOLLOWER, apply path (replication_client.go replicate loop): after
+      each applied entry, lagMs = now − entry.Timestamp, where
+      entry.Timestamp is the leader's commit time (set in binlog.Append).
+      This is REAL commit→apply wall-clock lag — the trustworthy signal.
+    - >-
+      FOLLOWER, ack path (ackLoop, every 10s): lagMs = (LeaderLsn −
+      applied) × 10 — the same synthetic estimate as the leader, written
+      to the SAME atomic. The two follower writers raced, so
+      replication_lag_ms flickered between a real-time value and a
+      count-scaled one depending on which writer ran last.
+    - >-
+      healthy = connected && applied LSN > 0 && lagMs ≤ maxLag (default
+      30s). With the racing real value (~90–290s during idc02 catch-up
+      bursts) vs synthetic (~4–50s), health and both views disagreed.
+  measured_2026-11-18: >-
+    Live samples during the session (leader bursting ~90 LSN/s, idc02
+    applying ~15-25 LSN/s on contended HDD): follower reported
+    replication_lag_ms 173s → 254s → 288s while leader showed the same
+    position as lag_ms 50500 → 42470 → 4350 ("unhealthy"→"warning") —
+    values diverge ~6x AND disagree on direction of severity.
+    last_recv_age_ms ~200-500ms and confirmed_lsn advancing prove the
+    stream is alive and applying — slow, not stalled. con01 keeps up
+    (faster disk). Clock skew ruled out: idc02/idc03 clocks agree to ~1s,
+    and heartbeats now measure offset explicitly.
+  verdict: >-
+    idc02's self-report is the HONEST one: it is genuinely ~minutes behind
+    during write bursts — real lag, not a metrics bug in the measured
+    quantity. The metric BUG was everywhere else: the leader's lag_ms
+    (and the follower ack-path overwrite) reported a scaled LSN count as
+    milliseconds and disagreed with the follower's real measurement.
+    healthy:false during catch-up is truthful — idc02 should not serve
+    failover reads while minutes stale; the noise was the two views
+    disagreeing about the same position.
+
+fix:
+  branch: fix/replication-lag-real-time (pushed into idc02:~/CascadeProjects/mddb-fork only — NOT pushed to origin)
+  commit: 04c7b9a2
+  base: upgrade/2.18.10 @ b759ba3e (same base as deployed localhost/mddb:2.18.10-merge)
+  patch_file: docs/ssot/jobs/infrastructure/2026-11-18-mddb-replication-lag-real-time.patch
+  definition: >-
+    One lag definition everywhere: lag = now − commit_ts(at the follower's
+    applied/acknowledged tip); 0 when the position covers the leader's
+    head, so an idle-but-caught-up follower does not report leader
+    write-idleness as lag.
+  changes:
+    - >-
+      internal/binlog: bounded LSN→commit-ts index (16384 slots,
+      ~minutes at typical rates), populated in Append/AppendBatch and
+      backfilled by recoverLSN — TimestampAt(lsn) needs no file scan.
+    - >-
+      leader (HTTP followers[] + gRPC ReplicationStatus): lag_ms =
+      now − commit_ts(confirmed tip) via TimestampAt; when confirmed
+      predates the index, the index floor's age is a truthful lower
+      bound; lag_lsn added (raw LSN gap — what the old ×10 encoded).
+    - >-
+      follower: lastAppliedCommitTs stored per apply; leaderHeadLSN
+      recorded per ack for the at-head check; LagMs() computed on read
+      so a stalled-behind follower's lag grows in real time; ack-path
+      ×10 survives only as the pre-first-apply fallback.
+    - >-
+      follower: heartbeat send-timestamps measure leader−local clock
+      offset; lag computed in leader time — clock skew cannot inflate
+      or hide it. Exported as leader_clock_offset_ms (makes the MEM-0799
+      "clock skew?" hypothesis directly observable).
+    - >-
+      thresholds unchanged: leader 1s warn / 30s unhealthy, follower
+      maxLag 30s — now in real milliseconds on both sides.
+  tests: >-
+    go build/vet clean; go test ./internal/binlog + package main
+    replication tests pass (idc02 golang:1.27.3-alpine). New tests:
+    TestBinlogTimestampAt (index + restart backfill),
+    TestReplicationClientLagMsRealTime (at-head 0, real lag, offset
+    correction, LagLSN), TestFollowerLagMsRealTime; updated
+    TestReplicationStatus_FollowerLag for real semantics.
+  consumers_checked:
+    - >-
+      scripts/mddb-follower-watchdog.py: keys on confirmed_lsn /
+      last_seen_at / leader current_lsn — unaffected; reads
+      replication_lag_ms only for reporting.
+    - >-
+      scripts/mddb-binlog-canary.py: flags followers[].status != healthy
+      — now truthful; will alert during real catch-up episodes (intended:
+      idc02 is genuinely stale then).
+
+deploy:
+  status: NOT DEPLOYED — production change, gated on explicit approval.
+  plan: >-
+    Rebuild localhost/mddb:<ver>-merge image from
+    fix/replication-lag-real-time, roll leader (idc03) first, then
+    followers idc02/con01 one at a time. Rollback = restart on the
+    previous image tag (2.18.10-merge kept locally).
+  verify: >-
+    idc02 /v1/replication/status replication_lag_ms ≈ leader's
+    followers[idc02].lag_ms at the same moment (same definition, both
+    real); healthy:true sustained when caught up; healthy:false only
+    during genuine catch-up; lag_lsn explains the residual gap;
+    leader_clock_offset_ms ≈ 0 confirms no clock skew.
+
+ops_note: >-
+  The underlying real lag on idc02 is a capacity problem, not a metrics
+  problem: HDD-bound apply (~15-25/s) vs leader write bursts (~90/s).
+  The metric fix makes that visible honestly; whether to smooth alerts
+  (maxLag env, canary persistence) or speed up idc02 apply is a separate
+  capacity decision.
