@@ -1,0 +1,97 @@
+# SSOT Job Lifecycle: ada-memory-sync transient-MDDB hardening
+# Card: ada-memory-sync-transient-mddb-hardening (MEM-1253).
+# Follow-up from timer-alert-idc03-ada-memory-sync (diagnosed 2026-11-09):
+# the hourly sync exited 1 on transient MDDB faults — ~8 red
+# self-healing timer-alert cycles between 2026-11-08 and 2026-11-18.
+
+title: ada-memory-sync — bounded retry on transient MDDB faults + timer off :00
+subtitle: Options (1)+(3) from card spec, plus the read-timeout bump retries need
+icon: shield
+
+planning:
+  goal: |
+    Stop hourly red timer-alert cards caused by *transient* MDDB faults
+    while keeping real crashes red. Two observed failure modes
+    (timer-alert-idc03-ada-memory-sync comms, 2026-11-09):
+      (a) weekly mddb-restart.timer (Sun 05:00) kills an in-flight
+          POST /add -> RemoteDisconnected (observed 11-08 05:00);
+      (b) degraded embed path (embed-pool-shim circuit-open + Gemini 429)
+          makes mddb retry embeds inline ~30s/doc, exceeding the sync
+          client's 20s read timeout -> ReadTimeout (observed 11-09 04:01,
+          degraded window ~03:58-07:01).
+  decisions: |
+    (1) Mddb._post now retries bounded: 3 attempts, linear backoff
+        30s/60s (covers an mddb.service restart), on transport faults
+        (requests.ConnectionError incl. RemoteDisconnected/refused,
+        requests.Timeout) and transient HTTP (429/5xx). Deterministic
+        4xx still fails fast; a real outage still exits nonzero after
+        retries — the exit-1-on-conflict semantics are untouched, so the
+        pending exit-0 contract migration (docs/kb/timer-expectations.md)
+        is unaffected.
+        All three callers are idempotent: /search reads, /add upserts by
+        key, /delete is key-scoped.
+    (2) Read timeout bumped 20s -> 60s. Strictly the card recommended
+        only (1)+(3), but retries under a 20s cap cannot survive the
+        documented ~30s/doc inline-embed stall — every attempt would
+        ReadTimeout identically. 60s covers the observed worst case
+        (~30-40s) with headroom. Oneshot units have no TimeoutStartSec
+        limit, so a hung endpoint is still bounded by attempts x
+        (timeout + backoff) ~= 4.5min per call.
+    (3) ada-memory-sync.timer OnCalendar=hourly -> *-*-* *:17:00 —
+        permanently off :00, so it can never collide with Sun-05:00
+        mddb-restart (or the other top-of-hour jobs). :17 chosen as
+        unused across repo timers (:30 ada-memory-pull, :45
+        ada-memory-health, :23 bench-edge-cms).
+    Rejected for now: (4) exit-0 contract fold-in — the unit also reports
+    real unresolved conflicts via exit 1, which needs a durable findings
+    channel before conversion; left as the documented residual.
+  changed:
+    - "scripts/ada/sync-ada-memory-to-mddb.py (Mddb._post retry/backoff,
+      timeout 20->60, max_attempts=3)"
+    - "systemd/ada-memory-sync.timer (OnCalendar *:17:00 + comment)"
+    - "systemd/ada-memory-sync.service (stale mn01-only comment -> idc03+mn01)"
+    - "tests/ada_memory/test_memory_scripts.py (TestMddbRetry — transient-
+      then-success, exhaustion re-raises, 4xx fail-fast, 5xx retried)"
+
+deploy:
+  propagate: |
+    Script + units land on hosts via the normal checkout sync:
+      - idc03 ~/CascadeProjects/chaba-vault (job checkout, pulls master;
+        ExecStart runs the script from there)
+      - mn01 same chaba-vault pattern.
+    The .timer/.service files also need copying onto the host user units —
+    they are NOT auto-installed by checkout sync:
+      for h in idc03 mn01; do
+        scp systemd/ada-memory-sync.{timer,service} \
+          $h:~/.config/systemd/user/
+        ssh $h 'systemctl --user daemon-reload && \
+                systemctl --user reenable ada-memory-sync.timer && \
+                systemctl --user restart ada-memory-sync.timer'
+      done
+    Needs a session with push/deploy approval — this dispatch only lands
+    the repo change.
+  verify: |
+    systemctl --user list-timers ada-memory-sync.timer   # NEXT ~:17
+    journalctl --user -u ada-memory-sync.service -n 50   # retries logged
+                                                       # on stderr as
+    #   "mddb/add failed (...) — retrying in Ns"
+    # Success = next hourly run exits 0 even if it rode an mddb restart;
+    # a real outage still fails after 3 attempts.
+
+verification:
+  tests: |
+    python3 -m unittest tests.ada_memory.test_memory_scripts — 26 tests OK
+    (new TestMddbRetry covers retry-success, exhaustion, 4xx fail-fast,
+    5xx retry; first run caught a real bug — bare `raise` outside the
+    except clause -> RuntimeError, fixed by keeping the raise inside).
+  calendar: |
+    systemd-analyze calendar '*-*-* *:17:00' -> valid, hourly at :17.
+
+open:
+  - Install the updated timer/service on idc03 + mn01 (deploy step above);
+    until then the installed unit still fires at :00 with the old script
+    (retries arrive via checkout sync once merged — the script path under
+    chaba-vault updates without a unit reinstall).
+  - Degraded-embed windows lasting longer than ~4.5min/call still exhaust
+    retries -> red card. That is intentional (a real outage); the embed
+    path itself is tracked under mddb-storage/embed-shim work.

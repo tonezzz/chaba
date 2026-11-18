@@ -31,6 +31,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -138,15 +139,41 @@ def build_meta(fm: dict, bank: str, scope: str, today: str) -> dict:
 
 
 class Mddb:
-    def __init__(self, base: str, timeout: int = 20) -> None:
+    def __init__(self, base: str, timeout: int = 60,
+                 max_attempts: int = 3) -> None:
         self.base = base
         self.timeout = timeout
+        self.max_attempts = max_attempts
         self.s = requests.Session()
 
     def _post(self, path: str, payload: dict):
-        r = self.s.post(f"{self.base}{path}", json=payload, timeout=self.timeout)
-        r.raise_for_status()
-        return r.json()
+        # Bounded retry on transport faults (RemoteDisconnected, refused,
+        # timeouts) and transient HTTP (429/5xx) — covers mddb.service
+        # restarts and degraded-embed stalls that used to crash the hourly
+        # run with exit 1. All three callers are idempotent (search reads,
+        # add upserts by key, delete is key-scoped). Deterministic HTTP
+        # errors (4xx) still fail fast; a real outage still exits nonzero
+        # after the retries are exhausted.
+        last = self.max_attempts - 1
+        for attempt in range(self.max_attempts):
+            try:
+                r = self.s.post(f"{self.base}{path}", json=payload,
+                                timeout=self.timeout)
+                r.raise_for_status()
+                return r.json()
+            except requests.HTTPError as exc:
+                code = exc.response.status_code if exc.response is not None else 0
+                if not (code == 429 or code >= 500) or attempt == last:
+                    raise
+                reason = f"HTTP {code}"
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                if attempt == last:
+                    raise
+                reason = str(exc)
+            wait = 30 * (attempt + 1)
+            print(f"  mddb{path} failed ({reason}) — retrying in {wait}s",
+                  file=sys.stderr)
+            time.sleep(wait)
 
     def list_docs(self, collection: str) -> list[dict]:
         # Banks with >1000 docs (devin-tony is ~2000) silently truncated —

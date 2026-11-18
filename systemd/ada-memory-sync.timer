@@ -2,7 +2,10 @@
 Description=Hourly Ada memory vault <-> MDDB sync
 
 [Timer]
-OnCalendar=hourly
+# Off-:00 so the hourly run never collides with idc03's weekly
+# mddb-restart.timer (Sun 05:00) — an in-flight POST /add used to die with
+# RemoteDisconnected -> red timer-alert (MEM-1253).
+OnCalendar=*-*-* *:17:00
 Persistent=true
 
 [Install]
