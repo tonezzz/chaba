@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: doing
-updated: 2026-11-18 16:54
+updated: 2026-11-18 16:56
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -139,6 +139,10 @@ comms:
     give opt-in bulk lane (x-embed-lane header / lane body field; embed-pool-shim EMBED_POOL_LANE stamps it). Query
     priority = de-facto via pacing; strict priority needs mddbd marking (mddb-fork followup — EmbeddingJob is index-only
     by construction; gpu-queue EmbeddingJob is u'
+- at: 2026-11-18 16:56
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233707-goal-bulk-index-embedding-work no longer active on idc02 but card
+    still says running — sweeping its branch'
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
