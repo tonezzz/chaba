@@ -125,6 +125,10 @@ comms:
 - at: 2026-11-18 22:17
   from: tony-dell
   text: claimed
+- at: 2026-11-18 22:17
+  from: tony-dell
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
+    dispatch is held'
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -164,8 +168,9 @@ requests:
     approval; no download or inference has been authorized by this request.'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
