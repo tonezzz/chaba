@@ -25,7 +25,7 @@ spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doin
 help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. Fetch must override the repo''s
   pinned GitHub key: `git -c core.sshCommand=ssh fetch`. Merge guard already in scripts/board/dispatch_repos.py
   — this service is its remedy path.'
-updated: 2026-11-18 20:46
+updated: 2026-11-18 20:48
 action:
   type: dispatch
   status: running
@@ -136,6 +136,12 @@ comms:
 - at: 2026-11-18 20:46
   from: chaba
   text: started devin-task-20261118-204621-sweep-script-scripts-board-mer on idc02 (dispatch)
+- at: 2026-11-18 20:48
+  from: devin
+  text: 're-dispatch (user-triggered) of a done+verified card — verified in worktree: merge-sweep.py implements
+    full spec (session/meta.json probe, core.sshCommand=ssh fetch, merge_state+merge_strict stop-and-report, conflict->card
+    request naming files, zombie lane 6h/60min flag-only, dispatch_repos reuse); 41/41 tests pass; cadence now via
+    board-janitor.timer on idc03 (15m). No code changes needed.'
 ownership:
   owner: tony
 claim: {}
