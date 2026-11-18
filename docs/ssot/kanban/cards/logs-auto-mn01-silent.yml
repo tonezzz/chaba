@@ -7,7 +7,7 @@ priority: high
 note: 'Auto-recovered 2026-10-25: `mn01-silent` condition cleared — shipper healthy again.'
 help: Run `log-shipper.py --hosts mn01 --dry-run` from tony-omen; if the ssh probe fails, check tailscale auth (browser
   link).
-updated: 2026-11-18 18:01
+updated: 2026-11-18 18:03
 brief: 'The log digest flagged something worth a look: logs `mn01` never shipped state. Read the note, then fix
   it or close the card.'
 review_kind: triage
@@ -51,4 +51,8 @@ comms:
 - at: 2026-11-18 18:01
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
