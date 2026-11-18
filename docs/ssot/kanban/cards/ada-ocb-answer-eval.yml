@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval
 title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
-column: doing
-updated: 2026-11-18 10:05
+column: review
+updated: 2026-11-18 10:09
 brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
   eval set that asserts answer quality end-to-end.
 priority: high
@@ -115,9 +115,13 @@ comms:
     Canonical doc benchmark/ocb-answer-eval-20261118-100407 = score 1.0 (tools 10/10; live unscored on opencode
     free-quota 429). Live-mode findings: dead-mcp fallback fixed, skill-hijack (ssot-search) + unenforceable builtins
     confirmed as real wrong-path failures the suite now catches.'
+- at: 2026-11-18 10:09
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    Failed to ope'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -130,3 +134,9 @@ action:
     wall clock time, 111.4M memory peak.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    No such file or directory'
+  verified: true
+review_kind: verify
+claim: {}
