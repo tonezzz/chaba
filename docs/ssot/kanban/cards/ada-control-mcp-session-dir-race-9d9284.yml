@@ -1,7 +1,7 @@
 id: ada-control-mcp-session-dir-race-9d9284
 title: ada-control-mcp-session-dir-race
 column: doing
-updated: 2026-11-18 20:47
+updated: 2026-11-18 20:54
 spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
   dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
   creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
@@ -39,6 +39,13 @@ comms:
 - at: 2026-11-18 20:47
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.69 > 1.0)'
+- at: 2026-11-18 20:54
+  from: devin
+  text: 'Root cause confirmed on idc02: managed opencode 2.3.2 (~/.local/node) spawns local MCP servers with cwd=session
+    dir; Effect spawner pre-flight FileSystem.access(cwd) fails when OpenChamber chat dir (~/.config/openchamber/chats/<date>/session-<uuid>)
+    is not yet materialized. Fork schema supports per-server cwd (Mcp.LocalConfig.cwd, resolves vs workspace, ~
+    expanded). Plan: pin ada-control cwd to /home/tony/CascadeProjects/ada-voice in ~/.config/opencode/opencode.json
+    -> spawn never touches epheme'
 action:
   type: dispatch
   status: running
