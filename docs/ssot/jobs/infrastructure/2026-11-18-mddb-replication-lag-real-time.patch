@@ -1,0 +1,533 @@
+From 04c7b9a2965c0d932702e61c547d6ca6f74ce5ca Mon Sep 17 00:00:00 2001
+From: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 17:08:56 +0700
+Subject: [PATCH] fix(replication): report real commit-to-apply lag, not
+ LSN-diff*10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+/v1/replication/status disagreed with itself: the leader view and the
+follower ack loop both computed lag as (LSN gap)*10 ms — a count scaled
+by an assumed 10ms/entry, not a time — while the follower apply path
+measured real entry-timestamp age. The two writers raced on the same
+field, so self-reported lag oscillated between definitions and the
+leader under-reported real lag ~4x (MEM-0799: leader saw ~4.6s
+"warning" while the follower measured ~93-238s real).
+
+One definition everywhere now: lag = wall-clock age of the follower's
+applied tip, 0 at the leader's head so idle leaders don't read as lag.
+
+- binlog: bounded LSN->commit-ts index (16384 slots), populated on
+  append and backfilled by recoverLSN, so lag lookups never scan.
+- leader (HTTP + gRPC status): lag_ms = now - commit_ts(confirmed tip)
+  via TimestampAt; predating the index reports the index-floor age as
+  a lower bound.
+- follower: lagMs computed on read from lastAppliedCommitTs; ackLoop
+  records leaderHeadLSN for the at-head check; the LSN-gap estimate
+  survives only as the pre-first-apply fallback.
+- follower: heartbeat send-timestamps now measure leader-local clock
+  offset; commit-ts lag is computed in leader time so host clock skew
+  cannot inflate or hide it. Exported as leader_clock_offset_ms.
+- new lag_lsn on both views exposes the raw LSN gap the old estimate
+  was derived from.
+---
+ services/mddbd/internal/binlog/binlog.go      | 49 +++++++++++++++
+ services/mddbd/internal/binlog/binlog_test.go | 52 ++++++++++++++++
+ services/mddbd/replication_client.go          | 61 +++++++++++++++++--
+ services/mddbd/replication_client_test.go     | 42 +++++++++++++
+ services/mddbd/replication_handlers.go        | 18 +++++-
+ services/mddbd/replication_handlers_test.go   | 36 +++++++++++
+ services/mddbd/replication_server.go          | 32 ++++++++--
+ .../mddbd/replication_server_extra_test.go    | 17 +++++-
+ 8 files changed, 293 insertions(+), 14 deletions(-)
+
+diff --git a/services/mddbd/internal/binlog/binlog.go b/services/mddbd/internal/binlog/binlog.go
+index 52ca541c..ed343f1f 100644
+--- a/services/mddbd/internal/binlog/binlog.go
++++ b/services/mddbd/internal/binlog/binlog.go
+@@ -34,6 +34,15 @@ type Binlog struct {
+ 	subscribers map[string]chan *BinlogEntry
+ 	subMu       sync.RWMutex
+ 
++	// recentTs is a bounded LSN→commit-ts index over the newest entries, so
++	// a per-LSN timestamp lookup (replication lag measured in real time)
++	// does not require a file scan. Slot = lsn % recentTsCap; a slot answers
++	// only for its recorded lsn. Writers fill it under b.mu at append and in
++	// recoverLSN; readers do lock-free atomic loads — the lsn equality check
++	// makes a torn read fail closed instead of returning a wrong timestamp.
++	recentLSN [recentTsCap]atomic.Uint64
++	recentTS  [recentTsCap]atomic.Int64
++
+ 	// Periodic flush
+ 	flusher   chan struct{}
+ 	done      chan struct{}
+@@ -53,8 +62,45 @@ const (
+ 	binlogBufferSize     = 256 * 1024 // 256KB write buffer
+ 	binlogSubscriberCap  = 4096       // channel buffer for subscribers
+ 	binlogFlushInterval  = 100 * time.Millisecond
++	recentTsCap          = 16384 // ~minutes of headroom at typical write rates
+ )
+ 
++// recordRecent indexes one entry's commit timestamp under its LSN. Callers
++// hold b.mu (append path) or run during single-threaded recovery.
++func (b *Binlog) recordRecent(lsn uint64, ts int64) {
++	slot := lsn % recentTsCap
++	b.recentTS[slot].Store(ts)
++	b.recentLSN[slot].Store(lsn)
++}
++
++// TimestampAt returns the commit timestamp recorded for lsn — same value the
++// entry carries on disk — when lsn still falls inside the recent index. ok is
++// false when the entry predates the window or nothing is recorded there.
++func (b *Binlog) TimestampAt(lsn uint64) (ts int64, ok bool) {
++	slot := lsn % recentTsCap
++	if b.recentLSN[slot].Load() != lsn {
++		return 0, false
++	}
++	if ts = b.recentTS[slot].Load(); ts <= 0 {
++		return 0, false
++	}
++	return ts, true
++}
++
++// RecentFloorLSN returns the oldest LSN the recent index can still cover.
++// Entries older than this need a ScanFrom to find their timestamp.
++func (b *Binlog) RecentFloorLSN() uint64 {
++	cur := b.lsn.Load()
++	b.mu.Lock()
++	oldest := b.oldestLSN
++	b.mu.Unlock()
++	floor := oldest
++	if cur+1 > recentTsCap && cur+1-recentTsCap > floor {
++		floor = cur + 1 - recentTsCap
++	}
++	return floor
++}
++
+ // NewBinlog creates a new binlog at the given path.
+ // If dbPath is provided and config.Path is empty, the binlog is placed alongside the DB file.
+ func NewBinlog(dbPath string, cfg BinlogConfig) (*Binlog, error) {
+@@ -137,6 +183,7 @@ func (b *Binlog) recoverLSN() error {
+ 			firstLSN = entry.LSN
+ 		}
+ 		lastLSN = entry.LSN
++		b.recordRecent(entry.LSN, entry.Timestamp)
+ 		good += int64(n)
+ 	}
+ 
+@@ -171,6 +218,7 @@ func (b *Binlog) Append(entry *BinlogEntry) error {
+ 	newLSN := b.lsn.Add(1)
+ 	entry.LSN = newLSN
+ 	entry.Timestamp = time.Now().UnixNano()
++	b.recordRecent(newLSN, entry.Timestamp)
+ 
+ 	// Serialize
+ 	data := MarshalBinlogEntry(entry)
+@@ -215,6 +263,7 @@ func (b *Binlog) AppendBatch(entries []*BinlogEntry) error {
+ 		newLSN := b.lsn.Add(1)
+ 		entry.LSN = newLSN
+ 		entry.Timestamp = now
++		b.recordRecent(newLSN, now)
+ 
+ 		data := MarshalBinlogEntry(entry)
+ 		n, err := b.writer.Write(data)
+diff --git a/services/mddbd/internal/binlog/binlog_test.go b/services/mddbd/internal/binlog/binlog_test.go
+index 1f9cc6c1..9f34a9d6 100644
+--- a/services/mddbd/internal/binlog/binlog_test.go
++++ b/services/mddbd/internal/binlog/binlog_test.go
+@@ -309,3 +309,55 @@ func TestBinlogRecoverLSN(t *testing.T) {
+ 		t.Errorf("expected LSN 6 after append, got %d", bl2.CurrentLSN())
+ 	}
+ }
++
++// The recent index maps LSN -> commit-ts without a file scan: populated on
++// append and backfilled by recoverLSN so a restarted leader can still answer
++// TimestampAt for entries written before the restart.
++func TestBinlogTimestampAt(t *testing.T) {
++	dir := t.TempDir()
++	dbPath := filepath.Join(dir, "test.db")
++	bl, err := NewBinlog(dbPath, BinlogConfig{MaxSize: 10 * 1024 * 1024, MaxAge: time.Hour})
++	if err != nil {
++		t.Fatal(err)
++	}
++
++	var lsn1, lsn2 uint64
++	for i, key := range []string{"a", "b"} {
++		e := &BinlogEntry{Type: BinlogPut, BucketName: "bkt", Key: []byte(key), Value: []byte("v")}
++		if err := bl.Append(e); err != nil {
++			t.Fatal(err)
++		}
++		if i == 0 {
++			lsn1 = e.LSN
++		} else {
++			lsn2 = e.LSN
++		}
++	}
++
++	ts1, ok := bl.TimestampAt(lsn1)
++	if !ok || ts1 <= 0 {
++		t.Fatalf("TimestampAt(%d) = %d, %v — want recorded ts", lsn1, ts1, ok)
++	}
++	if _, ok := bl.TimestampAt(lsn1 + 1000); ok {
++		t.Error("TimestampAt for an unwritten LSN should miss")
++	}
++
++	// Restart: close and reopen — recoverLSN must backfill the index.
++	path := bl.path
++	if err := bl.Close(); err != nil {
++		t.Fatal(err)
++	}
++	bl2, err := NewBinlog(dbPath, BinlogConfig{Path: path, MaxSize: 10 * 1024 * 1024, MaxAge: time.Hour})
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer func() { _ = bl2.Close() }()
++
++	ts2, ok := bl2.TimestampAt(lsn2)
++	if !ok || ts2 <= 0 {
++		t.Fatalf("after reopen TimestampAt(%d) = %d, %v — recoverLSN should backfill", lsn2, ts2, ok)
++	}
++	if bl2.RecentFloorLSN() > lsn1 {
++		t.Errorf("RecentFloorLSN %d should cover lsn %d", bl2.RecentFloorLSN(), lsn1)
++	}
++}
+diff --git a/services/mddbd/replication_client.go b/services/mddbd/replication_client.go
+index 866c7ae4..e78d7e85 100644
+--- a/services/mddbd/replication_client.go
++++ b/services/mddbd/replication_client.go
+@@ -42,6 +42,16 @@ type ReplicationClient struct {
+ 	lastRecvAt       atomic.Int64
+ 	heartbeatCapable atomic.Bool // the current stream has seen a heartbeat
+ 	lagMs            atomic.Int64
++	// lastAppliedCommitTs is the leader-side commit timestamp (UnixNano) of
++	// the most recently applied entry — the tip of the applied position.
++	lastAppliedCommitTs atomic.Int64
++	// leaderHeadLSN is the leader's current LSN as of the last ack — the
++	// at-head check that keeps an idle-but-caught-up follower at lag 0.
++	leaderHeadLSN atomic.Uint64
++	// leaderClockOffsetMs is (leader wall clock − local wall clock),
++	// measured from heartbeat send-timestamps. Commit-ts lag is computed in
++	// leader time so clock skew between the hosts cannot inflate or hide it.
++	leaderClockOffsetMs atomic.Int64
+ 	running          atomic.Bool
+ 	connected        atomic.Bool // a leader stream is established
+ 	stopCh           chan struct{}
+@@ -121,11 +131,44 @@ func (rc *ReplicationClient) Stop() {
+ 	slog.Info("Replication client stopped")
+ }
+ 
+-// LagMs returns the current replication lag in milliseconds
++// LagMs returns the current replication lag in milliseconds — the wall-clock
++// age of the follower's applied tip, measured in leader time:
++// now_leader − commit_ts(tip). It is 0 while the applied position covers the
++// leader's head as of the last ack, so an idle-but-caught-up follower does
++// not report the leader's write-idleness as lag. Until the first applied
++// entry and first ack it falls back to the ackLoop's LSN-gap estimate.
+ func (rc *ReplicationClient) LagMs() int64 {
++	if head := rc.leaderHeadLSN.Load(); head > 0 && head <= rc.applier.LastAppliedLSN() {
++		return 0
++	}
++	if ts := rc.lastAppliedCommitTs.Load(); ts > 0 {
++		lag := time.Now().UnixNano() + rc.leaderClockOffsetMs.Load()*int64(time.Millisecond) - ts
++		if lag <= 0 {
++			return 0
++		}
++		return lag / int64(time.Millisecond)
++	}
+ 	return rc.lagMs.Load()
+ }
+ 
++// LagLSN returns how many entries the applied position trails the leader's
++// last-acknowledged head — the raw gap the legacy ×10 estimate encoded.
++func (rc *ReplicationClient) LagLSN() uint64 {
++	head := rc.leaderHeadLSN.Load()
++	applied := rc.applier.LastAppliedLSN()
++	if head <= applied {
++		return 0
++	}
++	return head - applied
++}
++
++// LeaderClockOffsetMs returns leader−local wall-clock offset in ms, measured
++// from heartbeat send-timestamps. A large absolute value means clock skew —
++// not replication lag — would corrupt naive commit-ts comparisons.
++func (rc *ReplicationClient) LeaderClockOffsetMs() int64 {
++	return rc.leaderClockOffsetMs.Load()
++}
++
+ // LastAppliedAt returns the unix timestamp of the last applied entry
+ func (rc *ReplicationClient) LastAppliedAt() int64 {
+ 	return rc.lastAppliedAt.Load()
+@@ -358,7 +401,12 @@ func (rc *ReplicationClient) replicate() error {
+ 			entry := res.entry
+ 			if entry.Heartbeat {
+ 				// Liveness marker — never applied, never advances the LSN.
++				// Its send-timestamp doubles as a leader clock sample so
++				// commit-ts lag stays honest when the hosts' clocks disagree.
+ 				rc.heartbeatCapable.Store(true)
++				if entry.Timestamp > 0 {
++					rc.leaderClockOffsetMs.Store(entry.Timestamp/int64(time.Millisecond) - time.Now().UnixMilli())
++				}
+ 				resetDeadline()
+ 				continue
+ 			}
+@@ -374,10 +422,7 @@ func (rc *ReplicationClient) replicate() error {
+ 			}
+ 
+ 			rc.lastAppliedAt.Store(time.Now().Unix())
+-
+-			// Update lag estimate
+-			entryTime := time.Unix(0, entry.Timestamp)
+-			rc.lagMs.Store(time.Since(entryTime).Milliseconds())
++			rc.lastAppliedCommitTs.Store(entry.Timestamp)
+ 		}
+ 	}
+ }
+@@ -509,7 +554,11 @@ func (rc *ReplicationClient) ackLoop(ctx context.Context) {
+ 			if err != nil {
+ 				continue
+ 			}
+-			// Update lag based on leader's current LSN
++			// Record the leader's head for the at-head check in LagMs. The
++			// LSN-gap estimate stays as a fallback for the window before the
++			// first applied entry — its ×10 scaling is only an approximation,
++			// the applied-tip commit timestamp is the real lag.
++			rc.leaderHeadLSN.Store(resp.LeaderLsn)
+ 			if resp.LeaderLsn > lsn {
+ 				rc.lagMs.Store(int64(resp.LeaderLsn-lsn) * 10) // #nosec G115 -- LSN diff within int64 range
+ 			} else {
+diff --git a/services/mddbd/replication_client_test.go b/services/mddbd/replication_client_test.go
+index 13ae9d94..e6c4e9c9 100644
+--- a/services/mddbd/replication_client_test.go
++++ b/services/mddbd/replication_client_test.go
+@@ -449,3 +449,45 @@ func TestReplicationClientConfigStruct(t *testing.T) {
+ 		t.Errorf("unexpected MaxLag: %v", cfg.MaxLag)
+ 	}
+ }
++
++// LagMs measures the applied tip's commit-ts age in leader time — 0 at the
++// leader's head, real lag when behind, legacy estimate before the first
++// applied entry.
++func TestReplicationClientLagMsRealTime(t *testing.T) {
++	s, cleanup := newTestServerForReplClient(t)
++	defer cleanup()
++
++	rc := NewReplicationClient(s, ReplicationClientConfig{
++		LeaderAddr: "localhost:9090",
++		FollowerID: "follower-1",
++	})
++	rc.applier.SetLastAppliedLSN(100)
++
++	// At the leader's head as of the last ack: caught up, even if the tip
++	// entry itself is old (idle leader).
++	rc.leaderHeadLSN.Store(100)
++	rc.lastAppliedCommitTs.Store(time.Now().Add(-time.Hour).UnixNano())
++	if got := rc.LagMs(); got != 0 {
++		t.Errorf("at-head follower should report lag 0, got %d", got)
++	}
++
++	// Behind the head: real wall-clock lag of the applied tip.
++	rc.leaderHeadLSN.Store(200)
++	rc.lastAppliedCommitTs.Store(time.Now().Add(-42 * time.Second).UnixNano())
++	if got := rc.LagMs(); got < 40_000 || got > 45_000 {
++		t.Errorf("expected ~42s real lag, got %d", got)
++	}
++
++	// Leader clock offset corrects for local-clock skew: if the local clock
++	// runs 30s fast, lag must not be inflated by it.
++	rc.leaderClockOffsetMs.Store(-30_000)
++	if got := rc.LagMs(); got < 10_000 || got > 15_000 {
++		t.Errorf("offset-corrected lag should be ~12s, got %d", got)
++	}
++	rc.leaderClockOffsetMs.Store(0)
++
++	// LagLSN reports the raw head-vs-applied gap.
++	if got := rc.LagLSN(); got != 100 {
++		t.Errorf("expected LagLSN 100, got %d", got)
++	}
++}
+diff --git a/services/mddbd/replication_handlers.go b/services/mddbd/replication_handlers.go
+index fda8d93e..3477a451 100644
+--- a/services/mddbd/replication_handlers.go
++++ b/services/mddbd/replication_handlers.go
+@@ -14,6 +14,13 @@ type ReplicationStatusResponse struct {
+ 	BinlogSize     int64              `json:"binlog_size_bytes,omitempty"`
+ 	LeaderAddr     string             `json:"leader_addr,omitempty"`
+ 	ReplicationLag int64              `json:"replication_lag_ms,omitempty"`
++	// LagLSN is the raw applied-vs-leader-head gap in entries — the quantity
++	// the legacy ×10 "ms" estimate was derived from.
++	LagLSN int64 `json:"lag_lsn,omitempty"`
++	// LeaderClockOffsetMs is leader−local wall-clock offset measured from
++	// heartbeat send-timestamps. A large absolute value means clock skew,
++	// not replication lag, is what replication_lag_ms is reporting.
++	LeaderClockOffsetMs int64 `json:"leader_clock_offset_ms,omitempty"`
+ 	Healthy        bool               `json:"healthy"`
+ 	Followers      []FollowerInfoJSON `json:"followers,omitempty"`
+ 	Uptime         int64              `json:"uptime_seconds"`
+@@ -37,6 +44,9 @@ type FollowerInfoJSON struct {
+ 	Address      string `json:"address"`
+ 	ConfirmedLSN uint64 `json:"confirmed_lsn"`
+ 	LagMs        int64  `json:"lag_ms"`
++	// LagLSN is the leader-head-vs-confirmed gap in entries — the raw count
++	// lag_ms used to be derived from before it measured real commit-ts lag.
++	LagLSN       int64  `json:"lag_lsn,omitempty"`
+ 	LastSeenAt   int64  `json:"last_seen_at"`
+ 	// LastSentAt is the last entry or heartbeat the leader wrote on this
+ 	// stream — a stale value on a connected stream means the send loop froze.
+@@ -73,6 +83,8 @@ func (s *Server) handleReplicationStatus(w http.ResponseWriter, r *http.Request)
+ 			resp.LeaderAddr = rc.leaderAddr
+ 			resp.CurrentLSN = rc.LastAppliedLSN()
+ 			resp.ReplicationLag = rc.LagMs()
++			resp.LagLSN = int64(rc.LagLSN()) // #nosec G115 -- LSN gap within int64 range
++			resp.LeaderClockOffsetMs = rc.LeaderClockOffsetMs()
+ 			resp.Healthy = rc.IsHealthy()
+ 
+ 			connected := rc.connected.Load()
+@@ -98,10 +110,11 @@ func (s *Server) handleReplicationStatus(w http.ResponseWriter, r *http.Request)
+ 		if replServer := s.replServer; replServer != nil {
+ 			replServer.mu.RLock()
+ 			for _, fs := range replServer.followers {
+-				lagMs := int64(0)
+ 				currentLSN := s.Binlog.CurrentLSN()
++				lagMs := followerLagMs(fs, currentLSN, s.Binlog, time.Now())
++				lagLSN := int64(0)
+ 				if currentLSN > fs.ConfirmedLSN {
+-					lagMs = int64(currentLSN-fs.ConfirmedLSN) * 10 // #nosec G115 -- LSN diff within int64 range
++					lagLSN = int64(currentLSN - fs.ConfirmedLSN) // #nosec G115 -- LSN diff within int64 range
+ 				}
+ 
+ 				status := "healthy"
+@@ -116,6 +129,7 @@ func (s *Server) handleReplicationStatus(w http.ResponseWriter, r *http.Request)
+ 					Address:      fs.Address,
+ 					ConfirmedLSN: fs.ConfirmedLSN,
+ 					LagMs:        lagMs,
++					LagLSN:       lagLSN,
+ 					LastSeenAt:   fs.LastSeenAt,
+ 					LastSentAt:   fs.LastSentAt.Load(),
+ 					Status:       status,
+diff --git a/services/mddbd/replication_handlers_test.go b/services/mddbd/replication_handlers_test.go
+index 6a97da62..3f28b0fe 100644
+--- a/services/mddbd/replication_handlers_test.go
++++ b/services/mddbd/replication_handlers_test.go
+@@ -488,3 +488,39 @@ func TestHandleReplicationStatus_MultipleFollowers(t *testing.T) {
+ 		t.Errorf("expected 3 followers, got %d", len(resp.Followers))
+ 	}
+ }
++
++// ---------- 8. followerLagMs — real commit-ts lag on the leader view ----------
++
++func TestFollowerLagMsRealTime(t *testing.T) {
++	s, cleanup := newHandlerTestServer(t)
++	defer cleanup()
++
++	binlogPath := t.TempDir() + "/test.binlog"
++	bl, err := binlog.NewBinlog(binlogPath, binlog.BinlogConfig{Path: binlogPath})
++	if err != nil {
++		t.Fatalf("create binlog: %v", err)
++	}
++	defer func() { _ = bl.Close() }()
++	s.Binlog = bl
++
++	// Append an entry; its commit ts is ~now.
++	e := &binlog.BinlogEntry{Type: binlog.BinlogPut, BucketName: "bkt", Key: []byte("k"), Value: []byte("v")}
++	if err := bl.Append(e); err != nil {
++		t.Fatal(err)
++	}
++	current := bl.CurrentLSN()
++
++	// Follower confirmed at that entry: lag is its real age (~0 now), not
++	// LSN-diff*10.
++	fs := &FollowerState{ID: "f", ConfirmedLSN: current - 1}
++	// confirmed=0 when current=1: behind, tip predates index floor -> lower bound.
++	if got := followerLagMs(fs, current, s.Binlog, time.Now()); got < 0 {
++		t.Errorf("lag should be >= 0, got %d", got)
++	}
++
++	// At head -> 0.
++	fs2 := &FollowerState{ID: "g", ConfirmedLSN: current}
++	if got := followerLagMs(fs2, current, s.Binlog, time.Now()); got != 0 {
++		t.Errorf("at-head follower lag should be 0, got %d", got)
++	}
++}
+diff --git a/services/mddbd/replication_server.go b/services/mddbd/replication_server.go
+index f3cbfb2f..35d2e7ed 100644
+--- a/services/mddbd/replication_server.go
++++ b/services/mddbd/replication_server.go
+@@ -90,6 +90,33 @@ type FollowerState struct {
+ 	LastSentAt atomic.Int64
+ }
+ 
++// followerLagMs reports a follower's real commit-to-apply lag in
++// milliseconds — the wall-clock age of the entry at its acknowledged
++// position, the same quantity the follower self-reports. It is 0 once the
++// confirmed LSN covers the leader's head, so an idle-but-caught-up follower
++// does not report the leader's write-idleness as lag. It replaces the old
++// LSN-diff×10 estimate, which conflated entry count with time and could not
++// agree with the follower's own commit-ts measurement of the same position.
++//
++// The commit timestamp comes from the binlog's bounded recent index. When
++// the confirmed position predates it, the age of the index floor is
++// returned — a lower bound on the real lag, so a very stale follower still
++// reads as very stale rather than 0.
++func followerLagMs(fs *FollowerState, currentLSN uint64, b *binlog.Binlog, now time.Time) int64 {
++	if fs.ConfirmedLSN >= currentLSN {
++		return 0
++	}
++	if ts, ok := b.TimestampAt(fs.ConfirmedLSN); ok {
++		return max(now.Sub(time.Unix(0, ts)).Milliseconds(), 0)
++	}
++	if ts, ok := b.TimestampAt(b.RecentFloorLSN()); ok {
++		return max(now.Sub(time.Unix(0, ts)).Milliseconds(), 0)
++	}
++	// Nothing indexed at all — fall back to the legacy gap-proportional
++	// estimate rather than reporting 0 for a behind follower.
++	return int64(currentLSN-fs.ConfirmedLSN) * 10 // #nosec G115 -- LSN diff within int64 range
++}
++
+ // NewReplicationServer creates a new replication server
+ func NewReplicationServer(s *Server) *ReplicationServer {
+ 	return &ReplicationServer{
+@@ -380,10 +407,7 @@ func (rs *ReplicationServer) ReplicationStatus(_ context.Context, _ *proto.Repli
+ 	for _, fs := range rs.followers {
+ 		lagMs := int64(0)
+ 		if rs.server.Binlog != nil {
+-			currentLSN := rs.server.Binlog.CurrentLSN()
+-			if currentLSN > fs.ConfirmedLSN {
+-				lagMs = int64(currentLSN-fs.ConfirmedLSN) * 10 // #nosec G115 -- rough estimate, LSN diff within int64 range
+-			}
++			lagMs = followerLagMs(fs, rs.server.Binlog.CurrentLSN(), rs.server.Binlog, time.Now())
+ 		}
+ 		resp.Followers = append(resp.Followers, &proto.FollowerInfo{
+ 			FollowerId:   fs.ID,
+diff --git a/services/mddbd/replication_server_extra_test.go b/services/mddbd/replication_server_extra_test.go
+index 5b83957b..8d5eb4db 100644
+--- a/services/mddbd/replication_server_extra_test.go
++++ b/services/mddbd/replication_server_extra_test.go
+@@ -608,8 +608,21 @@ func TestReplicationStatus_FollowerLag(t *testing.T) {
+ 	}
+ 
+ 	follower := resp.Followers[0]
+-	if follower.LagMs <= 0 {
+-		t.Errorf("expected positive lag when follower is behind (currentLSN=%d, confirmed=3), got %d", currentLSN, follower.LagMs)
++	// Lag is now real commit-to-apply time, not (lsn gap)*10: the entries
++	// were committed milliseconds ago, so a behind follower still reports
++	// ~0 lag. The scaled-LSN estimate would have reported (10-3)*10=70.
++	if follower.LagMs < 0 {
++		t.Errorf("expected non-negative lag when follower is behind (currentLSN=%d, confirmed=3), got %d", currentLSN, follower.LagMs)
++	}
++	if follower.LagMs >= 30000 {
++		t.Errorf("fresh entries should give near-zero real lag, got %d", follower.LagMs)
++	}
++
++	// Same follower, same LSNs, queried 10 minutes later: real lag tracks
++	// the commit-ts age (~10min), not the LSN gap.
++	later := followerLagMs(rs.followers["lag-follower"], currentLSN, s.Binlog, time.Now().Add(10*time.Minute))
++	if later < 9*time.Minute.Milliseconds() {
++		t.Errorf("expected ~10min real lag when queried 10min after commit, got %d", later)
+ 	}
+ }
+ 
+-- 
+2.53.0
+
