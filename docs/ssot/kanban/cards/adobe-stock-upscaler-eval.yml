@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: doing
-updated: 2026-11-18 22:27
+updated: 2026-11-18 23:14
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -186,6 +186,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261109-090841-goal-choose-the-standard-upsca on
     tony-omen — if the work was never pushed it may be gone'
+- at: 2026-11-18 23:14
+  from: devin
+  text: 'Eval complete on comparison-b x4 (tony-omen). Measured: realesrgan-ncnn Vulkan 32s (PSNR 32.2/CLIP .97,
+    texture invention = desired for stock), llvmpipe CPU fallback 19min same output, SwinIR-M 480s (46.9dB/.999
+    — fidelity champion but reads clean-resize), HAT-S 45.4dB crop (OOMs full-frame under cgroup), Real-HAT-GAN
+    ≈RE profile, diffusion SR (OSEDiff 9GB/SeeSR 12GB/SUPIR 12-30GB VRAM) no fleet host. RECOMMENDATION: realesrgan-x4plus
+    x4 via ncnn-vulkan = pipeline default; SwinIR as fidelity alt'
 action:
   type: dispatch
   status: running
