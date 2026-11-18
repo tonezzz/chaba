@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval
 title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
 column: doing
-updated: 2026-11-18 08:39
+updated: 2026-11-18 09:10
 brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
   eval set that asserts answer quality end-to-end.
 priority: high
@@ -95,6 +95,13 @@ comms:
 - at: 2026-11-18 08:39
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha'
+- at: 2026-11-18 09:10
+  from: devin
+  text: 'in progress: scripts/ocb-eval.py + tests/eval_ocb/cases.yml (10 cases) built in an ada-voice clone branched
+    at 0899e56. tools mode all-green (~3s); live mode (opencode run --standalone on this repo bridge, hardened builtin-tool
+    deny) exercising now. Findings so far: deployed workspace bridge is stale (21 vs 25 tools — no ada_ssot_get/ada_context_pack);
+    opencode v2.2.6 needs agent tools:false (not permission map) to block shell/read builtins; flash-lite wanders
+    tools before answering — exactly wh'
 action:
   type: dispatch
   status: running
