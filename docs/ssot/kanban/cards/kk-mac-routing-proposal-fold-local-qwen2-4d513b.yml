@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: review
-updated: 2026-11-18 18:42
+updated: 2026-11-18 18:47
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -410,6 +410,13 @@ comms:
   from: devin
   text: 'Dispatch started on tony-omen: drafting kk_mac_local routing proposal (job_class candidates, lane-savings
     evidence, risks, T3 rerun cadence).'
+- at: 2026-11-18 18:47
+  from: devin
+  text: 'DONE (tony-omen dispatch): routing proposal v2 landed at docs/ssot/jobs/devnest/2026-11-18-kk-mac-routing-proposal.yml
+    — documents the already-live placement (summary/classify/bench leg1=kkmac via shim :11447, chat-local leg2,
+    tool-call deferred pending 3 qualifying runs + deference>=0.90) + rerun cadence. Re-landed the orphaned v1 branch
+    pieces: lane-savings EXECUTOR_LANES patch (verified: kk_mac_local/jules/nlm_batch now attribute correctly) and
+    qwen3:8b->qwen2.5:32b repin across all 5 kk_mac_'
 action:
   type: dispatch
   repo: chaba
@@ -653,3 +660,4 @@ requests:
   suggested: let devin resolve the conflict and land it ★
 review_kind: verify
 claim: {}
+awaiting_action: true
