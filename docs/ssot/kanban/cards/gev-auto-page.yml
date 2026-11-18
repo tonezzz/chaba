@@ -10,7 +10,7 @@ note: 'Auto-recovered 2026-11-16: `page` check passing again.'
 help: 'Static bundle is Caddy (`web` container, :80) serving stacks/web/public/apps/gev/. If Caddy answers but 404s,
   the staged bundle is missing — rebuild + repatch + re-stage per AGENTS.md ''GEV Gemini Live voice deployment''.
   Check: podman ps | grep web; curl -s -o /dev/null -w ''%{http_code}'' http://tony-dell.taila0626a.ts.net/apps/gev/'
-updated: 2026-11-18 17:15
+updated: 2026-11-18 18:01
 review_kind: triage
 ref: MED-0293
 comms:
@@ -48,4 +48,8 @@ comms:
 - at: 2026-11-18 17:15
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
