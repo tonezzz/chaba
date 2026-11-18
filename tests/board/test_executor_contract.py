@@ -1407,3 +1407,115 @@ class KkMacBoardApiTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ------------------------------------------------------------ claude lane
+
+class ClaudeExecutorContractTest(unittest.TestCase):
+    """executor=claude (claude-dispatch lane, 2026-11-18 eval):
+
+    Same contract as opencode — claimed only where the lane can run
+    (CLAUDE_LANES=1 AND the claude-dispatch wrapper present), routed to
+    CLAUDE_DISPATCH in start_task, never silently falls back to devin.
+    action.model passes through DISPATCH_MODEL (claude-dispatch
+    validates it); action.effort becomes DISPATCH_EFFORT; provider is
+    stamped "claude" for usage accounting.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("OPENCODE_LANES", "CLAUDE_LANES", "DISPATCH",
+                        "CLAUDE_DISPATCH", "HOST", "LABELS")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("opencode_bin", "push_capable", "shutil_which",
+                           "sh", "dr_module", "enforce_task_limits")}
+        m.DISPATCH = str(SCRIPT)
+        # distinct existing path so argv[0] proves which wrapper ran
+        m.CLAUDE_DISPATCH = str(REPO / "scripts/board/kanban-dispatch.py")
+        m.push_capable = lambda repo: True
+        m.shutil_which = lambda name: True
+        m.HOST = "testhost"
+        m.LABELS = set()
+        m.dr_module = lambda: None
+        m.enforce_task_limits = lambda *a, **k: None
+        self.calls = []
+        m.sh = lambda argv, **kw: self.calls.append((argv, kw)) or _proc(
+            0, "fake-tid-123\n")
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def test_claude_executor_claimable_when_capable(self):
+        self.mod.CLAUDE_LANES = True
+        c = _card(executor="claude")
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    def test_claude_executor_deferred_when_lanes_off(self):
+        """CLAUDE_LANES=0 leaves the card queued for a capable host —
+        never a devin claim (the no-silent-fallback guarantee)."""
+        self.mod.CLAUDE_LANES = False
+        c = _card(executor="claude")
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("CLAUDE_LANES=0", r)
+        self.assertIn("never silently fall back", r)
+
+    def test_claude_executor_deferred_without_wrapper(self):
+        self.mod.CLAUDE_LANES = True
+        self.mod.CLAUDE_DISPATCH = "/nonexistent/claude-dispatch"
+        c = _card(executor="claude")
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("no claude-dispatch", r)
+
+    def test_claude_start_routes_to_claude_dispatch(self):
+        """argv[0] is CLAUDE_DISPATCH, not devin-dispatch; unit keeps
+        the devin-task-<id> contract finish_pass/merge-sweep read."""
+        self.mod.CLAUDE_LANES = True
+        unit, tid, err = self.mod.start_task(_card(executor="claude"),
+                                             "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-fake-tid-123")
+        self.assertEqual(len(self.calls), 1)
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0], str(REPO / "scripts/board/kanban-dispatch.py"))
+        self.assertNotEqual(argv[0], str(self.mod.DISPATCH))
+        self.assertEqual(kw["env"]["DISPATCH_EXECUTOR"], "claude")
+        self.assertEqual(kw["env"]["DISPATCH_PROVIDER"], "claude")
+
+    def test_claude_model_and_effort_propagate(self):
+        self.mod.CLAUDE_LANES = True
+        card = _card(executor="claude", model="sonnet", effort="low")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        env = self.calls[0][1]["env"]
+        self.assertEqual(env["DISPATCH_MODEL"], "sonnet")
+        self.assertEqual(env["DISPATCH_EFFORT"], "low")
+        self.assertEqual(env["DISPATCH_EXECUTOR"], "claude")
+        self.assertEqual(env["DISPATCH_PROVIDER"], "claude")
+
+    def test_claude_no_effort_leaves_env_unset(self):
+        """Unattended default stays claude's own — no invented default."""
+        self.mod.CLAUDE_LANES = True
+        unit, tid, err = self.mod.start_task(_card(executor="claude"),
+                                             "dispatch")
+        self.assertEqual(err, "")
+        env = self.calls[0][1]["env"]
+        self.assertNotIn("DISPATCH_EFFORT", env)
+
+    def test_devin_path_unchanged(self):
+        """executor=devin still launches DISPATCH with provider from
+        model_provider — the claude branch doesn't leak."""
+        card = _card(executor="devin")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0], str(self.mod.DISPATCH))
+        self.assertNotIn("DISPATCH_EFFORT", kw["env"])
