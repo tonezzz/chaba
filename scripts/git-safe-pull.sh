@@ -49,6 +49,11 @@
 #      upstream-wins (--theirs mid-merge), local side preserved as
 #      .local-conflict-* like the rebase path. Conflicts outside
 #      generated paths still abort and exit 1.
+#   8. tail step (every run, incl. no-op ticks):
+#      scripts/devin/sync-runner-tools.sh refreshes the ~/.local/bin
+#      runner-tooling snapshots (runner-agent, devin-dispatch, ...)
+#      from the canonical checkout — installed copies self-heal within
+#      one sync cycle instead of drifting until a manual scp.
 #
 # Board write flock: before any worktree mutation the script takes the
 # same flock board-api.py holds across save()->commit
@@ -620,6 +625,16 @@ fi
 # refs only, never touches the worktree or board files — safe outside
 # the board lock and on no-op ticks.
 nf _gc_autostash
+
+# Runner tooling self-heal (card
+# runner-tooling-drift-recurs-installed-ru-3aad1e): the ~/.local/bin
+# snapshots (runner-agent, devin-dispatch, ...) are deploy copies that
+# used to converge only via manual scp. Every tick now refreshes them
+# from the canonical checkout — drift heals within one sync cycle
+# instead of waiting for a human. Best-effort: the script no-ops outside
+# ~/CascadeProjects/chaba* and never fails the pull.
+TOOLS_SYNC="$REPO/scripts/devin/sync-runner-tools.sh"
+[ -f "$TOOLS_SYNC" ] && nf bash "$TOOLS_SYNC" "$REPO" || true
 
 # Success means upstream is now an ancestor of HEAD (or unresolvable).
 if git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 \

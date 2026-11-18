@@ -88,6 +88,21 @@ REFS = {
     "devin_dispatch": REPO / "scripts" / "devin" / "devin-dispatch.sh",
     "dispatch_repos": REPO / "scripts" / "board" / "dispatch_repos.py",
 }
+CANON_REPOS_CONF = REPO / "scripts" / "devin" / "dispatch-repos.conf"
+
+
+def conf_entries(path: Path) -> dict:
+    """repos.conf -> {name: branch}; comments/#-suffixes stripped."""
+    ents = {}
+    try:
+        for ln in path.read_text().splitlines():
+            ln = ln.split("#", 1)[0].strip()
+            if ln:
+                p = ln.split()
+                ents[p[0]] = p[2] if len(p) > 2 else "master"
+    except Exception:
+        pass
+    return ents
 
 HELP = {
     "unreachable":
@@ -119,13 +134,16 @@ HELP = {
         "fails from tony-dell — neither runner-push nor merge-sweep "
         "salvage can land its session branches.",
     "runner-agent":
-        "Redeploy: scp scripts/board/runner-agent.py "
-        "<host>:~/.local/bin/runner-agent && ssh <host> chmod +x "
-        "~/.local/bin/runner-agent",
+        "Usually self-heals within one chaba-repo-sync tick "
+        "(sync-runner-tools.sh via git-safe-pull). Manual: scp "
+        "scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent "
+        "&& ssh <host> chmod +x ~/.local/bin/runner-agent",
     "devin-dispatch":
-        "Redeploy: scp scripts/devin/devin-dispatch.sh "
-        "<host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x "
-        "~/.local/bin/devin-dispatch",
+        "Usually self-heals within one chaba-repo-sync tick "
+        "(sync-runner-tools.sh via git-safe-pull). Manual: scp "
+        "scripts/devin/devin-dispatch.sh <host>:~/.local/bin/"
+        "devin-dispatch && ssh <host> chmod +x ~/.local/bin/"
+        "devin-dispatch",
     "dispatch-repos":
         "Refresh ~/CascadeProjects/chaba on the host (pull --ff-only) — "
         "runner-agent imports dispatch_repos.py from that checkout.",
@@ -281,6 +299,28 @@ for key, path in (("runner_agent", HOME / ".local/bin/runner-agent"),
             e["syntax_err"] = (se or so)[:160]
     inst[key] = e
 out["installed"] = inst
+
+# $DISPATCH_DIR/repos.conf — the host's dispatch repo whitelist. Per-host
+# tables are legal (kk-mac ships chaba-only), so judge() reports a
+# name/branch-set diff as a note, never a violation — this is the audit
+# half of card runner-tooling-drift-recurs (the sync half is
+# scripts/devin/sync-runner-tools.sh via git-safe-pull).
+confp = Path(os.environ.get("DISPATCH_DIR",
+                            HOME / ".local/share/devin-dispatch")) / "repos.conf"
+rcj = {"path": str(confp), "exists": confp.exists()}
+if confp.exists():
+    rcj["sha"] = sha(confp)
+    ents = {}
+    try:
+        for ln in confp.read_text().splitlines():
+            ln = ln.split("#", 1)[0].strip()
+            if ln:
+                p = ln.split()
+                ents[p[0]] = p[2] if len(p) > 2 else "master"
+    except Exception:
+        pass
+    rcj["entries"] = ents
+out["repos_conf"] = rcj
 
 # dispatch_repos resolution — mirror runner-agent.dr_module() exactly:
 # $DISPATCH_REPOS_DIR, dir of the installed runner-agent,
@@ -584,6 +624,28 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
         notes.append(f"dispatch_repos copy differs from repo "
                      f"(sha {dr['sha']} vs {refsha['dispatch_repos']}) "
                      f"— functional attrs present")
+
+    # repos.conf audit (card runner-tooling-drift-recurs): the whitelist
+    # is per-host by design — kk-mac ships chaba-only — so differences
+    # are notes for review, never violations. Missing entirely while
+    # devin-dispatch is installed means the builtin table applies.
+    rcj = d.get("repos_conf") or {}
+    if (inst.get("devin_dispatch") or {}).get("exists"):
+        if not rcj.get("exists"):
+            notes.append("repos.conf missing — devin-dispatch builtin "
+                         "repo table in use")
+        elif "entries" in rcj:
+            canon = conf_entries(CANON_REPOS_CONF)
+            host_e = rcj["entries"]
+            extra = sorted(set(host_e) - set(canon))
+            missing = sorted(set(canon) - set(host_e))
+            bdiff = sorted(n for n in set(host_e) & set(canon)
+                           if host_e[n] != canon[n])
+            if extra or missing or bdiff:
+                notes.append(f"repos.conf differs from canonical "
+                             f"(extra={extra} missing={missing} "
+                             f"branch-diff={bdiff}) — per-host table, "
+                             f"review only")
 
     devin = d.get("devin") or {}
     if not devin.get("path"):

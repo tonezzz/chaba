@@ -1,0 +1,76 @@
+title: Runner tooling self-heal — ~/.local/bin snapshots converge via git-safe-pull
+id: 2026-11-18-runner-tooling-selfheal-sync
+kind: infra-change
+card: runner-tooling-drift-recurs-installed-ru-3aad1e
+ref: OPS-1026
+hosts: [all runner hosts — tony-dell, tony-omen, tony-macbook, idc02, idc03, mn01, con01, kk-mac]
+summary: >-
+  The dispatch executables under ~/.local/bin are verbatim single-file
+  deploy SNAPSHOTS of repo files. Nothing converged them when master
+  moved: runner-agent grew _self_update() (OPS-1026) but only heals
+  itself and only while it runs; devin-dispatch, claude-dispatch,
+  devin-dispatch-prune, dispatch-queue, and a stray dispatch_repos.py
+  shadow copy healed never. Evidence 2026-11-18: dispatch deferrals on
+  tony-omen/mn01/tony-macbook ("installed runner-agent drifted") and
+  kanban-sync logging devin-dispatch installed sha e5b401a3 vs repo
+  71a2c265 on multiple hosts — manual scp redeploy was the only fix.
+change:
+  - >-
+    NEW scripts/devin/sync-runner-tools.sh — repo-driven convergence:
+    for each (repo source -> ~/.local/bin dest) pair, installs when the
+    dest is missing-but-provisioned (runner-agent/devin-dispatch only —
+    systemd user unit / LaunchAgent / DISPATCH_DIR evidence required),
+    refreshes when content differs and dest is NOT newer-mtime, and
+    keeps+warns a newer-mtime differing dest (never-downgrade guard, same
+    rule _self_update carries — protects manual hotfixes and the stale-
+    checkout overwrite class). Sources are skipped when dirty in the
+    checkout or failing syntax (bash -n / py compile). Leaf tools
+    (claude-dispatch, prune, queue, dispatch_repos.py) are update-only —
+    present -> kept current, absent -> never auto-bootstrapped.
+  - >-
+    git-safe-pull.sh tail calls it on EVERY run (post-pull AND no-op
+    ticks) under nf(), best-effort — chaba-repo-sync.timer, idc03's
+    kanban-commit ExecStartPost, and satellite git-safe-push all now
+    converge tools within one sync cycle. Guarded to the canonical
+    checkouts (~/CascadeProjects/chaba, ~/CascadeProjects/chaba-tony-dell)
+    so a dispatch worktree on a feature branch can never poison
+    ~/.local/bin; SYNC_RUNNER_TOOLS=0 opts a host out.
+  - >-
+    runner-fleet-health.py — REMOTE_PROBE now captures
+    $DISPATCH_DIR/repos.conf (exists/sha/name->branch rows) and judge()
+    reports drift vs canonical scripts/devin/dispatch-repos.conf as a
+    NOTE (per-host tables are legal — kk-mac ships chaba-only); missing
+    conf on a host with devin-dispatch installed notes the builtin-table
+    fallback. repos.conf is audited, never rewritten — the audit half of
+    the card.
+convergence_topology: >-
+  merge -> push -> each host's next git-safe-pull (chaba-repo-sync hourly,
+  15min on idc03/tony-dell, kanban-commit-exec-post on idc03) -> snapshots
+  refreshed. First tick after merge delivers the sync script itself via
+  the pulled git-safe-pull + the new file, so full convergence is <=2
+  sync cycles worst case on a host whose pull was pending. Drift that
+  survives (dest newer, dirty source, missing provision) stays visible:
+  runner-fleet-health still cards it on the runner-auto-<host> surface.
+audit_finding_2026-11-18: >-
+  First live probe run surfaced a real gap the card predicted: idc02 has
+  devin-dispatch installed but NO $DISPATCH_DIR/repos.conf — it dispatches
+  against the builtin table inside devin-dispatch.sh, which drifts with
+  the same snapshot problem the card is about. Now a note on
+  runner-auto-idc02 each audit pass.
+verify: |
+  journalctl --user -u chaba-repo-sync.service -n 5 --no-pager   # look for "sync-runner-tools:" lines
+  sha256sum ~/.local/bin/runner-agent \
+    ~/CascadeProjects/chaba/scripts/board/runner-agent.py        # must match post-sync
+  sha256sum ~/.local/bin/devin-dispatch \
+    ~/CascadeProjects/chaba/scripts/devin/devin-dispatch.sh
+  SYNC verbose dry-run on any host:
+    bash ~/CascadeProjects/chaba/scripts/devin/sync-runner-tools.sh --verbose ~/CascadeProjects/chaba
+rollback: >-
+  Remove the TOOLS_SYNC tail block in git-safe-pull.sh (or export
+  SYNC_RUNNER_TOOLS=0 in the unit environment) — detection-only behavior
+  returns; fleet-health cards stay the audit layer.
+not_done_here: >-
+  No host was touched from this worktree — convergence lands when this
+  branch merges and each host pulls. runner-agent snapshots older than
+  _self_update() still can't self-heal between pulls, but the next
+  git-safe-pull tick installs them now regardless.

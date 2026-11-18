@@ -4291,7 +4291,10 @@ def _self_update():
     ran stale code until manual scp, and a stale snapshot claimed OPS-1021
     with a bug already fixed in the repo). When running AS the snapshot,
     install a differing repo copy if it byte-compiles, then re-exec so
-    this pass runs the new code — no restart step, no fleet scp."""
+    this pass runs the new code — no restart step, no fleet scp. The
+    fleet-level convergence for this and the sibling tools (devin-dispatch
+    etc.) is scripts/devin/sync-runner-tools.sh at git-safe-pull's tail —
+    this remains the fast path for a running agent."""
     me = Path(__file__).resolve()
     if me != Path.home() / ".local/bin/runner-agent":
         return                     # repo checkout/dev run — not the snapshot
