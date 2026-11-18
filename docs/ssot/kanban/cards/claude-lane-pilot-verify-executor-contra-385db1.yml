@@ -1,0 +1,22 @@
+id: claude-lane-pilot-verify-executor-contra-385db1
+title: 'claude-lane pilot: verify executor contract landed on master'
+column: backlog
+updated: 2026-11-18 17:38
+priority: low
+tags:
+- claude-lane-pilot
+spec: 'Verify-only pilot for the new executor=claude dispatch lane (PR #187). In this repo: (1) confirm the string
+  "claude" appears in the EXECUTORS set of scripts/board/runner-agent.py and scripts/board/dispatch_repos.py; (2)
+  run `python3 -m pytest tests/board/test_executor_contract.py -q` and report pass count; (3) write ./dispatch-outcome-<id>.md
+  with findings and the exact commands run. Do not modify any files.'
+action:
+  type: dispatch
+  repo: chaba
+  model: sonnet
+  executor: claude
+  status: queued
+ref: OPS-0196
+comms:
+- at: 2026-11-18 17:38
+  from: devin
+  text: card captured via board-api
