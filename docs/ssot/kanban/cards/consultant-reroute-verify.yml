@@ -1,7 +1,7 @@
 id: consultant-reroute-verify
 title: 'Verify consultant reroute: qwen3:8b first-filter + paid escalate'
 column: doing
-updated: 2026-11-18 22:27
+updated: 2026-11-18 22:32
 priority: high
 program: devnest
 tags:
@@ -99,6 +99,13 @@ comms:
   text: '[progress] dispatch picked up on idc02. Mapping the new path: consultant triage = ollama-qwen38b-kkmac
     via LiteLLM; escalation = paid consult alias + LITELLM_KEY_CONSULT. Checking live gateway for aliases/key before
     running a real consult end-to-end.'
+- at: 2026-11-18 22:32
+  from: devin
+  text: '[verify 2026-11-18] Reroute PARTIALLY verified live: (1) e2e ran — triage leg DOWN: kk-mac offline ~2.7h,
+    admission shim fails fast (503 heartbeat_stale→cooldown 429); raw alias has NO paid fallback (good for invariant,
+    bad for availability); through bench/classify job-class aliases the SAME triage prompt landed on paid flash-lite
+    → paid also fires on infra failure, not only escalation. (3) spend-cap layer NOT live: consult-flash alias 400,
+    LITELLM_KEY_CONSULT unminted, PR #180 + ada-voice consu'
 action:
   type: dispatch
   status: running
