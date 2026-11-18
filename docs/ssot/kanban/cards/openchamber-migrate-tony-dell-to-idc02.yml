@@ -1,7 +1,7 @@
 id: openchamber-migrate-tony-dell-to-idc02
 title: Migrate OpenChamber pane from tony-dell to idc02
-column: review
-updated: 2026-11-18 16:53
+column: done
+updated: 2026-11-18 16:56
 brief: 'Tony approved direction 2026-11-18: idc02 is the better home for the OpenChamber agent pane — always-on
   (dell sleeps/reboots), 5G RAM avail vs dell 2G, load ~1 vs ~6, and it already hosts the public edge so ada-ocb.surf-thailand.com
   shortens from caddy→tailnet→dell to caddy→localhost. Migration is moderate cost: fresh install + provider re-auth
@@ -158,6 +158,9 @@ comms:
 - at: 2026-11-18 16:53
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-18 16:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: openchamber-on-idc02-is-live-local-pane-16ea82
   ask: 'OpenChamber on idc02 is LIVE: local pane 200, edge repointed to 127.0.0.1:3000, litellm lane verified with
@@ -177,3 +180,7 @@ requests:
     Only remaining item is the 24-48h soak, then Tony decides dell openchamber.service retire vs local-only.'
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 16:56
+  note: verified — evidence checks green, closing itself
