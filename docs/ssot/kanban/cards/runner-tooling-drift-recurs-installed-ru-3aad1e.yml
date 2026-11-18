@@ -1,8 +1,8 @@
 id: runner-tooling-drift-recurs-installed-ru-3aad1e
 title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
   but nothing redeploys
-column: doing
-updated: 2026-11-18 20:31
+column: review
+updated: 2026-11-18 20:34
 priority: medium
 tags:
 - dispatch
@@ -50,9 +50,18 @@ comms:
     dispatch_repos.py (never-downgrade mtime guard, syntax gate, provisioning-evidence for missing dests; worktrees
     guarded out). runner-fleet-health now audits $DISPATCH_DIR/repos.conf vs canonical — per-host diffs are notes,
     missing conf on a dispatch host noted. Live probe on idc02 '
+- at: 2026-11-18 20:34
+  from: idc02
+  text: 'finished (ok): exit=0 t-wide ≤2 sync cycles after merge; any residual drift keeps auto-carding via `runner-auto-<host>`.
+    | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  result: 'exit=0 t-wide ≤2 sync cycles after merge; any residual drift keeps auto-carding via `runner-auto-<host>`.
+    | devin-task-20261118-202035-evidence-2026-11-18-dispatch-d.service: Consumed 3min 22.231s CPU time, 323.1M
+    memory peak, 0B memory swap peak.'
+review_kind: verify
+claim: {}
