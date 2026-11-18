@@ -1,6 +1,6 @@
 id: openchamber-migrate-tony-dell-to-idc02
 title: Migrate OpenChamber pane from tony-dell to idc02
-column: doing
+column: review
 updated: 2026-11-18 14:56
 brief: 'Tony approved direction 2026-11-18: idc02 is the better home for the OpenChamber agent pane — always-on
   (dell sleeps/reboots), 5G RAM avail vs dell 2G, load ~1 vs ~6, and it already hosts the public edge so ada-ocb.surf-thailand.com
@@ -67,10 +67,13 @@ action:
   host: idc02
   labels:
   - push:chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  sweep:
+    stale_running: 2026-11-18 14:56
+  verified: true
 ref: OPS-0187
 comms:
 - at: 2026-11-18 14:39
@@ -117,6 +120,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261118-144015-migration-runbook-openchamber- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-18 14:56
+  from: chaba
+  text: 'merge-sweep: merged 636812f2 (dispatch/20261118-144015-migration-runbook-openchamber- from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261118-144015-migration-runbook-openchamber-.md)
+    — held in review (open request(s) [''openchamber-on-idc02-is-live-l''] block close)'
 requests:
 - id: openchamber-on-idc02-is-live-local-pane-16ea82
   ask: 'OpenChamber on idc02 is LIVE: local pane 200, edge repointed to 127.0.0.1:3000, litellm lane verified with
@@ -131,3 +139,4 @@ requests:
   options:
   - proceed
   - hold
+claim: {}
