@@ -2,7 +2,7 @@ id: idc02-mddb-follower-11023-replication-de-ee75be
 title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
   sees ~4.6s warning; LSN advances but health/lag metrics
 column: doing
-updated: 2026-11-18 16:47
+updated: 2026-11-18 17:13
 priority: medium
 tags:
 - mddb
@@ -51,6 +51,13 @@ comms:
 - at: 2026-11-18 16:47
   from: chaba
   text: started devin-task-20261118-164736-evidence-mem-0799-2026-11-18-r on tony-macbook (dispatch)
+- at: 2026-11-18 17:13
+  from: devin
+  text: 'ROOT CAUSE found. Three lag computations, two definitions, one race: (1) leader view lag_ms = (leader_lsn
+    − confirmed_lsn) × 10 — a scaled LSN COUNT, not time; (2) follower apply path lagMs = now − entry.Timestamp
+    (leader commit ts) — REAL commit→apply lag; (3) follower ack loop every 10s overwrote the same atomic with its
+    own ×10 estimate. So the self-report flickered between real and synthetic, and the leader under-reported ~6x.
+    Clock skew ruled out (clocks agree ~1s); stream is alive (last_re'
 action:
   type: dispatch
   status: running
