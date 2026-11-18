@@ -1,0 +1,24 @@
+id: cms-plane-bge-golden-set-eval-measure-re-cad4f4
+title: CMS-plane BGE golden-set eval — measure retrieval quality vs gemini before :11027 migration decision
+column: backlog
+updated: 2026-11-18 21:11
+priority: medium
+tags:
+- mddb
+- bge
+- eval
+- cms
+- mem-0193
+spec: 'FOLLOW-UP to MEM-0193 spike (proven: BGE-CMS scratch parity 36.3% vs 31.0% top-10 overlap, but ''rankings
+  WILL shift ~2/3 — needs golden-set eval before prod cutover''). GOAL: build a small golden query set for CMS collections
+  (ada-cms-pages, chaba-docs, chaba-lessons, kb-*, infrastructure-ssot, devin-kb) — ~30-50 queries with known-relevant
+  doc keys, run against BOTH gemini :11027 and a BGE scratch/replica, score recall@5/@10 + MRR, document deltas
+  per collection. OUTPUT: eval report + go/no-go recommendation for migrating mddb-cms :11027 embed provider to
+  local bge-m3 (embed-pool-shim :11436, dim 1024, full reindex required ~42min per spike). Reuse scripts/mddb/spike-cms-bge/recall_compare.py
+  + copy_sample.py from MEM-0193. No prod changes. Related: MEM-0193 (spike done), MEM-1129 (bank-side decision),
+  ADA-0202 (bank serving path).'
+ref: MEM-0204
+comms:
+- at: 2026-11-18 21:11
+  from: tony
+  text: card captured via board-api
