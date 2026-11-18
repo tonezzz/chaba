@@ -1,0 +1,115 @@
+id: 2026-11-18-embed-free-lane-budget
+kind: change-record
+title: Free-lane embed budget — proxy-side hourly pace + bulk-lane marker
+card: embed-free-lane-daily-budget
+ref: MEM-0108
+date: 2026-11-18
+decision:
+  where_the_budget_lives: >-
+    PROXY SIDE (option b) for what this repo can enforce; mddbd side
+    (option a) remains the architecturally correct home for strict
+    query-vs-index priority — followup below.
+  query_priority: >-
+    Partial, de-facto. The proxy cannot distinguish query from index
+    embeds on mddbd traffic: mddbd's index worker sends per-chunk
+    single-text calls over the same ollama-shaped endpoint as
+    vector-search query embeds, and there is exactly ONE
+    MDDB_EMBEDDING_API_URL for both. So the proxy offers two gates:
+    (1) FREE_GEMINI_HOURLY_BUDGET — a token bucket on the free leg that
+    spreads the daily quota across 24h, so a bulk burst cannot drain
+    the day by morning and interactive calls still find free capacity
+    all day; (2) an opt-in bulk lane marker (x-embed-lane header /
+    "lane" body field) with FREE_GEMINI_BULK_DAILY_BUDGET and
+    PAID_GEMINI_BULK_ALLOW=0 — real per-class priority for callers that
+    can mark themselves (embed-pool-shim via EMBED_POOL_LANE=bulk;
+    backfill lanes). Bulk past budget skips free (and optionally the
+    capped paid leg) and rides OR, or hard-fails — deferral in the
+    only sense the proxy can offer, since mddbd retries failed jobs
+    with a bounded attempt budget anyway.
+  embeddingjob_check: >-
+    Card asked "does EmbeddingJob carry a query/index distinction?" —
+    effectively YES by construction: mddbd's EmbeddingJob only ever
+    holds index work; vector-search embeds the query synchronously and
+    never enters the queue. The gpu-queue EmbeddingJob in this repo is
+    an unrelated Weaviate/GPU-queue system (processEmbeddingJob ->
+    localhost:5000), not the mddbd path. A mddbd-side worker budget
+    would therefore get the index/query split for free — but that is
+    mddb-fork code, out of this dispatch's repo scope.
+context:
+  demand_vs_capacity: >-
+    ~38–58k embeds/day legitimate demand (mddb :11023 + mddb-cms :11027
+    embed-on-write incl. CMS republish churn ~150–170 chunks per
+    republish, plus server-side query embeds) vs same-space capacity
+    ~9k/day (2 free keys × ~1000 + OR cap 5000 + paid cap 2000). The
+    free lane is <5% of demand and exhausts early every day regardless;
+    the 2026-11-18 incident was ALL legs exhausted + embed queue pinned
+    at 4000, not free-starvation specifically. The budget is a
+    correctness/fairness layer on a structurally oversubscribed chain,
+    not a capacity fix.
+  live_drift_warning: >-
+    2026-11-18 ~14:17 the LIVE proxy on idc03 was patched with a
+    GEMINI_FREE_KEYS ring + per-key circuits (backup
+    .bak-keyring-20261118 in ~/.config/containers/mddb/proxy/) — the
+    patch was applied to the running copy and is NOT in the repo (the
+    only repo reference is a card comm). Deploying the repo version
+    as-is would revert the keyring. Next deploy must merge the live
+    keyring into the repo file first, or cherry-pick the live file's
+    keyring block onto this version.
+changes:
+  - file: scripts/mddb/gemini-ollama-proxy.mjs
+    what: >-
+      FREE_GEMINI_HOURLY_BUDGET / FREE_GEMINI_BULK_DAILY_BUDGET /
+      PAID_GEMINI_BULK_ALLOW envs (0/unset = off, preserves current
+      behavior). Free-leg gates in fetchFreeGeminiBatch throw a tagged
+      err.freeBudget so budget refusals route to the backup chain
+      WITHOUT tripping the Gemini circuit or paging embed_circuit_open.
+      bulk flag propagated through fetchBackupBatch to the free and paid
+      legs (bulk skips paid when PAID_GEMINI_BULK_ALLOW=0). Lane marker
+      = x-embed-lane: bulk header or "lane":"bulk" body field. New
+      emitOpsEvent type embed_free_budget (15min damped). /health
+      exposes free_calls_hour/today, free_bulk_calls_today, the
+      budgets, paid_bulk_allow. Also added GEMINI_API_BASE env override
+      (default unchanged) so tests/throwaway instances can point at a
+      stub instead of Google.
+  - file: scripts/nest/embed-pool-shim.py
+    what: >-
+      EMBED_POOL_LANE env — stamps x-embed-lane on all upstream calls
+      (set "bulk" on the pool serving backfill banks); a caller-set
+      x-embed-lane header is forwarded and wins. /health reports lane.
+  - file: scripts/ops-digest.py
+    what: "FLAGGED += embed_free_budget (nightly digest surfaces budget trips)"
+  - file: tests/embed/test_gemini_proxy_budget.mjs
+    what: >-
+      node:test — spawns the real proxy with GEMINI_API_BASE pointed at
+      a stub. Asserts: bulk budget gates bulk-marked (header AND body
+      field) while unmarked requests keep free capacity; hourly pace
+      gates the free leg without tripping the provider circuit or
+      making extra Google calls; default-off preserves current
+      behavior. 3/3 pass.
+verify: >-
+  node --test tests/embed/test_gemini_proxy_budget.mjs — 3/3 green
+  (real proxy subprocess against stub Gemini endpoint).
+deploy: >-
+  NOT deployed (dispatch worktree only). To take live: reconcile the
+  live GEMINI_FREE_KEYS keyring patch into this file FIRST (see
+  live_drift_warning), scp to idc03:~/.config/containers/mddb/proxy/,
+  set budgets in ~/.config/secrets/mddb-gemini.env (suggested:
+  FREE_GEMINI_HOURLY_BUDGET ≈ free_keys_total/24 ≈ 80 for 2×1000/day;
+  FREE_GEMINI_BULK_DAILY_BUDGET=500; PAID_GEMINI_BULK_ALLOW=0), then
+  systemctl --user restart gemini-ollama-proxy. Optional: set
+  EMBED_POOL_LANE=bulk on embed-pool-shim.service so mddb-embed bank
+  traffic is marked.
+followups:
+  - "mddbd-side worker budget + query/index tagging (the real option-a):
+    EmbeddingJob is index-only by construction — add MDDB_EMBEDDING_WORKER_DAILY_BUDGET
+    (defer index jobs past N/day) or MDDB_EMBEDDING_QUERY_API_URL so query
+    embeds can be routed/marked separately. repo=mddb-fork; pairs with
+    card mddb-fail-fast-writes-when-embed-provide-c55f11."
+  - "Reconcile live GEMINI_FREE_KEYS keyring patch into the repo proxy file."
+  - "Structural volume fix still stands: per-collection embed-disable or
+    repointing generated-CMS-page writes (the ~58k/day driver) — mddb-fork."
+  - "Possible wrong-space hazard noted in passing: embed-pool-shim races
+    the gemini proxy for mddb-embed (bge-m3 1024d bank); if the proxy
+    ever wins that race it returns gemini-embedding-2 768d vectors into
+    a bge-m3 bank. Worth verifying the shim's upstream list or gating
+    which upstreams serve which model."

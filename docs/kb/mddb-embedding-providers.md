@@ -34,6 +34,25 @@ corpus must stay on ONE path or scores collapse to ~0.
     embedding failed — retryable on recovery) instead of draining the
     key. Counters reset on window roll or proxy restart; live values in
     `/health` (`paid_calls_hour`/`paid_calls_today`).
+  - Free-lane budget (added 2026-11-18, card
+    embed-free-lane-daily-budget; all OFF by default):
+    - `FREE_GEMINI_HOURLY_BUDGET` — max free-leg calls per UTC hour
+      across ALL requests. Paces the daily free quota across 24h so a
+      bulk burst can't drain it by morning; past it the free leg
+      refuses and the backup chain serves until the hour rolls.
+    - `FREE_GEMINI_BULK_DAILY_BUDGET` — max free-leg calls per UTC day
+      for bulk-marked requests. Marking: `x-embed-lane: bulk` request
+      header or `"lane":"bulk"` in the request body; embed-pool-shim
+      stamps it via `EMBED_POOL_LANE=bulk`. mddbd sends no marker —
+      its index churn shares the unmarked lane with queries.
+    - `PAID_GEMINI_BULK_ALLOW=0` — bulk-marked requests also skip the
+      paid leg, preserving the capped trickle for interactive traffic.
+    - A budget refusal throws a tagged `freeBudget` error: the request
+      routes to the backup chain WITHOUT tripping the provider circuit
+      or paging `embed_circuit_open` (pacing is policy, not a provider
+      failure). Trips emit the `embed_free_budget` ops-event (damped
+      15min); live counters in `/health` (`free_calls_hour`,
+      `free_calls_today`, `free_bulk_calls_today`).
 - Provider pin: `provider.order: ["Google"], allow_fallbacks: false` —
   OR's default `Google AI Studio` upstream is broken
   (`API_KEY_INVALID`) and is a different vector space anyway.
