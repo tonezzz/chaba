@@ -1,6 +1,6 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
-column: review
+column: done
 updated: 2026-11-18 15:16
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
@@ -168,5 +168,8 @@ comms:
     5f0a49c, chaba-board-api restarted. Live: compact=2 1.56s/795KB (was ~16s/9MB full dump), comms_tail=3 works,
     compact=1 0.56s. Board-api now has real server-side projection — bridge workarounds in ada-voice can adopt compact=2/comms_tail
     in a follow-up.'
+- at: 2026-11-18 15:16
+  from: devin
+  text: closed by devin
 review_kind: verify
 claim: {}
