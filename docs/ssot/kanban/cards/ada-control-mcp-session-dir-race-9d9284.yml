@@ -1,7 +1,7 @@
 id: ada-control-mcp-session-dir-race-9d9284
 title: ada-control-mcp-session-dir-race
 column: doing
-updated: 2026-11-18 21:04
+updated: 2026-11-18 21:11
 spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
   dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
   creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
@@ -53,6 +53,10 @@ comms:
     hot-reloaded, no restart. Verified: deterministic deleted-dir repro failed pre-fix (exact NotFound:FileSystem.access),
     then 20 consecutive session starts 14:00:17-53 UTC = 20x mcp connected tools=26, zero failures. Last idc02 failure
     13:59:25 UTC'
+- at: 2026-11-18 21:11
+  from: chaba
+  text: 'merge-sweep: devin-task-20261118-204709-ada-control-mcp-in-opencode-in no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
