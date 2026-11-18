@@ -4,7 +4,7 @@ brief: 'Recurring failure pattern: runners complete work but can''t push to GitH
   key via core.sshCommand, runners lack creds), so dispatch branches strand on remote hosts and cards can''t close.
   A periodic dell-side sweep can fetch branches over tailscale ssh, merge into the canonical branch, and unblock
   card closes — the exact salvage Devin did by hand six times on 2026-10-08.'
-column: doing
+column: review
 priority: high
 program: chaba-ci
 area: dispatch
@@ -25,13 +25,12 @@ spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doin
 help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. Fetch must override the repo''s
   pinned GitHub key: `git -c core.sshCommand=ssh fetch`. Merge guard already in scripts/board/dispatch_repos.py
   — this service is its remedy path.'
-updated: 2026-11-18 21:01
+updated: 2026-11-18 21:04
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 hanges, no pushes). Open follow-up gaps are already tracked as separate cards (merge-conflict
-    re-raise loop, test-gate fail-open), not this one. | devin-task-20261118-204621-sweep-script-scripts-board-mer.service:
-    Consumed 25.668s CPU time.'
+  status: done
+  result: 'exit=0 containers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261118-205414-sweep-script-scripts-board-mer.service:
+    Consumed 47.087s CPU time over 2min 11.129s wall clock time, 975.7M memory peak, 101.2M memory swap peak.'
   lane: codemod
   lane_source: kw
   runner: tony-dell
@@ -269,6 +268,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-205414-sweep-script-scripts-board-mer,
     branch dispatch/20261118-205414-sweep-script-scripts-board-mer'
+- at: 2026-11-18 21:04
+  from: tony-dell
+  text: 'finished (ok): exit=0 containers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261118-205414-sweep-script-scrip'
 ownership:
   owner: tony
 claim: {}
