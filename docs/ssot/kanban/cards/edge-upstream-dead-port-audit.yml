@@ -1,7 +1,7 @@
 id: edge-upstream-dead-port-audit
 title: Audit edge upstreams for dead-port drift (serve/caddy/systemd)
 column: doing
-updated: 2026-11-18 17:40
+updated: 2026-11-18 17:41
 brief: '2026-11-18 incident chain: three infra faults in ~35min — managed opencode crash (16:31), caddy-edge container
   restart (17:05), and a stale tailscale serve entry (:8125 -> dead 127.0.0.1:8125 while HA lives on :8123) that
   502d all of ada-ha.surf-thailand.com including the ada-ocb iframe. None were caught by existing audits. Build
@@ -79,3 +79,7 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:41
+  from: devin
+  text: 'Dispatch picked up. Recon done: on idc02, ssh to fleet confirmed (omen/dell/idc03/mn01 reachable, idc02
+    local). serve JSON shapes captured; Caddyfile parsed for design. Building scripts/audit-edge-upstreams.py next.'
