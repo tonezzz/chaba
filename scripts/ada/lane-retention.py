@@ -143,11 +143,14 @@ LANES = {
         "collections": ["ada-ha-events-chaba", "ada-ha-snapshots-chaba"],
     },
     "dev": {
-        # Keep this to the confirmed dev lanes. ada-pi-pwa is excluded
-        # pending reconciliation: its card calls it dev, but current SSOT
-        # assigns ADA_INSTANCE_ID=tony and marks the service retired.
+        # Confirmed dev lanes + ada-pi-pwa — Tony classified pi-pwa as dev
+        # 2026-11-18 (supersedes the earlier 'exclude' answer). pi-pwa ran
+        # with ADA_INSTANCE_ID=tony so its recall sids live in tony's
+        # collections; the unit's journald is the ONLY dev-attributing
+        # signal, which is why the dev timer runs BEFORE tony's — a sid
+        # visible to both claims dev, matching the decision.
         "hosts": ["idc03"],
-        "units": {"idc03": ["ada-dev", "ada-kk-dev"]},
+        "units": {"idc03": ["ada-dev", "ada-kk-dev", "ada-pi-pwa"]},
         "sid_collections": ["ada-ha-recall-summary-dev",
                             "ada-ha-actions-dev",
                             "ada-ha-recall-summary-kk-dev"],

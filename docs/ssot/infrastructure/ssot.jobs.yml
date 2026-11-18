@@ -116,15 +116,17 @@ jobs:
   name: Ada lane retention — dev lanes
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 05:00:00'
+  on_calendar: 'Sun *-*-* 04:00:00'
   persistent: true
   timeout: 30m
   condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py
     --lane dev
-  note: 'card ada-transcript-archive-retention — currently limited to the
-    confirmed ada-dev and ada-kk-dev lanes. ada-pi-pwa remains excluded until
-    its dev-versus-Tony identity and retired-service status are reconciled.'
+  note: 'card ada-transcript-archive-retention — covers ada-dev, ada-kk-dev
+    and ada-pi-pwa (Tony classified pi-pwa dev 2026-11-18, superseding the
+    earlier exclude answer). Runs BEFORE the tony lane: pi-pwa ran with
+    ADA_INSTANCE_ID=tony so its recall sids sit in tony''s collections —
+    only journald attribution tags them dev, and dev must claim first.'
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725

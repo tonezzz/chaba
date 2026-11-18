@@ -138,10 +138,12 @@ class TestTranscriptClaim(unittest.TestCase):
 
 class TestLaneInventory(unittest.TestCase):
     def test_dev_archive_scope_is_bounded(self):
+        # ada-pi-pwa included per Tony's 2026-11-18 decision (lane=dev);
+        # anything beyond these confirmed dev units is still out of scope.
         cfg = lr.LANES["dev"]
         self.assertEqual(cfg["hosts"], ["idc03"])
-        self.assertEqual(cfg["units"], {"idc03": ["ada-dev", "ada-kk-dev"]})
-        self.assertNotIn("ada-pi-pwa", cfg["units"]["idc03"])
+        self.assertEqual(cfg["units"], {"idc03": ["ada-dev", "ada-kk-dev",
+                                                  "ada-pi-pwa"]})
 
     def test_michael_journal_uses_current_service_name(self):
         self.assertEqual(lr.LANES["michael"]["units"]["idc03"],

@@ -19,6 +19,12 @@ decisions:
     meta.session_id across each lane's ada-ha-recall-summary-<lane> + ada-ha-actions-<lane>
     MDDB collections (~369 mapped sessions), unioned with the sparse journald signal.
     Unattributed sessions remain local; no lane claims them by fallback.
+    ada-pi-pwa is a special case: it ran with ADA_INSTANCE_ID=tony, so its recall sids
+    live in tony's collections — indistinguishable there. Tony classified it dev
+    (2026-11-18, superseding the earlier 'exclude'), so dev claims it via the unit's
+    journald and the dev timer runs 04:00 BEFORE tony's 04:15. pi-pwa sids that only
+    exist in tony's recall collections still archive under the '(tony)' title tag —
+    same shared notebook, wrong label; unavoidable without a distinguishing signal.
   notebook_map: |
     Follows the dead ada-voice env mapping: tony/kk/dev -> 'Tony - Memory'
     (663ef269...), michael -> 'Michael — Ada HA' (1c12d5c8...). Upload path is
@@ -51,7 +57,7 @@ decisions:
 ops:
   units: [ada-retention-tony, ada-retention-kk, ada-retention-michael, ada-retention-dev]
   host: idc03
-  schedule: 'Sun 04:15/04:30/04:45/05:00'
+  schedule: 'Sun 04:00(dev)/04:15(tony)/04:30(kk)/04:45(michael) — dev first so pi-pwa sids claim dev'
   state_file: '~/.cache/ada-lane-retention.json (per host; upload dedup)'
   env_file: '~/.config/secrets/tony-ha/backend.env (GEMINI_API_KEY / gateway for merges)'
   verify:
@@ -61,21 +67,21 @@ ops:
     - 'No timer install, transcript upload, MDDB delete, or Gemini merge in this task.'
   known_gaps:
     - '~40 transcripts have no recall-summary/actions mapping and remain local until attribution is resolved.'
-    - 'The card lists ada-pi-pwa as dev/test, but current SSOT assigns ADA_INSTANCE_ID=tony and marks it retired; the service was observed active on idc03. Keep it excluded until reconciled.'
+    - 'ada-pi-pwa is classified dev per Tony 2026-11-18; only journald-attributable pi-pwa sids get the (dev) tag — the rest archive as (tony) because its ADA_INSTANCE_ID was tony. Same notebook either way.'
     - 'The asserted ~5d source-loss window has not been verified against current local transcript retention; weekly scheduling may miss it if files are removed sooner.'
     - 'kk/michael/tony extracts about subjects whose canonical is shared scope skip for
       human review rather than auto-merge (privacy gate).'
     - 'ada-chaba sessions have no sid_collections coverage and therefore remain local.'
 
 processing:
-  status: review
+  status: ready
   started_at: 2026-11-17
-  branch: fix/ada-0478-lane-retention
-  commit: c86b9049588
+  branch: dispatch/20261118-164354-scheduled-per-lane-retention-j
   pull_request: https://github.com/tonezzz/chaba/pull/182
-  pull_request_state: draft
-  pending_request: pi-pwa-lane-classification
+  pull_request_state: superseded-by-dispatch-branch
+  resolved_request: pi-pwa-lane-classification=dev (Tony 2026-11-18)
   notes: The preserved idc02 partial work was reviewed on a fresh current-master
-    branch. Its earlier run recorded one real kk transcript upload; this continuation
-    makes no live upload, provider call, MDDB deletion, or timer installation. The PR
-    remains draft while the ada-pi-pwa classification is unresolved.
+    branch (fix/ada-0478-lane-retention, c86b904) and merged into this dispatch
+    branch on 2026-11-18 with the resolved pi-pwa=dev classification applied.
+    Its earlier run recorded one real kk transcript upload; this continuation
+    makes no live upload, provider call, MDDB deletion, or timer installation.
