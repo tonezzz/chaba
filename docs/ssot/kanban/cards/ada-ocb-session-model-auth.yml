@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: doing
-updated: 2026-11-18 16:42
+updated: 2026-11-18 16:50
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -147,6 +147,13 @@ comms:
   text: 'merge-sweep: devin-task-20261117-233544-fix-ada-openchamber-prompt-exe failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-233544-fix-ada-openchamber-prompt-exe by
     hand.'
+- at: 2026-11-18 16:50
+  from: devin
+  text: 'RESOLVED — verified on the new idc02 pane (2026-11-18). Root cause was fixed 2026-11-17 (shared ada-sec1286
+    LiteLLM credential -> ~/.config/secrets/litellm-ada.env, OpenChamber restart, provider smoke GEMINI_OK) and
+    the project default was moved to opencode/iceman-free. Migration to idc02 (OPS-0187) carried the same secrets:
+    openchamber.service has EnvironmentFile=%h/.config/secrets/litellm-ada.env, managed opencode env contains LITELLM_KEY,
+    and a real litellm/gemini reply was verified through t'
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
