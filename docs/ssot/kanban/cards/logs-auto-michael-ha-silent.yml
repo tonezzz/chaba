@@ -7,7 +7,7 @@ priority: high
 note: 'Auto-recovered 2026-10-25: `michael-ha-silent` condition cleared — shipper healthy again.'
 help: Run `log-shipper.py --hosts michael-ha --dry-run` from tony-omen; if the ssh probe fails, check tailscale
   auth (browser link).
-updated: 2026-11-17 21:04
+updated: 2026-11-18 17:15
 ref: HOM-0085
 comms:
 - at: 2026-10-11 08:35
@@ -40,6 +40,10 @@ comms:
 - at: 2026-11-17 21:04
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 brief: 'The log digest flagged something worth a look: logs `michael-ha` never shipped state. Read the note, then
   fix it or close the card.'
