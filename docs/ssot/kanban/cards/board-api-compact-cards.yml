@@ -19,7 +19,7 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -30,6 +30,7 @@ action:
     the projection paths. Let me find the right insertion point:Now restart the test server with the new code and
     run the selftest: | devin-task-20261118-083559-in-scripts-board-board-api-py-.service: Consumed'
   attempts: 2
+  runner: tony-omen
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -117,3 +118,6 @@ comms:
 - at: 2026-11-18 14:42
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.11 > 0.85)'
+- at: 2026-11-18 14:42
+  from: tony-omen
+  text: claimed
