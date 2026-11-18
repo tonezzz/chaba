@@ -95,15 +95,20 @@ Fallback: `POST /auth/session {password: $OPENCHAMBER_UI_PASSWORD}` (from
 
 | host | OpenChamber | opencode | claude-code install | claude login |
 |---|---|---|---|---|
-| tony-dell | yes (:3000, `openchamber.service`) | 2.3.2 | 2.1.327 | yes — **wired + smoke-verified** |
+| idc02 | **yes (:3000, `openchamber.service`)** — canonical pane since 2026-11-18; public edge ada-ocb.surf-thailand.com now proxies local :3000 | 2.3.2 | 2.1.327 | pending — gate on card `openchamber-migrate-tony-dell-to-idc02` |
+| tony-dell | yes (:3000, `openchamber.service`) — soak fallback after 2026-11-18 migration; retire decision Tony's | 2.3.2 | 2.1.327 | yes — **wired + smoke-verified** |
 | tony-omen | no | no | yes | yes (.credentials.json) |
 | tony-macbook | no | yes (`~/.local/node/bin`) | no | no |
-| idc02 | no | host bin v2.2.7 + 2 podman workers (see note) | no | no |
 | kk-mac | no | no | no | no |
 | mn01, idc03, con01, michael-ha | no | no | no | no |
 
-tony-dell is currently the **only** OpenChamber host, so "roll out" today =
-re-verified idempotently there. For a new OpenChamber host: install
+The pane moved tony-dell → idc02 on 2026-11-18 (card
+`openchamber-migrate-tony-dell-to-idc02`): fresh install of the same
+versions, dell config + secrets copied host-to-host, edge repointed to the
+local :3000. The idc02 pane runs litellm + opencode lanes today; the
+claude-agent lane activates once `claude auth login` completes on idc02 —
+then `scripts/claude-code/openchamber-wire.sh --check` (or a plain run)
+finishes the wiring exactly as on dell. For any future host: install
 OpenChamber first (service + `ssot.audit.hosts.yml` declaration per
 host-hygiene rules), install pinned claude-code, `claude auth login` once,
 then run this script. Standalone `opencode serve` (no OpenChamber) can use

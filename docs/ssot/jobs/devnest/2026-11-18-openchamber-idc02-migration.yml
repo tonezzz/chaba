@@ -1,0 +1,118 @@
+# Job: OpenChamber ada-ocb pane migration tony-dell -> idc02
+title: Migrate OpenChamber ada-ocb pane from tony-dell to idc02
+subtitle: card openchamber-migrate-tony-dell-to-idc02, dispatch on idc02
+icon: rocket
+
+planning:
+  goal: >-
+    Move the canonical OpenChamber pane to idc02 (always-on VPS, headroom,
+    already hosts the public edge) while keeping dell's pane as a live
+    fallback during a 24-48h soak. Preserve the public URL
+    ada-ocb.surf-thailand.com so iframe/dashboard consumers are unchanged.
+  scope: >-
+    In: idc02 install (node24, @openchamber/web, @opencode/cli, systemd
+    units), config+secrets copy dell->idc02, edge repoint, lane smokes,
+    doc/SSOT updates. Out: session-history DB migration, dell retire
+    decision (Tony, post-soak), DNS/CF Access changes (none needed).
+  success_criteria:
+    - openchamber.service active on idc02, versions match dell
+    - ada-ocb.surf-thailand.com serves the idc02 pane (edge probe 200)
+    - litellm lane verified with a real model reply
+    - claude-agent lane wired after Tony's claude auth login (GATE)
+    - iframe hostname unchanged -> dashboard needs no edit
+  owner: tony
+  related_focus:
+    - label: this card
+      file: docs/ssot/kanban/cards/openchamber-migrate-tony-dell-to-idc02.yml
+    - label: wiring runbook
+      file: docs/kb/openchamber-claude-agent-provider.md
+
+processing:
+  status: blocked-on-tony
+  started_at: "2026-11-18T14:40+07:00"
+  steps:
+    - id: 1
+      label: idc02 install + unit
+      status: done
+      notes: >-
+        node-v24.14.0 tarball -> ~/.local/node24; npm -g
+        --prefix=~/.local/node @openchamber/web@2.7.0 @opencode/cli@2.3.2
+        (exact dell match). Unit + 10-litellm-env.conf drop-in +
+        openchamber-update.{service,timer} copied verbatim from dell.
+        Clean startup.env written (UI password + FRAME_ANCESTORS +
+        OPENCODE_BINARY pulled dell-side, PATH rebuilt) — dell's file was
+        polluted with a captured desktop session env; only the 3 real keys
+        carried over. Service enabled+active, managed opencode child
+        spawning normally.
+    - id: 2
+      label: claude-code install + auth gate
+      status: blocked
+      notes: >-
+        @anthropic-ai/claude-code@2.1.327 pinned at
+        ~/CascadeProjects/tony-projects/claude-code (matches the
+        OPENCODE_CLAUDE_PATH already in the copied environment.json).
+        `claude auth status` = loggedIn:false — interactive OAuth is the
+        declared Tony gate. Board request raised with options (a) Tony
+        runs `claude auth login` on idc02 [recommended], (b) approve
+        .credentials.json copy, (c) setup-token. After auth:
+        scripts/claude-code/openchamber-wire.sh (already on idc02 via the
+        worktree script — also runnable from any host with --host idc02)
+        completes steps 4-8 incl. haiku smoke.
+    - id: 3
+      label: LiteLLM provider copy + verify
+      status: done
+      notes: >-
+        ~/.config/secrets/litellm-ada.env copied dell->idc02 over ssh
+        (never read into session). opencode.json merged: dell pane config
+        (mcp ada-control pointing at ~/CascadeProjects/ada-voice — exists
+        on idc02; agent defaults; omen-llamacpp) + union of idc02's extra
+        litellm models = 22 litellm models, all enabled in /api/model.
+        Live prompt litellm/gemini-3.5-flash-lite -> assistant "ok" —
+        key + proxy path verified end-to-end.
+    - id: 4
+      label: edge repoint
+      status: done
+      notes: >-
+        ~/.config/caddy/Caddyfile ada-ocb block: upstream
+        https://tony-dell.taila0626a.ts.net:8443 -> http://127.0.0.1:3000.
+        caddy validate + reload (zero-downtime, autosave). Direct-to-bind
+        probe --resolve ada-ocb.surf-thailand.com:443:45.136.236.190 ->
+        200 with frame-ancestors CSP intact. Backup Caddyfile.bak-ada-ocb-
+        repoint-20261118. Rollback = restore upstream line + reload.
+        :8443 on idc02 is owned by the bserver container, so no tailscale
+        serve backup was added (dell :8443 remains the soak fallback).
+    - id: 5
+      label: consumer repoints
+      status: done
+      notes: >-
+        ada-voice bridge = local MCP process (ada_mcp.py), hits
+        board-api/MDDB — nothing pointing at the pane URL; card's
+        "targets dell" premise was stale. ada-ocb-smoke.timer was
+        ExecCondition-skipping hourly (ocb-smoke.py never reached the
+        staging checkout); `git pull --ff-only` on ~/CascadeProjects/
+        ada-voice landed the merged smoke suite — timer will now run
+        for real against the local bridge. HA iframe src is the public
+        hostname -> unchanged by design. No dell:8443 references found
+        in ada-voice web/backend or chaba consumer artifacts.
+        Dependency fix: idc02 system python3 lacked `mcp` (dell has
+        mcp==1.29.0 in user site) — created dedicated venv
+        ~/.local/venvs/ada-mcp (mcp==1.29.0) and repointed the
+        ada-control command in the host-local opencode.json; bridge
+        boots clean (tools=26).
+    - id: 6
+      label: surface verification
+      status: partial
+      notes: >-
+        Edge 200 + CSP verified via direct-bind probe; full public path
+        (Cloudflare Access) unchanged — same site block, same AUD. UI
+        password and jwt-secret copied => existing sessions and Tony's
+        saved login carry over. claude-agent haiku smoke pending auth
+        gate. Browser-level check (login, both lanes, iframe render) is
+        Tony's one-minute surface pass post-auth.
+    - id: 7
+      label: soak + close-out
+      status: pending
+      notes: >-
+        dell openchamber.service left running (verified active).
+        Retire-vs-local-only + this card's close = Tony decision after
+        24-48h soak. idc02 retains full fallback while dell unit lives.
