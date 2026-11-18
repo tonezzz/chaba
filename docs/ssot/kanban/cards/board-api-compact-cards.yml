@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
 column: doing
-updated: 2026-11-17 22:25
+updated: 2026-11-18 08:34
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -19,14 +19,14 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-dell
-  result: 'exit=1 scripts-board-board-api-py-.service: Failed with result ''exit-code''. | devin-task-20261117-221304-in-scripts-board-board-api-py-.service:
-    Consumed 1.813s CPU time over 7min 23.278s wall clock time, 85.7M memory peak, 29.6M memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 22:25
+  last_failure: 'exit=1 scripts-board-board-api-py-.service: Failed with result ''exit-code''. | devin-task-20261117-221304-in-scripts-board-board-api-py-.service:
+    Consumed 1.813s CPU time over 7min 23.278s wall clock time, 85.7M memory peak, 29.6M memory swap peak.'
+  attempts: 1
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -65,3 +65,6 @@ comms:
   text: 'merge-sweep: devin-task-20261117-221304-in-scripts-board-board-api-py- failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-221304-in-scripts-board-board-api-py- by
     hand.'
+- at: 2026-11-18 08:34
+  from: devin
+  text: retry requested
