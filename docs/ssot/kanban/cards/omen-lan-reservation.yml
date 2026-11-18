@@ -2,10 +2,11 @@ id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: backlog
 updated: 2026-11-17 21:10
-brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
-  target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
-  must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
-  reservation for omen on the router (needs Tony), or make MEDIA_BASE resolve at service start. See docs/ssot/jobs/vcast/2026-10-12-omen-lan-ip-drift-cast-proxy.yml.'
+brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference
+  (cast-browser-proxy target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof,
+  but MEDIA_BASE=http://192.168.2.84:8090 must stay a LAN IP (Chromecast cannot reach tailnet) — it will
+  break again on the next renumber. Fix: pin a DHCP reservation for omen on the router (needs Tony), or
+  make MEDIA_BASE resolve at service start. See docs/ssot/jobs/vcast/2026-10-12-omen-lan-ip-drift-cast-proxy.yml.'
 priority: medium
 ref: OPS-0522
 comms:
@@ -17,8 +18,8 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-10-26 08:21
   from: tony
-  text: 'answered the-card-notes-that-the-tony-o-1dbcf8: ★ Configure a static DHCP reservation on the network router
-    for tony-omen once the MAC address and desired IP are provided by the owner.'
+  text: 'answered the-card-notes-that-the-tony-o-1dbcf8: ★ Configure a static DHCP reservation on the
+    network router for tony-omen once the MAC address and desired IP are provided by the owner.'
 - at: 2026-10-26 08:21
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -35,8 +36,8 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-11-17 06:41
   from: tony
-  text: 'answered the-dhcp-reservation-for-tony-4e9426: ★ Provide the MAC address and desired IP address for tony-omen
-    so a router DHCP reservation can be configured.'
+  text: 'answered the-dhcp-reservation-for-tony-4e9426: ★ Provide the MAC address and desired IP address
+    for tony-omen so a router DHCP reservation can be configured.'
 - at: 2026-11-17 06:41
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -64,28 +65,37 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
-  ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
-    target IP address, MAC address, or whether this should be configured via the router's DHCP reservation table
-    or through local network configuration on the host.
+  ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not
+    specify the target IP address, MAC address, or whether this should be configured via the router's
+    DHCP reservation table or through local network configuration on the host.
   options:
-  - ★ Configure a static DHCP reservation on the network router for tony-omen once the MAC address and desired IP
-    are provided by the owner.
+  - ★ Configure a static DHCP reservation on the network router for tony-omen once the MAC address and
+    desired IP are provided by the owner.
   - Configure dynamic host resolution or mDNS locally on tony-omen without router-level DHCP changes.
   status: answered
   at: 2026-10-26 07:20
   from: backlog-spec-enrich
-  answer: ★ Configure a static DHCP reservation on the network router for tony-omen once the MAC address and desired
-    IP are provided by the owner.
+  answer: ★ Configure a static DHCP reservation on the network router for tony-omen once the MAC address
+    and desired IP are provided by the owner.
 - id: the-dhcp-reservation-for-tony-4e9426
-  ask: The DHCP reservation for tony-omen requires a MAC address and desired IP address, but neither has been provided
-    in the card history or recent comms yet.
+  ask: The DHCP reservation for tony-omen requires a MAC address and desired IP address, but neither has
+    been provided in the card history or recent comms yet.
   options:
-  - ★ Provide the MAC address and desired IP address for tony-omen so a router DHCP reservation can be configured.
+  - ★ Provide the MAC address and desired IP address for tony-omen so a router DHCP reservation can be
+    configured.
   - Postpone this card until network hardware access is available.
   status: answered
   at: 2026-11-17 01:20
   from: backlog-spec-enrich
-  answer: ★ Provide the MAC address and desired IP address for tony-omen so a router DHCP reservation can be configured.
+  answer: ★ Provide the MAC address and desired IP address for tony-omen so a router DHCP reservation
+    can be configured.
 awaiting_action: true
+spec: Configure a static DHCP reservation for tony-omen on the local network router or configure it to
+  use dynamic hostname references so its IP remains consistently reachable. The target host is tony-omen.
+  The done-condition is verified when tony-omen consistently resolves and responds reliably via its assigned
+  LAN IP or dynamic reference without manual intervention.
