@@ -1,7 +1,7 @@
 id: claude-agent-idc02-opencode
 title: Wire claude-agent into idc02 bare opencode serve
-column: doing
-updated: 2026-11-18 13:55
+column: review
+updated: 2026-11-18 13:59
 brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
   verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
   provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
@@ -38,10 +38,14 @@ action:
   host: idc02
   labels:
   - push:chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  result: 'exit=0 te, and committed everything on the dispatch branch (`91b06ea`, `6efa1bd`) with the outcome file
+    written. | devin-task-20261118-135051-follow-up-to-ops-0184-done-scr.service: Consumed 26.453s CPU time, 1.5G
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0185
 comms:
 - at: 2026-11-18 13:49
@@ -86,6 +90,10 @@ comms:
   text: '[dispatch] Done. Findings + request posted above; docs committed on dispatch branch (kb runbook corrected,
     job doc docs/ssot/jobs/devnest/2026-11-18-idc02-opencode-claude-agent-probe.yml). No host mutation — the only
     injection paths are design changes gated on your answer to the request. tony-dell --check remains green.'
+- at: 2026-11-18 13:59
+  from: idc02
+  text: 'finished (ok): exit=0 te, and committed everything on the dispatch branch (`91b06ea`, `6efa1bd`) with the
+    outcome file written. | devin'
 requests:
 - id: idc02-opencode-4096-2-litellm-lane-podma-6bb28b
   ask: idc02 opencode :4096 = 2 LiteLLM-lane podman workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection
@@ -102,3 +110,5 @@ requests:
   - id: litellm-claude
     label: Keep isolation; add Claude alias via LiteLLM for Jack
   suggested: close
+review_kind: verify
+claim: {}
