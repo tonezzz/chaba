@@ -24,9 +24,15 @@ Endpoints (after prefix strip):
                  since=<updated string> (lexicographic, same format)
       projection: fields=a,b,c (top-level keys; unknown ignored),
                  compact=1 -> {id,title,column,updated,priority,ref,
-                               action_status}
+                               action_status},
+                 compact=2 -> {id,ref,title,column,priority,updated,
+                               brief,spec,action_status} — card-detail
+                               tier, no comms/action bulk
+      comms:      comms_tail=<n> keeps only the last n comms entries per
+                 card (0 drops comms) and stamps comms_total; combines
+                 with fields/compact and also applies to /card/<id>
       pagination: limit=<n> (cap 1000), offset=<n>
-  GET  /card/<id>[?fields=|compact=1] -> {"ok", card} | 404
+  GET  /card/<id>[?fields=|compact=1|comms_tail=<n>] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
       dispatch card whose session branch still has commits not in
@@ -4034,6 +4040,11 @@ CARDS_JSON = REPO / "stacks/web/public/apps/board/cards.json"
 # side on a projection that lacked action saw "no queued cards").
 COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref",
                   "action_status")
+# compact=2 (board-api-compact-cards): the card-detail tier — brief+spec
+# for summary/answer surfaces, without the comms list or the action
+# dict. action_status stays synthesized (OPS-1107).
+COMPACT2_FIELDS = ("id", "ref", "title", "column", "priority", "updated",
+                   "brief", "spec", "action_status")
 CARDS_MAX_LIMIT = 1000
 
 
@@ -4081,9 +4092,35 @@ def _truthy(v: str) -> bool:
 
 
 def _field_set(q: dict) -> set:
-    if _truthy(_q1(q, "compact")):
-        return set(COMPACT_FIELDS)
+    cv = _q1(q, "compact").strip()
+    if cv and cv.lower() not in ("0", "false", "no", "off"):
+        # compact=2 is the detail tier; any other enabled value is the
+        # original slim tier. Before this, compact=2 fell through to a
+        # full-card dump — the heaviest possible miss.
+        return set(COMPACT2_FIELDS) if cv == "2" else set(COMPACT_FIELDS)
     return {f.strip() for f in _q1(q, "fields").split(",") if f.strip()}
+
+
+def _comms_tail(q: dict):
+    """comms_tail=<n> keeps only the last n comms entries per card;
+    0 drops comms entirely. None = untouched."""
+    raw = _q1(q, "comms_tail").strip()
+    if not raw:
+        return None
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return None
+
+
+def _tail_comms(card: dict, n: int) -> dict:
+    comms = card.get("comms")
+    if not isinstance(comms, list):
+        return card
+    out = dict(card)                    # never mutate the read-side cache
+    out["comms"] = comms[-n:] if n else []
+    out["comms_total"] = len(comms)
+    return out
 
 
 def _project(card: dict, fields: set) -> dict:
@@ -4126,6 +4163,9 @@ def card_query(cards: list, q: dict) -> dict:
     page = out[off: off + lim if lim else None]
     fields = _field_set(q)
     page = [_project(c, fields) for c in page]
+    tail = _comms_tail(q)
+    if tail is not None:
+        page = [_tail_comms(c, tail) for c in page]
     return {"ok": True, "count": len(page), "total": total,
             "offset": off, "truncated": off + len(page) < total,
             "cards": page}
@@ -4269,9 +4309,12 @@ class H(BaseHTTPRequestHandler):
                     return self._send(404, {"error": "card not found",
                                             "id": cid})
                 hit = load(ap)
-            return self._send(200, {
-                "ok": True,
-                "card": _project(hit, _field_set(parse_qs(url.query)))})
+            q = parse_qs(url.query)
+            card = _project(hit, _field_set(q))
+            tail = _comms_tail(q)
+            if tail is not None:
+                card = _tail_comms(card, tail)
+            return self._send(200, {"ok": True, "card": card})
         if path == "/queue":
             try:
                 return self._send(200, queue_view())
@@ -4719,6 +4762,49 @@ def _selftest() -> None:
     assert dup_comment(
         {"comms": [{"at": old, "from": "devin", "text": "hi"}]},
         "devin", "hi", "") is False
+
+    # /cards read projection (board-api-compact-cards): fields=,
+    # compact tiers, comms_tail — and none of it may mutate the card
+    # dicts the read cache hands out
+    big = {"id": "c1", "ref": "KNB-1", "title": "t", "column": "doing",
+           "priority": "high", "updated": "2026-01-01", "brief": "b",
+           "spec": "s", "note": "n",
+           "action": {"status": "queued", "task_id": "x"},
+           "comms": [{"at": f"2026-01-0{i}", "from": "devin",
+                      "text": f"m{i}"} for i in range(1, 6)]}
+    res = card_query([big], parse_qs("fields=id,title"))
+    assert res["cards"] == [{"id": "c1", "title": "t"}]
+    res = card_query([big], parse_qs("compact=1"))
+    assert res["cards"][0]["action_status"] == "queued"
+    assert "comms" not in res["cards"][0] and "spec" not in res["cards"][0]
+    res = card_query([big], parse_qs("compact=2"))
+    c2 = res["cards"][0]
+    assert c2["brief"] == "b" and c2["spec"] == "s"
+    assert c2["action_status"] == "queued"
+    assert "comms" not in c2 and "action" not in c2
+    res = card_query([big], parse_qs("comms_tail=2"))
+    ct = res["cards"][0]
+    assert [m["text"] for m in ct["comms"]] == ["m4", "m5"]
+    assert ct["comms_total"] == 5 and ct["spec"] == "s"
+    res = card_query([big], parse_qs("comms_tail=0"))
+    assert res["cards"][0]["comms"] == [] \
+        and res["cards"][0]["comms_total"] == 5
+    res = card_query([big], parse_qs("fields=id,comms&comms_tail=1"))
+    fc = res["cards"][0]
+    assert [m["text"] for m in fc["comms"]] == ["m5"] \
+        and "spec" not in fc
+    # the source card is untouched — the read cache serves it again
+    assert len(big["comms"]) == 5 and "comms_total" not in big
+    # garbage comms_tail is ignored, never a 500
+    res = card_query([big], parse_qs("comms_tail=abc"))
+    assert len(res["cards"][0]["comms"]) == 5
+    # compact=0 disables -> fields path (empty -> full card)
+    res = card_query([big], parse_qs("compact=0"))
+    assert "comms" in res["cards"][0] and "action" in res["cards"][0]
+    # unknown compact values map to tier 1, never the silent full dump
+    res = card_query([big], parse_qs("compact=9"))
+    assert "comms" not in res["cards"][0] \
+        and res["cards"][0]["action_status"] == "queued"
 
     # bounded acquire — a held flock yields None after the deadline,
     # never a silent queue (the pre-fix stall mode)
