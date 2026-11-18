@@ -1,7 +1,7 @@
 id: memory-extract-merge-proposals
 title: Weekly extract→canonical merge proposals (recommend-mode) for Ada memory banks
 column: done
-updated: 2026-11-18 23:03
+updated: 2026-11-18 23:04
 brief: Surface probable canonical updates hidden in extract drafts as reviewable proposals — never auto-write. Builds
   on memory-distill + consolidate-memory; closes the ADA-0478 leg-3 gap without giving up the human review gate
   on memory writes.
@@ -146,6 +146,10 @@ comms:
   text: 'weekly merge-proposals run: 3 open proposal(s) (3 new) across 124 recent extract draft(s). Pending decisions:
     3. Report: ada-cms-pages/memory-merge-proposals. Resolve via memory-merge-proposals.py --resolve <id> --action
     …'
+- at: 2026-11-18 23:04
+  from: devin
+  text: 'raised request done-gate-pick-one-real-merge-proposal-a-807b17: DONE-gate: pick one real merge proposal
+    and resolve it on idc03 (human review is the last DONE WHEN item). 3 proposals n'
 action:
   type: dispatch
   status: done
@@ -160,3 +164,19 @@ auto_close:
   by: merge-sweep
   at: 2026-11-18 22:12
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261118-213852-context-ada-memory-pipeline-to.md
+requests:
+- id: done-gate-pick-one-real-merge-proposal-a-807b17
+  ask: 'DONE-gate: pick one real merge proposal and resolve it on idc03 (human review is the last DONE WHEN item).
+    3 proposals now live in idc03 state + report ada-cms-pages/memory-merge-proposals. On inspection all 3 are restatements
+    (one is a Thai translation of the canonical) — nothing worth merging; recommended: reject merge-a6b85c92 (draft
+    "User''s TV is named TONY-TV" adds nothing to the richer canonical). Run on idc03: python3 scripts/ada/memory-merge-proposals.py
+    --resolve <id> --action reject|supersede|update-in-place'
+  status: open
+  at: 2026-11-18 23:04
+  from: devin
+  options:
+  - ★ reject merge-a6b85c92 — restatement, exercises reject path
+  - reject a different one (say which)
+  - supersede/update one anyway (say which + id)
+  - let Ada review instead
+  suggested: ★ reject merge-a6b85c92 — restatement, exercises reject path
