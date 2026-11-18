@@ -1,0 +1,30 @@
+id: mddb-fail-fast-writes-when-embed-provide-c55f11
+title: 'mddb: fail-fast writes when embed provider circuit is open (queue-full 30s timeouts break producer jobs)'
+column: backlog
+updated: 2026-11-18 16:18
+priority: high
+tags:
+- mddb
+- embedding
+- reliability
+spec: 'INCIDENT 2026-11-18: gemini-ollama-proxy embed chain fully exhausted (Gemini 429, OR key total-limit 403,
+  paid hourly-cap). mddb-cms embed queue pinned at 4000, droppedTotal>9300. Every /v1/add waits ~30s on the embed
+  queue then the HTTP write times out -> ''Remote end closed connection'' -> kanban-sync fails every 15min, chaba-kanban-brief
+  fails, report producers went stale fleet-wide. GOAL: when the embed provider circuit is open or the queue is saturated,
+  write endpoints must not block callers for the full queue-wait + write-timeout window. Acceptable shapes (pick
+  simplest consistent with codebase): (a) /v1/add accepts the doc with vector deferred (queue-or-drop with a ''needs-reindex''
+  marker) and returns 200 promptly; (b) fail fast 503/429 + Retry-After so clients back off instead of dying at
+  30s; (c) per-request embed bypass flag for callers that don''t need vectors. ALSO: surface embed queue depth +
+  dropped count + provider circuit state in /health or vector-stats so monitors can see this BEFORE writes start
+  timing out. Add a runbook note (docs/kb or card comms) for post-recovery /v1/vector-reindex of collections that
+  dropped vectors. Constraints: repo=mddb-fork; code+tests only, NO production deploy; preserve current behavior
+  when embed path is healthy; keep vector-space correctness (never silently switch embedding model/dimension).'
+action:
+  type: dispatch
+  repo: mddb-fork
+  executor: devin
+ref: MEM-0192
+comms:
+- at: 2026-11-18 16:18
+  from: tony
+  text: card captured via board-api
