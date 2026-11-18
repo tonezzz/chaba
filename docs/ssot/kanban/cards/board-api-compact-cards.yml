@@ -19,20 +19,17 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
   sweep:
     failed_noted: 2026-11-17 22:25
     stale_running: 2026-11-18 08:40
     session_gone: 2026-11-18 08:40
-  last_failure: 'exit=1 scripts-board-board-api-py-.service: Failed with result ''exit-code''. | devin-task-20261117-221304-in-scripts-board-board-api-py-.service:
-    Consumed 1.813s CPU time over 7min 23.278s wall clock time, 85.7M memory peak, 29.6M memory swap peak.'
-  attempts: 1
-  runner: idc02
-  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) est coverage for the projection
-    paths. Let me find the right insertion point:Now restart the test server with the new code and run the selftest:
-    | devin-task-20261118-083559-in-scripts-board-board-api-py-.service: Consumed'
+  last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) est coverage for
+    the projection paths. Let me find the right insertion point:Now restart the test server with the new code and
+    run the selftest: | devin-task-20261118-083559-in-scripts-board-board-api-py-.service: Consumed'
+  attempts: 2
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -114,3 +111,6 @@ comms:
   text: Second infra failure on idc02 (unit not-found, work lost). Card stays queued-ish; will retry once idc02
     runner-agent is verified. If it fails a third time I'll implement directly — the fields= projection semantics
     need verifying first anyway.
+- at: 2026-11-18 14:41
+  from: devin
+  text: retry requested
