@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-17 22:24
+updated: 2026-11-18 08:42
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -63,3 +63,10 @@ comms:
   text: 'merge-sweep: devin-task-20261117-221256-in-ada-voice-opencode-ada-mcp- failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-221256-in-ada-voice-opencode-ada-mcp- by
     hand.'
+- at: 2026-11-18 08:42
+  from: devin
+  text: 'rescued by Devin after runner died on free-model rate limit (work was complete but uncommitted in dispatch
+    worktree). Verified: BRIDGE_VERSION resolution (env>VERSION>git describe>content hash), bridge{} envelope on
+    every tool response, bridge_version in calls.jsonl, ada_bridge_info tool (26 tools), startup audit+stderr log,
+    16 tests pass. Merged aa31f29 to main, deployed idc03 (1760 pass), DevNest synced e91645a, live check: version=git-d073d8d-dirty
+    tools_count=26.'
