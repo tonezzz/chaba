@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: review
-updated: 2026-11-18 16:57
+updated: 2026-11-18 16:58
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -171,6 +171,10 @@ comms:
 - at: 2026-11-18 16:57
   from: chaba
   text: auto-merged 1d7d1d7b (dispatch/20261118-164347-goal-bulk-index-embedding-work) → origin/master
+- at: 2026-11-18 16:58
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-164347-goal-bulk-index-embedding-work,
+    branch dispatch/20261118-164347-goal-bulk-index-embedding-work'
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
