@@ -2,7 +2,7 @@ id: runner-tooling-drift-recurs-installed-ru-3aad1e
 title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
   but nothing redeploys
 column: doing
-updated: 2026-11-18 20:21
+updated: 2026-11-18 20:31
 priority: medium
 tags:
 - dispatch
@@ -43,6 +43,13 @@ comms:
   from: devin
   text: dispatch started on idc02 — investigating drift check + chaba-repo-sync to implement self-healing install
     sync (option a)
+- at: 2026-11-18 20:31
+  from: devin
+  text: 'DONE (option a) on dispatch branch: new scripts/devin/sync-runner-tools.sh runs at git-safe-pull tail every
+    tick — canonical checkouts converge ~/.local/bin/runner-agent, devin-dispatch, claude-dispatch, prune, queue,
+    dispatch_repos.py (never-downgrade mtime guard, syntax gate, provisioning-evidence for missing dests; worktrees
+    guarded out). runner-fleet-health now audits $DISPATCH_DIR/repos.conf vs canonical — per-host diffs are notes,
+    missing conf on a dispatch host noted. Live probe on idc02 '
 action:
   type: dispatch
   status: running
