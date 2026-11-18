@@ -31,9 +31,14 @@ design:
     reject stamps merge_review=rejected (never re-proposed).
     Reconcile pass each run adopts externally-applied resolutions."
   metrics: "state ~/.cache/ada-memory-merge-proposals.json — per-pair
-    lifecycle + last 52 run rows; rolling 90d acceptance rate in every
-    report/comment. >80% for ~4wk gates a possible auto-apply follow-up
-    card — NOT this one."
+    lifecycle + last 52 run rows (each row carries search_errors);
+    rolling 90d acceptance rate in every report/comment. >80% for ~4wk
+    gates a possible auto-apply follow-up card — NOT this one."
+  degraded_embed: "per-collection vector-search failures are counted
+    (stats.search_errors) and surfaced in the report block, run metric,
+    card comment and run log — an embed-capped run reports 'lower bound',
+    not a false 'no candidates'. Footer-only/empty drafts skip the search
+    call entirely."
   non_goals: "no LLM rewriting (draft quoted verbatim), no writes to
     read-only banks or from dev instances, no auto-apply / bulk merge /
     draft deletion in the propose path."
@@ -44,9 +49,10 @@ schedule:
     the hand-installed ada-memory-distill.timer (Sun 09:45) in the
     Sunday ada-memory pipeline. No LLM env needed (deterministic)."
   rendered: "systemd/generated/idc03/ada-memory-merge-proposals.{service,timer}"
-  install: "render-jobs.py --host idc03 --ids ada-memory-merge-proposals
-    --install on idc03 after merge; declared in ssot.audit.hosts.yml
-    idc03 timer census."
+  install: "DONE 2026-11-18 ~22:35+07 — render-jobs.py --host idc03 --ids
+    ada-memory-merge-proposals --install on idc03; systemctl --user
+    list-timers shows next run Sun 2026-11-22 10:30. Declared in
+    ssot.audit.hosts.yml idc03 timer census."
 
 verify:
   unit: "tests/ada_memory/test_memory_scripts.py TestMergeProposals —
@@ -83,9 +89,10 @@ ops_notes:
     anything."
 
 followups:
-  - "install the timer on idc03 post-merge: render-jobs.py --host idc03
-    --ids ada-memory-merge-proposals --install"
+  - "timer INSTALLED on idc03 2026-11-18 (see schedule.install) —
+    first scheduled fire Sun 2026-11-22 10:30"
   - "first real proposals need fresh extract drafts — verify the
-    inflow (see ops_notes.draft_inflow)"
+    inflow (see ops_notes.draft_inflow); a one-off --draft-days 60
+    catch-up run on idc03 surfaces the ~480-draft backlog for review"
   - "auto-apply follow-up card only if 90d acceptance >80% for ~4wk
     (per card spec — preference updates first)"
