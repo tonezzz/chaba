@@ -1,6 +1,6 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
-column: doing
+column: done
 updated: 2026-11-18 16:50
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
@@ -154,6 +154,9 @@ comms:
     the project default was moved to opencode/iceman-free. Migration to idc02 (OPS-0187) carried the same secrets:
     openchamber.service has EnvironmentFile=%h/.config/secrets/litellm-ada.env, managed opencode env contains LITELLM_KEY,
     and a real litellm/gemini reply was verified through t'
+- at: 2026-11-18 16:50
+  from: tony
+  text: closed by tony
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
@@ -170,7 +173,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-omen
@@ -179,4 +182,3 @@ action:
     wall clock time, 1.4G memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
-awaiting_action: true
