@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ha-fabric-cms
 title: Timer ha-fabric-cms on tony-omen failing
 column: done
-updated: 2026-11-18 16:00
+updated: 2026-11-18 17:29
 priority: high
 tags:
 - timer-alert
@@ -47,6 +47,10 @@ comms:
 - at: 2026-11-18 16:00
   from: tony
   text: closed by tony
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `ha-fabric-cms.service` on host `tony-omen` which resulted in an exit-code on 11-16
   00:04. Inspect the systemd user journal using `journalctl --user -u ha-fabric-cms.service` and review CMS `timer-timeline-tony-omen`.
   The done-condition is verified when the root cause of the service failure is identified and documented in the
