@@ -1,7 +1,7 @@
 id: edge-upstream-dead-port-audit
 title: Audit edge upstreams for dead-port drift (serve/caddy/systemd)
-column: doing
-updated: 2026-11-18 17:52
+column: review
+updated: 2026-11-18 17:55
 brief: '2026-11-18 incident chain: three infra faults in ~35min — managed opencode crash (16:31), caddy-edge container
   restart (17:05), and a stale tailscale serve entry (:8125 -> dead 127.0.0.1:8125 while HA lives on :8123) that
   502d all of ada-ha.surf-thailand.com including the ada-ocb iframe. None were caught by existing audits. Build
@@ -54,10 +54,14 @@ action:
   host: idc02
   labels:
   - push:chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  result: 'exit=0 lifecycle trail in `docs/ssot/jobs/infrastructure/`, and a board comment posted with the findings.
+    | devin-task-20261118-173925-build-scripts-audit-edge-upstr.service: Consumed 1min 30.685s CPU time, 373.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: AUD-0197
 comms:
 - at: 2026-11-18 17:38
@@ -90,3 +94,9 @@ comms:
     camwall-edge). Exit 1 on dead|degraded. Live sweep from idc02: 118 ok / 3 dead / 2 degraded / 1 skipped — would
     have caught the :8125 bug at BOTH layers. New real findings flagged (not fixed — owner call): (1) omen serve
     :8444 -> dead :9005 (ha-live inactive; also 502 via idc'
+- at: 2026-11-18 17:55
+  from: idc02
+  text: 'finished (ok): exit=0 lifecycle trail in `docs/ssot/jobs/infrastructure/`, and a board comment posted with
+    the findings. | devin-task-2'
+review_kind: verify
+claim: {}
