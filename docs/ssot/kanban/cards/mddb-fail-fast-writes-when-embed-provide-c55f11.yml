@@ -1,7 +1,7 @@
 id: mddb-fail-fast-writes-when-embed-provide-c55f11
 title: 'mddb: fail-fast writes when embed provider circuit is open (queue-full 30s timeouts break producer jobs)'
 column: doing
-updated: 2026-11-18 16:45
+updated: 2026-11-18 17:00
 priority: high
 tags:
 - mddb
@@ -56,3 +56,10 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:mddb-fork label and `git push --dry-run` fails in /home/tony/CascadeProjects/mddb-fork
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 17:00
+  from: devin
+  text: 'Done (code+tests, no deploy). Shape (a)+(c): new provider circuit breaker on EmbeddingWorker (MDDB_EMBEDDING_CIRCUIT_FAILURES=5,
+    CIRCUIT_COOLDOWN=30s, 0 disables). While open, Enqueue drops instantly — no QUEUE_WAIT — worker drains backlog
+    without calling the dead provider, docs still stored. /v1/add returns X-MDDB-Embedding: deferred (needs reindex);
+    new skipEmbedding + add-batch skipEmbeddings bypass flag. /health gains embedding{queueDepth,dropped,circuitOpen,retryAfter};
+    /v1/vector-stats que'
