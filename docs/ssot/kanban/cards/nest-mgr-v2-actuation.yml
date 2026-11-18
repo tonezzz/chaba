@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-18 21:03
+updated: 2026-11-18 21:07
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -132,6 +132,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 21:07
+  from: devin
+  text: 'dispatch picked up (tony-omen). Implementing Phase 0: mode machinery (monitor/recommend/guarded), restart
+    gates + circuits + actions[] audit in nest-mgr.py, device-telemetry svc attrs, spec doc. Zero execution — recommend
+    is the ceiling this card ships.'
 action:
   type: dispatch
   status: running
