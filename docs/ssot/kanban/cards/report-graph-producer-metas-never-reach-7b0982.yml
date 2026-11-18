@@ -1,0 +1,30 @@
+id: report-graph-producer-metas-never-reach-7b0982
+title: 'report-graph: producer metas never reach con01 renderer — L3 report shows ~20 false ''missing'' nodes'
+column: backlog
+updated: 2026-11-18 15:53
+priority: high
+tags:
+- reports
+- ops
+- con01
+spec: 'ROOT CAUSE (verified 2026-11-18): chaba-system-report renders on con01 (ssot.jobs.yml host:con01, daily 06:45
+  CET) but reports/* is gitignored and producer metas stay on producer hosts. con01''s checkout had only 12 local
+  metas -> ~20 nodes resolved ''missing'' in the served system-report.yml on idc02. Manual fix proven: rsync meta*.yml
+  from tony-dell/chaba, chaba-tony-dell, idc02, idc03 checkouts + ~/var/chaba/health/meta.yml into con01:~/CascadeProjects/chaba/reports/
+  -> missing dropped 20->1 (fleet-jobs-report, genuinely never produced), report re-rendered and shipped to idc02.
+  DURABLE FIX OPTIONS: (a) add a meta-pull step to the con01 chaba-system-report exec (rsync meta*.yml + var/chaba/health/meta.yml
+  from producer hosts before report-system.py) — smallest change, single point; (b) repoint run-and-ship.sh SERVED
+  + --push-meta targets from tony-dell:chaba-tony-dell to con01 checkout — but only covers audit producers, not
+  kanban/host-loads/nest/daily-brief which have no ship step at all; (c) move render to idc02 (freshest metas, web
+  origin, report-api already there) — but idc02 lacks tony-dell-produced metas (health-monitor, overnight-assessment,
+  daily-brief) so still needs ship-to-idc02. Recommend (a) now + audit which producers lack any ship/push-meta step.
+  SECOND ISSUE surfaced: after metas arrived, 23 nodes show genuinely STALE (last_run ~2026-10-23) — nest-lanes/*,
+  nest-brains/*, nest-bench/*, chaba-nest, daily-brief, disk-trend, kanban, audit-suite, memory-suite, fleet, systemwide-assessment
+  producers appear dead/moved for ~4 weeks. Separate investigation needed: are those timers disabled, moved, or
+  failing? Also: overnight-assessment=error since Oct 10, model-bench=error, fleet-jobs-report has no producer output
+  at all.'
+ref: OPS-0190
+comms:
+- at: 2026-11-18 15:53
+  from: tony
+  text: card captured via board-api
