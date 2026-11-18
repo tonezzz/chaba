@@ -119,6 +119,9 @@ comms:
 - at: 2026-11-18 16:43
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.12 > 0.85)'
+- at: 2026-11-18 16:43
+  from: idc02
+  text: claimed
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
@@ -138,7 +141,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
   result: exit=1  status=1/FAILURE | @ IM_CONFIG_ENTRY='profile' XDG_SESSION_TYPE ='' UID=1000 PID=1204668 PPID=1202079
@@ -146,3 +149,4 @@ action:
     <- 'UNDEFINED'
   sweep:
     failed_noted: 2026-11-17 23:40
+  runner: idc02
