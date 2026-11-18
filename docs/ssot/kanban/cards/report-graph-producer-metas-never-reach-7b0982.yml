@@ -1,7 +1,7 @@
 id: report-graph-producer-metas-never-reach-7b0982
 title: 'report-graph: producer metas never reach con01 renderer — L3 report shows ~20 false ''missing'' nodes'
-column: doing
-updated: 2026-11-18 16:56
+column: review
+updated: 2026-11-18 16:57
 priority: high
 tags:
 - reports
@@ -59,11 +59,20 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261118-162329-root-cause-verified-2026-11-18 on tony-omen still dirty
     — 7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-18 16:57
+  from: tony-omen
+  text: 'finished (ok): exit=0 ome written to `dispatch-outcome-20261118-162329-root-cause-verified-2026-11-18.md`.
+    | devin-task-20261118-162329'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-omen
   sweep:
     stale_running: 2026-11-18 16:56
+    dirty: 7
+  result: 'exit=0 ome written to `dispatch-outcome-20261118-162329-root-cause-verified-2026-11-18.md`. | devin-task-20261118-162329-root-cause-verified-2026-11-18.service:
+    Consumed 1min 49.624s CPU time over 23min 47.084s wall clock time, 955.6M memory peak.'
+review_kind: verify
+claim: {}
