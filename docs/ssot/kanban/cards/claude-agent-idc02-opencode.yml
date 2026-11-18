@@ -1,7 +1,7 @@
 id: claude-agent-idc02-opencode
 title: Wire claude-agent into idc02 bare opencode serve
 column: done
-updated: 2026-11-18 16:50
+updated: 2026-11-18 17:30
 brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
   verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
   provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
@@ -130,6 +130,10 @@ comms:
 - at: 2026-11-18 16:50
   from: tony
   text: closed by tony
+- at: 2026-11-18 17:30
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: idc02-opencode-4096-2-litellm-lane-podma-6bb28b
   ask: idc02 opencode :4096 = 2 LiteLLM-lane podman workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection
