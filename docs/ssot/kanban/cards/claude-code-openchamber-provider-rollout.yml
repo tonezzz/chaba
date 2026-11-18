@@ -1,7 +1,7 @@
 id: claude-code-openchamber-provider-rollout
 title: Standardize claude-agent provider wiring across OpenChamber hosts
 column: backlog
-updated: 2026-11-18 12:42
+updated: 2026-11-18 13:14
 brief: OpenCode 2.2.3+ has a native claude-agent provider that runs the local Claude Code binary via the Agent SDK
   — subscription auth, no API key, separate lane from LiteLLM. Wired and verified on tony-dell ada-ocb 2026-11-18;
   needs to become the repeatable standard for every OpenChamber host.
@@ -42,6 +42,9 @@ action:
   host: tony-dell
   labels:
   - docs
+  status: queued
+  lane: codemod
+  lane_source: kw
 ref: OPS-0184
 comms:
 - at: 2026-11-18 12:39
@@ -71,4 +74,14 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''docs''] — fix
     action.labels/host pins or teach a runner the capability'
+- at: 2026-11-18 13:14
+  from: chaba
+  text: classified as codemod (kw:script conf 1.00)
+- at: 2026-11-18 13:14
+  from: tony
+  text: queued for processing
+- at: 2026-11-18 13:14
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — tony-dell lacks labels [''docs'']. Fix action.labels/host
+    pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
 awaiting_action: true
