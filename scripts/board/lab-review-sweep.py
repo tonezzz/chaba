@@ -97,7 +97,7 @@ def main(cards=None) -> int:
         # still sits in lab; promote/retire moves it out, extend re-dates).
         decided = False
         for req in card.get("requests") or []:
-            if (req.get("id") == "lab-review"
+            if (str(req.get("id", "")).startswith("lab-review")
                     and req.get("status") == "answered"
                     and not req.get("executed")):
                 if execute_decision(card, req):
@@ -121,10 +121,14 @@ def main(cards=None) -> int:
 
         changed = False
         reqs = card.setdefault("requests", [])
-        if not any(r.get("id") == "lab-review" and r.get("status") == "open"
-                   for r in reqs):
+        if not any(str(r.get("id", "")).startswith("lab-review")
+                   and r.get("status") == "open" for r in reqs):
+            # unique id per cycle (lab-review, lab-review-2, ...) so a
+            # fresh cycle never collides with an answered earlier one
+            n = sum(1 for r in reqs
+                    if str(r.get("id", "")).startswith("lab-review"))
             reqs.append({
-                "id": "lab-review",
+                "id": "lab-review" if n == 0 else f"lab-review-{n + 1}",
                 "ask": (f"Lab review_by {review_by} has passed with no "
                         "outcome — promote, retire, or extend?"),
                 "status": "open",

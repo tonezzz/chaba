@@ -1351,7 +1351,10 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 break
     if not answer:
         raise ValueError("answer required")
-    for r in _reqs(card):
+    # duplicate ids (legacy cycles): prefer the open entry over answered ones
+    _matches = [r for r in _reqs(card) if r.get("id") == rid]
+    _matches.sort(key=lambda r: r.get("status") in ("answered", "closed"))
+    for r in _matches[:1]:
         if r.get("id") == rid:
             verb = "answered"
             if r.get("status") == "answered":
