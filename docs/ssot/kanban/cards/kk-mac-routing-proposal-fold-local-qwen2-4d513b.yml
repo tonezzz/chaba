@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: review
-updated: 2026-11-18 18:18
+updated: 2026-11-18 18:42
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -390,13 +390,19 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:41
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-18 18:42
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: done
+  status: running
   lane: devin
-  runner: tony-dell
   result: 'exit=0 ontainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261113-202232-card-judgment-eval-done-2026-1.service:
     Consumed 4min 6.693s CPU time over 8min 57.753s wall clock time, 1.1G memory peak, 89.8M memory swap peak.'
   verified: false
@@ -404,6 +410,9 @@ action:
     stale_running: 2026-11-13 20:40
     dirty: 1
     session_gone: 2026-11-13 22:55
+    zero_commit: 2026-11-18 18:41
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
+  runner: tony-omen
 requests:
 - id: approve-gateway-leg-placement-proposal-i-9310b0
   ask: 'Approve gateway leg placement? Proposal in docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml.
@@ -631,4 +640,3 @@ requests:
   suggested: let devin resolve the conflict and land it ★
 review_kind: verify
 claim: {}
-awaiting_action: true
