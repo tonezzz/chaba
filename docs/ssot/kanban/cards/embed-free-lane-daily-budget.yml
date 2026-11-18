@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: doing
-updated: 2026-11-18 16:42
+updated: 2026-11-18 16:43
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -109,6 +109,10 @@ comms:
 - at: 2026-11-18 16:42
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.42 > 0.85)'
+- at: 2026-11-18 16:43
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
