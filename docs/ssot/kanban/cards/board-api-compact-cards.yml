@@ -19,7 +19,7 @@ spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -27,6 +27,7 @@ action:
   last_failure: 'exit=1 scripts-board-board-api-py-.service: Failed with result ''exit-code''. | devin-task-20261117-221304-in-scripts-board-board-api-py-.service:
     Consumed 1.813s CPU time over 7min 23.278s wall clock time, 85.7M memory peak, 29.6M memory swap peak.'
   attempts: 1
+  runner: idc02
 ref: KNB-0176
 comms:
 - at: 2026-11-17 22:11
@@ -74,3 +75,6 @@ comms:
 - at: 2026-11-18 08:35
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.42 > 1.0)'
+- at: 2026-11-18 08:35
+  from: idc02
+  text: claimed
