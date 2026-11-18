@@ -1,0 +1,61 @@
+id: edge-upstream-dead-port-audit
+title: Audit edge upstreams for dead-port drift (serve/caddy/systemd)
+column: backlog
+updated: 2026-11-18 17:38
+brief: '2026-11-18 incident chain: three infra faults in ~35min — managed opencode crash (16:31), caddy-edge container
+  restart (17:05), and a stale tailscale serve entry (:8125 -> dead 127.0.0.1:8125 while HA lives on :8123) that
+  502d all of ada-ha.surf-thailand.com including the ada-ocb iframe. None were caught by existing audits. Build
+  a drift detector for edge upstreams.'
+priority: medium
+program: devnest
+tags:
+- audit
+- edge
+- tailscale
+- caddy
+- drift
+- incident-2026-11-18
+spec: 'Build scripts/audit-edge-upstreams.py (chaba repo) + wire into existing audit cadence.
+
+
+  INCIDENT (verified 2026-11-18): tony-omen tailscale serve :8125 proxied to 127.0.0.1:8125 (dead) while tony-ha
+  container serves :8123. caddy-edge on idc02 reverse_proxy https://tony-omen.taila0626a.ts.net:8125 -> 502 -> entire
+  ada-ha.surf-thailand.com down. Fixed by `tailscale serve --bg --https=8125 http://127.0.0.1:8123`.
+
+
+  CHECKS TO IMPLEMENT:
+
+  1. tailscale serve drift: parse `tailscale serve status --json` per host; for each Web handler proxy target, verify
+  the local port actually listens (or resolves for remote targets). Flag proxy->dead-port.
+
+  2. caddy-edge upstreams: parse ~/.config/caddy/Caddyfile reverse_proxy targets on idc02; resolve each to a real
+  endpoint and probe it (http(s) HEAD/GET expect non-5xx). Flag dead upstreams per vhost.
+
+  3. Optionally: systemd unit ExecStart health — skip if scope creep; keep to edges.
+
+  4. Output: per-host report {host, surface, upstream, status, evidence}; nonzero exit on any dead upstream; suitable
+  for timer/health-check integration.
+
+
+  FLEET: run across tony-omen, tony-dell, idc02, idc03, mn01 via ssh (BatchMode). Known-good baseline to encode:
+  omen :8125->8123 (just fixed), idc02 caddy vhosts. Also grep for OTHER stale serve entries discovered during the
+  audit (e.g. :8444->9005 unverified).
+
+
+  DELIVERABLE: script + docs/kb runbook entry + optionally ssot.health entry so mcp-health surfaces it. Verify by
+  running against the fleet and confirming it would have caught todays :8125 bug (test: temporarily point a scratch
+  serve entry at a dead port on a test port? — safer: unit-test the parser + run live read-only).
+
+
+  RELATED: docs/kb/host-hygiene-rules.md, scripts/audit-hosts.py (existing host audit — extend or sibling).'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  labels:
+  - push:chaba
+ref: AUD-0197
+comms:
+- at: 2026-11-18 17:38
+  from: devin
+  text: card captured via board-api
