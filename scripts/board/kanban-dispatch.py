@@ -121,6 +121,58 @@ JEV_LANE = os.environ.get("JEV_LANE", "0") == "1"
 PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
 _PUSH_PROBE_CACHE: dict = {}
 
+# Provider rate-limit claim cooldown (dispatch-runner-resilience — the
+# served-side twin of runner-agent's): a devin-task unit whose journal
+# shows a provider 429 arms a host-local cooldown so the NEXT claim
+# doesn't burn its attempts into the same wall. The signature table is
+# dr.rate_limit_hit; detection runs in the phase-A0 survey (journalctl
+# stays OUT of the card flock — the 2026-11-17 convoy rule).
+RATELIMIT_FILE = Path(os.environ.get(
+    "KANBAN_RATELIMIT_FILE",
+    f"/tmp/kanban-dispatch-ratelimit-{os.getuid()}-{HOST}.json"))
+RATELIMIT_COOLDOWN_S = int(os.environ.get(
+    "KANBAN_RATELIMIT_COOLDOWN_S", "1800"))
+
+
+def ratelimit_record(unit: str, sig: str) -> None:
+    try:
+        log = json.loads(RATELIMIT_FILE.read_text())
+    except Exception:
+        log = {}
+    log.update(until=time.time() + RATELIMIT_COOLDOWN_S,
+               hits=int(log.get("hits") or 0) + 1, last=unit, sig=sig,
+               at=int(time.time()))
+    try:
+        RATELIMIT_FILE.write_text(json.dumps(log))
+    except OSError:
+        pass
+
+
+def ratelimit_reason() -> str:
+    """'' when claims may proceed, else the active cooldown reason."""
+    try:
+        log = json.loads(RATELIMIT_FILE.read_text())
+    except Exception:
+        return ""
+    until = float(log.get("until") or 0)
+    if time.time() >= until:
+        return ""
+    mins = max(1, int((until - time.time()) / 60))
+    return (f"provider rate-limited ({log.get('sig') or '?'} on "
+            f"{log.get('last') or '?'}) — claims held ~{mins}m")
+
+
+def ratelimit_scan_task(tid: str) -> None:
+    """Survey-side scan of a finished task's journal for provider
+    throttle signatures — runs lock-free, so the journalctl cost never
+    extends the card flock."""
+    tail = (sh(["journalctl", "--user", "-u", f"devin-task-{tid}",
+                "-n", "80", "--no-pager", "-o", "cat"],
+               timeout=15).stdout or "")[-8000:]
+    sig = dr.rate_limit_hit(tail)
+    if sig:
+        ratelimit_record(f"devin-task-{tid}", sig)
+
 # Hands-off waiting-card gate (KNB-0928,
 # docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards):
 # queue EXECUTION is gated separately from kanban-act's auto-close.
@@ -1010,6 +1062,10 @@ def main() -> int:
         can_claim = False
         print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
               " — not claiming")
+    rl = ratelimit_reason()
+    if rl:
+        can_claim = False
+        print(f"{rl} — not claiming")
     # Declared fleet claim surface for the unclaimable flag — parsed
     # once per pass; {} when the SSOT is unreadable (never flags).
     try:
@@ -1034,6 +1090,15 @@ def main() -> int:
         _ex = (dr.unit_exit_evidence(_tid)
                if _tid and _st not in ("active", "activating")
                else (None, "not surveyed"))
+        # rate-limit survey (dispatch-runner-resilience): a unit that
+        # just died on a provider 429 arms the claim cooldown — lock-
+        # free here, never inside the card flock.
+        if _tid and _st not in ("active", "activating") \
+                and _ex[0] is not True:
+            try:
+                ratelimit_scan_task(_tid)
+            except Exception:
+                pass  # a journal hiccup must not break the survey
         # session_end_notes git probes — only needed on the no-automerge
         # finish path (merge_pending_one surveys its own)
         _sess = session_probe(_c) \

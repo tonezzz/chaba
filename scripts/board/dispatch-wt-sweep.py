@@ -21,6 +21,16 @@ the evidence check above is what makes that safe. The session branch is
 deleted with -D after the tree goes (unmerged by definition — the merged
 case is gc_worktree's job, which runs earlier in the same lifecycle).
 
+Salvage-before-reap (card dispatch-runner-resilience): the evidence dir
+preserves the transcript, not git history — a failed run's COMMITTED
+work sits only on the local dispatch branch, and -D deletes it forever.
+Before reaping, the worktree head is checked against origin
+(remote-tracking refs after a fresh fetch): commits already on origin
+reap as before; anything else is pushed to a recoverable
+`wip/dispatch/<task-id>` ref first and the pushed ref is logged to the
+card's comms. When origin can't be reached or the push fails, the tree
+is KEPT — an unproven head is never silently lost.
+
 Usage:
   dispatch-wt-sweep.py            # dry-run report
   dispatch-wt-sweep.py --apply    # actually reap
@@ -30,11 +40,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 
@@ -72,7 +84,71 @@ def repo_root(wt: Path) -> Path | None:
 
 def head_branch(wt: Path) -> str:
     r = sh(["git", "-C", str(wt), "rev-parse", "--abbrev-ref", "HEAD"])
+    out = r.stdout.strip() if r.returncode == 0 else ""
+    return "" if out == "HEAD" else out  # detached tree — no branch
+
+
+def head_sha(wt: Path) -> str:
+    r = sh(["git", "-C", str(wt), "rev-parse", "HEAD"])
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def on_origin(root: Path, sha: str) -> bool:
+    """Every commit at sha reachable from an origin remote-tracking ref.
+    Fetch first so the view is fresh; a failed fetch still leaves the
+    last-fetched refs, which are proof enough — a commit that WAS on
+    origin is still there (wip/base refs are never force-rewound)."""
+    sh(["git", "-C", str(root), "fetch", "-q", "--prune", "origin"],
+       timeout=90)
+    r = sh(["git", "-C", str(root), "branch", "-r", "--contains", sha])
+    return any(ln.strip().startswith("origin/")
+               for ln in r.stdout.splitlines())
+
+
+def salvage_ref(tid: str) -> str:
+    return f"refs/heads/wip/dispatch/{tid}"
+
+
+def salvage_push(root: Path, sha: str, tid: str) -> str:
+    """Push the doomed head to the wip/ salvage namespace on origin —
+    returns the pushed ref, '' when origin refused/unreachable. The
+    forced update is safe: the namespace is salvage-only and the worst
+    case rewrites an older salvage of the same task."""
+    ref = salvage_ref(tid)
+    r = sh(["git", "-C", str(root), "push", "-q", "origin",
+            f"+{sha}:{ref}"], timeout=120)
+    return ref if r.returncode == 0 else ""
+
+
+def card_for_task(task_root: Path | None, tid: str) -> str:
+    d = task_root or (Path.home()
+                      / ".local/share/devin-dispatch/tasks")
+    try:
+        meta = json.loads((d / tid / "meta.json").read_text())
+        return str(meta.get("card") or "")
+    except Exception:
+        return ""
+
+
+def note_salvage(cid: str, text: str) -> None:
+    """Best-effort card comms for a salvage push — a dead api never
+    blocks the reap."""
+    if not cid:
+        return
+    api = os.environ.get(
+        "BOARD_API",
+        os.environ.get(
+            "RUNNER_API",
+            "https://idc03.taila0626a.ts.net:10000")).rstrip("/")
+    try:
+        req = urllib.request.Request(
+            f"{api}/comment",
+            data=json.dumps({"id": cid, "from": "chaba",
+                             "text": text[:500]}).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10).read()
+    except Exception:
+        pass
 
 
 def sweep(base: Path, days: float, task_root: Path, apply: bool) -> int:
@@ -105,9 +181,31 @@ def sweep(base: Path, days: float, task_root: Path, apply: bool) -> int:
         if root is None:
             print(f"  SKIP  {tag} — not a git worktree (unreadable)")
             continue
-        if not apply:
-            print(f"  REAP  {tag} — dry-run (evidence in {ev})")
+        # Salvage gate (dispatch-runner-resilience): committed-but-
+        # unpushed work must land on origin before the -D delete below
+        # can take it. unpushed=None means 'can't even read HEAD' — the
+        # same non-git case the old code reaped blindly; keep it.
+        sha = head_sha(wt)
+        unpushed = None if not sha else not on_origin(root, sha)
+        if unpushed is None:
+            print(f"  KEEP  {tag} — HEAD unreadable; not reaping blind")
             continue
+        if not apply:
+            print(f"  REAP  {tag} — dry-run (evidence in {ev})"
+                  + (f"; would salvage-push {sha[:8]} to "
+                     f"{salvage_ref(tid)}" if unpushed else ""))
+            continue
+        if unpushed:
+            ref = salvage_push(root, sha, tid)
+            if not ref:
+                print(f"  KEEP  {tag} — head {sha[:8]} not on origin "
+                      "and salvage push failed (origin unreachable?)")
+                continue
+            note = (f"dispatch-wt-sweep salvaged unpushed commits "
+                    f"before reap: {wt.name} head {sha[:8]} → "
+                    f"origin {ref}")
+            print(f"  PUSH  {tag} — {note}")
+            note_salvage(card_for_task(task_root, tid), note)
 
         branch = head_branch(wt)
         r = sh(["git", "-C", str(root), "worktree", "remove", "--force",
