@@ -2,7 +2,7 @@ id: runner-tooling-drift-recurs-installed-ru-3aad1e
 title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
   but nothing redeploys
 column: review
-updated: 2026-11-18 20:41
+updated: 2026-11-18 21:13
 priority: medium
 tags:
 - dispatch
@@ -76,6 +76,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261118-202035-evidence-2026-11-18-dispatch-d on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-18 21:13
+  from: devin
+  text: 'Merged to chaba origin/master (salvage: auto-merge rejected non-ff, branch was on origin but worktree GC''d
+    — fetched + merged). sync-runner-tools.sh converges ~/.local/bin snapshots on every git-safe-pull with never-downgrade/never-bootstrap
+    guards. Takes effect per-host on next chaba-repo-sync tick.'
 action:
   type: dispatch
   status: done
