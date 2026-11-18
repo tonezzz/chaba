@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval
 title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
 column: doing
-updated: 2026-11-18 09:10
+updated: 2026-11-18 10:02
 brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
   eval set that asserts answer quality end-to-end.
 priority: high
@@ -102,6 +102,12 @@ comms:
     deny) exercising now. Findings so far: deployed workspace bridge is stale (21 vs 25 tools — no ada_ssot_get/ada_context_pack);
     opencode v2.2.6 needs agent tools:false (not permission map) to block shell/read builtins; flash-lite wanders
     tools before answering — exactly wh'
+- at: 2026-11-18 10:02
+  from: devin
+  text: 'eval harness done: tests/eval_ocb/cases.yml (10 cases) + scripts/ocb-eval.py (tools/live/replay modes,
+    kind:benchmark MDDB doc). tools mode 10/10 in ~1s. live mode found real issues: flash-lite gets hijacked by
+    matching skills (ssot-search) + ignores ada-control prompt — exactly the wrong-path failure this eval measures.
+    canonical run writing now.'
 action:
   type: dispatch
   status: running
