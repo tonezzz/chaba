@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-18 16:44
+updated: 2026-11-18 16:50
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -246,6 +246,13 @@ comms:
   from: devin
   text: 'resumed: merging prior fix/ada-0478-lane-retention work into dispatch/20261118-164354, then applying pi-pwa=dev
     decision + verify'
+- at: 2026-11-18 16:50
+  from: devin
+  text: 'done on dispatch/20261118-164354 (merge of fix/ada-0478-lane-retention + pi-pwa=dev applied, 22faaba):
+    lane-retention.py + 4 weekly idc03 timers (dev 04:00 < tony 04:15 so pi-pwa journald sids claim dev), ops 30d
+    TTL dual-base, extract supersede-merge. 24/24 tests, 5016/5016 SSOT valid, render-jobs OK. Not pushed/deployed
+    — install: render-jobs.py --host idc03 --ids ada-retention-* --install then dry-run per lane. PR #182 redundant,
+    close after merge.'
 action:
   type: dispatch
   repo: chaba
