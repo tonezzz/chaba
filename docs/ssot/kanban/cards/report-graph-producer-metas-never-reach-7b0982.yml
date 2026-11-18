@@ -1,7 +1,7 @@
 id: report-graph-producer-metas-never-reach-7b0982
 title: 'report-graph: producer metas never reach con01 renderer — L3 report shows ~20 false ''missing'' nodes'
 column: doing
-updated: 2026-11-18 16:25
+updated: 2026-11-18 16:46
 priority: high
 tags:
 - reports
@@ -44,6 +44,13 @@ comms:
   from: devin
   text: '[devin] picked up — implementing option (a): meta-pull step ahead of report-system.py on con01 + producer
     ship-step audit + stale-producer investigation'
+- at: 2026-11-18 16:46
+  from: devin
+  text: '[devin] DONE — option (a) live on con01: pull-report-metas.sh harvests meta*.yml (rsync -u newest-wins,
+    recursive) from idc03 served/exec/kanban-sync + idc02 + tony-dell + tony-omen + mn01 + idc01 checkouts + dell
+    health meta, runs before report-system.py in chaba-system-report exec. Verified end-to-end: served report on
+    idc02 now ok=14 delta=17 error=1 stale=1 untracked=1, missing=0 (was ~20 missing, ~23 stale). Also fixed en
+    route: board-janitor+fleet-jobs-report timers never installed on idc0'
 action:
   type: dispatch
   status: running
