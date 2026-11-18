@@ -1,0 +1,37 @@
+id: agent-tool-registry-federation-ee0089
+title: agent-tool-registry-federation
+column: backlog
+updated: 2026-11-18 20:45
+spec: 'Canonical tool registry + federation layer so any future AI agent inherits the full toolset. Context: three
+  parallel registries exist today (ada-voice tools.d manifest + realtime declarations, devin ~/.config/devin/mcp_config.json
+  + stdio wrappers, ada-voice/opencode/ada_mcp.py 26-tool MCP bridge) with drift risk; ada_mcp.py reimplements board/mddb/wiki
+  logic instead of proxying services; no single catalog of name/schema/policy-tier/backend/transport/allowed-agents.
+
+
+  Phase 1 (this card, chaba repo):
+
+  1. docs/ssot/infrastructure/ssot.tools.yml — canonical registry. Per tool: name (domain-namespaced, e.g. ops.kanban_next
+  not ada_*), JSON-schema-ish signature, policy tier (read|confirmed|owner_only|secondary_allowed — reuse tools.d
+  vocabulary), backend endpoint/service, transport (http|stdio-mcp|native-decl), allowed agent lanes (ada-voice,
+  ada-dev, devin, ada-ocb, future).
+
+  2. Inventory pass: enumerate existing tools from backend/tools.d/manifest.yml (29 modules), realtime_provider
+  declarations (~40), ada_mcp.py exports (26), devin mcp_config.json servers — map each into registry rows; mark
+  gaps/dupes.
+
+  3. Design note docs/kb/agent-tool-federation.md: registry -> per-surface generators (opencode.json mcp block,
+  devin mcp_config, ada-voice function declarations); policy enforced at service layer (board-api doors); migration
+  order.
+
+
+  Phase 2+ (follow-up cards, do NOT do here): thin-adapter rewrite of ada_mcp.py over board-api/mddb; MCP race fix
+  on ephemeral session dirs; T2 read-only MCP additions to opencode.json.
+
+
+  Done when: ssot.tools.yml validates (scripts/ssot-validate), covers all inventoried tools, design note committed,
+  no live service changes.'
+ref: OPS-0200
+comms:
+- at: 2026-11-18 20:45
+  from: tony
+  text: card captured via board-api
