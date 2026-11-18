@@ -3,9 +3,9 @@
 #   unit active · manager-state.json exists with nodes · CMS page published
 set -uo pipefail
 HOSTS=("$@")
-[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc03 tony-omen tony-dell)
+[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc02 idc03 con01 mn01 tony-omen tony-dell)
 MDDB="${MDDB_BASE_URL:-http://100.102.134.91:11027/v1}"
-PY='import json;d=json.load(open("/home/tony/.local/share/nest/manager-state.json"));n=d.get("nodes",{});a=sorted(k for k,v in n.items() if v.get("adopted"));print(f"   state: {len(n)} nodes, {len(a)} adopted {a}")'
+PY='import json;d=json.load(open("/home/tony/.local/share/nest/manager-state.json"));n=d.get("nodes",{});a=sorted(k for k,v in n.items() if v.get("adopted"));act=d.get("actuation") or {};print(f"   state: {len(n)} nodes, {len(a)} adopted {a} — mode={act.get(\"mode\",\"monitor\")} actions={len(d.get(\"actions\") or [])}")'
 rc_all=0
 
 for host in "${HOSTS[@]}"; do
