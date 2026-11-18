@@ -1,0 +1,45 @@
+id: claude-agent-idc02-opencode
+title: Wire claude-agent into idc02 bare opencode serve
+column: backlog
+updated: 2026-11-18 13:49
+brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
+  verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
+  provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
+  env must carry OPENCODE_CLAUDE_PATH).'
+priority: low
+program: devnest
+tags:
+- claude-code
+- opencode
+- idc02
+- provider
+spec: 'Follow-up to OPS-0184 (done — scripts/claude-code/openchamber-wire.sh + docs/kb/openchamber-claude-agent-provider.md
+  merged).
+
+
+  Scope:
+
+  1. idc02: `opencode serve --hostname 0.0.0.0 --port 4096` is running outside OpenChamber. Determine its launch
+  path (systemd unit? manual? container?) and inject OPENCODE_CLAUDE_PATH=/home/tony/CascadeProjects/tony-projects/claude-code/node_modules/.bin/claude
+  into that process env — NOTE: openchamber-wire.sh --host idc02 only works if idc02 has the pinned claude-code
+  install + claude auth; install.sh first if missing, then `claude auth login` needs Tony (interactive OAuth) unless
+  setup-token is used.
+
+  2. Confirm whether idc02 opencode is even meant to serve model sessions (it may be a relay/worker) — if not user-facing,
+  document and close.
+
+  3. Re-run `openchamber-wire.sh --check` on tony-dell periodically / after openchamber updates; script is the standard.
+
+
+  Out of scope: LiteLLM lane, other hosts (no OpenChamber/opencode found on omen, idc03, mn01, macs).'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  labels:
+  - push:chaba
+ref: OPS-0185
+comms:
+- at: 2026-11-18 13:49
+  from: devin
+  text: card captured via board-api
