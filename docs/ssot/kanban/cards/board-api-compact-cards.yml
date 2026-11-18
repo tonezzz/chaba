@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
 column: doing
-updated: 2026-11-18 14:42
+updated: 2026-11-18 14:51
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -132,3 +132,10 @@ comms:
   from: devin
   text: '[devin] Picked up on tony-omen. Step 1: verify current /cards?fields behavior (param-bound vs payload-bound),
     then implement projection + comms_tail + compact=2.'
+- at: 2026-11-18 14:51
+  from: devin
+  text: '[devin] Done on tony-omen branch dispatch/20261118-144240-in-scripts-board-board-api-py-. Verified premise
+    was stale: fields= already works live (123KB/0.42s); real bug was compact=2 silently returning the full 9.67MB/15.6s
+    dump. Implemented compact=2 (id/ref/title/column/priority/updated/brief/spec/action_status) + comms_tail=N (0
+    drops comms, stamps comms_total; /card/<id> too) + docstring + selftest coverage — selftest ok. Local verify
+    on real 931-card data: compact=2 789KB/38ms, comms_tail=0'
