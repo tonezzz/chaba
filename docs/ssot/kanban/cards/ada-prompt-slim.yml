@@ -22,7 +22,7 @@ action:
   repo: ada-voice
   executor: jules
   lane: jules
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
@@ -31,8 +31,8 @@ action:
     Failed with result ''exit-code''. | devin-task-ada-prompt-slim-1794229791.service: Consumed 1.427s CPU time
     over 24min 42.780s wall clock time, 17.7M memory peak.'
   attempts: 1
-  result: 'journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1794883300.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794883300.service: Failed with
+  result: 'journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1795015278.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1795015278.service: Failed with
     result ''exit-code''.'
   runner: tony-omen
 ref: ADA-1282
@@ -199,3 +199,6 @@ comms:
   from: chaba
   text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
     card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-18 22:21
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1795015278.se'
