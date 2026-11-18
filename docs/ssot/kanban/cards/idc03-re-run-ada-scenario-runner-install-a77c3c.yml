@@ -1,18 +1,18 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
 column: backlog
-updated: 2026-11-17 21:09
+updated: 2026-11-18 17:22
 priority: medium
 tags:
 - idc03
 - ada
 - scenario
 - drift
-note: 'Deployed ~/.config/systemd/user/ada-scenario-*.service on idc03 all still point ADA_LIVE_URL=:8002
-  (paid lane); repo HEAD has research/cms/reports on dev lane :8005 (bench-off-paid-lanes, 1c56115c5).
-  Wrapper was reinstalled Nov 7 but unit files were not. Result: research/cms/reports weekly suites will
-  PARK (exit 0, zero sessions) instead of running on dev until install.sh is re-run on idc03. memory/tools/casting
-  staying :8002+parked is by design. Found during timer-alert-idc03-ada-scenario-memor'
+note: 'Deployed ~/.config/systemd/user/ada-scenario-*.service on idc03 all still point ADA_LIVE_URL=:8002 (paid
+  lane); repo HEAD has research/cms/reports on dev lane :8005 (bench-off-paid-lanes, 1c56115c5). Wrapper was reinstalled
+  Nov 7 but unit files were not. Result: research/cms/reports weekly suites will PARK (exit 0, zero sessions) instead
+  of running on dev until install.sh is re-run on idc03. memory/tools/casting staying :8002+parked is by design.
+  Found during timer-alert-idc03-ada-scenario-memor'
 ref: ADA-1159
 comms:
 - at: 2026-11-08 10:36
@@ -49,8 +49,12 @@ comms:
 - at: 2026-11-18 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from
-  the paid lane (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports
-  weekly suites run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting
-  on :8002 as designed. The done-condition is verified when systemd user units on idc03 correctly reflect
-  ADA_LIVE_URL=:8005 for the relevant scenario runner services.
+- at: 2026-11-18 17:22
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
+  (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
+  run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
+  The done-condition is verified when systemd user units on idc03 correctly reflect ADA_LIVE_URL=:8005 for the relevant
+  scenario runner services.
