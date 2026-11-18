@@ -9,7 +9,7 @@ priority: high
 note: 'Auto-recovered 2026-11-18: security-digest healthy for 2 consecutive ticks (status=ok, state=ok).'
 help: 'Trigger a manual regen: cms_automation run_now for ''security-digest'' (or POST /api/cms/pages/security-digest/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-18 17:20
+updated: 2026-11-18 18:08
 comms:
 - at: 2026-11-07 16:50
   from: devin
@@ -50,6 +50,10 @@ comms:
 - at: 2026-11-18 17:20
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
