@@ -2,7 +2,7 @@ id: bge-serving-path-dense-retrieval-with-in-b080f6
 title: 'BGE serving path: dense retrieval with includeContent=false + bounded doc fetch (shadow currently ~4-5s/collection,
   all timeouts)'
 column: done
-updated: 2026-11-18 21:12
+updated: 2026-11-18 21:13
 priority: high
 tags:
 - ada
@@ -71,6 +71,12 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-210023-blocker-for-mem-1129-productio,
     branch dispatch/20261118-210023-blocker-for-mem-1129-productio on idc02'
+- at: 2026-11-18 21:13
+  from: devin
+  text: 'Merged to ada-voice origin/main as 7c5ba50 (salvage: branch lived only on idc02, fetched via ssh). Verified:
+    tests/test_bge_memory_shadow.py 4/4 pass, tool-lint clean. Probe evidence from dispatch: status=ok dense_ms=322
+    fetch_ms=66 rerank_ms=1078 total_ms=1470 warm — reranker now dominant phase. NEXT: deploy via deploy-ada.sh
+    (staging idc02 first), then soak for MEM-1129.'
 action:
   type: dispatch
   status: done
