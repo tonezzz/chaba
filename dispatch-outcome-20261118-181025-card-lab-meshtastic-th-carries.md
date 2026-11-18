@@ -1,0 +1,1 @@
+Fixed lab-review id collision. lab-review-sweep.py now mints unique ids per cycle (lab-review, lab-review-2, ...) and executes any lab-review* answered request; board-api.py do_respond now prefers the open entry when ids collide (so legacy duplicates like lab-meshtastic-th answer correctly). Verified by py_compile only; restart board-api on idc03 after merge.
