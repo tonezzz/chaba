@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: backlog
-updated: 2026-11-18 15:34
+updated: 2026-11-18 17:29
 priority: high
 tags:
 - devin
@@ -77,3 +77,7 @@ comms:
     glibc 2.43-2ubuntu2.7 security update (06:23 today; also happened Nov-12 so recurring class). Prime suspects:
     (a) glibc 2.43 IFUNC/hwcap mis-selection on i7-9750H (no AVX512), (b) NVIDIA 595.99.02-open userspace GL path.
     MITIGATIONS APPLIED: devin-desktop upgraded 3.11.238->3.14.3081'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
