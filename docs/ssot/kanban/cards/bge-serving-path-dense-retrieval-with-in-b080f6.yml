@@ -1,8 +1,8 @@
 id: bge-serving-path-dense-retrieval-with-in-b080f6
 title: 'BGE serving path: dense retrieval with includeContent=false + bounded doc fetch (shadow currently ~4-5s/collection,
   all timeouts)'
-column: doing
-updated: 2026-11-18 21:11
+column: done
+updated: 2026-11-18 21:12
 priority: high
 tags:
 - ada
@@ -62,9 +62,22 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261118-210023-blocker-for-mem-1129-productio no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-18 21:12
+  from: chaba
+  text: 'merge-sweep: merged bb8f772c (dispatch/20261118-210023-blocker-for-mem-1129-productio from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261118-210023-blocker-for-mem-1129-productio.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  sweep:
+    stale_running: 2026-11-18 21:12
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 21:12
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261118-210023-blocker-for-mem-1129-productio.md
