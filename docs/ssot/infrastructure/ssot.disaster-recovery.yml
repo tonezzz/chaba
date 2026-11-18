@@ -176,6 +176,48 @@ sections:
           - mcp-gpu: GPU operations (medium)
           - mcp-llama: LLM inference (medium)
 
+  - title: Host-Level DR — tony-dell (added 2026-11-18)
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Disk Layout
+        text: >-
+          nvme0n1p3 = live root (220G); sda (internal 500G HDD) = sda1 1G
+          rescue-efi ESP + sda2 79G rescue-root (minimal Ubuntu 26.04,
+          kernel 7.0.0-43, ssh+restic) + sda3 386G timeshift store;
+          sdb1 (USB 1TB) = dell-backup restic repo mounted /dell-backup.
+          UEFI Boot0004 'Ubuntu-Rescue' is BootOrder #2 after Ubuntu-NVMe.
+        runbook: devin-kb docs/tools/dell-backup-recovery.md
+
+      - label: restic Backups
+        text: >-
+          Repo /dell-backup/restic (encrypted). critical tier daily 03:30
+          (secrets/systemd/devin configs, ~/.local/bin, ~/.ssh, etc-snapshot),
+          home tier weekly Sun 02:00 (/home/tony minus caches/container
+          data). Retention critical 7d/4w/6m, home last4+6monthly.
+          Passphrase in ~/.config/secrets/restic-dell.env — needs offline copy.
+        script: ~/.local/bin/dell-restic-backup.sh
+
+      - label: Timeshift Snapshots
+        text: >-
+          /etc/timeshift/timeshift.json — RSYNC mode, weekly, keep 4w/6m,
+          device /dev/sda3. System-only (excludes /home /root /srv /var/log
+          /tmp /swapfile /timeshift /dell-backup); /home covered by restic.
+          Snapshots register in live GRUB for fast rollback.
+
+      - label: Rescue OS Recovery Path
+        text: >-
+          NVMe dead → firmware falls through to Boot0004 Ubuntu-Rescue on
+          sda1; rescue has DHCP ethernet, ssh as tony (same authorized_keys),
+          restic+rsync; mounts /dell-backup and /timeshift via fstab.
+          Full steps in devin-kb runbook.
+        status: Installed, test-boot pending
+
+      - label: sda5 Archive
+        text: >-
+          Pre-repartition June-2026 /home/tony snapshot archived to restic
+          tag sda5-archive (snapshot 6b797162, 47.3GiB new / 6.7GiB stored).
+
   - title: Documentation References
     icon: 📚
     layout: list
@@ -197,7 +239,7 @@ sections:
 
 config:
   version: 1
-  last_updated: 2026-08-06
+  last_updated: 2026-11-18
   maintainer: tony
   backup_status: operational
   recovery_priority: high
