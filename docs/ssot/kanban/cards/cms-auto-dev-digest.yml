@@ -6,8 +6,8 @@ column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'last_status=error — Remote end closed connection without response. last_run=2026-11-18T03:00:23+00:00
-  interval=1440m status=error. Page: https://idc03.taila0626a.ts.net/cms/#/dev-digest'
+note: 'Recovering: dev-digest healthy for 1/2 ticks — auto-closes when the streak
+  holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''dev-digest'' (or POST
   /api/cms/pages/dev-digest/regenerate). If it repeats, check the page''s generator
   command in the registry doc.'
@@ -52,3 +52,4 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
+ok_streak: 1
