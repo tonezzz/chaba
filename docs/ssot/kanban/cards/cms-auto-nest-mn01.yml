@@ -1,13 +1,16 @@
 id: cms-auto-nest-mn01
 title: CMS automation `nest-mn01` stale
-brief: A scheduled report-page job ('nest-mn01') is stale. Re-run it or check the
-  generator — details in the note.
+brief: A scheduled report-page job ('nest-mn01') is stale. Re-run it or check the generator — details in the note.
 column: done
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'Auto-recovered 2026-11-18: nest-mn01 healthy for 2 consecutive ticks (status=ok,
-  state=ok).'
+note: 'Auto-recovered 2026-11-18: nest-mn01 healthy for 2 consecutive ticks (status=ok, state=ok).'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-mn01'' (or POST /api/cms/pages/nest-mn01/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: '2026-11-18'
+updated: 2026-11-18 17:20
+comms:
+- at: 2026-11-18 17:20
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
