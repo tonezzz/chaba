@@ -151,7 +151,7 @@ PROXY_HEALTH = os.environ.get(
 EMBED_PROXY_FAIL_ALERT = int(os.environ.get("EMBED_PROXY_FAIL_ALERT", "3"))
 
 
-def check_provider_health() -> str:
+def check_provider_health() -> "tuple[str, bool]":
     """Embed-provider degradation tripwire. Reads the gemini-ollama-proxy
     /health and emits ops-events on transitions:
       embed_provider_degraded — a provider circuit opened (paid fallback
@@ -168,7 +168,7 @@ def check_provider_health() -> str:
         h = json.loads(urllib.request.urlopen(PROXY_HEALTH, timeout=10).read())
     except Exception as exc:
         print(f"proxy health unavailable: {exc}", file=sys.stderr)
-        return ""
+        return "", True
     circuit = h.get("circuit") or {}
     consec_fail = int((h.get("embed") or {}).get("consecutive_failures", 0))
     degraded = (circuit.get("or_open") or circuit.get("gemini_open")
@@ -189,7 +189,7 @@ def check_provider_health() -> str:
         prev["proxy_degraded"] = bool(degraded)
         os.makedirs(os.path.dirname(QUEUE_STATE), exist_ok=True)
         open(QUEUE_STATE, "w").write(json.dumps(prev))
-    return note
+    return note, degraded
 
 
 def probe() -> tuple[bool, str, int, bool]:
@@ -221,7 +221,7 @@ def probe() -> tuple[bool, str, int, bool]:
 def main() -> int:
     ok, detail, index_size, wiped = probe()
     qnote = check_queue()
-    pnote = check_provider_health()
+    pnote, providers_degraded = check_provider_health()
     for n in (qnote, pnote):
         if n:
             detail = f"{detail} | {n}"
@@ -240,8 +240,16 @@ def main() -> int:
         print(f"transition {prev}->{cur}: {ev_type}: {detail}")
         if ok:
             # docs written during the outage had their embed jobs dropped;
-            # reindex backfills them (content-hash skip keeps it cheap)
-            _kick_reindex(f"recovery {prev}->up")
+            # reindex backfills them (content-hash skip keeps it cheap).
+            # But don't kick while embed providers are still degraded —
+            # the reindex jobs would fail and re-churn the queue (the
+            # 2026-11-18 flap loop: up->down->up kicked reindex ~6x/day
+            # while every provider circuit stayed open).
+            if providers_degraded:
+                print("recovery but embed providers still degraded — "
+                      "reindex deferred until provider_restored")
+            else:
+                _kick_reindex(f"recovery {prev}->up")
     else:
         print(f"{cur} (unchanged): {detail}")
 
