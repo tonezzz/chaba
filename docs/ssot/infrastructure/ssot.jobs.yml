@@ -1708,6 +1708,26 @@ jobs:
     (~60s); this is the full-suite signal (1549 tests, ~1h on tony-omen).
     Failure -> unit fails -> timer-sentinel timer-alert card. Runs in the
     job-exec checkout kept current by chaba-repo-sync. Added 2026-11-17.'
+- id: ada-transcript-archive
+  name: Ada transcript deep-archive to NotebookLM (weekly)
+  host: idc03
+  dispatch: systemd
+  on_calendar: Sun *-*-* 05:15:00
+  persistent: true
+  timeout: 1h
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/transcript-archive.py
+  note: 'card ada-transcript-archive-retention leg 1 — raw transcripts are
+    local-only on idc03 and the per-session NotebookLM upload died with
+    notebooklm-rest (:3011) retirement, so this weekly job pushes
+    >48h-old transcripts to the "Ada — Transcript Archive" notebook via
+    nlm on mn01 (--text, files never leave idc03). Lane tags come from
+    ada-ha-recall-summary-<instance> session-* keys; unattributed archive
+    as lane=unknown, never dropped. State ~/.local/share/ada/
+    transcript-archive-state.json makes re-runs incremental; each run
+    comments the card. Limit 100/run drains the ~380-file backlog in ~4
+    weeks then covers ~new sessions/week. Sunday 05:15 sits inside the
+    approved early-morning window and clear of the 04:20 telemetry prune.
+    Added 2026-11-18.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py

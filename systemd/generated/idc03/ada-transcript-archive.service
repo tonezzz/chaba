@@ -1,0 +1,7 @@
+[Unit]
+Description=Ada transcript deep-archive to NotebookLM (weekly) (job:ada-transcript-archive, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=3600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/transcript-archive.py
