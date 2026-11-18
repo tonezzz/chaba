@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: backlog
-updated: 2026-11-18 13:49
+updated: 2026-11-18 14:06
 priority: high
 tags:
 - devin
@@ -63,3 +63,10 @@ comms:
     13:36-13:37 + runaway renderer (8h CPU, watchdog-killed ~13:30) explain the dead-feeling launches. REAL BUG
     FOUND+FIXED: stale ANTHROPIC_BASE_URL=http://127.0.0.1:8787 exported in ~/.bashrc AND baked into ~/.local/share/applications/devin-desktop.desktop
     Exec — nothing has listened on'
+- at: 2026-11-18 14:06
+  from: devin
+  text: '2026-11-18 update: omen devin-desktop upgraded 3.11.238 -> 3.14.30819 (windsurf transitional same), devin
+    CLI already latest 3000.13.4. Stale ANTHROPIC_BASE_URL fix from earlier today survived the package upgrade (user
+    .desktop clean, system .desktop ships clean Exec). Verified: relaunched on DISPLAY :20, window present, running
+    clean — only benign GPU command-buffer warning. bashrc export remains commented pending Tony decision on the
+    plaintext sk-ant key.'
