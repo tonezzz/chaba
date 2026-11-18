@@ -1,14 +1,14 @@
 id: timer-alert-idc03-board-janitor
 title: Timer board-janitor on idc03 failing
 column: backlog
-updated: 2026-11-18 18:13
+updated: 2026-11-18 21:18
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-18 16:42) of `board-janitor.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u board-janitor.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-18 16:42) of `board-janitor.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u board-janitor.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: KNB-0195
 comms:
 - at: 2026-11-18 16:59
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-18 17:10
   from: devin
-  text: '[still suspicious] Last run (11-18 16:58) of `board-janitor.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u board-janitor.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-18 16:58) of `board-janitor.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u board-janitor.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-18 17:29
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -33,9 +33,13 @@ comms:
 - at: 2026-11-18 19:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: investigate the failing board-janitor.service timer-alert on idc03 by inspecting the systemd
-  journal via journalctl --user -u board-janitor.service on idc03, and redeploy the drifted runner-agent
-  script from the chaba repository via scp scripts/board/runner-agent.py idc03:~/.local/bin/runner-agent.
-  Constraints: rely strictly on host idc03 and repository chaba as indicated in the card context and recent
-  communications. Testable done-condition: board-janitor.service runs successfully on idc03 with exit
-  status zero and journal logs confirm no subsequent execution errors.'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: 'Goal: investigate the failing board-janitor.service timer-alert on idc03 by inspecting the systemd journal
+  via journalctl --user -u board-janitor.service on idc03, and redeploy the drifted runner-agent script from the
+  chaba repository via scp scripts/board/runner-agent.py idc03:~/.local/bin/runner-agent. Constraints: rely strictly
+  on host idc03 and repository chaba as indicated in the card context and recent communications. Testable done-condition:
+  board-janitor.service runs successfully on idc03 with exit status zero and journal logs confirm no subsequent
+  execution errors.'
