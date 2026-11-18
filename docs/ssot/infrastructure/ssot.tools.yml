@@ -1,0 +1,1619 @@
+id: ssot.tools
+title: Canonical Agent Tool Registry
+subtitle: Every agent-callable capability — canonical name, signature, policy tier, backend, transport, allowed agent lanes
+icon: wrench
+version: 1
+maintainer: tony
+status: active
+category: infrastructure
+source_of_truth: true
+overview:
+  purpose: 'Single catalog of every tool an agent lane can call, so a future agent inherits the full toolset instead of rediscovering it. Supersedes
+    the three parallel registries: ada-voice tools.d manifest + realtime_provider native declarations, opencode/ada_mcp.py (ada-control MCP bridge),
+    and devin mcp_config.json servers. Design: docs/kb/agent-tool-federation.md.'
+  how_to_read: One row per canonical tool (kind=tool) or MCP server (kind=provider). name is domain-namespaced (domain.verb); surfaces maps agent
+    lane -> the name that lane actually calls. sig is a JSON-schema-ish condensed signature (declared properties; req = required). policy reuses
+    tools.d vocabulary; secondary mirrors manifest secondary_allowed. backend is the service the call reaches; transport is how the agent invokes
+    it.
+  inventoried: 2026-11-18 from ada-voice @ Nov 13-18 checkout (tony-omen) + devin mcp_config.json — re-run inventory before trusting counts.
+  related:
+  - docs/kb/agent-tool-federation.md — registry->surface generator design + migration order
+  - infrastructure/ssot.mcp.yml — MCP server infra definitions (endpoints, wrappers)
+  - infrastructure/ssot.mcp-tools.yml — domain->server selection policy (which MCP for what)
+  - infrastructure/ssot.mcp-wrappers.yml — devin stdio launcher scripts
+  - ada-voice backend/tools.d/manifest.yml — current ada-voice tool manifest (generation target)
+vocab:
+  kind:
+    tool: one callable function
+    provider: an MCP server exposing N tools (rows for its tools are per-tool via mcp_list_tools)
+  policy:
+    read: callable without confirmation
+    confirmed: requires confirmed=true (voice confirm gate or two-call/native-menu gate) or a selection/handoff token
+    owner_only: owner-tier only — denied outright to non-owner identities
+    mixed: provider rows — per-tool policy inside the server
+  secondary: mirrors tools.d manifest secondary_allowed — whether an identified non-owner (secondary) voice/session may call it. Absent = not
+    applicable to that lane.
+  transport:
+    native-decl: model-native function declaration (Gemini Live tools / in-process dispatch)
+    stdio-mcp: MCP server over stdio (FastMCP / wrapper script)
+    http: remote HTTP MCP endpoint or direct HTTP service
+  agent_lanes:
+    ada-voice: production voice instances (ada-ha-tony, ada-ha-michael, PWA, relays) — realtime_provider + tools.d
+    ada-voice-guest: guest/Chaba-web sub-surface of ada-voice — CHABA_ALLOW allowlist, guest-scoped decls
+    ada-dev: dev voice instance — same code surface, separate deploy on idc03
+    ada-ocb: OpenCode bridge lane — opencode.json -> opencode/ada_mcp.py FastMCP "ada-control" (stdio)
+    devin: Devin CLI/Desktop + dispatch runners — ~/.config/devin/mcp_config.json + wrapper scripts
+    future: reserved — new agents inherit this registry via the generators in docs/kb/agent-tool-federation.md
+  backends:
+    board-api: https://idc03.taila0626a.ts.net:10000 (also /apps/board-api via tony-dell Caddy) — unified mutation door
+    mddb: idc03 :11023 memory / :11027 cms / :9000 mcp — per collection
+    ha: Home Assistant via ha_client / ha-mcp (tony-ha, michael-ha)
+    wp-boards: boards WordPress site — writes via wp_client or board-api doors
+    vcast: screen/display services on tony-dell
+inventory:
+  sources:
+    tools.d manifest: 31 modules (backend/tools.d/manifest.yml + DECLARATION/TOOL dicts)
+    realtime_provider builtins: 36 native decls + ada_camera_snapshot + 3 guest-scoped CHABA_DECLARATIONS (re-decls of remember/search/enroll)
+    ada_mcp.py: 26 FastMCP tools (stdio ada-control for ada-ocb/OpenCode)
+    devin mcp_config.json: 21 servers (20 active + google-home disabled)
+  coverage: 111 registry rows covering 31 tools.d + 37 native decls (+3 guest re-decls) + 26 ada_mcp + 21 devin providers
+  dupes:
+  - memory.search — ada-voice builtin AND ada_mcp ada_memory_search (separate impl; bridge reimplements bank+lesson search)
+  - wiki.extensions — tools.d wiki_extension AND ada_mcp ada_wiki_extensions/ada_wiki_extension (list vs mutate ops)
+  - media.adobe_stock_qc — tools.d ada_adobe_stock AND ada_mcp ada_adobe_stock_qc(+_decide)
+  - board.* — tools.d kanban (voice authority matrix) vs ada_mcp ada_plan/ada_status/ada_next_card/ada_preflight family (agent workflow gates)
+    — complementary, not literal dupes, but the bridge re-implements board reads instead of proxying services (phase-2 thin adapter)
+  gaps:
+  - ada-voice lanes have no board.plan/preflight/start_check/dispatch_check — those gates exist only in ada_mcp (ada-ocb)
+  - devin lane reaches board.* only via board-api HTTP directly, no packaged tool surface
+  - mcp.colab vs mcp.colab_upstream — two colab servers with near-identical names in mcp_config.json
+  - google-home provider disabled in mcp_config.json (oauth) — kept as status=disabled row
+tools:
+- name: media.gs_capture_eval
+  kind: tool
+  sig: image_dir
+  req: image_dir
+  policy: read
+  secondary: true
+  backend: local:chaba-checkout evaluator (also served via Kornia MCP)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: gs_capture_eval
+    ada-dev: gs_capture_eval
+  source: ada-voice:backend/tools.d/gs_capture_eval.py
+  notes: fixed-command bridge; never shells user input
+- name: board.kanban
+  kind: tool
+  sig: action,choice,id,column,text,evidence,ask,options,suggested,title,note,priority,request_id,answer,report,limit,expected_updated,confirmed,confirm_token
+  policy: read
+  secondary: true
+  backend: board-api
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: kanban
+    ada-dev: kanban
+  source: ada-voice:backend/tools.d/kanban.py
+  notes: absorbs ada_board_write alias; authority matrix in-module
+- name: audio.voice_fx
+  kind: tool
+  sig: action,feature,enabled
+  policy: read
+  secondary: true
+  backend: local:~/.config/ada/voice-fx.json
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: voice_fx
+    ada-dev: voice_fx
+  source: ada-voice:backend/tools.d/voice_fx.py
+- name: sys.track_device
+  kind: tool
+  sig: action,device,limit,hours,interval_s,channel,gev_pin
+  policy: owner_only
+  secondary: false
+  backend: ha + mddb:device-telemetry
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_track_device
+    ada-dev: ada_track_device
+  source: ada-voice:backend/tools.d/ada_track_device.py
+- name: access.device_acl
+  kind: tool
+  sig: action,identity,entity_id
+  policy: owner_only
+  secondary: false
+  backend: local:~/.config/ada/device-grants.json overlay on control_policies
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_device_acl
+    ada-dev: ada_device_acl
+  source: ada-voice:backend/tools.d/ada_device_acl.py
+- name: speaker.profiles
+  kind: tool
+  sig: action,path,name,person,display_name,rename_to,seconds
+  policy: read
+  secondary: true
+  backend: 'local: speaker_id ECAPA store + ha person bindings'
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: speaker_profiles
+    ada-dev: speaker_profiles
+  source: ada-voice:backend/tools.d/speaker_profiles.py
+- name: market.quote
+  kind: tool
+  sig: kind,currency
+  req: kind
+  policy: read
+  secondary: true
+  backend: trade-api (tony-dell) -> trade postgres
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_market_quote
+    ada-dev: ada_market_quote
+  source: ada-voice:backend/tools.d/ada_market_quote.py
+- name: media.render_image
+  kind: tool
+  sig: prompt,ref_url,ref_urls,aspect,size,provider,job
+  req: prompt
+  policy: read
+  secondary: false
+  backend: imagen2-api (tony-dell /apps/imagen2) | sdcpp local (tony-omen :8399)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_render_image
+    ada-dev: ada_render_image
+  source: ada-voice:backend/tools.d/ada_render_image.py
+- name: media.adobe_stock_qc
+  kind: tool
+  sig: action,asset,decision,note
+  policy: confirmed
+  secondary: false
+  backend: picker-server (tony-dell :8777 -> rclone/GDrive)
+  transport: native-decl + stdio-mcp
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-ocb
+  surfaces:
+    ada-voice: ada_adobe_stock
+    ada-dev: ada_adobe_stock
+    ada-ocb: ada_adobe_stock_qc+ada_adobe_stock_qc_decide
+  source: ada-voice:backend/tools.d/ada_adobe_stock.py
+  notes: decide op records TONY choice only; ada-ocb binding via ada_mcp.py (reimpl — phase-2 thin adapter)
+- name: media.render_video
+  kind: tool
+  sig: prompt,ref_url,secs,aspect,res,operation
+  policy: read
+  secondary: false
+  backend: veo-api + wp-boards upload
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_render_video
+    ada-dev: ada_render_video
+  source: ada-voice:backend/tools.d/ada_render_video.py
+- name: media.look
+  kind: tool
+  policy: read
+  secondary: true
+  backend: mddb:eye detections docs
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_look
+    ada-dev: ada_look
+  source: ada-voice:backend/tools.d/eye.py
+  notes: module file eye.py; decl name ada_look
+- name: access.member_keys
+  kind: tool
+  sig: action,name,person,ha_person
+  policy: owner_only
+  secondary: false
+  backend: local member-key store + pwa /i/<tok> landing
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_member_keys
+    ada-dev: ada_member_keys
+  source: ada-voice:backend/tools.d/ada_member_keys.py
+- name: media.percussion
+  kind: tool
+  sig: style,mood,instruments,action
+  policy: owner_only
+  secondary: false
+  backend: input-bridge (tony-dell /api/input-bridge)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: percussion
+    ada-dev: percussion
+  source: ada-voice:backend/tools.d/percussion.py
+- name: web.screenshot
+  kind: tool
+  sig: url,full_page,slug
+  req: url
+  policy: read
+  secondary: true
+  backend: playlived headless chrome (tony-dell :9230)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: page_snapshot
+    ada-dev: page_snapshot
+  source: ada-voice:backend/tools.d/page_snapshot.py
+- name: docs.read
+  kind: tool
+  sig: path_or_url,prompt
+  req: path_or_url
+  policy: read
+  secondary: true
+  backend: local doc archive + gemini lane extraction
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: doc_read
+    ada-dev: doc_read
+  source: ada-voice:backend/tools.d/doc_read.py
+- name: cms.trip_calendar
+  kind: tool
+  sig: slug,start,end,title,keywords,public,confirmed
+  policy: read
+  secondary: true
+  backend: chaba scripts/ada/trip-calendar.py -> cms pages
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: trip_calendar
+    ada-dev: trip_calendar
+  source: ada-voice:backend/tools.d/trip_calendar.py
+- name: cms.place_report
+  kind: tool
+  sig: url,place,ask,lang
+  policy: read
+  secondary: true
+  backend: nominatim + wp-boards public post
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: place_report
+    ada-dev: place_report
+  source: ada-voice:backend/tools.d/place_report.py
+- name: cms.wp_post
+  kind: tool
+  sig: person,title,content,publish,media_url
+  req: person,title,content
+  policy: read
+  secondary: true
+  backend: wp-boards via wp_client
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: wp_post
+    ada-dev: wp_post
+  source: ada-voice:backend/tools.d/wp_post.py
+- name: cms.chat_page
+  kind: tool
+  sig: member,lane,parent,slug,status
+  req: member,lane
+  policy: read
+  secondary: true
+  backend: wp-boards via wp_client
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: wp_chat_page
+    ada-dev: wp_chat_page
+  source: ada-voice:backend/tools.d/wp_chat_page.py
+- name: cms.cpt_post
+  kind: tool
+  policy: read
+  secondary: true
+  backend: wp-boards CPTs via wp_client
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cpt_post
+    ada-dev: cpt_post
+  source: ada-voice:backend/tools.d/cpt_post.py
+- name: devnest.news
+  kind: tool
+  sig: title,body,summary,source_url,source_published_at,wiki_title,desk,geo_scope,topic,parent,country,region,private_wiki_title,review_revid,diagnosis_id,card_ref
+  req: title,body,summary,source_url,source_published_at,wiki_title,desk,geo_scope,topic,parent
+  policy: confirmed
+  secondary: false
+  backend: board-api (owns validation/idempotency/retry)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: devnest_news
+    ada-dev: devnest_news
+  source: ada-voice:backend/tools.d/devnest_news.py
+- name: devnest.news_review
+  kind: tool
+  sig: wiki_title
+  req: wiki_title
+  policy: read
+  secondary: false
+  backend: board-api
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: devnest_news_review
+    ada-dev: devnest_news_review
+  source: ada-voice:backend/tools.d/devnest_news_review.py
+- name: devnest.news_diagnose
+  kind: tool
+  sig: private_wiki_title,public_wiki_title,review_revid,card_ref
+  req: private_wiki_title,public_wiki_title
+  policy: read
+  secondary: false
+  backend: board-api
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: devnest_news_diagnose
+    ada-dev: devnest_news_diagnose
+  source: ada-voice:backend/tools.d/devnest_news_diagnose.py
+- name: wiki.extensions
+  kind: tool
+  sig: action,name
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: board-api (wiki creds stay on service host)
+  transport: native-decl + stdio-mcp
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-ocb
+  surfaces:
+    ada-voice: wiki_extension
+    ada-dev: wiki_extension
+    ada-ocb: ada_wiki_extensions+ada_wiki_extension
+  source: ada-voice:backend/tools.d/wiki_extension.py
+  notes: overlaps ada-ocb wiki.extensions (separate impl via board-api); ada-ocb binding via ada_mcp.py (reimpl — phase-2 thin adapter)
+- name: weather.station
+  kind: tool
+  policy: read
+  secondary: true
+  backend: rikacloud-api (external)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: weather_station
+    ada-dev: weather_station
+  source: ada-voice:backend/tools.d/weather_station.py
+- name: comms.conv_journal
+  kind: tool
+  sig: action,chat,date,title
+  policy: read
+  secondary: true
+  backend: mddb journal + cms review surface
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: conv_journal
+    ada-dev: conv_journal
+  source: ada-voice:backend/tools.d/conv_journal.py
+- name: edu.lesson
+  kind: tool
+  sig: topic,content,level
+  req: topic,content
+  policy: confirmed
+  secondary: false
+  backend: board-api /lesson -> WP lesson CPT + mddb chaba-lessons
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_lesson
+    ada-dev: ada_lesson
+  source: ada-voice:backend/tools.d/ada_lesson.py
+- name: dev.opencode
+  kind: tool
+  sig: action,card_reference,task,repo,model,llm_key_alias,profile,target_host,artifact,max_usd,max_turns,max_tokens,max_wall_time_s,max_retries
+  req: action,card_reference
+  policy: read
+  secondary: false
+  backend: backend.ada_opencode_control (in-process)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_opencode
+    ada-dev: ada_opencode
+  source: ada-voice:backend/tools.d/ada_opencode.py
+- name: dev.opencode_dispatch
+  kind: tool
+  sig: card_reference,task,repo,model,llm_key_alias,profile,target_host,artifact,max_usd,max_turns,max_tokens,max_wall_time_s,max_retries,approval_receipt,approval_issued_at,approval_expires_at
+  req: card_reference,task,approval_receipt,approval_issued_at,approval_expires_at
+  policy: confirmed
+  secondary: false
+  backend: backend.ada_opencode_control + board-api
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_opencode_dispatch
+    ada-dev: ada_opencode_dispatch
+  source: ada-voice:backend/tools.d/ada_opencode_dispatch.py
+- name: ops.sweep
+  kind: tool
+  policy: confirmed
+  secondary: false
+  backend: backend.ada_opencode_control + board-api
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_sweep
+    ada-dev: ada_sweep
+  source: ada-voice:backend/tools.d/ada_sweep.py
+- name: devnest.status
+  kind: tool
+  policy: read
+  secondary: true
+  backend: nest-queue-health snapshot (tony-dell web)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: nest_status
+    ada-dev: nest_status
+  source: ada-voice:backend/tools.d/nest_status.py
+- name: avatar.facial_expression
+  kind: tool
+  sig: expression
+  req: expression
+  policy: read
+  secondary: true
+  backend: 'local: UI expression state'
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: set_facial_expression
+    ada-dev: set_facial_expression
+  source: ada-voice:backend/realtime_provider.py
+- name: ha.get_state
+  kind: tool
+  sig: entity_id,domain
+  policy: read
+  secondary: true
+  backend: ha
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: get_home_state
+    ada-dev: get_home_state
+    ada-voice-guest: get_home_state
+  source: ada-voice:backend/realtime_provider.py
+  notes: absorbs ada_ha_get_state
+- name: ha.control_entity
+  kind: tool
+  sig: entity_id,on,action,source,confirmed,confirm_token
+  req: entity_id
+  policy: confirmed
+  secondary: false
+  backend: ha
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: control_entity
+    ada-dev: control_entity
+    ada-voice-guest: control_entity
+  source: ada-voice:backend/realtime_provider.py
+  notes: CONTROL_TOOLS; guest allow keeps light/media verbs only
+- name: ha.search
+  kind: tool
+  sig: query,kind,limit,hours
+  policy: read
+  secondary: true
+  backend: ha
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: home_search
+    ada-dev: home_search
+    ada-voice-guest: home_search
+  source: ada-voice:backend/realtime_provider.py
+- name: media.yt
+  kind: tool
+  sig: action,query,url,language
+  req: action
+  policy: read
+  secondary: true
+  backend: vcast + yt source
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: yt
+    ada-dev: yt
+  source: ada-voice:backend/realtime_provider.py
+- name: media.tv_action
+  kind: tool
+  sig: cmd,text,selector,role,key,dx,dy,factor
+  req: cmd
+  policy: confirmed
+  secondary: false
+  backend: ha/tv (tool_runner/ha.py)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: tv_action
+    ada-dev: tv_action
+  source: ada-voice:backend/realtime_provider.py
+  notes: CONTROL_TOOLS
+- name: media.cast_to_screen
+  kind: tool
+  sig: screen,action,url,shortcut,text,pane,panes,mode,name,to_screen,confirmed
+  policy: confirmed
+  secondary: false
+  backend: vcast displays
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cast_to_screen
+    ada-dev: cast_to_screen
+  source: ada-voice:backend/realtime_provider.py
+  notes: CONTROL_TOOLS + CAPTURE_CONFIRMED
+- name: media.vcast_snapshot
+  kind: tool
+  sig: screen
+  req: screen
+  policy: read
+  secondary: true
+  backend: vcast displays
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: vcast_snapshot
+    ada-dev: vcast_snapshot
+  source: ada-voice:backend/realtime_provider.py
+- name: comms.chat_send
+  kind: tool
+  sig: channel,text,camera,image_url,video_url,to,say,photo,session_id,screen,show,doc,key,op
+  policy: read
+  secondary: true
+  backend: line/tg relays + screens
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: chat_send
+    ada-dev: chat_send
+  source: ada-voice:backend/realtime_provider.py
+  notes: plain sends free; photo=/doc= flows owner-tier (DRIVE_TOOLS seat)
+- name: media.vcast_gesture
+  kind: tool
+  sig: screen,mode
+  req: screen
+  policy: read
+  secondary: true
+  backend: vcast displays
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: vcast_gesture
+    ada-dev: vcast_gesture
+  source: ada-voice:backend/realtime_provider.py
+- name: media.cctv_wall
+  kind: tool
+  sig: action,zone,screen,pane,settings,confirmed
+  req: zone
+  policy: confirmed
+  secondary: false
+  backend: vcast + vms
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cctv_wall
+    ada-dev: cctv_wall
+  source: ada-voice:backend/realtime_provider.py
+  notes: CAPTURE_CONFIRMED_TOOLS
+- name: media.gev_command
+  kind: tool
+  sig: name,args,screen,pane,wait,tour
+  policy: confirmed
+  secondary: false
+  backend: gev workspace
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: gev_command
+    ada-dev: gev_command
+  source: ada-voice:backend/realtime_provider.py
+  notes: CONTROL_TOOLS
+- name: ha.status
+  kind: tool
+  sig: what,battery_index,hours,tab
+  req: what
+  policy: read
+  secondary: true
+  backend: ha + ups/battery sensors
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: home_status
+    ada-dev: home_status
+    ada-voice-guest: home_status
+  source: ada-voice:backend/realtime_provider.py
+  notes: absorbs get_pool_status/get_battery_status/get_battery_detail aliases
+- name: weather.rk600
+  kind: tool
+  policy: read
+  secondary: true
+  backend: rk600 station (local/ha)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: get_rk600_weather
+    ada-dev: get_rk600_weather
+    ada-voice-guest: get_rk600_weather
+  source: ada-voice:backend/realtime_provider.py
+- name: ha.history
+  kind: tool
+  sig: kind,entity_id,domain,hours,query,limit
+  policy: read
+  secondary: true
+  backend: ha
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: home_history
+    ada-dev: home_history
+    ada-voice-guest: home_history
+  source: ada-voice:backend/realtime_provider.py
+- name: ha.confidence
+  kind: tool
+  sig: entity_id,status,safety
+  policy: read
+  secondary: false
+  backend: ha
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ha_confidence
+    ada-dev: ha_confidence
+  source: ada-voice:backend/realtime_provider.py
+  notes: write path (status/safety args) secondary-blocked; read carve-out free
+- name: memory.session_recall
+  kind: tool
+  sig: question,scope,limit,group,bank,force
+  req: question
+  policy: read
+  secondary: true
+  backend: local transcript store
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_session_recall
+    ada-dev: ada_session_recall
+  source: ada-voice:backend/realtime_provider.py
+- name: memory.search
+  kind: tool
+  sig: scope,bank,query,limit,include_inactive
+  req: query
+  policy: read
+  secondary: false
+  backend: mddb banks
+  transport: native-decl + stdio-mcp
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  - ada-ocb
+  surfaces:
+    ada-voice: ada_memory_search
+    ada-dev: ada_memory_search
+    ada-voice-guest: ada_memory_search
+    ada-ocb: ada_memory_search
+  source: ada-voice:backend/realtime_provider.py
+  notes: owner-tier read — SECONDARY_BLOCKED; guest variant re-declared (scope=guest); parallel impl in ada_mcp (ada-ocb); ada-ocb binding via
+    ada_mcp.py (reimpl — phase-2 thin adapter)
+- name: web.search
+  kind: tool
+  sig: query,provider
+  req: query
+  policy: read
+  secondary: true
+  backend: gemini-grounded + DDG fallback
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: web_search
+    ada-dev: web_search
+  source: ada-voice:backend/realtime_provider.py
+- name: memory.remember
+  kind: tool
+  sig: bank,text,key,subject,attribute,kind,private,note,challenge_id,habit_key,observed,confidence,reason,item_identified,consumption_visible,classified_unhealthy,valid_until,supersedes,confirmed,confirm_token,prime
+  policy: confirmed
+  secondary: false
+  backend: mddb banks
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: ada_remember
+    ada-dev: ada_remember
+    ada-voice-guest: ada_remember
+  source: ada-voice:backend/realtime_provider.py
+  notes: MEMORY_WRITE_TOOLS; guest variant kind=guest public notes
+- name: memory.forget
+  kind: tool
+  sig: bank,key,reason,confirmed,confirm_token
+  req: bank,key
+  policy: confirmed
+  secondary: false
+  backend: mddb banks
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_forget
+    ada-dev: ada_forget
+  source: ada-voice:backend/realtime_provider.py
+  notes: MEMORY_WRITE_TOOLS
+- name: agent.ops
+  kind: tool
+  sig: action,node,bank,key,outcome,note,source,reset,collection,product,url,mode,topic,depth,identity,entity_id,tool,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: local ops/meta (habits, acl, bank ops)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_ops
+    ada-dev: ada_ops
+  source: ada-voice:backend/realtime_provider.py
+  notes: MEMORY_WRITE_TOOLS seat
+- name: agent.persona
+  kind: tool
+  sig: action,knob,value,person,voice
+  req: action
+  policy: read
+  secondary: false
+  backend: local persona store
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_persona
+    ada-dev: ada_persona
+  source: ada-voice:backend/realtime_provider.py
+  notes: read path free; set/reset secondary-blocked via persona_write token
+- name: speaker.enroll
+  kind: tool
+  sig: who,name,ha_person,display_name,confirmed
+  req: name
+  policy: confirmed
+  secondary: false
+  backend: speaker store + ha person
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-voice-guest
+  surfaces:
+    ada-voice: ada_enroll_speaker
+    ada-dev: ada_enroll_speaker
+    ada-voice-guest: ada_enroll_speaker
+  source: ada-voice:backend/realtime_provider.py
+  notes: guest variant who=guest; secondary-blocked
+- name: cal.read
+  kind: tool
+  sig: action,day,days,query,calendar
+  req: action
+  policy: read
+  secondary: true
+  backend: google calendar
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: calendar_read
+    ada-dev: calendar_read
+  source: ada-voice:backend/realtime_provider.py
+- name: cal.plan_day
+  kind: tool
+  sig: period,day,days,refresh
+  policy: read
+  secondary: true
+  backend: google calendar + memory
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: plan_day
+    ada-dev: plan_day
+  source: ada-voice:backend/realtime_provider.py
+- name: cal.write
+  kind: tool
+  sig: action,title,start,end,notes,location,calendar,event_id,to,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: google calendar
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: calendar_write
+    ada-dev: calendar_write
+  source: ada-voice:backend/realtime_provider.py
+  notes: CALENDAR_WRITE_TOOLS
+- name: cal.tasks
+  kind: tool
+  sig: action,task_list,title,due,notes,task_id,confirmed,confirm_token
+  policy: confirmed
+  secondary: false
+  backend: google tasks
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: tasks
+    ada-dev: tasks
+  source: ada-voice:backend/realtime_provider.py
+  notes: CALENDAR_WRITE_TOOLS; action=list read carve-out
+- name: cms.read
+  kind: tool
+  sig: action,key,query,lang,limit
+  req: action
+  policy: read
+  secondary: true
+  backend: cms pages (mddb + wp)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cms_read
+    ada-dev: cms_read
+  source: ada-voice:backend/realtime_provider.py
+- name: cms.publish_page
+  kind: tool
+  sig: slug,title,content,format,lang,summary,domain,fresh_for,links,supersedes,public,confidence,confirmed,confirm_token
+  req: slug,title,content,summary,domain,fresh_for,confidence
+  policy: confirmed
+  secondary: false
+  backend: wp-boards
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cms_publish_page
+    ada-dev: cms_publish_page
+  source: ada-voice:backend/realtime_provider.py
+  notes: CMS_WRITE_TOOLS + pending-confirm handshake
+- name: cms.edit
+  kind: tool
+  sig: action,slug,note,summary,lang,op,enabled,interval_min,run_now,max_items,since_hours,require,feeds,langs,parent,children,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: wp-boards
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: cms_edit
+    ada-dev: cms_edit
+  source: ada-voice:backend/realtime_provider.py
+  notes: CMS_WRITE_TOOLS + pending-confirm handshake
+- name: agent.resolve_action
+  kind: tool
+  sig: key,resolution
+  req: key,resolution
+  policy: read
+  secondary: false
+  backend: conversation_memory proposals
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_resolve_action
+    ada-dev: ada_resolve_action
+  source: ada-voice:backend/realtime_provider.py
+  notes: SECONDARY_BLOCKED
+- name: dev.dispatch
+  kind: tool
+  sig: action,repo,task,task_id,message,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: devin-dispatch ledger (mddb devin-handoff) + systemd units
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: devin
+    ada-dev: devin
+  source: ada-voice:backend/realtime_provider.py
+  notes: DEVIN_CONFIRMED_TOOLS; action=dispatch|followup|answer
+- name: dev.read
+  kind: tool
+  sig: action,task_id,status,limit,publish,request,title,confirmed,confirm_token
+  req: action
+  policy: read
+  secondary: true
+  backend: mddb devin-handoff ledger
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: devin_read
+    ada-dev: devin_read
+  source: ada-voice:backend/realtime_provider.py
+  notes: report+publish re-checks confirm internally
+- name: docs.archive
+  kind: tool
+  sig: action,query,slug,limit,doc_type,intake_key,intake_keys,source_dir,pages,true_size_mm,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: mddb documents bank + gdrive archive/print
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: docs
+    ada-dev: docs
+  source: ada-voice:backend/realtime_provider.py
+  notes: DOC_CONFIRMED per-action; whole tool owner-tier scoped (DOC_TOOLS)
+- name: docs.drive
+  kind: tool
+  sig: action,query,mime,limit,file_id,content,screen,target,confirmed,confirm_token
+  req: action
+  policy: confirmed
+  secondary: false
+  backend: gdrive
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: drive
+    ada-dev: drive
+  source: ada-voice:backend/realtime_provider.py
+  notes: DRIVE_CONFIRMED per-action; owner-tier (DRIVE_TOOLS)
+- name: media.camera_snapshot
+  kind: tool
+  sig: view,source,channel,camera,query,lat,lon,heading,mode,screen,target,confirmed
+  policy: confirmed
+  secondary: false
+  backend: vms + traffic-cam feed + vcast
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: ada_camera_snapshot
+    ada-dev: ada_camera_snapshot
+  source: ada-voice:backend/realtime_provider.py
+  notes: 'CAPTURE_CONFIRMED: gated only when pushing to display (screen=/target=); describe path open'
+- name: board.plan
+  kind: tool
+  sig: ada_plan(card_reference,selection_confirmation,selection_token)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_plan
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_plan:selection_confirmation/token native-menu gate (read-after-confirm)
+- name: board.plan_with_context
+  kind: tool
+  sig: ada_plan_with_context(card_reference,selection_confirmation,selection_token)
+  policy: read
+  backend: board-api + mddb
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_plan_with_context
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_plan_with_context:same gate; includes bounded context
+- name: media.adobe_stock_reuse
+  kind: tool
+  sig: ada_adobe_stock_reuse(campaign_idea,compact)
+  policy: read
+  backend: local indexes + mddb
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_adobe_stock_reuse
+  source: ada-voice:opencode/ada_mcp.py
+- name: agent.self_verify
+  kind: tool
+  sig: ada_self_verify()
+  policy: read
+  backend: local (evidence-bound code)
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_self_verify
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.status
+  kind: tool
+  sig: ada_status(card_reference)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_status
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.next_card
+  kind: tool
+  sig: ada_next_card()
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_next_card
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.handoff_preview
+  kind: tool
+  sig: ada_handoff_preview(card_reference,plan_confirmation)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_handoff_preview
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_handoff_preview:plan-stage confirmation gate
+- name: board.card_pick
+  kind: tool
+  sig: ada_card_pick(strategy,limit,days)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_card_pick
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_card_pick:issues selection tokens
+- name: board.card_context
+  kind: tool
+  sig: ada_card_context(card_reference,max_files)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_card_context
+  source: ada-voice:opencode/ada_mcp.py
+- name: dev.context_pack
+  kind: tool
+  sig: ada_context_pack(query,card_reference,profile,include_memory,include_ssot,limit)
+  policy: read
+  backend: board-api + mddb + ssot
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_context_pack
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_context_pack:bounded pack for OpenChamber/OpenCode
+- name: ssot.get
+  kind: tool
+  sig: ada_ssot_get(collection,key,selector,max_chars)
+  policy: read
+  backend: mddb ssot collections (allowlisted)
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_ssot_get
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.preflight
+  kind: tool
+  sig: ada_preflight(card_reference,selection_confirmation,selection_token)
+  policy: read
+  backend: board-api + mddb
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_preflight
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_preflight:one workflow receipt; selection-token gate
+- name: dev.start_check
+  kind: tool
+  sig: ada_start_check(card_reference,handoff_confirmation)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_start_check
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_start_check:handoff-stage confirmation gate
+- name: dev.dispatch_check
+  kind: tool
+  sig: ada_dispatch_check(card_reference)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_dispatch_check
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_dispatch_check:validates envelope; creates nothing
+- name: ops.spend_summary
+  kind: tool
+  sig: ada_spend_summary()
+  policy: read
+  backend: litellm spend ledger (published)
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_spend_summary
+  source: ada-voice:opencode/ada_mcp.py
+- name: agent.self_test
+  kind: tool
+  sig: ada_self_test()
+  policy: read
+  backend: local contract test
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_self_test
+  source: ada-voice:opencode/ada_mcp.py
+- name: dev.debug_opencode
+  kind: tool
+  sig: ada_debug_opencode()
+  policy: read
+  backend: local + board-api reachability
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_debug_opencode
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.attention
+  kind: tool
+  sig: ada_attention(oldest)
+  policy: read
+  backend: board-api
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_attention
+  source: ada-voice:opencode/ada_mcp.py
+- name: board.respond
+  kind: tool
+  sig: ada_respond(card_reference,request_id,answer,confirmed)
+  policy: confirmed
+  backend: board-api /respond
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_respond
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_respond:mutation; two-call confirmation gate
+- name: board.card_action
+  kind: tool
+  sig: ada_card_action(card_reference,do,confirmed)
+  policy: confirmed
+  backend: board-api /action
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_card_action
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_card_action:mutation (queue|hold); two-call confirmation gate
+- name: agent.bridge_info
+  kind: tool
+  sig: ada_bridge_info()
+  policy: read
+  backend: local
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_bridge_info
+  source: ada-voice:opencode/ada_mcp.py
+- name: mcp.github
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: github api
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: github
+  source: ~/.config/devin/mcp_config.json
+  notes: github-mcp-server (docker via run-github-mcp.sh; single-instance); filtered toolset (search_issues, create_issue, add_issue_comment,
+    create_pull_request, list_pull_requests, add_comment_to_pending_review, list_commons, get_file_contents)
+- name: mcp.gpu
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: imagen2 api + llama-server (tony-omen :8001)
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: gpu
+  source: ~/.config/devin/mcp_config.json
+  notes: chaba mcp-servers/mcp-gpu/server.py
+- name: mcp.llama
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: ollama idc01:11434
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: llama
+  source: ~/.config/devin/mcp_config.json
+  notes: chaba mcp-servers/mcp-llama/server.py
+- name: mcp.postgres
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: postgres tony-dell:5432
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: postgres
+  source: ~/.config/devin/mcp_config.json
+  notes: postgres-mcp via run-postgres-mcp.sh; filtered read toolset
+- name: mcp.yomi
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: local LINE search index (on-device)
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: yomi
+  source: ~/.config/devin/mcp_config.json
+  notes: ~/.config/devin/mcp-scripts/mcp-yomi.sh; capture-all default; exclusion via exclude_chats
+- name: mcp.playlive
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: playlived fleet (ssot playlive-hosts.yml)
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: playlive
+  source: ~/.config/devin/mcp_config.json
+  notes: playlive-hosts-loader.py
+- name: mcp.debug
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: mcp-debug stdio server
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: debug
+  source: ~/.config/devin/mcp_config.json
+  notes: mcp-debug.sh -> tony-dell
+- name: mcp.alphavantage
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: mcp.alphavantage.co
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: alphavantage
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp; api key lives in mcp_config.json — never copy into SSOT
+- name: mcp.docs_trade
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: local docs index
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: docs_trade
+  source: ~/.config/devin/mcp_config.json
+  notes: npx @devista/docs-mcp over trade/docs
+- name: mcp.weaviate
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: weaviate search (tony-dell :8084 / omen :3002)
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: weaviate
+  source: ~/.config/devin/mcp_config.json
+  notes: chaba mcp-servers/mcp-weaviate/server.py
+- name: mcp.mddb
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: mddb-mcp idc03:9000/mcp
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: mddb
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp; X-API-Key in mcp_config.json — never copy into SSOT
+- name: mcp.health
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: mcp-health server (HEALTH_PROFILE=home)
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: health
+  source: ~/.config/devin/mcp_config.json
+  notes: mcp-health-ssh.sh -> tony-dell
+- name: mcp.ha_home
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: tony-ha via tony-dell:9584 private URL
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: ha_home
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp (server key home-assistant); token-in-URL; reference config only
+- name: mcp.ha_michael_dev
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: michael dev ha idc02:9585
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: ha_michael_dev
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp (server key michael-dev); token-in-URL
+- name: mcp.ha_michael
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: michael ha tony-dell:19584
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: ha_michael
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp (server key michael-ha); token-in-URL
+- name: mcp.notebooklm
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: notebooklm bridge
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: notebooklm
+  source: ~/.config/devin/mcp_config.json
+  notes: mcp-notebooklm-ssh.sh
+- name: mcp.google_home
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: home.googleapis.com/mcp
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: google_home
+  source: ~/.config/devin/mcp_config.json
+  status: disabled
+  notes: remote http mcp + oauth; DISABLED in mcp_config.json
+- name: mcp.google_home_lan
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: google-home-lan mn01:8004/mcp
+  transport: http
+  agents:
+  - devin
+  surfaces:
+    devin: google_home_lan
+  source: ~/.config/devin/mcp_config.json
+  notes: remote http mcp
+- name: mcp.icloud
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: icloud local(applescript)/cloud bridge
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: icloud
+  source: ~/.config/devin/mcp_config.json
+  notes: mcp-icloud-ssh.sh
+- name: mcp.colab_upstream
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: google colab api
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: colab_upstream
+  source: ~/.config/devin/mcp_config.json
+  notes: uvx git+ googlecolab/colab-mcp (server key colab-mcp)
+- name: mcp.colab
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: local colab bridge
+  transport: stdio-mcp
+  agents:
+  - devin
+  surfaces:
+    devin: colab
+  source: ~/.config/devin/mcp_config.json
+  notes: chaba mcp-servers/mcp-colab/server.py (server key mcp-colab); distinct from colab_upstream — name collision risk in mcp_config
+- name: mcp.ada_control
+  kind: provider
+  sig: per-tool via mcp_list_tools
+  policy: mixed
+  backend: board-api idc03:10000 + mddb :11023/:11027
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_control
+  source: ada-voice:opencode/opencode.json
+  notes: ada-voice opencode/ada_mcp.py (FastMCP ada-control); the ada-ocb bridge itself; 26 tools inventoried above; reimplements board/mddb/wiki
+    logic — phase-2 thin-adapter rewrite
