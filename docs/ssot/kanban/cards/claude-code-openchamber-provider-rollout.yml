@@ -1,7 +1,7 @@
 id: claude-code-openchamber-provider-rollout
 title: Standardize claude-agent provider wiring across OpenChamber hosts
-column: doing
-updated: 2026-11-18 13:30
+column: review
+updated: 2026-11-18 13:36
 brief: OpenCode 2.2.3+ has a native claude-agent provider that runs the local Claude Code binary via the Agent SDK
   — subscription auth, no API key, separate lane from LiteLLM. Wired and verified on tony-dell ada-ocb 2026-11-18;
   needs to become the repeatable standard for every OpenChamber host.
@@ -42,10 +42,13 @@ action:
   host: tony-dell
   labels:
   - push:chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-dell
+  result: 'exit=0 b5386b2611252cd1, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261118-132130-turn-the-tony-dell-wiring-into.service:
+    Consumed 1min 1.379s CPU time over 9min 4.947s wall clock time, 2.6G memory peak.'
+  verified: true
 ref: OPS-0184
 comms:
 - at: 2026-11-18 12:39
@@ -113,3 +116,9 @@ comms:
     live on tony-dell: --force exercised PUT /api/environment + auth login + config/reload + post-reload model verify,
     --smoke got a real claude-agent/haiku reply. Fleet probe: tony-dell is the ONLY OpenChamber host today — no
     rollout targets exist. Readiness: tony-omen has claude-code+lo'
+- at: 2026-11-18 13:36
+  from: tony-dell
+  text: 'finished (ok): exit=0 b5386b2611252cd1, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server)
+    | devin-task-20261118-1'
+review_kind: verify
+claim: {}
