@@ -7,20 +7,19 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: git fetch origin failed AND 252 commits behind last-fetched ref —
-  clone can''t refresh (ssh: Could not resolve hostname github.com: Temporary failure
-  in name resolution); runner-agent installed but no repo push-capable (no push:<repo>
-  label, every probe fails) — this host can only strand dispatch branches; ~/.local/bin/devin-dispatch
-  sha e5b401a3f212a9ca != repo 71a2c26532c597f4 — installed copy drifted; redeploy.
-  Info: chaba origin is push-capable; no ada-voice checkout — host can''t take action.repo=ada-voice
+note: 'Failing: chaba clone 286 commits behind origin/master (limit 200); runner-agent
+  installed but no repo push-capable (no push:<repo> label, every probe fails) — this
+  host can only strand dispatch branches; ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca
+  != repo 71a2c26532c597f4 — installed copy drifted; redeploy. Info: chaba origin
+  is push-capable; no ada-voice checkout — host can''t take action.repo=ada-voice
   cards; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card cards;
   no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view
   checkout — host can''t take action.repo=gods-eye-view cards; devin: /home/tony/.local/bin/devin
   (devin 3000.13.4 (d9a56503ce88)).'
 help: 'Per-check fixes:
 
-  - clone-fetch: git fetch origin fails on the host — check egress/DNS to github.com
-  from <host>.
+  - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale
+  clones crash runner-agent on missing dispatch_repos helpers (idc01, 860 behind).
 
   - no-push-creds: A dispatch runner that can''t push ANY repo only strands branches
   (relay salvages them, but the host is a liability). Give it a push-capable deploy
