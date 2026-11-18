@@ -1,0 +1,25 @@
+id: runner-tooling-drift-recurs-installed-ru-3aad1e
+title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
+  but nothing redeploys
+column: backlog
+updated: 2026-11-18 20:19
+priority: medium
+tags:
+- dispatch
+- runner
+- drift
+- ops
+spec: 'EVIDENCE (2026-11-18): dispatch deferrals across tony-omen/mn01/tony-macbook (''installed runner-agent drifted
+  from repo — redeploy it'') and kanban-sync repeatedly logging devin-dispatch installed hash e5b401a3 vs repo 71a2c265
+  on multiple hosts. Manually redeployed devin-dispatch to omen/mn01/idc02/idc03 today; runner-agent was already
+  current everywhere. ROOT ISSUE: installed copies under ~/.local/bin are snapshots — nothing syncs them when scripts/board/runner-agent.py
+  or scripts/devin/devin-dispatch.sh change on master. The drift check exists (ssot.jobs.yml ~line 884) but only
+  reports. OPTIONS: (a) extend chaba-repo-sync or a small timer to rsync the canonical files to ~/.local/bin when
+  hash differs (self-healing, my recommendation); (b) keep detect-only but auto-file a card on drift; (c) status
+  quo + manual redeploys. Also audit dispatch_repos.conf drift in the same pass. Done when: installed hash == repo
+  hash on all runner hosts without manual intervention, or drift auto-files a card within one sync cycle.'
+ref: OPS-0198
+comms:
+- at: 2026-11-18 20:19
+  from: tony
+  text: card captured via board-api
