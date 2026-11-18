@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval-r2
 title: ada-ocb answer-quality eval r2 (retry — r1 work lost to worktree GC)
 column: doing
-updated: 2026-11-18 14:42
+updated: 2026-11-18 15:45
 brief: 'Re-run of ADA-0175: r1 produced a good harness (ocb-eval.py, 10 cases, tools-mode 10/10) but the branch
   eval/ocb-answer-eval @442cfc7 lived in a scratch clone inside a GC''d worktree and is LOST. Rebuild it — the analysis
   is in ADA-0175 comms.'
@@ -70,4 +70,11 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 15:45
+  from: devin
+  text: 'Implemented directly after runner retries kept dying on push-creds. Merged to main as 36828b1 (+7eb67b3
+    timer fix), deployed idc03 (1820 tests pass, all services active). Delivered: scripts/ocb-eval.py (tools/replay/live
+    modes, answer-text assertions, degraded-on-quota), tests/eval_ocb/cases.yml (10 cases), tests/test_ocb_eval.py
+    (6 offline tests), ada-ocb-eval.service/.timer (6-hourly on idc02, next 18:20). First live run: score 10/10,
+    benchmark doc ada-ha-scenario-reports/benchmark/ocb-eval-20'
 ref: ADA-0188
