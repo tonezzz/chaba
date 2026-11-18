@@ -144,7 +144,10 @@ contract:
       scripts/chaba/render-report-feed.py. CMS-published reports
       (producer = Ada writing ada-cms-pages) use the reflector instead:
       scripts/ada/cms-report-reflect.py mirrors page -> meta + artifact
-      snapshot via chaba-cms-reflect.timer.
+      snapshot via chaba-cms-reflect.timer. Since 2026-11-18 the renderer
+      also PULLS: scripts/report/pull-report-metas.sh harvests meta*.yml
+      from every producer checkout into con01's reports/ ahead of
+      report-system.py — push-back is a convenience, pull is the floor.
     offline_ok: >
       Hosts that legitimately leave the tailnet (laptops, travel nodes)
       declare `offline_ok: true` — report-watch tolerates `unreachable`
@@ -706,9 +709,12 @@ schedule:
     timer: systemd/chaba-system-report.timer
     service: systemd/chaba-system-report.service
     frequency: daily at 06:45 (after overnight producers)
-    status: installed on tony-dell (2026-09-27); the service runs the full
-      chain — per-host audit-hosts snapshots -> --consolidate fleet L2 ->
-      report-system.py L3
+    status: rendered from ssot.jobs.yml; runs on con01 (moved tony-dell ->
+      idc02 2026-10-04, idc02 -> con01 Oct-25 absorber shed). Chain —
+      per-host audit-hosts snapshots -> --consolidate fleet L2 ->
+      pull-report-metas.sh (harvest producer metas — reports/* is
+      gitignored, added 2026-11-18) -> report-system.py L3 -> scp fanout
+      to idc02 web-srv + exec checkout.
   daily_brief:
     timer: job:daily-brief in ssot.jobs.yml (one timer, twice daily)
     frequency: 07:05 + 19:05 (morning run lands after the 06:45 system

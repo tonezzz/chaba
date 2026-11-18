@@ -1,0 +1,163 @@
+title: Report-graph meta pull — con01 renderer harvests producer metas
+date: 2026-11-18
+card: report-graph-producer-metas-never-reach-7b0982
+status: implemented + verified live
+
+root_cause:
+  summary: >
+    reports/* is gitignored — producer meta*.yml files only ever exist on the
+    host+checkout that produced them. The L3 renderer (chaba-system-report on
+    con01) read only its own checkout's reports/, saw ~12 local metas, and
+    resolved ~20 declared nodes as `missing` in the system-report.yml served
+    on idc02.
+  aggravator_1: >
+    Producer push-back targets drifted after the OPS-0725 served-checkout move
+    (dell -> idc03, Oct-17) and the Oct-25 absorber shed (renderer idc02 ->
+    con01): run-and-ship.sh still ships audit metas to tony-dell:chaba-tony-dell,
+    render-report-feed.py scp's its meta to the same dead mirror, chaba-route-health
+    and chaba-cms-reflect ExecStartPost scp to idc02:chaba. Every push path pointed
+    somewhere the renderer wasn't.
+  aggravator_2: >
+    The manual fix (2026-11-18) rsynced metas without -u and pulled idc02's
+    frozen Oct-23/25 copies — it overwrote con01's OWN fresh audit-hosts metas
+    (written 06:45 CET same day) with stale ones, which is why ~23 nodes then
+    reported stale at ~Oct-23. The producers were never dead; con01 was reading
+    a frozen snapshot.
+
+fix:
+  what: >
+    scripts/report/pull-report-metas.sh — runs inside chaba-system-report's
+    exec chain on con01 between --consolidate and report-system.py. rsync -au
+    (newest mtime wins, recursive include meta*.yml) from every checkout known
+    to hold producer metas, plus tony-dell's ~/var/chaba/health/meta.yml ->
+    same absolute path locally. Excludes meta.system-report.yml +
+    meta.focus-inbox.yml (renderer-owned). All sources soft-fail: unreachable
+    hosts are skipped, the render never blocks.
+  unit: >
+    systemd/generated/con01/chaba-system-report.service re-rendered from
+    ssot.jobs.yml and installed on con01 2026-11-18 (script scp'd into con01's
+    checkout — untracked until this worktree merges; git-safe-pull resolves
+    upstream-wins on the collision).
+  verified: >
+    Ran the pull + report-system.py on con01 2026-11-18 ~10:37 CET:
+    missing 20 -> 0, stale ~23 -> 1, served system-report.yml on idc02
+    refreshed (generated_at 10:44 CET, counts
+    ok=14 delta=17 planned=2 error=1 stale=1 untracked=1 — missing=0).
+
+producer_meta_map:
+  # Where each node's meta is written today (verified 2026-11-18).
+  audit-hosts/*: con01 chaba/reports/audit-hosts/ (local); also tony-dell
+    chaba-tony-dell (leftover renderer — see findings)
+  fleet: con01 chaba/reports/fleet/ (local, --consolidate)
+  system-report + focus-inbox: con01 (renderer-owned, excluded from pull)
+  health-monitor: tony-dell ~/var/chaba/health/meta.yml (tony-dell-monitor.timer)
+  route-health/tony-dell-web: tony-dell chaba-tony-dell + scp -> idc02 chaba
+  host-loads: idc02 chaba/reports/host-loads/ (5 min sampler)
+  disk-trend: idc03 chaba-tony-dell/reports/disk-trend/ (kanban-sync.sh -> $SRC)
+  overnight-assessment: idc03 chaba-tony-dell/reports/ (02:00 timer)
+  systemwide-assessment: tony-dell chaba-cms-reflect -> chaba-tony-dell + scp -> idc02 chaba
+  kanban: idc03 chaba-tony-dell/reports/kanban/ (board-janitor kanban-stats sub-check)
+  daily-brief: idc03 chaba/reports/ (daily-brief.timer, exec checkout)
+  nest-lanes/* nest-brains/* nest-bench/* chaba-nest: idc03
+    chaba-tony-dell/reports/nest/ (chaba-kanban-brief ExecStart #3, 30 min)
+  audit-suite + memory-suite: con01 chaba-audit.timer (Sun) -> run-and-ship
+    rsyncs to tony-dell:chaba-tony-dell (stale target; also local)
+  report-feed: tony-omen chaba-report-feed.timer hourly -> scp meta to
+    tony-dell:chaba-tony-dell (stale push-back target)
+  model-bench: tony-omen model-bench.timer Sun 05:15 -> --push-meta idc02:chaba
+  fleet-jobs-report: idc03 chaba/reports/ (fleet-jobs-report.timer, 4h)
+  lane-savings: manual (no meta writer — untracked by design gap)
+  ada-memory-report: planned (no meta writer)
+  ci-pipeline: dormant (arg-required)
+
+findings:
+  - id: board-janitor-never-installed
+    detail: >
+      board-janitor.timer (idc03, every 15m — OPS-1244d: runs all board sweeps
+      incl. kanban-stats) was declared in ssot.jobs.yml and its units were
+      generated into systemd/generated/idc03/, but never installed — no timer
+      unit existed on the host. kanban-stats has had NO scheduled producer
+      since ~Nov-12 (kanban-sync.sh dropped the call when board-janitor took
+      over). FIXED 2026-11-18: units installed + timer enabled on idc03;
+      first tick ran 16:40 — kanban-stats sub-check wrote a fresh meta
+      (940 cards). Caveat: the tick exits 1 because its backlog-audit
+      sub-check errors (pre-existing script issue — all 6 other sweeps ok;
+      worth a follow-up but does not block the kanban node).
+  - id: fleet-jobs-report-never-installed
+    detail: >
+      fleet-jobs-report.timer (idc03, every 4h) same story — declared,
+      generated, never installed; node was the last `missing`. FIXED
+      2026-11-18: installed + enabled; first run produced meta
+      reports/meta.fleet-jobs-report.yml + reports/fleet-jobs-20261118.md (ok).
+  - id: model-bench-disabled
+    detail: >
+      model-bench.timer on tony-omen was rendered Oct-23 but never enabled
+      (unit-file state disabled, zero journal runs ever) — weekly Sun 05:15
+      bench never fired; Oct-24/Nov-11 metas came from manual runs. FIXED
+      2026-11-18: enabled + started (fires next Sunday; push-meta -> idc02:chaba
+      is inside the pull set).
+  - id: con01-ssh-known-hosts
+    detail: >
+      con01 had no ~/.ssh/known_hosts entries for tony-omen, mn01 or itself —
+      audit-hosts marked tony-omen/mn01/macbook unreachable every run and the
+      pull couldn't reach those checkouts. Verified keys via independent
+      vantages (tony-omen local host key, dell's known_hosts for mn01 + con01)
+      and added them 2026-11-18. con01 self-ssh is moot once the _is_local fix
+      lands (audit-hosts.py only recognized tony-omen/tony-dell as local —
+      generalized in this change). idc01 unreachable 27d (tailscale offline,
+      warm-DR; pull tolerates it).
+  - id: dell-leftover-renderer
+    detail: >
+      tony-dell still runs its pre-move chaba-system-report.timer daily 06:45
+      (+07) into chaba-tony-dell (old --all --cards chain incl. retired idc01,
+      which now errors as an invalid --host choice). It is a duplicate
+      renderer — wasted ~4 min/day and writes metas that compete in the pull
+      set (its audit coverage actually HELPS: dell reaches mn01 that con01
+      couldn't). Decide: disable the timer on dell, or keep as redundant
+      coverage; NOT touched in this change.
+  - id: stale-pushback-targets
+    detail: >
+      run-and-ship.sh SERVED=tony-dell:chaba-tony-dell (pre-OPS-0725 served),
+      render-report-feed.py scp's meta to the same mirror, model-bench
+      --push-meta -> idc02:chaba, route-health + cms-reflect ExecStartPost ->
+      idc02:chaba. All harmless under the pull model (every target is in the
+      source list) but worth repointing to the real served checkout when those
+      producers are next touched — push-back should target the canonical
+      served path idc03:chaba-tony-dell, not a frozen mirror.
+  - id: genuine-producer-errors
+    detail: >
+      Not transport: overnight-assessment reports status=error on idc03
+      (5/6 steps ok; health_snapshot fails — investigate orchestrate.py
+      health_snapshot). systemwide-assessment stale since 2026-09-27 — the
+      reflector works; the SOURCE is a manual Ada+Devin joint page that has
+      not been republished (7d cadence — stale is the intended signal).
+      lane-savings is manual with no meta writer (untracked — small contract
+      gap in lane-savings.py). focus-inbox shows 1704 open items.
+
+producers_lacking_ship_or_pull_coverage:
+  # audit asked: which producers have no path to the renderer.
+  covered_by_pull: all registry nodes above — every checkout they write to
+    is in pull-report-metas.sh SOURCES.
+  gaps:
+    - lane-savings: never writes meta at all (manual producer; artifact only)
+    - ada-memory-report: planned, no producer
+    - ha-auth + qc-scoreboard + ada-debug + ai-edge + gh-runs +
+      nest-node-hardware metas exist on hosts but are NOT registry nodes —
+      they ride along in the pull harmlessly.
+  note: >
+    Any NEW producer must land its meta in a checkout listed in
+    pull-report-metas.sh SOURCES (or the source list must grow) — that is the
+    single integration point now.
+
+verification:
+  - ssh con01 'cd ~/CascadeProjects/chaba && bash scripts/report/pull-report-metas.sh'
+  - ssh con01 'journalctl --user -u chaba-system-report.service -n 30 --no-pager'
+  - curl -s https://idc02.taila0626a.ts.net/apps/system-report/data/system-report.yml | head
+  - systemctl --user list-timers board-janitor.timer fleet-jobs-report.timer (idc03)
+  - systemctl --user list-timers model-bench.timer (tony-omen)
+
+related:
+  - scripts/report/pull-report-metas.sh
+  - docs/ssot/infrastructure/ssot.jobs.yml (chaba-system-report exec + note)
+  - scripts/audit-hosts.py (_is_local generalized beyond tony-omen/tony-dell)
+  - docs/ssot/infrastructure/ssot.reports.yml (contract.remote_pushback)

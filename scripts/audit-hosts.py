@@ -253,7 +253,7 @@ def _is_local(host: str) -> bool:
         hn = subprocess.run(["hostname", "-s"], capture_output=True, text=True, timeout=5).stdout.strip()
     except Exception:
         hn = ""
-    return host == "tony-omen" and hn == "tony-omen" or host == "tony-dell" and hn == "tony-dell"
+    return bool(hn) and hn.split(".")[0].lower() == host.lower()
 
 
 def audit_host(host: str, ssh: bool | None = None) -> dict:
