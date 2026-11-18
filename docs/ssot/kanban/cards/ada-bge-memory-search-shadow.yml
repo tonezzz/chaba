@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-18 15:11
+updated: 2026-11-18 17:29
 priority: high
 tags:
 - ada
@@ -104,6 +104,10 @@ comms:
     total_ms=5018`. ACL confirmed working: anonymous fanout correctly resolved to only general+home (default policy
     allow-list; dev-scratch not in tony instance). Failure isolation proven live: both :11028 fetches blew the 5s
     deadline, shadow degraded to empty, baseline unto'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: failed
