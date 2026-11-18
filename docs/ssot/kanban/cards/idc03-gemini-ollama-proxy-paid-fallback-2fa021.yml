@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: done
-updated: 2026-11-18 11:25
+updated: 2026-11-18 14:17
 priority: high
 tags:
 - idc03
@@ -263,6 +263,13 @@ comms:
     drops + requeue loops. Drain rate is capped by provider circuits: free Gemini dead, OR circuit open, paid capped
     at 150/hr + 2000/day — max ~2.5-5 embeds/min while demand exceeds it, so the queue never drains and failed jobs
     requeue forever. Embed traffic is ~5/min baselin'
+- at: 2026-11-18 14:17
+  from: devin
+  text: 'PROGRESS 2026-11-18: free-tier capacity expanded. Verified live: (1) NOT a litellm rate limit — gemini-ollama-proxy
+    calls Google directly, litellm not in path. (2) mddb free key ...VPnw hit Google free-tier cap 1000 embeds/day.
+    (3) Enabled Generative Language API on GEMINI_API_KEY_FREE project (...UCiA) — quota-429 not 403 now, resets
+    ~15:00 UTC. (4) gemini-ollama-proxy.mjs patched: GEMINI_FREE_KEYS ring with per-key circuits (backup .bak-keyring-20261118);
+    live verified — VPnw+UCiA circuits ope'
 action:
   type: dispatch
   status: done
