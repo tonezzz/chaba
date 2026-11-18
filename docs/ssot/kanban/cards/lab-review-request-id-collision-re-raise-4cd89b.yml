@@ -1,7 +1,7 @@
 id: lab-review-request-id-collision-re-raise-4cd89b
 title: lab-review request id collision — re-raised lab-review unreachable by /respond (always 400 already-answered)
 column: backlog
-updated: 2026-11-18 17:24
+updated: 2026-11-18 18:09
 priority: medium
 tags:
 - board
@@ -20,6 +20,9 @@ spec: 'Card lab-meshtastic-th carries TWO requests[] entries both with id=lab-re
 action:
   type: dispatch
   repo: chaba
+  model: sonnet
+  executor: claude
+  status: queued
 ref: KNB-0179
 comms:
 - at: 2026-11-17 23:23
@@ -29,3 +32,6 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:09
+  from: devin
+  text: re-spawned from report page
