@@ -1,7 +1,7 @@
 id: scenario-sessions-hitting-ada-ha-tony-in-4d180d
 title: Scenario sessions hitting ada-ha-tony instead of ada-dev free lane
 column: done
-updated: 2026-11-17 21:05
+updated: 2026-11-18 17:15
 priority: high
 tags:
 - ada
@@ -97,6 +97,10 @@ comms:
 - at: 2026-11-17 21:05
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate why admin sessions still connect to ada-ha-tony at 6.6s intervals during suite windows despite
   smoke retargeting working for actual usage. The target repository is ada-voice and the operations run on host
