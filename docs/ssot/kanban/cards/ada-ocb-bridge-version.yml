@@ -1,6 +1,6 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
-column: doing
+column: review
 updated: 2026-11-18 08:42
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
@@ -70,3 +70,7 @@ comms:
     every tool response, bridge_version in calls.jsonl, ada_bridge_info tool (26 tools), startup audit+stderr log,
     16 tests pass. Merged aa31f29 to main, deployed idc03 (1760 pass), DevNest synced e91645a, live check: version=git-d073d8d-dirty
     tools_count=26.'
+- at: 2026-11-18 08:42
+  from: devin
+  text: moved doing -> review
+review_kind: verify
