@@ -1,7 +1,7 @@
 id: board-api-compact-cards
 title: 'board-api: honor fields/compact projection server-side for /cards'
 column: doing
-updated: 2026-11-18 08:40
+updated: 2026-11-18 14:41
 brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
   real server-side.
 priority: medium
@@ -109,3 +109,8 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261117-221304-in-scripts-board-board-api-py- on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-18 14:41
+  from: devin
+  text: Second infra failure on idc02 (unit not-found, work lost). Card stays queued-ish; will retry once idc02
+    runner-agent is verified. If it fails a third time I'll implement directly — the fields= projection semantics
+    need verifying first anyway.
