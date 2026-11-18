@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: review
-updated: 2026-11-18 21:31
+updated: 2026-11-18 21:34
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -178,6 +178,10 @@ comms:
 - at: 2026-11-18 21:31
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-18 21:34
+  from: chaba
+  text: restarted zombie claim as devin-task-20261118-213418-goal-improve-devnest-throughpu on tony-omen — claim
+    committed but the response was lost (OPS-1071)
 action:
   type: dispatch
   status: done
