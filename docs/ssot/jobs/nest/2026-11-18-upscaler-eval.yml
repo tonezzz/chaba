@@ -1,0 +1,73 @@
+title: Standard upscale step for the Nest Adobe Stock pipeline (eval + pick)
+date: 2026-11-18
+card: adobe-stock-upscaler-eval
+session: dispatch-wt-20261118-221239-goal-choose-the-standard-upsca (tony-omen)
+ref: OPS-1077
+report: reports/upscaler-eval-2026-11-18.md
+
+what:
+  asset: gdrive:ada-nest-adobe-stock campaigns/AS-2026-11-05-REMOTE-WORK-001
+         30-candidates/comparison-b-sharp-leaves (SDXL photographic, 1024x576)
+  harness: scripts/adobe-stock/upscale-eval.py
+        # backends: realesrgan-ncnn | spandrel | bicubic; post: --dn, --unsharp
+        # metrics: laplacian_var, roundtrip PSNR/SSIM, flat_region_lap_gain,
+        #          CLIP cosine drift (external clip-drift.py this session)
+  repro: /tmp/as-eval on tony-omen (src, models, receipts, crops)
+
+decision:
+  default: realesrgan-x4plus x4 via realesrgan-ncnn-vulkan
+    # 32s/img on omen GTX1650 Vulkan; llvmpipe CPU fallback 19min/img;
+    # GAN texture invention is desired for stock (AI-smooth -> photographic)
+    # --dn 0.5 when source carries visible generation noise
+  fidelity_alternate: SwinIR-M / HAT-S classical SR via spandrel
+    # 45.4-46.9dB roundtrip vs 32.2 — for assets already sharp that only
+    # need the 4MP gate; output reads "clean resize" not "more photo"
+  rejected_default: diffusion SR (SeeSR/OSEDiff/SUPIR)
+    # 8.7-30GB VRAM — no fleet host qualifies; hallucination risk is the
+    # wrong default for stock QC; keep for hero assets (rented GPU)
+
+measured:                       # comparison-b x4, tony-omen
+  realesrgan_vulkan:   {wall_s: 32.4,  lap: 130.5, psnr_db: 32.20, ssim: 0.9718, clip: 0.9695}
+  realesrgan_dn05:     {lap: 37.7,  psnr_db: 38.52, ssim: 0.9896, clip: 0.9874}
+  realesrgan_sharp60:  {lap: 289.6, psnr_db: 30.28, ssim: 0.9613, clip: 0.9654}
+  realesrgan_llvmpipe: {wall_s: 1130, lap: 130.3,  psnr_db: 32.00, ssim: 0.9728}
+  swinir_m_classical:  {wall_s: 480,  lap: 55.2,   psnr_db: 46.87, ssim: 0.9981, clip: 0.9993}
+  hat_s_crop:          {wall_s: 210,  lap: 52.8,   psnr_db: 45.42, ssim: 0.9977}
+  real_hat_gan_crop:   {wall_s: 197,  lap: 135.1,  psnr_db: 32.09, ssim: 0.9724}
+  bicubic_x4:          {wall_s: 0.7,  lap: 5.35,   psnr_db: 45.44, ssim: 0.9967, clip: 0.9984}
+
+failure_modes_observed:
+  - "ncnn -s 3 on an x4-only model: tile-scrambled output (blocks of the
+     scene permuted/duplicated). RULE: run models at native scale only."
+  - "realesrgan-x4plus-anime_6B: black frame on this ncnn build — exclude
+     from photographic lane."
+  - "spandrel BGR->RGB channel order bug in harness (fixed): blue-shifted
+     output, PSNR collapsed to 22 — would have wrongly failed classical SR."
+  - "HAT / Real-HAT-GAN full-frame OOM under dispatch cgroup (~12GB);
+     crop-level runs fine, full-frame needs tiling."
+  - "flat_region_lap_gain NaN on AI-smooth sources (no flat energy to
+     amplify — treat as informational, not failure)."
+  - "CLIP cosine misses spatial corruption (scrambled x3 scored 0.95) —
+     pair with pixel metrics or visual QC."
+
+correction:
+  - "lesson ai-image-quality-ladder claimed x2 upscale 'comfortably'
+     clears Adobe 4MP — 2048x1152 = 2.36MP < 4MP. For 1024x576 sources
+     x4 (9.44MP) is the minimum compliant scale."
+
+integration_plan:
+  step: "post-QC-accept, pre-upload-package; new 50-upscaled/ stage"
+  worker: "upscale-eval.py + thin upscale-worker.sh; -g 0 when Vulkan GPU
+           present else llvmpipe; x4 only; receipt JSON lands with PNG"
+  routing: "omen Vulkan (32s) or KK-Mac ncnn macOS build primary;
+            idc03 llvmpipe (19min) no-GPU fallback only"
+  qc: "human QC pass unchanged; CLIP + roundtrip PSNR in receipt give a
+       pre-open drift signal"
+
+education: lesson ai-image-quality-ladder-upscaling-restoration (post 4130,
+           updated in place with eval results)
+followups:
+  - "card idea: ResShift/RSD-class distilled non-T2I diffusion (174M,
+     ~0.5-1.2GB VRAM) — fits GTX1650, beats GAN fidelity; future lane"
+  - "HAT full-frame needs tiled inference (spandrel tiling or
+     HAT's own tile mode) if classical SR is promoted"
