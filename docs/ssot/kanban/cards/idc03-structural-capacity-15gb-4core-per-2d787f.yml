@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: backlog
-updated: 2026-11-17 21:13
+updated: 2026-11-18 11:24
 priority: medium
 tags:
 - idc03
@@ -47,6 +47,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 11:24
+  from: devin
+  text: 'PHASE-1 MIGRATION DONE 2026-11-18: (1) ada-dev + ada-kk-dev moved idc03->tony-omen, live on omen :8005/:8009
+    (verified HTTP 200, units enabled), disabled on idc03. (2) jev-student (distilbert confirm-gate, prod CHAMP)
+    moved to omen :8780 — ckpt md5-verified identical, health OK (model jev-student-distilmulti thr 0.7); ada-chaba.env
+    ADA_JEV_URL repointed to http://100.75.102.88:8780 and service restarted clean; idc03 jev-student disabled.
+    (3) Secrets envs copied; omen ada-voice fast-forwarded 822'
 action:
   type: dispatch
   status: idle
