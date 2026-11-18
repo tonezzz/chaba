@@ -96,6 +96,27 @@ def dispatch_dir() -> Path:
         "DISPATCH_DIR", str(Path.home() / ".local/share/devin-dispatch")))
 
 
+# --- provider rate-limit signature (dispatch-runner-resilience) -------
+# Canonical scan shared by kanban-dispatch's finish survey; runner-agent
+# carries a lockstep vendored copy (single-file deploys). A lane model
+# that 429s is a shared resource — a failed unit whose output carries
+# one of these arms the host's claim cooldown instead of burning the
+# next card's attempts into the same wall.
+RATE_LIMIT_PAT = re.compile(
+    r"(rate[ _-]?limit(?:ed|_error| error)?|too many requests|"
+    r"\b429\b|\b529\b|resource.?exhaust|quota (?:exceeded|exhausted)|"
+    r"exceed\w*.{0,25}quota|insufficient.?quota|overloaded_error|"
+    r"throttl)", re.I)
+
+
+def rate_limit_hit(text: str) -> str:
+    """Provider throttle signature found in `text`, else ''."""
+    if not text:
+        return ""
+    m = RATE_LIMIT_PAT.search(text)
+    return (m.group(0)[:80] if m else "")
+
+
 # --- lane -> cheapest-executor routing (jev-pilot Phase 2, 2026-10-25) --
 # Canonical home for the lane tables + classifier so a queued card's lane
 # resolves to DISPATCH_MODEL identically whichever claimer wins the race —

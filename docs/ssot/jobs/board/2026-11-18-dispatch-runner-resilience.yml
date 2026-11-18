@@ -1,0 +1,30 @@
+title: "Dispatch runner resilience — salvage-before-reap, claim-time push gating, provider rate-limit cooldown"
+date: 2026-11-18
+card: dispatch-runner-resilience
+session: "dispatch-wt-20261118-213939-scope-scripts-board-runner-age (idc02)"
+status: "implemented — 15 new tests, 641 board tests green; no card-schema or board-api changes"
+
+guards:
+  salvage_before_reap:
+    where: "scripts/board/dispatch-wt-sweep.py (the only GC path that force-removes worktrees and -D deletes branches)"
+    rule: "before `git worktree remove --force` + `branch -D`, the worktree HEAD is checked against origin (fresh fetch + `git branch -r --contains`): already-on-origin reaps as before; otherwise the head is pushed to `refs/heads/wip/dispatch/<task-id>` first and the pushed ref is logged to the card's comms via board-api /comment (card id from task meta.json)"
+    failsafe: "origin unreachable / push refused / HEAD unreadable → the worktree is KEPT. An unproven head is never silently lost; the evidence dir (meta.json/events.jsonl) was never a substitute for git history."
+    note: "gc_worktree/gc_session/REMOTE_GC_PROBE/devin-dispatch-prune.sh already require head ⊆ a pushed ref — they needed no change"
+  push_capability_gating:
+    where: "claim time, both claimers — runner-agent._claimable (`push_capable(action.repo)`, vendored) and kanban-dispatch main loop (`push_capable` before mark_start)"
+    rule: "a type=dispatch card is claimable only on a host that can push the card's repo: `push:<repo>` label fast-path, else a live `git push --dry-run` probe (TTL-cached). Verified in place — defer notes already land on cards ('<host> defers: push guard …'). Lanes that never push a local branch (jules/nlm_batch/kk_mac_local try-first) are deliberately exempt; executor=claude/opencode are NOT exempt (their close-out pushes the session branch)."
+    new_coverage: "tests/board/test_dispatch_runner_resilience.py adds the kanban-dispatch side — push-incapable host leaves an ada-voice card queued with the defer note; push-capable host claims it (runner-agent side was already covered by test_runner_push_guard.py)"
+  ratelimit_cooldown:
+    where: "runner-agent finish_pass scans the failed unit's collect() result + journal tail for provider throttle signatures (RATE_LIMIT_PAT; kanban-dispatch runs the same scan in the lock-free phase-A0 survey via dr.rate_limit_hit)"
+    rule: "a hit writes a host-local cooldown file (runner: $RUNNER_STATE/ratelimit.json; dispatcher: /tmp/kanban-dispatch-ratelimit-<uid>-<host>.json) holding ALL new claims for RUNNER_/KANBAN_RATELIMIT_COOLDOWN_S (default 1800s, fresh hits re-arm). _capacity_reason/can_claim report the reason; _note_capacity_skip posts the usual '<host> defers:' note so the board shows why cards wait."
+    signature_table: "dispatch_repos.RATE_LIMIT_PAT is canonical — 429/529, rate[ _-]?limit(ed/_error/error), too many requests, RESOURCE_EXHAUSTED, quota exceeded / exceeded-*-quota, insufficient quota, overloaded_error, throttl. runner-agent carries a lockstep vendored copy (single-file deploys); a parity test keeps them identical."
+    rationale: "the lane model is a fleet-shared quota — re-claiming into a 429 burns each queued card's attempts, not just the card that hit it"
+
+out_of_scope_unchanged:
+  - "card schema — no new action.* fields"
+  - "board-api write paths — comms notes ride the existing /comment surface"
+
+verify:
+  - "python3 -m pytest tests/board/test_dispatch_runner_resilience.py (15 tests: salvage push/keep-on-failure/dry-run, signature scan + vendored parity, cooldown gating + finish_pass arming, kanban-dispatch push gate + cooldown)"
+  - "simulated GC: commit in a dispatch-wt-* tree, run dispatch-wt-sweep --apply --days 0 --task-root <tasks> — head lands at origin wip/dispatch/<tid>, comms logged"
+  - "kill the remote (remote set-url to a dead path) → same sweep prints KEEP and the tree+branch survive"

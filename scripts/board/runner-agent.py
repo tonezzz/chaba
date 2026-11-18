@@ -76,6 +76,11 @@ Env:
   RUNNER_RETRY_TTL_S   ledger entries idle this long are dropped
                  (default 30d — a stale fail must not shadow a card
                  re-queued months later)
+  RUNNER_RATELIMIT_COOLDOWN_S  hold ALL new claims this long after a
+                 finished unit's output shows a provider rate-limit
+                 signature (default 1800). The lane model is shared —
+                 re-claiming into a 429 burns card attempts across the
+                 whole queue, not just the card that hit it.
 
 Interactive-host guards (card omen-gpu-display-wedge — on when the host
 carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
@@ -449,6 +454,21 @@ RETRY_BASE_S = int(os.environ.get("RUNNER_RETRY_BACKOFF_S", "1800"))
 RETRY_MAX_S = int(os.environ.get("RUNNER_RETRY_BACKOFF_MAX_S", "21600"))
 RETRY_TTL_S = int(os.environ.get("RUNNER_RETRY_TTL_S",
                                 str(30 * 86400)))
+
+# --- provider rate-limit claim cooldown (dispatch-runner-resilience) --
+# Keep in lockstep with dispatch_repos.RATE_LIMIT_PAT — this vendored
+# copy runs where dispatch_repos can't be imported. A lane model that
+# 429s is a FLEET-shared resource: a failed unit whose output carries a
+# throttle signature arms a host-local cooldown so this runner stops
+# claiming into the same wall (each fresh hit re-arms the window).
+RATELIMIT_FILE = STATE_DIR / "ratelimit.json"
+RATELIMIT_COOLDOWN_S = int(os.environ.get(
+    "RUNNER_RATELIMIT_COOLDOWN_S", "1800"))
+RATE_LIMIT_PAT = re.compile(
+    r"(rate[ _-]?limit(?:ed|_error| error)?|too many requests|"
+    r"\b429\b|\b529\b|resource.?exhaust|quota (?:exceeded|exhausted)|"
+    r"exceed\w*.{0,25}quota|insufficient.?quota|overloaded_error|"
+    r"throttl)", re.I)
 WD_ON = _env_on("RUNNER_GPU_WATCHDOG")
 WD_NICE = int(os.environ.get("RUNNER_WATCHDOG_NICE", "19"))
 WD_CPU_QUOTA = os.environ.get("RUNNER_WATCHDOG_CPU_QUOTA", "30%")
@@ -3714,6 +3734,21 @@ def finish_pass(st: dict) -> bool:
                 result = ("kk_mac executor exited 0; collected unit was "
                           "already reaped; using durable verdict evidence")
         verified, notes = None, []
+        if not ok:
+            # Provider throttle gate (dispatch-runner-resilience): a
+            # unit that died on a lane-model 429 arms the host claim
+            # cooldown BEFORE the claim pass below can burn the next
+            # card's attempts into the same wall. The comms line rides
+            # the finish notes so the board sees why claims paused.
+            sig = rate_limit_scan(unit, result)
+            if sig:
+                ratelimit_record(unit, sig)
+                notes.append(
+                    f"provider rate-limit signature on {unit} "
+                    f"({sig}) — {HOST} holds new claims "
+                    f"~{max(1, RATELIMIT_COOLDOWN_S // 60)}m")
+                print(f"{cid}: rate-limit signature ({sig}) — "
+                      "claim cooldown armed")
         if ok and ent.get("type") == "dispatch":
             if cards is None:
                 cards = {c.get("id"): c for c in
@@ -3926,6 +3961,65 @@ def reconcile_pass(st: dict) -> bool:
     return changed
 
 
+def rate_limit_hit(text: str) -> str:
+    """Provider throttle signature found in `text`, else ''."""
+    if not text:
+        return ""
+    m = RATE_LIMIT_PAT.search(text)
+    return (m.group(0)[:80] if m else "")
+
+
+def rate_limit_scan(unit: str, result: str) -> str:
+    """Signature from a finished unit's output — the collect() result
+    tail first, then a wider journal/log read (the 240-char result tail
+    can truncate the throttle line out of view)."""
+    sig = rate_limit_hit(result)
+    if sig:
+        return sig
+    if task_runtime() == "launchd":
+        try:
+            tail = _launchd_log(unit).read_text()[-8000:]
+        except OSError:
+            tail = ""
+    else:
+        tail = (sh(["journalctl", "--user", "-u", unit, "-n", "80",
+                    "--no-pager", "-o", "cat"], timeout=15).stdout
+                or "")[-8000:]
+    return rate_limit_hit(tail)
+
+
+def ratelimit_record(unit: str, sig: str) -> None:
+    """Arm/extend the claim cooldown — best-effort, a state-dir write
+    failure must never break the finish path."""
+    try:
+        log = json.loads(RATELIMIT_FILE.read_text())
+    except Exception:
+        log = {}
+    log.update(until=time.time() + RATELIMIT_COOLDOWN_S,
+               hits=int(log.get("hits") or 0) + 1, last=unit, sig=sig,
+               at=int(time.time()))
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        RATELIMIT_FILE.write_text(json.dumps(log))
+    except OSError:
+        pass
+
+
+def ratelimit_reason() -> str:
+    """'' when claims may proceed, else the cooldown reason for
+    _capacity_reason / /ready verdicts."""
+    try:
+        log = json.loads(RATELIMIT_FILE.read_text())
+    except Exception:
+        return ""
+    until = float(log.get("until") or 0)
+    if time.time() >= until:
+        return ""
+    mins = max(1, int((until - time.time()) / 60))
+    return (f"provider rate-limited ({log.get('sig') or '?'} on "
+            f"{log.get('last') or '?'}) — claims held ~{mins}m")
+
+
 def overloaded(pc: float | None = None) -> bool:
     """5-min load per core above the cap → don't claim new work.
 
@@ -4002,6 +4096,9 @@ def _capacity_reason(st: dict) -> str:
     while the runner silently skips it (OPS-1107)."""
     if len(st) >= CAP:
         return f"runner at cap ({len(st)}/{CAP})"
+    rl = ratelimit_reason()
+    if rl:
+        return rl
     if Path(WAITING_KILL).exists():
         return f"kill switch {WAITING_KILL} present"
     try:
