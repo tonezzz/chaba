@@ -1,7 +1,7 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
 column: done
-updated: 2026-11-17 21:14
+updated: 2026-11-18 16:42
 spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
   Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
   after). Schedule alongside cms compaction; backup first.'
@@ -215,7 +215,6 @@ requests:
   answer: proceed — bbolt compact ran correctly (leader 12G→3.5G, health 200, idc02 follower 200). Post-hoc approval.
 review_kind: verify
 claim: {}
-awaiting_action: true
 auto_close:
   by: merge-sweep
   at: 2026-11-13 18:10

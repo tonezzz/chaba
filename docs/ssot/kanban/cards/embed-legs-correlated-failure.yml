@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
-column: doing
-updated: 2026-11-17 23:54
+column: done
+updated: 2026-11-18 16:42
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -137,6 +137,9 @@ comms:
   text: 'merge-sweep: devin-task-20261117-233851-2026-11-12-13-40-all-same-spac failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-233851-2026-11-12-13-40-all-same-spac by
     hand.'
+- at: 2026-11-18 16:42
+  from: chaba
+  text: 'answer-sweep: executed ''close-on-restore — auto-close when restored event lands'' -> moved to done'
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
@@ -151,10 +154,11 @@ requests:
     label: keep open for multi-key rotation work
   suggested: close-on-restore
   answer: close-on-restore — auto-close when restored event lands
+  executed: 2026-11-18 close
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: done
   lane: codemod
   lane_source: kw
   sweep:

@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
 column: doing
-updated: 2026-11-17 23:41
+updated: 2026-11-18 16:42
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -115,3 +115,4 @@ action:
     Consumed 1min 21.199s CPU time over 1min 53.920s wall clock time, 1.6G memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:41
+awaiting_action: true
