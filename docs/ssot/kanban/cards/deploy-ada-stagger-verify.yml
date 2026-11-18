@@ -1,0 +1,22 @@
+id: deploy-ada-stagger-verify
+title: deploy-ada.sh exits 7 when staggered units are still in start-pre
+column: backlog
+updated: 2026-11-18 21:49
+brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
+  9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
+  post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
+  where a watcher could think services are down.
+priority: low
+tags:
+- deploy
+- ada-voice
+- infra
+spec: 'In scripts/deploy-ada.sh (ada-voice repo): the post-restart verification should wait for units to leave ''activating
+  (start-pre)'' before declaring failure — poll systemctl is-active with a timeout >= max stagger (~120s), or treat
+  start-pre as in-progress rather than failed. Keep the drain behavior unchanged. Done when: a deploy during stagger
+  exits 0 and prints all-active, and a genuinely failed unit still exits nonzero.'
+ref: SYS-0208
+comms:
+- at: 2026-11-18 21:49
+  from: devin
+  text: card captured via board-api
