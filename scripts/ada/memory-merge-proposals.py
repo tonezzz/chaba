@@ -347,13 +347,17 @@ def propose(mddb: "ada_sync.Mddb", args) -> tuple[
                   if is_candidate_draft(d, args.draft_days)]
         canons = {k: d for k, d in docs.items() if is_canonical(d)}
         stats[coll] = {"bank": m["bank"], "drafts": len(drafts),
-                       "canonicals": len(canons)}
+                       "canonicals": len(canons), "search_errors": 0}
         for draft in sorted(drafts, key=lambda d: d.get("key") or ""):
             if len(proposals) >= args.max_proposals:
                 break
+            fact = draft_fact(draft)
+            if not fact:
+                continue  # nothing to embed — footer-only drafts
             try:
-                hits = vector_hits(mddb, coll, draft_fact(draft))
+                hits = vector_hits(mddb, coll, fact)
             except Exception as exc:
+                stats[coll]["search_errors"] += 1
                 print(f"  ! {coll}: vector-search {draft['key']}: {exc}",
                       file=sys.stderr)
                 continue
@@ -394,9 +398,10 @@ def _esc(s: str) -> str:
 
 
 def report_block(proposals: list[dict], stats: dict, acc: dict,
-                 now: datetime) -> str:
+                 now: datetime, draft_days: int = DRAFT_DAYS) -> str:
     drafts = sum(s["drafts"] for s in stats.values())
     canons = sum(s["canonicals"] for s in stats.values())
+    errors = sum(s.get("search_errors", 0) for s in stats.values())
     wr = (f"{acc['window_rate']:.0%}" if acc["window_rate"] is not None
           else "n/a")
     lr = (f"{acc['lifetime_rate']:.0%}" if acc["lifetime_rate"] is not None
@@ -405,7 +410,7 @@ def report_block(proposals: list[dict], stats: dict, acc: dict,
         BLOCK_BEGIN,
         f"## Latest run — {now:%Y-%m-%d %H:%M}Z",
         "",
-        f"drafts scanned (14d): **{drafts}** · active canonicals: "
+        f"drafts scanned ({draft_days}d): **{drafts}** · active canonicals: "
         f"**{canons}** · open proposals: **{len(proposals)}** · "
         f"pending decisions: **{acc['pending']}**",
         f"acceptance ({ACCEPT_WINDOW_D}d): **{wr}** "
@@ -413,6 +418,13 @@ def report_block(proposals: list[dict], stats: dict, acc: dict,
         f"{acc['window']['rejected']} rejected) · lifetime: **{lr}**",
         "",
     ]
+    if errors:
+        L += [
+            f"⚠ **{errors} vector-search call(s) failed this run** "
+            "(embed providers down/capped) — proposal count is a lower "
+            "bound; retry next run or when the embed chain recovers.",
+            "",
+        ]
     if not proposals:
         L.append("_No update candidates in the 0.82–0.95 band this run._")
     else:
@@ -717,34 +729,40 @@ def main() -> int:
         new += 1
     acc = acceptance(state)
 
+    errors = sum(s.get("search_errors", 0) for s in stats.values())
     runs = state.setdefault("runs", [])
     runs.append({"ts": datetime.now(timezone.utc)
                  .isoformat(timespec="seconds"),
                  "proposals": len(proposals), "new": new,
-                 "pending": acc["pending"]})
+                 "pending": acc["pending"], "search_errors": errors})
     state["runs"] = runs[-52:]
 
     metric = (f"merge-proposals: {len(proposals)} open "
               f"({new} new), pending={acc['pending']}, "
               f"acceptance90d={acc['window_rate']}, "
-              f"lifetime={acc['lifetime']}")
+              f"lifetime={acc['lifetime']}, search_errors={errors}")
     print(metric)
     for coll, s in sorted(stats.items()):
         print(f"  {coll}: {s['drafts']} draft(s), "
-              f"{s['canonicals']} canonical(s)")
+              f"{s['canonicals']} canonical(s)"
+              + (f", {s['search_errors']} search error(s)"
+                 if s.get("search_errors") else ""))
     for p in proposals:
         print(f"  {p['id']} {p['action']:<15} {p['score']:.2f} "
               f"{p['collection']}:{p['canonical']} <- {p['draft']}")
 
     if not args.no_publish:
         now = datetime.now(timezone.utc)
-        block = report_block(proposals, stats, acc, now)
+        block = report_block(proposals, stats, acc, now,
+                             draft_days=args.draft_days)
         publish_report(block, now, args.dry_run)
         summary = (
             f"weekly merge-proposals run: {len(proposals)} open "
             f"proposal(s) ({new} new) across {sum(s['drafts'] for s in stats.values())} "
             f"recent extract draft(s). Pending decisions: {acc['pending']}. "
-            f"Report: ada-cms-pages/{PAGE}. Resolve via "
+            + (f"⚠ {errors} vector-search call(s) failed — embed chain "
+               "degraded, proposals are a lower bound. " if errors else "")
+            + f"Report: ada-cms-pages/{PAGE}. Resolve via "
             f"memory-merge-proposals.py --resolve <id> --action …"
             + (" [dry-run]" if args.dry_run else ""))
         if not args.dry_run:
