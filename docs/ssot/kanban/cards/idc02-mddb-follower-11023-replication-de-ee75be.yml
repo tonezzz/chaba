@@ -1,8 +1,8 @@
 id: idc02-mddb-follower-11023-replication-de-ee75be
 title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
   sees ~4.6s warning; LSN advances but health/lag metrics
-column: doing
-updated: 2026-11-18 17:13
+column: review
+updated: 2026-11-18 17:25
 priority: medium
 tags:
 - mddb
@@ -58,9 +58,18 @@ comms:
     (leader commit ts) — REAL commit→apply lag; (3) follower ack loop every 10s overwrote the same atomic with its
     own ×10 estimate. So the self-report flickered between real and synthetic, and the leader under-reported ~6x.
     Clock skew ruled out (clocks agree ~1s); stream is alive (last_re'
+- at: 2026-11-18 17:25
+  from: tony-macbook
+  text: 'finished (ok): exit=0 9-2026-11-18-r.md`, card comment posted, artifacts committed on the dispatch branch.
+    | devin-task-20261118-164736'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-macbook
+  result: 'exit=0 9-2026-11-18-r.md`, card comment posted, artifacts committed on the dispatch branch. | devin-task-20261118-164736-evidence-mem-0799-2026-11-18-r.service:
+    Consumed 3min 39.683s CPU time over 35min 43.993s wall clock time, 985.7M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
