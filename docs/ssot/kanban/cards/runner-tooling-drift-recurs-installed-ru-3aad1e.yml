@@ -1,7 +1,7 @@
 id: runner-tooling-drift-recurs-installed-ru-3aad1e
 title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
   but nothing redeploys
-column: backlog
+column: doing
 updated: 2026-11-18 20:20
 priority: medium
 tags:
@@ -33,8 +33,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 20:20
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: idc02
