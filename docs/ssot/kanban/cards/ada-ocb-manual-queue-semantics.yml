@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
 column: review
-updated: 2026-11-18 15:08
+updated: 2026-11-18 17:30
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -40,4 +40,8 @@ comms:
   from: devin
   text: 'CI follow-up 2026-11-18: GitHub PR #17 check `test` completed successfully. Commit `7e4599e` is already
     pushed; this card moved to review. Waiting for human review/merge; no deployment has occurred.'
+- at: 2026-11-18 17:30
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
