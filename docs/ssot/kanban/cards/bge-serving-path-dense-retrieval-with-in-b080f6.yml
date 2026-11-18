@@ -1,0 +1,27 @@
+id: bge-serving-path-dense-retrieval-with-in-b080f6
+title: 'BGE serving path: dense retrieval with includeContent=false + bounded doc fetch (shadow currently ~4-5s/collection,
+  all timeouts)'
+column: backlog
+updated: 2026-11-18 20:59
+priority: high
+tags:
+- ada
+- bge
+- memory
+- retrieval
+- mem-1129
+spec: 'BLOCKER for MEM-1129 production switch. EVIDENCE: backend/bge_memory_shadow.py sends /v1/vector-search with
+  includeContent=True (line ~135) — measured ~4.2s for ONE collection (ada-ha-bank-general) on :11028, so every
+  production shadow sample on ada-ha-tony logs status=empty/error TimeoutError at the 5s deadline. GOAL: restructure
+  retrieval to (1) vector-search includeContent=false topK~10-20 per bank collection (parallel, bounded), (2) fetch
+  document content for candidates only via bounded /v1/get or search second pass, (3) rerank top-10 via existing
+  reranker path, all under a hard deadline (~800ms target for sync serving; keep shadow''s configurable timeout).
+  Preserve: ACL/person scoping upstream unchanged, result-invisible shadow semantics, Gemini fallback untouched.
+  SCOPE: ada-voice repo, backend/bge_memory_shadow.py + tests; measure dense_ms/fetch_ms/rerank_ms in shadow logs.
+  DONE WHEN: shadow produces status=ok samples with total_ms < ~2s on real traffic, unit tests pass, no prod deploy
+  (deploy-ada.sh is a separate gated step). Related: MEM-1129 (architecture decision), ADA-1299 (shadow soak).'
+ref: ADA-0202
+comms:
+- at: 2026-11-18 20:59
+  from: tony
+  text: card captured via board-api
