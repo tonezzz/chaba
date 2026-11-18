@@ -1,6 +1,6 @@
 id: ada-ocb-answer-eval-r2
 title: ada-ocb answer-quality eval r2 (retry — r1 work lost to worktree GC)
-column: backlog
+column: doing
 updated: 2026-11-18 14:42
 brief: 'Re-run of ADA-0175: r1 produced a good harness (ocb-eval.py, 10 cases, tools-mode 10/10) but the branch
   eval/ocb-answer-eval @442cfc7 lived in a scratch clone inside a GC''d worktree and is LOST. Rebuild it — the analysis
@@ -40,10 +40,11 @@ spec: 'Work in repo ada-voice (action.repo is set — do NOT work in a scratch c
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
+  runner: idc02
 comms:
 - at: 2026-11-18 14:41
   from: chaba
@@ -54,4 +55,7 @@ comms:
 - at: 2026-11-18 14:42
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.11 > 0.85)'
+- at: 2026-11-18 14:42
+  from: idc02
+  text: claimed
 ref: ADA-0188
