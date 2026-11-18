@@ -2,7 +2,7 @@ id: bge-serving-path-dense-retrieval-with-in-b080f6
 title: 'BGE serving path: dense retrieval with includeContent=false + bounded doc fetch (shadow currently ~4-5s/collection,
   all timeouts)'
 column: done
-updated: 2026-11-18 21:13
+updated: 2026-11-18 21:17
 priority: high
 tags:
 - ada
@@ -77,6 +77,9 @@ comms:
     tests/test_bge_memory_shadow.py 4/4 pass, tool-lint clean. Probe evidence from dispatch: status=ok dense_ms=322
     fetch_ms=66 rerank_ms=1078 total_ms=1470 warm — reranker now dominant phase. NEXT: deploy via deploy-ada.sh
     (staging idc02 first), then soak for MEM-1129.'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: ran under executor=devin provider=devin
 action:
   type: dispatch
   status: done
