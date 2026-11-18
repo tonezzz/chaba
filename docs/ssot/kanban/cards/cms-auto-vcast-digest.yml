@@ -1,24 +1,22 @@
 id: cms-auto-vcast-digest
 title: CMS automation `vcast-digest` error
-brief: A scheduled report-page job ('vcast-digest') is error. Re-run it or check the
-  generator — details in the note.
+brief: A scheduled report-page job ('vcast-digest') is error. Re-run it or check the generator — details in the
+  note.
 column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'last_status=timeout — no detail. last_run=2026-11-18T07:00:13+00:00 interval=1440m
-  status=timeout. Page: https://idc03.taila0626a.ts.net/cms/#/vcast-digest'
-help: 'Trigger a manual regen: cms_automation run_now for ''vcast-digest'' (or POST
-  /api/cms/pages/vcast-digest/regenerate). If it repeats, check the page''s generator
-  command in the registry doc.'
-updated: 2026-11-18 17:20
+note: 'last_status=timeout — no detail. last_run=2026-11-18T07:00:13+00:00 interval=1440m status=timeout. Page:
+  https://idc03.taila0626a.ts.net/cms/#/vcast-digest'
+help: 'Trigger a manual regen: cms_automation run_now for ''vcast-digest'' (or POST /api/cms/pages/vcast-digest/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-18 18:08
 comms:
 - at: 2026-11-07 16:50
   from: devin
-  text: '[KNB-1098] verified healthy: registry last_run=2026-11-07T06:05Z status=ok
-    for `vcast-digest` ran in the family batch (registry status=ok) (interval 1440m),
-    pages regenerated today (e.g. kanban-digest 13:00, general-digest 11:04 ICT).
-    The alert stamp predates the 06:05Z regen. Closing.'
+  text: '[KNB-1098] verified healthy: registry last_run=2026-11-07T06:05Z status=ok for `vcast-digest` ran in the
+    family batch (registry status=ok) (interval 1440m), pages regenerated today (e.g. kanban-digest 13:00, general-digest
+    11:04 ICT). The alert stamp predates the 06:05Z regen. Closing.'
 - at: 2026-11-07 16:50
   from: devin
   text: closed by devin
@@ -53,6 +51,10 @@ comms:
 - at: 2026-11-18 17:20
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
