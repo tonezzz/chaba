@@ -1,7 +1,7 @@
 id: answered-but-unexecuted-card-graveyard-3-3d4fe1
 title: Answered-but-unexecuted card graveyard — 39 backlog cards with dead answers; option picks carry no action
 column: backlog
-updated: 2026-11-18 22:06
+updated: 2026-11-18 22:12
 priority: high
 tags:
 - board
@@ -41,6 +41,7 @@ spec: 'Sweep 2026-11-17 (Tony request): 39 backlog cards hold answered-but-unexe
   5. /respond idempotent-on-answered (200 not 400) — already noted on KNB-0178/KNB-0179.'
 action:
   type: manual
+  status: queued
 ref: KNB-0180
 comms:
 - at: 2026-11-17 23:28
@@ -73,3 +74,9 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:12
+  from: tony
+  text: queued for processing
+- at: 2026-11-18 22:12
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
