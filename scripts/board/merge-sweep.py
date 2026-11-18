@@ -1709,22 +1709,27 @@ def _reap_move(cid: str, why: str, dry: bool) -> bool:
     return locked_edit(cid, apply)
 
 
-def _reap_flag(cid: str, text: str, dry: bool) -> bool:
-    """One-shot flag for a stale live-looking claim — comms +
+def _reap_flag(cid: str, text: str, dry: bool,
+               live_st: bool = True) -> bool:
+    """One-shot flag for a stale claim — comms +
     action.sweep.stalled_claim + awaiting_action in one locked write;
-    bookkeeping (never crowns `updated`). Re-verifies under the lock
-    that the card still reads doing+running."""
+    bookkeeping (never crowns `updated`). live_st=True re-verifies the
+    card still reads a live-looking status (running/claimed);
+    live_st=False re-verifies it still has NO live claim (the orphan
+    flag — a running card must never get it)."""
     if dry:
         print(f"  [dry] {cid}: flag stalled claim — {text[:110]}")
         return True
 
     def apply(c):
-        a = _act(c)
+        st = _act(c).get("status")
+        live = st in ("running", "claimed")
         if terminal(c) or c.get("column") != "doing" \
-                or a.get("status") not in ("running", "claimed") \
-                or (a.get("sweep") or {}).get("stalled_claim"):
+                or live != live_st \
+                or (_act(c).get("sweep") or {}).get("stalled_claim"):
             return False
-        a.setdefault("sweep", {})["stalled_claim"] = now()
+        _ensure_act(c).setdefault(
+            "sweep", {})["stalled_claim"] = now()
         c["awaiting_action"] = True
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba", "text": text[:500]})
@@ -1782,13 +1787,28 @@ def reap_stalled_claims(cards: list, active: dict, live_ids,
                     cid,
                     "status=starting past the settle window — a crashed "
                     "start is not a live claim", dry)
-        else:  # idle/absent/unknown status — a manual claim
-            if claim_age_s(c) > ORPHAN_DOING_S:
+        else:  # idle/absent/unknown status — a manual claim or a
+            # claim whose record was lost; could be real offline work
+            if claim_age_s(c) <= ORPHAN_DOING_S:
+                continue
+            if (_act(c).get("sweep") or {}).get("stalled_claim"):
+                # flagged once already and STILL claim-free past the
+                # horizon — the flag got a full pass to attract a
+                # human; the honest column wins now
                 changed |= _reap_move(
                     cid,
-                    f"in doing >{int(ORPHAN_DOING_S / 3600)}h with no "
-                    "claim/runner/session — doing means a live claim "
-                    "exists", dry)
+                    f"flagged stalled and still in doing "
+                    f">{int(ORPHAN_DOING_S / 3600)}h with no "
+                    "claim/runner/session — doing means a live "
+                    "claim exists", dry)
+            else:
+                changed |= _reap_flag(
+                    cid,
+                    f"stalled-claim reaper: in doing "
+                    f">{int(ORPHAN_DOING_S / 3600)}h with no "
+                    "claim/runner/session — returns to backlog next "
+                    "pass if still untouched (doing means a live "
+                    "claim exists)", dry, live_st=False)
     return changed
 
 

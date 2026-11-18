@@ -4294,7 +4294,7 @@ def queue_view() -> dict:
     claimed = []
     for c in cards:
         a = _act(c)
-        if a.get("status") not in ("claimed", "running"):
+        if a.get("status") not in ("claimed", "running", "starting"):
             continue
         cid = c.get("id") or ""
         rep = active_by_card.get(cid) or {}
