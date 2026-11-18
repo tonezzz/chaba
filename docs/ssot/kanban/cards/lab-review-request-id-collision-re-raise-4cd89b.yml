@@ -1,7 +1,7 @@
 id: lab-review-request-id-collision-re-raise-4cd89b
 title: lab-review request id collision — re-raised lab-review unreachable by /respond (always 400 already-answered)
-column: doing
-updated: 2026-11-18 18:16
+column: review
+updated: 2026-11-18 18:20
 priority: medium
 tags:
 - board
@@ -22,11 +22,15 @@ action:
   repo: chaba
   model: sonnet
   executor: claude
-  status: running
+  status: done
   runner: tony-omen
   sweep:
     stale_running: 2026-11-18 18:12
     dirty: 3
+  result: 'exit=0 nputTokens":0,"canonicalModel":"claude-sonnet-5-5","provider":"firstParty","costBasis":"list"}}}
+    | devin-task-20261118-181025-card-lab-meshtastic-th-carries.service: Consumed 4.752s CPU time over 21.195s wall
+    clock time, 181.6M memory peak.'
+  verified: false
 ref: KNB-0179
 comms:
 - at: 2026-11-17 23:23
@@ -69,4 +73,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:20
+  from: tony-omen
+  text: 'finished (ok): exit=0 nputTokens":0,"canonicalModel":"claude-sonnet-5-5","provider":"firstParty","costBasis":"list"}}}
+    | devin-task-202'
 awaiting_action: true
+review_kind: verify
+claim: {}
