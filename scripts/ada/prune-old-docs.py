@@ -47,24 +47,24 @@ PAGE_SIZE = 5000
 DELETE_CHUNK = 1000
 
 # collection -> (timestamp meta key, retention days)
-POLICY = {
-    "host-logs": ("ts", 3),
-    "ada-ha-events-tony": ("period_end", 30),
-    "ada-ha-events-michael": ("period_end", 30),
-    "ada-ha-snapshots-tony": ("refreshed_at", 30),
-    "ada-ha-snapshots-michael": ("refreshed_at", 30),
-}
+POLICY = {"host-logs": ("ts", 3)}
+ADA_INSTANCES = ("tony", "michael", "kk", "chaba", "dev",
+                 "kk-dev", "tony-dev")
+for _inst in ADA_INSTANCES:
+    POLICY[f"ada-ha-events-{_inst}"] = ("period_end", 30)
+    POLICY[f"ada-ha-snapshots-{_inst}"] = ("refreshed_at", 30)
 # collections served from an ops DB instead of the leader — host-logs
 # on idc03 :11026, ada-ha-* telemetry on idc02 :11025 (the mddb-ops
 # split moved them; the leader copies are frozen residue — sweeping
 # them is harmless but pointless, the live copies grow there).
-COLLECTION_BASE = {
-    "host-logs": OPS_MDB,
-    "ada-ha-events-tony": ADA_OPS_MDB,
-    "ada-ha-events-michael": ADA_OPS_MDB,
-    "ada-ha-snapshots-tony": ADA_OPS_MDB,
-    "ada-ha-snapshots-michael": ADA_OPS_MDB,
-}
+COLLECTION_BASE = {"host-logs": OPS_MDB}
+ADA_BASES = (ADA_OPS_MDB, MDDB)
+
+
+def collection_bases(collection: str) -> list[str]:
+    if collection.startswith("ada-ha-"):
+        return list(ADA_BASES)
+    return [COLLECTION_BASE.get(collection, MDDB)]
 
 
 def post(path: str, body: dict, base: str = MDDB,
@@ -120,18 +120,28 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
         # deleting shifts later docs left — advance only past kept docs
         skip += kept
     verb = "would delete" if dry else "deleted"
+    host = base.split("//", 1)[-1].split("/", 1)[0]
     return (f"{collection}: {verb} {deleted}/{scanned} "
-            f"(>{days}d on {ts_key}) in {time.monotonic() - t0:.0f}s")
+            f"(>{days}d on {ts_key} @{host}) "
+            f"in {time.monotonic() - t0:.0f}s")
 
 
 def main() -> int:
     dry = "--dry-run" in sys.argv
+    only = None
+    if "--only" in sys.argv:
+        i = sys.argv.index("--only")
+        if i + 1 < len(sys.argv):
+            only = sys.argv[i + 1]
     for coll, (ts_key, days) in POLICY.items():
-        print(sweep(coll, ts_key, days, dry,
-                    COLLECTION_BASE.get(coll, MDDB)))
-    # one-shot leader cleanup: host-logs migrated to the ops DB — the
-    # stale leader copy still ages out on its own 14d window
-    print(sweep("host-logs", "ts", 14, dry, MDDB))
+        if only and only not in coll:
+            continue
+        for base in collection_bases(coll):
+            print(sweep(coll, ts_key, days, dry, base))
+    if only is None:
+        # one-shot leader cleanup: host-logs migrated to the ops DB — the
+        # stale leader copy still ages out on its own 14d window
+        print(sweep("host-logs", "ts", 14, dry, MDDB))
     return 0
 
 
