@@ -1,7 +1,7 @@
 id: ada-control-mcp-session-dir-race-9d9284
 title: ada-control-mcp-session-dir-race
 column: doing
-updated: 2026-11-18 20:54
+updated: 2026-11-18 21:04
 spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
   dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
   creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
@@ -46,6 +46,13 @@ comms:
     is not yet materialized. Fork schema supports per-server cwd (Mcp.LocalConfig.cwd, resolves vs workspace, ~
     expanded). Plan: pin ada-control cwd to /home/tony/CascadeProjects/ada-voice in ~/.config/opencode/opencode.json
     -> spawn never touches epheme'
+- at: 2026-11-18 21:04
+  from: devin
+  text: 'DONE. Fix = option (c): pinned mcp.ada-control.cwd to /home/tony/CascadeProjects/ada-voice in ~/.config/opencode/opencode.json
+    on idc02 AND tony-dell (soak fallback had 64 same-race failures). cwd is a documented fork config field (Mcp.LocalConfig.cwd);
+    hot-reloaded, no restart. Verified: deterministic deleted-dir repro failed pre-fix (exact NotFound:FileSystem.access),
+    then 20 consecutive session starts 14:00:17-53 UTC = 20x mcp connected tools=26, zero failures. Last idc02 failure
+    13:59:25 UTC'
 action:
   type: dispatch
   status: running
