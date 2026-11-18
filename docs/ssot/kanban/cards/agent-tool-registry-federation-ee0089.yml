@@ -1,7 +1,7 @@
 id: agent-tool-registry-federation-ee0089
 title: agent-tool-registry-federation
 column: doing
-updated: 2026-11-18 20:58
+updated: 2026-11-18 21:10
 spec: 'Canonical tool registry + federation layer so any future AI agent inherits the full toolset. Context: three
   parallel registries exist today (ada-voice tools.d manifest + realtime declarations, devin ~/.config/devin/mcp_config.json
   + stdio wrappers, ada-voice/opencode/ada_mcp.py 26-tool MCP bridge) with drift risk; ada_mcp.py reimplements board/mddb/wiki
@@ -57,6 +57,13 @@ comms:
 - at: 2026-11-18 20:58
   from: chaba
   text: started devin-task-20261118-205815-canonical-tool-registry-federa on tony-omen (dispatch)
+- at: 2026-11-18 21:10
+  from: devin
+  text: 'Phase 1 done on dispatch branch. ssot.tools.yml landed: 111 rows (89 tools + 22 providers) covering all
+    4 registries — tools.d 31, builtin decls 37+3 guest, ada_mcp 26, devin mcp_config 21. Canonical domain.* names,
+    policy/backend/transport/lanes per row; dupes folded (memory.search, wiki.extensions, adobe_stock_qc), gaps
+    recorded (board plan/preflight family ada-ocb-only; colab name collision). Design note docs/kb/agent-tool-federation.md:
+    registry->surface generators, policy stays at board-api'
 action:
   type: dispatch
   status: running
