@@ -1,7 +1,7 @@
 id: claude-agent-idc02-opencode
 title: Wire claude-agent into idc02 bare opencode serve
 column: review
-updated: 2026-11-18 14:10
+updated: 2026-11-18 16:50
 brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
   verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
   provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
@@ -119,11 +119,19 @@ comms:
 - at: 2026-11-18 14:10
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''idc02-opencode-4096-2-litellm-''] block close)'
+- at: 2026-11-18 16:50
+  from: devin
+  text: 'answered idc02-opencode-4096-2-litellm-lane-podma-6bb28b: Resolved by OPS-0187 instead: idc02 :4096 confirmed
+    as LiteLLM-lane podman workers (ada-code, jack-opencode) — correctly out of scope for claude-agent env injection.
+    The actual OpenChamber pane now li'
+- at: 2026-11-18 16:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: idc02-opencode-4096-2-litellm-lane-podma-6bb28b
   ask: idc02 opencode :4096 = 2 LiteLLM-lane podman workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection
     target for claude-agent. Direction?
-  status: open
+  status: answered
   at: 2026-11-18 13:55
   from: devin
   options:
@@ -135,5 +143,10 @@ requests:
   - id: litellm-claude
     label: Keep isolation; add Claude alias via LiteLLM for Jack
   suggested: close
+  answer: 'Resolved by OPS-0187 instead: idc02 :4096 confirmed as LiteLLM-lane podman workers (ada-code, jack-opencode)
+    — correctly out of scope for claude-agent env injection. The actual OpenChamber pane now lives ON idc02 and
+    claude-agent is wired + smoke-verified there via openchamber-wire.sh. No further action needed on the containerized
+    opencodes.'
 review_kind: verify
 claim: {}
+awaiting_action: true
