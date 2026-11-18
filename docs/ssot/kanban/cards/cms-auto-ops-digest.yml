@@ -2,12 +2,12 @@ id: cms-auto-ops-digest
 title: CMS automation `ops-digest` stale
 brief: A scheduled report-page job ('ops-digest') is stale. Re-run it or check the
   generator — details in the note.
-column: review
+column: done
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'Recovering: ops-digest healthy for 1/2 ticks — auto-closes when the streak
-  holds.'
+note: 'Auto-recovered 2026-11-18: ops-digest healthy for 2 consecutive ticks (status=ok,
+  state=ok).'
 help: 'Trigger a manual regen: cms_automation run_now for ''ops-digest'' (or POST
   /api/cms/pages/ops-digest/regenerate). If it repeats, check the page''s generator
   command in the registry doc.'
@@ -52,4 +52,3 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
-ok_streak: 1
