@@ -6,8 +6,8 @@ column: review
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'last_run 119m overdue (interval 1440m). last_run=2026-11-17T03:00:22+00:00
-  interval=1440m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/meta-digest'
+note: 'Recovering: meta-digest healthy for 1/2 ticks — auto-closes when the streak
+  holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''meta-digest'' (or POST
   /api/cms/pages/meta-digest/regenerate). If it repeats, check the page''s generator
   command in the registry doc.'
@@ -52,3 +52,4 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
+ok_streak: 1
