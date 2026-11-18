@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
-column: doing
-updated: 2026-11-18 15:00
+column: review
+updated: 2026-11-18 15:08
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -33,3 +33,7 @@ comms:
     as `queued for manual handling; not runner-dispatchable` while preserving read-only planning selection tokens;
     regular dispatch picks retain their prior label. No card action was changed. Local validation: full suite 1,808
     passed, 7 skipped, 31 subtests; tool-lint clean (60 warning'
+- at: 2026-11-18 15:08
+  from: devin
+  text: moved doing -> review
+review_kind: verify
