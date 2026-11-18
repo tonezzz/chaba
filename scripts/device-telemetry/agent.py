@@ -25,6 +25,7 @@ import socket
 import subprocess
 import time
 import urllib.request
+from datetime import datetime
 
 MDBB = os.environ.get("DEVICE_TELEMETRY_MDBB",
                       "http://100.102.134.91:11026/v1").rstrip("/")
@@ -282,7 +283,8 @@ def _services() -> dict:
                 entry[k] = str(v)[:80]
         svcs["nest-worker"] = entry
     # nest-mgr (DevNest manager daemon) keeps manager-state.json —
-    # summarize node counts so dashboards see fleet state at a glance
+    # summarize node counts + actuation posture so dashboards see fleet
+    # state at a glance (v2: mode/actions ride svc_nest_mgr_* HA sensors)
     mgr = os.path.expanduser("~/.local/share/nest/manager-state.json")
     if os.path.exists(mgr):
         try:
@@ -294,13 +296,40 @@ def _services() -> dict:
                 s = n.get("state") or "unknown"
                 counts[s] = counts.get(s, 0) + 1
             age = int(time.time()) - int(os.path.getmtime(mgr))
-            svcs["nest-mgr"] = {
+            entry = {
                 "state": "running" if age <= 600 else "stale",
                 "age_s": age,
                 "nodes": str(len(nodes)),
                 "active": str(sum(v for k, v in counts.items()
                                   if k not in ("parked", "unknown"))),
             }
+            act = m.get("actuation") or {}
+            if act:
+                entry["mode"] = str(act.get("mode") or "monitor")
+                hour_ago = time.time() - 3600
+                n_1h = 0
+                last_ev = None
+                for a in (m.get("actions") or [])[-60:]:
+                    try:
+                        ts = datetime.fromisoformat(
+                            str(a.get("ts")).replace("Z", "+00:00")
+                        ).timestamp()
+                    except Exception:
+                        continue
+                    if ts >= hour_ago:
+                        n_1h += 1
+                    last_ev = a
+                entry["act_1h"] = str(n_1h)
+                circs = list(act.get("unit_circuits") or [])
+                if act.get("host_circuit"):
+                    circs.insert(0, "HOST")
+                entry["circuit"] = ",".join(circs) if circs else "closed"
+                if last_ev:
+                    entry["last"] = str(
+                        f"{last_ev.get('action')} "
+                        f"{last_ev.get('unit')} "
+                        f"{last_ev.get('outcome')}")[:80]
+            svcs["nest-mgr"] = entry
         except Exception:
             pass
     return svcs

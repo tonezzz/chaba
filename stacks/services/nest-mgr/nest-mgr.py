@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""nest-mgr.py — per-host Nest manager (observer-governor, v1).
+"""nest-mgr.py — per-host Nest manager (observer-governor + gated actuation, v2).
 
 A nest node on this host is any of:
 
@@ -16,6 +16,36 @@ manager adopts it into ~/.local/share/nest/manager-state.json. Adoption is
 observational — the manager reports and health-checks, never restarts or
 enforces (leash principle, ssot.nest-training.yml promotion_gate).
 
+v2 actuation plane (card nest-mgr-v2-actuation) — modes, resolved each
+tick from env/file flags; safety flags can only LOWER the effective mode:
+
+    monitor    v1 behavior: detect + report only (default)
+    recommend  compute allowlisted actions, log them to the state file
+               actions[] ring + the CMS page, execute nothing
+    guarded    additionally execute allowlisted restarts — requires the
+               per-host opt-in flag file actuation.on
+
+Flags under $NEST_STATE_DIR (default ~/.local/share/nest/):
+    mode                 monitor|recommend|guarded (below env priority)
+    actuation.off        kill switch — present => monitor, checked every tick
+    actuation.on         per-host opt-in — required for guarded to execute
+    host-circuit.open    host circuit breaker tripped (>5 execs/hour);
+                         rm to reset
+    manual-units         units an operator holds — never restarted, 1/line
+    restart-allowlist    restart-eligible units, 1/line
+    circuit/<unit>.open  per-unit circuit (2 failed restarts/hour);
+                         rm to reset
+
+Guarded auto-restart never touches: card-owned nodes (nest_nodes:),
+NEST_OWNER=none/unmanaged units, nest-mgr itself, manual-units, or
+topology prod lanes (NEST_MGR_PROD_OK=1 overrides). A restart fires only
+when state==failed for FAIL_TICKS consecutive ticks, the unit is
+allowlisted (NEST_RESTART_OK=1 on the unit or in restart-allowlist),
+no owner lock exists, cooldown/rate limits pass, and the host budget is
+green — via `systemctl --user restart` only. Every recommendation and
+action appends {ts, host, unit, prior_state, action, reason, outcome} to
+manager-state.json actions[] (last 200) and renders on the CMS page.
+
 Report: publishes ada-cms-pages/nest-<host> through the MDDB writer path
 report-distill uses. The page auto-surfaces on /chaba-nest because the
 dashboard's `match: nest|polity|tony-ideas` already covers nest-<host>
@@ -31,7 +61,9 @@ Usage:
     nest-mgr.py --loop        daemon mode (service entry point)
     nest-mgr.py --discover    print discovered nodes, no writes
     nest-mgr.py --report      print the rendered page body, no publish
-    nest-mgr.py --once --dry-run   full cycle, state file only, no CMS write
+    nest-mgr.py --actions     print the actions[] audit tail
+    nest-mgr.py --once --dry-run   full cycle, state file only, no CMS write,
+                            never executes (guarded degrades to recommend)
 
 Env:
     MDDB_BASE_URL     default http://100.102.134.91:11027/v1
@@ -40,6 +72,9 @@ Env:
     NEST_CARDS_DIR    kanban cards dir scanned for `nest_nodes:` claims
                       (default ~/CascadeProjects/chaba/docs/ssot/kanban/cards)
     NEST_HOST         host label override (default: short hostname)
+    NEST_STATE_DIR    state/flag dir (default ~/.local/share/nest)
+    NEST_MGR_MODE     monitor|recommend|guarded — overrides the mode file
+    NEST_MGR_PROD_OK  set 1 to let guarded restart prod-lane nodes
 """
 from __future__ import annotations
 
@@ -62,7 +97,8 @@ MDDB = os.environ.get(
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 
-STATE_DIR = Path.home() / ".local" / "share" / "nest"
+STATE_DIR = Path(os.environ.get(
+    "NEST_STATE_DIR", str(Path.home() / ".local" / "share" / "nest")))
 STATE_FILE = STATE_DIR / "manager-state.json"
 DEFAULT_TOPO = (Path.home() / "CascadeProjects" / "ada-voice" / "tests" /
                 "bench" / "topologies.yml")
@@ -83,6 +119,28 @@ EXCLUDE_RX = re.compile(
 # Fixed probe set — NOT a port scan: only the ports the nest fleet has
 # ever used, plus whatever discovered endpoints already declare.
 KNOWN_PORTS = {8777, 8778, 8779, 8878, 8791}
+
+# ---- v2 actuation plane (card nest-mgr-v2-actuation) -------------------
+# Flag files under STATE_DIR — the operator's control surface. Presence
+# of a flag can only lower the effective mode, never raise it.
+MODE_FILE = STATE_DIR / "mode"                  # monitor|recommend|guarded
+KILL_FILE = STATE_DIR / "actuation.off"         # global kill switch
+OPTIN_FILE = STATE_DIR / "actuation.on"         # per-host guarded opt-in
+HOST_CIRCUIT = STATE_DIR / "host-circuit.open"  # per-host breaker flag
+MANUAL_FILE = STATE_DIR / "manual-units"        # operator-held units
+ALLOW_FILE = STATE_DIR / "restart-allowlist"    # restart-eligible units
+CIRCUIT_DIR = STATE_DIR / "circuit"             # per-unit <unit>.open flags
+
+MODE_RANK = {"monitor": 0, "recommend": 1, "guarded": 2}
+
+FAIL_TICKS = 3            # consecutive failed ticks before acting
+RESTART_COOLDOWN_S = 300  # min seconds between restart attempts on a unit
+RESTART_MAX_HOUR = 2      # max restart attempts per unit per hour
+UNIT_FAILS_CIRCUIT = 2    # failed restarts/hour -> unit circuit-open
+HOST_MAX_ACTIONS_HOUR = 5  # executed actions/hour -> host circuit-open
+REC_RESEND_S = 900        # re-emit a standing recommendation at most /15m
+HELD_RESEND_S = 3600      # re-emit a held verdict at most hourly
+ACTIONS_CAP = 200         # actions[] audit ring buffer bound
 
 KIND_RULES = [
     ("student", re.compile(r"student", re.I)),
@@ -193,7 +251,8 @@ def discover_units() -> dict[str, dict]:
         show, rc = _sh(
             ["systemctl", "--user", "show", name, "-p", "ActiveState",
              "-p", "SubState", "-p", "Description", "-p", "ExecStart",
-             "-p", "Environment", "-p", "FragmentPath"], timeout=10)
+             "-p", "Environment", "-p", "FragmentPath",
+             "-p", "Restart"], timeout=10)
         if rc != 0 or "ActiveState=" not in show:
             continue
         props = dict(l.split("=", 1) for l in show.splitlines() if "=" in l)
@@ -228,10 +287,11 @@ def _parse_endpoint(execstart: str) -> tuple[str | None, int | None]:
     return host, port
 
 
-def _env_owner(env_blob: str, frag: str | None) -> str | None:
-    """NEST_OWNER=… from `systemctl show -p Environment` or the unit
-    file/drop-ins. Returns 'none' for the explicit opt-out value."""
-    m = re.search(r"NEST_OWNER=([^\s\"']+)", env_blob or "")
+def _env_value(env_blob: str, frag: str | None, name: str) -> str | None:
+    """<name>=… from `systemctl show -p Environment` or the unit
+    file/drop-ins."""
+    rx = re.compile(re.escape(name) + r"=([^\s\"']+)")
+    m = rx.search(env_blob or "")
     if m:
         return m.group(1)
     paths = []
@@ -242,12 +302,22 @@ def _env_owner(env_blob: str, frag: str | None) -> str | None:
             paths += sorted(drop.glob("*.conf"))
     for p in paths:
         try:
-            m = re.search(r"NEST_OWNER=([^\s\"']+)", p.read_text())
+            m = rx.search(p.read_text())
             if m:
                 return m.group(1)
         except OSError:
             continue
     return None
+
+
+def _env_owner(env_blob: str, frag: str | None) -> str | None:
+    """NEST_OWNER=… — 'none' is the explicit opt-out value."""
+    return _env_value(env_blob, frag, "NEST_OWNER")
+
+
+def _env_flag(env_blob: str, frag: str | None, name: str) -> bool:
+    return (_env_value(env_blob, frag, name) or ""
+            ).strip().lower() in ("1", "true", "yes", "on")
 
 
 def card_claims(cards_dir: Path) -> dict[str, str]:
@@ -472,6 +542,10 @@ def discover(hid: HostId, topo_path: Path, cards_dir: Path) -> dict:
             active_state=props.get("ActiveState"),
             sub_state=props.get("SubState"),
             endpoint=(host, port) if port else None,
+            restart_policy=props.get("Restart"),
+            restart_ok=_env_flag(props.get("Environment", ""),
+                                 props.get("FragmentPath"),
+                                 "NEST_RESTART_OK"),
             nest_owner=_env_owner(props.get("Environment", ""),
                                   props.get("FragmentPath")))
     for key, tnode in topo_nodes(topo_path, hid).items():
@@ -521,6 +595,246 @@ def discover(hid: HostId, topo_path: Path, cards_dir: Path) -> dict:
     return nodes
 
 
+# ------------------------------------------------------------- actuation
+# v2 action plane — bounded, allowlisted, audited. Everything here is a
+# pure function of (discovered nodes, flag files, previous state) plus —
+# only in guarded mode — `systemctl --user restart`. Phase-2 rebalancing
+# (re-offering broker-normalized packages to idle hosts) plugs in as a
+# second planner beside _plan_restart(); it is deliberately absent until
+# the restart pilot proves out (card nest-mgr-v2-actuation rollout).
+
+def _read_list(path: Path) -> set[str]:
+    """Line-delimited flag/allowlist file; '#' comments, blanks skipped."""
+    try:
+        return {l.strip() for l in path.read_text().splitlines()
+                if l.strip() and not l.startswith("#")}
+    except OSError:
+        return set()
+
+
+def _ts(s: str | None) -> datetime | None:
+    try:
+        d = datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
+
+def _ago(s: str | None) -> float:
+    """Seconds since an iso ts; a missing/unparseable ts is 'long ago'."""
+    d = _ts(s)
+    return (_now() - d).total_seconds() if d else 1e18
+
+
+def requested_mode() -> str:
+    m = (os.environ.get("NEST_MGR_MODE") or "").strip().lower()
+    if not m:
+        try:
+            m = MODE_FILE.read_text().strip().lower()
+        except OSError:
+            m = ""
+    return m if m in MODE_RANK else "monitor"
+
+
+def effective_mode(requested: str) -> tuple[str, list[str]]:
+    """Safety flags can only degrade the requested mode, never raise it."""
+    if KILL_FILE.exists():
+        return "monitor", ["kill switch: actuation.off present"]
+    if HOST_CIRCUIT.exists():
+        return "monitor", [f"host circuit open — rm {HOST_CIRCUIT} "
+                           "to reset"]
+    if requested == "guarded" and not OPTIN_FILE.exists():
+        return "recommend", ["guarded requested but the per-host opt-in "
+                             "flag actuation.on is absent"]
+    return requested, []
+
+
+def restart_gate(n: dict, allow: set[str], manual: set[str]) -> str | None:
+    """First blocking gate for auto-restart, or None when the node is a
+    restart candidate. The never-list is checked before the allowlist —
+    an allowlisted unit that is card-owned, unmanaged, manual, or prod
+    still never restarts."""
+    unit = n.get("unit") or ""
+    if not unit:
+        return "no-unit"
+    if unit.startswith("nest-mgr") or EXCLUDE_RX.match(unit):
+        return "self"
+    owner = n.get("owner") or ""
+    if owner.startswith("card:"):
+        return "owner-card"
+    if owner == "unmanaged":
+        return "unmanaged"
+    if unit in manual or (n.get("name") or "") in manual:
+        return "manual"
+    if n.get("topo_status") == "prod" and \
+            not os.environ.get("NEST_MGR_PROD_OK"):
+        return "production"
+    if not (n.get("restart_ok") or unit in allow
+            or (n.get("name") or "") in allow):
+        return "not-allowlisted"
+    if n.get("restart_policy") == "on-success":
+        # failed + Restart=on-success means the unit is deliberately
+        # parked on failure — a timer/oneshot, not a crashed daemon
+        return "restart-policy"
+    if (CIRCUIT_DIR / f"{unit}.open").exists():
+        return "circuit-open"
+    return None
+
+
+def throttle_gate(u: dict) -> str | None:
+    """Cooldown + per-unit hourly rate limit on restart attempts."""
+    atts = u.get("attempts") or []
+    if atts and _ago(atts[-1].get("ts")) < RESTART_COOLDOWN_S:
+        return "cooldown"
+    if sum(1 for a in atts if _ago(a.get("ts")) < 3600) >= RESTART_MAX_HOUR:
+        return "rate-limit"
+    return None
+
+
+def _execs_1h(actions: list[dict]) -> int:
+    """Executed restarts in the last hour — the host circuit budget."""
+    return sum(
+        1 for a in actions
+        if a.get("action") == "restart"
+        and str(a.get("outcome") or "").startswith(("ok", "error"))
+        and _ago(a.get("ts")) < 3600)
+
+
+def actuation_tick(nodes: dict, hid: HostId, prev: dict,
+                   plan_only: bool = False) -> tuple[dict, list[dict]]:
+    """One actuation tick. Returns (actuation_state, new_events).
+
+    monitor   — counters only; zero decisions (v1 behavior, unchanged).
+    recommend — plan allowlisted actions, log them, execute nothing.
+    guarded   — additionally execute allowlisted restarts; requires the
+                actuation.on opt-in flag plus all per-unit gates.
+    plan_only — dry-run/report callers: guarded degrades to recommend so
+                a preview can never execute."""
+    prev_act = prev.get("actuation") or {}
+    units = {k: dict(v) for k, v in (prev_act.get("units") or {}).items()}
+    metrics = dict(prev_act.get("metrics") or {})
+    prev_actions = list(prev.get("actions") or [])
+    req = requested_mode()
+    eff, notes = effective_mode(req)
+    if plan_only and eff == "guarded":
+        eff = "recommend"
+        notes.append("plan-only tick — guarded degraded to recommend")
+    now = _now()
+    events: list[dict] = []
+
+    def record(unit: str, action: str, reason: str, outcome: str,
+               prior_state: str | None = None) -> None:
+        events.append({"ts": now.isoformat(timespec="seconds"),
+                       "host": hid.label(), "unit": unit,
+                       "prior_state": prior_state, "action": action,
+                       "reason": reason, "outcome": outcome})
+
+    def bump(key: str, n: int = 1) -> None:
+        metrics[key] = int(metrics.get(key) or 0) + n
+
+    # fail_ticks bookkeeping runs in every mode — pure observation; a
+    # monitor -> recommend mode flip must not inherit a stale streak.
+    for n in nodes.values():
+        unit = n.get("unit")
+        if not unit:
+            continue
+        u = units.setdefault(unit, {})
+        u["fail_ticks"] = (int(u.get("fail_ticks") or 0) + 1
+                           if n.get("state") == "failed" else 0)
+        u["attempts"] = [a for a in (u.get("attempts") or [])
+                         if _ago(a.get("ts")) < 2 * 3600]
+
+    prev_mode = prev_act.get("mode") or "monitor"
+    if prev_mode != eff:
+        record("-", "mode-change", f"{prev_mode} -> {eff}", eff)
+
+    if eff != "monitor":
+        allow = _read_list(ALLOW_FILE)
+        manual = _read_list(MANUAL_FILE)
+        for key in sorted(nodes, key=lambda k: nodes[k].get("name") or k):
+            n = nodes[key]
+            unit = n.get("unit")
+            if not unit or (units[unit].get("fail_ticks") or 0) \
+                    < FAIL_TICKS:
+                continue
+            u = units[unit]
+            gate = restart_gate(n, allow, manual) or throttle_gate(u)
+            if gate:
+                held = u.get("held") or {}
+                if held.get("gate") != gate or \
+                        _ago(held.get("ts")) > HELD_RESEND_S:
+                    u["held"] = {"gate": gate,
+                                 "ts": now.isoformat(timespec="seconds")}
+                    record(unit, "restart", gate, "held",
+                           prior_state=n.get("state"))
+                    bump("held")
+                continue
+            u.pop("held", None)
+            acted = False
+            if eff == "guarded":
+                if _execs_1h(prev_actions) + _execs_1h(events) \
+                        >= HOST_MAX_ACTIONS_HOUR:
+                    if not HOST_CIRCUIT.exists():
+                        HOST_CIRCUIT.write_text(
+                            now.isoformat(timespec="seconds"))
+                        record("-", "circuit-open",
+                               f"more than {HOST_MAX_ACTIONS_HOUR} "
+                               "restart actions in 1h", "open")
+                        bump("circuits")
+                    eff = "recommend"
+                    notes.append("host circuit opened this tick — "
+                                 "degraded to recommend")
+                else:
+                    acted = True
+                    _, rc = _sh(["systemctl", "--user", "restart", unit],
+                                timeout=30)
+                    att = {"ts": now.isoformat(timespec="seconds"),
+                           "ok": rc == 0}
+                    u.setdefault("attempts", []).append(att)
+                    if rc == 0:
+                        u["fail_ticks"] = 0
+                        record(unit, "restart",
+                               f"failed {FAIL_TICKS}+ ticks; allowlisted",
+                               "ok", prior_state=n.get("state"))
+                        bump("executed"); bump("exec_ok")
+                    else:
+                        record(unit, "restart",
+                               f"systemctl --user restart rc={rc}",
+                               "error", prior_state=n.get("state"))
+                        bump("executed"); bump("exec_fail")
+                        fails = sum(1 for a in u["attempts"]
+                                    if not a.get("ok")
+                                    and _ago(a.get("ts")) < 3600)
+                        if fails >= UNIT_FAILS_CIRCUIT:
+                            CIRCUIT_DIR.mkdir(parents=True, exist_ok=True)
+                            (CIRCUIT_DIR / f"{unit}.open").write_text(
+                                now.isoformat(timespec="seconds"))
+                            record(unit, "circuit-open",
+                                   f"{fails} failed restarts in 1h",
+                                   "open", prior_state=n.get("state"))
+                            bump("circuits")
+            if not acted and _ago(u.get("last_rec")) > REC_RESEND_S:
+                u["last_rec"] = now.isoformat(timespec="seconds")
+                record(unit, "restart",
+                       f"state=failed {u['fail_ticks']} consecutive "
+                       "ticks; eligible, gates green",
+                       "recommended", prior_state=n.get("state"))
+                bump("recommended")
+
+    act = {
+        "requested_mode": req, "mode": eff,
+        "notes": notes or None,
+        "opted_in": OPTIN_FILE.exists(),
+        "kill_switch": KILL_FILE.exists(),
+        "host_circuit": HOST_CIRCUIT.exists(),
+        "unit_circuits": (sorted(p.name[:-5]
+                                 for p in CIRCUIT_DIR.glob("*.open"))
+                          if CIRCUIT_DIR.is_dir() else []),
+        "units": units, "metrics": metrics,
+    }
+    return act, events
+
+
 # ----------------------------------------------------------------- state
 
 def load_state() -> dict:
@@ -530,22 +844,34 @@ def load_state() -> dict:
         return {}
 
 
-def fingerprint(nodes: dict) -> str:
-    """State-change detector: publish when any node's state/health or the
-    node set itself changes."""
+def fingerprint(nodes: dict, act: dict | None = None,
+                actions: list[dict] | None = None) -> str:
+    """State-change detector: publish when any node's state/health, the
+    node set, the actuation posture, or the audit tail changes."""
     parts = []
     for k in sorted(nodes):
         n = nodes[k]
         h = n.get("health") or {}
         parts.append(f"{n.get('name') or k}:{n.get('state')}:{h.get('ok')}")
+    if act:
+        parts.append(f"~mode:{act.get('mode')}")
+        # count + last ts: at the ACTIONS_CAP ring bound a new event must
+        # still shift the fingerprint
+        last = (actions or [{}])[-1].get("ts") or "-"
+        parts.append(f"~actions:{len(actions or [])}:{last}")
+        for c in act.get("unit_circuits") or []:
+            parts.append(f"~circuit:{c}")
     return "|".join(parts)
 
 
-def update_state_file(nodes: dict, hid: HostId) -> bool:
+def update_state_file(nodes: dict, hid: HostId, act: dict,
+                      events: list[dict],
+                      prev: dict | None = None) -> tuple[bool, list[dict]]:
     """Merge into manager-state.json (first_seen/adopted_at persist).
     State file is keyed by node NAME (jev-student, bankq-student, …).
-    Returns True when the fingerprint changed."""
-    prev = load_state()
+    Actuation state + the actions[] audit ring (last ACTIONS_CAP) ride
+    the same doc. Returns (fingerprint_changed, full actions list)."""
+    prev = prev if prev is not None else load_state()
     prev_nodes = prev.get("nodes") or {}
     now = _now().isoformat(timespec="seconds")
     out_nodes = {}
@@ -562,6 +888,8 @@ def update_state_file(nodes: dict, hid: HostId) -> bool:
             "sources": n.get("sources"),
             "state": n.get("state"), "owner": n.get("owner"),
             "adopted": bool(n.get("adopted")),
+            "restart_ok": bool(n.get("restart_ok")),
+            "restart_policy": n.get("restart_policy"),
             "goal": n.get("goal") or n.get("desc"),
             "progress": fmt_progress(n),
             "health": {k2: v for k2, v in (n.get("health") or {}).items()
@@ -572,18 +900,22 @@ def update_state_file(nodes: dict, hid: HostId) -> bool:
             "adopted_at": (old.get("adopted_at")
                            or (now if n.get("adopted") else None)),
         }
-    doc = {"host": hid.label(), "manager": "nest-mgr v1",
-           "updated": now, "fingerprint": fingerprint(nodes),
-           "leash": "observational — reports and "
-                    "health-checks only, never restarts",
+    actions = (list(prev.get("actions") or []) + events)[-ACTIONS_CAP:]
+    fp = fingerprint(nodes, act, actions)
+    doc = {"host": hid.label(), "manager": "nest-mgr v2",
+           "updated": now, "fingerprint": fp,
+           "leash": "actuation monitor<recommend<guarded — gated, "
+                    "allowlisted, audited; production lanes stay "
+                    "leashed (card nest-mgr-v2-actuation)",
+           "actuation": act, "actions": actions,
            "nodes": out_nodes}
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=STATE_DIR, prefix=".state-")
     with os.fdopen(fd, "w") as f:
         json.dump(doc, f, indent=1)
     os.replace(tmp, STATE_FILE)
-    return fingerprint(nodes) != prev.get("fingerprint") or \
-        set(out_nodes) != set(prev_nodes)
+    return (fp != prev.get("fingerprint") or
+            set(out_nodes) != set(prev_nodes)), actions
 
 
 # ---------------------------------------------------------------- report
@@ -592,7 +924,9 @@ STATE_MARK = {"active": "active", "shadow": "shadow", "failed": "FAILED",
               "parked": "parked"}
 
 
-def render_page(nodes: dict, hid: HostId, now: datetime) -> tuple[str, str]:
+def render_page(nodes: dict, hid: HostId, now: datetime,
+                act: dict | None = None,
+                actions: list[dict] | None = None) -> tuple[str, str]:
     stamp = now.astimezone(ICT).strftime("%Y-%m-%d %H:%M")
     rows = []
     counts = {"active": 0, "shadow": 0, "failed": 0, "parked": 0}
@@ -610,32 +944,80 @@ def render_page(nodes: dict, hid: HostId, now: datetime) -> tuple[str, str]:
         mark = {"active": "🟢", "shadow": "🟡", "failed": "🔴",
                 "parked": "⚪"}.get(st, "")
         goal = n.get("goal") or n.get("desc") or "—"
+        ok = " ✅restart-ok" if n.get("restart_ok") else ""
         rows.append(
             f"| **{n.get('name')}** | {n.get('kind') or 'node'} | "
             f"`{ep_s}` | {mark} {st} | {goal} — {fmt_progress(n)} | "
-            f"{n.get('owner')} |")
+            f"{n.get('owner')}{ok} |")
     n_nodes = len(nodes)
+    act = act or {}
+    mode = act.get("mode") or "monitor"
+    req = act.get("requested_mode") or mode
+    req_note = f" (requested `{req}`)" if req != mode else ""
     summary = (f"{n_nodes} nest nodes on {hid.label()}: "
                f"{counts['active']} active, {counts['shadow']} shadow, "
                f"{counts['failed']} failed, {counts['parked']} parked — "
-               f"{adopted} adopted by nest-mgr (observer-only)")
+               f"{adopted} adopted · actuation mode {mode}")
     if not rows:
         rows.append("| _none_ | — | — | — | no nest nodes discovered on "
                     "this host | — |")
+
+    arows = []
+    for a in (actions or [])[-8:]:
+        arows.append(
+            f"| `{a.get('ts', '?')[5:19].replace('T', ' ')}Z` | "
+            f"{a.get('unit')} | {a.get('action')} | {a.get('reason')} | "
+            f"{a.get('outcome')} |")
+    if not arows:
+        arows.append("| — | _no actuation events recorded yet_ | — | — |"
+                     " — |")
+    m = act.get("metrics") or {}
+    met_bits = []
+    for k in ("recommended", "executed", "exec_ok", "exec_fail", "held",
+              "circuits"):
+        if m.get(k):
+            met_bits.append(f"{k} {m[k]}")
+    flags = []
+    flags.append("opt-in `actuation.on` ✅" if act.get("opted_in")
+                 else "opt-in `actuation.on` —")
+    flags.append("kill `actuation.off` 🔴SET" if act.get("kill_switch")
+                 else "kill `actuation.off` —")
+    flags.append("host circuit 🔴OPEN" if act.get("host_circuit")
+                 else "host circuit —")
+    ucirc = act.get("unit_circuits") or []
+    flags.append(f"unit circuits 🔴{','.join(ucirc)}" if ucirc
+                 else "unit circuits —")
+    posture = " · ".join(flags)
+    met_line = (f"lifetime: {' · '.join(met_bits)}"
+                if met_bits else "no actions recorded")
+    notes = act.get("notes") or []
+    notes_line = ("  \n".join(f"> {x}" for x in notes) + "  \n") \
+        if notes else ""
     body = f"""# Nest nodes — {hid.label()}
 
 **{summary}**
-_Updated {stamp} ICT · `nest-mgr.service` v1 — the per-host observer-governor:
-adopts ownerless nodes, health-checks, reports. Never restarts or enforces
-(leash principle, `ssot.nest-training.yml` promotion_gate)._
+_Updated {stamp} ICT · `nest-mgr.service` v2 — observer-governor + gated
+actuation plane. `monitor` reports only · `recommend` plans and audits ·
+`guarded` executes allowlisted restarts under per-host opt-in + circuit
+breakers (card `nest-mgr-v2-actuation`; prod lanes stay leashed)._
 
 | node | kind | endpoint | state | goal · progress | owner |
 |---|---|---|---|---|---|
 {chr(10).join(rows)}
 
+## Actuation — mode `{mode}`{req_note}
+
+{notes_line}{posture}
+_{met_line}_
+
+| ts (utc) | unit | action | reason | outcome |
+|---|---|---|---|---|
+{chr(10).join(arows)}
+
 **Owner** — `manager` = adopted ownerless node · `card:<id>` = kanban claim
 (`nest_nodes:` on the card) · `unmanaged` = NEST_OWNER opt-out · any other
-value = that unit's declared NEST_OWNER.
+value = that unit's declared NEST_OWNER · `✅restart-ok` = the unit opts in
+to guarded auto-restart (`NEST_RESTART_OK=1` or `restart-allowlist`).
 
 **Discovery** — systemd user units matching `jev|student|bankq|nest|serve-*.py|openjev` ·
 `serves:`/`lanes:` entries in ada-voice `tests/bench/topologies.yml` resolving
@@ -686,9 +1068,10 @@ TIMELINE_CAP = 40
 
 
 def publish(nodes: dict, hid: HostId, now: datetime,
+            act: dict | None = None, actions: list[dict] | None = None,
             dry_run: bool = False) -> str:
     slug = f"nest-{hid.label()}"
-    body, summary = render_page(nodes, hid, now)
+    body, summary = render_page(nodes, hid, now, act, actions)
     if dry_run:
         return body
     old = get_page(slug) or {}
@@ -752,14 +1135,16 @@ def cycle(hid: HostId, topo: Path, cards: Path, publish_now: bool,
           dry_run: bool) -> tuple[bool, dict]:
     """One tick. Returns (published?, nodes)."""
     nodes = discover(hid, topo, cards)
-    changed = update_state_file(nodes, hid)
+    prev = load_state()
+    act, events = actuation_tick(nodes, hid, prev, plan_only=dry_run)
+    changed, actions = update_state_file(nodes, hid, act, events, prev)
     cfg, _ = get_registry(f"nest-{hid.label()}") if not dry_run \
         else ({}, None)
     due = publish_now or changed or cfg.get("run_now") or \
         _publish_due(cfg)
     if due:
         if cfg.get("enabled", True) or publish_now:
-            publish(nodes, hid, _now(), dry_run=dry_run)
+            publish(nodes, hid, _now(), act, actions, dry_run=dry_run)
             return True, nodes
     return False, nodes
 
@@ -789,8 +1174,10 @@ def main() -> int:
                     help="print discovered nodes only")
     ap.add_argument("--report", action="store_true",
                     help="print rendered page only")
+    ap.add_argument("--actions", action="store_true",
+                    help="print the actions[] audit tail")
     ap.add_argument("--dry-run", action="store_true",
-                    help="state file yes, CMS/registry no")
+                    help="state file yes, CMS/registry no, never executes")
     ap.add_argument("--topologies", default=os.environ.get(
         "NEST_TOPOLOGIES", str(DEFAULT_TOPO)))
     ap.add_argument("--cards", default=os.environ.get(
@@ -815,7 +1202,22 @@ def main() -> int:
         return 0
     if a.report:
         nodes = discover(hid, topo, cards)
-        print(render_page(nodes, hid, _now())[0])
+        prev = load_state()
+        act, events = actuation_tick(nodes, hid, prev, plan_only=True)
+        print(render_page(nodes, hid, _now(), act,
+                          list(prev.get("actions") or []) + events)[0])
+        return 0
+    if a.actions:
+        st = load_state()
+        acts = st.get("actions") or []
+        act = st.get("actuation") or {}
+        print(f"{hid.label()}: mode={act.get('mode') or 'monitor'} "
+              f"(requested {act.get('requested_mode') or '?'}) — "
+              f"{len(acts)} audit record(s):")
+        for ev in acts[-25:]:
+            print(f"  {ev.get('ts')}  {ev.get('unit') or '-':28} "
+                  f"{ev.get('action'):12} {ev.get('outcome'):12} "
+                  f"{ev.get('reason')}")
         return 0
     if a.loop:
         print(f"nest-mgr: host={hid.label()} tick={TICK_S}s "
