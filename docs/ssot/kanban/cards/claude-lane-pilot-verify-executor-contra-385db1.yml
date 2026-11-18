@@ -1,7 +1,7 @@
 id: claude-lane-pilot-verify-executor-contra-385db1
 title: 'claude-lane pilot: verify executor contract landed on master'
-column: review
-updated: 2026-11-18 17:54
+column: done
+updated: 2026-11-18 17:56
 priority: low
 tags:
 - claude-lane-pilot
@@ -19,7 +19,7 @@ action:
   result: 'exit=0 nputTokens":0,"canonicalModel":"claude-sonnet-5-5","provider":"firstParty","costBasis":"list"}}}
     | devin-task-20261118-174434-verify-only-pilot-for-the-new-.service: Consumed 7.682s CPU time over 14.401s wall
     clock time, 266.5M memory peak.'
-  verified: false
+  verified: true
 ref: OPS-0196
 comms:
 - at: 2026-11-18 17:38
@@ -115,6 +115,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: unclaimable by the declared runner fleet: action.executor=''claude'' names no known executor
     — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-18 17:56
+  from: chaba
+  text: 'merge-sweep: merged b1619187 (dispatch/20261118-174434-verify-only-pilot-for-the-new- from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261118-174434-verify-only-pilot-for-the-new-.md)
+    — auto-closed'
 review_kind: verify
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 17:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261118-174434-verify-only-pilot-for-the-new-.md
