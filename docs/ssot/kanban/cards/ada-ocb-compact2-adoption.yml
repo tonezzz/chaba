@@ -1,7 +1,7 @@
 id: ada-ocb-compact2-adoption
 title: 'ada-ocb: adopt board-api compact=2 + comms_tail projections'
 column: backlog
-updated: 2026-11-18 21:39
+updated: 2026-11-18 21:49
 brief: 'KNB-0176 landed server-side compact=2 (id,ref,title,column,priority,updated,brief,spec,action_status) and
   comms_tail=<n> on /cards and /card/<id>. ada_mcp.py still uses its own fields= projection workaround (~1MB snapshot).
   Adopt the server-side tier: _board_cards snapshot via compact=2, single-card hydration via comms_tail for comms
@@ -23,3 +23,10 @@ comms:
 - at: 2026-11-18 21:39
   from: devin
   text: card captured via board-api
+- at: 2026-11-18 21:49
+  from: devin
+  text: 'Done directly (ada-voice a2a2026, deployed idc03 — 1820 tests pass). Hydration now requests comms_tail=8
+    on both _fetch_card_full and _context_card; _safe_card surfaces comms_total. Snapshot stays on fields= — verified
+    compact=2 drops action/requests/aliases which ranking/gates need (documented in code). Live verify on idc03:
+    find_card ADA-0172 = 0.67s, comms=6 comms_total=6. ocb-smoke PASS, ocb-eval dry-run 10/10, 26 focused tests
+    pass.'
