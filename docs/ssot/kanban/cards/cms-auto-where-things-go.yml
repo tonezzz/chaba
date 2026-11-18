@@ -1,22 +1,20 @@
 id: cms-auto-where-things-go
 title: CMS automation `where-things-go` stale
-brief: A scheduled report-page job ('where-things-go') is stale. Re-run it or check
-  the generator — details in the note.
+brief: A scheduled report-page job ('where-things-go') is stale. Re-run it or check the generator — details in the
+  note.
 column: review
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'Recovering: where-things-go healthy for 1/2 ticks — auto-closes when the streak
-  holds.'
-help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or
-  POST /api/cms/pages/where-things-go/regenerate). If it repeats, check the page''s
-  generator command in the registry doc.'
-updated: '2026-11-18'
+note: 'last_run 45m overdue (interval 60m). last_run=2026-11-18T12:00:01+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/where-things-go'
+help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or POST /api/cms/pages/where-things-go/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-18 21:17
 comms:
 - at: 2026-11-07 16:49
   from: devin
-  text: '[KNB-1098] verified: page regenerated 2026-11-07 09:00Z + 16:00 ICT and registry
-    status=ok — transient overdue cleared. Closing.'
+  text: '[KNB-1098] verified: page regenerated 2026-11-07 09:00Z + 16:00 ICT and registry status=ok — transient
+    overdue cleared. Closing.'
 - at: 2026-11-07 16:49
   from: devin
   text: closed by devin
@@ -55,6 +53,10 @@ comms:
 - at: 2026-11-18 18:10
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
