@@ -25,7 +25,7 @@ spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doin
 help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. Fetch must override the repo''s
   pinned GitHub key: `git -c core.sshCommand=ssh fetch`. Merge guard already in scripts/board/dispatch_repos.py
   — this service is its remedy path.'
-updated: 2026-11-18 20:55
+updated: 2026-11-18 20:56
 action:
   type: dispatch
   status: running
@@ -209,6 +209,13 @@ comms:
     probe, core.sshCommand=ssh fetch, merge_state+merge_strict stop-and-report -> card request naming files, zombie
     lane 6h/60min flag-only, dispatch_repos reuse, ada-pi resolves via alias to ada-voice); 41/41 tests pass; live
     cadence via board-janitor.timer on idc03 (15m). No code changes needed.'
+- at: 2026-11-18 20:56
+  from: devin
+  text: 're-dispatch #2 (user-triggered) — same verdict as 20:48 run: merge-sweep.py identical to origin/master,
+    full spec implemented (meta.json probe, core.sshCommand=ssh fetch, merge_state+merge_strict stop-and-report,
+    conflict->card request naming files, zombie 6h/60min flag-only, dispatch_repos reuse); 41/41 tests pass; live
+    via board-janitor.timer on idc03 (15m). Card sits in doing/running from the re-queues — moving it back to review/done
+    would stop repeat verification sessions.'
 ownership:
   owner: tony
 claim: {}
