@@ -1,6 +1,6 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
-column: backlog
+column: doing
 updated: 2026-11-18 22:17
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
@@ -122,6 +122,9 @@ comms:
 - at: 2026-11-18 22:17
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.20 > 0.85)'
+- at: 2026-11-18 22:17
+  from: tony-dell
+  text: claimed
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -161,7 +164,8 @@ requests:
     approval; no download or inference has been authorized by this request.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
+  runner: tony-dell
