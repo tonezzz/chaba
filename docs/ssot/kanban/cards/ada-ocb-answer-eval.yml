@@ -1,7 +1,7 @@
 id: ada-ocb-answer-eval
 title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
 column: doing
-updated: 2026-11-18 10:02
+updated: 2026-11-18 10:05
 brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
   eval set that asserts answer quality end-to-end.
 priority: high
@@ -108,6 +108,13 @@ comms:
     kind:benchmark MDDB doc). tools mode 10/10 in ~1s. live mode found real issues: flash-lite gets hijacked by
     matching skills (ssot-search) + ignores ada-control prompt — exactly the wrong-path failure this eval measures.
     canonical run writing now.'
+- at: 2026-11-18 10:05
+  from: devin
+  text: 'done. ada-voice branch eval/ocb-answer-eval @ 442cfc7 (not pushed): tests/eval_ocb/cases.yml (10 cases)
+    + scripts/ocb-eval.py (tools/live/replay, kind:benchmark MDDB docs) + offline schema test + hourly timer unit.
+    Canonical doc benchmark/ocb-answer-eval-20261118-100407 = score 1.0 (tools 10/10; live unscored on opencode
+    free-quota 429). Live-mode findings: dead-mcp fallback fixed, skill-hijack (ssot-search) + unenforceable builtins
+    confirmed as real wrong-path failures the suite now catches.'
 action:
   type: dispatch
   status: running
