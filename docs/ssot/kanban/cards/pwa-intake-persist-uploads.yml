@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
 column: doing
-updated: 2026-11-18 16:42
+updated: 2026-11-18 17:29
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -88,6 +88,10 @@ comms:
   text: 'merge-sweep: devin-task-20261117-233214-goal-fix-pwa-document-intake-d failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-233214-goal-fix-pwa-document-intake-d by
     hand.'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-pwa-document-intake-featur-096c1f
   ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
