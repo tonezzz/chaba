@@ -1,0 +1,121 @@
+# Job: ada-control MCP session-dir connect race — fix via pinned cwd
+title: Fix ada-control MCP FileSystem.access race on OpenChamber session dirs
+subtitle: card ada-control-mcp-session-dir-race-9d9284, dispatch on tony-omen
+icon: wrench
+
+planning:
+  goal: >-
+    Stop ada-control MCP connect failures caused by the OpenChamber session-dir
+    race: opencode spawns local MCP servers with cwd = session directory
+    (~/.config/openchamber/chats/<date>/session-<uuid>); the Effect spawner's
+    pre-spawn FileSystem.access(cwd) fails with NotFound when the ephemeral dir
+    is not materialized yet (or was discarded between location resolution and
+    spawn). Verified fix: pin the MCP server's configured cwd to a stable path
+    so the spawn never touches the ephemeral dir.
+  evidence:
+    - >-
+      idc02 ~/.local/share/opencode/log/opencode.log: 19 "mcp connect failed"
+      on 2026-11-18; NotFound: FileSystem.access
+      (.../chats/2026-11-18/session-<uuid>) interleaved with
+      "mcp connected tools=26". Same pattern on tony-dell: 64 failures.
+    - >-
+      Every failed session's chat dir is absent on disk afterwards; every
+      connected session's dir exists. Failed dirs are created empty and
+      removed again (OpenChamber discard/cleanup of empty chat dirs).
+  root_cause: >-
+    packages/core/src/mcp/client.ts (anomalyco/opencode fork): for
+    type=="local", spawn cwd = McpStdio.resolveCwd(options.directory,
+    config.cwd) — config.cwd unset => workspace directory. The Effect
+    ChildProcess spawner validates cwd via FileSystem.access before exec;
+    a missing chat dir => "NotFound: FileSystem.access (<dir>)".
+    Parent-side check: ada_mcp.py never starts, so its own Path.cwd()
+    fallback cannot help (option (b) alone is not viable).
+  fix_choice: >-
+    Option (c) pin MCP cwd — supported natively by the fork:
+    Mcp.LocalConfig.cwd ("Working directory for the MCP server process.
+    Relative paths resolve from the workspace directory.", ~ expands to
+    home). Set mcp.ada-control.cwd = /home/tony/CascadeProjects/ada-voice.
+    Why (c) over (a) openchamber patch: node_modules patches are reverted by
+    openchamber-update.timer; the config field is upstream-supported and
+    survives upgrades. Why not (b): spawn never reaches the process.
+  side_effects:
+    - >-
+      ada_mcp.py WORKSPACE becomes the ada-voice checkout instead of the
+      chat dir. Workspace-scoped probes (.opencode/commands/ada.md,
+      .opencode/opencode.json, .opencode/ada_mcp.py feature detection;
+      subprocess cwd=WORKSPACE; _context_pack file scans) now resolve
+      against a real project instead of an empty/discarded chat dir —
+      strictly better for a control-plane bridge. Chat sessions never had
+      those files anyway.
+    - >-
+      MCP pool still spawns one ada_mcp.py per location (per-location
+      scope), same as before — no process-count regression; ~34 live
+      during the 20-run verification.
+
+processing:
+  status: done
+  started_at: "2026-11-18T20:47+07:00"
+  steps:
+    - id: 1
+      label: reproduce deterministically
+      status: done
+      notes: >-
+        On idc02 managed opencode (127.0.0.1:<dynamic>, basic auth
+        opencode:$OPENCODE_SERVER_PASSWORD from the managed child's
+        /proc/<pid>/environ): mkdir D; GET /api/config?location[directory]=D
+        (resolves+caches the location, 200); rmdir D; GET
+        /api/mcp?location[directory]=D -> logged
+        "mcp connect failed ... NotFound: FileSystem.access (D)". Direct
+        POST /api/session with a missing dir only records the session row —
+        LocationNotFound on scoped reads; the race needs the dir deleted
+        AFTER resolution, matching OpenChamber's empty-dir discard.
+    - id: 2
+      label: apply cwd pin (idc02)
+      status: done
+      notes: >-
+        /home/tony/.config/opencode/opencode.json — mcp.ada-control +=
+        "cwd": "/home/tony/CascadeProjects/ada-voice". Backup at
+        opencode.json.bak-cwd-fix-20261118. Config hot-reloads (opencode
+        watches ~/.config/opencode); no unit restart needed — reconcile
+        fired immediately (all live locations re-connected tools=26).
+    - id: 3
+      label: verify 20 consecutive session starts (idc02)
+      status: done
+      notes: >-
+        /tmp/race_verify.py ran the full sequence 20x (mkdir -> session
+        create -> config resolve -> rmdir -> /api/mcp): 20x "mcp connected
+        tools=26" between 14:00:17-14:00:53 UTC, zero "mcp connect failed".
+        Last failure on idc02 was 13:59:25 UTC (the pre-fix repro run).
+    - id: 4
+      label: apply + verify on tony-dell (soak fallback)
+      status: done
+      notes: >-
+        Same latent race on dell pane (still active): 64 logged failures.
+        Same one-line cwd pin applied (backup same name). Single-shot
+        deleted-dir repro -> "mcp connected tools=26" at 14:02:25 UTC.
+    - id: 5
+      label: durable trail
+      status: done
+      notes: this file + dispatch outcome + board comms.
+
+followups:
+  - >-
+    Upstream (a): OpenChamber could create the chat dir before the session
+    is registered with opencode, and/or the opencode fork could tolerate a
+    missing MCP cwd (skip or mkdir -p) instead of hard-failing at
+    FileSystem.access. Worth an issue on github.com/anomalyco/opencode and/or
+    openchamber — the cwd pin makes this cosmetic for ada-control, but any
+    other local MCP server without a pinned cwd keeps the race.
+  - >-
+    The host-local ~/.config/opencode/opencode.json ada-control block exists
+    only on idc02 and tony-dell (pane hosts); both now carry the cwd pin.
+    If a new pane host is ever provisioned, copy the block WITH cwd.
+  - >-
+    ada_mcp.py already tolerates a missing cwd at Path.cwd() (fallback to
+    ~) — keep it; it no longer triggers in practice.
+
+references:
+  - card: ada-control-mcp-session-dir-race-9d9284
+  - migration job: docs/ssot/jobs/devnest/2026-11-18-openchamber-idc02-migration.yml
+  - fork source: github.com/anomalyco/opencode packages/core/src/mcp/{client,stdio}.ts
+  - schema: packages/schema/src/mcp.ts Mcp.LocalConfig.cwd
