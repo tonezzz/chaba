@@ -56,7 +56,7 @@ def validate(pack: str, output: str) -> list[dict]:
             "task_id": task_id,
             "lane": "kk_mac_local",
             "task_class": task_class,
-            "model": "qwen3:8b",
+            "model": "qwen2.5:32b",
             "prompt": prompt,
             "expect": {},
             "source_id": source_id,
