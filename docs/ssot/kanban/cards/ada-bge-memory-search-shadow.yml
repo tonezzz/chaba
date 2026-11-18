@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-17 23:39
+updated: 2026-11-18 15:11
 priority: high
 tags:
 - ada
@@ -97,6 +97,13 @@ comms:
   text: 'merge-sweep: devin-task-20261117-232220-add-an-opt-in-asynchronous-sha failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-232220-add-an-opt-in-asynchronous-sha by
     hand.'
+- at: 2026-11-18 15:11
+  from: devin
+  text: '2026-11-18 synthetic in-process probe on idc03 (prod env, anonymous person_entity=None): full path verified
+    — baseline Gemini returned 3 hits, shadow fired and logged `status=empty collections=2 collection_errors=2 dense_ms=5018
+    total_ms=5018`. ACL confirmed working: anonymous fanout correctly resolved to only general+home (default policy
+    allow-list; dev-scratch not in tony instance). Failure isolation proven live: both :11028 fetches blew the 5s
+    deadline, shadow degraded to empty, baseline unto'
 action:
   type: dispatch
   status: failed
