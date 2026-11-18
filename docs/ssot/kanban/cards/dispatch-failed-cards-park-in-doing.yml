@@ -1,7 +1,7 @@
 id: dispatch-failed-cards-park-in-doing
 title: Failed/idle dispatch cards park in doing forever — no reaper returns them to backlog
 column: doing
-updated: 2026-11-18 22:27
+updated: 2026-11-18 22:57
 brief: '2026-11-17 sweep found 43 cards in doing with zero live claims fleet-wide (/queue claimed=[]): 23 action.status=failed
   dispatch cards (mostly Nov-14 runner-agent-drift/push-guard defers), 7 action.status=done stuck in doing, 11 manual/no-action
   stale claims. kanban-dispatch defers leave cards in doing; nothing ever returns them to backlog or re-queues them,
@@ -128,6 +128,13 @@ comms:
 - at: 2026-11-18 22:27
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-184815-decide-implement-the-stalled-c'
+- at: 2026-11-18 22:57
+  from: devin
+  text: 'stalled-claim lifecycle implemented: every dead-claim path (do_finish, launch fail, dead-runner requeue,
+    merge/verified-gate fail, retry-cap park, queue/retry verbs) now leaves doing — auto-requeue to backlog under
+    KANBAN_MAX_ATTEMPTS=2, else parked failed+backlog (retry re-arms). Claims bump attempts + stamp claim.since;
+    /queue counts starting. New merge-sweep reaper lane on the 15-min janitor tick: live-looking claims >6h with
+    no unit+no heartbeat get flagged (never auto-requeued), dead status'
 action:
   type: dispatch
   status: running
