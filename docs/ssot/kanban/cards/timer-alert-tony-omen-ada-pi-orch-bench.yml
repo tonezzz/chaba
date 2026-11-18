@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-ada-pi-orch-bench
 title: Timer ada-pi-orch-bench on tony-omen failing
-column: backlog
+column: done
 updated: 2026-11-18 15:59
 priority: high
 tags:
@@ -44,9 +44,14 @@ comms:
 - at: 2026-11-18 15:59
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 15:59
+  from: tony
+  text: closed by tony
 spec: Investigate the timeout failure of `ada-pi-orch-bench.service` on host `tony-omen` by inspecting the systemd
   user journal via `journalctl --user -u ada-pi-orch-bench.service` and referencing CMS `timer-timeline-tony-omen`.
   The target host is `tony-omen` and the relevant repository is `ada-pi`. Constraints are to rely strictly on the
   provided card details and host logs without inventing paths or making unauthorized system modifications. The done-condition
   is met when the root cause of the timeout is identified from the journal and documented alongside the CMS timeline
   reference.
+action:
+  status: done
