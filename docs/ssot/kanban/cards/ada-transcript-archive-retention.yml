@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 23:49
+updated: 2026-11-18 16:16
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -225,6 +225,11 @@ comms:
 - at: 2026-11-17 23:49
   from: chaba
   text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-18 00:19'
+- at: 2026-11-18 16:16
+  from: devin
+  text: 'DECISION (Tony, 2026-11-18): pi-pwa-lane-classification = dev — ada-pi-pwa transcripts archive to the shared
+    dev lane (lane=dev), superseding the earlier exclude answer. Note: retirement work already removed the live
+    service; this only affects how its historical transcripts are classified in the retention job.'
 action:
   type: dispatch
   repo: chaba
