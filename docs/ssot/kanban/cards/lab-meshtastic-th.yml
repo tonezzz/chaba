@@ -7,10 +7,10 @@ lab:
   hypothesis: A passive collector on the Thai Meshtastic mesh sees enough node traffic to map community coverage
     — worth a permanent node
   metric: '>= 20 unique nodes heard over 14 days, mapped on CMS'
-  review_by: '2026-11-01'
+  review_by: '2026-11-15'
 note: 'Experiment dir: experiments/meshtastic-th-collector. Retire = collector becomes a cron''d map publisher;
   promote = dedicated always-on node card.'
-updated: 2026-11-18 22:11
+updated: 2026-11-18 22:18
 ref: OPS-0011
 comms:
 - at: 2026-10-11 08:35
@@ -95,10 +95,15 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:11
+- ts: '2026-11-18T22:12:59'
   from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+  text: lab review due — promote, retire, or extend?
+- at: 2026-11-18 22:18
+  from: tony
+  text: 'answered lab-review: extend — extend 2w — set a new lab.review_by (+14d)'
+- ts: '2026-11-18T22:18:18'
+  from: chaba
+  text: 'lab decision executed: extend — extend 2w — set a new lab.review_by (+14d)'
 requests:
 - id: lab-review
   ask: Lab review_by 2026-10-18 has passed with no outcome — promote, retire, or extend?
@@ -115,7 +120,7 @@ requests:
   executed: '2026-10-23'
 - id: lab-review
   ask: Lab review_by 2026-11-01 has passed with no outcome — promote, retire, or extend?
-  status: open
+  status: answered
   options:
   - id: promote
     label: promote → backlog — it earned a real card
@@ -124,3 +129,5 @@ requests:
   - id: extend
     label: extend 2w — set a new lab.review_by (+14d)
   escalated_at: 2026-11-06 20:16
+  answer: extend — extend 2w — set a new lab.review_by (+14d)
+  executed: '2026-11-18'
