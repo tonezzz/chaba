@@ -1,7 +1,7 @@
 id: ada-ocb-regression-suite
 title: 'ada-ocb regression suite: per-feature tests + live smoke + calls.jsonl benchmark'
 column: doing
-updated: 2026-11-17 22:24
+updated: 2026-11-18 08:34
 brief: Lock in this week's ada-ocb improvements (context_pack, ssot_get, windowed excerpts, MDDB lessons, vector-search,
   board snapshots, string-row guards) with regression coverage so they can't silently rot.
 priority: high
@@ -76,14 +76,18 @@ comms:
   text: 'merge-sweep: devin-task-20261117-220450-three-layers-in-ada-voice-1-un failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-220450-three-layers-in-ada-voice-1-un by
     hand.'
+- at: 2026-11-18 08:34
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  runner: tony-omen
-  result: 'exit=1 0261117-220450-three-layers-in-ada-voice-1-un.service: Failed with result ''exit-code''. | devin-task-20261117-220450-three-layers-in-ada-voice-1-un.service:
-    Consumed 5min 51.935s CPU time over 15min 39.071s wall clock time, 2.4G memory peak.'
   sweep:
     failed_noted: 2026-11-17 22:24
+  last_failure: 'exit=1 0261117-220450-three-layers-in-ada-voice-1-un.service: Failed with result ''exit-code''.
+    | devin-task-20261117-220450-three-layers-in-ada-voice-1-un.service: Consumed 5min 51.935s CPU time over 15min
+    39.071s wall clock time, 2.4G memory peak.'
+  attempts: 1
