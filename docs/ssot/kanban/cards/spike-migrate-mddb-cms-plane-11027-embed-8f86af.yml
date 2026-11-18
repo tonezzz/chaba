@@ -1,7 +1,7 @@
 id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
 title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
 column: review
-updated: 2026-11-18 18:18
+updated: 2026-11-18 20:15
 priority: medium
 tags:
 - mddb
@@ -103,6 +103,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 20:15
+  from: devin
+  text: 'Merged spike artifacts to origin/master (runbook docs/ssot/jobs/mddb/2026-11-18-cms-plane-bge-m3-migration-runbook.yml
+    + scripts/mddb/spike-cms-bge/*). Key result for MEM-1129: BGE-CMS proven on scratch — 931 docs, 0 fail, ~42min
+    drain; recall parity vs gemini (36.3% vs 31.0% top-10 overlap, identical per-query on shared colls). Rankings
+    shift ~2/3 → needs golden-set eval before any prod cutover. Note: OR embed daily-cap (5000) exhausted by reindex
+    — remaining ~2.8k CMS missing vectors wait for '
 action:
   type: dispatch
   status: done
