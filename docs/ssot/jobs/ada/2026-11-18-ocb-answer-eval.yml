@@ -1,0 +1,60 @@
+date: 2026-11-18
+title: ada-ocb answer-quality eval — tests/eval_ocb + scripts/ocb-eval.py (ADA-0175)
+domain: ada
+job: dispatch
+cards: [ada-ocb-answer-eval, ada-ocb-regression-suite]
+host: idc02
+summary: >
+  Built the answer-quality layer that ADA-0174's tool-plumbing smoke
+  cannot express: tests/eval_ocb/cases.yml holds 10 curated cases
+  encoding the failure modes actually hit (doc-title answers, board
+  timeouts, guessed attention lists, collection-head SSOT reads,
+  mutation-gate regressions); scripts/ocb-eval.py runs them in three
+  modes — tools (deterministic plans through ada_mcp against live
+  board-api/MDDB), live (opencode run --standalone on this repo's
+  bridge, answer text + tool trace asserted), replay (recorded
+  sessions re-asserted offline). Scores per case and writes one
+  kind:benchmark doc per run to ada-ha-scenario-reports so
+  regressions show as score drops.
+
+findings:
+  - 'deployed ada-code workspace bridge (~/.local/share/ada-code/workspace/
+    .opencode/ada_mcp.py) is STALE: 21 tools vs repo''s 25 — no
+    ada_ssot_get / ada_context_pack / ada_card_pick. Production
+    OpenChamber answers cannot use the exact-SSOT or vector-pack
+    paths until the workspace copy is refreshed (deploy-ada flow).'
+  - 'opencode v2.2.6: the legacy agent permission map and tools:false
+    map do NOT remove the renamed builtins (shell/read/grep/glob/
+    write) — the model can and does read card YAML / SSOT files
+    directly instead of calling ada-control. Live eval runs show
+    flash-lite preferring filesystem tools ~most of the time; the
+    eval workspace now stacks policies+permissions+tools+permission
+    denies as best-effort, but the real perimeter is asserted, not
+    enforced — see the live tool traces in the benchmark docs.'
+  - 'the model answers some questions correctly through the wrong
+    path (grep/read of docs/ssot/kanban/cards/*.yml yields the right
+    column) — require_any_tools on the trace catches this: content
+    correct ≠ bridge used.'
+  - 'litellm gateway flaked twice during bring-up (000 connect /
+    401 "Key is blocked" bursts that clear on retry) — eval
+    classifies provider.auth/quota/connectivity as infra
+    (unscored), same taxonomy as scenario-benchmark.py.'
+
+evidence:
+  - 'scripts/ocb-eval.py --mode tools: 10/10 pass in ~3s against live
+    board-api + MDDB (mcp stub fallback works without the mcp pkg; with
+    mcp installed the real FastMCP tool-manager path incl. calls.jsonl
+    audit is exercised).'
+  - 'benchmark docs: benchmark/ocb-answer-eval-* in
+    ada-ha-scenario-reports (MDDB ops leader
+    http://100.102.134.91:11023/v1).'
+  - 'read-only: every step asserts mutations_performed/mutations empty;
+    live mode fails the case if a write tool (ada_respond/
+    ada_card_action/ada_adobe_stock_qc_decide) is even attempted.'
+
+verify: |
+  cd <ada-voice checkout>
+  .venv/bin/python scripts/ocb-eval.py --mode tools --dry-run      # 10/10
+  .venv/bin/python scripts/ocb-eval.py --mode live --only card-status-ada-0172 \
+      --mcp-python <venv-with-mcp>/bin/python --dry-run
+  python3 -c "import json,urllib.request;print(json.loads(urllib.request.urlopen(urllib.request.Request('http://100.102.134.91:11023/v1/search',data=b'{\"collection\":\"ada-ha-scenario-reports\",\"query\":\"ocb-answer-eval\",\"limit\":3}',headers={'Content-Type':'application/json'})).read())[0]['key'])"
