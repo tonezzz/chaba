@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-ha-fabric-cms
 title: Timer ha-fabric-cms on tony-omen failing
-column: backlog
+column: done
 updated: 2026-11-18 16:00
 priority: high
 tags:
@@ -44,7 +44,12 @@ comms:
 - at: 2026-11-18 16:00
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 16:00
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `ha-fabric-cms.service` on host `tony-omen` which resulted in an exit-code on 11-16
   00:04. Inspect the systemd user journal using `journalctl --user -u ha-fabric-cms.service` and review CMS `timer-timeline-tony-omen`.
   The done-condition is verified when the root cause of the service failure is identified and documented in the
   card context.
+action:
+  status: done
