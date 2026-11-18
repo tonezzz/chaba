@@ -82,9 +82,12 @@ comms:
 - at: 2026-11-18 08:35
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-18 08:35
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -94,3 +97,4 @@ action:
     | devin-task-20261117-220450-three-layers-in-ada-voice-1-un.service: Consumed 5min 51.935s CPU time over 15min
     39.071s wall clock time, 2.4G memory peak.'
   attempts: 1
+  runner: idc02
