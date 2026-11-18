@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: doing
-updated: 2026-11-18 16:43
+updated: 2026-11-18 16:50
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -125,6 +125,13 @@ comms:
 - at: 2026-11-18 16:43
   from: chaba
   text: started devin-task-20261118-164347-goal-bulk-index-embedding-work on idc02 (dispatch)
+- at: 2026-11-18 16:50
+  from: devin
+  text: 'picked up on idc02 dispatch. Findings so far: (1) EmbeddingJob distinction — query embeds never enter mddbs
+    embed queue (vector-search calls the provider directly per card note), so the index/query split exists by construction
+    inside mddbd, not at the proxy; (2) repo proxy lacks the 2026-11-18 live GEMINI_FREE_KEYS keyring patch — drift
+    to reconcile at deploy; (3) proxy sees identical request shapes for query+index (mddbd per-chunk single-text
+    calls) — true per-class priority needs mddbd coopera'
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
