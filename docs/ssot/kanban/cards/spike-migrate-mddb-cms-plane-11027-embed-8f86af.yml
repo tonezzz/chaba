@@ -1,7 +1,7 @@
 id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
 title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
 column: review
-updated: 2026-11-18 20:15
+updated: 2026-11-18 21:21
 priority: medium
 tags:
 - mddb
@@ -110,6 +110,10 @@ comms:
     drain; recall parity vs gemini (36.3% vs 31.0% top-10 overlap, identical per-query on shared colls). Rankings
     shift ~2/3 → needs golden-set eval before any prod cutover. Note: OR embed daily-cap (5000) exhausted by reindex
     — remaining ~2.8k CMS missing vectors wait for '
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
