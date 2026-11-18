@@ -47,7 +47,7 @@ Env overrides:
               nest-micro-training branch merged for suites.yml/adv sets)
   VENV_PY     python with torch/transformers (default
               ~/CascadeProjects/open-jev/.venv/bin/python)
-  CHAMP       incumbent endpoint (default http://idc03.taila0626a.ts.net:8778)
+  CHAMP       incumbent endpoint (default http://tony-omen.taila0626a.ts.net:8780)
   CORPUS_LIVE / CORPUS_ARCHIVE   ssh hosts (default idc03 / idc01)
   MDDB        mddb base (default http://100.102.134.91:11023/v1)
   BOARD_API   board api base (default https://tony-dell.../apps/board-api)
@@ -96,7 +96,7 @@ ADA_PI = Path(os.environ.get("ADA_PI", HOME / "CascadeProjects/ada-voice"))
 VENV_PY = os.environ.get(
     "VENV_PY", str(HOME / "CascadeProjects/open-jev/.venv/bin/python"))
 CHAMP = os.environ.get(
-    "CHAMP", "http://idc03.taila0626a.ts.net:8778").rstrip("/")
+    "CHAMP", "http://tony-omen.taila0626a.ts.net:8780").rstrip("/")
 CORPUS_LIVE = os.environ.get("CORPUS_LIVE", "idc03")
 CORPUS_ARCHIVE = os.environ.get("CORPUS_ARCHIVE", "idc01")
 MDDB = os.environ.get("MDDB", "http://100.102.134.91:11023/v1").rstrip("/")

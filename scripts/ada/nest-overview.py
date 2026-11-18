@@ -88,7 +88,7 @@ BRAIN_STATUS = {"packed-verified": "ok", "candidate": "delta",
 # L1 node slug (nest-lanes/<slug>). Lanes get probed live; a lane being
 # down is information, not an error.
 LANES = [
-    ("jev-student", "jev-student (prod gate)", "idc03", 8778,
+    ("jev-student", "jev-student (prod gate)", "tony-omen", 8780,
      "distilbert confirm"),
     ("student-a",   "student-a",               "tony-omen", 8778,
      "gemma-3-1b systemd"),
