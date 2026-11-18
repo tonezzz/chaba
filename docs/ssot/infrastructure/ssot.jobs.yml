@@ -72,6 +72,61 @@ jobs:
     brief — related SSOT + KB lessons + top-3 similar done-cards with
     proven-right outcomes via scripts/ada-jobs/brief_builder.py — before
     her turn; opt-in flag pending bench delta + flip decision.
+- id: ada-retention-tony
+  name: Ada lane retention — tony (+shared scopes)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 04:15:00'
+  persistent: true
+  timeout: 2h
+  env_file: '%h/.config/secrets/tony-ha/backend.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+    --lane tony --include-shared
+  note: 'card ada-transcript-archive-retention — archives only sessions
+    attributed to this lane; unmapped transcripts stay local. Runs ops TTL
+    and extract merge phases after transcript archiving.'
+- id: ada-retention-kk
+  name: Ada lane retention — kk
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 04:30:00'
+  persistent: true
+  timeout: 1h
+  env_file: '%h/.config/secrets/tony-ha/backend.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+    --lane kk
+  note: 'card ada-transcript-archive-retention — lane-attributed transcripts
+    archive to the shared Tony-Memory notebook; local copies are retained.'
+- id: ada-retention-michael
+  name: Ada lane retention — michael
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 04:45:00'
+  persistent: true
+  timeout: 1h
+  env_file: '%h/.config/secrets/tony-ha/backend.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+    --lane michael
+  note: 'card ada-transcript-archive-retention — Michael transcript archive
+    uses the dedicated Michael — Ada HA notebook; local copies are retained.'
+- id: ada-retention-dev
+  name: Ada lane retention — dev lanes
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 04:00:00'
+  persistent: true
+  timeout: 30m
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+    --lane dev
+  note: 'card ada-transcript-archive-retention — covers ada-dev, ada-kk-dev
+    and ada-pi-pwa (Tony classified pi-pwa dev 2026-11-18, superseding the
+    earlier exclude answer). Runs BEFORE the tony lane: pi-pwa ran with
+    ADA_INSTANCE_ID=tony so its recall sids sit in tony''s collections —
+    only journald attribution tags them dev, and dev must claim first.'
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725

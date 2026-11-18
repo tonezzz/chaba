@@ -1,0 +1,9 @@
+[Unit]
+Description=Ada lane retention — tony (+shared scopes) (job:ada-retention-tony, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=7200
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py --lane tony --include-shared
+EnvironmentFile=%h/.config/secrets/tony-ha/backend.env

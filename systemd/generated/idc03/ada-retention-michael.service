@@ -1,0 +1,9 @@
+[Unit]
+Description=Ada lane retention — michael (job:ada-retention-michael, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/lane-retention.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=3600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-retention.py --lane michael
+EnvironmentFile=%h/.config/secrets/tony-ha/backend.env
