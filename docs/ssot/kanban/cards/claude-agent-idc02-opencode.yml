@@ -77,3 +77,23 @@ comms:
     v2.2.6) = Ada control-plane responder backend, LiteLLM-keyed, not user-facing; (2) jack-opencode (quadlet, opencode
     1.19.4 — predates claude-agent >=2.2.x) = Jack isolated IDE via jack-enroll, LiteLLM-only by committed config.
     OPENCODE_CLAUDE_PATH=<host path> cannot reach either cont'
+- at: 2026-11-18 13:55
+  from: devin
+  text: 'raised request idc02-opencode-4096-2-litellm-lane-podma-6bb28b: idc02 opencode :4096 = 2 LiteLLM-lane podman
+    workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection ta'
+requests:
+- id: idc02-opencode-4096-2-litellm-lane-podma-6bb28b
+  ask: idc02 opencode :4096 = 2 LiteLLM-lane podman workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection
+    target for claude-agent. Direction?
+  status: open
+  at: 2026-11-18 13:55
+  from: devin
+  options:
+  - id: close
+    label: Close — claude-agent stays OpenChamber/tony-dell lane (recommended)
+  - id: wire-jack
+    label: Wire claude-agent into jack-ide (image rebuild to opencode>=2.2, ro claude-code mount, OAuth inside container,
+      anthropic egress)
+  - id: litellm-claude
+    label: Keep isolation; add Claude alias via LiteLLM for Jack
+  suggested: close
