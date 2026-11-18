@@ -1,0 +1,91 @@
+title: "Ada memory merge proposals — weekly recommend-mode job"
+subtitle: "extract drafts that update canonicals surface for human decision; no auto-apply"
+icon: 🧠
+context:
+  card: memory-extract-merge-proposals
+  trigger: "dedup at DEDUP_SCORE=0.82 skips near-duplicates entirely — a draft
+    that updates an existing canonical (0.82-0.95 band, same
+    subject/attribute, newer fact) is either skipped as 'known' or lands
+    as a separate draft that never merges; canonicals drift stale."
+  worktree: dispatch-wt-20261118-213852-context-ada-memory-pipeline-to
+
+design:
+  propose: "scripts/ada/memory-merge-proposals.py — for each writable bank
+    (ssot.apps.ada-memory-banks.yml via sync-ada-memory-to-mddb.load_bank_map):
+    list active canonicals + source=extract drafts from last 14d;
+    vector-search each draft against its own collection; candidates =
+    hits scoring 0.82 (MERGE_LO) .. 0.95 (MERGE_HI) on same
+    subject/attribute (missing meta falls back to score-only, flagged
+    weak_join). Deterministic suggested action: reject when the draft is
+    a restatement (text containment / jaccard >= 0.9), supersede when
+    scope differs, else update-in-place."
+  output: "ada-cms-pages/memory-merge-proposals (kind:report, managed
+    block rewritten per run, reports-index regen) + board comment on
+    memory-extract-merge-proposals + chaba job-result event + --emit
+    event when proposals are open."
+  apply: "manual only — `--resolve <id> --action
+    update-in-place|supersede|reject [--text wording]`. update-in-place
+    replaces canonical body (MDDB revisions = audit) and marks draft
+    superseded->canonical; supersede writes a new <bank>/<slug>-<date>
+    doc quoting the draft verbatim with supersedes/superseded_by links;
+    reject stamps merge_review=rejected (never re-proposed).
+    Reconcile pass each run adopts externally-applied resolutions."
+  metrics: "state ~/.cache/ada-memory-merge-proposals.json — per-pair
+    lifecycle + last 52 run rows; rolling 90d acceptance rate in every
+    report/comment. >80% for ~4wk gates a possible auto-apply follow-up
+    card — NOT this one."
+  non_goals: "no LLM rewriting (draft quoted verbatim), no writes to
+    read-only banks or from dev instances, no auto-apply / bulk merge /
+    draft deletion in the propose path."
+
+schedule:
+  job: "ada-memory-merge-proposals in ssot.jobs.yml — idc03, Sun 10:30,
+    persistent, 20m timeout, condition_path on the script. Runs after
+    the hand-installed ada-memory-distill.timer (Sun 09:45) in the
+    Sunday ada-memory pipeline. No LLM env needed (deterministic)."
+  rendered: "systemd/generated/idc03/ada-memory-merge-proposals.{service,timer}"
+  install: "render-jobs.py --host idc03 --ids ada-memory-merge-proposals
+    --install on idc03 after merge; declared in ssot.audit.hosts.yml
+    idc03 timer census."
+
+verify:
+  unit: "tests/ada_memory/test_memory_scripts.py TestMergeProposals —
+    9 tests (candidate filter, same_slot join, suggest_action, stable
+    proposal id, footer strip, reconcile incl. unscanned-collection
+    guard, rolling acceptance). 34/34 pass."
+  live_propose: "--dry-run --draft-days 45 on idc02 against prod MDDB:
+    3 real proposals from 131 drafts (general/note banks), correct
+    band/subject filtering. Default 14d window yields 0 — newest
+    extract draft is 2026-10-17 (extract inflow stalled ~1mo — worth a
+    separate look; lane-retention weekly merge may be why)."
+  live_resolve: "end-to-end on ada-ha-bank-dev-scratch (staging): seeded
+    canonical + 2 drafts, injected pairs, `--resolve ... --action
+    reject` -> merge_review=rejected; `--resolve ... --action
+    supersede` -> new canonical with supersedes link, canonical
+    superseded_by, draft superseded+applied. Selftest docs deleted
+    after."
+  live_publish: "real run 2026-11-18 15:07Z published
+    ada-cms-pages/memory-merge-proposals (0-proposal report) + card
+    comment; state file written."
+
+ops_notes:
+  embed_outage: "during dev the mddb embed chain was fully capped (OR
+    daily 5000 + paid hourly 150 + free Gemini) — /vector-search 400s,
+    /add and even PATCH /update commit server-side but DROP the
+    response. Script hardened: update_meta verifies via /get before
+    re-patching, _post_cms retries + publish verifies content match,
+    supersede reuses a same-day partial-apply doc. These quirks are
+    load-dependent, not steady-state."
+  draft_inflow: "0 drafts <14d at ship time — newest source=extract
+    draft anywhere is 2026-10-17. If proposals stay 0 for weeks the
+    pipeline inflow (memory-distill writes / lane-retention extract
+    merge) needs checking before the acceptance-rate gate means
+    anything."
+
+followups:
+  - "install the timer on idc03 post-merge: render-jobs.py --host idc03
+    --ids ada-memory-merge-proposals --install"
+  - "first real proposals need fresh extract drafts — verify the
+    inflow (see ops_notes.draft_inflow)"
+  - "auto-apply follow-up card only if 90d acceptance >80% for ~4wk
+    (per card spec — preference updates first)"
