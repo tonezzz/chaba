@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: done
-updated: 2026-11-17 22:10
+updated: 2026-11-18 11:25
 priority: high
 tags:
 - idc03
@@ -256,6 +256,13 @@ comms:
 - at: 2026-11-17 22:10
   from: devin
   text: closed by devin
+- at: 2026-11-18 11:25
+  from: devin
+  text: 'ROOT CAUSE FOUND 2026-11-18: not a caller bug — an embed-queue death spiral on mddb leader (:11023). vector-stats:
+    queue depth 3999/4000 PERMANENTLY FULL, dropped 419, retried 226; journal shows continuous embedding-queue-full
+    drops + requeue loops. Drain rate is capped by provider circuits: free Gemini dead, OR circuit open, paid capped
+    at 150/hr + 2000/day — max ~2.5-5 embeds/min while demand exceeds it, so the queue never drains and failed jobs
+    requeue forever. Embed traffic is ~5/min baselin'
 action:
   type: dispatch
   status: done
