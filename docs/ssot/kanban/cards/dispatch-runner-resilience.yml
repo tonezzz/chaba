@@ -1,0 +1,36 @@
+id: dispatch-runner-resilience
+title: 'dispatch runner resilience: WIP push before GC, push-cred gating, claim stagger'
+column: backlog
+updated: 2026-11-18 21:38
+brief: 'Three dispatch failures on 2026-11-17/18 were infra, not task: (1) free-model rate limit killed 4 simultaneous
+  claims, (2) worktree GC destroyed unpushed work twice (ADA-0175 r1 branch lost entirely, idc02 scratch clone lost),
+  (3) idc02 lacks push:ada-voice creds so repo cards fail at push guard. Harden runner-agent/kanban-dispatch against
+  all three.'
+priority: high
+tags:
+- dispatch
+- runner-agent
+- infra
+spec: 'Scope: scripts/board/runner-agent.py + kanban-dispatch claim path in the chaba repo. Requirements: (a) before
+  worktree GC/reap, push any committed-but-unpushed dispatch branch to origin (or a wip/ namespace) so work is never
+  silently lost — log the pushed ref in card comms; (b) enforce push-capability gating: cards whose action.repo
+  requires push must only be claimed by hosts holding push:<repo> credentials (there is already a push:ada-voice
+  label mechanism — verify and enforce at claim time, not just push time); (c) stagger/limit concurrent claims per
+  host or globally when the lane model is rate-limited — detect provider 429/rate-limit in runner output and back
+  off claims for a cooldown window instead of burning attempts; (d) add tests under tests/board/ covering each guard.
+  Do NOT change card schema or board-api write paths. Done when: a simulated GC with unpushed commits leaves a recoverable
+  branch, a push-incapable host cannot claim an ada-voice card, and a rate-limited runner defers claims.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: devin
+  lane_source: fallback
+comms:
+- at: 2026-11-18 21:39
+  from: chaba
+  text: classified as devin (fallback conf 0.13)
+- at: 2026-11-18 21:39
+  from: devin
+  text: card captured via board-api
+ref: OPS-0206
