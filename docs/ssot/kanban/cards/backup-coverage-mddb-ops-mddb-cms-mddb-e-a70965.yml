@@ -1,7 +1,7 @@
 id: backup-coverage-mddb-ops-mddb-cms-mddb-e-a70965
 title: 'Backup coverage: mddb-ops, mddb-cms, mddb-embed (53G unprotected)'
 column: done
-updated: 2026-11-17 21:13
+updated: 2026-11-18 17:24
 brief: Only the leader mddb (:11023) has mddb-backup.timer. ops=30G, cms=21G, embed=2.8G have no backup path. Extend
   backup script to loop the instances with same 3d retention.
 ref: MEM-0022
@@ -59,6 +59,10 @@ comms:
 - at: 2026-11-17 21:13
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
