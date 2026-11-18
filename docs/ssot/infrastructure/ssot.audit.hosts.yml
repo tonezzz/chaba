@@ -190,7 +190,7 @@ hosts:
           https://tony-dell.taila0626a.ts.net:8443.
           Embeds in ada-ha chaba-admin as the ada-ocb iframe tab via the
           public edge https://ada-ocb.surf-thailand.com (ADA-0032: idc02
-          caddy-edge -> tailscale serve :8443; covered by the opencode-ada
+          caddy-edge; covered by the opencode-ada
           CF Access app). Declared 2026-11-12 —
           previously ran as ad-hoc `openchamber start` daemon; promoted to
           a systemd unit so env (OPENCHAMBER_FRAME_ANCESTORS CSP, UI
@@ -206,7 +206,11 @@ hosts:
           ~/.config/openchamber/logs/. Gotchas: SameSite=Strict session
           cookie => iframe only works when dashboard is opened same-site
           (tony-omen tailnet URL), not via ada-ha.surf-thailand.com;
-          LAN/non-loopback bind refused without OPENCHAMBER_UI_PASSWORD."
+          LAN/non-loopback bind refused without OPENCHAMBER_UI_PASSWORD.
+          2026-11-18: canonical pane migrated to idc02 (card
+          openchamber-migrate-tony-dell-to-idc02) — edge now proxies to
+          idc02 local :3000; this unit stays active 24-48h as soak
+          fallback, retire-vs-local-only is Tony's close-out decision."
       - {name: openchamber-update.service, type: service, scope: user,
          note: "oneshot — npm i -g @openchamber/web @opencode/cli (node24
            npm) then restarts openchamber.service; fired by
@@ -2224,6 +2228,30 @@ hosts:
       - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: openchamber.service, type: service, scope: user,
+         note: "OpenChamber ada-ocb pane — migrated tony-dell -> idc02 2026-11-18
+          (card openchamber-migrate-tony-dell-to-idc02). Same recipe as dell:
+          node24 (~/.local/node24/bin/node) running @openchamber/web@2.7.0 +
+          @opencode/cli@2.3.2 installed under ~/.local/node prefix, binds
+          127.0.0.1:3000, managed opencode child per session. startup.env
+          mode 600 (OPENCHAMBER_UI_PASSWORD, OPENCHAMBER_FRAME_ANCESTORS,
+          OPENCODE_BINARY=~/.local/node/bin/opencode); drop-in
+          10-litellm-env.conf loads %h/.config/secrets/litellm-ada.env.
+          Public edge ada-ocb.surf-thailand.com now proxies to local :3000
+          (was dell tailscale :8443). claude-agent lane pending interactive
+          `claude auth login` on this host."}
+      - {name: openchamber-update.service, type: service, scope: user,
+         note: "oneshot — npm i -g @openchamber/web @opencode/cli then restarts
+          openchamber.service; fired by openchamber-update.timer (migrated
+          with the pane 2026-11-18)"}
+      - {name: openchamber-update.timer, type: timer, scope: user,
+         note: "monthly 1st 06:30 OpenChamber+opencode update cadence
+          (migrated tony-dell -> idc02 2026-11-18)"}
+      - {name: ada-ocb-smoke.timer, type: timer, scope: user,
+         note: "hourly ada-control bridge smoke -> ada-ha-scenario-reports
+          (ExecCondition on ~/CascadeProjects/ada-voice/scripts/ocb-smoke.py;
+          silently skipped until ada-voice pull landed the script 2026-11-18).
+          Tests the local MCP bridge, not the OpenChamber pane."}
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: helm.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
