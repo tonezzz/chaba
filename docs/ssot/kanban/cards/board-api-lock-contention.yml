@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-17 22:20
+updated: 2026-11-18 15:44
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -145,6 +145,13 @@ comms:
 - at: 2026-11-17 22:20
   from: devin
   text: moved backlog -> review
+- at: 2026-11-18 15:44
+  from: devin
+  text: 'Verification pass (2026-11-18 ~15:20 ICT): fix 60bd8a2769 confirmed live — served checkout contains it,
+    chaba-board-api restarted 15:15. /lock-stats since restart: /comment n=46 timeouts=0 wait_max=0.0s; /action
+    n=10 timeouts=0; all observed waits <0.05s. Journal: zero >25s lock-wait 503s post-restart (last seen 14:55
+    pre-restart, one 8.1s wait). Done-condition needs ~24h soak — keeping in review until p95<2s holds overnight.
+    Remaining ideas if regressions appear: per-card lock sharding and rend'
 requests: []
 action:
   lane: paid_frontier
