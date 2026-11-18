@@ -1,7 +1,7 @@
 id: edge-upstream-dead-port-audit
 title: Audit edge upstreams for dead-port drift (serve/caddy/systemd)
 column: done
-updated: 2026-11-18 17:56
+updated: 2026-11-18 18:16
 brief: '2026-11-18 incident chain: three infra faults in ~35min — managed opencode crash (16:31), caddy-edge container
   restart (17:05), and a stale tailscale serve entry (:8125 -> dead 127.0.0.1:8125 while HA lives on :8123) that
   502d all of ada-ha.surf-thailand.com including the ada-ocb iframe. None were caught by existing audits. Build
@@ -124,6 +124,10 @@ comms:
 - at: 2026-11-18 17:56
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
 auto_close:
