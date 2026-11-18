@@ -1,0 +1,22 @@
+id: idc02-mddb-follower-11023-replication-de-ee75be
+title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
+  sees ~4.6s warning; LSN advances but health/lag metrics
+column: backlog
+updated: 2026-11-18 16:39
+priority: medium
+tags:
+- mddb
+- replication
+- idc02
+spec: 'EVIDENCE (MEM-0799 + 2026-11-18 recheck): idc02''s own /v1/replication/status reports healthy:false with
+  lag spiking 93s->238s->recovering, while idc03 leader reports the same follower as warning ~4.6s. LSNs do advance
+  — metrics/health calculation inconsistent rather than fully stalled. con01 follower healthy and LSN-matched. IMPACT:
+  idc02 cannot be trusted for read failover; also noisy watch alerts. GOAL: root-cause the divergent lag/health
+  computation (clock skew? LSN source mismatch? heartbeat path?) and fix so follower health is trustworthy — or
+  document why self-report differs and align the leader-side view. Verify: follower healthy:true sustained, lag
+  < threshold, failover-read safe. Repo: mddb-fork. Related: MEM-0799 (audit card, has evidence comms).'
+ref: MEM-0194
+comms:
+- at: 2026-11-18 16:39
+  from: tony
+  text: card captured via board-api
