@@ -213,6 +213,20 @@ sections:
           Full steps in devin-kb runbook.
         status: Installed, test-boot pending
 
+      - label: Fleet restic + Off-site (added 2026-11-18)
+        text: >-
+          Each host (idc03, idc02, tony-omen, tony-macbook, mn01) runs
+          fleet-restic-backup.sh daily ~04:30-05:30 → own encrypted repo
+          /dell-backup/restic-fleet/<host> on dell sdb via sftp. Rebuild
+          set = ~/.config/{secrets,systemd,containers,devin}, ~/.local/bin,
+          ~/bin, ~/.ssh + /var/backups/host-etc-snapshot.tar.gz.
+          Passphrases in ~/.config/secrets/restic-fleet-<host>.env on host
+          AND dell. Weekly Sun 06:00 dell-restic-offsite.timer copies
+          latest-3 critical + latest fleet snapshots to
+          sftp:tony@idc03:restic-offsite (consolidated ~2-3G repo).
+          Home tier stays local-only — idc03 disk can't hold 50G+.
+        runbook: devin-kb docs/tools/dell-backup-recovery.md
+
       - label: sda5 Archive
         text: >-
           Pre-repartition June-2026 /home/tony snapshot archived to restic
