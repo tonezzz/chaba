@@ -1,7 +1,7 @@
 id: ada-ocb-kanban-sweep-report
 title: 'Ada-OCB: read-only Kanban stuck-card sweep tool'
 column: doing
-updated: 2026-11-19 08:43
+updated: 2026-11-19 15:02
 brief: The card-ops-sweep skill and card-status procedure already define evidence-first triage; add a callable Ada-OCB
   tool to produce one timestamped summary of stuck, failed, and misplaced work without dispatching or mutating cards.
 priority: medium
@@ -36,3 +36,9 @@ comms:
     subtests; targeted MCP tests: 29 passed; tool-lint clean (60 warnings). Live read-only smoke at 2026-11-19 08:40
     +07 returned 25 attention items, 2 active, and mutations_performed=[]. CI is still in progress. No provider
     calls or deployment. Keep in doing until CI/review; update card-ops-sweep skill after merge.'
+- at: 2026-11-19 15:02
+  from: devin
+  text: 'Review follow-up 2026-11-19 14:57: PR #18''s GitHub test check is green. Read-only review found that a
+    `starting` claim with no unit and no matching host.active entry is reported as active and advised to be left
+    running; this matches the current ADA-0042 queue snapshot. A line comment is on PR #18. Hold merge until claims
+    are distinguished from confirmed active units. No deployment or code edits were made in this pass.'
