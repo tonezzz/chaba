@@ -1,0 +1,42 @@
+id: 2026-11-19-kkmac-vision-qa-bench
+date: 2026-11-19
+domain: devnest
+card: kk-mac-vision-lane-eval
+status: built-not-run
+what: >
+  Vision benchmark for qwen2.5vl:7b on kk-mac, answering "usable for the
+  adobe-stock visual QA lane or not". Lives in scripts/bench/vision-qa/
+  following the scripts/bench/card-judgment pattern:
+  build_corpus.py (20 deterministic synthetic cases via imglib.py —
+  stdlib PNG writer + 5x7 font, no PIL needed), corpus.jsonl + images/,
+  score.py (ollama /api/chat native images, or OpenAI-compat /v1 for
+  LiteLLM), kkmac_eval.sh (gates: ssh+ollama tags+smctemp, fails closed).
+corpus:
+  cases: 20
+  stock_lane: 13 cases — 4 match-yes, 3 match-no, 4 defect-yes
+    (blur/watermark/noise/banding), 2 defect-no
+  ui_lane: 7 cases — ok/error_state/layout_bug/empty_state triage
+thresholds_provisional:
+  overall_accuracy: ">=0.80"
+  stock_lane: ">=0.80"
+  defect_recall: ">=0.75"
+  ui_lane: ">=0.70"
+  parse_failures: 0
+run:
+  cmd: scripts/bench/vision-qa/kkmac_eval.sh
+  when: kk-mac awake on tailnet (member device, no remote wake; last seen
+    2026-11-18 ~20:00 +07, offline at build time)
+  verify: |
+    1. python3 scripts/bench/vision-qa/build_corpus.py   # rebuild corpus
+    2. python3 scripts/bench/vision-qa/score.py --entity mock-oracle
+       # harness smoke test, expect all-PASS
+    3. scripts/bench/vision-qa/kkmac_eval.sh             # real run on kk-mac
+  outputs: scripts/bench/vision-qa/run-kkmac-<model>.{md,json}
+verdict: pending — kk-mac offline at session time; gate verified fail-closed
+  (exit 2). Harness verified end-to-end via mock-oracle entity.
+notes: >
+  Synthetic images keep gold labels exact and the corpus reproducible
+  offline; caveat — they test schematic scene recognition, not photographic
+  nuance. If qwen2.5vl passes, follow-up should replay real campaign
+  renders (gdrive:ada-nest/adobe-stock) through the same scorer before
+  trusting it on production assets.
