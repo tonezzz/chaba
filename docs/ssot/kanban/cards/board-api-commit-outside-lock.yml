@@ -89,4 +89,11 @@ comms:
     while a request or safe-pull pull phase holds the flock, rebase/merge gitdir guard + retry w/ max-tries -> sweep).
     Verified: selftest ok, 58 unit tests ok, sandboxed burst 40x /comment -> hold_s_max 0.042s + 2 coalesced commits
     + clean tree, flock-held deferral -> commit lands on '
+- at: 2026-11-19 10:20
+  from: devin
+  text: 'DONE. Deliverables on dispatch worktree branch dispatch/20261119-031056-evidence-2026-11-19-10-00-ict-:
+    commits f1f0b272ca (code) + c6b43322f1 (outcome doc). Changed: scripts/board/board-api.py (_queue_commit + _commit_loop
+    worker + _commit_paths + commit_pending_flush), comment updates in git-safe-pull.sh / kanban-commit.sh / test-kanban-commit.sh,
+    test mock rename, selftest coverage, SSOT job doc. Verify path: merge to master, restart chaba-board-api on
+    idc03, watch /lock-stats hold_s_max <5s '
 ref: KNB-0224
