@@ -1,0 +1,29 @@
+id: devnest-info-find-skill
+title: Port unified info-find workflow to DevNest
+column: backlog
+updated: 2026-11-19 12:15
+priority: medium
+program: devnest
+tags:
+- devnest
+- information-retrieval
+- skill
+- research
+spec: 'Explore and implement a portable DevNest capability based on the existing info-find workflow: route a query
+  across project-local SSOT/code, MDDB semantic docs, policy-allowlisted MCP discovery, service-health checks, and
+  web search; return ranked results with source citations; isolate cache/audit by project and task/session; fail
+  safely when a source is unavailable. Phase 1 recommendation: package a portable Agent Skill plus shared planner/source
+  adapters, expose it to one read-only DevNest agent lane, and pilot on Chaba before adding an autonomous queued-research
+  executor. Reuse the current DevNest task/executor and artifact/verifier contracts rather than introducing an unbounded
+  generic tool runner. Add routing/fallback/citation/session-isolation tests and document the capability gate. Open
+  decision: whether initial integration is conversational skill access, a queued card research task class, or both.'
+note: 'Initial architecture review: runner-agent currently has explicit dispatch/container/script task modes and
+  registered executors; no generic SKILL.md discovery/loading path was found. There is a DevNest host-assessment
+  ''skill'' with skill.md + scripts, but its files currently live under a tony-dell evals directory and the job
+  SSOT notes that portability is still a follow-up. Existing info-find is a SKILL.md workflow plus a small Node
+  planner; its search/MCP/web steps are provided by the invoking ag'
+ref: DEV-0230
+comms:
+- at: 2026-11-19 12:15
+  from: devin
+  text: card captured via board-api
