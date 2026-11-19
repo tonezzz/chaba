@@ -1,6 +1,6 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
-column: backlog
+column: doing
 updated: 2026-11-19 17:14
 ref: ADA-1204
 comms:
@@ -136,10 +136,13 @@ comms:
 - at: 2026-11-19 17:13
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.76 > 1.0)'
+- at: 2026-11-19 17:14
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   result: 'exit=1 sk-20261117-190737-ada-benchmark-coverage-scenari.service: Failed with result ''exit-code''. |
@@ -147,4 +150,7 @@ action:
     wall clock time, 630.3M memory peak.'
   sweep:
     failed_noted: 2026-11-17 19:24
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-19 17:14
