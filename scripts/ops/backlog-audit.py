@@ -166,16 +166,16 @@ def audit(cards_override=None) -> dict:
     return out
 
 
-def main(cards_override=None) -> int:
+def main(cards=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--column", default="backlog",
                     choices=("backlog", "review", "all"))
     args = ap.parse_args()
-    cols, done_ids = _load(cards_override)
+    cols, done_ids = _load(cards)
     sections: dict[str, dict] = {}
     if args.column in ("backlog", "all"):
-        sections["backlog"] = audit(cards_override)
+        sections["backlog"] = audit(cards)
     if args.column in ("review", "all"):
         sections["review"] = audit_review(cols.get("review", []))
     if args.json:
