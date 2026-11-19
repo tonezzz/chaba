@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: backlog
-updated: 2026-11-19 13:57
+updated: 2026-11-19 14:02
 priority: high
 tags:
 - mddb
@@ -51,3 +51,10 @@ comms:
     embed-lane-banks sync on idc02 delivered 3,116 new docs across two passes, 0 failures; final dry-run shows todo=0
     for all 24 configured bank collections, and target queue was down to 51 jobs/draining. Important limitation:
     :11028 is NOT a full blue-green replica of the 63-collection le'
+- at: 2026-11-19 14:02
+  from: devin
+  text: 'Final catch-up read 2026-11-19 14:01 ICT: post-compaction leader healthy; both followers connected and
+    converging (con01 healthy/lag 0; idc02 briefly warning at 11.2s lag but receiving current LSN). BGE shadow stats
+    21,381 docs/24 collections. Final embed-lane dry-run: todo=0 for every configured collection (one last missing
+    content doc was delivered in the third pass). BGE vector-search returned ranked results. Async embed queue is
+    still draining: depth 14 at 14:01, dropped=2 cumulative; allow '
