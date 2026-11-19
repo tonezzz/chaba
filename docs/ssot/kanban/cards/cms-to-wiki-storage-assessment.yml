@@ -1,0 +1,40 @@
+id: cms-to-wiki-storage-assessment
+title: Assess residual CMS-to-Wiki storage reduction options
+column: backlog
+updated: 2026-11-19 12:38
+priority: medium
+program: docs-infrastructure
+tags:
+- cms
+- wiki
+- storage
+- migration
+- assessment
+spec: 'Read-only assessment of whether moving some or all remaining CMS content to Wiki can materially reduce internal
+  storage. First reconcile completed work: 124 lessons + 2 reports migrated to Wiki, Wiki-primary lesson writes
+  enabled, and mddb-cms compacted from 23G toward the verified <4G target. Inventory remaining WP CMS/CPT, ada-cms-pages/MDDB
+  collections and indexes, Wiki pages/revisions, backups, media/attachments, writers, readers, automation, URLs,
+  and access boundaries. Measure actual current bytes and duplicated/revision/index overhead; distinguish movable
+  knowledge/reports from feeds and operational ledgers. Compare (A) no move plus retention/compaction, (B) move
+  selected document-like content, and (C) broader migration; estimate reclaimed bytes, Wiki growth, ongoing operations,
+  search/retrieval impact, backup/restore, redirects, access control, and rollback. Deliver a measured recommendation
+  and phased pilot plan. HARD LIMIT: this card is assessment/planning only—do not migrate, delete, rewrite, redirect,
+  change production writers, or alter access policies; return any actual cutover scope for Tony approval. Done when
+  the artifact cites measured source sizes, maps consumers and ownership, compares scenarios, and gives a reversible
+  recommendation.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: devin
+  lane_source: kw
+comms:
+- at: 2026-11-19 12:38
+  from: chaba
+  text: classified as devin (kw:automation conf 1.00)
+- at: 2026-11-19 12:38
+  from: tony
+  text: card captured via board-api
+note: This is a residual-scope assessment, not a duplicate of the completed Education/Wiki migration or mddb-cms
+  compaction.
+ref: KNB-0232
