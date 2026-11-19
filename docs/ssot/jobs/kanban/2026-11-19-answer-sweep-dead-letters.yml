@@ -1,0 +1,125 @@
+id: answer-sweep-dead-letter-spec
+title: Spec — answered-but-unexecuted dead letters (KNB-0180)
+date: 2026-11-19
+card: answered-but-unexecuted-card-graveyard-3-3d4fe1
+status: proposed
+
+context: >
+  KNB-0180 sweep 2026-11-17 found 39 backlog cards holding
+  answered-but-unexecuted requests: answer-sweep.py only auto-fires
+  hard verbs and dict-option `action:` fields; option-picked and
+  decision answers stay flagged awaiting_action forever. Verified
+  2026-11-19 against the served checkout: dry-run still lists the
+  same 39 cards / ~70 unmapped answered requests — the pile has not
+  shrunk. This file specs the card's five improvement options against
+  the current code; nothing here is implemented yet.
+
+current_mechanics: >
+  scripts/board/answer-sweep.py resolves an answered request in order:
+  (1) dict-option `action: queue|retry|close|hold|none` wins verbatim;
+  (2) else first token of the answer head -> VERBS table; soft assent
+  words never fire as unmatched free text on an options ask; owned
+  prefixes (lab-review*, merge-conflict*) are skipped entirely.
+  board-api.py /request already passes `options` through verbatim and
+  validates `suggested` against id/label — dict options with `action`
+  need no API change. /respond raises "already answered" (HTTP error)
+  on a repeat answer unless reopen=true. merge-sweep.py emits its
+  merge-conflict options as plain strings (its requests are
+  OWNED_PREFIXES-skipped anyway, so option actions there would be
+  inert unless ownership changes).
+
+options:
+
+  1_option_actions:
+    title: Emitters write options as dicts carrying action
+    design: >
+      Contract already exists end-to-end (answer-sweep classify() honors
+      {id,label,action}); the gap is emitters. Concrete changes:
+      a) board-cli.py request --options gains a dict form
+         (--option 'id|label|action' or JSON) so CLI users can declare
+         consequences;
+      b) docs/kb/board-api-write-door.md documents the dict-option
+         contract {id,label,action:queue|retry|close|hold|none} with
+         the rule "declare the consequence at request time";
+      c) optional lint: board-invariants flags tony-facing requests
+         whose options are all plain strings AND whose plausible
+         answers are all in VERBS — i.e. cases where a string option
+         like "proceed" would fire anyway vs. decision options that
+         will dead-letter. Start as warn-only.
+      d) merge-sweep.py options -> dicts is cosmetic only while
+         merge-conflict* stays OWNED_PREFIXES; defer until/unless
+         ownership moves.
+    effort: small (cli flag + doc + optional warn)
+    risk: low — opt-in per option, no behavior change for existing
+      string options
+
+  2_auto_compose_spec:
+    title: Auto-compose spec when all asks answered, gap is composition
+    design: >
+      When every open request on a card is answered/executed and the
+      card still lacks a dispatchable spec, answer-sweep raises ONE
+      consolidated spec request (or arms dispatch) instead of leaving
+      awaiting_action set. Needs a spec-quality bar — auto-arming a
+      dispatch on composed text risks bad runs. Recommended shape:
+      phase 1 = detect the state and raise a single "compose spec
+      from these answers" request with the answers inlined; phase 2
+      (later card) = template composition for the common
+      repo+host-unblock pattern.
+    effort: medium
+    risk: medium — touches dispatch arming; keep phase 1 read/raise
+      only, no auto-queue
+
+  3_dead_letter_aging:
+    title: awaiting_action cards >7d get a digest so they cannot pile up
+    design: >
+      Add an aging pass (board-janitor or kanban-stats report): cards
+      with awaiting_action and updated >7d old get a weekly digest
+      line — either a comms note on the card itself ("dead-letter
+      aging: N answered requests still unmapped") or a section in the
+      board digest/report. Cheapest correct version: count + list in
+      reports/kanban/kanban-stats.yml so the pile is visible without
+      new comms spam; per-card comms note only on first crossing of
+      the 7d boundary (dedup like answer-sweep's recent-comms check).
+    effort: small
+    risk: low — reporting only
+
+  4_extend_verbs:
+    title: Extend VERBS for observed decision answers
+    design: >
+      Add "postpone" -> hold (observed live: cost a manual hold on
+      2026-11-17), plus audit the 39 dry-run answers for other
+      recurring first-words that are really hold/close decisions.
+      Candidates seen in the dry-run heads: "the-card-..." narrative
+      answers stay unmapped by design — only add words that unambiguously
+      mean a board transition. "drop"/"abandon" -> close is plausible
+      but needs a human confirm first (close is destructive-ish).
+      Every addition needs a test in tests/board/test_answer_sweep.py.
+    effort: trivial per word
+    risk: low if restricted to unambiguous hold-family words;
+      medium for close-family
+
+  5_respond_idempotent:
+    title: /respond idempotent-on-answered (200 not 400)
+    design: >
+      In do_respond, when r.status=="answered" and the incoming answer
+      equals r["answer"] (normalized) and reopen is not set, return
+      "already answered" as a success instead of raising
+      ValueError("already answered"). Different answer without reopen
+      still errors — idempotent means same-payload retry is safe
+      (voice/UI double-submit, relay retries). Same for do_ask_respond.
+      Update tests/board expectations around 'already answered'.
+    effort: small
+    risk: low — narrows an error path, no new transitions
+
+recommended_order: >
+  5 (idempotent respond — pure UX fix) -> 4 (postpone verb, trivial)
+  -> 3 (aging visibility — makes the pile measurable) -> 1 (option
+  actions — emitter work, needs doc+cli) -> 2 (auto-compose — biggest,
+  deserves its own card once 1-4 show what still dead-letters).
+
+verification: >
+  answer-sweep --dry-run count of unmapped answers should drop after
+  4+5 land (postpone cases resolve; retries stop erroring). Option 3
+  makes the residual count visible weekly. No card auto-closes from
+  this spec — each option ships as its own commit(s) on the served
+  checkout with tests.
