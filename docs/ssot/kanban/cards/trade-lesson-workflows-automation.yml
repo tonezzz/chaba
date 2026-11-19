@@ -1,7 +1,7 @@
 id: trade-lesson-workflows-automation
 title: 'Trade lesson draft: trade-workflows (free-lane drafting)'
 column: review
-updated: 2026-11-19 08:45
+updated: 2026-11-19 09:00
 brief: Distill trade docs (workflows/*, features/automation/*, MANUAL_WORKFLOW.md, DEVELOPMENT_WORKFLOW.md, CHANGELOG_WORKFLOW.md)
   into lesson trade-trade-workflows; drafting on the $0 free lane via trade-lesson-migrate.py.
 priority: low
@@ -38,6 +38,7 @@ action:
   sweep:
     stale_running: 2026-11-16 20:43
     dirty: 1
+    fetch_failed: 2026-11-19 08:59
   result: 'exit=0 an run here unchanged. Outcome written to `dispatch-outcome-20261116-202630-free-lane-draft-publish-for-tr.md`;
     final status posted to the card. | devin-task-20261116-202630-free-lane-draft-publish-for-tr.service: Consumed
     19.535s CPU time.'
@@ -244,6 +245,18 @@ comms:
 - at: 2026-11-19 08:45
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-19 08:52
+  from: chaba
+  text: 'merge-sweep: dispatch/20261116-202630-free-lane-draft-publish-for-tr conflicts with origin/master: scripts/lesson-drift-map.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-19 08:52
+  from: chaba
+  text: 'raised request merge-conflict-5: merge-sweep can''t land dispatch/20261116-202630-free-lane-draft-publish-for-tr:
+    2 commit(s) conflict with origin/master '
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'merge-sweep: fetch idc02:/home/tony/CascadeProjects/dispatch-wt-20261116-202630-free-lane-draft-publish-for-tr
+    HEAD failed — runner down or worktree gone?'
 review_kind: verify
 claim: {}
 requests:
@@ -300,4 +313,15 @@ requests:
   - hold the card
   suggested: let devin resolve the conflict and land it ★
   answer: let devin resolve the conflict and land it ★
-awaiting_action: true
+- id: merge-conflict-5
+  ask: 'merge-sweep can''t land dispatch/20261116-202630-free-lane-draft-publish-for-tr: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/lesson-drift-map.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261116-202630-free-lane-draft-publish-for-tr
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-19 08:52
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★

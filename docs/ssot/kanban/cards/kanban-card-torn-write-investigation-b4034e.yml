@@ -1,7 +1,7 @@
 id: kanban-card-torn-write-investigation-b4034e
 title: kanban-card-torn-write-investigation
-column: review
-updated: 2026-11-19 08:44
+column: done
+updated: 2026-11-19 08:51
 spec: 'Investigate torn/truncated kanban card YAML writes that took down board-api + kanban-commit on 2026-11-19
   ~03:00 ICT.
 
@@ -132,6 +132,24 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261119-081822-investigate-torn-truncated-kan:
     4 commit(s) conflict with origin/master '
+- at: 2026-11-19 08:50
+  from: tony
+  text: closed by tony
+- at: 2026-11-19 08:50
+  from: devin
+  text: 'Merge conflict resolved manually on idc03 (focus-inbox timestamp conflict, took newer stamp) — branch landed
+    on master as 9781cb5. Root cause confirmed: ENOSPC at 02:55 from 18GB partial mddb-ops backup + non-atomic locked_edit
+    fallback in board-janitor merge-sweep path. FOLLOW-UP NEEDED: (1) delete ~/mddb-backups/mddb-ops-20261119-0237.db
+    (18GB partial, disk still 99%/3.6G free) — awaiting Tony OK; (2) make locked_edit fallback atomic (tmp+rename)
+    — the actual bug; (3) mddb-backup needs disk-he'
+- at: 2026-11-19 08:51
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-081822-investigate-torn-truncated-kan,
+    branch dispatch/20261119-081822-investigate-torn-truncated-kan on tony-omen'
+- at: 2026-11-19 08:51
+  from: chaba
+  text: 'merge-sweep: dispatch/20261119-081822-investigate-torn-truncated-kan already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261119-081822-investigate-torn-truncated-kan.md) — auto-closed'
 action:
   type: dispatch
   status: done
