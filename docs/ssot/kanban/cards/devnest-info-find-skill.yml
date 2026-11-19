@@ -1,7 +1,7 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
 column: review
-updated: 2026-11-19 12:43
+updated: 2026-11-19 12:48
 priority: medium
 program: devnest
 tags:
@@ -209,6 +209,13 @@ comms:
 - at: 2026-11-19 12:43
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 12:48
+  from: devin
+  text: 'Follow-up verification 2026-11-19: pytest is unavailable on tony-macbook, so ran the standard-library unittest
+    suite directly in the dispatch worktree: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/devnest
+    -p test_info_find.py -v. Result: 23 tests passed (routing, fallback, citations, project/session isolation, profile/envelope,
+    held-out verifier). This is local fixture/unit coverage only; the explicitly requested Ada-OCB project-session
+    smoke test remains outstanding. Keep car'
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
