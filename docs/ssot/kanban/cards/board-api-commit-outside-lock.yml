@@ -1,0 +1,61 @@
+id: board-api-commit-outside-lock
+title: 'board-api: move per-write git commit out of the card flock'
+column: backlog
+updated: 2026-11-19 10:09
+priority: high
+tags:
+- board-api
+- kanban
+- performance
+- git
+spec: 'EVIDENCE (2026-11-19 ~10:00 ICT): board-api-lock-contention soak is NOT clean. chaba-board-api active since
+  18:35; /lock-stats shows /comment n=3807 timeouts=15 wait_max=26.6s hold_max=118.7s, /action timeouts=12 wait_max=25.7s,
+  /card timeouts=5 wait_max=25.1s; journal has a 503 cluster 08:33-09:02 (lock wait >25s on /comment /action /card).
+  p95 is fine, but the card''s zero-lock-wait-503 done condition failed again.
+
+
+  ROOT CAUSE (code read): the earlier fix (60bd8a2769) moved slow probes out of the flock and stopped fd inheritance,
+  but save() still calls _commit_write() while holding /tmp/board-api.lock. _commit_write runs `git add -- <paths>`
+  then `git commit --no-verify -qm ... -- <paths>` with 15s subprocess timeouts, under the global card flock. Every
+  card/comment/action write pays a repo commit inside the one lock that serializes all card mutations; bursts stack
+  into 40-118s holds, and the git index lock races kanban-commit/git-safe-pull.
+
+
+  GOAL: keep /tmp/board-api.lock scoped to card YAML read-modify-write (+ .ref-seq allocation) only. Move git commit
+  out of the request flock: collect the dirty repo paths for the write, release LOCK, then commit after the response
+  path (debounced/coalesced like render_async, or per-request post-lock). Commits must still be near-immediate enough
+  to avoid the autostash-eats-writes incident (board-api-writes-eaten-by-autostash-pops-515009); kanban-commit.timer
+  remains the backstop. BOARD_API_COMMIT=0 keeps working.
+
+
+  IMPLEMENTATION HINTS: introduce a pending-commit list/flag set inside the locked section; after the locked block
+  exits (before/with render_async), a commit worker takes a dedicated commit mutex (NOT the card LOCK) and runs
+  git add+commit for coalesced repo-relative paths. Respect the existing gitdir rebase/merge-state guard and index-lock
+  failures (leave dirty for sweep). Do not hold LOCK while committing. Do not shard the card lock yet — git commit
+  serialization is repo-wide, so batching commits is the actual fix; revisit per-card locks only if post-change
+  stats still show YAML-RMW holds >5s.
+
+
+  DONE WHEN: /lock-stats hold_s_max for /comment /action /card stays <5s and journal shows zero `lock wait >25s`
+  503s over 24h under normal board use; `git log` still shows board-api commits landing; no regression in comms/column
+  durability (no autostash-eaten writes).
+
+
+  NON-GOALS: no board-api rewrite, no render-board changes (render_async already coalesces), no WP/remote-lock changes,
+  no deploy/restart of chaba-board-api unless the change requires it (then use the normal service restart path and
+  verify /lock-stats after).'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: codemod
+  lane_source: kw
+comms:
+- at: 2026-11-19 10:09
+  from: chaba
+  text: classified as codemod (kw:lock conf 1.00)
+- at: 2026-11-19 10:09
+  from: devin
+  text: 'carded from board-api-lock-contention soak evidence + board-api.py read: _commit_write still runs git add/commit
+    inside /tmp/board-api.lock.'
+ref: KNB-0224
