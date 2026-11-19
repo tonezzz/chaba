@@ -2085,9 +2085,31 @@ def do_create(body: dict, frm: str) -> dict:
         tc = str(act.get("task_class") or "").strip()
         if tc and ex == "opencode":
             envelope = act.get("lane_envelope")
-            if (tc not in ("read_only", "report") or not isinstance(envelope, dict)
-                    or envelope.get("task_class") != tc):
-                raise ValueError("executor=opencode requires a read_only/report task_class matching lane_envelope")
+            profile = str(act.get("agent_profile") or act.get("profile") or "")
+            remote_diagnosis = (
+                tc == "diagnosis"
+                and profile == "ops-remote-read"
+                and isinstance(envelope, dict)
+                and envelope.get("task_class") == tc
+                and envelope.get("profile") == profile
+                and envelope.get("stage") == "S3"
+                and envelope.get("target_host") == "idc02"
+                and th == "idc02"
+                and envelope.get("unattended") is True
+                and bool(sh)
+                and sh != th
+                and envelope.get("subject_host") == sh
+                and isinstance(envelope.get("mcp_allowlist"), list)
+                and "mcp_debug" in envelope["mcp_allowlist"]
+            )
+            if (not isinstance(envelope, dict)
+                    or envelope.get("task_class") != tc
+                    or (tc not in ("read_only", "report")
+                        and not remote_diagnosis)):
+                raise ValueError(
+                    "executor=opencode requires a read_only/report task_class "
+                    "matching lane_envelope or an S3 ops-remote-read "
+                    "diagnosis envelope")
         elif tc and ex != "kk_mac_local":
             # A bare task_class (no executor pin) is the auto-route
             # hint (kk-mac-auto-lane-classifier): queue-time

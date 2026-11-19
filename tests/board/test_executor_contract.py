@@ -935,11 +935,53 @@ class BoardApiContractTest(unittest.TestCase):
 
     def test_opencode_task_class_requires_matching_readonly_envelope(self):
         for tc, env in (("report", None), ("report", {"task_class": "read_only"}),
-                        ("branch_code", {"task_class": "branch_code"})):
+                        ("branch_code", {"task_class": "branch_code"}),
+                        ("diagnosis", {"task_class": "diagnosis"})):
             self.rejects({"id": "bad-class", "title": "t", "action": {
                 "type": "dispatch", "executor": "opencode", "task_class": tc,
                 **({"lane_envelope": env} if env is not None else {})}},
                 "executor=opencode requires a read_only/report")
+
+    def test_remote_diagnosis_requires_ops_remote_read_s3_contract(self):
+        env = {
+            "task_class": "diagnosis",
+            "profile": "ops-remote-read",
+            "stage": "S3",
+            "target_host": "idc02",
+            "subject_host": "idc03",
+            "unattended": True,
+            "mcp_allowlist": ["mcp_debug", "mcp_health"],
+        }
+        action = {
+            "type": "dispatch",
+            "executor": "opencode",
+            "task_class": "diagnosis",
+            "agent_profile": "ops-remote-read",
+            "target_host": "idc02",
+            "subject_host": "idc03",
+            "lane_envelope": env,
+        }
+        self.mod.do_create(
+            {"id": "remote-diagnosis", "title": "remote diagnosis",
+             "action": action}, "devin")
+        saved = self.mod.load(
+            Path(self.td.name) / "remote-diagnosis.yml")
+        self.assertEqual(saved["action"]["task_class"], "diagnosis")
+
+        for updates in (
+                {"agent_profile": "ops-readonly"},
+                {"target_host": "idc03"},
+                {"subject_host": ""},
+                {"lane_envelope": {**env, "stage": "S2"}},
+                {"lane_envelope": {**env, "mcp_allowlist": ["mcp_health"]}},
+                {"lane_envelope": {**env, "subject_host": "idc02"}}):
+            with self.subTest(updates=updates):
+                invalid = dict(action)
+                invalid.update(updates)
+                self.rejects(
+                    {"id": "remote-diagnosis-invalid", "title": "t",
+                     "action": invalid},
+                    "executor=opencode requires a read_only/report")
 
     def test_create_validates_executor(self):
         self.rejects({"id": "c-bad", "title": "t",
