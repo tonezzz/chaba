@@ -221,6 +221,36 @@ sections:
           SSOT like this one. Validate the new SSOT, commit it to the current branch, and end
           with 'Session closed.'
 
+
+  - title: Ada-OCB staged dispatch envelope workflow (2026-11-19)
+    icon: book
+    layout: list
+    items:
+      - label: Separate decision tools from mutation capability
+        text: |
+          ada_dispatch_check correctly found missing lane-envelope fields, but no Ada tool
+          could write them. ada_card_action only transitions queue/hold; a successful-looking
+          no-op queue result was mistaken for staging. Give the agent a dedicated
+          ada_envelope_draft (read-only) and confirmed ada_envelope_stage tool, and make the
+          stage tool verify read-back. Tool results should state clearly what they did not do.
+      - label: Enforce lifecycle safety at the write boundary
+        text: |
+          Before re-staging or queueing, inspect the card's live action status and runner.
+          Refuse writes while queued/running. Stage-and-queue through one canonical board-api
+          request to avoid a half-staged card; never interpret "already running" as success.
+      - label: Keep mirrored lane policy fail-closed
+        text: |
+          Ada's envelope builder mirrors runner-agent profile admission. Generated envelopes
+          must pass the real lane_gate.lint_envelope and opencode_profiles.check_envelope
+          checks; today only the three S3 profiles on idc02 are admitted. Keep drift failing
+          closed and add a drift check/generator before widening the profile set.
+      - label: Resolve only the approved conflict paths
+        text: |
+          The served Chaba checkout had many unrelated staged/dirty files during conflict
+          resolution. Resolve and commit explicit paths only, inspect the exact commit, and
+          leave other index/worktree changes untouched. A role-guard override is only for
+          the user-approved, narrowly scoped commit; do not commit the whole index.
+
 config:
   version: 1
   last_updated: 2026-09-12
