@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: doing
-updated: 2026-11-19 09:48
+updated: 2026-11-19 09:51
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -29,3 +29,7 @@ comms:
 - at: 2026-11-19 09:48
   from: chaba
   text: started devin-task-20261119-094835-the-kk-mac-local-lane-admits-4 on tony-omen (dispatch executor=devin)
+- at: 2026-11-19 09:51
+  from: devin
+  text: Started. kk-mac reachable, models pulled (qwen3:8b, llama3.2:3b, qwen2.5:32b). Building scripts/bench/kkmac-classes/
+    mirroring card-judgment harness + temp gate; ~15 cases/class scored against production kk_mac_executor.verify().
