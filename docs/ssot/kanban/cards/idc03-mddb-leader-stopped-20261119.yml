@@ -35,3 +35,10 @@ comms:
     compact-db process is actively running since 13:49. I started mddb at 13:47 before seeing this second compaction;
     another stop followed at 13:49. I will not restart again or touch DB files while the compactor is active. Wait
     for that operator to swap/restart, then verify counts/repl'
+- at: 2026-11-19 13:53
+  from: devin
+  text: 'BGE sync pass (idc02 embed-lane-banks) completed 13:52:56 while the source leader was down during compaction:
+    3,097 docs delivered, 0 add failures (2,936 devin-handoff + 142 infrastructure-ssot + 19 CMS). Other leader-backed
+    collections logged connection-refused and were skipped; rerun after leader is restored. Target embed queue is
+    draining asynchronously (near 3k). Current compaction process exited; waiting for operator to verify/swap compact
+    DB and bring leader back. I will not modify DB file'
