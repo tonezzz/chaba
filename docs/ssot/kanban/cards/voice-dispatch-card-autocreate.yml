@@ -1,7 +1,7 @@
 id: voice-dispatch-card-autocreate
 title: Voice dispatch auto-card — Ada's devin_dispatch files a queued card instead of bare start
 column: done
-updated: 2026-11-19 20:05
+updated: 2026-11-20 02:37
 brief: 'Ada''s voice/chat devin_dispatch path (ada-voice backend/devin_dispatch.py → ssh devin-dispatch start) bypasses
   the entire tuned kanban path: no card, no KNOWN_PITFALLS primer, no card comms, no RETRY_RAILS, no board visibility.
   Tony''s decision (2026-11-09): voice dispatches auto-create a queued kanban card and ride the normal dispatch
@@ -282,9 +282,15 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 02:37
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc02) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
   at: 2026-11-09 18:34
   note: verified — evidence checks green, closing itself
+awaiting_action: true
