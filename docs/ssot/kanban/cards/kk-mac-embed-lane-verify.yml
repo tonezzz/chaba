@@ -1,7 +1,7 @@
 id: kk-mac-embed-lane-verify
 title: kk-mac bge-m3 embed lane — verify registration in embed-pool upstreams
 column: doing
-updated: 2026-11-19 09:53
+updated: 2026-11-19 09:59
 spec: 'bge-m3 is pulled on kk-mac and embed-pool-shim runs on idc03:11436. Verify whether kk-mac ollama :11434 is
   registered as an embed-pool upstream; if not, add it (bounded: embeddings only, admission-gated). embed-pool-fleet
   card closed on live-service evidence — this verifies kk-mac specifically joins the pool.'
@@ -38,3 +38,7 @@ comms:
     shim upstream repointed to kk-mac direct tailnet 100.108.217.17:11434 (ollama now binds 0.0.0.0, bge-m3 pulled).
     Verified: POST :11447/api/embed -> 200 real bge-m3 vector; drain-switch -> instant 503 admission_denied; pool
     :11436 /health lists :11447 with 673 win'
+- at: 2026-11-19 09:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-094826-bge-m3-is-pulled-on-kk-mac-and no longer active on tony-omen but
+    card still says running — sweeping its branch'
