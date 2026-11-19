@@ -1,0 +1,80 @@
+id: board-api-residual-lock-holds
+title: 'board-api: fix commit-worker false retries + measure remaining lock holds'
+column: backlog
+updated: 2026-11-19 12:45
+priority: high
+tags:
+- board-api
+- kanban
+- performance
+- git
+spec: 'FOLLOW-UP to board-api-commit-outside-lock (f1f0b, live since 2026-11-19 10:24). The post-lock commit worker
+  is deployed, but the done condition is NOT met.
+
+
+  EVIDENCE (idc03 journal/lock-stats since 10:24 restart):
+
+  - /lock-stats: /comment n=193 timeouts=3 wait_max=25.7s hold_max=80.7s; /action timeouts=1 wait_max=25.2s; /card
+  timeouts=1 wait_max=25.2s.
+
+  - journal still has `lock wait >25s` 503s at 10:38 (/inbox /card /comment x2), 11:40 (/comment), 11:44 (/action),
+  plus `held=74.4s` and `held=80.7s` on /comment at 11:40/11:44.
+
+  - commit worker is retry-storming: repeated `board-api commit skipped: On branch master ... Changes not staged
+  for commit` every ~5s while served checkout is ahead of origin/master by 9-10 commits with unrelated dirty/untracked
+  files. Writes still land via kanban-commit sweep, but the immediate-commit path is effectively failing and the
+  retry loop is noise.
+
+
+  ROOT CAUSE HYPOTHESES:
+
+  1. `_commit_paths()` treats any `git commit -- <rels>` nonzero (except literal "nothing to commit") as transient
+  and requeues forever. On the served checkout the partial-commit pathspec can return nonzero while the queued paths
+  are already clean/committed by the sweep or another writer; the worker never verifies post-state, so it retries
+  up to COMMIT_MAX_TRIES and logs spam.
+
+  2. Remaining >5s (up to ~80s) LOCK holds mean something inside the request flock is still slow. save() no longer
+  commits, so suspects are load()/save() YAML+fsync on a large/dirty card, card_io.atomic_write_text fsync on a
+  slow/full disk, do_* helpers doing remote/subprocess work, or load_cards()/ref resolution reading more than one
+  file. This needs measurement, not guessing.
+
+
+  WORK:
+
+  A. Make the commit worker verify by repo state, not commit rc alone: after `git add -- <rels>`, if `git status
+  --porcelain -- <rels>` is empty, treat the batch as done (committed by worker or sweep). Only requeue while the
+  queued paths are still dirty. Keep the gitdir rebase/merge guard and index.lock transient retry. Keep BOARD_API_COMMIT=0
+  and kanban-commit backstop semantics.
+
+  B. Add cheap phase timing inside the card flock for POST writes: record load_ms / mutate_ms / save_ms (and maybe
+  card_path_ms) and include them in the existing slow-lock journal line when wait_s or hold_s >= BOARD_API_LOCK_SLOW_S.
+  No behavior change; measurement only.
+
+  C. Post the post-f1f0b evidence above as a comm on board-api-lock-contention so the soak card reflects that the
+  first fix landed but did not meet its done condition.
+
+
+  DONE WHEN: commit worker stops logging repeated `commit skipped` for paths that are already clean; /lock-stats
+  + journal over 24h show hold_s_max <5s for /comment /action /card /inbox and zero `lock wait >25s` 503s under
+  normal board use; slow-lock journal lines (when they occur) include phase timings that identify the remaining
+  hold source.
+
+
+  NON-GOALS: no render-board changes, no per-card lock sharding yet, no WP/remote-lock changes, no deploy/restart
+  of chaba-board-api unless required (if restarted, verify /lock-stats after).'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+comms:
+- at: 2026-11-19 12:45
+  from: chaba
+  text: classified as paid_frontier (kw:compare conf 1.00)
+- at: 2026-11-19 12:45
+  from: devin
+  text: 'follow-up to board-api-commit-outside-lock: f1f0b is live but post-restart stats still show 503s/80s holds
+    and commit-worker retry storm.'
+ref: KNB-0233
