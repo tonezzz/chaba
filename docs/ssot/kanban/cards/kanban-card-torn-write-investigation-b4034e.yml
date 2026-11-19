@@ -1,0 +1,48 @@
+id: kanban-card-torn-write-investigation-b4034e
+title: kanban-card-torn-write-investigation
+column: backlog
+updated: 2026-11-19 08:17
+spec: 'Investigate torn/truncated kanban card YAML writes that took down board-api + kanban-commit on 2026-11-19
+  ~03:00 ICT.
+
+
+  Evidence (all on idc03 ~/CascadeProjects/chaba-tony-dell):
+
+  - 3 card files truncated mid-scalar at EOF: docs/ssot/kanban/cards/adobe-stock-inpaint-defect-repair.yml (cut
+  at ''tex'' inside comms), trade-lesson-ui-integration.yml (cut inside quoted comms text), trade-lesson-workflows-automation.yml
+  (same).
+
+  - 0-byte .yml.tmp leftovers timestamped 02:57-03:04 — signature of an interrupted write-via-temp-file.
+
+  - kanban-commit.service refused to commit (YAML syntax gate) every run since; board-api returned ''canonical card
+  store unavailable'' 503 on all card reads.
+
+  - Manual repair done 08:12: restored 3 files from HEAD, cleared .tmp, kanban-commit green (423baed).
+
+
+  Prime suspect: focus-dispatcher-overnight.timer fires at 03:00 — overlaps the .tmp timestamps exactly. Also suspects:
+  kanban-commit''s git-safe-pull rebase window, board-api card write path, card-union merge driver (merge-card-yaml.py),
+  runner-agent comms appends.
+
+
+  Investigate:
+
+  1. journalctl --user around 2026-11-19 02:50-03:10 on idc03 for all units touching docs/ssot/kanban/cards/ (focus-dispatcher-overnight,
+  kanban-commit, board-api, merge-sweep, runner-agents).
+
+  2. Identify which process opens card files for write without atomic rename, or writes .tmp then renames — find
+  the non-atomic path.
+
+  3. Check whether focus-dispatcher-overnight or another 03:00 job batch-edits cards.
+
+  4. Reproduce if possible; propose fix: all card writes via write-to-tmp+fsync+rename under the board flock, or
+  extend the existing locked write path to every mutator.
+
+
+  Done when: root cause named with log evidence, fix implemented or carded, kanban card write path verified atomic
+  end-to-end.'
+ref: KNB-0212
+comms:
+- at: 2026-11-19 08:17
+  from: tony
+  text: card captured via board-api
