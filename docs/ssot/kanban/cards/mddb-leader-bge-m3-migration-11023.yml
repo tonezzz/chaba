@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: backlog
-updated: 2026-11-19 13:41
+updated: 2026-11-19 13:57
 priority: high
 tags:
 - mddb
@@ -44,3 +44,10 @@ comms:
     1024-d, so during reindex this is NOT garbage scoring/mixed-coordinate ranking — it is partial recall: only
     already-reindexed BGE docs are eligible; old Gemini vectors are invisible until reindexed. Current same-DB reindex
     remains availability-safe but search coverage ramps gradually'
+- at: 2026-11-19 13:57
+  from: devin
+  text: 'Recovery + shadow sync results 2026-11-19: :11023 is healthy again after an independently running offline
+    bbolt compaction (2.6G DB, old 5.3G file retained as rollback); idc02/con01 replication caught up. Existing
+    embed-lane-banks sync on idc02 delivered 3,116 new docs across two passes, 0 failures; final dry-run shows todo=0
+    for all 24 configured bank collections, and target queue was down to 51 jobs/draining. Important limitation:
+    :11028 is NOT a full blue-green replica of the 63-collection le'
