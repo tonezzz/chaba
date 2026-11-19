@@ -1,7 +1,7 @@
 id: dispatch-failed-cards-park-in-doing
 title: Failed/idle dispatch cards park in doing forever — no reaper returns them to backlog
 column: doing
-updated: 2026-11-19 08:31
+updated: 2026-11-19 08:33
 brief: '2026-11-17 sweep found 43 cards in doing with zero live claims fleet-wide (/queue claimed=[]): 23 action.status=failed
   dispatch cards (mostly Nov-14 runner-agent-drift/push-guard defers), 7 action.status=done stuck in doing, 11 manual/no-action
   stale claims. kanban-dispatch defers leave cards in doing; nothing ever returns them to backlog or re-queues them,
@@ -193,6 +193,10 @@ comms:
   from: chaba
   text: 'mn01 defers: executor=claude declared but this runner can''t serve it (CLAUDE_LANES=0, no claude-dispatch
     on host) — the card stays queued for a Claude-capable runner; it will never silently fall back to devin'
+- at: 2026-11-19 08:33
+  from: devin
+  text: 'tony-omen: prior run (dispatch/20261118-221757) was never merged (auto-merge push rejected). Re-landing
+    it onto current master in this worktree; merge is clean, running tests/board.'
 action:
   type: dispatch
   status: running
