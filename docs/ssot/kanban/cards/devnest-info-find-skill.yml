@@ -1,7 +1,7 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
 column: doing
-updated: 2026-11-19 12:39
+updated: 2026-11-19 12:40
 priority: medium
 program: devnest
 tags:
@@ -159,6 +159,13 @@ comms:
     tony-omen unit devin-task-20261119-122207-explore-and-implement-a-portab is inactive, Result=success, exit_code=0.
     The queue still shows the stale Omen claim; card action runner is tony-macbook. Implementation was reported
     in comms, but no final verified/merged state yet.'
+- at: 2026-11-19 12:40
+  from: devin
+  text: 'DONE Phase 1 (conversational skill first). Shipped on branch dispatch/20261119-122516: scripts/devnest/info_find.py
+    (shared stdlib planner+adapters+CLI; adds the missing explore intent/GitHub precedent rung), .agents/skills/info-find/
+    (portable skill), evals/opencode-lane/profiles/info-find/ (read-only S1 profile: bash=info_find.py only, 5 read-only
+    MCP tools, held_out_py verifier) + canary envelope jobs/p1-info-find-idc02.yaml, tests/devnest/test_info_find.py
+    (23 tests, all pass), gate doc docs'
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
