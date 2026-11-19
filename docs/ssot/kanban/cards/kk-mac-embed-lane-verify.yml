@@ -1,6 +1,6 @@
 id: kk-mac-embed-lane-verify
 title: kk-mac bge-m3 embed lane — verify registration in embed-pool upstreams
-column: backlog
+column: doing
 updated: 2026-11-19 09:48
 spec: 'bge-m3 is pulled on kk-mac and embed-pool-shim runs on idc03:11436. Verify whether kk-mac ollama :11434 is
   registered as an embed-pool upstream; if not, add it (bounded: embeddings only, admission-gated). embed-pool-fleet
@@ -9,7 +9,8 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: tony-omen
 ref: MEM-0221
 comms:
 - at: 2026-11-19 08:58
@@ -18,3 +19,6 @@ comms:
 - at: 2026-11-19 09:48
   from: devin
   text: queued for processing
+- at: 2026-11-19 09:48
+  from: tony-omen
+  text: claimed
