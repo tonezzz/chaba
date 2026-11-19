@@ -128,6 +128,10 @@ comms:
     via POST /card on board-api — never edit card YAML directl; [board-api-exec-checkout-mismatch] FIXED 2026-11-06.
     Root cause was two stacked ; [board-api-compact-cards] Landed manually: merge-sweep test gate failed on unrel;
     [board-api-writes-eaten-by-autostash-pops-515009] Picked up. '
+- at: 2026-11-19 11:18
+  from: devin
+  text: Attempt 3 (idc02). Prior failures were provider rate-limit exits, not work failures. Locating locked_edit
+    fallback write path + auditing all card-YAML mutators for non-atomic writes.
 action:
   type: dispatch
   status: running
