@@ -1,7 +1,7 @@
 id: cms-to-wiki-storage-assessment
 title: Assess residual CMS-to-Wiki storage reduction options
 column: doing
-updated: 2026-11-19 12:40
+updated: 2026-11-19 12:46
 priority: medium
 program: docs-infrastructure
 tags:
@@ -54,6 +54,13 @@ comms:
   from: devin
   text: '[devin] session started on idc02 — reconciling prior migration/compaction state, then measuring live stores
     (mddb-cms, ada-cms-pages, WP, Wiki). Read-only.'
+- at: 2026-11-19 12:46
+  from: devin
+  text: '[devin] DONE — measured assessment in reports/cms-to-wiki-storage-assessment-2026-11-19.md. Verdict: migration
+    reclaims ~0 — all movable content is ~41MB (mddb-cms) + ~10MB (WP) vs 22G/29G db files that are ~98% revisions+freelist
+    churn. Real finds: (1) 67G of stale pre-compact rollback files across 3 mddb banks — delete restores backup
+    headroom; (2) tonight''s cms backup FAILED ENOSPC; (3) cms db regrew 2.4G→22G in 6d (~17k revs/day, no maxRevisions
+    anywhere); (4) ops host-logs retention still b'
 note: This is a residual-scope assessment, not a duplicate of the completed Education/Wiki migration or mddb-cms
   compaction.
 ref: KNB-0232
