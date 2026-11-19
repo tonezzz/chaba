@@ -1,7 +1,7 @@
 id: idc03-mddb-leader-stopped-20261119
 title: idc03 mddb leader :11023 stopped at 13:36 ICT — restore service and determine operator
 column: backlog
-updated: 2026-11-19 13:50
+updated: 2026-11-19 13:53
 priority: high
 tags:
 - mddb
@@ -28,3 +28,10 @@ comms:
     63 collections / 28,201 docs. idc02 + con01 followers both healthy and caught up (confirmed_lsn == leader current_lsn,
     lag 0). Stop origin remains unknown; journal shows clean SIGTERM but no unit timer invoking it. Keeping card
     open to trace the operator/action source.'
+- at: 2026-11-19 13:53
+  from: devin
+  text: 'More context 2026-11-19 13:52: stop was in an offline bbolt compaction window, not an unexplained crash.
+    Journald records compacted and integrity-checked mddb.compact.db after 13:36 stop, and a second rootless podman
+    compact-db process is actively running since 13:49. I started mddb at 13:47 before seeing this second compaction;
+    another stop followed at 13:49. I will not restart again or touch DB files while the compactor is active. Wait
+    for that operator to swap/restart, then verify counts/repl'
