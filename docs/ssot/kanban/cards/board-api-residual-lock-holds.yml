@@ -1,7 +1,7 @@
 id: board-api-residual-lock-holds
 title: 'board-api: fix commit-worker false retries + measure remaining lock holds'
 column: doing
-updated: 2026-11-19 12:48
+updated: 2026-11-19 12:57
 priority: high
 tags:
 - board-api
@@ -104,6 +104,13 @@ comms:
   text: 'Picked up. Plan: (1) _commit_paths verifies by git status --porcelain of queued rels — clean = done (sweep
     raced and won), only requeue while still dirty; kills the 5s commit-skipped retry storm. (2) phase timing load_ms/mutate_ms/save_ms/card_path_ms
     on the slow-lock journal line to identify the residual hold source. (3) post f1f0b evidence onto board-api-lock-contention.'
+- at: 2026-11-19 12:57
+  from: devin
+  text: DONE on dispatch worktree branch dispatch/20261119-124654-follow-up-to-board-api-commit- (commits ceddecb0bb
+    code+job-doc, 91c6fd4c8c outcome+prev-file yaml fix). (A) _commit_paths now verifies done-ness by git status
+    --porcelain of queued rels — provably-clean batch (sweep raced and won) ends WITHOUT attempting the commit;
+    failure paths requeue only while paths still dirty. Kills the 5s commit-skipped storm. (B) slow-lock journal
+    line now carries load_ms/mutate_ms/save_ms/card_path_ms. Verified
 ref: KNB-0233
 claim:
   since: 2026-11-19 12:45
