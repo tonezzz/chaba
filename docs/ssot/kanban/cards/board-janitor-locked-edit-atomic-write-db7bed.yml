@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: doing
-updated: 2026-11-19 11:21
+updated: 2026-11-19 11:34
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -139,6 +139,13 @@ comms:
 - at: 2026-11-19 11:21
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261119-101602-make-the-locked-edit-fallback-'
+- at: 2026-11-19 11:34
+  from: devin
+  text: 'DONE (attempt 3, idc02). Finding: core fix already landed in d52179fd5a (locked_edit -> card_io.atomic_dump_card);
+    prior 2 failures were provider rate-limit exits, not work. Gap audit found the last 2 non-atomic board writers
+    the commit missed: card-pipeline FileSink.flush (direct write_text on card YAML under board flock) and report-watch
+    heal_item (focus-inbox) — both converted to card_io. Added tests/board/test_card_io_atomic.py: ENOSPC-at-fsync
+    + kill-at-rename fault injection proves old-or-'
 action:
   type: dispatch
   status: running
