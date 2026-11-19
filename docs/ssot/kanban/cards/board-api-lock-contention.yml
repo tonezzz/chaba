@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-19 10:01
+updated: 2026-11-19 12:45
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -182,6 +182,12 @@ comms:
     n=3807 timeouts=15 wait_max=26.6s hold_max=118.7s; journal has a 503 cluster 08:33-09:02 (lock wait >25s on
     /comment /action /card). p95 still <2s but the zero-503 done condition is not met; keeping review. Next lever
     is the deferred per-card lock sharding / render debounce, not another fd fix.'
+- at: 2026-11-19 12:45
+  from: devin
+  text: 'post-f1f0b evidence: commit-outside-lock worker is live (served HEAD contains f1f0b, service restarted
+    10:24) but done condition not met — /lock-stats since restart still shows /comment timeouts=3 wait_max=25.7s
+    hold_max=80.7s, journal has lock-wait >25s 503s at 10:38/11:40/11:44, and commit worker is retry-storming `commit
+    skipped` on clean paths. Follow-up carded+queued: board-api-residual-lock-holds (KNB-0233).'
 requests: []
 action:
   lane: paid_frontier
