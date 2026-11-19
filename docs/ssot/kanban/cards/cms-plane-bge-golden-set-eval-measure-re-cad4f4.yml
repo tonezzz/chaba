@@ -1,7 +1,7 @@
 id: cms-plane-bge-golden-set-eval-measure-re-cad4f4
 title: CMS-plane BGE golden-set eval — measure retrieval quality vs gemini before :11027 migration decision
 column: backlog
-updated: 2026-11-18 22:10
+updated: 2026-11-19 13:06
 priority: medium
 tags:
 - mddb
@@ -42,3 +42,9 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 13:06
+  from: devin
+  text: 'Status update 2026-11-19: :11027 already migrated to bge-m3 (env swap + force reindex, 19/19 collections
+    done or draining). The gemini baseline on :11027 no longer exists — a labeled golden-set eval can still measure
+    ABSOLUTE bge recall on the new plane, or compare :11027-bge vs :11023-gemini only for collections present on
+    both (limited overlap). Leader-plane eval evidence captured on mddb-leader-bge-m3-migration-11023 instead.'
