@@ -1,7 +1,7 @@
 id: mddb-followers-still-lagging-after-leade-2a5bc8
 title: MDDB followers still lagging after leader recovery — verify catch-up
-column: backlog
-updated: 2026-11-19 17:04
+column: done
+updated: 2026-11-19 18:13
 priority: medium
 tags:
 - mddb
@@ -23,3 +23,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:13
+  from: devin
+  text: '[verified 2026-11-19 18:13 ICT] Read-only follow-up: leader idc03 healthy at LSN 256359982; leader replication
+    status reports both con01 and idc02 healthy with confirmed_lsn 256359982 and lag_ms 0. Both follower endpoints
+    independently report healthy=true, connected=true, current_lsn 256359982. This confirms the 14:48 lag was transient
+    catch-up; no restart/reseed/config change needed. Closing this bounded follow-up. Keep the separate leader BGE
+    migration gated by its evaluation/coverage work.'
+- at: 2026-11-19 18:13
+  from: devin
+  text: closed by devin
+action:
+  status: done
