@@ -1,7 +1,7 @@
 id: dispatch-failed-cards-park-in-doing
 title: Failed/idle dispatch cards park in doing forever — no reaper returns them to backlog
 column: doing
-updated: 2026-11-19 08:33
+updated: 2026-11-19 08:39
 brief: '2026-11-17 sweep found 43 cards in doing with zero live claims fleet-wide (/queue claimed=[]): 23 action.status=failed
   dispatch cards (mostly Nov-14 runner-agent-drift/push-guard defers), 7 action.status=done stuck in doing, 11 manual/no-action
   stale claims. kanban-dispatch defers leave cards in doing; nothing ever returns them to backlog or re-queues them,
@@ -197,6 +197,13 @@ comms:
   from: devin
   text: 'tony-omen: prior run (dispatch/20261118-221757) was never merged (auto-merge push rejected). Re-landing
     it onto current master in this worktree; merge is clean, running tests/board.'
+- at: 2026-11-19 08:39
+  from: devin
+  text: 'tony-omen: re-landed the 11-18 lifecycle (it was never merged; auto-merge push was rejected) onto current
+    master on branch dispatch/20261119-083115-decide-implement-the-stalled-c. Clean merge, tests/board 664 passed.
+    Reaper dry-run on the live board: 24/25 doing cards would leave doing (23 failed->backlog, 1 done->review),
+    leaving only the live claim. Needs merge to master + redeploy board-api/kanban-dispatch/merge-sweep/runner-agent;
+    then re-check doing-count vs /queue.'
 action:
   type: dispatch
   status: running
