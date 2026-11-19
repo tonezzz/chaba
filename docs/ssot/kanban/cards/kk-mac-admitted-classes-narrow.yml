@@ -1,6 +1,6 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
-column: backlog
+column: doing
 updated: 2026-11-19 13:40
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
@@ -12,7 +12,9 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-0237
 comms:
 - at: 2026-11-19 13:38
@@ -35,4 +37,8 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
-claim: {}
+- at: 2026-11-19 13:40
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-19 13:40
