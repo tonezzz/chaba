@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
-column: doing
-updated: 2026-11-19 13:48
+column: backlog
+updated: 2026-11-19 13:49
 priority: medium
 tags:
 - devnest
@@ -15,18 +15,18 @@ spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 mer
   documented; matching card comms on the cards that spawned them.'
 action:
   type: dispatch
-  status: running
+  status: failed
   executor: devin
   repo: chaba
   sweep:
     failed_noted: 2026-11-17 22:25
-  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261119-133954-triage-2026-11-09-cascadeproje.service:
-    Failed with result ''exit-code''. | devin-task-20261119-133954-triage-2026-11-09-cascadeproje.service: Consumed
-    7.240s CPU time.'
+  last_failure: 'exit=1 evin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
+    | devin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Consumed 9.944s CPU time over 4.116s wall
+    clock time, 249.7M memory peak.'
   attempts: 2
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261119-133954-triage-2026-11-09-cascadeproje.service:
-    Failed with result ''exit-code''. | devin-task-20261119-133954-triage-2026-11-09-cascadeproje.service: Consumed
-    7.240s CPU time.'
+  result: 'exit=1 evin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
+    | devin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Consumed 9.944s CPU time over 4.116s wall
+    clock time, 249.7M memory peak.'
   runner: tony-macbook
 ref: OPS-1288
 comms:
@@ -216,5 +216,14 @@ comms:
     merge-sweep: devin-task-20261117-233349-observe; [dispatch-failed-cards-park-in-doing] tony-omen: re-landed
     the 11-18 lifecycle (; [runner-tooling-drift-recurs-installed-ru-3aad1e] Merged to chaba origin/master ; [ada-printer-diagnostics-safe-repair]
     merge-sweep: devin-task'
+- at: 2026-11-19 13:49
+  from: tony-macbook
+  text: 'finished (failed): exit=1 evin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Failed with
+    result ''exit-code''. | devin-task-20 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-19 13:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-134825-triage-2026-11-09-cascadeproje (rate limit)
+    — tony-macbook holds new claims ~30m
 claim:
   since: 2026-11-19 13:46
