@@ -1,7 +1,7 @@
 id: chaba-board-quadlet
 title: Package board-api + render + kanban-sync as one quadlet on idc03
 column: backlog
-updated: 2026-11-19 17:03
+updated: 2026-11-19 18:55
 brief: 'Post-migration consolidation: once OPS-0725 (dell-off) lands and edge service names exist, the board stack
   can become a single podman quadlet — repo checkout as volume, ssh keys via mounted secrets. Assessed 2026-10-22:
   real fragility is topology assumptions in probes, not process management; container adds little until the host
@@ -71,4 +71,8 @@ comms:
 - at: 2026-11-19 17:03
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
