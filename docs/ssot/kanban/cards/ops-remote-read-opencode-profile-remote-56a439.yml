@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
 column: backlog
-updated: 2026-11-19 19:09
+updated: 2026-11-19 19:30
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -87,3 +87,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:30
+  from: devin
+  text: 'Task-class gate reconciled: OpenCode diagnosis is now admitted only for an S3 ops-remote-read envelope
+    targeting idc02, with matching remote subject_host, unattended=true, and mcp_debug allowlisted. Commit e3fa5f74d3
+    pushed as branch ops-1025-task-class. Verification on current origin/master worktree: BoardApiContractTest 13
+    passed (6 subtests), board-api mutation/action-persistence tests 30 passed; py_compile and diff check passed.
+    Live rollout is held: idc02 chaba checkout is 32 commits behind'
