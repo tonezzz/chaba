@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: doing
-updated: 2026-11-19 11:18
+updated: 2026-11-19 11:20
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -132,6 +132,10 @@ comms:
   from: devin
   text: Attempt 3 (idc02). Prior failures were provider rate-limit exits, not work failures. Locating locked_edit
     fallback write path + auditing all card-YAML mutators for non-atomic writes.
+- at: 2026-11-19 11:20
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-101602-make-the-locked-edit-fallback- no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -145,5 +149,7 @@ action:
     wall clock time, 1G memory peak.'
   attempts: 2
   runner: idc02
+  sweep:
+    stale_running: 2026-11-19 11:20
 claim:
   since: 2026-11-19 11:18
