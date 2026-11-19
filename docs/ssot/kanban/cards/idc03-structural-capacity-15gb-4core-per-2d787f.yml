@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: backlog
-updated: 2026-11-18 22:10
+updated: 2026-11-19 08:18
 priority: medium
 tags:
 - idc03
@@ -78,6 +78,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:18
+  from: devin
+  text: 'Residual on the dev-twin migration (found during ADA-0149 RCA): ada-dev + ada-kk-dev are enabled+healthy
+    on omen (:8005/:8009=200) and `disabled` on idc03 — but still `active` there: ada-voice deploy-ada.sh SERVICES
+    still lists them, so every fleet deploy `systemctl --user restart`s them back up (~750MB still resident on idc03).
+    Full reclaim needs: (a) repoint ada-scenario units on idc03 from ws://127.0.0.1:8005/:8009 to ws://100.75.102.88:8005/:8009
+    — hourly smoke + nightly suites ride the LOCA'
 action:
   type: dispatch
   status: idle
