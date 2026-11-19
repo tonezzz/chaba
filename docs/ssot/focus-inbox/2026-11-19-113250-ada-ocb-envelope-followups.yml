@@ -1,0 +1,45 @@
+title: Ada-OCB envelope tools — follow-ups from PR #20
+subtitle: Loose ends left by the staged-dispatch envelope work (2026-11-19)
+icon: inbox
+
+focus:
+  label: ada-ocb-envelope-followups
+  text: >-
+    PR tonezzz/ada-voice#20 (merged 6a39e3a) shipped ada_envelope_draft /
+    ada_envelope_stage plus liveness guards. Leftovers: (1) the staged
+    profile table in opencode/ada_mcp.py mirrors
+    evals/opencode-lane/profiles/*/profile.yml — add a drift check or
+    generate it from the profiles; (2) stage-without-queue mode needs a
+    board-api change (do_create on_exists path always re-queues);
+    (3) widening S3 staged admission beyond ops-readonly/ssot-research/
+    storage-dryrun on idc02 requires runner-agent changes;
+    (4) verify a real /ada dispatch smoke in OpenChamber once a card
+    actually needs it.
+  branch: main
+  priority: low
+  status: draft
+  tags: [ada-ocb, kanban, dispatch]
+  missing_info:
+    - Whether Tony wants stage-without-queue or fused stage+queue is fine long-term
+  safe_to_parallel:
+    value: true
+    reason: All items are independent small changes; none block current work
+  subtasks:
+    - label: Add profile-table drift check or generator
+      status: not_started
+    - label: Decide on stage-without-queue (board-api queue:false opt-out)
+      status: not_started
+    - label: Evaluate widening staged admission profiles (runner-agent)
+      status: not_started
+    - label: First real /ada dispatch smoke in OpenChamber
+      status: not_started
+
+ownership:
+  owner: tony
+  session: devin-2026-11-19-envelope-tools
+  locked: false
+  lock_reason: ""
+
+source:
+  session: devin-2026-11-19-envelope-tools
+  date: 2026-11-19
