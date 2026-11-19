@@ -1,7 +1,7 @@
 id: board-api-residual-lock-holds
 title: 'board-api: fix commit-worker false retries + measure remaining lock holds'
 column: doing
-updated: 2026-11-19 12:47
+updated: 2026-11-19 12:48
 priority: high
 tags:
 - board-api
@@ -99,6 +99,11 @@ comms:
     FIXED 2026-11-06. Root cause was two stacked ; [board-api-write-latency] FIX LANDED (commit f2acf34614f on served
     checkout, awa; [board-janitor-locked-edit-atomic-write-db7bed] primer injected 8 lesson(s): [ka; [ops-local-conflict-guard]
     ROOT CAUSE found + cleared (2026-1'
+- at: 2026-11-19 12:48
+  from: devin
+  text: 'Picked up. Plan: (1) _commit_paths verifies by git status --porcelain of queued rels — clean = done (sweep
+    raced and won), only requeue while still dirty; kills the 5s commit-skipped retry storm. (2) phase timing load_ms/mutate_ms/save_ms/card_path_ms
+    on the slow-lock journal line to identify the residual hold source. (3) post f1f0b evidence onto board-api-lock-contention.'
 ref: KNB-0233
 claim:
   since: 2026-11-19 12:45
