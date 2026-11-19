@@ -1,6 +1,6 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
-column: backlog
+column: doing
 updated: 2026-11-19 13:05
 priority: high
 tags:
@@ -144,9 +144,12 @@ comms:
 - at: 2026-11-19 13:05
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-19 13:05
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
   result: 'exit=1 RE | devin-task-20261117-232220-add-an-opt-in-asynchronous-sha.service: Failed with result ''exit-code''.
@@ -154,4 +157,7 @@ action:
     peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-19 13:05
