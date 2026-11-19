@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
 column: backlog
-updated: 2026-11-19 17:03
+updated: 2026-11-19 17:29
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -281,6 +281,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:29
+  from: chaba
+  text: 'answer-sweep: executed ''Postpone the flood tracking task until infrastructure runner'' -> put on hold'
+- at: 2026-11-19 17:29
+  from: chaba
+  text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -296,6 +302,7 @@ requests:
   at: 2026-11-17 19:20
   from: backlog-spec-enrich
   answer: Postpone the flood tracking task until infrastructure runner drift is resolved globally by the owner
+  executed: 2026-11-19 hold
 - id: the-flood-tracking-task-for-ba-cec12a
   ask: The flood tracking task for Bangkok was previously postponed until infrastructure runner drift on tony-dell
     is resolved globally by the owner. However, the card is now queued for triage and requires a decision on whether
