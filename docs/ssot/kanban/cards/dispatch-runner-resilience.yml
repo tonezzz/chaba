@@ -1,7 +1,7 @@
 id: dispatch-runner-resilience
 title: 'dispatch runner resilience: WIP push before GC, push-cred gating, claim stagger'
 column: done
-updated: 2026-11-19 19:08
+updated: 2026-11-19 20:02
 brief: 'Three dispatch failures on 2026-11-17/18 were infra, not task: (1) free-model rate limit killed 4 simultaneous
   claims, (2) worktree GC destroyed unpushed work twice (ADA-0175 r1 branch lost entirely, idc02 scratch clone lost),
   (3) idc02 lacks push:ada-voice creds so repo cards fail at push guard. Harden runner-agent/kanban-dispatch against
@@ -117,6 +117,10 @@ comms:
 - at: 2026-11-19 19:08
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-0206
 review_kind: verify
