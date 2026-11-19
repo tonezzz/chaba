@@ -8,9 +8,13 @@ description: Use for status/process/continue requests involving one or more Kanb
 Follow `docs/kb/card-status-and-processing.md`. Use this skill to reconcile
 the board, executor, and artifact without repeating full scans or status polls.
 
-1. Extract the named cards and decision needed. Prefer `/queue` for a queue
-   overview and `/card/<id>` for specific cards; never fetch the full board
-   for a small, named set.
+1. Extract the named cards and decision needed. When running under Ada-OCB,
+   call `ada_kanban_sweep` first for a read-only stuck-work snapshot (queue
+   counts, classified attention items, active work, `mutations_performed: []`).
+   Otherwise prefer `/queue` for a queue overview and `/card/<id>` for specific
+   cards; never fetch the full board for a small, named set. The sweep is a
+   starting point only — every mutation still goes through the gated paths
+   below.
 2. Batch independent board reads. Read `comms` only for pending requests,
    failures, or state contradictions.
 3. Reconcile remote work in one pass. List relevant executor sessions once;
