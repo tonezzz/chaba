@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-19 17:04
+updated: 2026-11-19 17:15
 priority: medium
 tags:
 - merge-sweep
@@ -203,6 +203,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:15
+  from: devin
+  text: 'done (attempt 2): re-landed the 13:17 fail-closed implementation (gate_unrunnable + repo-scoped .venv bootstrap
+    + action.test_exempt + pytest label routing + sweep-side gate) onto current master, plus NEW fix: REPO_TESTS[chaba].timeout
+    240s->900s — the 12-file/237-test gate set measures ~483s on tony-omen under load, so the old budget held even
+    green merges on suite timeout (that is what stranded attempt 1). tests/board close_out+merge_sweep 95/95, full
+    gate set 237/237. Branch dispatch/20261119'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
