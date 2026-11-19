@@ -1,7 +1,7 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
 column: doing
-updated: 2026-11-19 12:33
+updated: 2026-11-19 12:36
 priority: medium
 program: devnest
 tags:
@@ -145,6 +145,13 @@ comms:
     plan. Executor reconciliation: the older tony-omen unit devin-task-20261119-122207-explore-and-implement-a-portab
     is inactive/result=success/exit_code=0; the current tony-macbook unit devin-task-20261119-122516-explore-and-implement-a-portab
     remains active with no exit_code. Queue sn'
+- at: 2026-11-19 12:36
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-122207-explore-and-implement-a-portab no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-19 12:36
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261119-122207-explore-and-implement-a-portab'
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
@@ -177,6 +184,9 @@ action:
   model: litellm/gemini-2.5-flash
   attempts: 2
   runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-19 12:36
+    no_repo: 2026-11-19 12:36
 claim:
   since: 2026-11-19 12:23
 awaiting_action: true
