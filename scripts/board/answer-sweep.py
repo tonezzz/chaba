@@ -131,7 +131,7 @@ VERBS = {
     "resolved": "close", "retire": "close", "archive": "close",
     "hold": "hold", "park": "hold", "parked": "hold", "defer": "hold",
     "wait": "hold", "later": "hold", "keep": "hold", "stay": "hold",
-    "backlog": "hold",
+    "backlog": "hold", "postpone": "hold",
     "superseded": "none", "duplicate": "none", "self-resolved": "none",
     "merged": "none", "n/a": "none", "none": "none", "nothing": "none",
     "skip": "none", "no-op": "none",

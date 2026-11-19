@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
-column: backlog
-updated: 2026-11-19 17:02
+column: doing
+updated: 2026-11-19 17:20
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -127,15 +127,49 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:12
+  from: tony
+  text: queued for processing
+- at: 2026-11-19 17:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.33 > 0.85)'
+- at: 2026-11-19 17:13
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.76 > 1.0)'
+- at: 2026-11-19 17:14
+  from: idc02
+  text: claimed
+- at: 2026-11-19 17:14
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 17:15
+  from: chaba
+  text: started devin-task-20261119-171510-ada-benchmark-coverage-scenari on idc02 (dispatch)
+- at: 2026-11-19 17:15
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-benchmark-coverage-scenarios-for-kan-152a4f] merge-sweep: devin-task-202611;
+    [ada-benchmark-coverage-scenarios-for-kan-152a4f] finished (failed): exit=1 sk-2; [ada-tools-wiki-read-wiki-search-recall-t-8f32dd]
+    merge-sweep: devin-task-202611; [ada-tools-wiki-read-wiki-search-recall-t-8f32dd] spec (ada-voice repo, main):
+    A; Two prior dispatch attempts on this card died exit=1 with zero commits (runner-s; Injected lines log to card
+    comms (''primer injected N lesson(s'
+- at: 2026-11-19 17:20
+  from: devin
+  text: 'run started on idc02 — baseline green: 19 offline scenarios pass with a local venv (httpx+websockets).
+    Adding FakeBoard + dispatch_ssh fixtures to scenario_engine, then scenario yamls for kanban ops/move-gates,
+    devin dispatch (board+playbook), ada_opencode spend-cap + sweep, wiki_extension gates.'
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
-  runner: tony-macbook
   result: 'exit=1 sk-20261117-190737-ada-benchmark-coverage-scenari.service: Failed with result ''exit-code''. |
     devin-task-20261117-190737-ada-benchmark-coverage-scenari.service: Consumed 40.669s CPU time over 5min 47.782s
     wall clock time, 630.3M memory peak.'
   sweep:
     failed_noted: 2026-11-17 19:24
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-19 17:14
