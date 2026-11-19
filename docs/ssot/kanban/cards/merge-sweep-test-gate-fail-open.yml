@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-19 13:22
+updated: 2026-11-19 13:33
 priority: medium
 tags:
 - merge-sweep
@@ -123,6 +123,12 @@ comms:
     bootstrap provisions <canonical checkout>/.venv with pytest (+repo deps) before holding — the approved repo-scoped
     fix, never a global install; (3) action.test_exempt is the allowlist for docs-only cards; (4) runners auto-advertise
     a pytest label and unrunnable requeues gain labels:[py'
+- at: 2026-11-19 13:33
+  from: devin
+  text: 'Execution reconciliation: board action lane is labeled codemod, but the active tony-omen task metadata
+    confirms executor=devin/provider=devin (matching Tony''s Devin-dispatch approval); treat it as paid Devin-plan
+    work, not a no-cost run. Scope recommendation remains Chaba project .venv/test dependency, not global pytest
+    installation.'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
