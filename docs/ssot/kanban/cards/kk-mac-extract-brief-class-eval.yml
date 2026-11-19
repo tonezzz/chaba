@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: review
-updated: 2026-11-19 10:21
+updated: 2026-11-19 16:55
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -16,6 +16,7 @@ action:
     Consumed 1min 22.073s CPU time over 28min 54.475s wall clock time, 719.5M memory peak.'
   sweep:
     dirty: 12
+    session_gone: 2026-11-19 16:55
 ref: OPS-0219
 comms:
 - at: 2026-11-19 08:58
@@ -72,5 +73,9 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261119-094835-the-kk-mac-local-lane-admits-4 on tony-omen still dirty
     — 12 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 16:55
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261119-094835 on tony-omen — if the work was never
+    pushed it may be gone'
 review_kind: verify
 claim: {}
