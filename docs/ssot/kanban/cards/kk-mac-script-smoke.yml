@@ -1,14 +1,14 @@
 id: kk-mac-script-smoke
 title: kk-mac launchd runner — script executor e2e smoke
-column: doing
+column: review
 priority: low
 created: '2026-11-19'
-updated: 2026-11-19 10:38
+updated: 2026-11-19 10:39
 brief: 'E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd — proves the provisioned
   runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).'
 action:
   type: script
-  status: running
+  status: done
   host: kk-mac
   labels:
   - desktop
@@ -21,6 +21,9 @@ action:
     timeout: 300
   runner: kk-mac
   attempts: 1
+  result: "exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:\
+    \ line 13: 32548 Terminated: 15          ( sleep 300; kill -TERM -\"$cpid\" 2> /dev/null; sleep 15; kill -KILL\
+    \ -\"$cpid\" 2> /dev/null )"
 spec: smoke — kk-mac launchd runner claim+execute verify
 comms:
 - at: 2026-11-19 10:38
@@ -34,6 +37,11 @@ comms:
   from: chaba
   text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
     action.labels/host pins or teach a runner the capability'
+- at: 2026-11-19 10:39
+  from: kk-mac
+  text: "finished (ok): exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:\
+    \ lin"
 claim:
   since: 2026-11-19 10:37
 awaiting_action: true
+review_kind: verify
