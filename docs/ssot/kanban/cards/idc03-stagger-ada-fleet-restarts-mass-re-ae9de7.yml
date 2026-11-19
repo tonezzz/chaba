@@ -1,7 +1,7 @@
 id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
 title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
 column: doing
-updated: 2026-11-19 08:13
+updated: 2026-11-19 08:18
 priority: high
 tags:
 - idc03
@@ -144,6 +144,13 @@ comms:
 - at: 2026-11-19 08:13
   from: chaba
   text: started devin-task-20261119-081318-observed-2026-11-16-20-56-53-i on idc02 (dispatch)
+- at: 2026-11-19 08:18
+  from: devin
+  text: 'RCA: mass restart = ada-voice scripts/deploy-ada.sh run via ssh from tony-omen (session 20:53:56-20:56:56;
+    ada-voice reflog ff-merge 20:53:57 matches). Its single `systemctl --user restart` on all 10 SERVICES units
+    (ada-pi-pwa still listed then) parallel-started ~3.7GB. NOT chaba-repo-sync (finished 20:51), NOT chaba deploy-ada.sh
+    (serial+sleep, covers only 8 units), NOT deploy-preflight (started 20:57). FIX: ExecStartPre stagger already
+    live on idc03 since 11-17 (installed by the failed first d'
 action:
   type: dispatch
   status: running
