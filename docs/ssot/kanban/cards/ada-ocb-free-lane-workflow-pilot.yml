@@ -1,0 +1,30 @@
+id: ada-ocb-free-lane-workflow-pilot
+title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
+column: backlog
+updated: 2026-11-19 14:51
+brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
+  free route before queueing one bounded read-only canary; do not use a paid fallback.
+priority: medium
+program: devnest
+tags:
+- ada
+- free-lane
+- read-only
+- pilot
+spec: 'Goal: validate the existing free OpenCode lane and the Kanban-to-runner-to-artifact-to-verifier path with
+  one bounded report. No production changes.\n\nPreflight on 2026-11-19: board-api reads succeeded; the existing
+  S1 ops-readonly envelope passes lint; idc02 lane gate reports S3 and not killed. However, the current ada-ocb
+  card reports the Gemini Flash Lite project default is paid and the configured local Qwen endpoint at 127.0.0.1:8780
+  is not listening. No zero-cost model route is currently verified.\n\nGate: do not queue this card or send any
+  model request until the exact provider/model route is independently verified as available and zero-cost. Do not
+  use a paid fallback, alter model configuration, or change service environment. If no free route is verified, hold
+  and request Tony\s decision.\n\nAfter the free route is verified: run exactly one supervised S3 read-only report
+  using the existing ops-readonly profile; pin the verified free model in a complete lane_envelope; use the existing
+  held-out verifier; require the declared artifact and zero mutations; record model/provider, actual spend or verified
+  zero-cost evidence, tokens/quota if available, wall time, human minutes, verifier result, retries, and any escalation.
+  Max retries: 0. Do not mark done until independent verification passes.'
+ref: ADA-0242
+comms:
+- at: 2026-11-19 14:51
+  from: tony
+  text: card captured via board-api
