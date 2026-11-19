@@ -1,0 +1,140 @@
+title: "stalled-claim lifecycle — honest columns for dead claims"
+subtitle: >-
+  A fleet sweep found 43 cards parked in `doing` with zero live claims
+  (/queue claimed=[]): 23 failed dispatches, 7 done-stuck, 11
+  manual/orphan. Every write path that ends a claim (runner finish,
+  dispatch-launch failure, dead-host requeue, merge/verified-gate
+  failure, retry-cap park, queue/retry verbs) now leaves `doing`, and a
+  stalled-claim reaper lane in merge-sweep keeps `doing` honest on a
+  15-minute cadence. Rule: doing means a live claim exists.
+icon: 🧹
+id: 2026-11-18-stalled-claim-lifecycle
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-failed-cards-park-in-doing
+started: "2026-11-18"
+completed: "2026-11-18"
+
+context:
+  bug: >-
+    board-api do_finish set action.status=failed but left column=doing
+    (the whole 43-card fleet was that one missing line, plus every other
+    fail path copying it). kanban-dispatch's mark_start never set
+    column=doing either — local claims ran "invisibly" while remote
+    claims parked. /queue's claimed projection omitted status=starting.
+  scope: >-
+    Three writers mutate claim state: board-api (remote claim/finish,
+    /action verbs), kanban-dispatch (local dispatch pass), merge-sweep
+    (verified gate, reaper). The single-writer flock /tmp/board-api.lock
+    serializes every mutation; reaper writes re-check card state under
+    the lock so a scan-time decision never stomps a fresher write.
+
+semantics:
+  attempts: >-
+    action.attempts counts CLAIMS, bumped atomically at claim time —
+    do_claim (remote) and mark_start (local) alike. Default cap
+    KANBAN_MAX_ATTEMPTS=2 (per-card override action.max_attempts).
+    do_claim refuses at the cap; kanban-dispatch's retries_per_card gate
+    parks the card held. /action do=retry resets attempts to 0 — the
+    deliberate human re-arm.
+  claim_since: >-
+    claim.since stamps at claim time — the reaper's age basis. Falls
+    back to the last claim-shaped comms line, then card.updated; an
+    undatable card reads as old, never young.
+  fail_or_requeue: >-
+    Every dead-claim path uses one rule: under the cap -> status=queued
+    + column=backlog + runner/task_id/claim.session cleared +
+    action.last_failure recorded (auto-retry, KANBAN_AUTORETRY=0
+    disables); at the cap -> status=failed parked in backlog with a
+    manual-retry pointer. Success unchanged: status=done +
+    column=review + review_kind=verify.
+  reaper: >-
+    merge-sweep.reap_stalled_claims runs inside board-janitor's 15-min
+    tick on idc03 (served checkout only — the chaba-role guard refuses
+    elsewhere). Per doing-card:
+      * running/claimed + live devin-task unit or fresh runner
+        heartbeat -> untouched
+      * running/claimed + no unit + no fresh report + claim older than
+        STALLED_CLAIM_HOURS (6h) -> FLAGGED (comms + sweep stamp +
+        awaiting_action), never auto-requeued — an unprobeable runner's
+        session may still be alive, and a second claim would double-run
+      * done -> review (the verified gate owns the close decision)
+      * failed/held -> backlog (manual retry re-arms)
+      * queued -> backlog; starting past STARTING_SETTLE_MIN (30m) ->
+        backlog
+      * no claim evidence past ORPHAN_DOING_HOURS (24h) -> flag first
+        sighting, move to backlog on the next still-untouched pass
+        (could be real offline work — the flag is the warning shot)
+  queue_truth: >-
+    /queue claimed[] now counts status starting alongside
+    claimed/running, so board doing-count == /queue claimed(+active)
+    holds while a local dispatch is mid-launch.
+
+files:
+- scripts/board/board-api.py        (do_claim, do_finish, do_action, queue_view)
+- scripts/board/kanban-dispatch.py  (mark_start, _fail_or_requeue, finish_one, start_pending, merge_pending_one, requeue_dead, held park)
+- scripts/board/merge-sweep.py      (fail_attempt, reap_stalled_claims + helpers, wired into main() after sweep_zombies)
+- tests/board/test_stalled_claim_lifecycle.py  (23 cases)
+- tests/board/test_dispatch_close_out.py       (re-pinned to lifecycle)
+
+verified:
+- >-
+  python3 -m pytest tests/board/ — 664 passed, 8 subtests (incl. 23 new
+  stalled-claim cases; test_dispatch_close_out re-pinned: failed unit ->
+  queued+backlog under cap, failed+backlog at cap).
+- >-
+  Live E2E against a real board-api HTTP server on a temp card store
+  (BOARD_API_COMMIT=0): 27/27 checks — failed finish -> queued+backlog +
+  claimable in /queue queued; re-claim -> doing + attempts+1 +
+  claim.since; cap -> failed+backlog + claim refused; retry -> queued +
+  attempts reset; queue verb -> backlog; doing-count == /queue claimed
+  at every step.
+- >-
+  python3 scripts/board/board-api.py --selftest -> selftest ok.
+  merge-sweep --dry-run from a readonly checkout correctly refuses
+  (chaba-role guard) — the reaper runs only on the served writer.
+
+knobs:
+  KANBAN_MAX_ATTEMPTS: "2 — claims per card before parking"
+  KANBAN_AUTORETRY: "1 — 0 disables the auto-requeue half"
+  STALLED_CLAIM_HOURS: "6 — running+no-evidence flag horizon"
+  ORPHAN_DOING_HOURS: "24 — no-claim-evidence flag-then-move horizon"
+  STARTING_SETTLE_MIN: "30 — grace before a stuck 'starting' is dead"
+
+notes:
+- >-
+  The flag stamp action.sweep.stalled_claim is written with
+  touch=False (bookkeeping — never crowns `updated`, so it cannot win
+  the card-union scalar race against a fresher human write). The
+  follow-on move is a real workflow mutation (touch=True).
+- >-
+  A flagged running card re-queues manually via /action do=queue (which
+  now also releases doing cards, clearing session/runner/task_id), or
+  /action do=retry to also reset the attempt budget.
+- >-
+  Deploy: rides the normal worktree merge -> chaba-repo-sync ->
+  board-api restart path; board-janitor's next tick picks up the reaper
+  lane on idc03. Not deployed from this worktree.
+
+landing_2026_11_19:
+  why: >-
+    The 2026-11-18 run (dispatch/20261118-221757) finished ok and pushed
+    its branch, but auto-merge to master was rejected (non-fast-forward)
+    and the worktree was GC'd — the fix never reached master or the
+    hosts. Retry dispatch 20261119-083115 (tony-omen) re-landed it.
+  done: >-
+    Merged origin/dispatch/20261118-221757-decide-implement-the-stalled-c
+    into the 20261119 dispatch branch on top of current master (clean,
+    no conflicts); tests/board green.
+  live_evidence_pre_deploy: >-
+    2026-11-19 08:34 board: 25 cards in doing (23 dispatch/failed,
+    1 dispatch/done, 1 dispatch/running) vs /queue claimed=2 + 4 active
+    units fleet-wide. Dry-run of reap_stalled_claims on that snapshot:
+    24 moves (23 failed -> backlog, 1 done -> review), leaving only the
+    live claim — doing-count == /queue claimed+active once deployed.
+  remaining_gates:
+    - merge dispatch/20261119-083115-decide-implement-the-stalled-c to master
+    - redeploy runner-agent/board-api/kanban-dispatch/merge-sweep on hosts
+      (board-api restart on idc03; janitor tick picks up merge-sweep)
+    - after first janitor tick, re-check doing-count vs /queue

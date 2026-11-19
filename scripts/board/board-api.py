@@ -1009,10 +1009,14 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
         a.pop("verified", None)  # stale stamp must not survive a re-queue
+        _ensure_claim(card).pop("session", None)
         msg = _apply_classify_at_queue(card, a)
         if msg:
             return msg
-        if card.get("column") in ("done", "review"):
+        # honest columns (dispatch-failed-cards-park-in-doing): queued
+        # means claimable, and claimable work lives in backlog — not
+        # doing/review/done
+        if card.get("column") in ("done", "review", "doing"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
         warn = queue_starve_warn(card)
@@ -1032,8 +1036,14 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         if prev:
             a["last_failure"] = str(prev)[:300]
         a.pop("runner", None)  # free for any host to re-claim
-        a["attempts"] = int(a.get("attempts") or 0) + 1
+        a.pop("task_id", None)
+        # a human re-arm gets a fresh dispatch budget — claims count
+        # attempts from here (retry is the escape from the attempt cap)
+        a["attempts"] = 0
         a.pop("verified", None)  # a retried card is unverified until it lands
+        _ensure_claim(card).pop("session", None)
+        if card.get("column") in ("done", "review", "doing"):
+            card["column"] = "backlog"
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":
@@ -1148,6 +1158,17 @@ def do_claim(card: dict, body: dict) -> str:
     host = (body.get("host") or "").strip()
     if not host:
         raise ValueError("claim needs host")
+    # Attempt cap (stalled-claim lifecycle): attempts counts every claim
+    # — kanban-dispatch's mark_start and this endpoint alike — so a card
+    # that keeps failing can be parked instead of re-dispatched forever.
+    # /action do=retry resets attempts; that is the human re-arm.
+    att = int(a.get("attempts") or 0)
+    max_att = int(a.get("max_attempts")
+                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    if att >= max_att:
+        raise ValueError(
+            f"attempt cap reached ({att}/{max_att}) — /action do=retry "
+            "re-arms it")
     pinned = a.get("host")
     if pinned and dr.canon_host(pinned) != dr.canon_host(host):
         raise ValueError(f"card is pinned to {pinned}")
@@ -1204,7 +1225,14 @@ def do_claim(card: dict, body: dict) -> str:
     a["runner"] = host
     a["status"] = "running"  # claimed = running from the board's view;
     # the runner's finish call (or a sweeper) is the only way out
-    if card.get("column") == "backlog":
+    a["attempts"] = int(a.get("attempts") or 0) + 1
+    # claim.since is the reaper's age basis — the runner may never write
+    # again, so stamp the claim time atomically with the claim itself
+    _ensure_claim(card)["since"] = now()
+    # honest columns: a live claim means doing from ANY non-terminal
+    # column (an auto-retried card re-claimed out of review used to
+    # stay in review while it ran — undercounted doing)
+    if card.get("column") not in ("doing", "done"):
         card["column"] = "doing"
     card.pop("awaiting_action", None)
     comms_add(card, host, "claimed")
@@ -1213,7 +1241,9 @@ def do_claim(card: dict, body: dict) -> str:
 
 def do_finish(card: dict, body: dict) -> str:
     """Remote runner reports its claimed task finished — status->done and
-    column->review on success, status->failed (card stays put) on failure.
+    column->review on success; on failure the claim is dead, so the card
+    leaves doing: auto-retry queued in backlog under the attempts cap,
+    else parked there as failed (a manual retry re-arms it).
     Only the claiming host may finish a card."""
     a = _ensure_act(card)
     host = (body.get("host") or "").strip()
@@ -1224,7 +1254,6 @@ def do_finish(card: dict, body: dict) -> str:
     if a.get("runner") and dr.canon_host(a["runner"]) != dr.canon_host(host):
         raise ValueError(f"claimed by {a['runner']}")
     ok = bool(body.get("ok", True))
-    a["status"] = "done" if ok else "failed"
     result = str(body.get("result") or "").strip()
     if result:
         a["result"] = result[:300]
@@ -1233,17 +1262,45 @@ def do_finish(card: dict, body: dict) -> str:
         # session branch landed in origin/<default>; False = checked and
         # NOT merged (conflicts / failed goals — stays for a human)
         a["verified"] = bool(body["verified"])
+    tail = f": {result[:120]}" if result else ""
     if ok:
+        a["status"] = "done"
         card["column"] = "review"
         # every review card needs a close-out contract or the ssot-optimize
         # gate fails commits repo-wide (recurring kanban-commit breakage —
         # verify = the human confirms the work, the safe default)
         card.setdefault("review_kind", "verify")
         _ensure_claim(card).pop("session", None)
+        comms_add(card, host, f"finished (ok){tail}")
+        return "finished -> review"
+    # Failure (stalled-claim lifecycle): no live runner owns this card
+    # anymore — parking it in doing overstates active work forever. Same
+    # requeue-or-park rule the merge/verified-gate failures use:
+    # attempts < max_attempts -> queued for another claim; at cap ->
+    # failed in backlog until a human retries. KANBAN_AUTORETRY=0 skips
+    # the requeue half.
+    a["last_failure"] = (result or "runner reported failure")[:280]
+    _ensure_claim(card).pop("session", None)
+    att = int(a.get("attempts") or 0)
+    max_att = int(a.get("max_attempts")
+                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    if os.environ.get("KANBAN_AUTORETRY", "1") != "0" and att < max_att:
+        a["status"] = "queued"
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        if card.get("column") != "done":
+            card["column"] = "backlog"
+        comms_add(card, host,
+                  f"finished (failed){tail} — auto-retry queued "
+                  f"(attempt {att + 1}/{max_att}) (column -> backlog)")
+        return "failed — auto-retry queued"
+    a["status"] = "failed"
+    if card.get("column") == "doing":
+        card["column"] = "backlog"
     comms_add(card, host,
-              f"finished ({'ok' if ok else 'failed'})"
-              + (f": {result[:120]}" if result else ""))
-    return "finished -> review" if ok else "marked failed"
+              f"finished (failed){tail} — attempt cap {max_att} reached; "
+              "moved doing -> backlog, a manual retry re-arms it")
+    return "marked failed"
 
 
 def _opt_label(o) -> str:
@@ -4237,7 +4294,7 @@ def queue_view() -> dict:
     claimed = []
     for c in cards:
         a = _act(c)
-        if a.get("status") not in ("claimed", "running"):
+        if a.get("status") not in ("claimed", "running", "starting"):
             continue
         cid = c.get("id") or ""
         rep = active_by_card.get(cid) or {}
