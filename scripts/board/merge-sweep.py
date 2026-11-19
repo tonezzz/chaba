@@ -1170,7 +1170,10 @@ def task_id_for(card: dict, runner: str) -> str:
     tid = str(_claim(card).get("session") or "").strip()
     if tid:
         return tid
-    for m in card.get("comms") or []:
+    # newest comms first — a retried card's earlier attempt ids are dead;
+    # the latest devin-task line is the live session (ADA-0242: the sweep
+    # kept probing attempt-1's dirty worktree after attempt-2 landed)
+    for m in reversed(card.get("comms") or []):
         hit = TASK_ID_RE.search(str(m.get("text") or ""))
         if hit:
             return hit.group(1)
@@ -1853,7 +1856,7 @@ def main(cards=None) -> int:
         tid = str(a.get("task_id") or _claim(c)
                   .get("session") or "")
         if not tid:
-            for m in c.get("comms") or []:
+            for m in reversed(c.get("comms") or []):
                 if not isinstance(m, dict):
                     continue
                 hit = TASK_ID_RE.search(str(m.get("text") or ""))

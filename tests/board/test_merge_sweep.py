@@ -832,6 +832,22 @@ class Case(unittest.TestCase):
         self.assertEqual(probed.get("tid"), TID)
         self.assertTrue(self.remote_has("master", "comms.py"))
 
+    def test_task_id_prefers_latest_comms(self):
+        # a retried card's comms carry every attempt's devin-task id —
+        # the sweep must track the newest session, not the dead first one
+        card = {"id": "retry-card", "column": "review",
+                "action": {"type": "dispatch", "status": "done",
+                           "runner": "nowhere"},
+                "comms": [
+                    {"at": "2026-01-01 00:00", "from": "nowhere",
+                     "text": "started devin-task-20990101-000000-old-attempt "
+                             "on nowhere"},
+                    {"at": "2026-01-02 00:00", "from": "nowhere",
+                     "text": "started devin-task-20990102-000000-new-attempt "
+                             "on nowhere"}]}
+        self.assertEqual(ms.task_id_for(card, "nowhere"),
+                         "20990102-000000-new-attempt")
+
     def test_zombie_flag_once(self):
         card = self.write_card(
             column="doing",
