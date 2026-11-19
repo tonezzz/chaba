@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: backlog
-updated: 2026-11-19 13:06
+updated: 2026-11-19 13:41
 priority: high
 tags:
 - mddb
@@ -37,3 +37,10 @@ comms:
 - at: 2026-11-19 13:06
   from: devin
   text: card captured via board-api
+- at: 2026-11-19 13:41
+  from: devin
+  text: 'Important correction to the migration caveat: MDDB VectorIndex.Search explicitly skips vectors whose length
+    differs from the query (`if len(vec) != len(query) { continue }`). Gemini vectors are 768-d, BGE-M3 vectors
+    1024-d, so during reindex this is NOT garbage scoring/mixed-coordinate ranking — it is partial recall: only
+    already-reindexed BGE docs are eligible; old Gemini vectors are invisible until reindexed. Current same-DB reindex
+    remains availability-safe but search coverage ramps gradually'
