@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
-column: doing
-updated: 2026-11-19 10:16
+column: backlog
+updated: 2026-11-19 10:47
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -60,9 +60,22 @@ comms:
   from: devin
   text: Picked up in dispatch worktree on tony-omen. Locating locked_edit fallback write path in scripts/board/
     and auditing all card-YAML mutators for non-atomic writes.
+- at: 2026-11-19 10:47
+  from: tony-omen
+  text: 'finished (failed): exit=1 20261119-101602-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
+    | devin-task-20261119-101 — auto-retry queued (attempt 1/2) (column -> backlog)'
+- at: 2026-11-19 10:47
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-101602-make-the-locked-edit-fallback- (rate limit)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: codemod
   lane_source: kw
-  runner: tony-omen
+  result: 'exit=1 20261119-101602-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''. | devin-task-20261119-101602-make-the-locked-edit-fallback-.service:
+    Consumed 27min 35.356s CPU time over 29min 45.798s wall clock time, 1G memory peak.'
+  last_failure: 'exit=1 20261119-101602-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
+    | devin-task-20261119-101602-make-the-locked-edit-fallback-.service: Consumed 27min 35.356s CPU time over 29min
+    45.798s wall clock time, 1G memory peak.'
+claim: {}
