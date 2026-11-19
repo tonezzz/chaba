@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-19 13:37
+updated: 2026-11-19 13:44
 priority: medium
 tags:
 - merge-sweep
@@ -136,6 +136,10 @@ comms:
     tries a locked bootstrap of the checkout .venv with REPO_TESTS[repo].bootstrap deps (KANBAN_GATE_BOOTSTRAP=0
     opts out). action.test_exempt is the docs-only allowlist. merge-sweep runs the same baseline-aware gate in merge_strict
     before push, stamps action.sweep.gate_blocked per head. k'
+- at: 2026-11-19 13:44
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-131744-observed-on-hands-off-waiting- no longer active on tony-omen but
+    card still says running — sweeping its branch'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -156,5 +160,7 @@ action:
   lane: codemod
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-19 13:44
 claim:
   since: 2026-11-19 13:16
