@@ -1,0 +1,77 @@
+id: ops-1025-remote-read-smoke-idc03
+title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
+column: backlog
+updated: 2026-11-19 20:36
+brief: One supervised, read-only S3 verification of the merged remote-read gates.
+priority: medium
+program: OPS-1025
+tags:
+- ops-1025
+- opencode
+- ops-remote-read
+- verification
+spec: 'Parent OPS-1025: perform one bounded read-only diagnosis of the declared remote subject host idc03 from runner
+  idc02. Use only the ops-remote-read profile''s read-only MCP tools; do not use shell SSH, write files, change
+  services, or inspect secrets. Use mcp_debug only for the recommended `systemctl --user list-units --state=failed
+  --no-legend` inventory and derive failed_units_on_target from its returned rows. Populate host from the target
+  identity in the tool response; if it does not establish the real hostname, stop and report a blocker instead of
+  guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus the exact
+  read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with read_only=true
+  and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/or-free-nemotron-nano
+  executor: opencode
+  agent_profile: ops-remote-read
+  target_host: idc02
+  artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
+  task_class: diagnosis
+  lane: free_lane
+  subject_host: idc03
+  llm_key_alias: chaba
+  lane_envelope:
+    id: ops-1025-remote-read-smoke-idc03
+    card: ops-1025-remote-read-smoke-idc03
+    task_class: diagnosis
+    stage: S3
+    target_host: idc02
+    subject_host: idc03
+    executor: opencode
+    profile: ops-remote-read
+    model: litellm/or-free-nemotron-nano
+    provider: litellm
+    unattended: true
+    mcp_allowlist:
+    - mcp_debug
+    allowed_paths:
+    - evals/opencode-lane/out/
+    artifact:
+      path: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
+      schema: 'evals/opencode-lane/profiles/ops-remote-read/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ops-remote-read/fixture/verify.py
+    escalation:
+      on_fail: manual
+      max_retries: 0
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 420
+    task: 'Parent OPS-1025: perform one bounded read-only diagnosis of the declared remote subject host idc03 from
+      runner idc02. Use only the ops-remote-read profile''s read-only MCP tools; do not use shell SSH, write files,
+      change services, or inspect secrets. Use mcp_debug only for the recommended `systemctl --user list-units --state=failed
+      --no-legend` inventory and derive failed_units_on_target from its returned rows. Populate host from the target
+      identity in the tool response; if it does not establish the real hostname, stop and report a blocker instead
+      of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
+      the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
+      read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
+  status: queued
+ref: OPS-0245
+comms:
+- at: 2026-11-19 20:36
+  from: tony
+  text: One attempt on the explicit free-only model route; parent OPS-1025 remains open until verifier pass.
