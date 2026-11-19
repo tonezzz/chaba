@@ -1,7 +1,7 @@
 id: mddb-main-bank-revision-churn-audit
 title: Audit main MDDB revision churn and retention policy
 column: doing
-updated: 2026-11-19 14:24
+updated: 2026-11-19 14:27
 brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
   retention.
 priority: medium
@@ -84,5 +84,12 @@ comms:
     Jules EOL 2026-11-12: Google panel shows read-only; [ada-voice-session-churn] Root-cause trace (audit window
     10-09→10-10): churn epi; [assessments-to-education-split-ssot-keep-113ca4] ALL DONE. (1) chaba-lessons co; [lesson-audit-scheduled]
     LIVE (2026-10-25): chaba-lessons-aud'
+- at: 2026-11-19 14:27
+  from: devin
+  text: '[audit in progress] Live stats: home 34d/21696r, general 365d/20978r, devin-tony 2877d/38790r, devin-handoff
+    7703d/21487r. maxRevisions live: ONLY devin-tony=20; home/general/handoff configured:false (10-26 policy said
+    all 6 main colls=20). Smoking gun in home: 5 note/flood-* docs hold ~18k revs (~3.6k each), revs are meta-only
+    identical writes (last_used/use_count bumps) bursting 300-500/day during Oct flood window. Running full per-doc
+    census now.'
 claim:
   since: 2026-11-19 14:22
