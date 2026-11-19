@@ -280,6 +280,9 @@ REPORT_SPAWN_TEMPLATE = (
 )
 PRIORITIES = {"high", "medium", "low"}
 ACTION_TYPES = {"dispatch", "manual"}
+# dict-option `action:` values answer-sweep.py will execute verbatim —
+# keep in sync with answer-sweep.ACTIONS (KNB-0180)
+OPTION_ACTIONS = {"queue", "retry", "close", "hold", "none"}
 LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 # action keys a caller may set — status/runner/task_id are board-owned and
 # silently dropped so a spawn can't fake a running card
@@ -1959,6 +1962,23 @@ def do_request(card: dict, body: dict) -> str:
         # the real choices should pass them explicitly.
         opts = ["proceed", "hold"]
     if opts:
+        # dict options may declare the answer's consequence
+        # ({id,label,action}) — answer-sweep executes it verbatim.
+        # Validate the contract at the door: a bad action would
+        # dead-letter the answer silently (KNB-0180).
+        for o in opts:
+            if isinstance(o, str):
+                continue
+            if not isinstance(o, dict) or not any(
+                    str(o.get(k) or "").strip()
+                    for k in ("id", "label", "v", "d")):
+                raise ValueError(
+                    "options dicts need id/label/v/d")
+            act = str(o.get("action") or "").strip().lower()
+            if act and act not in OPTION_ACTIONS:
+                raise ValueError(
+                    f"option action must be one of "
+                    f"{sorted(OPTION_ACTIONS)} (got {act!r})")
         req["options"] = opts
     sug = str(body.get("suggested") or "").strip()
     if sug:
@@ -5226,6 +5246,22 @@ def _selftest() -> None:
                                       "options": [{"id": "a", "label": "A"}],
                                       "suggested": "b"}),
             "suggested must match one of the options")
+    # dict-option action contract (KNB-0180): valid actions pass,
+    # unknown actions and label-less dicts are refused at the door
+    do_request(card, {"ask": "act?",
+                      "options": [{"id": "go", "label": "Go",
+                                   "action": "queue"},
+                                  {"id": "later", "label": "Later",
+                                   "action": "hold"}]})
+    assert card["requests"][-1]["options"][0]["action"] == "queue"
+    rejects(lambda: do_request(card, {"ask": "bad act",
+                                      "options": [{"id": "x",
+                                                   "label": "X",
+                                                   "action": "explode"}]}),
+            "option action must be one of")
+    rejects(lambda: do_request(card, {"ask": "bad opt",
+                                      "options": [{"action": "hold"}]}),
+            "options dicts need id/label/v/d")
     rejects(lambda: do_request(card, {"ask": "q", "to": "nobody"}),
             "to must be one of")
     do_request(card, {"ask": "auto id please"})

@@ -21,6 +21,10 @@ Catches the wound classes that keep recurring (see ssot.repeat-asks.yml):
       dispatch can never claim it, so the card starves silently
       (queue-type-starvation-guard; 2026-10-13 zombie-sweep found 6
       queued for days with zero claims). Flagged after QUEUED_STARVE_H.
+  R4  request option dict with an `action:` outside
+      queue|retry|close|hold|none, or missing id/label/v/d — the
+      answer would dead-letter (answer-sweep can't execute it).
+      YAML-bypass catch for the /request door validation (KNB-0180).
 
 Read-only by design: prints findings; --alert writes one focus-inbox
 file per violation class with findings (deduped by filename, so a
@@ -61,6 +65,8 @@ QUEUED_STARVE_H = 24
 VERIFY_GATE_AFTER = dt.datetime(2026, 10, 12)
 VERIFY_EVIDENCE_RE = re.compile(
     r"\[\s*(verify|exp|alpha|beta|smoke|rc|prod)\s*\]", re.I)
+# mirrors board-api.OPTION_ACTIONS / answer-sweep.ACTIONS (KNB-0180)
+OPTION_ACTIONS = {"queue", "retry", "close", "hold", "none"}
 
 
 def _ts(v):
@@ -96,7 +102,8 @@ def norm_ask(s):
 
 def check_cards():
     now = dt.datetime.now()
-    finds = {k: [] for k in ("R1", "R2", "R3", "V1", "S1", "S2", "Q1")}
+    finds = {k: [] for k in ("R1", "R2", "R3", "R4", "V1", "S1", "S2",
+                             "Q1")}
     for p in sorted(CARD_DIR.glob("*.yml")):
         try:
             c = yaml.safe_load(p.read_text()) or {}
@@ -119,6 +126,21 @@ def check_cards():
             if sug and str(sug) not in opts:
                 finds["R2"].append(
                     f"{cid}: suggested '{sug}' not in options of {r.get('id')}")
+            for o in r.get("options") or []:
+                if isinstance(o, str):
+                    continue
+                if not isinstance(o, dict) or not any(
+                        str(o.get(k) or "").strip()
+                        for k in ("id", "label", "v", "d")):
+                    finds["R4"].append(
+                        f"{cid}: request {r.get('id')} option dict lacks "
+                        "id/label/v/d")
+                    continue
+                act = str(o.get("action") or "").strip().lower()
+                if act and act not in OPTION_ACTIONS:
+                    finds["R4"].append(
+                        f"{cid}: request {r.get('id')} option action "
+                        f"{act!r} not in {sorted(OPTION_ACTIONS)}")
             asks.setdefault(norm_ask(r.get("ask")), []).append(r.get("id"))
         for k, ids in asks.items():
             if k and len(ids) > 1:
@@ -166,7 +188,8 @@ def write_alerts(finds):
     INBOX.mkdir(parents=True, exist_ok=True)
     names = {
         "R1": "buttonless-requests", "R2": "bad-suggested-option",
-        "R3": "dup-open-requests", "V1": "done-missing-verify-evidence",
+        "R3": "dup-open-requests", "R4": "bad-option-action",
+        "V1": "done-missing-verify-evidence",
         "S1": "stale-running-claims", "S2": "parked-doing-claims",
         "Q1": "starved-queued-cards",
     }

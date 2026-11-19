@@ -27,7 +27,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | `/comment` | `{id, from, text}` | card comms append |
 | **`/attach`** | `{id, filename, payload|b64|data, from?}` (alias `/upload`) | file/photo evidence → `docs/ssot/kanban/attachments/<id>/<file>` + comms link |
 | `/request` | `{id, ask, options?, suggested?, to?}` | card `requests[]` |
-| `/respond` | `{id, request_id?, answer|option}` | answer a request/ask |
+| `/respond` | `{id, request_id?, answer|option}` | answer a request/ask — idempotent: re-posting the same answer returns `already answered` (200), a different one needs `reopen:true` |
 | `/action` | `{id, do: queue|close|hold|retry|claim|move|finish}` | card state |
 | `/pipeline` | `{id, opt_in?|pipeline?|stage+status}` | CI status block |
 | `/patch-relay` | `{id, head, branch?, bundle}` | git bundle spool |
@@ -39,6 +39,18 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 
 ## Endpoint notes
 
+- **`/request` options** — `options[]` entries are strings or dicts
+  `{id, label, action?}`. A dict option lets the emitter declare the
+  answer's consequence at request time: when the answer picks that
+  option, `answer-sweep.py` executes `action` verbatim —
+  `queue|retry|close|hold|none` (same set as `OPTION_ACTIONS` in
+  board-api and `ACTIONS` in answer-sweep). The door rejects dict
+  options with no `id`/`label`/`v`/`d` and any `action` outside that
+  set — a bad action would dead-letter the answer silently (KNB-0180).
+  String options keep working unchanged: the answer's first word is
+  looked up in the sweep's VERBS table, and decision answers stay
+  flagged for human triage. `board-cli.py request` exposes this as
+  `--option 'id|label|action'` (repeatable; action optional).
 - **`/attach`** — card file/photo evidence
   (`board-attachments-photo-image-evidence`, 2026-11-17). `payload` is
   base64 (a `data:` URI prefix is stripped); `filename` is sanitized to
