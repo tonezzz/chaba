@@ -1,7 +1,7 @@
 id: answered-but-unexecuted-card-graveyard-3-3d4fe1
 title: Answered-but-unexecuted card graveyard — 39 backlog cards with dead answers; option picks carry no action
 column: backlog
-updated: 2026-11-19 17:05
+updated: 2026-11-19 17:18
 priority: high
 tags:
 - board
@@ -187,3 +187,10 @@ comms:
 - at: 2026-11-19 17:05
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-19 17:18
+  from: devin
+  text: 'Options 5+4+3 implemented per Tony pick, commit da9c6a79df0 on served master (push via kanban-commit):
+    (5) /respond idempotent-on-answered — same answer returns ok:already answered, different answer still 400s;
+    verified live on ada-expert-consult-tool (200 vs error). (4) VERBS += postpone->hold. (3) kanban-stats gains
+    dead_letters block: awaiting_action total + cards untouched >7d with unanswered counts, rendered in kanban.md
+    Needs attention. 698 board tests pass; board-api selftest additions co'
