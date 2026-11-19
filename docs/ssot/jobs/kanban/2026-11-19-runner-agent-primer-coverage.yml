@@ -1,0 +1,60 @@
+title: "runner-agent-primer-coverage: shared dispatch_task composition
+        brings the lesson primer to the devin lane (~96% of dispatches)"
+summary: >
+  The primer gap measured in the 2026-11-09 primer-efficacy report:
+  only kanban-dispatch.build_task injected KNOWN_PITFALLS while
+  runner-agent.start_task — the lane carrying ~96% of dispatches —
+  built plain spec + RAILS. Fix took option A: the full devin-lane
+  task composition (spec + TASK_RAILS + KNOWN_PITFALLS + KNOWN_GOOD +
+  RETRY_RAILS + REPORT_RAILS) moved to a shared module,
+  scripts/board/dispatch_task.py; both claimers now render the
+  identical prompt.
+card: runner-agent-primer-coverage
+ref: OPS-1280
+artifacts:
+  - scripts/board/dispatch_task.py        # new shared module
+  - scripts/board/kanban-dispatch.py      # build_task delegates; rails aliased
+  - scripts/board/runner-agent.py         # dt_module() + devin-path wiring
+  - tests/board/test_runner_agent_primer.py
+verify:
+  - "python3 -m unittest tests.board.test_runner_agent_primer — 9/9 ok"
+  - "python3 -m unittest discover -s tests/board — 643 tests, 1 pre-
+    existing env error (test_ada_job_envelope needs pytest, not
+    installed); all board tests green"
+  - "real smoke: dt.build_task_text on this card via runner-agent's
+    dt_module — 8 primer + 4 good lines, KNOWN_PITFALLS + 'This is
+    attempt 2' both render"
+method_notes: >
+  runner-agent deploys single-file to ~/.local/bin, so it can't import
+  the shared module at top level — dt_module() resolves dispatch_task
+  from DISPATCH_REPOS_DIR / __file__.parent /
+  ~/CascadeProjects/chaba/scripts/board, the exact candidate pattern
+  dr_module() uses for dispatch_repos; unresolvable -> spec + RAILS
+  fallback, warn-only. kanban-dispatch keeps TASK_RAILS/RETRY_RAILS/
+  REPORT_RAILS bound (test compat) and its lp import (tests patch
+  lp.build). Injected lines log to card comms ('primer injected N
+  lesson(s): ...') from claim_pass, same message shape as
+  kanban-dispatch start_pending. Deploy note: hosts need the new file
+  via their chaba checkout sync (chaba-repo-sync.timer), not the
+  runner-agent scp — the drift-guard 'installed runner-agent drifted'
+  comms flag the scp only.
+decisions:
+  - "Option A (shared module) over B — import boundary is clean:
+    dispatch_task sits beside lesson_primer in scripts/board, and
+    runner-agent already had the single-file->checkout resolution
+    pattern (dr_module) to copy."
+  - "Primer is devin-path only — opencode/kk_mac lanes keep their
+    bounded profile contracts (no extra prompt blocks). executor=claude
+    shares the devin task build, so it gains the primer too."
+  - "runner-agent's legacy RAILS stays as the no-checkout fallback;
+    when dispatch_task resolves, the devin lane gets TASK_RAILS
+    verbatim — gaining the CI-pipeline note, the kind:'comment'
+    answers note, and the lessons: tail that self-seeds the primer
+    corpus."
+gotchas:
+  - "runner-agent is deployed by scp of ONLY runner-agent.py — any new
+    module dep must resolve via the host's chaba checkout, or the
+    feature silently no-ops on stale checkouts (warn-only by design)."
+  - "lp.build does a repo walk + a 10s-timeout MDDB bank fetch on first
+    call — unit tests patch lesson_primer.build/build_good rather than
+    set KANBAN_PRIMER=0, matching the existing test convention."

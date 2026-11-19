@@ -1195,6 +1195,46 @@ def collect(unit: str) -> tuple[bool, str]:
 
 _DR = None
 _DR_TRIED = False
+_DT = None
+_DT_TRIED = False
+
+# Lesson/good lines the devin-path task build injected for the claim
+# currently launching — claim_pass logs them to card comms (the
+# 'primer injected N lesson(s)' note kanban-dispatch start_pending
+# posts) so the board shows exactly what the primer added.
+LAST_PRIMER_LINES: list = []
+LAST_GOOD_LINES: list = []
+
+
+def dt_module():
+    """Import dispatch_task — the shared devin-lane task composition
+    (spec + TASK_RAILS + lesson primer + RETRY/REPORT_RAILS). The
+    module lives in the chaba repo (scripts/board); runner-agent
+    deploys as a single file, so resolve it from a local checkout
+    (same candidate dirs as dr_module). None when the host has no
+    usable copy — the devin path then falls back to spec + RAILS
+    with no primer, warn-only."""
+    global _DT, _DT_TRIED
+    if _DT_TRIED:
+        return _DT
+    _DT_TRIED = True
+    cands = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        cands.append(Path(env))
+    cands += [Path(__file__).resolve().parent,
+              Path.home() / "CascadeProjects/chaba/scripts/board"]
+    for d in cands:
+        if not (d / "dispatch_task.py").exists():
+            continue
+        sys.path.insert(0, str(d))
+        try:
+            import dispatch_task as dt
+            _DT = dt
+            return _DT
+        except Exception:
+            continue
+    return None
 
 
 def dr_module():
@@ -3478,6 +3518,10 @@ def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
     a = _act(card)
+    # Drop any leftover primer lines from a previous claim — only lines
+    # the devin-path build below injects may ride this card's comms.
+    LAST_PRIMER_LINES.clear()
+    LAST_GOOD_LINES.clear()
     unit = re.sub(r"[^a-zA-Z0-9_-]", "-",
                   f"runner-{cid}-{int(time.time())}")[:60]
     if typ == "container":
@@ -3602,10 +3646,30 @@ def start_task(card: dict, typ: str) -> tuple:
                 (card_profile(card) or LANE_PROFILES.get(lane)):
             return start_opencode_lane(card, lane, unit)
         # no resolvable task profile -> generic build agent stays out
-        # of unattended routing; the card takes the devin path
-        spec = (card.get("spec") or "").strip() or \
-            f"{card.get('title', '')}\n\n{card.get('note', '')}"
-        task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
+        # of unattended routing; the card takes the devin path.
+        # Task text is shared with kanban-dispatch (dispatch_task.py —
+        # runner-agent-primer-coverage): spec + TASK_RAILS +
+        # KNOWN_PITFALLS/KNOWN_GOOD primer + RETRY_RAILS + REPORT_RAILS.
+        # The module ships with the repo, not this single-file agent —
+        # when no checkout resolves it the prompt falls back to plain
+        # spec + RAILS (primer is advisory, never a claim blocker).
+        # Deliberately devin-path only: opencode/kk_mac lanes keep
+        # their bounded profile contracts — no extra prompt blocks.
+        dt = dt_module()
+        if dt:
+            try:
+                task, primer, good = dt.build_task_text(card, HOST, API)
+                LAST_PRIMER_LINES.extend(primer)
+                LAST_GOOD_LINES.extend(good)
+            except Exception as e:
+                print(f"warn: dispatch_task build failed: {e}",
+                      file=sys.stderr)
+                dt = None
+        if not dt:
+            spec = (card.get("spec") or "").strip() or \
+                f"{card.get('title', '')}\n\n{card.get('note', '')}"
+            task = spec + "\n\n" + RAILS.format(id=cid, host=HOST,
+                                                api=API)
         if task_runtime() != "systemd":
             # claimable() already declines; double-guard so a forced
             # claim can never invoke the systemd-run-based launcher.
@@ -4309,6 +4373,19 @@ def claim_pass(st: dict) -> bool:
                 detail += f" model={a0['model']}"
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"started {unit} on {HOST} ({detail})"})
+        if LAST_PRIMER_LINES or LAST_GOOD_LINES:
+            # kanban-dispatch start_pending parity — the board shows
+            # exactly what the devin-path primer injected.
+            msg = f"primer injected {len(LAST_PRIMER_LINES)} lesson(s)"
+            if LAST_PRIMER_LINES:
+                msg += ": " + "; ".join(
+                    l[:80] for l in LAST_PRIMER_LINES)
+            if LAST_GOOD_LINES:
+                msg += (" | good: " + "; ".join(
+                    l[:80] for l in LAST_GOOD_LINES))
+            api("/comment", {"id": cid, "from": "chaba", "text": msg})
+            LAST_PRIMER_LINES.clear()
+            LAST_GOOD_LINES.clear()
         _notify(cid, "start", f"claimed {typ} — {unit}")
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
                    "at": int(time.time()),
