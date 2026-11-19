@@ -1,7 +1,7 @@
 id: ada-ocb-ssot-search-query
 title: 'Ada-OCB: expose read-only SSOT search/query'
 column: backlog
-updated: 2026-11-19 14:47
+updated: 2026-11-19 16:15
 brief: Add bounded exact SSOT search to OpenChamber and update the canonical tool registry; reuse existing SSOT
   sources instead of creating a duplicate.
 priority: medium
@@ -31,3 +31,10 @@ comms:
 - at: 2026-11-19 14:47
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-19 16:15
+  from: devin
+  text: 'Implemented directly (manual card, no dispatch). Design: ada_ssot_search(query, collection, limit) uses
+    MDDB /v1/fts lexical search on the allowlisted collections — no embedding/provider calls, $0. Returns docs/ssot
+    paths, excerpts, matched terms, provenance/freshness, cross-refs; mutations_performed=[]. Separation kept: context_pack=semantic,
+    ssot_get=hydrate, ssot_search=exact. PR tonezzz/ada-voice#19 opened; 7 new tests + live FTS smoke pass; CI pending.
+    Chaba registry updates (ssot.tools.yml'
