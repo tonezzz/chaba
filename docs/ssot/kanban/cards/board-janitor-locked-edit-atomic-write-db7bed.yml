@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
-column: doing
-updated: 2026-11-19 11:05
+column: backlog
+updated: 2026-11-19 11:06
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -100,17 +100,25 @@ comms:
     via POST /card on board-api — never edit card YAML directl; [board-api-exec-checkout-mismatch] FIXED 2026-11-06.
     Root cause was two stacked ; [board-api-compact-cards] Landed manually: merge-sweep test gate failed on unrel;
     [board-api-writes-eaten-by-autostash-pops-515009] Picked up. '
+- at: 2026-11-19 11:06
+  from: tony-dell
+  text: 'finished (failed): exit=1  devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Failed with
+    result ''exit-code''. | devin-task- — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 11:06
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-110544-make-the-locked-edit-fallback- (rate limit)
+    — tony-dell holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: codemod
   lane_source: kw
-  result: 'exit=1 20261119-101602-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''. | devin-task-20261119-101602-make-the-locked-edit-fallback-.service:
-    Consumed 27min 35.356s CPU time over 29min 45.798s wall clock time, 1G memory peak.'
-  last_failure: 'exit=1 20261119-101602-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
-    | devin-task-20261119-101602-make-the-locked-edit-fallback-.service: Consumed 27min 35.356s CPU time over 29min
-    45.798s wall clock time, 1G memory peak.'
-  runner: tony-dell
+  result: 'exit=1  devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
+    | devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Consumed 20.358s CPU time over 15.776s
+    wall clock time, 1G memory peak.'
+  last_failure: 'exit=1  devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
+    | devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Consumed 20.358s CPU time over 15.776s
+    wall clock time, 1G memory peak.'
   attempts: 1
 claim:
   since: 2026-11-19 11:05
