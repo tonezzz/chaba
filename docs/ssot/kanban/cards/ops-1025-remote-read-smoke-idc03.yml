@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: backlog
-updated: 2026-11-19 20:36
+column: doing
+updated: 2026-11-19 20:37
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,9 +69,16 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
   from: tony
   text: One attempt on the explicit free-only model route; parent OPS-1025 remains open until verifier pass.
+- at: 2026-11-19 20:37
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-19 20:37
