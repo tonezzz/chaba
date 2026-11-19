@@ -1,0 +1,34 @@
+id: ada-start-stagger
+host: idc03
+description: >-
+  Fleet-restart stagger for the idc03 ada-* user units. An ExecStartPre hook
+  (ada-start-stagger.sh) sleeps a per-unit offset ONLY while >1 ada-* start
+  job is pending (a fleet transaction, e.g. deploy-ada.sh's single
+  `systemctl --user restart`). Lone starts and crash-recovery skip the
+  sleep. Serializes the ~700MB pwa_server ramps so a mass restart can't
+  demand ~3.7GB in one second (2026-11-16 20:56:53 incident, load 11.8).
+verify: >-
+  systemctl --user show ada-dev.service -p ExecStartPre --value | grep -q
+  ada-start-stagger.sh && systemctl --user cat ada-dev.service | grep -q
+  stagger.conf
+files:
+  - "~/.local/bin/ada-start-stagger.sh — the ExecStartPre hook"
+  - "~/.config/systemd/user/<unit>.service.d/stagger.conf — per-unit offset + TimeoutStartSec=180"
+offsets:
+  ada-ha-tony: 0
+  ada-bankq-student: 10
+  ada-chaba: 20
+  ada-ai-kraut: 35
+  ada-kk: 65
+  ada-kk-dev: 80
+  ada-dev: 95
+  ada-ha-ada: 110
+notes: >-
+  TimeoutStartSec=180 is required — offsets up to 110s exceed the default
+  90s start timeout. ada-dev/ada-kk-dev keep their drop-ins even though the
+  units are disabled on idc03 (lab twins live on tony-omen per SYS-0151) —
+  if they are ever started again they still serialize. install.sh is the
+  canonical writer; do not hand-edit live drop-ins.
+related_cards: [idc03-stagger-ada-fleet-restarts-mass-re-ae9de7, deploy-ada-stagger-verify]
+status: deployed
+deployed: 2026-11-17

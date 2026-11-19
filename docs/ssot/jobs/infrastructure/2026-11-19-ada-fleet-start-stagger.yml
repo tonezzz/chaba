@@ -1,0 +1,87 @@
+title: idc03 ada fleet-start stagger — RCA of the 2026-11-16 mass restart + declared ExecStartPre serialization
+id: 2026-11-19-ada-fleet-start-stagger
+kind: infra-change
+card: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
+ref: ADA-0149
+hosts: [idc03]
+rca:
+  issuer: >-
+    ada-voice repo's scripts/deploy-ada.sh (canonical copy on the ada-voice
+    checkout), invoked over SSH from tony-omen (tailscale 100.75.102.88).
+    Evidence: idc03 sshd session-662158 opened 2026-11-16 20:53:56 and the
+    ada-voice reflog records `merge origin/main: Fast-forward` (6932d60 ->
+    7b4e2be) at 20:53:57 — same second. The session ran the pre-flight
+    gates + 45s ws-drain, then at 20:56:53 issued ONE
+    `systemctl --user restart` for all 10 units in SERVICES (which then
+    still included ada-pi-pwa — removed 2026-11-17 in ada-voice eaf4eba).
+    Session closed 20:56:56 after 1m29s CPU. Exact caller on tony-omen is
+    unrecoverable (journal only reaches 2026-11-18); manual or agent run.
+  impact: >-
+    systemd stops+starts the whole list in parallel: 6 fresh pwa_server
+    uvicorns (~615MB each) ramped in the same second -> ~3.7GB instant
+    demand on a 15GB/4-core box then running no swap. sar: kbavail
+    3.77GB@20:30 -> 2.67GB@20:50 bucket, 5m load 7.96@21:10 (card-observed
+    peak 11.8); dispatch load-gate starved ~30min.
+  eliminated_candidates: >-
+    chaba-repo-sync.service finished 20:51:47 (5min prior, ExecStartPost
+    does not touch ada units); chaba deploy-ada.sh restarts serially with
+    sleep 1 and its idc03 list covers only 8 of the 10 restarted units;
+    deploy-preflight.service started 20:57:00 (after the restart).
+mechanism:
+  - >-
+    ~/.local/bin/ada-start-stagger.sh OFFSET — ExecStartPre hook that sleeps
+    OFFSET only while `systemctl --user list-jobs` shows >1 pending ada-*
+    start job (a fleet transaction). Single-unit restarts and crash
+    recovery see <=1 pending job and skip the sleep entirely.
+  - >-
+    Per-unit drop-in ~/.config/systemd/user/<unit>.service.d/stagger.conf
+    sets ExecStartPre=<script> <offset> AND TimeoutStartSec=180 (offsets up
+    to 110s exceed the 90s default — without it the last units die in
+    start-pre).
+  - >-
+    Offsets follow deploy-ada.sh's canary ladder: ada-ha-tony=0,
+    ada-bankq-student=10, ada-chaba=20, ada-ai-kraut=35, ada-kk=65,
+    ada-kk-dev=80, ada-dev=95, ada-ha-ada=110. Relays (~25MB) need none.
+  - >-
+    Installed live on idc03 2026-11-17 09:35 by the first (failed) dispatch
+    of this card; this commit declares it — canonical copies now live in
+    stacks/idc03/ada-start-stagger/ (script, install.sh, stack.yml).
+verification:
+  journal_serialized: >-
+    2026-11-18 21:45:50 deploy (a2a2026): stops all at :50-51, then starts
+    land serialized — ada-ha-tony :45:51, relays :45:51/:46:46/:46:56,
+    ada-ai-kraut :46:46, ada-kk :46:56, ada-kk-dev :47:10, ada-dev :47:25 —
+    ~95s spread, one heavy ramp at a time.
+  memory_delta: >-
+    sar sa18: kbavail 8.16GB@21:40 -> 7.62GB@21:50 across the whole
+    serialized restart bucket (~540MB 10-min-avg delta) vs the 2026-11-16
+    event's >1GB instantaneous drop — under the card's <1GB peak delta bar.
+residuals:
+  - >-
+    dev twins still running on idc03: SYS-0151 moved ada-dev/ada-kk-dev to
+    tony-omen (enabled+healthy, :8005/:8009 = 200) and disabled them on
+    idc03, but ada-voice deploy-ada.sh still lists them in SERVICES so every
+    deploy `systemctl --user restart`s them — disabled-but-active, ~750MB
+    still resident on idc03. Full reclaim needs (a) ada-scenario units'
+    ADA_LIVE_URL repointed from ws://127.0.0.1:8005/:8009 to
+    ws://100.75.102.88:8005/:8009 (hourly smoke + nightly suites currently
+    depend on the LOCAL twins — stopping them cold would break the FREE-key
+    bench lanes), (b) SERVICES updated in the ada-voice repo, then (c)
+    systemctl --user stop on idc03. Decision recorded on the capacity card —
+    tradeoff is idc03-local benches vs omen uptime dependency.
+  - >-
+    ada-voice deploy-ada.sh's post-restart verify treats 'activating
+    (start-pre)' as failure -> exit 7 false-fail during the ~95s stagger
+    window. Tracked by card deploy-ada-stagger-verify; fix lives in the
+    ada-voice repo (out of this worktree's scope).
+  - >-
+    ada-pi-pwa.service is retired on idc03 (unit removed 2026-11-17); the
+    second pi lane lives on idc02 — if a pwa_server fleet ever coexists
+    there again, install.sh should run on that host too.
+verify_commands: |
+  ssh idc03 'systemctl --user show ada-dev.service -p ExecStartPre --value'
+  ssh idc03 'journalctl --since "<deploy ts>" | grep -E "Started ada-"'
+  sha256sum stacks/idc03/ada-start-stagger/ada-start-stagger.sh   # 4240130185… == live
+rollback: >-
+  Remove each <unit>.service.d/stagger.conf and daemon-reload; units revert
+  to parallel fleet starts (the pre-2026-11-17 behavior).
