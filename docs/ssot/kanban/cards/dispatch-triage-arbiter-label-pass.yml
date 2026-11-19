@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
 column: backlog
-updated: 2026-11-18 22:09
+updated: 2026-11-19 08:45
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -199,19 +199,18 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:45
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
     stale_running: 2026-11-17 09:39
     dirty: 1
-  last_failure: 'exit=1  devin-task-20261109-182323-approved-strategy-b-per-the-bo.service: Failed with result ''exit-code''.
-    | devin-task-20261109-182323-approved-strategy-b-per-the-bo.service: Consumed 2min 3.757s CPU time, 172.4M memory
-    peak, 0B memory swap peak.'
-  attempts: 1
-  runner: idc02
-  result: 'exit=1  exited, code=exited, status=1/FAILURE | devin-task-20261117-092646-approved-strategy-b-per-the-bo.service:
+  last_failure: 'exit=1  exited, code=exited, status=1/FAILURE | devin-task-20261117-092646-approved-strategy-b-per-the-bo.service:
     Failed with result ''exit-code''. | devin-task-20261117-092646-approved-strategy-b-per-the-bo.service: Consumed
     2min 57.306s CPU time.'
+  attempts: 2
