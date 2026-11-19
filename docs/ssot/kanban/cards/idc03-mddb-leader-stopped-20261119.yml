@@ -1,0 +1,23 @@
+id: idc03-mddb-leader-stopped-20261119
+title: idc03 mddb leader :11023 stopped at 13:36 ICT — restore service and determine operator
+column: backlog
+updated: 2026-11-19 13:44
+priority: high
+tags:
+- mddb
+- idc03
+- outage
+- ada-memory
+- replication
+spec: 'Read-only status check 2026-11-19 ~13:43 ICT found systemd --user mddb.service inactive/dead since 13:36:34
+  +07 on idc03. It received SIGTERM and shut down cleanly (exit status 0), not a crash. Tailnet GET :11023/v1/stats
+  is connection-refused. Last stats before stop showed 63 collections / 27,688 docs. idc02 read-only follower and
+  con01 replication may be impacted; Ada memory/search consumers may be down or using other paths. Determine who/what
+  requested stop from systemd journal/audit, verify consumer impact and follower state, restart only after confirming
+  no planned maintenance/active migration; then verify /health, /v1/stats and replication convergence. Do not assume
+  this was caused by the BGE evaluation or change: MEM-0235 leader embedding migration was not run.'
+ref: MEM-0238
+comms:
+- at: 2026-11-19 13:44
+  from: devin
+  text: card captured via board-api
