@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-19 13:17
+updated: 2026-11-19 13:22
 priority: medium
 tags:
 - merge-sweep
@@ -116,6 +116,13 @@ comms:
     Landed manually: merge-sweep test gate failed on unrel; [board-attachments-photo-image-evidence-o-6fc9c2] merge-sweep:
     devin-task-202611; [dispatch-failed-cards-park-in-doing] merge-sweep: devin-task-20261117-184815-de; [dispatch-failed-cards-park-in-doing]
     tony-omen: re-landed th'
+- at: 2026-11-19 13:22
+  from: devin
+  text: 'working — decision: fail-closed (option 1) per the approved direction. Design: (1) run_test_gate returns
+    unrunnable→merge held when a pytest gate is configured but no interpreter can import pytest; (2) repo-scoped
+    bootstrap provisions <canonical checkout>/.venv with pytest (+repo deps) before holding — the approved repo-scoped
+    fix, never a global install; (3) action.test_exempt is the allowlist for docs-only cards; (4) runners auto-advertise
+    a pytest label and unrunnable requeues gain labels:[py'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
