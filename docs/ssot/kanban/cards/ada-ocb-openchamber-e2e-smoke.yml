@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-19 15:08
+updated: 2026-11-19 15:51
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -89,3 +89,10 @@ comms:
     The 15:00 ada-ocb-smoke run passed (exit 0), but it tests the local Ada MCP bridge, not the pane. Still no verified
     zero-cost model route for a fresh session; no session or model call made. Next: Tony chooses local/free route
     verification or explicitly authorizes one small Gemini '
+- at: 2026-11-19 15:51
+  from: devin
+  text: Fresh-session OpenChamber smoke PASSED on idc02 (2026-11-19 ~15:49 +07). Session ses_e0d00c5a6ffepfalu2GSgsCeom
+    titled "ADA-0186 OC smoke free iceman mcp-fixed", agent=ada, model=opencode/iceman-free (free lane, no paid
+    call). Prompt /ada status ADA-0167 -> model called ada-control_ada_status and returned authoritative board status
+    for ADA-0167 (done/high, updated 2026-11-18 22:15, open requests none). opencode.log confirms mcp connected
+    tools=26 for /home/tony/.local/share/ada-code/workspace; n
