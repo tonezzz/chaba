@@ -1,0 +1,39 @@
+title: CMS → Wiki residual storage assessment — measured verdict
+subtitle: migration reclaims ~0; real problem is bbolt churn + 67G stale rollback files
+icon: database
+job: cms-to-wiki-storage-assessment
+card: cms-to-wiki-storage-assessment (KNB-0232)
+date: 2026-11-19
+host: idc02 (dispatch) — measured live on idc03 + WP/Wiki REST
+type: read-only assessment
+result: complete — recommend Scenario A (retention+compaction), NOT migration
+artifact: docs/reports/2026-11-19-cms-to-wiki-storage-assessment.md
+
+measured:
+  idc03_disk: "290G total, 268G used, 23G free (93%)"
+  mddb_cms_db: "22G live (2.4G post-compact 2026-11-13, regrew ~3.3G/day) + 24G stale mddb.db.pre-compact"
+  mddb_cms_content: "~41MB exported across 19 collections / 10,002 docs / 137,272 revisions / 114,846 meta-idx; no maxRevisions"
+  mddb_ops_db: "29G live + 31G stale .precompact-20261111; host-logs 423,634 docs; daily prune times out (list failed) — retention broken"
+  mddb_leader: "5.3G live + 12G stale .pre-compact-20261113"
+  mddb_embed: "2.8G"
+  stale_rollback_files_total: "67G across the three banks"
+  backups: "~/mddb-backups 19G, ~2 sets retained; mddb-cms backup FAILED ENOSPC 2026-11-19 03:37 — last good gz 2026-11-18"
+  wp_boards: "~4,341 posts total; news 3,962/~13MB (feed), lesson 137/~7.6MB (frozen, already in wiki), media 167/~12MB; movable ≈ ~10MB"
+  wiki: "253 pages / 330 edits; Education 177, Reports 17, PrivateNews 1 (MediaWiki 1.46.2 on Plesk)"
+  devnest_cache: "~/var/cache/devnest 33G — adjacent finding, not CMS"
+
+scenario_verdict:
+  A_retention_compaction: "RECOMMENDED — reclaims ~90-110G: rm 3 stale rollback files (+67G), maxRevisions+truncate cms+ops, repair host-logs retention, recurring compaction cadence"
+  B_selected_docs_to_wiki: "optional housekeeping only — movable authored set ~10MB; mddb file doesn't shrink on delete; consumers (cms-render, /report door, Ada search) would need retarget; storage delta ≈ 0"
+  C_broader_migration: "rejected — moves ~50MB total, breaks living-doc writers (cam-wall/digests would spam wiki revisions), loses MDDB meta-taxonomy, news feed can't move"
+
+pending_tony_approval:
+  - "Phase 0 file deletes: mddb.db.pre-compact (cms,24G), mddb.db.precompact-20261111 (ops,31G), mddb.db.pre-compact-20261113 (leader,12G) + 0-byte .UNVERIFIED filecopy"
+  - "Phase 1: maxRevisions (~10) + /v1/truncate on ada-cms-pages, ada-cms-pages-kk, ada-cms-automation, infrastructure-ssot; ops collections too"
+  - "Phase 2: host-logs :11026 retention repair (backup->scratch->delete-batch or truncate; target <~114k docs under 3d policy)"
+  - "Phase 3: size-triggered/scheduled export-import compaction cadence"
+  - "Optional Phase 4: ~10 authored ada-cms-pages reports -> Wiki Reports: pilot (consolidation value, not storage)"
+
+watch_items:
+  - "WIKI_HOST=.../v0 in wiki-h3-gizmo.env is stale vs canonical https://wiki.h3.gizmo-thailand.com/api.php (ssot.mediawiki-news.yml) — verify board-api resolves WIKI_API_URL correctly"
+  - "backup retention ~2 sets is thin; raise once headroom returns"
