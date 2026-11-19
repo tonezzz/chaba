@@ -884,8 +884,14 @@ def write_inbox_entry(sig_row: dict, day: str) -> str:
         card_io.atomic_write_text(INBOX_DIR / fname, yaml.safe_dump(
             item, sort_keys=False, allow_unicode=True, width=120))
     else:
-        (INBOX_DIR / fname).write_text(yaml.safe_dump(
+        # card_io unavailable — still never write the inbox entry in
+        # place; tmp+replace keeps a mid-write fault from leaving a
+        # torn YAML the inbox consumer can't parse (2026-11-19).
+        p = INBOX_DIR / fname
+        tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+        tmp.write_text(yaml.safe_dump(
             item, sort_keys=False, allow_unicode=True, width=120))
+        tmp.replace(p)
     return f"filed {fname}"
 
 

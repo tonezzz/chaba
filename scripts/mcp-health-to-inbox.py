@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent  # whichever checkout runs the job — drafts land next to the other inbox items it produces
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402 — atomic inbox writes (ENOSPC tear fix)
 CLIENT = REPO / "scripts" / "mcp-health-client.py"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 HEALTH_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.health.yml"
@@ -134,7 +136,8 @@ def main():
         if args.dry_run:
             print(f"would create {path} for {name} ({status}, {crit}, {priority})")
         else:
-            path.write_text(
+            card_io.atomic_write_text(
+                path,
                 yaml.safe_dump(
                     item,
                     sort_keys=False,

@@ -461,7 +461,7 @@ def alloc_ref(cat: str) -> str:
     else:
         n = _ref_seed()
     n += 1
-    seq.write_text(f"{n}\n")
+    card_io.atomic_write_text(seq, f"{n}\n")
     return f"{cat}-{n:04d}"
 
 

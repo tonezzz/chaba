@@ -4,6 +4,7 @@ Only appends to whitelisted top-level list sections. No deletes, no moves, no
 in-place edits. This keeps the tool narrow and auditable.
 """
 import logging
+import os
 from pathlib import Path
 
 import yaml
@@ -12,6 +13,13 @@ logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 SSOT_ROOT = REPO_ROOT / "docs" / "ssot"
+
+import sys as _sys
+_sys.path.insert(0, str(REPO_ROOT / "scripts" / "board"))
+try:
+    import card_io as _card_io
+except ImportError:  # checkout predates card_io
+    _card_io = None
 
 # Top-level list sections this tool is allowed to append to.
 ALLOWED_SECTIONS = {
@@ -48,8 +56,15 @@ def _load_yaml(path):
 
 
 def _save_yaml(path, data):
-    with open(path, "w") as f:
-        yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    text = yaml.safe_dump(data, sort_keys=False, allow_unicode=True,
+                          width=120, default_flow_style=False)
+    if _card_io is not None:
+        # atomic — never leave a torn SSOT file (2026-11-19 ENOSPC)
+        _card_io.atomic_write_text(path, text)
+        return
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text)
+    tmp.replace(path)
 
 
 def mcp_ssot_append(path, section, item):

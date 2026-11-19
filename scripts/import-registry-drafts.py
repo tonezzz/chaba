@@ -6,6 +6,9 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
+import sys
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402 — atomic SSOT writes (ENOSPC tear fix)
 REGISTRY_DIR = REPO / "docs" / "ssot"
 DRAFT = REPO / "reports" / "REGISTRY_DRAFTS.md"
 
@@ -84,7 +87,8 @@ def main():
         assets.extend(entries)
         assets.sort(key=lambda a: (a.get("type", ""), a.get("path", "")))
         doc["assets"] = assets
-        f.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
+        card_io.atomic_write_text(
+            f, yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
         print(f"Imported {len(entries)} new asset(s) into {f}")
 
     print(f"Total imported: {added}")

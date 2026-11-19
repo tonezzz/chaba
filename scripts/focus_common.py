@@ -3,16 +3,60 @@
 Used by both mcp_debug/focus.py (mcp_focus) and focus_dispatcher/triage.py.
 """
 
+import os
+import sys
 from pathlib import Path
 
 import yaml
 
 
 REPO = Path(__file__).resolve().parent.parent
+
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+try:
+    import card_io as _card_io
+except ImportError:  # running outside a full chaba checkout
+    _card_io = None
+
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
 BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
+
+
+def atomic_write_text(p, text):
+    """Replace `p` with `text` atomically (tmp + fsync + os.replace).
+
+    Delegates to scripts/board/card_io when importable; otherwise the
+    same tmp+fsync+replace algorithm inline. Never an in-place write —
+    a mid-write fault/ENOSPC must leave old-or-new, never torn YAML
+    (2026-11-19 idc03 disk-full incident)."""
+    if _card_io is not None:
+        _card_io.atomic_write_text(Path(p), text)
+        return
+    p = Path(p)
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(p)
+    except BaseException:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        raise
+
+
+def atomic_write_yaml(path, doc, **dump_kw):
+    """safe_dump `doc` to `path` atomically."""
+    dump_kw.setdefault("sort_keys", False)
+    dump_kw.setdefault("allow_unicode", True)
+    dump_kw.setdefault("width", 120)
+    dump_kw.setdefault("default_flow_style", False)
+    atomic_write_text(path, yaml.safe_dump(doc, **dump_kw))
 
 
 def load_active():
@@ -20,8 +64,7 @@ def load_active():
 
 
 def save_active(doc):
-    with open(ACTIVE, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(ACTIVE, doc)
 
 
 def load_backlog():
@@ -29,8 +72,7 @@ def load_backlog():
 
 
 def save_backlog(doc):
-    with open(BACKLOG, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(BACKLOG, doc)
 
 
 PRIORITY = {"high": 3, "medium": 2, "low": 1}

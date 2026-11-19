@@ -16,6 +16,8 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402 — atomic SSOT writes (ENOSPC tear fix)
 IMPROVEMENTS = REPO / "docs" / "ssot" / "ssot.improvements.yml"
 DATE_SUFFIX_RE = re.compile(r"\s*\(\d{4}-\d{2}-\d{2}\)\s*$")
 ARCHIVE_AFTER_DAYS = 14
@@ -208,30 +210,30 @@ def triage():
             archive_doc.setdefault("items", []).extend(items)
             archive_doc["archived_at"] = datetime.now().date().isoformat()
             ap.parent.mkdir(parents=True, exist_ok=True)
-            with open(ap, "w") as f:
+            card_io.atomic_write_text(
+                ap,
                 yaml.safe_dump(
                     archive_doc,
-                    f,
                     sort_keys=False,
                     allow_unicode=True,
                     width=120,
                     default_flow_style=False,
-                )
+                ))
             changes.append(f"wrote {len(items)} items to {ap.name}")
 
     if not changes:
         print("[improvements-triage] no changes")
         return 0
 
-    with open(IMPROVEMENTS, "w") as f:
+    card_io.atomic_write_text(
+        IMPROVEMENTS,
         yaml.safe_dump(
             doc,
-            f,
             sort_keys=False,
             allow_unicode=True,
             width=120,
             default_flow_style=False,
-        )
+        ))
 
     print(f"[improvements-triage] changes: {len(changes)}")
     for c in changes:

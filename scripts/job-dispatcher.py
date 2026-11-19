@@ -43,6 +43,8 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402 — atomic board-facing YAML writes
 MANIFEST = REPO / "docs/ssot/infrastructure/ssot.jobs.yml"
 INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 BOARD_API = "https://idc03.taila0626a.ts.net:10000"
@@ -163,7 +165,8 @@ def default_alert(j: dict, host: str, rec: dict, st: dict, inbox_dir: Path,
     }
     try:
         inbox_dir.mkdir(parents=True, exist_ok=True)
-        _alert_path(inbox_dir, host, jid).write_text(
+        card_io.atomic_write_text(
+            _alert_path(inbox_dir, host, jid),
             yaml.safe_dump(doc, sort_keys=False, width=120))
         return True
     except Exception:

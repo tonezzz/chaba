@@ -2,6 +2,7 @@
 import yaml
 
 from . import REPO
+from focus_common import atomic_write_yaml
 
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
 ACTIVE = CURRENT
@@ -61,13 +62,11 @@ def load_meta():
 
 
 def save_active(doc):
-    with open(ACTIVE, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(ACTIVE, doc)
 
 
 def save_backlog(doc):
-    with open(BACKLOG, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(BACKLOG, doc)
 
 
 def save_current(doc):
@@ -76,8 +75,7 @@ def save_current(doc):
 
 
 def save_focus(doc):
-    with open(FOCUS, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(FOCUS, doc)
 
 
 def find_section(sections, title):

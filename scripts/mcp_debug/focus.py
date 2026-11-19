@@ -13,8 +13,9 @@ sys.path.insert(0, str(REPO_DIR / "scripts"))
 from prompt_preprocessor import preprocess as _preprocess_request
 from focus_common import (
     PRIORITY, QUICK_WIN_CUES, BACKLOG_CUES, priority_value, triage_score, is_active,
-    active_branch_set, active_items, backlog_items, find_section, incomplete_subtasks,
-    inbox_items, load_yaml, ready_safe_items, safe_to_parallel_reason, sweep_candidates,
+    active_branch_set, active_items, atomic_write_yaml, backlog_items, find_section,
+    incomplete_subtasks, inbox_items, load_yaml, ready_safe_items,
+    safe_to_parallel_reason, sweep_candidates,
 )
 
 
@@ -59,8 +60,7 @@ def _load_current(force=False):
 
 
 def _save_current(doc):
-    with open(CURRENT, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(CURRENT, doc)
     _FILE_CACHE.pop(str(CURRENT), None)
 
 
@@ -69,8 +69,7 @@ def _load_active(force=False):
 
 
 def _save_active(doc):
-    with open(ACTIVE, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(ACTIVE, doc)
     _FILE_CACHE.pop(str(ACTIVE), None)
 
 
@@ -79,14 +78,12 @@ def _load_backlog(force=False):
 
 
 def _save_backlog(doc):
-    with open(BACKLOG, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(BACKLOG, doc)
     _FILE_CACHE.pop(str(BACKLOG), None)
 
 
 def _save_focus(doc):
-    with open(FOCUS, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(FOCUS, doc)
     _FILE_CACHE.pop(str(FOCUS), None)
 
 
@@ -384,8 +381,7 @@ def _activate_candidate(candidate):
                 doc["focus"] = focus
             else:
                 doc = focus
-            with open(new_path, "w") as f:
-                yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+            atomic_write_yaml(new_path, doc)
             # Add to current active branch
             branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
             if branch_sec:
@@ -428,8 +424,7 @@ def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
                     doc["focus"] = focus
                 else:
                     doc = focus
-                with open(p, "w") as f:
-                    yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+                atomic_write_yaml(p, doc)
                 changed.append({"label": c["label"], "to": "deferred", "session": session, "file": str(p)})
             continue
 
@@ -706,8 +701,7 @@ def log_decision(request, action, target, reason, confidence, source, matched_to
         "source": source,
         "matched_to": matched_to,
     })
-    with open(path, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
+    atomic_write_yaml(path, doc)
 
 
 def log_technical_decision(decision, dry_run=False):
@@ -723,8 +717,7 @@ def log_technical_decision(decision, dry_run=False):
     decisions = doc.setdefault("decisions", [])
     decision.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
     decisions.append(decision)
-    with open(TECHNICAL, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(TECHNICAL, doc)
 
 
 def log_session_summary(summary, dry_run=False):
@@ -740,8 +733,7 @@ def log_session_summary(summary, dry_run=False):
     sessions = doc.setdefault("sessions", [])
     summary.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
     sessions.append(summary)
-    with open(SESSIONS, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    atomic_write_yaml(SESSIONS, doc)
 
 
 def _historical_items():
