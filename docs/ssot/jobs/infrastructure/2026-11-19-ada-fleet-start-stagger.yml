@@ -56,6 +56,19 @@ verification:
     sar sa18: kbavail 8.16GB@21:40 -> 7.62GB@21:50 across the whole
     serialized restart bucket (~540MB 10-min-avg delta) vs the 2026-11-16
     event's >1GB instantaneous drop — under the card's <1GB peak delta bar.
+reverified: >-
+  2026-11-19 dispatch re-run: live script byte-identical to
+  stacks/idc03/ada-start-stagger/ada-start-stagger.sh (sha256
+  4240130185…), all 8 heavy units carry stagger.conf with the declared
+  offsets + TimeoutStartSec=180, relays deliberately uncovered. Journal
+  shows a second serialized fleet event (2026-11-18 15:42:41->15:44:16,
+  ~95s spread) in addition to the 21:45 deploy. sar sa18 re-checked:
+  kbavail 8,160,100@21:40 -> 7,620,692@21:50 (~540MB). New data point on
+  the twin residual: tony-omen :8005/:8009 were unreachable (connect fail)
+  at check time — the omen-uptime dependency is not hypothetical; the
+  idc03 twins are currently load-bearing for the hourly scenario-smoke
+  lane (ADA_LIVE_URL=ws://127.0.0.1:8005/ws). ada-dev RSS ~427MB,
+  ada-kk-dev ~200MB at check time.
 residuals:
   - >-
     dev twins still running on idc03: SYS-0151 moved ada-dev/ada-kk-dev to
