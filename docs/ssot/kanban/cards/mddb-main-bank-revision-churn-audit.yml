@@ -1,0 +1,32 @@
+id: mddb-main-bank-revision-churn-audit
+title: Audit main MDDB revision churn and retention policy
+column: backlog
+updated: 2026-11-19 14:00
+brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
+  retention.
+priority: medium
+program: docs-infrastructure
+tags:
+- mddb
+- storage
+- retention
+- audit
+spec: 'Read-only audit of the main MDDB collections flagged after the 2026-11-19 compaction: ada-ha-bank-home, ada-ha-bank-general,
+  ada-ha-bank-devin-tony, and ada-ha-bank-devin-handoff. For each, record live document/revision counts, maxRevisions
+  config, identify the most revision-heavy document keys and write cadence, and trace the producer(s) (service/timer/script
+  or API caller) responsible. Distinguish expected update history from duplicate/heartbeat writes. Deliver an evidence-backed
+  report at docs/reports/mddb-main-bank-revision-churn-audit-2026-11-19.md with root cause, recommended maxRevisions/keepRevs,
+  and any writer fix needed. READ-ONLY: do not truncate revisions, change collection configs, modify writers, restart/stop
+  services, or delete data. Do not run billable embedding/model probes. Reference prior completed card mddb-storage-reduction-retention-relocation;
+  this is a follow-up for the remaining main-bank churn only.'
+action:
+  type: dispatch
+  repo: chaba
+  lane: free_lane
+  subject_host: idc03
+  status: queued
+ref: MEM-0239
+comms:
+- at: 2026-11-19 14:00
+  from: tony
+  text: card captured via board-api
