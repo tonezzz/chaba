@@ -1,0 +1,53 @@
+title: "Devin workflow & error-handling standard — audit + codification (DEV-0253)"
+date: 2026-11-19
+card: standardize-devin-workflows-error-handli-e19df2
+session: "dispatch-wt-20261119-081342-standardize-devin-workflows-er (idc02)"
+status: "docs-only codification — no code changes; standard distilled from already-running lane machinery"
+
+scope_answer: >-
+  Tony (2026-10-26, request standardize-devin-error-handling-scope-n-492d72):
+  "chaba — audit current error-handling patterns across lanes, write
+  ssot.procedures entries + AGENTS.md rule". The first scope request
+  (2026-10-25) was a meta-option; the second got the real answer.
+
+deliverables:
+  audit_and_standard: docs/kb/devin-error-handling-standard.md
+  procedures_entries:
+    - "ssot.procedures.yml#devin-error-standard — the 10-rule lane contract"
+    - "ssot.procedures.yml#session-blocked-protocol — needs-input/request/exit-42"
+  agents_rule: "AGENTS.md 'Devin workflow & error-handling standard' (after procedure-lookup duty)"
+
+lanes_audited:
+  - scripts/board/kanban-dispatch.py      # served claim loop: gates, auto-retry, park, ops_event
+  - scripts/board/runner-agent.py         # satellite loop: retry ledger/backoff, defer notes, ratelimit cooldown
+  - scripts/board/merge-sweep.py          # verified gate: exit ∧ work ∧ goals; fail → requeue-or-failed
+  - scripts/board/dispatch-wt-sweep.py    # salvage-before-reap, keep-on-doubt
+  - scripts/board/board-api.py + publication.py  # flock writes, outbox retry + dead-letter, answers.jsonl
+  - scripts/devin/devin-dispatch.sh + devin-dispatch-watch.sh  # rails, needs-input routing, transcript verdict
+  - scripts/devin/job-run.sh              # exit-42 / NEEDS-INPUT: protocol
+  - scripts/board/{request-sweep,answer-sweep}.py  # escalate/execute request lifecycle
+  - scripts/board/waiting_cards.py + ssot.devin-autonomy.yml   # unattended eligibility + envelope
+
+the_10_rules:
+  - "fail loud, bounded evidence (comms + action.last_failure; verified:false = checked-failed)"
+  - "bounded retries; re-arm is a deliberate human verb, producer re-queues never forgive"
+  - "failure evidence rides the next attempt (RETRY_RAILS / last_failure)"
+  - "blocked ≠ failed (request / needs-input.txt / exit-42 — never nonzero exit or faked success)"
+  - "advisory components degrade, never block (dead API must not stop a claim loop)"
+  - "gate at claim time, not mid-run (push creds, VRAM, labels, load, quiet hours, kill switch, budgets, R-class)"
+  - "probes outside the card flock (2026-11-17 convoy rule)"
+  - "nothing unproven is destroyed (salvage-push wip/dispatch/<tid> or KEEP)"
+  - "exit codes mean crashed — findings report via comms/inbox/ops-event (OPS-0581)"
+  - "finished ≠ verified — exit ∧ produced-work ∧ goals, each leg pass/fail/unverifiable"
+
+audit_gaps_noted:
+  - "three retry counters with different semantics (attempts/max_attempts global, runner ledger per-host consecutive, retries_per_card policy park) — interoperate correctly; a future card could unify vocabulary, not the ledgers"
+  - "runner-agent's vendored twins (waiting_cards evaluate, RATE_LIMIT_PAT) are parity-tested, but the recurring 'installed runner-agent drifted from repo' defers show the deploy path is the weak link"
+  - "devin-dispatch-watch still labels record-less finished units '(collected,inferred)' success — best-available-signal, worth knowing"
+  - "awaiting_action 'deterministic-gap-only' is convention, not enforced"
+
+verify:
+  - "python3 -c 'import yaml; yaml.safe_load(open(\"docs/ssot/ssot.procedures.yml\"))'"
+  - "grep -n 'devin-error-standard\\|session-blocked-protocol' docs/ssot/ssot.procedures.yml"
+  - "grep -n 'Devin workflow & error-handling standard' AGENTS.md"
+  - "read docs/kb/devin-error-handling-standard.md — lane table + 10 rules + gaps"
