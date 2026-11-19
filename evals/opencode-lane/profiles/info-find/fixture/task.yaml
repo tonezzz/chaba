@@ -1,0 +1,30 @@
+id: info-find
+title: Unified info-find query with per-source status + citations
+class: read_only
+timeout_s: 420
+artifact: evals/opencode-lane/out/info-find-answer.json
+description: >-
+  Answer a retrieval question through the shared info_find.py planner
+  + source adapters. Every planned source carries an explicit status;
+  every result carries a resolvable citation. Artifact is the agent's
+  final message; the runner writes it.
+contract:
+  required_fields:
+    question: "the query, echoed"
+    intent: "planner intent — ssot|code|service-health|mcp|web|
+             explore|general-doc"
+    answer: "prose answer — 'not found in available sources' is valid"
+    session: "the --session id passed to info_find.py"
+    sources: "map source -> {status, reason?} covering every planned
+              source; status in ok|skipped|deferred|unavailable|error;
+              unavailable/error carry a reason, deferred carries spec"
+    results: "ranked list of {source, citation, excerpt} — mddb >
+              web > github > ssot/health > mcp > code; every citation
+              resolves (repo path exists, mddb carries collection+id,
+              web carries url)"
+    read_only: "must be true"
+    cache_dir: "session cache dir echoed from the run output — MUST be
+                under ~/.cache/devin/info-find/, never inside the repo"
+  citation_roots: [docs/, scripts/, evals/, tests/, integrations/,
+                   stacks/, apps/, .agents/, .devin/, AGENTS.md,
+                   reports/]

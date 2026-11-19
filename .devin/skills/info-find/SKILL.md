@@ -18,6 +18,12 @@ triggers:
 
 Unified information-finding flow for `chaba`, `trade`, and any other project in the workspace.
 
+> Portable variant (DEV-0230, 2026-11-19): `.agents/skills/info-find/`
+> drives the shared `scripts/devnest/info_find.py` planner/adapters and
+> adds the `explore` intent + per-source status contract. This skill
+> stays the Devin-native flow; prefer the portable one when working
+> across agents or inside the read-only info-find opencode lane.
+
 1. Capture the query
    - Prefer an argument or the user message. If missing, prompt for it.
 

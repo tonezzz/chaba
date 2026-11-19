@@ -101,6 +101,7 @@ Shipped profiles (2026-10-27):
 | `ssot-research` | read-only SSOT/education retrieval; every claim needs a resolvable citation; **no bash at all** | enabled, S1–S3 |
 | `storage-dryrun` | bounded inventory + candidate classification; `deletions` always `[]`, unsafe automatic candidates refused structurally (runner classifier + held-out verifier enforce the same policy) | enabled, S1–S3 |
 | `branch-code` | isolated-worktree code tasks; strong model + tests + `independent_devin` review | **disabled** — defined for validation, admits nothing |
+| `info-find` | unified read-only retrieval via the shared `info_find.py` planner/adapters (bash allowlist) + the 5 read-only retrieval MCP tools; per-source status + resolvable citations held-out | enabled, **S1 only** (DEV-0230 pilot) |
 
 Runner routing (`scripts/board/runner-agent.py`): a lane reaches
 `opencode run` only when a profile resolves — `action.profile` wins,

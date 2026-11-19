@@ -1,0 +1,38 @@
+# S1 profile job — info-find canary on idc02 (card
+# devnest-info-find-skill / DEV-0230 Phase 1). Real read-only
+# retrieval job through the shared planner/adapters; the agent's final
+# message is the artifact, verified held-out.
+id: p1-info-find-idc02
+card: devnest-info-find-skill
+task_class: read_only
+stage: S1
+target_host: idc02
+executor: opencode
+profile: info-find
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+task: >-
+  How does the kanban board converge card files that arrive via
+  dispatch worktree merges, and which script owns that merge driver?
+  Route the query through info_find.py, keep every source status, and
+  cite what answers it.
+mcp_allowlist: []           # no mcp proxy on idc02 — info_find.py
+                            # reaches the MDDB bank over tailnet HTTP
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/p1-info-find-answer.json
+  schema: >-
+    evals/opencode-lane/profiles/info-find/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/info-find/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: none
+heartbeat:
+  required: true
+  stale_s: 300
