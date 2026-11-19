@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-stable-path
 title: 'ada-ocb: point ada-control MCP at a stable origin/main bridge, not a live checkout'
-column: backlog
-updated: 2026-11-19 08:39
+column: doing
+updated: 2026-11-19 08:40
 brief: 'Global ~/.config/opencode/opencode.json runs ada-control as `python3 /home/tony/CascadeProjects/ada-voice/opencode/ada_mcp.py`
   — a checkout that is currently on branch ada-consult-pr12-edit with uncommitted WIP. Every OpenChamber session
   silently loads whatever bridge file that checkout happens to hold (observed 2026-11-18: divergent consult WIP,
@@ -27,9 +27,10 @@ spec: 'Deliver a stable bridge distribution for OpenChamber/OpenCode MCP clients
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: idc02
 comms:
 - at: 2026-11-19 08:38
   from: chaba
@@ -40,4 +41,7 @@ comms:
 - at: 2026-11-19 08:39
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 2.82 > 0.85)'
+- at: 2026-11-19 08:40
+  from: idc02
+  text: claimed
 ref: SYS-0218
