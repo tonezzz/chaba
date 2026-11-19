@@ -1,0 +1,228 @@
+{
+ "at": "2026-11-19T09:32:59.296304+00:00",
+ "job": "ada-ocb-free-lane-workflow-pilot-1795080773",
+ "envelope": {
+  "id": "ada-ocb-free-lane-workflow-pilot-1795080773",
+  "card": "ada-ocb-free-lane-workflow-pilot",
+  "task_class": "report",
+  "stage": "S3",
+  "target_host": "idc02",
+  "executor": "opencode",
+  "profile": "ops-readonly",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "provider": "opencode",
+  "unattended": true,
+  "mcp_allowlist": [],
+  "allowed_paths": [
+   "evals/opencode-lane/out/"
+  ],
+  "artifact": {
+   "path": "evals/opencode-lane/out/ada-0242-idc02-health.json",
+   "schema": "evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ops-readonly/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "allowed_on_fail": [
+    "manual",
+    "hold"
+   ],
+   "max_retries": 0
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "heartbeat": {
+   "required": true,
+   "stale_s": 300
+  },
+  "timeout_s": 420,
+  "dispatch_card": true,
+  "task": "Goal: validate the existing free OpenCode lane and the Kanban-to-runner-to-artifact-to-verifier path with one bounded report. No production changes.\\n\\nPreflight on 2026-11-19: board-api reads succeeded; the existing S1 ops-readonly envelope passes lint; idc02 lane gate reports S3 and not killed. However, the current ada-ocb card reports the Gemini Flash Lite project default is paid and the configured local Qwen endpoint at 127.0.0.1:8780 is not listening. No zero-cost model route is currently verified.\\n\\nGate: do not queue this card or send any model request until the exact provider/model route is independently verified as available and zero-cost. Do not use a paid fallback, alter model configuration, or change service environment. If no free route is verified, hold and request Tony\\s decision.\\n\\nAfter the free route is verified: run exactly one supervised S3 read-only report using the existing ops-readonly profile; pin the verified free model in a complete lane_envelope; use the existing held-out verifier; require the declared artifact and zero mutations; record model/provider, actual spend or verified zero-cost evidence, tokens/quota if available, wall time, human minutes, verifier result, retries, and any escalation. Max retries: 0. Do not mark done until independent verification passes."
+ },
+ "profile": {
+  "id": "ops-readonly",
+  "version": 1,
+  "status": "enabled",
+  "unattended": true,
+  "description": "Read-only host and MCP ops reports. Collects declared host facts via a bounded bash allowlist (no mutating verbs) and/or the 8-tool mcp-debug read-only allowlist, then emits a JSON report artifact.",
+  "task_classes": [
+   "read_only",
+   "report"
+  ],
+  "stages": [
+   "S1",
+   "S2",
+   "S3"
+  ],
+  "target_host": {
+   "required": true,
+   "allowed": []
+  },
+  "model": {
+   "tier": "cheap",
+   "default": "litellm/gemini-3.5-flash-lite",
+   "allowed": [
+    "litellm/gemini-3.5-flash-lite",
+    "litellm/gemini-3.5-flash",
+    "litellm/or-free-nemotron-nano",
+    "litellm/or-free-nemotron-ultra",
+    "litellm/or-free-nemotron-35",
+    "litellm/or-free-north-code",
+    "litellm/or-gemini-3.5-flash-lite",
+    "litellm/or-gemini-3.5-flash",
+    "opencode/big-pickle",
+    "opencode/deepseek-v4.1-flash-free",
+    "opencode/glm-5.3-flash-free",
+    "opencode/mimo-v2.6-flash-free"
+   ]
+  },
+  "providers": [
+   "litellm",
+   "opencode"
+  ],
+  "agent": {
+   "mode": "primary"
+  },
+  "tools": {
+   "read": true,
+   "grep": true,
+   "glob": true,
+   "list": true,
+   "todoread": true,
+   "todowrite": true,
+   "bash": true,
+   "write": false,
+   "edit": false,
+   "patch": false,
+   "task": false,
+   "webfetch": false
+  },
+  "permission": {
+   "edit": "deny",
+   "webfetch": "deny",
+   "external_directory": "deny",
+   "doom_loop": "ask",
+   "bash": {
+    "*": "deny",
+    "hostname": "allow",
+    "hostname *": "allow",
+    "uname": "allow",
+    "uname *": "allow",
+    "whoami": "allow",
+    "date": "allow",
+    "date *": "allow",
+    "uptime": "allow",
+    "uptime *": "allow",
+    "nproc": "allow",
+    "nproc *": "allow",
+    "lscpu": "allow",
+    "lscpu *": "allow",
+    "df": "allow",
+    "df *": "allow",
+    "du *": "allow",
+    "free": "allow",
+    "free *": "allow",
+    "ls": "allow",
+    "ls *": "allow",
+    "stat *": "allow",
+    "ss *": "allow",
+    "ps *": "allow",
+    "journalctl *": "allow",
+    "systemctl list-units *": "allow",
+    "systemctl --user list-units *": "allow",
+    "systemctl list-timers *": "allow",
+    "systemctl --user list-timers *": "allow",
+    "systemctl status *": "allow",
+    "systemctl --user status *": "allow",
+    "systemctl is-active *": "allow",
+    "systemctl --user is-active *": "allow",
+    "systemctl is-enabled *": "allow",
+    "systemctl --user is-enabled *": "allow",
+    "systemctl show *": "allow",
+    "systemctl --user show *": "allow",
+    "git status*": "allow",
+    "git log*": "allow",
+    "git diff*": "allow",
+    "git show*": "allow",
+    "git rev-parse*": "allow",
+    "git branch*": "allow",
+    "python3 scripts/devnest/host_snapshot.py*": "allow"
+   }
+  },
+  "mcp": {
+   "allowed": [
+    "mcp_debug",
+    "mcp_health",
+    "mcp_get_file",
+    "mcp_read_ssot",
+    "mcp_search_ssot",
+    "mcp_ssot_query",
+    "mcp_ssot_get",
+    "mcp_mddb_doc"
+   ],
+   "denied": [
+    "mcp_raw",
+    "mcp_put_file",
+    "mcp_remediate",
+    "mcp_ssot_append",
+    "mcp_clipboard_set",
+    "mcp_clipboard_get",
+    "mcp_clipboard_image_get",
+    "mcp_eget",
+    "mcp_screenshot",
+    "mcp_window_list",
+    "mcp_preset_run",
+    "mcp_adaptive"
+   ],
+   "upstream": {
+    "name": "mcp-debug-readonly",
+    "proxy": "~/.config/devin/mcp-scripts/mcp-allowlist.py",
+    "command": [
+     "/bin/bash",
+     "~/.config/devin/mcp-scripts/mcp-debug-ssh.sh"
+    ]
+   }
+  },
+  "allowed_paths": [],
+  "artifact": {
+   "mode": "message",
+   "format": "json",
+   "dirs": [
+    "evals/opencode-lane/out/",
+    "reports/"
+   ],
+   "schema": "evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ops-readonly/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "allowed_on_fail": [
+    "manual",
+    "devin",
+    "retry_then_manual",
+    "hold"
+   ],
+   "max_retries": 1
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "rails": "You are the ops-readonly profile agent. You may READ the host and the repo; you may not write, edit, move, delete, install packages, or change services \u2014 denied tool calls are recorded and fail the job. Do not read anything under ~/.config/secrets. Allowed bash is a small allowlist (hostname, date, uptime, nproc, lscpu, free, df, ls, ps, ss, stat, du, journalctl, systemctl read verbs, and `python3 scripts/devnest/host_snapshot.py`). ANY other command \u2014 git, python3 -c, && chains, /proc reads \u2014 is denied and fails the job; do not probe for alternatives. For host facts prefer ONE call: `python3 scripts/devnest/host_snapshot.py` emits every required field correctly (it computes uptime_seconds itself \u2014 never subtract epochs by hand). Your report is your final message: emit ONLY the artifact content, no prose around it."
+ },
+ "agent": "ops-readonly",
+ "mcp_rendered": false,
+ "mcp_proxy_available": true,
+ "denied_builtin_agents": [
+  "build",
+  "plan",
+  "general"
+ ],
+ "config": "/home/tony/CascadeProjects/dispatch-wt-ada-ocb-free-lane-workflow-pilot-1795080773/evals/opencode-lane/runs/ada-ocb-free-lane-workflow-pilot-1795080773-20261119-163259/opencode.json"
+}
