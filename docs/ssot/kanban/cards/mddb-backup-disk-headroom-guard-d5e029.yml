@@ -1,7 +1,7 @@
 id: mddb-backup-disk-headroom-guard-d5e029
 title: mddb-backup-disk-headroom-guard
 column: doing
-updated: 2026-11-19 10:17
+updated: 2026-11-19 10:22
 spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
   2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
   that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
@@ -56,6 +56,12 @@ comms:
     RESOLVED — card filed on stale; [timer-alert-idc03-consumer-canary] 2026-11-13 sweep: `board-api comment failed:;
     [timer-alert-tony-omen-timer-sentinel] RCA (OPS-1261): not a sentinel bug on ome; [assessments-to-education-split-ssot-keep-113ca4]
     ALL DONE. ('
+- at: 2026-11-19 10:22
+  from: devin
+  text: 'Investigation done: live ~/mddb-backup.sh on idc03 (generalized 4-instance script deployed 11-11) is unversioned
+    — not in chaba repo. Repo canonical home is stacks/idc03/mddb/mddb-backup.sh (README already lists it; file
+    missing). Writing new canonical script there with headroom pre-flight, stream-to-.tmp.gz+rename, per-instance
+    + dir-cap retention, board-api alert. Will test guard logic locally with stubbed podman.'
 action:
   type: dispatch
   status: running
