@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: review
-updated: 2026-11-18 23:27
+updated: 2026-11-19 07:03
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -228,6 +228,12 @@ comms:
 - at: 2026-11-18 23:27
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''confirm-pipeline-default-from-''] block close)'
+- at: 2026-11-19 07:03
+  from: tony
+  text: 'answered confirm-pipeline-default-from-eval-1-rea-f33c6d: 1'
+- at: 2026-11-19 07:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -252,11 +258,13 @@ requests:
     invention suits stock QC (recommended); (2) SwinIR-M x4 — max fidelity 46.9dB but clean-resize look, 8x slower,
     CPU-torch only; (3) hold for diffusion SR once a >8GB GPU host exists. QC images in campaign 60-upscale-eval/
     on Drive.'
-  status: open
+  status: answered
   at: 2026-11-18 23:14
   from: devin
   options:
   - proceed
   - hold
+  answer: '1'
 review_kind: verify
 claim: {}
+awaiting_action: true
