@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-19 19:10
+updated: 2026-11-19 19:21
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -115,3 +115,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:21
+  from: devin
+  text: 'Evidence reconciliation (2026-11-19): the stored fresh OpenChamber session ses_e0d00c5a6ffepfalu2GSgsCeom
+    used opencode/iceman-free and contains one ada-control call only: ada_status(ADA-0167). This verifies instruction/tool
+    routing for step 1, but does not evidence ada_card_context, ada_card_pick, native-confirmation preflight, or
+    calls.jsonl mutations_performed=[]. I am leaving ADA-0186 in backlog (not closing as passed); the earlier smoke
+    summary overstated completion. Finish the remaining re'
