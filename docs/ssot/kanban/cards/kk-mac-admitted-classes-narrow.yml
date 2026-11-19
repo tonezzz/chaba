@@ -1,7 +1,7 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
-column: doing
-updated: 2026-11-19 13:41
+column: backlog
+updated: 2026-11-19 13:42
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
   exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
@@ -12,9 +12,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
-  runner: idc02
+  status: queued
   attempts: 1
+  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19.service:
+    Failed with result ''exit-code''. | devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19.service: Consumed
+    6.325s CPU time.'
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19.service:
+    Failed with result ''exit-code''. | devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19.service: Consumed
+    6.325s CPU time.'
 ref: OPS-0237
 comms:
 - at: 2026-11-19 13:38
@@ -53,5 +58,13 @@ comms:
     5-case read-only DevNest batch on KK-Mac qwen; [speed-probe] Overnight sweep 2026-11-19: parked in backlog.
     The latest attempt ; [ada-deploy-preflight-gate] Implemented + merged + installed. PR tonezzz/chaba#8; [ada-expert-consult-tool]
     Cross-evidence from ADA-1088 bench '
+- at: 2026-11-19 13:42
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19.service:
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 13:42
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-134121-kk-mac-classes-eval-2026-11-19 (rate limit)
+    — idc02 holds new claims ~30m
 claim:
   since: 2026-11-19 13:40
