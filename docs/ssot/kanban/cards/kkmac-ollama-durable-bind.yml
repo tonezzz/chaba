@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: backlog
-updated: 2026-11-18 22:11
+updated: 2026-11-19 09:53
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -68,3 +68,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 09:53
+  from: devin
+  text: 'update (found during kk-mac-embed-lane-verify): option (b) effectively landed — kk-mac ollama now binds
+    0.0.0.0, answering on tailnet 100.108.217.17:11434 AND LAN 192.168.0.101:11434. kkmac-ollama-tunnel.service
+    was stopped+disabled 2026-11-17 after ~19k restart flaps (kept as disabled fallback); admission shim + embed-pool
+    repointed to the direct bind today. Remaining delta on this card: verify the bind is durable in adanest plist
+    + narrow to tailnet-IP-only (LAN exposure vs SEC-0985 intent) — '
