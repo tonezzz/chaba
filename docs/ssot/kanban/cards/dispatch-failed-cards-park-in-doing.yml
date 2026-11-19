@@ -1,7 +1,7 @@
 id: dispatch-failed-cards-park-in-doing
 title: Failed/idle dispatch cards park in doing forever — no reaper returns them to backlog
-column: review
-updated: 2026-11-18 23:04
+column: backlog
+updated: 2026-11-19 08:29
 brief: '2026-11-17 sweep found 43 cards in doing with zero live claims fleet-wide (/queue claimed=[]): 23 action.status=failed
   dispatch cards (mostly Nov-14 runner-agent-drift/push-guard defers), 7 action.status=done stuck in doing, 11 manual/no-action
   stale claims. kanban-dispatch defers leave cards in doing; nothing ever returns them to backlog or re-queues them,
@@ -153,9 +153,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-221757-decide-implement-the-stalled-c,
     branch dispatch/20261118-221757-decide-implement-the-stalled-c'
+- at: 2026-11-19 08:29
+  from: devin
+  text: re-spawned from report page
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: codemod
   result: 'exit=0 b''s official MCP Server, org.opencontainers.image.licenses=MIT) | devin-task-20261118-221757-decide-implement-the-stalled-c.service:
     Consumed 8min 21.660s CPU time over 40min 48.727s wall clock time, 1G memory peak, 683.8M memory swap peak.'
@@ -163,6 +166,7 @@ action:
     failed_noted: 2026-11-17 19:25
     stale_running: 2026-11-18 22:27
     no_repo: 2026-11-18 22:27
-  runner: tony-dell
+  model: opus
+  executor: claude
 review_kind: verify
 claim: {}
