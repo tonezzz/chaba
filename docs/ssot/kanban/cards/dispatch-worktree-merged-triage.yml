@@ -1,6 +1,6 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
-column: backlog
+column: doing
 updated: 2026-11-19 13:39
 priority: medium
 tags:
@@ -15,7 +15,7 @@ spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 mer
   documented; matching card comms on the cards that spawned them.'
 action:
   type: dispatch
-  status: queued
+  status: running
   executor: devin
   repo: chaba
   sweep:
@@ -23,7 +23,8 @@ action:
   last_failure: 'exit=1 ask-20261117-221333-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
     | devin-task-20261117-221333-triage-2026-11-09-cascadeproje.service: Consumed 2.301s CPU time over 6min 55.410s
     wall clock time, 102.6M memory peak.'
-  attempts: 0
+  attempts: 1
+  runner: idc02
 ref: OPS-1288
 comms:
 - at: 2026-11-09 17:39
@@ -161,4 +162,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-claim: {}
+- at: 2026-11-19 13:39
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-19 13:39
