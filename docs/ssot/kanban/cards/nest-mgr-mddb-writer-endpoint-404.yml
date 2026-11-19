@@ -1,0 +1,21 @@
+id: nest-mgr-mddb-writer-endpoint-404
+title: 'nest-mgr on tony-macbook: MDDB publish path 404s every tick'
+column: backlog
+updated: 2026-11-19 08:31
+priority: medium
+tags:
+- nest-mgr
+- tony-macbook
+- mddb
+- idc03
+spec: 'nest-mgr.service installed on tony-macbook 2026-11-17 (card ops-macbook-nestmgr-install) runs active but
+  every tick fails: "tick error: Remote end closed connection without response". It publishes ada-cms-pages/nest-<host>
+  via MDDB_BASE_URL default http://100.102.134.91:11027/v1 — port answers but GET / and /v1/ return 404 and POSTs
+  get connection-closed. Find the correct writer endpoint/path for ada-cms-pages on idc03 (check mddb/mddb-cms units,
+  ports 11023-11027, and how other nest/host publishers write), fix MDDB_BASE_URL or the POST path in nest-mgr.py,
+  restart nest-mgr.service on tony-macbook, verify a tick lands nest-tony-macbook.'
+ref: MEM-0216
+comms:
+- at: 2026-11-19 08:31
+  from: devin
+  text: card captured via board-api
