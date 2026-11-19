@@ -1,7 +1,7 @@
 id: timer-alert-mn01-mn01-canary
 title: Timer mn01-canary on mn01 failing
-column: backlog
-updated: 2026-11-18 22:07
+column: done
+updated: 2026-11-19 10:40
 priority: high
 tags:
 - timer-alert
@@ -45,6 +45,14 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 10:40
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-19 03:30 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-19 10:40
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `mn01-canary.service` on host `mn01` by reviewing the systemd journal using `journalctl
   --user -u mn01-canary.service`. Target host is `mn01`. The done-condition is a documented diagnosis of the exit-code
   failure referencing the timeline CMS `timer-timeline-mn01`.
+action:
+  status: done
