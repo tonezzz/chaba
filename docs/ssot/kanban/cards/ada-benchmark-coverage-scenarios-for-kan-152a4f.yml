@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
-column: doing
-updated: 2026-11-19 17:40
+column: review
+updated: 2026-11-19 17:44
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -181,20 +181,41 @@ comms:
   text: "merge-sweep: landing devin-task-20261119-171510-ada-benchmark-coverage-scenari failed: push: remote: error:\
     \ refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current\
     \ branch in a non-bare repository        \nremote: is denied, because it will"
+- at: 2026-11-19 17:44
+  from: idc02
+  text: 'finished (ok): exit=0 riteup in `dispatch-outcome-20261119-171510-ada-benchmark-coverage-scenari.md`; card
+    comms posted. | devin-task-2'
+- at: 2026-11-19 17:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 17:44
+  from: chaba
+  text: banked 38 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 17:44
+  from: chaba
+  text: pushed dispatch/20261119-171510-ada-benchmark-coverage-scenari to origin
+- at: 2026-11-19 17:44
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_scenarios.py::ScenarioTests::test_cms_write_flow, tools:mddb_client.py:244'
+- at: 2026-11-19 17:44
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
-  result: 'exit=1 sk-20261117-190737-ada-benchmark-coverage-scenari.service: Failed with result ''exit-code''. |
-    devin-task-20261117-190737-ada-benchmark-coverage-scenari.service: Consumed 40.669s CPU time over 5min 47.782s
-    wall clock time, 630.3M memory peak.'
+  result: 'exit=0 riteup in `dispatch-outcome-20261119-171510-ada-benchmark-coverage-scenari.md`; card comms posted.
+    | devin-task-20261119-171510-ada-benchmark-coverage-scenari.service: Consumed 2min 46.205s CPU time, 390.8M
+    memory peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 19:24
     stale_running: 2026-11-19 17:39
     merge_err: 2026-11-19 17:40
   runner: idc02
   attempts: 1
+  verified: false
 claim:
   since: 2026-11-19 17:14
+review_kind: verify
