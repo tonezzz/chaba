@@ -1,7 +1,7 @@
 id: ada-write-fidelity-drop-parity
 title: Review staged Ada write-fidelity drop parity without weakening guards
 column: backlog
-updated: 2026-11-19 08:59
+updated: 2026-11-19 17:03
 brief: 'Pre-commit blocks PR #138 CI repair because the staged write-fidelity.patch diverges against canonical Ada
   main; canonical fidelity tests still pass 17/17.'
 priority: high
@@ -128,6 +128,10 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
     it'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: guard-parity-scope
   ask: 'Recommended: prepare a separate, reviewed parity refresh of the staged integration artifact, keeping runtime
