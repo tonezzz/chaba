@@ -1,0 +1,68 @@
+id: 2026-11-19-board-api-commit-outside-lock
+card: board-api-commit-outside-lock
+date: "2026-11-19"
+domain: infrastructure
+status: implemented
+summary: >
+  board-api no longer runs git add+commit inside /tmp/board-api.lock.
+  save() queues repo-relative dirty paths under the flock (card YAML
+  read-modify-write only); a dedicated commit worker — debounced like
+  render_async — coalesces pending paths and commits after the flock is
+  released.
+
+why: >
+  2026-11-19 ~10:00 ICT soak of the earlier probe fix (60bd8a2769):
+  /comment n=3807 timeouts=15 wait_max=26.6s hold_max=118.7s, /action
+  timeouts=12, /card timeouts=5; 503 cluster 08:33-09:02. Every
+  card/comment/action write paid two git subprocesses inside the one
+  lock serializing all card mutations; bursts stacked into 40-118s
+  holds and the git index lock raced kanban-commit/git-safe-pull.
+
+design:
+  - _queue_commit(p, label, extra): called under the request flock,
+    records repo-relative paths + label in _pending_commits (no
+    subprocesses); BOARD_API_COMMIT=0 keeps the sweep-only model.
+  - _commit_loop worker: waits on _commit_flag, sleeps
+    BOARD_API_COMMIT_DEBOUNCE_S (default 0.4s) so bursts coalesce,
+    drains _pending_commits, joins labels into one commit message.
+  - _commit_paths(rels, label): probes the card flock LOCK_NB first —
+    defers while a request or git-safe-pull's pull+autostash+pop phase
+    holds it (never HOLDS the flock across git ops); honours the
+    existing rebase-merge/rebase-apply/MERGE_HEAD/CHERRY_PICK_HEAD
+    gitdir guard; per-path add fallback when one queued pathspec no
+    longer matches (untracked file deleted before commit) so one bad
+    path can't drop the batch; "nothing to commit"/non-repo paths are
+    terminal-true.
+  - retry: failures requeue and retry every BOARD_API_COMMIT_RETRY_S
+    (default 5s); a path exceeding BOARD_API_COMMIT_MAX_TRIES (default
+    60) drops to the kanban-commit sweep with a stderr note.
+  - commit_pending_flush(timeout): test/drain hook — waits until
+    pending is empty and no commit is in flight.
+
+durability: >
+  A card write sits dirty for ~debounce+git seconds, not a sweep
+  interval — the autostash window stays tiny. While git-safe-pull holds
+  the card flock the worker defers, so no commit lands mid-autostash;
+  residual races (index.lock, mid-rebase) requeue and retry, and
+  kanban-commit.timer remains the backstop exactly as before.
+
+verify:
+  - python3 scripts/board/board-api.py --selftest (commit worker,
+    coalescing, mid-rebase defer+retry, BOARD_API_COMMIT=0, non-repo
+    filter all covered)
+  - python3 -m unittest tests.board.test_board_api_reads
+    tests.board.test_board_api_mutations
+    tests.board.test_board_api_action_persistence (58 tests)
+  - sandboxed burst smoke: 40 concurrent /comment -> hold_s_max 0.042s,
+    2 coalesced commits, tree clean
+  - flock-held deferral: queued commit stays dirty while the card
+    flock is held, lands immediately on release
+  - done-condition on live: /lock-stats hold_s_max <5s for
+    /comment /action /card and zero `lock wait >25s` 503s over 24h;
+    requires merge + service restart on the board host first.
+
+deploy_note: >
+  Change is dormant until merged to master and chaba-board-api is
+  restarted on idc03. Env knobs: BOARD_API_COMMIT_DEBOUNCE_S,
+  BOARD_API_COMMIT_RETRY_S, BOARD_API_COMMIT_MAX_TRIES,
+  BOARD_API_COMMIT=0 (off-switch, unchanged).

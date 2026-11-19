@@ -239,7 +239,7 @@ class GetRoutingTest(unittest.TestCase):
         body = json.dumps({"id": "c-one", "from": "devin", "text": "fresh canonical comment"}).encode()
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}/comment", data=body,
                                      headers={"Content-Type": "application/json"})
-        with mock.patch.object(self.mod, "_commit_write"), mock.patch.object(self.mod, "render_async"):
+        with mock.patch.object(self.mod, "_queue_commit"), mock.patch.object(self.mod, "render_async"):
             with urllib.request.urlopen(req, timeout=5) as response:
                 self.assertTrue(json.load(response)["ok"])
         for path in ("/cards?id=c-one", "/card/c-one"):

@@ -212,12 +212,12 @@ if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
     exit 1
 fi
 
-# index.lock contention: board-api._commit_write runs git add/commit per
-# card write while this sweep does bulk add+commit — the loser sees
-# "Unable to create index.lock". board-api treats its commit as
-# best-effort; this sweep is the durability path, so retry briefly
-# instead of failing the whole tick (2026-11-17: repeated tick failures
-# while the 2179-commit backlog pushed).
+# index.lock contention: board-api's post-lock commit worker runs git
+# add/commit per card-write batch while this sweep does bulk add+commit
+# — the loser sees "Unable to create index.lock". board-api treats its
+# commit as best-effort (deferred retry); this sweep is the durability
+# path, so retry briefly instead of failing the whole tick (2026-11-17:
+# repeated tick failures while the 2179-commit backlog pushed).
 git_lock_retry() {
     local attempt=0 out
     while [ $attempt -lt 8 ]; do
