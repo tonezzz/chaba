@@ -2900,9 +2900,14 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
 # approved for the sampling window. ssot-research + storage-dryrun were
 # added 2026-11-12 (option A on the S3-source request). Other profiles
 # that merely declare stages:[S3] (doc-draft, gs-capture-eval,
-# mddb-sequence, ops-remote-read) stay unadmitted until their own cards
-# approve them.
+# mddb-sequence) stay unadmitted until their own cards approve them.
 S3_STAGED_PROFILES = {"ops-readonly", "ssot-research", "storage-dryrun"}
+# OPS-1025: ops-remote-read is admitted under its own bounds — the
+# subject may be a declared REMOTE host and the envelope MUST
+# allowlist the mcp_debug read surface (an empty allowlist renders no
+# MCP servers, so remote facts would be impossible/fabricated).
+S3_REMOTE_READ_PROFILES = {"ops-remote-read"}
+S3_REMOTE_READ_MCP = "mcp_debug"
 
 
 def prepare_profile_dispatch(card, tid, prof, model, ocp):
@@ -2920,15 +2925,33 @@ def prepare_profile_dispatch(card, tid, prof, model, ocp):
                 "target_host": HOST, "task_class": a.get("task_class")}
     if any(env.get(k) != v for k, v in expected.items()):
         raise ValueError("lane envelope differs from the declared executor/card/host/model/class")
-    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] not in S3_STAGED_PROFILES
-            or env.get("mcp_allowlist") != []
-            or env.get("task_class") not in ("read_only", "report")
+    remote_read = prof["id"] in S3_REMOTE_READ_PROFILES
+    mcp_allow = env.get("mcp_allowlist")
+    mcp_ok = (mcp_allow == [] if not remote_read else
+              isinstance(mcp_allow, list) and bool(mcp_allow)
+              and S3_REMOTE_READ_MCP in mcp_allow)
+    env_subj = _canon_host(env.get("subject_host"))
+    act_subj = _canon_host(a.get("subject_host"))
+    subject_ok = ((env_subj in ("", _host_key())
+                   and act_subj in ("", _host_key()))
+                  if not remote_read else
+                  bool(env_subj) and env_subj == act_subj)
+    classes = (("read_only", "report", "diagnosis") if remote_read
+               else ("read_only", "report"))
+    admitted = (S3_STAGED_PROFILES if not remote_read
+                else S3_REMOTE_READ_PROFILES)
+    if (HOST != "idc02" or env.get("stage") != "S3"
+            or prof["id"] not in admitted
+            or not mcp_ok
+            or env.get("task_class") not in classes
             or _canon_host(a.get("target_host")) != _host_key() \
             or env.get("unattended", True) is not True
-            or _canon_host(env.get("subject_host")) not in ("", _host_key())
-            or _canon_host(a.get("subject_host")) not in ("", _host_key())):
+            or not subject_ok):
         raise ValueError("staged dispatch currently admits only unattended S3 idc02 read-only reports "
-                         "(" + "/".join(sorted(S3_STAGED_PROFILES)) + ")")
+                         "(" + "/".join(sorted(S3_STAGED_PROFILES)) + ")"
+                         " and ops-remote-read remote diagnoses with a "
+                         "declared matching subject_host + mcp_debug "
+                         "allowlist")
     art = str((env.get("artifact") or {}).get("path") or "")
     if not art or Path(art).is_absolute() or ".." in Path(art).parts or art != a.get("artifact"):
         raise ValueError("lane artifact must match the declared relative artifact path")

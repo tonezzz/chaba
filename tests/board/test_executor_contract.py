@@ -628,6 +628,91 @@ class StagedProfileAdmissionTest(unittest.TestCase):
             self._try("doc-draft", "p1-ssot-research-idc02.yaml", "read_only")
 
 
+class RemoteReadAdmissionTest(unittest.TestCase):
+    """OPS-1025: ops-remote-read is admitted only with a declared
+    matching remote subject_host and an mcp_debug-bearing allowlist —
+    the local read-only profiles keep their stricter bounds."""
+
+    VERIFY_REF = ("evals/opencode-lane/profiles/ops-remote-read/"
+                  "fixture/verify.py")
+    SCHEMA = ("evals/opencode-lane/profiles/ops-remote-read/fixture/"
+              "task.yaml #contract.required_fields")
+
+    def _env(self, **kw):
+        env = {
+            "id": "job", "card": "ex-card", "task_class": "read_only",
+            "stage": "S3", "target_host": "idc02",
+            "executor": "opencode", "profile": "ops-remote-read",
+            "model": "litellm/gemini-3.5-flash-lite",
+            "provider": "litellm", "unattended": True,
+            "subject_host": "idc03",
+            "mcp_allowlist": ["mcp_debug", "mcp_health"],
+            "allowed_paths": ["evals/opencode-lane/out/"],
+            "artifact": {
+                "path": "evals/opencode-lane/out/ops-remote-read-t.json",
+                "schema": self.SCHEMA},
+            "verifier": {"type": "held_out_py", "ref": self.VERIFY_REF},
+            "escalation": {"on_fail": "manual", "max_retries": 0},
+            "rollback": {"kind": "none"},
+            "heartbeat": {"required": True},
+        }
+        env.update(kw)
+        return env
+
+    def _try(self, env=None, card_updates=None):
+        mod = _load("runner-agent.py")
+        mod.HOST = "idc02"
+        ocp = mod.oc_profiles_module()
+        prof = ocp.load_profile("ops-remote-read")
+        env = env if env is not None else self._env()
+        a = {"executor": "opencode", "agent_profile": "ops-remote-read",
+             "model": env["model"], "task_class": env["task_class"],
+             "target_host": "idc02", "subject_host": "idc03",
+             "artifact": env["artifact"]["path"],
+             "lane_envelope": env}
+        a.update(card_updates or {})
+        card = {"id": "ex-card", "title": "t", "spec": "s", "action": a}
+        return mod.prepare_profile_dispatch(
+            card, "actual-task", prof, env["model"], ocp)
+
+    def test_remote_read_admitted_with_remote_subject(self):
+        frozen = self._try()
+        self.assertEqual(frozen["profile"], "ops-remote-read")
+        self.assertEqual(frozen["id"], "actual-task")
+        self.assertEqual(frozen["subject_host"], "idc03")
+
+    def test_rejects_empty_or_debugless_allowlist(self):
+        for allow in ([], ["mcp_health"], "mcp_debug"):
+            with self.subTest(allow=allow):
+                with self.assertRaises(ValueError):
+                    self._try(env=self._env(mcp_allowlist=allow))
+
+    def test_rejects_missing_or_mismatched_subject(self):
+        with self.assertRaises(ValueError):
+            self._try(env=self._env(subject_host=""))
+        with self.assertRaises(ValueError):
+            self._try(card_updates={"subject_host": "idc02"})
+        with self.assertRaises(ValueError):
+            self._try(card_updates={"subject_host": ""})
+
+    def test_local_profiles_still_reject_remote_subject(self):
+        mod = _load("runner-agent.py")
+        mod.HOST = "idc02"
+        ocp = mod.oc_profiles_module()
+        prof = ocp.load_profile("ops-readonly")
+        env = ocp.lane_gate.load_envelope(
+            REPO / "evals/opencode-lane/jobs/p1-ops-readonly-idc02.yaml")
+        env.update(id="job", card="ex-card", stage="S3",
+                   profile="ops-readonly", subject_host="idc03")
+        card = _card(executor="opencode", agent_profile="ops-readonly",
+                     model=env["model"], task_class="report",
+                     target_host="idc02", subject_host="idc03",
+                     artifact=env["artifact"]["path"], lane_envelope=env)
+        with self.assertRaises(ValueError):
+            mod.prepare_profile_dispatch(
+                card, "actual-task", prof, env["model"], ocp)
+
+
 class FinishOpenCodeLaneTest(unittest.TestCase):
     """finish_opencode_lane: declared artifact must land + verifier pass
     before the merge gate runs; contract failures hold the merge."""
