@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-19 12:45
+updated: 2026-11-19 12:54
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -188,6 +188,13 @@ comms:
     10:24) but done condition not met — /lock-stats since restart still shows /comment timeouts=3 wait_max=25.7s
     hold_max=80.7s, journal has lock-wait >25s 503s at 10:38/11:40/11:44, and commit worker is retry-storming `commit
     skipped` on clean paths. Follow-up carded+queued: board-api-residual-lock-holds (KNB-0233).'
+- at: 2026-11-19 12:54
+  from: devin
+  text: 'Post-f1f0b soak (f1f0b live since 2026-11-19 10:24 restart) — first fix landed but done-condition NOT met.
+    /lock-stats since restart: /comment n=193 timeouts=3 wait_max=25.7s hold_max=80.7s; /action timeouts=1 wait_max=25.2s;
+    /card timeouts=1 wait_max=25.2s. Journal still shows `lock wait >25s` 503s at 10:38 (/inbox /card /comment x2),
+    11:40 (/comment), 11:44 (/action), plus held=74.4s/80.7s holds on /comment. Also: commit worker retry-storms
+    `board-api commit skipped: Changes not staged` every '
 requests: []
 action:
   lane: paid_frontier

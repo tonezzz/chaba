@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: backlog
-updated: 2026-11-18 22:09
+updated: 2026-11-19 12:54
 priority: medium
 tags:
 - merge-sweep
@@ -73,3 +73,26 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 12:54
+  from: devin
+  text: 'DEV-0230 exposed this gap again: the merge gate skipped because pytest was unavailable, although the focused
+    info-find unittest suite subsequently passed 23/23 with the standard-library runner. Research recommendation:
+    do NOT install pytest globally as a host-wide baseline. ssot.host-software declares python3+venv; the completed
+    dispatch-test-gate-venv work already resolves a repo/canonical-checkout .venv that can import pytest before
+    falling back to system Python. Chaba has no root test-depende'
+- at: 2026-11-19 12:54
+  from: tony
+  text: 'raised request approve-dispatch-of-this-multi-step-pyte-f36ee6: Approve dispatch of this multi-step pytest/test-gate
+    fix on the Devin lane? The recommended implementation is repo-scope'
+requests:
+- id: approve-dispatch-of-this-multi-step-pyte-f36ee6
+  ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
+    is repo-scoped pytest in Chaba's .venv, not a global host install. Devin lane uses paid plan tokens (typically
+    100s of k tokens/session).
+  status: open
+  at: 2026-11-19 12:54
+  from: tony
+  options:
+  - Approve Devin dispatch
+  - Hold for no-cost route
+  suggested: Approve Devin dispatch
