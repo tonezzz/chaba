@@ -276,6 +276,25 @@ class DispatchEvidence(unittest.TestCase):
             (rd / "events.jsonl").write_text(json.dumps(event) + "\n")
             self.assertFalse(mod.artifact_matches_snapshot(rd))
 
+    def test_artifact_matches_opencode_v2_shell_event(self):
+        # opencode v2 emits tool="shell" and nests exit/truncated under
+        # state.metadata.metadata — the v1 bash/flat shape must still work.
+        with tempfile.TemporaryDirectory() as tmp:
+            rd = Path(tmp)
+            (rd / "artifact.out").write_text('{"host":"idc02"}')
+            state = {"status": "completed",
+                     "input": {"command": "python3 scripts/devnest/host_snapshot.py"},
+                     "metadata": {"metadata": {"exit": 0, "truncated": False,
+                                               "status": "completed"},
+                                  "content": [{"type": "text"}]},
+                     "output": '{"host":"idc02"}'}
+            event = {"part": {"tool": "shell", "state": state}}
+            (rd / "events.jsonl").write_text(json.dumps(event) + "\n")
+            self.assertTrue(mod.artifact_matches_snapshot(rd))
+            state["metadata"]["metadata"]["truncated"] = True
+            (rd / "events.jsonl").write_text(json.dumps(event) + "\n")
+            self.assertFalse(mod.artifact_matches_snapshot(rd))
+
 
 class HumanWatch(unittest.TestCase):
     def test_confirmation_records_measured_minutes_and_observer(self):

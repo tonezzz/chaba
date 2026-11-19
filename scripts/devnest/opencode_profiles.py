@@ -868,12 +868,24 @@ def artifact_matches_snapshot(rd: Path) -> bool:
         for line in (rd / "events.jsonl").read_text().splitlines():
             part = json.loads(line).get("part") or {}
             state = part.get("state") or {}
+            if part.get("tool") not in ("bash", "shell") or \
+                    state.get("status") != "completed":
+                continue
             command = str((state.get("input") or {}).get("command") or "").strip()
-            if part.get("tool") == "bash" and state.get("status") == "completed" and command == "python3 scripts/devnest/host_snapshot.py":
-                metadata = state.get("metadata") or {}
-                if metadata.get("exit") != 0 or metadata.get("truncated") is True:
-                    return False
-                snapshots.append(json.loads(state["output"]))
+            if command != "python3 scripts/devnest/host_snapshot.py":
+                continue
+            meta = state.get("metadata") or {}
+            # opencode v2 nests run metadata one level deeper
+            # (state.metadata.metadata.{exit,truncated}); v1 kept it flat.
+            inner = meta.get("metadata") if isinstance(meta.get("metadata"), dict) else {}
+            exit_code = inner.get("exit", meta.get("exit"))
+            truncated = inner.get("truncated", meta.get("truncated"))
+            if exit_code != 0 or truncated is True:
+                return False
+            out = state.get("output")
+            if not isinstance(out, str):
+                return False
+            snapshots.append(json.loads(out))
         return len(snapshots) == 1 and snapshots[0] == artifact
     except (OSError, ValueError, TypeError, KeyError):
         return False
