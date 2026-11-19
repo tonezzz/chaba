@@ -1,6 +1,6 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: backlog
+column: doing
 updated: 2026-11-19 18:57
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
@@ -192,9 +192,12 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-19 18:57
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
@@ -202,12 +205,13 @@ action:
     Consumed 12min 26.816s CPU time over 48min 58.610s wall clock time, 1.1G memory peak.'
   repo: chaba
   executor: devin
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 261119-180543-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
     | devin-task-20261119-180543-finish-artifact-landing-verifi.service: Consumed 12min 26.816s CPU time over 48min
     58.610s wall clock time, 1.1G memory peak.'
   sweep:
     stale_running: 2026-11-19 18:55
     dirty: 1
+  runner: tony-macbook
 claim:
-  since: 2026-11-19 18:04
+  since: 2026-11-19 18:57
