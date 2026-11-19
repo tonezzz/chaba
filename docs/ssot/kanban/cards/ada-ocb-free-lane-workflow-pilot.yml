@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
-column: doing
-updated: 2026-11-19 15:07
+column: backlog
+updated: 2026-11-19 15:11
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -38,6 +38,10 @@ comms:
   from: chaba
   text: started devin-task-ada-ocb-free-lane-workflow-pilot-1795075647 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/or-free-nemotron-ultra)
+- at: 2026-11-19 15:11
+  from: idc02
+  text: 'finished (failed): exit=1 ain process exited, code=exited, status=1/FAILURE | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.servic
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
 action:
   type: dispatch
   repo: chaba
@@ -82,9 +86,14 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: queued
   agent_profile: ops-readonly
-  runner: idc02
   attempts: 1
+  result: 'exit=1 ain process exited, code=exited, status=1/FAILURE | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service:
+    Failed with result ''exit-code''. | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service: Consumed
+    13.145s CPU time.'
+  last_failure: 'exit=1 ain process exited, code=exited, status=1/FAILURE | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service:
+    Failed with result ''exit-code''. | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service: Consumed
+    13.145s CPU time.'
 claim:
   since: 2026-11-19 15:07
