@@ -1,0 +1,39 @@
+id: mddb-leader-bge-m3-migration-11023
+title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
+column: backlog
+updated: 2026-11-19 13:06
+priority: high
+tags:
+- mddb
+- embed
+- bge-m3
+- idc03
+- ada-memory
+- migration
+spec: 'Follow-on to the proven :11027 cms-plane migration (done 2026-11-19). Leader :11023 is the LAST gemini-embedding-2
+  plane: 63 collections / 27.7k docs, dominated by ada-ha-* memory banks — highest stakes.
+
+
+  EVIDENCE (2026-11-19 smoke eval): 40 query x 4 bank pairs, gemini :11023 vs bge :11028 (idc02 mddb-embed shadow
+  bank): mean top-5 overlap 30% — consistent with the :11027 spike (31-36%) and expected for a space change, not
+  a quality signal. Spot-checks show bge top hits at least as relevant (wifi query -> literal password note). cms-plane-bge-golden-set-eval
+  card still open for labeled recall if wanted before cutover.
+
+
+  STEPS: (1) verify idc02 read-only follower embed/query path — ro mode may not embed queries; if it does, sync
+  env or accept degraded follower search. (2) pre-warm bge-m3 on all embed-pool-shim upstreams (keep_alive 30m).
+  (3) Edit ~/.config/containers/systemd/mddb.container: MDDB_EMBEDDING_API_URL -> http://100.102.134.91:11436, MODEL
+  -> bge-m3, DIMENSIONS -> 1024 (backup first). (4) systemctl --user daemon-reload && restart mddb.service — Ada
+  memory_search degraded/mixed-space during window; pick off-peak. (5) Force async vector-reindex ALL 63 collections
+  (list from GET /v1/stats; /v1/vector-reindex {collection,force:true,async:true}); ETA ~8-12h at observed pace.
+  (6) Verify: vector-search sanity on ada-ha-bank-general/personal-tony + Ada memory_search smoke. (7) Update runbook
+  doc + SSOT; rollback before reindex = env revert + restart; after reindex starts rollback costs a full reindex.
+
+
+  Related: spike-migrate-mddb-cms-plane-11027-embed-8f86af (proven), ada-bge-memory-search-shadow (shadow card stays
+  as ongoing validation), cms-plane-bge-golden-set-eval (optional labeled eval gate).'
+ref: MEM-0235
+comms:
+- at: 2026-11-19 13:06
+  from: devin
+  text: card captured via board-api
