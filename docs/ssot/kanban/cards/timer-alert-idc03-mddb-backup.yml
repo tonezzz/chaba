@@ -1,14 +1,14 @@
 id: timer-alert-idc03-mddb-backup
 title: Timer mddb-backup on idc03 failing
 column: backlog
-updated: 2026-11-19 19:08
+updated: 2026-11-19 20:03
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: MEM-0014
 comms:
 - at: 2026-11-11 20:43
@@ -16,24 +16,23 @@ comms:
   text: card captured via board-api
 - at: 2026-11-11 20:53
   from: devin
-  text: '[still suspicious] Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-11 23:13
   from: devin
-  text: '[still suspicious] Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-11 23:50
   from: devin
-  text: 'Still failing: this morning run exited status=125 under the old script. New generalized backup
-    script deployed 21:42 (covers 4 instances, poll-for-native + fallback). Root cause of 125 not yet
-    confirmed - will trigger a manual run after disk cleanup and watch tonight 02:30 timer.'
+  text: 'Still failing: this morning run exited status=125 under the old script. New generalized backup script deployed
+    21:42 (covers 4 instances, poll-for-native + fallback). Root cause of 125 not yet confirmed - will trigger a
+    manual run after disk cleanup and watch tonight 02:30 timer.'
 - at: 2026-11-12 00:41
   from: devin
-  text: 'Root cause of latest failure found and fixed: deployed script had local name=... out=$BK/$name.db
-    on one line - under set -u the $name ref in out= is unbound -> instant exit. Split into two locals;
-    manual run 2026-11-12 00:03-00:35 completed all 4 native backups cleanly (service exit 0). Note: the
-    02:30 status=125 was the older script build failing differently; todays filecopy still landed. Watch
-    tomorrows 02:30 run.'
+  text: 'Root cause of latest failure found and fixed: deployed script had local name=... out=$BK/$name.db on one
+    line - under set -u the $name ref in out= is unbound -> instant exit. Split into two locals; manual run 2026-11-12
+    00:03-00:35 completed all 4 native backups cleanly (service exit 0). Note: the 02:30 status=125 was the older
+    script build failing differently; todays filecopy still landed. Watch tomorrows 02:30 run.'
 - at: 2026-11-12 00:41
   from: tony
   text: closed by tony
@@ -98,8 +97,8 @@ comms:
     — investigate journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-19 08:31
   from: devin
-  text: '[still suspicious] Last run (11-19 03:37) of `mddb-backup.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-19 03:37) of `mddb-backup.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-19 17:03
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -115,11 +114,14 @@ comms:
 - at: 2026-11-19 19:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
-spec: Investigate why `mddb-backup.service` on `idc03` resulted in an exit-code failure by inspecting
-  the journal using `journalctl --user -u mddb-backup.service`. Before running the investigation, redeploy
-  the drifted runner-agent on `idc03` by copying `scripts/board/runner-agent.py` from the chaba repo to
-  `idc03:~/.local/bin/runner-agent`. The done-condition is verified when the runner-agent is successfully
-  updated on `idc03` and the root cause of the `mddb-backup.service` failure is identified from the journal
-  logs.
+spec: Investigate why `mddb-backup.service` on `idc03` resulted in an exit-code failure by inspecting the journal
+  using `journalctl --user -u mddb-backup.service`. Before running the investigation, redeploy the drifted runner-agent
+  on `idc03` by copying `scripts/board/runner-agent.py` from the chaba repo to `idc03:~/.local/bin/runner-agent`.
+  The done-condition is verified when the runner-agent is successfully updated on `idc03` and the root cause of
+  the `mddb-backup.service` failure is identified from the journal logs.
