@@ -1,7 +1,7 @@
 id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
 title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
-column: review
-updated: 2026-11-19 08:28
+column: done
+updated: 2026-11-19 08:29
 priority: high
 tags:
 - idc03
@@ -186,6 +186,9 @@ comms:
   text: Re-dispatch session started. Prior dispatch (2026-11-19 08:13) already landed the stagger declaration; this
     run is verifying the done criteria on live idc03 (serialized starts in journal + mem delta <1GB) and checking
     for drift.
+- at: 2026-11-19 08:29
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -203,3 +206,7 @@ action:
   verified: true
 claim: {}
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 08:29
+  note: verified — evidence checks green, closing itself
