@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-stable-path
 title: 'ada-ocb: point ada-control MCP at a stable origin/main bridge, not a live checkout'
-column: doing
-updated: 2026-11-19 08:43
+column: review
+updated: 2026-11-19 08:47
 brief: 'Global ~/.config/opencode/opencode.json runs ada-control as `python3 /home/tony/CascadeProjects/ada-voice/opencode/ada_mcp.py`
   — a checkout that is currently on branch ada-consult-pr12-edit with uncommitted WIP. Every OpenChamber session
   silently loads whatever bridge file that checkout happens to hold (observed 2026-11-18: divergent consult WIP,
@@ -27,10 +27,14 @@ spec: 'Deliver a stable bridge distribution for OpenChamber/OpenCode MCP clients
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
+  result: 'exit=0 ing `mcp.ada-control.command` in live `opencode.json` files remains the documented manual cutover
+    step. | devin-task-20261119-084016-deliver-a-stable-bridge-distri.service: Consumed 21.724s CPU time, 319.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-11-19 08:38
   from: chaba
@@ -67,4 +71,10 @@ comms:
   text: 'done on dispatch branch 77b9622 (not pushed): sync-ocb-bridge.sh + ada-ocb-bridge-sync timer units + kb
     doc + ssot + 9 tests (refuse-dirty covered); live dry-run verified ff-report and dirty refusal. Host cutover
     left manual per spec.'
+- at: 2026-11-19 08:47
+  from: idc02
+  text: 'finished (ok): exit=0 ing `mcp.ada-control.command` in live `opencode.json` files remains the documented
+    manual cutover step. | devin-t'
 ref: SYS-0218
+review_kind: verify
+claim: {}
