@@ -699,6 +699,21 @@ jobs:
     health — the OPS-1074 divergence sat for days before surfacing as
     >60s writes. Alerts deduped 12h; state
     ~/.local/state/served-checkout-watchdog.json.'
+- id: netdata-nodes-watch
+  name: Netdata fleet nodes watchdog (streaming child drop-out)
+  host: idc03
+  dispatch: systemd
+  every: 15min
+  persistent: true
+  timeout: 60s
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/netdata-nodes-watch.py
+  note: '2026-11-19 — watches the self-hosted netdata parent
+    (tony-omen :19999, 8 streaming children over tailnet) via
+    /api/v1/info + /api/v2/nodes; files a deduped board-api /inbox
+    entry when the parent is unreachable or an expected node is absent.
+    State ~/.local/state/netdata-nodes-watch.json; alerts deduped 12h.
+    Expected node list defaults to the 8-node fleet — edit --nodes or
+    this note if the fleet changes.'
 - id: timer-timeline-update
   name: Timer timeline sweep (collects all hosts' timer/service states)
   host: tony_omen
