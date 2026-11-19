@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: backlog
-updated: 2026-11-19 12:54
+updated: 2026-11-19 13:04
 priority: medium
 tags:
 - merge-sweep
@@ -84,15 +84,23 @@ comms:
   from: tony
   text: 'raised request approve-dispatch-of-this-multi-step-pyte-f36ee6: Approve dispatch of this multi-step pytest/test-gate
     fix on the Devin lane? The recommended implementation is repo-scope'
+- at: 2026-11-19 13:04
+  from: tony
+  text: 'answered approve-dispatch-of-this-multi-step-pyte-f36ee6: Approve Devin dispatch'
+- at: 2026-11-19 13:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
     is repo-scoped pytest in Chaba's .venv, not a global host install. Devin lane uses paid plan tokens (typically
     100s of k tokens/session).
-  status: open
+  status: answered
   at: 2026-11-19 12:54
   from: tony
   options:
   - Approve Devin dispatch
   - Hold for no-cost route
   suggested: Approve Devin dispatch
+  answer: Approve Devin dispatch
+awaiting_action: true
