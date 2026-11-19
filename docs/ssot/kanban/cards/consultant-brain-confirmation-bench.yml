@@ -1,0 +1,23 @@
+id: consultant-brain-confirmation-bench
+title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
+column: backlog
+updated: 2026-11-19 13:14
+priority: medium
+tags:
+- ada
+- t3
+- consultant
+- bench
+spec: 'Follow-up to ada-consultant-tier corpus audit (2026-11-19). After relabeling observe-006->defer, qwen3:8b
+  scored P/P/P/m — it hit the letter of the 3x-consecutive gate but run4 over-acted on 8 defer-golds (dangerous
+  direction). Run a fresh confirmation series on the CORRECTED corpus: python3 scripts/bench/card-judgment/score.py
+  --entity ada --model qwen3:8b --base-url <kk-mac or litellm ollama-qwen38b-kkmac> --enforce --briefs scripts/bench/card-judgment/briefs.json
+  --temperature 0.3 --max-tokens 2048, x3 consecutive runs. Certify only if all 3 pass AND no defer-gold->act/correct
+  misses appear (over-act is the disqualifying direction). If certified, flip ADA_JOBS_CONSULTANT=1 + install ada-jobs-consultant
+  units on idc03 (activation order in docs/ssot/jobs/bench/2026-11-09-consultant-brain-bench.yml). Also worth one
+  qwen2.5:32b run — post-audit it is ONE case under the deference bar; a prompt tune could put it over.'
+ref: ADA-0236
+comms:
+- at: 2026-11-19 13:14
+  from: devin
+  text: card captured via board-api
