@@ -1,0 +1,45 @@
+id: auto-route-bounded-card-classes-to-execu-257c7a
+title: Auto-route bounded card classes to executor=claude (classifier policy)
+column: backlog
+updated: 2026-11-19 08:29
+priority: medium
+tags:
+- claude-lane
+spec: 'Follow-up to PR #187 (claude executor lane, merged 2026-11-18). Today executor=claude requires an explicit
+  action.executor pin. Add classifier policy so bounded card classes auto-route to claude on CLAUDE_LANES=1 hosts,
+  saving Devin tokens.
+
+
+  Eval data (2026-11-18, tony-claude-code-00): sonnet best tokens-per-verified-fix; haiku churned 2x tokens via
+  more turns; effort=low skipped tests on a code card. Both production pilots cost < $0.20 list.
+
+
+  Spec:
+
+  - Mirror the kk_mac_local try-first pattern OR the opencode LANE_PROFILES pattern — pick whichever fits the codebase
+  better; document why in the outcome.
+
+  - Admit only bounded classes: verify-only, small repo-local fixes with a verify command, report/triage generation.
+  NEVER auto-route: cards with action.executor already set, host/target_host pins, labels outside the host set,
+  deploy/push requirements, cross-repo work.
+
+  - Gate per host: only claim when CLAUDE_LANES=1 AND claude-dispatch exists AND claude auth probe passes (cheap
+  check, no tokens burned).
+
+  - Model policy: default sonnet; action.model still wins when explicitly set.
+
+  - Fail closed like opencode: unservable claude-routed card stays queued with a defer note, never falls back to
+  devin silently — BUT auto-routed (un-pinned) cards MAY fall back to normal lane classification since the card
+  never declared claude.
+
+  - Tests: claimable/routing for each admitted class + each exclusion; no-fallback for pinned executor=claude.
+
+  - Verify: python3 -m pytest tests/board/test_executor_contract.py tests/board/test_runner_agent_lane.py -q'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-0215
+comms:
+- at: 2026-11-19 08:29
+  from: devin
+  text: card captured via board-api
