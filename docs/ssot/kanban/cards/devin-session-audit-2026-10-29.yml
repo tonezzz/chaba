@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
-updated: 2026-11-19 18:53
+column: backlog
+updated: 2026-11-19 18:55
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -162,16 +162,27 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: tony-omen
+  text: 'finished (failed): exit=1 261119-180543-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261119-18054 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-180543-finish-artifact-landing-verifi (rate limit)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
-  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+  result: 'exit=1 261119-180543-finish-artifact-landing-verifi.service: Failed with result ''exit-code''. | devin-task-20261119-180543-finish-artifact-landing-verifi.service:
+    Consumed 12min 26.816s CPU time over 48min 58.610s wall clock time, 1.1G memory peak.'
   repo: chaba
   executor: devin
-  runner: tony-omen
   attempts: 1
+  last_failure: 'exit=1 261119-180543-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261119-180543-finish-artifact-landing-verifi.service: Consumed 12min 26.816s CPU time over 48min
+    58.610s wall clock time, 1.1G memory peak.'
 claim:
   since: 2026-11-19 18:04
