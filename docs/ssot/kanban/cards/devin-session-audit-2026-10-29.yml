@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
 column: backlog
-updated: 2026-11-19 17:03
+updated: 2026-11-19 18:03
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -123,11 +123,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:03
+  from: devin
+  text: re-spawned from report page
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
-  runner: tony-dell
   result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+  repo: chaba
+  executor: devin
