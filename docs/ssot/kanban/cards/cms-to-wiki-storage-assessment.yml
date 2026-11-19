@@ -1,7 +1,7 @@
 id: cms-to-wiki-storage-assessment
 title: Assess residual CMS-to-Wiki storage reduction options
-column: doing
-updated: 2026-11-19 12:50
+column: done
+updated: 2026-11-19 12:51
 priority: medium
 program: docs-infrastructure
 tags:
@@ -25,13 +25,14 @@ spec: 'Read-only assessment of whether moving some or all remaining CMS content 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-19 12:50
+  verified: true
 comms:
 - at: 2026-11-19 12:38
   from: chaba
@@ -72,8 +73,17 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261119-124000-read-only-assessment-of-whethe no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-19 12:51
+  from: chaba
+  text: 'merge-sweep: merged 656dc82d (dispatch/20261119-124000-read-only-assessment-of-whethe from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261119-124000-read-only-assessment-of-whethe.md)
+    — auto-closed'
 note: This is a residual-scope assessment, not a duplicate of the completed Education/Wiki migration or mddb-cms
   compaction.
 ref: KNB-0232
 claim:
   since: 2026-11-19 12:39
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 12:51
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261119-124000-read-only-assessment-of-whethe.md
