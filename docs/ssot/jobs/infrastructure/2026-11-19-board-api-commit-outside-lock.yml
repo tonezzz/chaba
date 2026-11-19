@@ -1,4 +1,5 @@
 id: 2026-11-19-board-api-commit-outside-lock
+title: board-api commits card writes post-lock via coalesced worker
 card: board-api-commit-outside-lock
 date: "2026-11-19"
 domain: infrastructure
@@ -19,25 +20,25 @@ why: >
   holds and the git index lock raced kanban-commit/git-safe-pull.
 
 design:
-  - _queue_commit(p, label, extra): called under the request flock,
+  - "_queue_commit(p, label, extra): called under the request flock,
     records repo-relative paths + label in _pending_commits (no
-    subprocesses); BOARD_API_COMMIT=0 keeps the sweep-only model.
-  - _commit_loop worker: waits on _commit_flag, sleeps
+    subprocesses); BOARD_API_COMMIT=0 keeps the sweep-only model."
+  - "_commit_loop worker: waits on _commit_flag, sleeps
     BOARD_API_COMMIT_DEBOUNCE_S (default 0.4s) so bursts coalesce,
-    drains _pending_commits, joins labels into one commit message.
-  - _commit_paths(rels, label): probes the card flock LOCK_NB first —
+    drains _pending_commits, joins labels into one commit message."
+  - "_commit_paths(rels, label): probes the card flock LOCK_NB first —
     defers while a request or git-safe-pull's pull+autostash+pop phase
     holds it (never HOLDS the flock across git ops); honours the
     existing rebase-merge/rebase-apply/MERGE_HEAD/CHERRY_PICK_HEAD
     gitdir guard; per-path add fallback when one queued pathspec no
     longer matches (untracked file deleted before commit) so one bad
-    path can't drop the batch; "nothing to commit"/non-repo paths are
-    terminal-true.
-  - retry: failures requeue and retry every BOARD_API_COMMIT_RETRY_S
+    path can't drop the batch; 'nothing to commit'/non-repo paths are
+    terminal-true."
+  - "retry: failures requeue and retry every BOARD_API_COMMIT_RETRY_S
     (default 5s); a path exceeding BOARD_API_COMMIT_MAX_TRIES (default
-    60) drops to the kanban-commit sweep with a stderr note.
-  - commit_pending_flush(timeout): test/drain hook — waits until
-    pending is empty and no commit is in flight.
+    60) drops to the kanban-commit sweep with a stderr note."
+  - "commit_pending_flush(timeout): test/drain hook — waits until
+    pending is empty and no commit is in flight."
 
 durability: >
   A card write sits dirty for ~debounce+git seconds, not a sweep
@@ -47,19 +48,19 @@ durability: >
   kanban-commit.timer remains the backstop exactly as before.
 
 verify:
-  - python3 scripts/board/board-api.py --selftest (commit worker,
+  - "python3 scripts/board/board-api.py --selftest (commit worker,
     coalescing, mid-rebase defer+retry, BOARD_API_COMMIT=0, non-repo
-    filter all covered)
-  - python3 -m unittest tests.board.test_board_api_reads
+    filter all covered)"
+  - "python3 -m unittest tests.board.test_board_api_reads
     tests.board.test_board_api_mutations
-    tests.board.test_board_api_action_persistence (58 tests)
-  - sandboxed burst smoke: 40 concurrent /comment -> hold_s_max 0.042s,
-    2 coalesced commits, tree clean
-  - flock-held deferral: queued commit stays dirty while the card
-    flock is held, lands immediately on release
-  - done-condition on live: /lock-stats hold_s_max <5s for
+    tests.board.test_board_api_action_persistence (58 tests)"
+  - "sandboxed burst smoke: 40 concurrent /comment -> hold_s_max
+    0.042s, 2 coalesced commits, tree clean"
+  - "flock-held deferral: queued commit stays dirty while the card
+    flock is held, lands immediately on release"
+  - "done-condition on live: /lock-stats hold_s_max <5s for
     /comment /action /card and zero `lock wait >25s` 503s over 24h;
-    requires merge + service restart on the board host first.
+    requires merge + service restart on the board host first."
 
 deploy_note: >
   Change is dormant until merged to master and chaba-board-api is

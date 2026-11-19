@@ -1,0 +1,65 @@
+id: 2026-11-19-board-api-residual-lock-holds
+title: board-api commit worker verify-by-state + in-flock phase timing
+card: board-api-residual-lock-holds
+date: "2026-11-19"
+domain: infrastructure
+status: implemented
+summary: >
+  Follow-up to f1f0b (commit-outside-lock). Two changes: the commit
+  worker now decides done-ness by the queued paths' porcelain state
+  instead of the git commit rc, and the card flock gained cheap
+  phase timing (load_ms / mutate_ms / save_ms / card_path_ms) that
+  prints on the existing slow-lock journal line.
+
+why: >
+  Post-f1f0b soak (live since the 2026-11-19 10:24 restart): /lock-stats
+  showed /comment n=193 timeouts=3 wait_max=25.7s hold_max=80.7s,
+  /action timeouts=1, /card timeouts=1; journal still had "lock wait
+  >25s" 503s at 10:38 (/inbox /card /comment x2), 11:40, 11:44. The
+  commit worker retry-stormed "board-api commit skipped: ... Changes
+  not staged for commit" every ~5s: git-commit-with-pathspec rc=1s
+  whenever the queued paths are already clean (committed by the
+  kanban-commit sweep) while OTHER files are dirty — the served
+  checkout always is — and the worker requeued the finished batch
+  until COMMIT_MAX_TRIES. Separately, residual holds up to ~80s meant
+  something inside the flock was still slow, but the journal line
+  could not attribute the time.
+
+design:
+  - "_rels_dirty(rels) runs git status --porcelain -- <rels>: True
+    dirty, False provably clean, None check-failed (treated as
+    still-dirty so a real write keeps its retry)."
+  - "_commit_paths: after git add, a provably-clean batch returns done
+    WITHOUT attempting the commit (kills the retry storm at its
+    source); on add/commit transient failure the batch is done only
+    when paths are provably clean, else requeued. Lock-held deferral,
+    rebase/merge gitdir guard, per-path add fallback, COMMIT_MAX_TRIES
+    aging, and BOARD_API_COMMIT=0 all unchanged."
+  - "phase timing: thread-local accumulator armed by do_POST while it
+    owns the card flock; load()/save()/card_path() add their elapsed
+    ms; mutate_ms = hold remainder (do_* helpers, delivery queueing).
+    Off-request callers pay one getattr and record nothing."
+  - "slow-lock journal line now reads 'board-api lock wait=Xs held=Ys
+    path=P load_ms=.. mutate_ms=.. save_ms=.. card_path_ms=..' (only
+    when wait/hold >= BOARD_API_LOCK_SLOW_S, same gate as before)."
+
+verify:
+  - "python3 scripts/board/board-api.py --selftest — extended with the
+    sweep-race case (queued path committed externally while the flock
+    is held -> batch finishes, HEAD stays the sweep commit, unrelated
+    dirt untouched)"
+  - "python3 -m unittest tests.board.test_board_api_reads
+    tests.board.test_board_api_mutations
+    tests.board.test_board_api_action_persistence (58 tests)"
+  - "sandboxed HTTP smoke vs throwaway repo with permanent unrelated
+    dirt: (1) normal /comment still commits promptly; (2) externally
+    committed queued path -> batch ends silently, zero 'commit
+    skipped' lines, no spurious commit; (3) slow-lock lines carry all
+    four phase fields and sum <= hold."
+
+deploy_note: >
+  Dormant until merged to master and chaba-board-api restarts on
+  idc03. After restart: /lock-stats hold_s_max <5s for
+  /comment /action /card /inbox and zero "lock wait >25s" 503s over
+  24h under normal board use; the next slow-lock journal line should
+  name the residual phase directly from load_ms/mutate_ms/save_ms.
