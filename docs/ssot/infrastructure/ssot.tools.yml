@@ -1247,6 +1247,18 @@ tools:
   surfaces:
     ada-ocb: ada_ssot_get
   source: ada-voice:opencode/ada_mcp.py
+- name: ssot.search
+  kind: tool
+  sig: ada_ssot_search(query,collection,limit)
+  policy: read
+  backend: mddb /v1/fts lexical search (allowlisted ssot collections)
+  transport: stdio-mcp
+  agents:
+  - ada-ocb
+  surfaces:
+    ada-ocb: ada_ssot_search
+  source: ada-voice:opencode/ada_mcp.py
+  notes: ada_ssot_search:bounded exact-term SSOT lookup (ADA-0240); ada_context_pack=semantic, ada_ssot_get=hydrate
 - name: board.preflight
   kind: tool
   sig: ada_preflight(card_reference,selection_confirmation,selection_token)
