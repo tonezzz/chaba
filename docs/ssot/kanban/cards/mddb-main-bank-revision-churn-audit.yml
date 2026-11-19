@@ -1,7 +1,7 @@
 id: mddb-main-bank-revision-churn-audit
 title: Audit main MDDB revision churn and retention policy
 column: backlog
-updated: 2026-11-19 14:35
+updated: 2026-11-19 14:36
 brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
   retention.
 priority: medium
@@ -109,5 +109,24 @@ comms:
     has maxRevisions=20 — home/general/handoff unconfigured; (2) root causes are heartbeat writers: list_docs limit=5000
     capped at 1000 -> sync-devin-summaries re-adds ~1,321 invisible devin/* docs hourly (~31.7k writes+embeds/day);
     record_use_bg writes a revision per recall hit (flo'
+- at: 2026-11-19 14:36
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 14:36
+  from: chaba
+  text: banked 88 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 14:36
+  from: chaba
+  text: pushed dispatch/20261119-142416-read-only-audit-of-the-main-md to origin
+- at: 2026-11-19 14:36
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-19 14:36
+  from: chaba
+  text: auto-merged 46cdddd3 (dispatch/20261119-142416-read-only-audit-of-the-main-md) → origin/master
+- at: 2026-11-19 14:36
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-142416-read-only-audit-of-the-main-md,
+    branch dispatch/20261119-142416-read-only-audit-of-the-main-md'
 claim:
   since: 2026-11-19 14:22
