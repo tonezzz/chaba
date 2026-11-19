@@ -1,0 +1,41 @@
+# S1 profile job — info-find canary on tony-omen (card
+# devnest-info-find-skill). Pilot of the Phase-1 read-only lane: a real
+# multi-source research question answered via the shared
+# scripts/devnest/info_find.py adapters (SSOT/code grep + MDDB
+# vector-search + MCP-policy parse) — bash is allowlisted to exactly
+# that command; the agent's final message is the artifact.
+id: p1-info-find-tony-omen
+card: devnest-info-find-skill
+task_class: read_only
+stage: S1
+target_host: tony-omen
+executor: opencode
+profile: info-find
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+task: >-
+  What mechanism converges kanban card YAML files that arrive via
+  dispatch worktree merges, and which endpoint is the preferred write
+  path from non-writer hosts? Answer from at least two source rungs and
+  cite each claim.
+mcp_allowlist: []           # tony-omen runs no mcp-allowlist proxy for
+                            # this lane; the adapter's MDDB rung uses
+                            # direct tailnet HTTP to the cms bank
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/p1-info-find-answer.json
+  schema: >-
+    evals/opencode-lane/profiles/info-find/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/info-find/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: none
+heartbeat:
+  required: true
+  stale_s: 300

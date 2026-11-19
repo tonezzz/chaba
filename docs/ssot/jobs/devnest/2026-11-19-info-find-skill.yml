@@ -1,0 +1,128 @@
+title: "info-find skill — portable DevNest multi-source research
+  capability (Phase 1: conversational skill)"
+date: 2026-11-19
+card: devnest-info-find-skill
+session: "dispatch-wt-20261119-122207-explore-and-implement-a-portab (tony-omen)"
+status: "implemented — skill package + shared adapters + read-only
+  opencode profile + tests, all local-verified; queued research task
+  class deferred to Phase 2 (Tony decision: conversational skill first)"
+
+context: >
+  The interactive info-find flow lived as a user-level Devin skill
+  (~/.config/devin/skills/info-find: SKILL.md + a Node planner whose
+  search steps depend on the invoking agent's tools). DevNest needed the
+  same capability portable to any agent lane — executor-neutral,
+  bounded, citable. Tony answered the card request: Phase 1 =
+  conversational skill first, pilot on Chaba; no autonomous queued
+  research executor this phase.
+
+deliverables:
+  shared_adapters: >-
+    scripts/devnest/info_find.py — stdlib-only CLI (plan|run|record).
+    Classifies intent, fans out across source adapters, merges ranked
+    results with citations, audits to an isolated per-project/session
+    cache. rg when present, stdlib walker otherwise.
+  portable_skill: >-
+    .agents/skills/info-find/SKILL.md — cross-agent SKILL.md package
+    (agentskills folder standard) discoverable by any agent runtime in
+    the checkout. Thin wrapper: run the script, service deferred rungs
+    with the agent's own tools, close the audit. The older
+    .devin/skills/info-find (Devin-specific variant) is untouched —
+    duplicate names are already the norm across .agents/.devin.
+  lane_exposure: >-
+    evals/opencode-lane/profiles/info-find/ — read-only opencode task
+    profile (stages S1-S3, task_classes read_only/report/diagnosis).
+    bash allowlist is exactly `python3 scripts/devnest/info_find.py`;
+    no writes, no secrets, MCP limited to the SSOT/education read-only
+    subset. Fixture: task.yaml contract + prompt.md + held-out
+    verify.py (citation resolvability, honest source accounting —
+    a deferred rung can't be claimed as consulted).
+  pilot_envelope: >-
+    evals/opencode-lane/jobs/p1-info-find-tony-omen.yaml — S1 supervised
+    canary (heartbeat required, quota 3, OPENCODE_LANES=1 gate).
+    `lane_gate.py lint` + `opencode_profiles.py check`/`render` all
+    verified on this host; running it is a supervisor decision.
+  tests: >-
+    tests/devnest/test_info_find.py — 15 tests: routing matrix +
+    plan flags, dead-MDDB fallback (unavailable recorded, partial
+    results still returned), dedupe/rank/citation shape,
+    per-project+per-session cache isolation, TASK_DIR session
+    fallback, no-rg stdlib path, MCP policy deferred-step parse.
+
+capability_gate:                # what the capability may and may not do
+  admitted:
+    - "read-only multi-source retrieval: ssot|code|health|mddb rungs
+       in-script; mcp|web rungs deferred to the agent layer"
+    - "MDDB: /health preflight then POST /v1/vector-search per
+       collection — read-only endpoints; per-bank/collection failure
+       is recorded, never fatal"
+    - "health probes (--probe-health): GET only, capped 5 URLs from
+       matching ssot*health*.yml files, 4s timeout"
+    - "cache/audit under ~/.cache/devin/info-find/<project>/
+       sessions/<session>/ — outside any git tree; INFO_FIND_CACHE_BASE
+       overrides (e.g. into a task dir)"
+  denied:
+    - "no writes to the checkout, no mutating endpoints, no
+       ~/.config/secrets reads"
+    - "the script never calls MCP tools or web search itself — those
+       stay deferred so a no-web lane reports rather than fabricates"
+    - "opencode profile: bash beyond the single adapter command, any
+       write/edit/patch/webfetch tool, mcp_debug/health/get_file"
+  project_detection: >-
+    --project > INFO_FIND_PROJECT > git remote basename > cwd basename —
+    dispatch worktrees resolve to the real repo name (chaba), not the
+    worktree dir.
+  session_detection: >-
+    --session > DEVIN_SESSION_ID > basename(TASK_DIR) > pid.
+  env_overrides: >-
+    INFO_FIND_MDDB_URLS (comma list), INFO_FIND_MDDB_COLLECTIONS,
+    INFO_FIND_WEB_CMD (pluggable web adapter; absent => deferred),
+    INFO_FIND_RG, INFO_FIND_CACHE_BASE, INFO_FIND_PROJECT.
+
+source_contract:
+  statuses: "ok | degraded | unavailable | deferred — per source in
+    sources{}; unavailable[] and deferred[] summarize"
+  result_shape: "{source, ref, excerpt, score, rank[, meta]} — ref is
+    file:line | mddb://<collection>/<key> | URL"
+  rank_order: "mddb semantic score > web > ssot match-density > health >
+    code; dedupe by (source, ref)"
+  deferred_rungs:
+    web: "agent runs web_search (explore intents lead with '<q> github'
+      — the GitHub precedent rung); --web-json merges external hits
+      back into the ranker; INFO_FIND_WEB_CMD is the unattended
+      adapter hook"
+    mcp: "policy domains parsed from **/ssot.mcp-tools.yml; agent calls
+      the primary server via mcp_list_tools/mcp_call_tool honoring
+      policy.<domain> — never outside the allowlist"
+
+verification:
+  - "python3 -m pytest tests/devnest/test_info_find.py — 15/15 pass"
+  - "python3 scripts/devnest/opencode_profiles.py lint info-find — ok"
+  - "live run on tony-omen: 'kanban card write path' -> mddb hits
+     (infrastructure-ssot, score 0.68) ranked above ssot/code refs;
+     audit + plan/result caches landed under
+     ~/.cache/devin/info-find/chaba/sessions/test1/"
+
+open_followups:
+  - "Phase 2 (not carded this phase): queued card research task class —
+     a research pack producer + the info-find profile as executor,
+     feeding card comms. Tony chose conversational-first; revisit after
+     pilot evidence."
+  - "Web rung in unattended lanes needs a real adapter
+     (INFO_FIND_WEB_CMD) — candidates: a LiteLLM search tool or a
+     searx instance; until then web stays deferred outside
+     conversational agents."
+  - "MDDB collection defaults are per-project guesses
+     (<project>-docs/-lessons + infrastructure-ssot); a collections
+     registry could replace the guessing."
+
+references:
+  - scripts/devnest/info_find.py
+  - .agents/skills/info-find/SKILL.md
+  - evals/opencode-lane/profiles/info-find/
+  - evals/opencode-lane/jobs/p1-info-find-tony-omen.yaml
+  - tests/devnest/test_info_find.py
+  - ~/.config/devin/skills/info-find/ (legacy interactive variant)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml (lane catalog)
+  - scripts/devnest/mddb_probe.py (bank map + /v1/search pattern)
+  - scripts/bench-recall.py (MddbRest /v1/vector-search contract)

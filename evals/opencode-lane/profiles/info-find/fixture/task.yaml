@@ -1,0 +1,25 @@
+id: info-find
+title: Multi-source research question with mandatory citations
+class: read_only
+timeout_s: 420
+artifact: evals/opencode-lane/out/info-find-answer.json
+description: >-
+  Answer a research question via the shared info-find adapters plus
+  repo read tools. Artifact is the agent's final message; the runner
+  writes it.
+contract:
+  required_fields:
+    question: "the research question, echoed"
+    answer: "prose answer — 'not found' is a valid answer"
+    citations: "list of {source, ref, note} — every repo-path ref MUST
+                resolve in the checkout; mddb:// and http(s) refs are
+                format-checked; >= 2 entries"
+    sources_consulted: "list of source rungs actually used
+                        (e.g. mddb, ssot, code, health, mcp)"
+    unavailable_sources: "list of sources that reported unavailable
+                          (may be empty)"
+    deferred_rungs: "list of rungs the plan deferred to the agent
+                     layer (may be empty)"
+    read_only: "must be true"
+  citation_roots: [docs/, AGENTS.md, scripts/, evals/, reports/, mddb://,
+                   http]
