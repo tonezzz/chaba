@@ -1,0 +1,90 @@
+title: mddb-backup disk-headroom guard — canonical script hardened after ENOSPC
+subtitle: 2026-11-19 ~02:55 incident — 18G partial pull on 99%-full / tore
+  kanban cards + killed board-api; script can never start an unfinishable
+  pull again
+icon: shield
+
+card: mddb-backup-disk-headroom-guard-d5e029
+date: 2026-11-19
+dispatch: 20261119-101741-add-a-disk-headroom-guard-to-m (tony-macbook)
+status: versioned + locally tested — deploy to idc03 pending merge
+
+# ------------------------------------------------------------- context
+context: |
+  Incident 2026-11-19 ~02:55 ICT: mddb-backup's `podman cp` streamed an
+  ~18-19GB uncompressed mddb-ops DB backup onto a 99%-full / (290G total,
+  3.6G free). ENOSPC cascaded: torn kanban card writes (board-janitor's
+  merge-sweep direct write_text), board-api 503 outage, journald gap
+  02:56:18->03:37. Partial file manually deleted ~08:1x (freed ~18G).
+  RCA card: kanban-card-torn-write-investigation-b4034e; jobs file:
+  docs/ssot/jobs/board/2026-11-19-torn-card-write-enospc.yml.
+
+  The live ~/mddb-backup.sh on idc03 (generalized 4-instance script
+  deployed 2026-11-11 per card backup-coverage-mddb-ops-mddb-cms-mddb-e)
+  was NEVER versioned in the chaba repo — the only repo copy was the
+  older leader-era single-instance stacks/idc01/mddb/mddb-backup.sh.
+  This change lands the idc03 script in the repo for the first time:
+  stacks/idc03/mddb/mddb-backup.sh (the stack README already listed it).
+
+# ------------------------------------------------------------- what changed
+guards: |
+  1. PRE-FLIGHT df check — before each instance, require free >=
+     max(MDDB_BACKUP_MIN_FREE_GB=15, 2x live db size via `podman exec
+     stat`). Low headroom => skip that instance + board alert; the run
+     exits non-zero so timer-sentinel also flags it.
+  2. .tmp + rename — pulls land as *.db.gz.tmp and rename only after
+     `gzip -t` passes. The pull streams `podman exec cat | gzip` so only
+     compressed bytes hit the host fs (~10x less than the incident's raw
+     podman cp); uncompressed `podman cp` to .tmp remains only as the
+     shell-less-image fallback, still under the 2x margin.
+  3. Retention sweep — stale .tmp (>2h) + stale in-container staging
+     (>60min) purged BEFORE the df check; per-instance KEEP_COPIES=3;
+     whole-dir CAP_GB=80 cap that never deletes the newest copy of an
+     instance. Instance globs pinned to "<name>-2*.db.gz" — a bare
+     "mddb-*" also matches "mddb-ops-*" (bug caught in local test).
+  4. Alert path — board-api /comment on timer-alert-idc03-mddb-backup +
+     /inbox (priority high, tags ops/mddb/backup) via
+     http://127.0.0.1:8787; unreachable board-api degrades to stderr +
+     exit 1.
+
+env_knobs: |
+  MDDB_BACKUP_INSTANCES   "mddb:11023 mddb-ops:11026 mddb-cms:11027"
+  MDDB_BACKUP_HOST        100.102.134.91 (tailnet IP the instances bind)
+  MDDB_BACKUP_DIR         ~/mddb-backups
+  MDDB_BACKUP_MIN_FREE_GB 15
+  MDDB_BACKUP_KEEP_COPIES 3
+  MDDB_BACKUP_CAP_GB      80
+  MDDB_BACKUP_NATIVE_WAIT_S 1800 (staged-file poll window)
+  MDDB_BACKUP_VERIFY_IMAGE docker.io/tradik/mddb:2.15.4
+  MDDB_BACKUP_BOARD_API   http://127.0.0.1:8787
+  MDDB_BACKUP_ALERT_CARD  timer-alert-idc03-mddb-backup
+
+# ------------------------------------------------------------- verified
+verification: |
+  Local harness (stub podman/curl) on tony-macbook worktree:
+  - happy path: staged file polled -> cat|gzip -> .db.gz, no .tmp left,
+    exit 0
+  - MIN_FREE_GB=999999: both instances SKIP, zero files written, exit 1
+  - 60G db (needs 120G > 113G free): SKIP via the 2x-expected margin
+  - retention: keep=2 honored per instance with colliding mddb/mddb-ops
+    prefixes; stale >2h .tmp purged at start
+  - dir cap=0: prunes to exactly newest-per-instance (floor holds)
+  - cat-less container: podman cp .tmp fallback still lands .db.gz
+  Live idc03 verification happens post-deploy (timer 02:30).
+
+deploy: |
+  scp stacks/idc03/mddb/mddb-backup.sh idc03:~/mddb-backup.sh
+  then: systemctl --user start mddb-backup.service   # manual verify run
+  watch: journalctl --user -u mddb-backup.service -f
+  Done-condition from card: idc03 disk stays <90% after a week of cycles
+  — observe ~/mddb-backups across the 02:30 runs.
+
+follow_ups: |
+  - stacks/idc01/mddb/mddb-backup.sh is still the leader-era single-
+    instance script with no guards; if idc01 keeps a backup timer it
+    should adopt this script (env-overridable INSTANCES) — not changed
+    here, out of card scope.
+  - /app/backups staging still lands on the container layer = same root
+    fs. A dedicated Volume=/app/backups mount in the quadlet would move
+    staging off the container layer — requires a production leader
+    restart, needs approval, carded separately if wanted.
