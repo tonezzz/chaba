@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: doing
-updated: 2026-11-19 20:37
+column: backlog
+updated: 2026-11-19 20:42
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,9 +69,15 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: running
+  status: failed
   runner: idc02
   attempts: 1
+  result: 'exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed with result
+    ''exit-code''. | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Consumed 13.029s CPU time,
+    521.9M memory peak, 0B memory swap peak.'
+  last_failure: 'exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed with result
+    ''exit-code''. | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Consumed 13.029s CPU time,
+    521.9M memory peak, 0B memory swap peak.'
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -84,5 +90,9 @@ comms:
   from: chaba
   text: started devin-task-ops-1025-remote-read-smoke-idc03-1795095438 on idc02 (dispatch executor=opencode profile=ops-remote-read
     model=litellm/or-free-nemotron-nano)
+- at: 2026-11-19 20:42
+  from: idc02
+  text: 'finished (failed): exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed
+    with result ''exit-code''. | devi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
 claim:
   since: 2026-11-19 20:37
