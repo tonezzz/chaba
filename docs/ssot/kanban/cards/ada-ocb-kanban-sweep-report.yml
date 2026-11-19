@@ -1,0 +1,29 @@
+id: ada-ocb-kanban-sweep-report
+title: 'Ada-OCB: read-only Kanban stuck-card sweep tool'
+column: backlog
+updated: 2026-11-19 08:29
+brief: The card-ops-sweep skill and card-status procedure already define evidence-first triage; add a callable Ada-OCB
+  tool to produce one timestamped summary of stuck, failed, and misplaced work without dispatching or mutating cards.
+priority: medium
+tags:
+- ada
+- kanban
+- sweep
+- read-only
+- workflow
+spec: 'Keep docs/kb/card-status-and-processing.md and .devin/skills/card-ops-sweep as the canonical procedure. Add
+  a read-only Ada-Control MCP tool ada_kanban_sweep that uses board-api projections: take one /queue snapshot, then
+  fetch bounded relevant slices (failed/claimed/running/done cards in doing; queued manual/unsupported cards). Default
+  to the last 24 hours and cap results. Classify fresh active work, stale-running cards absent from the active queue,
+  failed-before-session/admission failures, failed-after-start, manual/unsupported queue items, and done-but-still-doing
+  cards. Return the snapshot time, per-card evidence and next safe step, and mutations_performed: []. Never auto-retry,
+  hold, queue, move, close, dispatch, call a model/provider, or inspect host services; all changes remain human-confirmed
+  via board-api. Use projections, not a full board download. Tests cover status classification, stale threshold,
+  manual action, empty/invalid responses, and no mutation. This is distinct from ADA-0042 single-card execution
+  and OPS-0964 OpenCode executor pilot. After merge, update the card-ops-sweep skill to invoke the tool for the
+  initial snapshot and follow its existing evidence and approval rules.'
+ref: ADA-0214
+comms:
+- at: 2026-11-19 08:29
+  from: devin
+  text: card captured via board-api
