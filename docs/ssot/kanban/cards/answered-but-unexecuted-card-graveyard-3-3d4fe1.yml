@@ -1,7 +1,7 @@
 id: answered-but-unexecuted-card-graveyard-3-3d4fe1
 title: Answered-but-unexecuted card graveyard — 39 backlog cards with dead answers; option picks carry no action
 column: backlog
-updated: 2026-11-19 17:18
+updated: 2026-11-19 17:35
 priority: high
 tags:
 - board
@@ -194,3 +194,10 @@ comms:
     verified live on ada-expert-consult-tool (200 vs error). (4) VERBS += postpone->hold. (3) kanban-stats gains
     dead_letters block: awaiting_action total + cards untouched >7d with unanswered counts, rendered in kanban.md
     Needs attention. 698 board tests pass; board-api selftest additions co'
+- at: 2026-11-19 17:35
+  from: devin
+  text: 'Option 1 implemented, commit 90a98066c41 on served master: (a) board-cli request gains --option id|label|action
+    (repeatable, action optional, client-side validated); (b) /request door now rejects dict options lacking id/label/v/d
+    and any action outside queue|retry|close|hold|none — bad actions can no longer dead-letter silently; (c) board-invariants
+    gains R4 bad-option-action (YAML-bypass catch, warn-only via existing alert path); (d) docs/kb/board-api-write-door.md
+    documents the contract + idem'
