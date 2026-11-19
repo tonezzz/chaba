@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/devnest/lane_gate.py"
@@ -158,6 +159,43 @@ class Admit(unittest.TestCase):
         d = admit(env, stage="S1")
         self.assertFalse(any(r.startswith("denied_tool")
                              for r in d["reasons"]))
+
+    def test_remote_read_diagnosis_is_narrowly_admitted_at_s3(self):
+        env = mk_env(
+            task_class="diagnosis", stage="S3", target_host="idc02",
+            subject_host="idc03", profile="ops-remote-read",
+            unattended=True, mcp_allowlist=["mcp_debug"],
+            allowed_paths=["evals/opencode-lane/out/"],
+            artifact={"path": "evals/opencode-lane/out/ops1025.json",
+                      "schema": "ops-remote-read contract"},
+            verifier={"type": "held_out_py",
+                      "ref": ("evals/opencode-lane/profiles/"
+                              "ops-remote-read/fixture/verify.py")},
+            rollback={"kind": "none", "ref": ""},
+            heartbeat={"required": True, "stale_s": 300})
+        admit_args = {
+            "probe": PROBE_OK,
+            "host": "idc02",
+            "stage_state": stage_state("S3"),
+            "inflight": 0,
+            "env_get": lambda k, d=None:
+                "1" if k == "OPENCODE_LANES" else d,
+        }
+        with patch.object(mod, "_heartbeat_age_s", return_value=0):
+            allowed = mod.admit(env, **admit_args)
+            self.assertTrue(allowed["admit"], allowed["reasons"])
+
+            for updates in (
+                    {"profile": "ops-readonly"},
+                    {"executor": "script"},
+                    {"unattended": False},
+                    {"subject_host": ""},
+                    {"subject_host": "idc02"},
+                    {"mcp_allowlist": []}):
+                candidate = dict(env, **updates)
+                denied = mod.admit(candidate, **admit_args)
+                self.assertIn("class_not_in_stage:diagnosis",
+                              denied["reasons"], updates)
 
     def test_denied_path(self):
         d = admit(mk_env(allowed_paths=["/etc/", "evals/shadow/task/"]))

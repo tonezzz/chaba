@@ -519,7 +519,21 @@ def admit(env: dict, probe: dict = None, host: str = "",
         reasons.append(f"denied_class:{cls}")
     if estage != cur:
         reasons.append(f"wrong_stage:job={estage} lane={cur}")
-    elif cls not in stage["classes"]:
+    subject_host = env.get("subject_host")
+    remote_read_diagnosis = (
+        estage == "S3" and cls == "diagnosis"
+        and env.get("executor") == "opencode"
+        and env.get("profile") == "ops-remote-read"
+        and env.get("unattended") is True
+        and isinstance(subject_host, str) and subject_host.strip()
+        and subject_host == subject_host.strip()
+        and subject_host != env.get("target_host")
+        and "mcp_debug" in (env.get("mcp_allowlist") or [])
+    )
+    # Diagnosis stays outside the general S3 class set; only the bounded
+    # remote-read profile may inspect a separately declared subject host.
+    if (estage == cur and cls not in stage["classes"]
+            and not remote_read_diagnosis):
         reasons.append(f"class_not_in_stage:{cls}")
 
     # task-scoped profiles (opencode-task-agent-profiles): an opencode
