@@ -1,7 +1,7 @@
 id: ada-ocb-ssot-search-query
 title: 'Ada-OCB: expose read-only SSOT search/query'
-column: backlog
-updated: 2026-11-19 16:15
+column: done
+updated: 2026-11-19 16:29
 brief: Add bounded exact SSOT search to OpenChamber and update the canonical tool registry; reuse existing SSOT
   sources instead of creating a duplicate.
 priority: medium
@@ -23,6 +23,7 @@ spec: Ada-voice currently exposes ada_context_pack's internal semantic _ssot_sea
   read-only behavior. No dispatch or deploy in this card until the cross-repo plan is staged.
 action:
   type: manual
+  status: done
 ref: ADA-0240
 comms:
 - at: 2026-11-19 14:47
@@ -38,3 +39,13 @@ comms:
     paths, excerpts, matched terms, provenance/freshness, cross-refs; mutations_performed=[]. Separation kept: context_pack=semantic,
     ssot_get=hydrate, ssot_search=exact. PR tonezzz/ada-voice#19 opened; 7 new tests + live FTS smoke pass; CI pending.
     Chaba registry updates (ssot.tools.yml'
+- at: 2026-11-19 16:29
+  from: devin
+  text: 'Shipped end-to-end. PR #19 merged as e5d5e8b, deployed to idc03 (1838 tests pass, all services active).
+    ada_ssot_search + /ada ssot live. Chaba registries updated on served checkout: ssot.tools.yml ssot.search entry
+    + ssot.mcp-tools.yml ssot_editing note (commit 596773288f2). Wiki Education:Opencode-Ada-Command-Manual updated
+    — /ada ssot moved to Commands, missing commands consolidated (plan/status/handoff/preflight/debug/adobe_stock),
+    Planned section cleared. Also fixed angle-bracket args strip'
+- at: 2026-11-19 16:29
+  from: devin
+  text: closed by devin
