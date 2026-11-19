@@ -1,7 +1,7 @@
 id: timer-alert-idc03-board-janitor
 title: Timer board-janitor on idc03 failing
 column: backlog
-updated: 2026-11-18 22:07
+updated: 2026-11-19 09:50
 priority: high
 tags:
 - timer-alert
@@ -45,6 +45,12 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 09:50
+  from: devin
+  text: 'Root cause found + fixed 2026-11-19: board-janitor.run_sweep calls mod.main(cards=cards) but scripts/ops/backlog-audit.py
+    main() took cards_override — every tick exited 1 on that one sweep (other 6 sweeps all ok). Fix e6141abbc4 on
+    master renames the kwarg to cards per sweep convention. Lands on served checkout at next kanban-commit pull;
+    next janitor tick should go green. Leaving card open until a clean tick verifies.'
 spec: 'Goal: investigate the failing board-janitor.service timer-alert on idc03 by inspecting the systemd journal
   via journalctl --user -u board-janitor.service on idc03, and redeploy the drifted runner-agent script from the
   chaba repository via scp scripts/board/runner-agent.py idc03:~/.local/bin/runner-agent. Constraints: rely strictly
