@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: backlog
-updated: 2026-11-19 15:20
+updated: 2026-11-19 15:55
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -60,6 +60,15 @@ comms:
   text: 'Follow-up needed (not applied): waiting_cards.py requires a top-level verifier and ignores lane_envelope.verifier;
     board autoretry uses KANBAN_AUTORETRY/KANBAN_MAX_ATTEMPTS independently of envelope max_retries. The missing_artifact
     cause remains unresolved (run.json error=null; 0 tokens). Keep idle/backlog; no retry without Tony approval.'
+- at: 2026-11-19 15:55
+  from: devin
+  text: 'Investigation + contract fix complete (no new model call).
+
+
+    Root cause: attempt 1 was blocked by OpenRouter free-tier exhaustion, not by the ops-readonly profile/verifier.
+    The lane logs show RateLimitError/HTTP 429 `free-models-per-day-high-balance`, `X-RateLimit-Remaining: 0`, and
+    repeated "No deployments available" cooldown messages; the run recorded 0 input/output tokens, $0.00 provider
+    cost, no artifact, verifier_pass=false. `missing_artifact` was only the surface classification — the provid'
 action:
   type: dispatch
   repo: chaba
