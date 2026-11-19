@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
 column: doing
-updated: 2026-11-19 17:20
+updated: 2026-11-19 17:38
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -158,6 +158,13 @@ comms:
   text: 'run started on idc02 — baseline green: 19 offline scenarios pass with a local venv (httpx+websockets).
     Adding FakeBoard + dispatch_ssh fixtures to scenario_engine, then scenario yamls for kanban ops/move-gates,
     devin dispatch (board+playbook), ada_opencode spend-cap + sweep, wiki_extension gates.'
+- at: 2026-11-19 17:38
+  from: devin
+  text: 'offline coverage landed: 11 new scenarios (kanban board ops + move/queue gates, devin board/board-down/playbook
+    dispatch, opencode preflight+receipt flow, sweep, wiki_extension, CMS write flow, lane budget cap + provider
+    latch). Found + fixed a real runner bug: confirmed/confirm_token never reached tools.d run() — gated kanban
+    moves were un-confirmable. 30/30 scenarios green, touched-module unit tests green, tool-lint clean. Committing
+    next.'
 action:
   type: dispatch
   repo: ada-voice
