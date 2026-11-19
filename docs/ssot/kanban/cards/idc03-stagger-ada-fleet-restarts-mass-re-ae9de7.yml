@@ -1,7 +1,7 @@
 id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
 title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
-column: backlog
-updated: 2026-11-19 07:01
+column: doing
+updated: 2026-11-19 08:13
 priority: high
 tags:
 - idc03
@@ -134,9 +134,12 @@ comms:
 - at: 2026-11-19 07:01
   from: tony
   text: queued for processing
+- at: 2026-11-19 08:13
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   sweep:
     stale_running: 2026-11-17 09:39
@@ -146,4 +149,5 @@ action:
   result: 'exit=1 in-task-20261117-094041-observed-2026-11-16-20-56-53-i.service: Failed with result ''exit-code''.
     | devin-task-20261117-094041-observed-2026-11-16-20-56-53-i.service: Consumed 24.701s CPU time over 13.346s
     wall clock time, 737.3M memory peak.'
+  runner: idc02
 claim: {}
