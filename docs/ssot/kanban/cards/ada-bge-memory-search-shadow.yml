@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-19 13:09
+updated: 2026-11-19 13:13
 priority: high
 tags:
 - ada
@@ -173,6 +173,10 @@ comms:
   text: 'dispatch 13:06 ICT picking up on idc02: impl merged (ada-voice 7c5ba50 incl. MEM-1129 dense+fetch+rerank).
     Plan: staging pull done; run live shadow validation on idc02 (timeout/queue/ACL/isolation/off-switch), verify
     idc03 prod soak lines, write runbook+report.'
+- at: 2026-11-19 13:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-232220-add-an-opt-in-asynchronous-sha no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -183,6 +187,7 @@ action:
     peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
+    stale_running: 2026-11-19 13:13
   runner: idc02
   attempts: 1
 claim:
