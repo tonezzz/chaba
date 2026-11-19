@@ -1,0 +1,24 @@
+id: kk-mac-admitted-classes-narrow
+title: kk-mac lane — narrow admitted task classes to proven set
+column: backlog
+updated: 2026-11-19 13:38
+spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
+  safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
+  exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
+  {summary, structured_extract} until re-eval passes; (2) file follow-up to fix operator_brief expect.facts echo
+  format and re-bench safe_route with a safer model before readmitting. Evidence: card kk-mac-extract-brief-class-eval
+  comms + scripts/bench/kkmac-classes/.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-0237
+comms:
+- at: 2026-11-19 13:38
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 13:38
+  from: devin
+  text: queued for processing
+claim: {}
