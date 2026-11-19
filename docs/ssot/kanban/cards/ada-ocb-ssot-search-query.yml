@@ -1,0 +1,33 @@
+id: ada-ocb-ssot-search-query
+title: 'Ada-OCB: expose read-only SSOT search/query'
+column: backlog
+updated: 2026-11-19 14:47
+brief: Add bounded exact SSOT search to OpenChamber and update the canonical tool registry; reuse existing SSOT
+  sources instead of creating a duplicate.
+priority: medium
+program: ai-workforce
+tags:
+- ada
+- opencode
+- ssot
+- ada-ocb
+- read-only
+spec: Ada-voice currently exposes ada_context_pack's internal semantic _ssot_search and ada_ssot_get for exact document
+  retrieval, but no public exact SSOT search comparable to the ssot-search skill. Add a bounded read-only Ada-Control
+  search/query surface that follows the canonical ssot.mcp-tools policy (mcp_search_ssot), returns matched SSOT
+  paths, concise context, provenance/freshness, and cross-reference pointers, and reports mutations_performed=[].
+  Keep ada_context_pack for semantic discovery and ada_ssot_get for exact hydration; do not duplicate SSOT content
+  or create a second SSOT file. Update OpenChamber/Ada guidance and tests. Update the existing Chaba docs/ssot/infrastructure/ssot.tools.yml
+  registry and relevant SSOT index/procedure pointers after the Ada-voice API shape is settled; keep Ada-voice and
+  Chaba changes as separate repo commits. Tests must cover bounded results, path/query matching, provenance, and
+  read-only behavior. No dispatch or deploy in this card until the cross-repo plan is staged.
+action:
+  type: manual
+ref: ADA-0240
+comms:
+- at: 2026-11-19 14:47
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 14:47
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
