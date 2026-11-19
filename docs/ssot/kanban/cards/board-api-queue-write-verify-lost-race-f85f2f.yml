@@ -1,6 +1,6 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
-column: doing
+column: backlog
 updated: 2026-11-19 10:49
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
@@ -94,18 +94,27 @@ comms:
     merge-sweep: verified gate failed — no ; [idc03-served-checkout-stuck-rebase] Follow-up shipped to master as
     d40573247b (; runbook docs/kb/board-api-read-door.md: board-api — the read door (card ops-manu; [ada-control-mcp-session-dir-race-9d9284]
     test gate failed — '
+- at: 2026-11-19 10:49
+  from: mn01
+  text: 'finished (failed): exit=1 evin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Failed with
+    result ''exit-code''. | devin-task-20 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-19 10:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-034906-two-dispatch-pipeline-robustne (rate limit)
+    — mn01 holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: codemod
   lane_source: kw
   attempts: 2
-  result: 'exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
-    | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Consumed 16.779s CPU time, 217.3M memory
-    peak, 0B memory swap peak.'
-  last_failure: 'exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed with result
-    ''exit-code''. | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Consumed 16.779s CPU time,
-    217.3M memory peak, 0B memory swap peak.'
+  result: 'exit=1 evin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
+    | devin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Consumed 1.719s CPU time over 3.005s wall
+    clock time, 246.5M memory peak.'
+  last_failure: 'exit=1 evin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
+    | devin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Consumed 1.719s CPU time over 3.005s wall
+    clock time, 246.5M memory peak.'
   runner: mn01
 claim:
   since: 2026-11-19 10:48
