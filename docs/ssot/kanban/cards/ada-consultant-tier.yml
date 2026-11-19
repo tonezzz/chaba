@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
 column: backlog
-updated: 2026-11-19 08:59
+updated: 2026-11-19 13:04
 priority: high
 tags:
 - ada
@@ -263,9 +263,12 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
     it'
+- at: 2026-11-19 13:04
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 09:33
     stale_running: 2026-11-09 14:04
@@ -277,4 +280,4 @@ action:
   model: litellm/gemini-2.5-flash
   result: 'exit=1 judgment-instead-of-ada.service: Failed with result ''exit-code''. | devin-task-20261117-232247-tiered-judgment-instead-of-ada.service:
     Consumed 45.334s CPU time over 11min 29.698s wall clock time, 884.9M memory peak, 534.9M memory swap peak.'
-  runner: tony-dell
+claim: {}
