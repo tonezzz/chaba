@@ -16,7 +16,11 @@ Usage:
 
 Transport: BOARD_API env (default http://127.0.0.1:8787) or --ssh HOST
 which pipes the same HTTP call through `ssh HOST curl` (board-api binds
-localhost on idc03).
+localhost on idc03). When the implicit loopback default refuses a
+connection, the call falls back once to the tailnet endpoint
+https://idc03.taila0626a.ts.net:10000 — board-api only listens on
+idc03 loopback, so bare board-cli fails on every other host. An
+explicit BOARD_API/--api is used as-is with no fallback.
 """
 from __future__ import annotations
 
@@ -25,9 +29,12 @@ import json
 import os
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
-API = os.environ.get("BOARD_API", "http://127.0.0.1:8787")
+LOOPBACK_API = "http://127.0.0.1:8787"
+TAILNET_API = "https://idc03.taila0626a.ts.net:10000"
+API = os.environ.get("BOARD_API", LOOPBACK_API)
 
 
 REMOTE_SCRIPT = "~/CascadeProjects/chaba/scripts/board/board-cli.py"
@@ -50,8 +57,19 @@ def call(method: str, path: str, payload: dict | None,
             raise RuntimeError(
                 (r.stderr or r.stdout or b"ssh failed").decode()[:300])
         return json.loads(r.stdout or "{}")
+    try:
+        return _http(method, path, body, API)
+    except urllib.error.HTTPError:
+        raise
+    except Exception:
+        if API != LOOPBACK_API:
+            raise
+        return _http(method, path, body, TAILNET_API)
+
+
+def _http(method: str, path: str, body: bytes | None, api: str) -> dict:
     req = urllib.request.Request(
-        API + path, data=body, method=method,
+        api + path, data=body, method=method,
         headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read() or "{}")

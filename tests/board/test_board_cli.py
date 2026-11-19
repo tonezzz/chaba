@@ -76,3 +76,49 @@ class TestBoardCli(unittest.TestCase):
         self.assertEqual(call.args, ("POST", "/comment", {
             "id": "card-one", "from": "devin", "text": "Checked"
         }, None))
+
+
+class TestBoardCliFallback(unittest.TestCase):
+    """Loopback default falls back to the tailnet endpoint on connect
+    failure; explicit BOARD_API/--api never falls back."""
+
+    def setUp(self):
+        path = Path(__file__).resolve().parents[2] / "scripts/board/board-cli.py"
+        spec = importlib.util.spec_from_file_location("board_cli", path)
+        self.cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.cli)
+
+    def _resp(self, payload=b'{"ok": true}'):
+        resp = mock.MagicMock()
+        resp.read.return_value = payload
+        resp.__enter__.return_value = resp
+        return resp
+
+    def test_loopback_refused_falls_back_to_tailnet(self):
+        self.cli.API = self.cli.LOOPBACK_API
+        with mock.patch.object(self.cli.urllib.request, "urlopen",
+                               side_effect=[OSError("refused"),
+                                            self._resp()]) as uo:
+            out = self.cli.call("GET", "/cards", None, None)
+        self.assertEqual(out, {"ok": True})
+        self.assertEqual(uo.call_count, 2)
+        self.assertIn(self.cli.TAILNET_API,
+                      uo.call_args_list[1].args[0].full_url)
+
+    def test_http_error_does_not_fall_back(self):
+        self.cli.API = self.cli.LOOPBACK_API
+        err = self.cli.urllib.error.HTTPError(
+            self.cli.LOOPBACK_API, 503, "unavailable", {}, None)
+        with mock.patch.object(self.cli.urllib.request, "urlopen",
+                               side_effect=err) as uo:
+            with self.assertRaises(self.cli.urllib.error.HTTPError):
+                self.cli.call("GET", "/cards", None, None)
+        self.assertEqual(uo.call_count, 1)
+
+    def test_explicit_api_does_not_fall_back(self):
+        self.cli.API = "http://board-api.example:9999"
+        with mock.patch.object(self.cli.urllib.request, "urlopen",
+                               side_effect=OSError("refused")) as uo:
+            with self.assertRaises(OSError):
+                self.cli.call("GET", "/cards", None, None)
+        self.assertEqual(uo.call_count, 1)
