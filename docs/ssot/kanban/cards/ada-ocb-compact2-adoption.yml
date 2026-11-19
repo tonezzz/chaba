@@ -1,7 +1,7 @@
 id: ada-ocb-compact2-adoption
 title: 'ada-ocb: adopt board-api compact=2 + comms_tail projections'
 column: done
-updated: 2026-11-19 18:53
+updated: 2026-11-19 19:09
 brief: 'KNB-0176 landed server-side compact=2 (id,ref,title,column,priority,updated,brief,spec,action_status) and
   comms_tail=<n> on /cards and /card/<id>. ada_mcp.py still uses its own fields= projection workaround (~1MB snapshot).
   Adopt the server-side tier: _board_cards snapshot via compact=2, single-card hydration via comms_tail for comms
@@ -56,6 +56,10 @@ comms:
 - at: 2026-11-19 18:53
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
