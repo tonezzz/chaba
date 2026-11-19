@@ -1,7 +1,7 @@
 id: kanban-card-cycle-control-pane
 title: Extend the control pane for the Kanban card cycle
 column: doing
-updated: 2026-11-19 17:04
+updated: 2026-11-19 18:52
 brief: Design a thin, evidence-first operations pane over the existing board/API, DevNest/JevTeam routing, and OpenChamber
   sessions.
 priority: medium
@@ -56,6 +56,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:52
+  from: tony
+  text: 'Design artifact: docs/design/kanban-card-cycle-control-pane.md — control-pane design, 9 sections mapped
+    to sources (card JSON; ada_job_envelope lifecycle/result contracts; runner-agent usage.json; DevNest lane_gate
+    metrics; OpenChamber sessions). Read-only projection v1; acceptance checklist in the doc; tests pass (tests/board/test_control_pane_projection.py
+    + test_ada_job_envelope.py, 12). Next: review + arm.'
 requests:
 - id: control-pane-surface
   ask: Choose the phase-one home for the card-cycle control pane.
