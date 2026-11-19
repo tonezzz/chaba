@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-18 22:11
+updated: 2026-11-19 13:39
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -76,3 +76,9 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 13:39
+  from: devin
+  text: '2026-11-19 preflight: idc02 Ada-voice OpenCode project default is litellm/gemini-3.5-flash-lite (paid).
+    Global config also lists omen-llamacpp/qwen3-coder, but its configured baseURL http://127.0.0.1:8780/v1 is not
+    listening on idc02. No zero-cost route is currently verified, so I did not create a session or send a prompt.
+    Next gate: verify/restore a local/free route, or Tony explicitly authorizes one small Gemini test.'
