@@ -1,7 +1,7 @@
 id: idc03-stagger-ada-fleet-restarts-mass-re-ae9de7
 title: 'idc03: stagger Ada fleet restarts — mass restart spawns ~3.7GB in seconds'
-column: doing
-updated: 2026-11-19 08:21
+column: review
+updated: 2026-11-19 08:22
 priority: high
 tags:
 - idc03
@@ -154,17 +154,24 @@ comms:
 - at: 2026-11-19 08:21
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-092442-observed-2026-11-16-20-56-53-i'
+- at: 2026-11-19 08:22
+  from: idc02
+  text: 'finished (ok): exit=0 cenario ADA_LIVE_URL repoints + a SERVICES drop in ada-voice, left as Tony''s call
+    on the capacity card. | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   sweep:
     stale_running: 2026-11-17 09:39
     zero_commit: 2026-11-17 09:40
     failed_noted: 2026-11-17 09:55
+    no_repo: 2026-11-19 08:21
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  result: 'exit=1 in-task-20261117-094041-observed-2026-11-16-20-56-53-i.service: Failed with result ''exit-code''.
-    | devin-task-20261117-094041-observed-2026-11-16-20-56-53-i.service: Consumed 24.701s CPU time over 13.346s
-    wall clock time, 737.3M memory peak.'
+  result: 'exit=0 cenario ADA_LIVE_URL repoints + a SERVICES drop in ada-voice, left as Tony''s call on the capacity
+    card. | devin-task-20261119-081318-observed-2026-11-16-20-56-53-i.service: Consumed 32.792s CPU time, 276.8M
+    memory peak, 0B memory swap peak.'
   runner: idc02
+  verified: true
 claim: {}
+review_kind: verify
