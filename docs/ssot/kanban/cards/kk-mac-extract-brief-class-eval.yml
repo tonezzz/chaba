@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: doing
-updated: 2026-11-19 09:51
+updated: 2026-11-19 10:17
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -33,3 +33,10 @@ comms:
   from: devin
   text: Started. kk-mac reachable, models pulled (qwen3:8b, llama3.2:3b, qwen2.5:32b). Building scripts/bench/kkmac-classes/
     mirroring card-judgment harness + temp gate; ~15 cases/class scored against production kk_mac_executor.verify().
+- at: 2026-11-19 10:17
+  from: devin
+  text: 'Done. Built scripts/bench/kkmac-classes/ (corpus 51 cases: 15 se / 16 ob / 15 sr + 5 summary controls;
+    score.py runs the PRODUCTION path kk_mac_llm.call_remote + kk_mac_executor.verify; kkmac_eval.sh same ssh/ollama/temp
+    gates). Ran 3 models live: structured_extract 0.93-1.00 READY everywhere; operator_brief 0.31-0.56 (all misses
+    = expect.facts echo, not JSON); safe_route 0.33-0.60 NOT ready — each model fails differently (qwen3:8b over-defers,
+    llama3.2 over-acts incl. act on priority:high prod,'
