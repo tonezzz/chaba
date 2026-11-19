@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
 column: doing
-updated: 2026-11-19 10:43
+updated: 2026-11-19 10:44
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -115,6 +115,10 @@ comms:
   text: 'E2E VERIFIED on metal: kk-mac claimed+finished script card kk-mac-script-smoke (exit=0, sw_vers 15.7.3
     output). Negative check: kk-mac defers executor=devin card with explicit launchd reason. Gap found live: action.host=kk-mac
     names no declared runner — _FLEET_HOST_RE misses kk-* hosts; fixing regex+fleet prose in worktree'
+- at: 2026-11-19 10:44
+  from: devin
+  text: 'raised request runner-provisioned-e2e-verified-on-kk-ma-3cf426: Runner provisioned + e2e verified on kk-mac.
+    Deploy key generated — enroll it (WRITE) at https://github.com/tonezzz/chab'
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
@@ -129,6 +133,18 @@ requests:
   - hold
   answer: proceed
   executed: 2026-11-19 queue
+- id: runner-provisioned-e2e-verified-on-kk-ma-3cf426
+  ask: 'Runner provisioned + e2e verified on kk-mac. Deploy key generated — enroll it (WRITE) at https://github.com/tonezzz/chaba/settings/keys/new
+    : ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyiwfNAWHG/xcxOAQn57pg6PIIhIBcE7w1Fi2kPJasB kk-mac chaba deploy key —
+    until then https fetch on kk-mac is insteadOf-rewritten to the unenrolled gh-chaba alias (script-lane sync_repo
+    + checkout fetch fail). Also still manual: ~/.config/secrets/litellm-keys.env (copy from idc02) for opencode
+    lanes; auto-login or LAUNCHD_DOMAIN=user for headless survival.'
+  status: open
+  at: 2026-11-19 10:44
+  from: devin
+  options:
+  - enrolled
+  - hold
 review_kind: verify
 claim:
   since: 2026-11-19 10:31
