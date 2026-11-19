@@ -1,7 +1,7 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
 column: doing
-updated: 2026-11-19 12:29
+updated: 2026-11-19 12:30
 priority: medium
 program: devnest
 tags:
@@ -128,6 +128,16 @@ comms:
     held_out_py verifier). Plan: scripts/devnest/info_find.py shared planner+adapters (stdlib-only), portable .agents/skills/info-find/
     SKILL.md, new info-find profile + S1 canary envelope, tests/devnest/test_info_find.py, capability-gate job doc.
     Implementing now.'
+- at: 2026-11-19 12:30
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-19 12:30
+  from: devin
+  text: 'Phase 1 implemented (conversational skill first, per Tony answer): scripts/devnest/info_find.py shared
+    planner+adapters (ssot/code/health/mddb/mcp-policy/web; ranked cited results; fail-safe per source; per-project+session
+    cache/audit isolation); .agents/skills/info-find portable SKILL.md; evals/opencode-lane/profiles/info-find read-only
+    opencode lane profile (bash allowlisted to the adapter only) + fixture verifier + p1-info-find-tony-omen S1
+    pilot envelope; tests/devnest/test_info_find.py 15 t'
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
@@ -151,6 +161,7 @@ requests:
   - Keep paused; seek no-cost route
   suggested: Keep paused; seek no-cost route
   answer: Approve paid_frontier
+  executed: 2026-11-19 queue (already running)
 action:
   type: dispatch
   status: running
@@ -161,3 +172,4 @@ action:
   runner: tony-macbook
 claim:
   since: 2026-11-19 12:23
+awaiting_action: true
