@@ -1,7 +1,7 @@
 id: idc03-mddb-leader-stopped-20261119
 title: idc03 mddb leader :11023 stopped at 13:36 ICT — restore service and determine operator
 column: backlog
-updated: 2026-11-19 13:44
+updated: 2026-11-19 13:50
 priority: high
 tags:
 - mddb
@@ -21,3 +21,10 @@ comms:
 - at: 2026-11-19 13:44
   from: devin
   text: card captured via board-api
+- at: 2026-11-19 13:50
+  from: devin
+  text: 'Recovery update 2026-11-19 13:49 ICT: idc03 mddb.service was started after confirming no scheduled mddb-restart
+    (next Nov 22), no active conflicting jobs, DB intact 5.3G, disk 76G free. /health healthy and read API responds;
+    63 collections / 28,201 docs. idc02 + con01 followers both healthy and caught up (confirmed_lsn == leader current_lsn,
+    lag 0). Stop origin remains unknown; journal shows clean SIGTERM but no unit timer invoking it. Keeping card
+    open to trace the operator/action source.'
