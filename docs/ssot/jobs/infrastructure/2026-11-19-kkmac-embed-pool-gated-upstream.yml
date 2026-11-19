@@ -1,0 +1,71 @@
+id: 2026-11-19-kkmac-embed-pool-gated-upstream
+title: kk-mac joins embed-pool admission-gated (tunnel retired, direct tailnet bind)
+card: kk-mac-embed-lane-verify
+date: 2026-11-19
+actor: devin (dispatch worktree on tony-omen)
+kind: infra-change + verification
+
+goal: >
+  Verify kk-mac ollama :11434 is a registered embed-pool upstream;
+  if not, add it bounded (embeddings only, admission-gated).
+
+found: |-
+  - embed-pool-shim on idc03:11436 DID list a kk-mac leg —
+    http://127.0.0.1:11445 — but that is the retired ssh tunnel.
+    kkmac-ollama-tunnel.service was cleanly stopped 2026-11-17 09:05 and
+    disabled after ~19,002 restart flaps. 27,847 accumulated pool fails.
+  - The leg was also NOT admission-gated (bypassed the :11447 shim).
+  - kkmac-admission-shim.service (:11447) was itself configured with
+    upstream http://127.0.0.1:11445 — the same dead tunnel — so LiteLLM
+    kk-mac legs (ollama-*-kkmac via :11447) were broken too
+    (upstream_errors accumulating).
+  - kk-mac ollama now binds 0.0.0.0 directly — tailnet
+    100.108.217.17:11434 answers (v0.40.8) AND LAN 192.168.0.101:11434.
+    bge-m3:latest is pulled alongside qwen2.5:32b, qwen3:8b,
+    qwen2.5vl:7b, llama3.2:3b, qwen3:30b-a3b, gpt-oss:20b.
+
+changed: |-
+  Live config only, idc03 user units — no repo deploy needed.
+  - ~/.config/systemd/user/kkmac-admission-shim.service:
+      KK_SHIM_UPSTREAM 127.0.0.1:11445 -> http://100.108.217.17:11434
+      (dropped kkmac-ollama-tunnel.service from After=; description fixed)
+  - ~/.config/systemd/user/embed-pool-shim.service:
+      EMBED_POOL_UPSTREAMS kk-mac leg 127.0.0.1:11445 -> 127.0.0.1:11447
+      (kk-mac embeds now admission-gated; embeddings-only bound is
+      inherent — only /api/embed|embeddings are raced)
+  - daemon-reload + restart both; both active.
+
+verified: |-
+  - GET :11447/health -> upstream http://100.108.217.17:11434,
+    admission live (eligible flips with kk-mac load; heartbeat fresh).
+  - POST :11447/api/embed model=bge-m3 -> HTTP 200 real vector
+    (3.9s warm; ~11.8s cold model load — over the pool's 8s race
+    timeout, so cold calls lose the race by design and another
+    fleet upstream wins).
+  - GET idc03:11436/health -> upstreams include http://127.0.0.1:11447.
+  - POST :11436/api/embed model=bge-m3 -> HTTP 200 via pool.
+
+boundedness:
+  embeddings_only: pool only races /api/embed + /api/embeddings at kk-mac.
+  admission_gated: >-
+    every kk-mac request passes the heartbeat/load/disk/temp/busy gate
+    on :11447; deny = instant 503 -> pool marks the leg failed and
+    races the rest of the fleet (dead-cooldown benches it).
+
+caveats: |-
+  - kk-mac ollama binds 0.0.0.0 — LAN-reachable, not just tailnet.
+    SEC-0985 said "do not bind KK ollama publicly". Narrowing to the
+    tailnet interface needs adanest plist access (KK sign-off pending);
+    commented on card kkmac-ollama-durable-bind.
+  - Durability of the direct bind across reboots is unverified
+    (plist unreadable from kkkakk). If it reverts to loopback, the
+    disabled kkmac-ollama-tunnel unit is the documented fallback —
+    repoint KK_SHIM_UPSTREAM back to :11445 and re-enable the tunnel.
+  - Retired tunnel + stale topology docs reconciled in
+    ssot.audit.hosts.yml + docs/kb/kkmac-ollama-lane.md.
+
+rollback: >
+  ssh idc03; restore the two unit env lines to their old values
+  (:11445 in both), daemon-reload, restart both units; optionally
+  systemctl --user enable --now kkmac-ollama-tunnel.service to revive
+  the tunnel path.
