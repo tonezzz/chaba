@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: done
-updated: 2026-11-19 17:04
+updated: 2026-11-19 18:54
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -117,6 +117,10 @@ comms:
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

@@ -1,7 +1,7 @@
 id: wp-comment-sync-suggestion-inbox
 title: 'wp-comment-sync: member comments -> agent suggestion lanes'
 column: done
-updated: 2026-11-19 17:04
+updated: 2026-11-19 18:54
 priority: medium
 note: 'Member comments on boards posts are the cheap comms channel (Tony call 2026-10-14). Build scripts/ada/wp-comment-sync.py
   on idc03 + timer (15min): poll GET /wp/v2/comments?after=<cursor> -> route by post type (memory-mirror -> Ada
@@ -312,6 +312,10 @@ comms:
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
