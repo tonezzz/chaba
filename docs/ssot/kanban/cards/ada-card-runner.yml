@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
-column: backlog
-updated: 2026-11-19 17:18
+column: done
+updated: 2026-11-19 17:32
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -200,9 +200,19 @@ comms:
 - at: 2026-11-19 17:18
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 17:32
+  from: devin
+  text: 'Closing evidence (Tony approved): all 4 spec pieces merged — pieces 1-3 via PRs #159/#163 (2026-11-12),
+    piece 4 (bounded-retry eval loop + unstaged-opencode claim-hold fix, DEV-0253) landed on origin/master as d9b324556a
+    from dispatch/20261119-162739. Validation: 150 tests OK (test_card_run, test_executor_contract, test_runner_agent_launchd).
+    Pilot ran AUD-0060 with 0 rescues. Attempt-1 admission fail root-caused and fixed at claim time; runner-agent
+    fleet redeploy follows separately.'
+- at: 2026-11-19 17:32
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
-  status: queued
+  status: done
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite

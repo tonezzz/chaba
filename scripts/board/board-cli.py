@@ -11,7 +11,7 @@ Usage:
              [--brief B] [--spec S] [--program P] [--tag a,b] [--set k=v ...]
   board-cli.py comment CARD_ID "text" [--from devin]
   board-cli.py action CARD_ID move COLUMN [--from devin]
-  board-cli.py request CARD_ID "text" [--options a|b|c] [--from devin]
+  board-cli.py request CARD_ID "text" [--options a|b|c] [--option id|label|action ...] [--from devin]
   board-cli.py respond CARD_ID REQUEST_ID "answer" [--from devin]
 
 Transport: BOARD_API env (default http://127.0.0.1:8787) or --ssh HOST
@@ -122,7 +122,13 @@ def main() -> int:
     rq = sub.add_parser("request")
     rq.add_argument("id")
     rq.add_argument("text")
-    rq.add_argument("--options", default="")
+    rq.add_argument("--options", default="",
+                    help="pipe-separated plain-string options")
+    rq.add_argument("--option", action="append", default=[],
+                    metavar="ID|LABEL|ACTION",
+                    help="dict option {id,label,action}; action one of "
+                         "queue|retry|close|hold|none (optional); a bare "
+                         "word stays a plain string option")
     rq.add_argument("--from", dest="frm", default="devin")
 
     rs = sub.add_parser("respond")
@@ -164,11 +170,28 @@ def main() -> int:
                        {"id": args.id, "from": args.frm, "do": args.do,
                         "column": args.column}, ssh)
         elif args.cmd == "request":
+            options = args.options.split("|") if args.options else []
+            for spec in args.option:
+                parts = [p.strip() for p in spec.split("|")]
+                if len(parts) == 1:
+                    options.append(parts[0])
+                    continue
+                if len(parts) > 3 or not parts[0] or not parts[1]:
+                    raise ValueError(
+                        "--option needs 'id|label' or 'id|label|action'")
+                opt = {"id": parts[0], "label": parts[1]}
+                if len(parts) == 3:
+                    act = parts[2].lower()
+                    if act not in ("queue", "retry", "close", "hold",
+                                   "none"):
+                        raise ValueError(
+                            "option action must be queue|retry|close|"
+                            "hold|none")
+                    opt["action"] = act
+                options.append(opt)
             out = call("POST", "/request",
                        {"id": args.id, "from": args.frm,
-                        "ask": args.text,
-                        "options": args.options.split("|")
-                        if args.options else []}, ssh)
+                        "ask": args.text, "options": options}, ssh)
         else:
             out = call("POST", "/respond",
                        {"id": args.id, "request_id": args.request_id,

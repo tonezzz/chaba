@@ -29,6 +29,37 @@ class TestBoardCli(unittest.TestCase):
             "id": "card-one", "from": "devin", "ask": "Proceed?", "options": ["Yes", "No"]
         }, "idc03"))
 
+    def test_request_dict_option_with_action(self):
+        call = self.invoke(
+            "request", "card-one", "Pick", "--options", "plain",
+            "--option", "go|Go now|queue",
+            "--option", "later|Later|hold",
+            "--option", "bare-word")
+        self.assertEqual(call.args, ("POST", "/request", {
+            "id": "card-one", "from": "devin", "ask": "Pick",
+            "options": ["plain",
+                        {"id": "go", "label": "Go now", "action": "queue"},
+                        {"id": "later", "label": "Later", "action": "hold"},
+                        "bare-word"]
+        }, None))
+
+    def test_request_dict_option_bad_action_rejected(self):
+        result = None
+        with mock.patch.object(sys, "argv",
+                               ["board-cli.py", "request", "c", "q",
+                                "--option", "x|X|explode"]), \
+                mock.patch.object(self.cli, "call") as call, \
+                contextlib.redirect_stdout(io.StringIO()):
+            result = self.cli.main()
+        self.assertEqual(result, 2)
+        call.assert_not_called()
+
+    def test_request_dict_option_id_label_only(self):
+        call = self.invoke("request", "card-one", "Pick",
+                           "--option", "a|Alpha")
+        self.assertEqual(call.args[2]["options"],
+                         [{"id": "a", "label": "Alpha"}])
+
     def test_respond_routes_card_and_uses_answer(self):
         call = self.invoke("--ssh", "idc03", "respond", "card-one", "req-one", "Yes")
         self.assertEqual(call.args, ("POST", "/respond", {
