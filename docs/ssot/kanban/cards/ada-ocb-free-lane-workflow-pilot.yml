@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: review
-updated: 2026-11-19 16:35
+updated: 2026-11-19 16:49
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -99,6 +99,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-ada-ocb-free-lane-workflow-pilot-1795075647 on idc02 still dirty — 1
     uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 16:49
+  from: devin
+  text: 'Closeout discrepancy resolved (no new model call). Root causes found and fixed on origin/master: (1) opencode_profiles.artifact_matches_snapshot
+    only accepted tool=bash + flat state.metadata, but opencode v2 emits tool=shell with exit/truncated nested under
+    state.metadata.metadata — the artifact was byte-identical to the host_snapshot.py output (verified manually:
+    snapshot JSON == artifact.out) yet the check returned False. Fixed in 407485dc18. (2) merge-sweep task_id_for
+    scanned comms oldest-fi'
 action:
   type: dispatch
   repo: chaba
