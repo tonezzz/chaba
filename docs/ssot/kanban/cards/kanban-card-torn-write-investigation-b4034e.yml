@@ -1,7 +1,7 @@
 id: kanban-card-torn-write-investigation-b4034e
 title: kanban-card-torn-write-investigation
 column: doing
-updated: 2026-11-19 08:18
+updated: 2026-11-19 08:32
 spec: 'Investigate torn/truncated kanban card YAML writes that took down board-api + kanban-commit on 2026-11-19
   ~03:00 ICT.
 
@@ -69,6 +69,13 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 08:32
+  from: devin
+  text: 'ROOT CAUSE NAMED: idc03 disk hit ENOSPC at ~02:55:41 (mddb-backup podman cp wrote a 19GB partial DB onto
+    a 99%-full disk; journald gap 02:56:18->03:37). board-janitor 02:56 tick ran merge-sweep whose locked_edit fallback
+    did a DIRECT write_text on cards — torn mid-scalar. Proof: uncommitted torn blob contains action.sweep.fetch_failed
+    02:57 stamp; other two torn blobs are exact HEAD prefixes cut at 12288/8192-byte page boundaries. board-api
+    was NOT the writer (already tmp+rename; its ENOSPC fail'
 action:
   type: dispatch
   status: running
