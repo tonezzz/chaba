@@ -1,6 +1,6 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
-column: doing
+column: backlog
 updated: 2026-11-19 12:21
 priority: medium
 program: devnest
@@ -60,6 +60,13 @@ comms:
 - at: 2026-11-19 12:21
   from: tony-omen
   text: claimed
+- at: 2026-11-19 12:21
+  from: devin
+  text: put on hold
+- at: 2026-11-19 12:21
+  from: devin
+  text: 'raised request dev-0230-currently-routes-to-paid-fronti-8a20dd: DEV-0230 currently routes to paid_frontier
+    (50–200k tokens; catalog typical contained-task spend ~$0.05–$0.30, actual ma'
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
@@ -72,9 +79,19 @@ requests:
   - Both
   suggested: Conversational skill first
   answer: Conversational skill first
+- id: dev-0230-currently-routes-to-paid-fronti-8a20dd
+  ask: DEV-0230 currently routes to paid_frontier (50–200k tokens; catalog typical contained-task spend ~$0.05–$0.30,
+    actual may vary). Which execution route do you approve?
+  status: open
+  at: 2026-11-19 12:21
+  from: devin
+  options:
+  - Approve paid_frontier
+  - Keep paused; seek no-cost route
+  suggested: Keep paused; seek no-cost route
 action:
   type: dispatch
-  status: running
+  status: idle
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
