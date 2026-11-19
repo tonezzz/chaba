@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: doing
-updated: 2026-11-19 13:13
+updated: 2026-11-19 13:18
 priority: high
 tags:
 - ada
@@ -181,6 +181,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261117-232220-add-an-opt-in-asynchronous-sha on idc02 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 13:18
+  from: devin
+  text: 'Validation done on idc02 (staging, per spec): 10/10 live scenarios in new scripts/bge-shadow-validate.py
+    — off-switch, missing-endpoint no-op, healthy status=ok total_ms=331, queue bound (MAX_INFLIGHT=2 → 3rd dropped
+    reason=busy), dead-MDDB isolation (status=empty, 4 errors, 0.05s), dead-reranker (status=error via _run_safely),
+    stall endpoint cut at 1.01s of 1.0s deadline, ops-collection excluded, privacy check (no query/doc text, strict
+    kv log lines). +8 unit tests → 12/12 pass, 188 memory/bge '
 action:
   type: dispatch
   status: running
