@@ -378,29 +378,33 @@ def _archive_index() -> dict:
 
 
 def card_path(cid: str) -> Path:
-    if not cid or "/" in cid or ".." in cid:
-        raise ValueError("bad card id")
-    p = CARD_DIR / f"{cid}.yml"
-    if not p.exists():
-        # filename/id drift happens when a session renames a card's id
-        # without renaming the file — fall back to an id-field scan so
-        # respond/action/comment still find it. Refs (ADA-0042) resolve
-        # through the same scan.
-        for cand in CARD_DIR.glob("*.yml"):
-            try:
-                c = yaml.safe_load(cand.read_text()) or {}
-            except Exception:
-                continue
-            if c.get("id") == cid or c.get("ref") == cid:
+    t0 = _phase_clock()
+    try:
+        if not cid or "/" in cid or ".." in cid:
+            raise ValueError("bad card id")
+        p = CARD_DIR / f"{cid}.yml"
+        if not p.exists():
+            # filename/id drift happens when a session renames a card's
+            # id without renaming the file — fall back to an id-field
+            # scan so respond/action/comment still find it. Refs
+            # (ADA-0042) resolve through the same scan.
+            for cand in CARD_DIR.glob("*.yml"):
+                try:
+                    c = yaml.safe_load(cand.read_text()) or {}
+                except Exception:
+                    continue
+                if c.get("id") == cid or c.get("ref") == cid:
+                    return cand
+            # archived cards stay resolvable via the cached archive index
+            # (KNB-1178) — a per-request yaml scan of cards/archive/ would
+            # be too slow for the GET path
+            cand = _archive_index().get(cid)
+            if cand:
                 return cand
-        # archived cards stay resolvable via the cached archive index
-        # (KNB-1178) — a per-request yaml scan of cards/archive/ would
-        # be too slow for the GET path
-        cand = _archive_index().get(cid)
-        if cand:
-            return cand
-        raise ValueError(f"no card {cid}")
-    return p
+            raise ValueError(f"no card {cid}")
+        return p
+    finally:
+        _phase_add("card_path_ms", t0)
 
 
 # Card refs — human handle CAT-NNNN (Tony 2026-10-11). Slug stays the
@@ -539,6 +543,32 @@ def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
             st["timeouts"] += 1
 
 
+# In-flock phase timing (board-api-residual-lock-holds): commits moved
+# post-lock in f1f0b yet holds still hit ~80s, and the slow-lock journal
+# line couldn't say where the time went. While do_POST owns the card
+# flock, load/save/card_path accumulate milliseconds into this
+# thread-local; mutate_ms is the hold remainder (do_* helpers, delivery
+# queueing, validation). Printed on the existing slow-lock line only, so
+# the next investigation reads the culprit straight off the journal.
+# Off-request callers (selftest, _append_comms_note, the post-write
+# worker) see on=False and pay one getattr.
+_phase_t = threading.local()
+
+
+def _phase_clock():
+    """monotonic() seed for a measured call inside the card flock —
+    None when no POST request is being timed so the instrumented
+    functions keep zero cost for non-request callers."""
+    return time.monotonic() if getattr(_phase_t, "on", False) else None
+
+
+def _phase_add(name: str, t0) -> None:
+    if t0 is not None:
+        setattr(_phase_t, name,
+                getattr(_phase_t, name, 0.0)
+                + (time.monotonic() - t0) * 1000)
+
+
 def _append_comms_note(cid: str, text: str) -> None:
     """Fold a post-lock note (session delivery/hide results) into comms
     via a second locked write — the work that produced it ran off the
@@ -592,10 +622,16 @@ def _post_write_loop() -> None:
 
 
 def load(p: Path) -> dict:
-    d = yaml.load(p.read_text(), Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) or {}
-    if not isinstance(d, dict):
-        raise ValueError(f"card {p.name} is not a YAML mapping")
-    return d
+    t0 = _phase_clock()
+    try:
+        d = yaml.load(p.read_text(),
+                      Loader=getattr(yaml, "CSafeLoader",
+                                     yaml.SafeLoader)) or {}
+        if not isinstance(d, dict):
+            raise ValueError(f"card {p.name} is not a YAML mapping")
+        return d
+    finally:
+        _phase_add("load_ms", t0)
 
 
 # Set by do_POST while holding the request flock so the queued commit in
@@ -615,16 +651,21 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     paths are then queued for the post-lock commit worker (see
     _queue_commit) so they sit dirty for ~seconds, not for a sweep
     interval — short enough that autostash can't eat them in practice."""
-    text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
-                          width=110)
-    if not isinstance(yaml.safe_load(text), dict):
-        raise ValueError(
-            f"refusing to write {p.name}: serialized card did not "
-            "re-parse as a mapping")
-    # fsync before rename — without it a delayed-allocation writeback can
-    # still lose the tail under ENOSPC (2026-11-19 idc03 disk-full)
-    card_io.atomic_write_text(p, text)
-    _queue_commit(p, _pending_label or f"write {p.stem}", extra=extra)
+    t0 = _phase_clock()
+    try:
+        text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
+                              width=110)
+        if not isinstance(yaml.safe_load(text), dict):
+            raise ValueError(
+                f"refusing to write {p.name}: serialized card did not "
+                "re-parse as a mapping")
+        # fsync before rename — without it a delayed-allocation writeback
+        # can still lose the tail under ENOSPC (2026-11-19 idc03
+        # disk-full)
+        card_io.atomic_write_text(p, text)
+        _queue_commit(p, _pending_label or f"write {p.stem}", extra=extra)
+    finally:
+        _phase_add("save_ms", t0)
 
 
 def _act(card: dict) -> dict:
@@ -685,7 +726,11 @@ def _ensure_reqs(card: dict) -> list:
 # request mid-write or git-safe-pull's whole pull+autostash+pop phase),
 # respects the gitdir rebase/merge-state guard, and retries every
 # COMMIT_RETRY_S until the commit lands — kanban-commit.timer remains
-# the sweep backstop. BOARD_API_COMMIT=0 restores the sweep-only model.
+# the sweep backstop. Done-ness is verified by the queued paths'
+# porcelain state, not the commit rc (board-api-residual-lock-holds):
+# a batch the sweep already committed — or that never had changes — is
+# finished, not requeued. BOARD_API_COMMIT=0 restores the sweep-only
+# model.
 COMMIT_DEBOUNCE_S = float(
     os.environ.get("BOARD_API_COMMIT_DEBOUNCE_S", "0.4"))
 COMMIT_RETRY_S = float(
@@ -805,13 +850,36 @@ def _card_lock_held() -> bool:
         return False
 
 
+def _rels_dirty(rels: list) -> bool | None:
+    """git status --porcelain scoped to the queued paths — the batch's
+    truth source. False (clean) means the paths were already committed
+    (this worker's previous drain, or the kanban-commit sweep raced us
+    and won) or never existed: the batch is done no matter what a later
+    commit rc says. None = the check itself failed — the caller can't
+    prove clean, so it keeps the conservative retry."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO), "status", "--porcelain", "--"] + rels,
+            capture_output=True, text=True, timeout=15)
+    except Exception:
+        return None
+    if r.returncode != 0:
+        return None
+    return bool(r.stdout.strip())
+
+
 def _commit_paths(rels: list, label: str) -> bool:
     """Best-effort git add+commit of coalesced repo-relative paths —
     runs on the commit worker, off the request flock. False means the
-    tree can't take a commit right now (pull phase holds the card flock,
-    mid-rebase/merge, index.lock) and the caller requeues for a retry;
-    True covers both 'committed' and 'nothing committable' (no repo,
-    pathspec matched nothing — kanban-commit sweeps either way)."""
+    batch STILL has dirty queued paths AND the tree can't take a commit
+    right now (pull phase holds the card flock, mid-rebase/merge,
+    index.lock) — the caller requeues for a retry. True covers
+    'committed' AND 'nothing left to commit': done-ness is decided by
+    the queued paths' porcelain state, not the commit rc, because
+    `git commit -- <rels>` exits 1 whenever the queued paths are already
+    clean while OTHER files are dirty — the served checkout always is —
+    which used to requeue a finished batch into a 5s 'commit skipped'
+    log storm until MAX_TRIES (board-api-residual-lock-holds)."""
     if not rels:
         return True
     try:
@@ -837,7 +905,10 @@ def _commit_paths(rels: list, label: str) -> bool:
             if "did not match" not in err:
                 sys.stderr.write(
                     f"board-api commit add skipped: {err[:200]}\n")
-                return False   # index.lock etc — transient, retry
+                # transient (index.lock) — done only when the queued
+                # paths are provably clean; still-dirty (or an
+                # inconclusive check) requeues
+                return _rels_dirty(rels) is False
             # git add is all-or-nothing on pathspecs: one queued path
             # that is neither on disk nor in the index (untracked then
             # deleted before the worker ran) must not drop the whole
@@ -851,14 +922,22 @@ def _commit_paths(rels: list, label: str) -> bool:
                     staged.append(r)
                 elif "did not match" not in (one.stderr or ""):
                     # transient (index.lock) — requeue everything so the
-                    # staged paths and this one commit together
+                    # staged paths and this one commit together, unless
+                    # the sweep provably already left them clean
                     sys.stderr.write(
                         f"board-api commit add skipped {r}: "
                         f"{(one.stderr or '').strip()[:200]}\n")
-                    return False
+                    return _rels_dirty(rels) is False
             rels = staged
             if not rels:
                 return True    # nothing stageable — sweep owns leftovers
+        # verify by repo state: queued paths already clean (the sweep
+        # committed between our write and this drain, or they never
+        # changed) means the batch is done — committing would rc=1 with
+        # 'Changes not staged for commit' over unrelated dirty files and
+        # the worker would retry a finished batch forever.
+        if _rels_dirty(rels) is False:
+            return True
         # --no-verify: save() already round-trip-validates the YAML and the
         # full SSOT/node gate is kanban-commit's job on the 15-min sweep —
         # paying it per write would blow the client timeout. Pathspec scope
@@ -871,10 +950,14 @@ def _commit_paths(rels: list, label: str) -> bool:
             capture_output=True, text=True, timeout=15)
         if r.returncode != 0:
             err = ((r.stderr or "") + (r.stdout or "")).strip()
-            if "nothing to commit" not in err.lower():
+            if "nothing to commit" in err.lower():
+                return True
+            # the sweep can commit between our porcelain gate and this
+            # commit — re-verify before calling the batch failed
+            if _rels_dirty(rels) is not False:
                 sys.stderr.write(
                     f"board-api commit skipped: {err[:200]}\n")
-                return False   # transient — retry rather than wait sweep
+                return False   # still dirty — transient, retry
         return True
     except Exception as e:
         sys.stderr.write(f"board-api commit skipped: {e}\n")
@@ -4662,6 +4745,8 @@ class H(BaseHTTPRequestHandler):
                 "error": "board write lock saturated — retry",
                 "retry_after_s": 5})
         lf, wait_s = got
+        _phase_t.on = True
+        _phase_t.load_ms = _phase_t.save_ms = _phase_t.card_path_ms = 0.0
         try:
             _pending_label = (
                 f"{path.lstrip('/')} "
@@ -4795,10 +4880,18 @@ class H(BaseHTTPRequestHandler):
             hold_s = time.monotonic() - t_lock - wait_s
             lf.close()
             _lock_stat(path, wait_s, hold_s)
+            _phase_t.on = False
             if wait_s >= LOCK_SLOW_S or hold_s >= LOCK_SLOW_S:
+                load_ms = getattr(_phase_t, "load_ms", 0.0)
+                save_ms = getattr(_phase_t, "save_ms", 0.0)
+                cp_ms = getattr(_phase_t, "card_path_ms", 0.0)
+                mutate_ms = max(
+                    0.0, hold_s * 1000 - load_ms - save_ms - cp_ms)
                 sys.stderr.write(
                     f"board-api lock wait={wait_s:.1f}s "
-                    f"held={hold_s:.1f}s path={path}\n")
+                    f"held={hold_s:.1f}s path={path} "
+                    f"load_ms={load_ms:.0f} mutate_ms={mutate_ms:.0f} "
+                    f"save_ms={save_ms:.0f} card_path_ms={cp_ms:.0f}\n")
         # card lock released — queue the push (debounced, best-effort) and
         # render under its own lock so neither stalls other writers
         if notify_req:
@@ -5381,6 +5474,31 @@ def _selftest() -> None:
     assert subprocess.run(["git", "-C", str(grepo), "status",
                            "--porcelain"], capture_output=True,
                           text=True).stdout.strip() == ""
+    # sweep race (board-api-residual-lock-holds): queued paths committed
+    # by an external commit while the card flock is held must end the
+    # batch — `git commit -- <rels>` on clean paths rc=1s over OTHER
+    # dirty files, which used to requeue into a 'commit skipped' storm.
+    (grepo / "unrelated.txt").write_text("dirty")   # other dirt stays
+    lf2 = acquire_lock(LOCK, 5)[0]     # held flock -> worker defers
+    g1["note"] = "swept"
+    save(gcards / "gc1.yml", g1)
+    time.sleep(0.15)                   # let a drain cycle hit the defer
+    subprocess.run(
+        ["git", "-C", str(grepo), "add", "--",
+         "docs/ssot/kanban/cards/gc1.yml"], check=True)
+    subprocess.run(["git", "-C", str(grepo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm",
+                    "sweep"], check=True)
+    lf2.close()                        # flock released -> drain runs
+    assert commit_pending_flush(10)
+    head = subprocess.run(["git", "-C", str(grepo), "log",
+                           "--format=%s", "-1"], capture_output=True,
+                          text=True).stdout.strip()
+    assert head == "sweep", head       # worker did not commit over it
+    assert "unrelated.txt" in subprocess.run(
+        ["git", "-C", str(grepo), "status", "--porcelain"],
+        capture_output=True, text=True).stdout
+    (grepo / "unrelated.txt").unlink()
     # outside-REPO paths are filtered, never raise
     save(tmp / "outside.yml", {"id": "o", "title": "t"})
     globals()["REPO"] = real_repo
