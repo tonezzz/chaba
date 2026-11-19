@@ -1,7 +1,7 @@
 id: mddb-backup-disk-headroom-guard-d5e029
 title: mddb-backup-disk-headroom-guard
 column: doing
-updated: 2026-11-19 10:26
+updated: 2026-11-19 10:29
 spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
   2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
   that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
@@ -69,6 +69,10 @@ comms:
     max(15G, 2x live db size) else skip+alert+exit1), pull streams podman exec cat|gzip to .db.gz.tmp -> gzip -t
     -> rename (partials can never look like backups; cp fallback still guarded), retention keep=3/instance + 80G
     dir cap that never deletes an instance''s newest copy, stale .tmp ('
+- at: 2026-11-19 10:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-101741-add-a-disk-headroom-guard-to-m no longer active on tony-macbook
+    but card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -76,3 +80,5 @@ action:
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-19 10:29
