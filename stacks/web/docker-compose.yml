@@ -46,6 +46,9 @@ services:
     - /sys:/host/sys:ro
     - /var/run/docker.sock:/var/run/docker.sock:ro
     - /etc/os-release:/host/etc/os-release:ro
+    - /home/tony/netdata/etc:/etc/netdata
+    - /home/tony/netdata/lib:/var/lib/netdata
+    - /home/tony/netdata/cache:/var/cache/netdata
     cap_add:
     - SYS_PTRACE
     - SYS_ADMIN
