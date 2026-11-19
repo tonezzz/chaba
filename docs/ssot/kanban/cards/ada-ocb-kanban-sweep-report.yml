@@ -1,7 +1,7 @@
 id: ada-ocb-kanban-sweep-report
 title: 'Ada-OCB: read-only Kanban stuck-card sweep tool'
 column: doing
-updated: 2026-11-19 15:13
+updated: 2026-11-19 15:47
 brief: The card-ops-sweep skill and card-status procedure already define evidence-first triage; add a callable Ada-OCB
   tool to produce one timestamped summary of stuck, failed, and misplaced work without dispatching or mutating cards.
 priority: medium
@@ -48,3 +48,10 @@ comms:
     evidence from confirmed work and includes host-active rows absent from claimed. Targeted board snapshot tests:
     13 passed; full suite: 1,818 passed, 4 skipped, 31 subtests; tool-lint clean (60 existing warnings). Waiting
     on CI for the updated head; no merge or deployment.'
+- at: 2026-11-19 15:47
+  from: devin
+  text: 'PR #18 merged to main as squash commit 26e23fa (head d0a8e0d). CI test check SUCCESS; independent review
+    found no blockers (minor nit: stale doing+open-request classifies as stale_doing, still surfaced safely). Chaba-side
+    follow-ups: card-ops-sweep SKILL.md now calls ada_kanban_sweep for the initial snapshot; ssot.tools.yml gained
+    board.kanban_sweep; ssot.procedures.yml card-ops-sweep pointer updated. Deploy to idc03 remains a deliberate
+    deploy-ada.sh step, not done here.'
