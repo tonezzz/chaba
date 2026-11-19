@@ -1,0 +1,40 @@
+id: ada-ocb-bridge-stable-path
+title: 'ada-ocb: point ada-control MCP at a stable origin/main bridge, not a live checkout'
+column: backlog
+updated: 2026-11-19 08:38
+brief: 'Global ~/.config/opencode/opencode.json runs ada-control as `python3 /home/tony/CascadeProjects/ada-voice/opencode/ada_mcp.py`
+  — a checkout that is currently on branch ada-consult-pr12-edit with uncommitted WIP. Every OpenChamber session
+  silently loads whatever bridge file that checkout happens to hold (observed 2026-11-18: divergent consult WIP,
+  missing comms_tail hydration). DevNest uses its own .opencode/ada_mcp.py copy which drifts separately. Bridge
+  version handshake (ADA-0177) detects staleness after the fact; this card prevents it.'
+priority: high
+tags:
+- ada-ocb
+- opencode
+- infra
+- mcp
+spec: 'Deliver a stable bridge distribution for OpenChamber/OpenCode MCP clients. Design (adjust if a clearly better
+  one exists, but keep it simple): (a) a dedicated checkout/worktree that only ever tracks origin/main — e.g. `git
+  worktree add ~/CascadeProjects/ada-bridge origin/main` or a small bare-sync script; (b) a sync script `scripts/sync-ocb-bridge.sh`
+  in ada-voice that fast-forwards that checkout to origin/main and verifies opencode/ada_mcp.py is clean (refuse
+  to sync a dirty tree — report instead); (c) systemd user timer unit (or hook into deploy-ada.sh / kanban-commit)
+  that runs the sync periodically so the bridge never lags main; (d) update docs (AGENTS.md or docs/kb) with the
+  new canonical path and the cutover step: repoint `mcp.ada-control.command` in ~/.config/opencode/opencode.json
+  and DevNest .opencode/opencode.json to the stable path. REPO-SIDE ONLY: do not edit live host config files (~/.config/opencode,
+  ~/DevNest) — the cutover is a separate manual step after merge. Done when: sync script + timer units + docs are
+  committed, a dry-run shows it would fast-forward a stale checkout and refuse a dirty one, and tests cover the
+  refuse-dirty path.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: codemod
+  lane_source: kw
+comms:
+- at: 2026-11-19 08:38
+  from: chaba
+  text: classified as codemod (kw:config conf 1.00)
+- at: 2026-11-19 08:38
+  from: devin
+  text: card captured via board-api
+ref: SYS-0218
