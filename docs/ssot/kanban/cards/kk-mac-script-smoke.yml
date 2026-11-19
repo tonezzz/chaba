@@ -3,7 +3,7 @@ title: kk-mac launchd runner — script executor e2e smoke
 column: review
 priority: low
 created: '2026-11-19'
-updated: 2026-11-19 20:06
+updated: 2026-11-19 22:39
 brief: 'E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd — proves the provisioned
   runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).'
 action:
@@ -89,6 +89,11 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 22:39
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
 claim:
   since: 2026-11-19 10:37
 review_kind: verify
+awaiting_action: true
