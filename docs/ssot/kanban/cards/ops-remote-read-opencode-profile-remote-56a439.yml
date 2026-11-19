@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-19 20:35
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -98,3 +98,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:35
+  from: devin
+  text: 'PR #191 merged as 890b2a2463 (syntax passed). idc02 safe-sync has no behind commits; lane_gate matches
+    HEAD and live S3 admission passes (8/20). Runner source/install hashes match cc637f5; safe-sync skipped the
+    dirty runner source, so that copy was not overwritten. The checkout retains all local edits and 230 untracked
+    files; its autostash patch was archived by git-safe-pull. idc03 board-api is active/healthy with the diagnosis
+    validator present. Next: one read-only free-route verification; keep'
