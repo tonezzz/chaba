@@ -1,7 +1,7 @@
 id: kanban-card-cycle-control-pane
 title: Extend the control pane for the Kanban card cycle
 column: doing
-updated: 2026-11-19 19:12
+updated: 2026-11-19 19:27
 brief: Design a thin, evidence-first operations pane over the existing board/API, DevNest/JevTeam routing, and OpenChamber
   sessions.
 priority: medium
@@ -77,6 +77,11 @@ comms:
     eligibility & claim reason, executor/provider/model, host/session, queue/run duration, tokens & cost, artifact/verifier,
     attempts/failure, escalation reason + confidence). Read-only v1 — no /action calls; live action overlay from
     /apps/board-api/cards?id=. Tests pass (14). Design d'
+- at: 2026-11-19 19:27
+  from: tony
+  text: '2026-11-19 v2: evidence serving (§4) + source tags (§6.3) on the Board control pane: board-api GET /jobs?card=
+    returns lane metric + usage.json + envelope (tests/board/test_board_api_jobs_evidence.py); pane shows queue
+    wait/tokens/cost with ''from: <source>'' per row. Tests pass (24). Design doc: docs/design/kanban-card-cycle-control-pane.md.'
 requests:
 - id: control-pane-surface
   ask: Choose the phase-one home for the card-cycle control pane.
