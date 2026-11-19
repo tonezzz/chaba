@@ -1,0 +1,28 @@
+id: board-api-queue-write-verify-lost-race-f85f2f
+title: board-api-queue-write-verify-lost-race
+column: backlog
+updated: 2026-11-19 10:38
+spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
+
+
+  1. SILENT WRITE LOSS on /action queue: POST /action {do:queue} returned ''queued — kanban-dispatch will claim
+  it'' at least 3x for OPS-0200 but the card YAML never got action.status=queued (only the create comm existed).
+  Likely lost to kanban-commit''s git-safe-pull rebase window on idc03 (known ~15min race). A later identical call
+  DID persist (commit d631f3dc). Fix options: (a) board-api reads back the card after write and returns the persisted
+  state (fail loudly on mismatch); (b) retry the locked write on pull-rebase conflict instead of dropping; (c) at
+  minimum document ''verify action.status landed'' in docs/kb/board-api-write-door.md.
+
+
+  2. TEST-GATE TIMEOUT is infra flake, not test failure: dispatch merge held twice on ''suite timeout (240s)'' for
+  docs/config-only diffs (OPS-0200, ADA-0201, KNB-0212). Both times manual merge on idc03 served checkout was safe.
+  Fix: dispatch/merge-sweep should distinguish timeout from assertion failure — auto-retry once, or allow merge
+  with ''gate: timeout-override'' flag for docs-only diffs (paths allowlist: docs/, stacks/, *.md).
+
+
+  Done when: queue writes are verified-or-loud, and a docs-only dispatch branch can land without a human merge when
+  the gate times out.'
+ref: KNB-0227
+comms:
+- at: 2026-11-19 10:38
+  from: tony
+  text: card captured via board-api
