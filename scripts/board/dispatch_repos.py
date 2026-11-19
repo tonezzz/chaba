@@ -1324,7 +1324,13 @@ REPO_TESTS = {
               "tests/board/test_board_api_action_persistence.py "
               "tests/test_ssot_validate_refs.py "
               "-x -q",
-              "timeout": 240,
+              # the set outgrew its old 240s budget — 237 tests need
+              # ~480s on tony-omen under load (2026-11-19), which held
+              # merges on "suite timeout" even when green; on idc03's
+              # 4 vCPUs it can stretch further. 900s keeps the gate
+              # honest without wedging every dispatch — a held merge
+              # costs more than a slow gate.
+              "timeout": 900,
               # what the bootstrap installs when nothing on the host can
               # import pytest — chaba's merge-smoke set needs pyyaml
               # (test files import yaml at collection time)

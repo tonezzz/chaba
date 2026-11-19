@@ -90,3 +90,8 @@ edge_cases:
     runner, not silent merging."
   - "test_exempt cards still pass through goals/conflict/shadow/verified
     gates — only the pytest step is waived."
+  - "chaba gate timeout raised 240s -> 900s (same change, second
+    dispatch): the 12-file / 237-test set runs ~480s on tony-omen under
+    load, so a green suite was being held on 'suite timeout'. A suite
+    that can never fit its budget wedges every merge; trim the set or
+    add pytest-xdist if 900s becomes painful."
