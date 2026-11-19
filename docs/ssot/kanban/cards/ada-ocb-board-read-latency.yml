@@ -1,7 +1,7 @@
 id: ada-ocb-board-read-latency
 title: 'ada-ocb: fast board reads for kanban tools (compact+projected snapshots)'
 column: done
-updated: 2026-11-19 19:08
+updated: 2026-11-19 20:02
 brief: ada_status/card_context/card_pick/next_card hit the 9MB /cards dump (13-16s) exceeding the OpenCode MCP timeout;
   calls completed server-side but agents saw timeouts. Route through compact index + projected snapshot + single-card
   hydration; guard string comms/requests/action rows.
@@ -60,6 +60,10 @@ comms:
 - at: 2026-11-19 19:08
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
