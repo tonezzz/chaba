@@ -56,11 +56,11 @@
 #      one sync cycle instead of drifting until a manual scp.
 #
 # Board write flock: before any worktree mutation the script takes the
-# same flock board-api.py holds across save()->commit
-# (SAFE_PULL_BOARD_LOCK, default /tmp/board-api.lock). board-api now
-# commits each write immediately under that lock, so the two can never
-# overlap — a card write can no longer sit uncommitted in the tree when
-# autostash fires, which is how comms/column moves were eaten by failed
+# same flock board-api.py holds across save()'s card read-modify-write
+# (SAFE_PULL_BOARD_LOCK, default /tmp/board-api.lock). board-api's
+# commit worker runs after the flock is released but probes it and
+# defers while this pull holds it, so a queued commit still can't land
+# mid-autostash — the window that ate comms/column moves via failed
 # stash pops (card board-api-writes-eaten-by-autostash-pops-515009).
 # The render flock (SAFE_PULL_RENDER_LOCK, default
 # /tmp/board-render.lock) is taken first — same order as
@@ -469,9 +469,11 @@ _pull_needed() {
 # Hold the board write flock for the whole worktree-mutating phase —
 # untracked-collision resolution, pull --rebase --autostash, pop
 # resolution, column guard, and the exit-trap reconcile. board-api.py
-# holds the same flock across save()->commit, so a card write can never
-# be mid-flight (uncommitted) while autostash snapshots the tree — the
-# window that ate board writes (card
+# holds the same flock across its card read-modify-write, and its
+# post-lock commit worker probes it and defers while it is held — so a
+# queued commit can't land mid-autostash and a card write's file
+# content is already atomic on disk before the pull stashes (the
+# window that ate board writes,
 # board-api-writes-eaten-by-autostash-pops-515009). The fd stays open
 # until exit, which also covers the EXIT-trap reconcile. Bounded wait:
 # a wedged board-api must not deadlock convergence — log and proceed.

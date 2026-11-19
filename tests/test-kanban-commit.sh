@@ -200,10 +200,11 @@ check "F: fixed card pushed to origin/master" \
   "git -C '$TMP/origin.git' show master:docs/ssot/kanban/cards/bad-card.yml | grep -q 'fixed'"
 
 # --- G: board write flock (board-api-writes-eaten-by-autostash-pops) ------
-# safe-pull holds the board write flock across the pull so a board-api
-# save() can never sit uncommitted when autostash fires. The wait is
-# bounded: a wedged writer must not deadlock convergence — it logs and
-# pulls anyway.
+# safe-pull holds the board write flock across the pull: board-api's
+# card RMW can't interleave, and its post-lock commit worker defers
+# while the flock is held, so no commit lands inside the autostash
+# window. The wait is bounded: a wedged writer must not deadlock
+# convergence — it logs and pulls anyway.
 # These checks need a REAL pull: the 2026-11-07 fast path skips the lock
 # entirely when upstream is already an ancestor of HEAD.
 (

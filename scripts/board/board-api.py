@@ -6,12 +6,18 @@ Binds 127.0.0.1:8787 on tony-dell; Caddy proxies /apps/board-api/* here
 checkout (chaba-tony-dell — the web container bind-mounts that tree),
 then re-runs render-board.py (+ render-board2.py --if-changed) so both
 views' cards.json + index.html refresh immediately. Git persistence:
-every write is committed immediately under the request flock (scoped
-pathspec commit — see _commit_write; BOARD_API_COMMIT=0 disables), and
-kanban-commit.timer sweeps anything left over + pushes. An uncommitted
-card edit is autostash bait — the next pull --rebase stashes it and a
-failed pop resolves generated paths to HEAD, silently eating comms and
-column moves (board-api-writes-eaten-by-autostash-pops-515009).
+every write queues its dirty repo paths for a dedicated commit worker
+that runs git add+commit AFTER the request flock is released (scoped
+pathspec commit — see _queue_commit/_commit_loop; BOARD_API_COMMIT=0
+disables), and kanban-commit.timer sweeps anything left over + pushes.
+An uncommitted card edit is autostash bait — the next pull --rebase
+stashes it and a failed pop resolves generated paths to HEAD, silently
+eating comms and column moves
+(board-api-writes-eaten-by-autostash-pops-515009) — so commits stay
+near-immediate (~0.4s debounce) while never sitting inside the flock
+(board-api-commit-outside-lock: per-write commits under the one lock
+that serializes all card mutations stacked into 40-118s holds and a
+503 storm, 2026-11-19).
 
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
@@ -556,6 +562,7 @@ def _append_comms_note(cid: str, text: str) -> None:
         sys.stderr.write(f"board-api post-write note failed: {e}\n")
     finally:
         lf.close()
+    commit_async()
     render_async()
 
 
@@ -591,10 +598,10 @@ def load(p: Path) -> dict:
     return d
 
 
-# Set by do_POST while holding the request flock so the immediate commit
-# in save() gets a useful message ("board-api comment <id>"); empty
-# outside requests (selftest, module importers) where it falls back to
-# the card filename.
+# Set by do_POST while holding the request flock so the queued commit in
+# save() gets a useful message ("board-api comment <id>"); empty outside
+# requests (selftest, module importers) where it falls back to the card
+# filename.
 _pending_label = ""
 
 
@@ -604,9 +611,10 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     file is touched — refuse/rollback at write time, not a corrupted
     card that kills render-board for the next N hours
     (guard-card-yaml-syntax-validation-at-wri; 2026-10-11 incident:
-    3 malformed cards wedged the render loop 2.5h). The write is also
-    committed to git immediately (see _commit_write) so it never sits
-    dirty for autostash to eat."""
+    3 malformed cards wedged the render loop 2.5h). The write's repo
+    paths are then queued for the post-lock commit worker (see
+    _queue_commit) so they sit dirty for ~seconds, not for a sweep
+    interval — short enough that autostash can't eat them in practice."""
     text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
                           width=110)
     if not isinstance(yaml.safe_load(text), dict):
@@ -616,7 +624,7 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     # fsync before rename — without it a delayed-allocation writeback can
     # still lose the tail under ENOSPC (2026-11-19 idc03 disk-full)
     card_io.atomic_write_text(p, text)
-    _commit_write(p, _pending_label or f"write {p.stem}", extra=extra)
+    _queue_commit(p, _pending_label or f"write {p.stem}", extra=extra)
 
 
 def _act(card: dict) -> dict:
@@ -665,50 +673,192 @@ def _ensure_reqs(card: dict) -> list:
     return r
 
 
-def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
-    """Commit a card write immediately. An uncommitted card edit in the
-    served checkout is autostash bait — a pull --rebase stashes it and a
-    failed pop resolves generated paths to HEAD upstream-wins, silently
-    eating comms/column moves
-    (board-api-writes-eaten-by-autostash-pops-515009, 2026-10-15 incident:
-    comms + merge-sweep lines orphaned in stash@{0}). Runs under the
-    request flock; git-safe-pull holds the same flock across pull+pop so
-    the two never overlap. Committed writes survive every pull path —
+# Pending-commit coalescing (card board-api-commit-outside-lock).
+# save() used to run git add+commit while holding the request flock —
+# every card/comment/action write paid two subprocesses inside the one
+# lock that serializes ALL card mutations, so bursts stacked into
+# 40-118s holds and the 08:33-09:02 503 storm of 2026-11-19. Now the
+# locked section only records repo-relative dirty paths; a dedicated
+# worker commits them after the flock is released, debounced like
+# render_async so a burst coalesces into the fewest commits. Durability
+# is preserved: the worker defers while the card flock is held (a
+# request mid-write or git-safe-pull's whole pull+autostash+pop phase),
+# respects the gitdir rebase/merge-state guard, and retries every
+# COMMIT_RETRY_S until the commit lands — kanban-commit.timer remains
+# the sweep backstop. BOARD_API_COMMIT=0 restores the sweep-only model.
+COMMIT_DEBOUNCE_S = float(
+    os.environ.get("BOARD_API_COMMIT_DEBOUNCE_S", "0.4"))
+COMMIT_RETRY_S = float(
+    os.environ.get("BOARD_API_COMMIT_RETRY_S", "5"))
+# A path that still won't commit after this many tries is dropped to the
+# kanban-commit sweep — a persistently-broken path must not retry+log
+# forever (the sweep sees the same dirty tree).
+COMMIT_MAX_TRIES = int(os.environ.get("BOARD_API_COMMIT_MAX_TRIES", "60"))
+_pending_commits: dict = {}      # rel path -> label (insertion ordered)
+_commit_tries: dict = {}         # rel path -> consecutive failed drains
+_commit_mu = threading.Lock()
+_commit_flag = threading.Event()
+_commit_active = False
+_commit_worker_started = False
+
+
+def _queue_commit(p: Path, label: str, extra: list | None = None) -> None:
+    """Record a write's dirty repo paths for the commit worker. Called
+    under the request flock where it must stay cheap — no subprocesses.
+    An uncommitted card edit in the served checkout is autostash bait
+    (board-api-writes-eaten-by-autostash-pops-515009), so the worker is
+    nudged immediately; it lands the commit ~debounce+git seconds after
+    the flock is released. Committed writes survive every pull path —
     worst case a rebase conflict goes upstream-wins with the local side
     preserved as .local-conflict-* and folded back by
-    reconcile-local-conflicts.py. Best-effort: any failure (index locked
-    by kanban-commit, mid-rebase tree) leaves the file dirty for the next
-    kanban-commit sweep — same durability as before, never a write-path
-    blocker. BOARD_API_COMMIT=0 restores the sweep-only model."""
+    reconcile-local-conflicts.py."""
     if os.environ.get("BOARD_API_COMMIT", "1") == "0":
         return
-    try:
-        paths = [p] + [Path(x) for x in (extra or [])]
-        seq = CARD_DIR / ".ref-seq"
-        if seq.exists():
-            paths.append(seq)  # ref allocation must persist with the card
-        rels = []
+    paths = [p] + [Path(x) for x in (extra or [])]
+    seq = CARD_DIR / ".ref-seq"
+    if seq.exists():
+        paths.append(seq)      # ref allocation must persist with the card
+    with _commit_mu:
         for q in paths:
             try:
-                rels.append(str(q.relative_to(REPO)))
+                _pending_commits.setdefault(
+                    str(q.relative_to(REPO)), label)
             except ValueError:
-                continue         # selftest/tmp paths — not repo files
-        if not rels:
-            return
+                continue       # selftest/tmp paths — not repo files
+        pending = bool(_pending_commits)
+    if pending:
+        commit_async()
+
+
+def commit_async() -> None:
+    """Nudge the commit worker — same shape as render_async."""
+    global _commit_worker_started
+    with _commit_mu:
+        if not _commit_worker_started:
+            threading.Thread(target=_commit_loop, daemon=True).start()
+            _commit_worker_started = True
+    _commit_flag.set()
+
+
+def _commit_loop() -> None:
+    global _commit_active
+    while True:
+        _commit_flag.wait()
+        _commit_flag.clear()
+        time.sleep(COMMIT_DEBOUNCE_S)   # let a burst coalesce
+        try:
+            while True:
+                with _commit_mu:
+                    items = dict(_pending_commits)
+                    _pending_commits.clear()
+                    if items:
+                        _commit_active = True
+                if not items:
+                    with _commit_mu:
+                        _commit_active = False
+                    break
+                rels = list(items)
+                label = "; ".join(dict.fromkeys(items.values()))[:110]
+                if _commit_paths(rels, label):
+                    with _commit_mu:
+                        for r in rels:
+                            _commit_tries.pop(r, None)
+                    continue      # drain anything queued during the commit
+                # mid-pull/mid-rebase/index-lock — requeue and retry
+                # shortly; a path that keeps failing ages out to the
+                # kanban-commit sweep instead of retrying forever
+                with _commit_mu:
+                    for r in rels:
+                        _commit_tries[r] = _commit_tries.get(r, 0) + 1
+                        if _commit_tries[r] <= COMMIT_MAX_TRIES:
+                            _pending_commits.setdefault(r, items[r])
+                        else:
+                            _commit_tries.pop(r, None)
+                            sys.stderr.write(
+                                f"board-api commit gave up on {r} "
+                                f"after {COMMIT_MAX_TRIES} tries — "
+                                "sweep owns it\n")
+                time.sleep(COMMIT_RETRY_S)
+        except Exception as e:
+            # never let the worker die — requeue anything in flight and
+            # keep waiting; the sweep is the backstop meanwhile
+            sys.stderr.write(f"board-api commit worker error: {e}\n")
+            with _commit_mu:
+                for r in (items if "items" in dir() else {}):
+                    _pending_commits.setdefault(r, items[r])
+                _commit_active = False
+
+
+def _card_lock_held() -> bool:
+    """True while a writer or git-safe-pull's pull phase holds the card
+    flock. The commit worker defers rather than racing the pull's
+    autostash/rebase window — but never HOLDS the flock across a commit:
+    request read-modify-write must not queue behind git."""
+    try:
+        with LOCK.open("w") as lf:
+            try:
+                fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return False
+            except BlockingIOError:
+                return True
+    except OSError:
+        return False
+
+
+def _commit_paths(rels: list, label: str) -> bool:
+    """Best-effort git add+commit of coalesced repo-relative paths —
+    runs on the commit worker, off the request flock. False means the
+    tree can't take a commit right now (pull phase holds the card flock,
+    mid-rebase/merge, index.lock) and the caller requeues for a retry;
+    True covers both 'committed' and 'nothing committable' (no repo,
+    pathspec matched nothing — kanban-commit sweeps either way)."""
+    if not rels:
+        return True
+    try:
+        if _card_lock_held():
+            return False       # a write or a pull phase owns the checkout
         gd = subprocess.run(
             ["git", "-C", str(REPO), "rev-parse", "--git-dir"],
             capture_output=True, text=True, timeout=10)
         if gd.returncode != 0:
-            return
+            return True        # not a repo (selftest/tmp) — never retries
         gitdir = Path(gd.stdout.strip())
         if not gitdir.is_absolute():
             gitdir = REPO / gitdir
         if any((gitdir / m).exists() for m in
                ("rebase-merge", "rebase-apply",
                 "MERGE_HEAD", "CHERRY_PICK_HEAD")):
-            return               # sweep owns the tree while git settles
-        subprocess.run(["git", "-C", str(REPO), "add", "--"] + rels,
-                       capture_output=True, timeout=15)
+            return False       # git is settling — retry, don't race it
+        add = subprocess.run(
+            ["git", "-C", str(REPO), "add", "--"] + rels,
+            capture_output=True, text=True, timeout=15)
+        if add.returncode != 0:
+            err = (add.stderr or "").strip()
+            if "did not match" not in err:
+                sys.stderr.write(
+                    f"board-api commit add skipped: {err[:200]}\n")
+                return False   # index.lock etc — transient, retry
+            # git add is all-or-nothing on pathspecs: one queued path
+            # that is neither on disk nor in the index (untracked then
+            # deleted before the worker ran) must not drop the whole
+            # batch — stage the survivors individually.
+            staged = []
+            for r in rels:
+                one = subprocess.run(
+                    ["git", "-C", str(REPO), "add", "--", r],
+                    capture_output=True, text=True, timeout=15)
+                if one.returncode == 0:
+                    staged.append(r)
+                elif "did not match" not in (one.stderr or ""):
+                    # transient (index.lock) — requeue everything so the
+                    # staged paths and this one commit together
+                    sys.stderr.write(
+                        f"board-api commit add skipped {r}: "
+                        f"{(one.stderr or '').strip()[:200]}\n")
+                    return False
+            rels = staged
+            if not rels:
+                return True    # nothing stageable — sweep owns leftovers
         # --no-verify: save() already round-trip-validates the YAML and the
         # full SSOT/node gate is kanban-commit's job on the 15-min sweep —
         # paying it per write would blow the client timeout. Pathspec scope
@@ -719,11 +869,30 @@ def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
              "commit", "--no-verify", "-qm",
              f"board-api {label}"[:120], "--"] + rels,
             capture_output=True, text=True, timeout=15)
-        if r.returncode != 0 and (r.stderr or "").strip():
-            sys.stderr.write(
-                f"board-api commit skipped: {(r.stderr or '').strip()[:200]}\n")
+        if r.returncode != 0:
+            err = ((r.stderr or "") + (r.stdout or "")).strip()
+            if "nothing to commit" not in err.lower():
+                sys.stderr.write(
+                    f"board-api commit skipped: {err[:200]}\n")
+                return False   # transient — retry rather than wait sweep
+        return True
     except Exception as e:
         sys.stderr.write(f"board-api commit skipped: {e}\n")
+        return False
+
+
+def commit_pending_flush(timeout_s: float = 15.0) -> bool:
+    """Wait until every queued commit has landed (or been confirmed
+    uncommittable) — for tests and drains that need the commit observed,
+    not just the write."""
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        with _commit_mu:
+            done = not _pending_commits and not _commit_active
+        if done:
+            return True
+        time.sleep(0.05)
+    return False
 
 
 def comms_add(card: dict, frm: str, text: str, req: str = "") -> None:
@@ -1124,9 +1293,9 @@ def _archive_move(p: Path, card: dict) -> None:
     adir = p.parent / "archive"
     adir.mkdir(exist_ok=True)
     dest = adir / p.name
-    save(dest, card)       # commits the archive-path write
+    save(dest, card)       # queues the archive-path write for commit
     p.unlink()             # source leaves cards/*.yml -> off the board
-    _commit_write(p, "archive move")  # stages source deletion + commits
+    _queue_commit(p, "archive move")  # worker stages source deletion too
     _ARCHIVE_INDEX["t"] = 0.0  # next lookup rebuilds (new member)
 
 
@@ -1146,7 +1315,7 @@ def _unarchive_move(p: Path, card: dict) -> None:
     dest = p.parent.parent / p.name  # cards/archive/x.yml -> cards/x.yml
     save(dest, card)
     p.unlink()
-    _commit_write(p, "unarchive move")
+    _queue_commit(p, "unarchive move")
     _ARCHIVE_INDEX["t"] = 0.0  # next lookup rebuilds (member left)
 
 
@@ -3535,7 +3704,7 @@ def _dashed_slug(text: str) -> str:
 
 def do_inbox(body: dict, frm: str) -> dict:
     """/inbox — a focus-inbox entry as an endpoint: agents park ideas
-    without a repo checkout. Same atomic write + immediate commit as
+    without a repo checkout. Same atomic write + queued commit as
     cards; runs under the card flock."""
     text = str(body.get("text") or "").strip()
     if not text:
@@ -3600,7 +3769,7 @@ def do_inbox(body: dict, frm: str) -> dict:
     out = yaml.safe_dump(entry, allow_unicode=True, sort_keys=False,
                          width=110)
     card_io.atomic_write_text(p, out)
-    _commit_write(p, _pending_label or f"inbox {slug}")
+    _queue_commit(p, _pending_label or f"inbox {slug}")
     return {"message": f"inbox item {p.name} filed", "file": p.name}
 
 
@@ -4639,6 +4808,7 @@ class H(BaseHTTPRequestHandler):
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
         self._send(200, {"ok": True, "message": msg, "via": ident,
                          **resp_extra})
+        commit_async()   # flush queued write paths post-lock (worker commits)
         render_async()
 
 
@@ -5146,11 +5316,16 @@ def _selftest() -> None:
                  "X-Forwarded-For": "203.0.113.5"}
         assert caller_identity(edge2, "10.0.0.9") == ""
 
-    # immediate commit (board-api-writes-eaten-by-autostash-pops-515009):
-    # a save() in a real repo lands in HEAD right away, leaving no dirty
-    # card file for autostash to eat; BOARD_API_COMMIT=0 falls back to the
-    # dirty-until-sweep model; paths outside REPO are ignored.
+    # deferred commit (board-api-writes-eaten-by-autostash-pops-515009 +
+    # board-api-commit-outside-lock): a save() in a real repo queues its
+    # paths and the commit worker lands them in HEAD within ~debounce
+    # seconds — no dirty card file sits long enough for autostash to
+    # eat; BOARD_API_COMMIT=0 falls back to the dirty-until-sweep model;
+    # paths outside REPO are ignored; a mid-rebase tree defers the
+    # commit and the retry loop lands it once git settles.
     real_repo, real_cards = REPO, CARD_DIR
+    real_lock = LOCK
+    real_deb, real_retry = COMMIT_DEBOUNCE_S, COMMIT_RETRY_S
     grepo = tmp / "grepo"
     gcards = grepo / "docs/ssot/kanban/cards"
     gcards.mkdir(parents=True)
@@ -5160,11 +5335,26 @@ def _selftest() -> None:
                     "--allow-empty", "-m", "init"], check=True)
     globals()["REPO"] = grepo
     globals()["CARD_DIR"] = gcards
+    globals()["LOCK"] = tmp / "board-api.lock"   # probe off the real flock
+    globals()["COMMIT_DEBOUNCE_S"] = 0.05
+    globals()["COMMIT_RETRY_S"] = 0.2
     g1 = {"id": "gc1", "title": "t", "column": "backlog"}
     save(gcards / "gc1.yml", g1)
+    assert commit_pending_flush(10)
     log = subprocess.run(["git", "-C", str(grepo), "log", "--format=%s",
                           "-1"], capture_output=True, text=True).stdout
-    assert "board-api write gc1" in log, log
+    assert "write gc1" in log and log.startswith("board-api"), log
+    assert subprocess.run(["git", "-C", str(grepo), "status",
+                           "--porcelain"], capture_output=True,
+                          text=True).stdout.strip() == ""
+    # burst coalescing: three writes land in ONE commit
+    for i in (2, 3, 4):
+        save(gcards / f"gc{i}.yml", {"id": f"gc{i}", "title": "t"})
+    assert commit_pending_flush(10)
+    log2 = subprocess.run(
+        ["git", "-C", str(grepo), "log", "--format=%s", "-2"],
+        capture_output=True, text=True).stdout
+    assert "board-api write gc" in log2.splitlines()[0], log2
     assert subprocess.run(["git", "-C", str(grepo), "status",
                            "--porcelain"], capture_output=True,
                           text=True).stdout.strip() == ""
@@ -5177,18 +5367,27 @@ def _selftest() -> None:
                            text=True).stdout
     assert "gc1.yml" in dirty
     del os.environ["BOARD_API_COMMIT"]
-    # mid-rebase tree -> commit skipped, write stays dirty for the sweep
+    # mid-rebase tree -> commit deferred (pending, write dirty) then the
+    # retry loop lands it once the rebase state clears
     (grepo / ".git" / "rebase-merge").mkdir()
     g1["note"] = "during rebase"
     save(gcards / "gc1.yml", g1)
+    assert not commit_pending_flush(2)     # stays queued while rebasing
     assert "gc1.yml" in subprocess.run(
         ["git", "-C", str(grepo), "status", "--porcelain"],
         capture_output=True, text=True).stdout
     (grepo / ".git" / "rebase-merge").rmdir()
+    assert commit_pending_flush(10)        # retry lands it
+    assert subprocess.run(["git", "-C", str(grepo), "status",
+                           "--porcelain"], capture_output=True,
+                          text=True).stdout.strip() == ""
     # outside-REPO paths are filtered, never raise
     save(tmp / "outside.yml", {"id": "o", "title": "t"})
     globals()["REPO"] = real_repo
     globals()["CARD_DIR"] = real_cards
+    globals()["LOCK"] = real_lock
+    globals()["COMMIT_DEBOUNCE_S"] = real_deb
+    globals()["COMMIT_RETRY_S"] = real_retry
 
     # ---- unified mutation door (nest-api-unified-mutation-service) ----
     class FakeWP:
