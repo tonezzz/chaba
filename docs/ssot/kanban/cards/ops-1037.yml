@@ -1,7 +1,7 @@
 id: ops-1037
 title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
 column: backlog
-updated: 2026-11-19 18:54
+updated: 2026-11-19 19:09
 spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
   LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
   Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
@@ -75,4 +75,8 @@ comms:
 - at: 2026-11-19 18:54
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

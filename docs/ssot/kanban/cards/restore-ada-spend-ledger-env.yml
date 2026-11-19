@@ -1,7 +1,7 @@
 id: restore-ada-spend-ledger-env
 title: Restore ada-ha-tony.env for ada-spend-ledger
 column: done
-updated: 2026-11-19 18:54
+updated: 2026-11-19 19:09
 spec: ada-spend-ledger.service can't spawn — EnvironmentFile ~/.config/secrets/ada-ha-tony.env missing (only .bak
   files, newest .bak-20261014). The job that tracks this exact spend can't run. Restore from bak or repoint unit.
   Verify contents without printing secrets.
@@ -94,6 +94,10 @@ comms:
 - at: 2026-11-19 18:54
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: ada-spend-ledger-can-t-spawn-config-secr-d0adeb
