@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
 column: backlog
-updated: 2026-11-19 20:35
+updated: 2026-11-19 20:37
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -105,3 +105,10 @@ comms:
     dirty runner source, so that copy was not overwritten. The checkout retains all local edits and 230 untracked
     files; its autostash patch was archived by git-safe-pull. idc03 board-api is active/healthy with the diagnosis
     validator present. Next: one read-only free-route verification; keep'
+- at: 2026-11-19 20:37
+  from: devin
+  text: Created child verification card OPS-0245 (ops-1025-remote-read-smoke-idc03), queued for one attempt on idc02
+    targeting idc03 with litellm/or-free-nemotron-nano. Its envelope sets escalation.max_retries=0; only mcp_debug
+    read-only evidence is requested. Latest queue snapshot showed queued/not yet claimed, so no provider call or
+    artifact is confirmed yet. OPS-1025 stays open until OPS-0245 produces a durable artifact and its held-out verifier
+    passes.
