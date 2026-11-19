@@ -50,6 +50,8 @@ LOCK = Path(os.environ.get("BOARD_LOCK", "/tmp/board-api.lock"))
 ACTOR = "devin"
 
 sys.path.insert(0, str(REPO / "scripts" / "lib"))
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402
 try:
     import report as reportlib  # scripts/lib/report.py
 except Exception:  # pragma: no cover - meta/timeline optional
@@ -168,9 +170,9 @@ class FileSink(Sink):
             fcntl.flock(lf, fcntl.LOCK_EX)
             for cid, card in self._dirty.items():
                 card["updated"] = now()
-                self._path(cid).write_text(
-                    yaml.safe_dump(card, allow_unicode=True,
-                                   sort_keys=False, width=110))
+                # atomic tmp+fsync+rename — a direct write_text tears the
+                # card mid-scalar under ENOSPC (2026-11-19 idc03 incident)
+                card_io.atomic_dump_card(self._path(cid), card)
         # Render AFTER releasing the card flock — a ~15-60s full-board
         # render inside the lock stalls every board-api writer behind it
         # (2026-11-17 convoy, OPS-0725).

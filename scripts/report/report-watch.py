@@ -135,8 +135,9 @@ def heal_item(raw: str, reason: str, dry_run: bool) -> str | None:
             foc = doc.setdefault("focus", {})
             foc["status"] = "processed"
             foc["processed_reason"] = reason
-            p.write_text(yaml.safe_dump(doc, sort_keys=False,
-                                        allow_unicode=True, width=120))
+            card_io.atomic_write_text(
+                p, yaml.safe_dump(doc, sort_keys=False,
+                                  allow_unicode=True, width=120))
         except Exception:
             return None
     return p.name
