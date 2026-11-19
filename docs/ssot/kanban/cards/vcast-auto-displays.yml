@@ -11,7 +11,7 @@ note: 'Auto-recovered 2026-10-27: `displays` check passing again.'
 help: Expects headless-* (vcast-headless@N on idc03) and vcast-real-* (vcast-real@N on idc02) connected, and screen-N
   names on slot N. Dead headless usually = a 409-stuck claim (fixed 2026-10-07 by force-reclaim + persisted keys);
   drift = pre-fix registry, repair with POST /release + re-claim or let registerDisplay re-home it.
-updated: 2026-11-19 17:02
+updated: 2026-11-19 18:53
 action:
   status: done
   verified: true
@@ -99,6 +99,10 @@ comms:
 - at: 2026-11-19 17:02
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: triage
 ref: MED-0382
