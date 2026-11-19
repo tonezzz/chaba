@@ -49,6 +49,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -108,7 +111,7 @@ def load(p: Path) -> dict:
 
 def save(p: Path, card: dict) -> None:
     card["updated"] = now()
-    p.write_text(yaml.safe_dump(card, allow_unicode=True, sort_keys=False))
+    card_io.atomic_dump_card(p, card)
 
 
 def api_post(path: str, body: dict) -> dict:

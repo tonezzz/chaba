@@ -65,6 +65,8 @@ import yaml
 
 repo, cid = Path(sys.argv[1]), sys.argv[2]
 reason, note = os.environ["BAD_REASON"], os.environ["BAD_NOTE"]
+sys.path.insert(0, str(repo / "scripts/board"))
+import card_io
 card_path = repo / "docs/ssot/kanban/cards" / f"{cid}.yml"
 now = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 try:
@@ -84,8 +86,7 @@ try:
                     title="kanban-commit blocked: unsafe staged state",
                     column="review", note=note[:500], updated=now)
         card_path.parent.mkdir(parents=True, exist_ok=True)
-        card_path.write_text(yaml.safe_dump(
-            card, allow_unicode=True, sort_keys=False, width=110))
+        card_io.atomic_dump_card(card_path, card)
     render = repo / "scripts/render-board.py"
     if render.exists():
         # Tolerate failure — while a poisoned card exists the renderer
@@ -149,6 +150,8 @@ import yaml
 
 repo, cid = Path(sys.argv[1]), sys.argv[2]
 n = os.environ["RECOVER_N"]
+sys.path.insert(0, str(repo / "scripts/board"))
+import card_io
 card_path = repo / "docs/ssot/kanban/cards" / f"{cid}.yml"
 now = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 try:
@@ -165,8 +168,7 @@ try:
             {"at": now, "from": "chaba",
              "text": f"recovered after {n} consecutive failed ticks"})
         card.update(id=cid, updated=now)
-        card_path.write_text(yaml.safe_dump(
-            card, allow_unicode=True, sort_keys=False, width=110))
+        card_io.atomic_dump_card(card_path, card)
     render = repo / "scripts/render-board.py"
     if render.exists():
         subprocess.run([sys.executable, str(render)], cwd=repo,

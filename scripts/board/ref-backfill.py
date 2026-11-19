@@ -20,6 +20,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 BAPI = Path(__file__).resolve().with_name("board-api.py")
 spec = importlib.util.spec_from_file_location("board_api", BAPI)
 bapi = importlib.util.module_from_spec(spec)
@@ -59,8 +62,7 @@ def main() -> int:
         if args.dry_run:
             print(f"DRY {new} -> {c.get('id') or p.stem}")
         else:
-            p.write_text(yaml.safe_dump(c, allow_unicode=True,
-                                        sort_keys=False, width=110))
+            card_io.atomic_dump_card(p, c)
             print(f"{new} -> {c.get('id') or p.stem}")
         changed += 1
     print(f"{'would assign' if args.dry_run else 'assigned'} {changed} ref(s)")

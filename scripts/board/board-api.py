@@ -207,6 +207,7 @@ from urllib.parse import urlparse, parse_qs, unquote
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
 import dispatch_repos as dr
 import board_notify as bn
 import publication as pub
@@ -612,9 +613,9 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
         raise ValueError(
             f"refusing to write {p.name}: serialized card did not "
             "re-parse as a mapping")
-    tmp = p.with_suffix(".yml.tmp")
-    tmp.write_text(text)
-    tmp.replace(p)  # atomic — a crash mid-write can't leave a torn card
+    # fsync before rename — without it a delayed-allocation writeback can
+    # still lose the tail under ENOSPC (2026-11-19 idc03 disk-full)
+    card_io.atomic_write_text(p, text)
     _commit_write(p, _pending_label or f"write {p.stem}", extra=extra)
 
 

@@ -158,6 +158,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
 import dispatch_repos as dr
 
 HOST = os.uname().nodename
@@ -641,8 +642,9 @@ def locked_edit(cid: str, fn, touch: bool = True) -> bool:
             return False
         if touch:
             card["updated"] = now()
-        p.write_text(yaml.safe_dump(card, allow_unicode=True,
-                                    sort_keys=False, width=110))
+        # atomic tmp+fsync+rename — a direct write_text tears the card
+        # mid-scalar under ENOSPC (2026-11-19 idc03 disk-full incident)
+        card_io.atomic_dump_card(p, card)
         return True
 
 

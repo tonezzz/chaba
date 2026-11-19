@@ -32,6 +32,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import board_notify as bn
+import card_io
 
 REPO = Path(os.environ.get(
     "CHABA_REPO", str(Path(__file__).resolve().parents[2])))
@@ -193,8 +194,7 @@ def main(cards=None) -> int:
                 "text": f"request-sweep: {len(ids)} request(s) unanswered "
                         f">{AGE_H:g}h — escalation pushed"})
             card["updated"] = stamp
-            p.write_text(yaml.safe_dump(card, allow_unicode=True,
-                                        sort_keys=False, width=110))
+            card_io.atomic_dump_card(p, card)
     print(f"request-sweep: escalated {stamped} request(s) across "
           f"{len(touched)} card(s)")
     return 0

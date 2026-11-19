@@ -33,6 +33,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 REPO = Path(__file__).resolve().parent.parent.parent
 RENDERS = [REPO / "scripts/render-board.py",
            REPO / "scripts/render-board2.py"]
@@ -69,14 +72,8 @@ def _save_state(st: dict) -> None:
 
 def _write_card(card: dict) -> None:
     """Verified atomic card write — same contract as board-api.save()."""
-    text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
-                          width=110)
-    if not isinstance(yaml.safe_load(text), dict):
-        raise ValueError("dump did not re-parse as a card mapping")
     p = CARD_DIR / f"{CARD_ID}.yml"
-    tmp = p.with_suffix(".yml.tmp")
-    tmp.write_text(text)
-    tmp.replace(p)
+    card_io.atomic_dump_card(p, card)
 
 
 def upsert_card(note: str, healthy: bool) -> None:

@@ -19,6 +19,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -291,7 +294,7 @@ def insert_brief(path: Path, brief: str, force: bool) -> bool:
         if l.startswith("column:"):
             lines.insert(i, "brief: " + json.dumps(brief,
                                                    ensure_ascii=False) + "\n")
-            path.write_text("".join(lines))
+            card_io.atomic_write_text(path, "".join(lines))
             return True
     return False
 
