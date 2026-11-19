@@ -161,6 +161,59 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 3. If no procedure exists or it's partial — say so plainly, then per the idea-pipeline duty the default is to **define it** (SSOT doc + card + Ada mirror where she acts on it), not improvise one.
 4. Same for Ada: her mirror carries the duty — "how do we handle X" gets the system's real answer or a proposal, never a made-up rule.
 
+## Devin workflow & error-handling standard (added 2026-11-19 — DEV-0253)
+
+Codified from the live lane machinery (kanban-dispatch, runner-agent,
+merge-sweep, dispatch-wt-sweep, board-api, devin-dispatch + watch,
+job-run). Full audit + rationale: `docs/kb/devin-error-handling-standard.md`.
+These rules are already how the stack works — apply them to anything
+new rather than improvising a weaker variant.
+
+**Writing/changing an unattended lane** (dispatcher, runner, sweep,
+timer, job envelope):
+
+- **Fail loud, bounded evidence.** Every failure lands on the card's
+  comms with a short reason and `action.last_failure`. `verified:
+  false` means checked-and-failed — distinct from "verified
+  withheld/unproven", which holds for a human.
+- **Bounded retries, deliberate re-arm.** Reuse the existing ledgers
+  (`action.attempts`/`max_attempts`; runner `retry-ledger.json` with
+  exponential backoff → host hold) — never a silent loop or a third
+  counter. Re-arm is a human verb (retry/queue); producer re-queues
+  and attempts-bumps never forgive.
+- **Evidence rides the next attempt.** Requeued cards carry
+  `last_failure` forward (RETRY_RAILS); a retry fixes the reported
+  failure first, not re-runs blind.
+- **Blocked ≠ failed.** Needing a human = `/request` or
+  `needs-input.txt` (job-run: needs-input.txt or exit 42 /
+  `NEEDS-INPUT:`) — never a nonzero exit, retry burn, or faked
+  success. `awaiting_action` is for deterministic gaps only.
+- **Advisory components degrade, never block.** Primers, notify,
+  ops-events, comms notes are warn-only — a dead API must not stop a
+  claim loop, merge, or reap.
+- **Gate at claim time, not mid-run.** Push creds, GPU VRAM, labels,
+  load, quiet hours, kill switch, budgets, R-class — checked before
+  work starts; defers are comms-noted and debounced, not crashes.
+- **Probes outside the flock.** Card mutations under
+  `/tmp/board-api.lock` stay cheap — no network/git/systemctl inside
+  it (the 2026-11-17 convoy rule).
+- **Nothing unproven is destroyed.** Reapers salvage-push unpushed
+  heads (`wip/dispatch/<tid>`) or KEEP the tree — never delete what
+  can't be proven on origin; unverifiable state resolves toward
+  "hold", never "drop".
+- **Exit codes mean crashed.** Completed runs exit 0; findings report
+  via comms/inbox/ops-event. Nonzero = the lane itself broke
+  (OPS-0581).
+- **Finished ≠ verified.** Exit 0 is not delivered work — the gate is
+  exit ∧ produced-work ∧ declared goals, each leg pass/fail/
+  unverifiable.
+
+**Inside a dispatched session** the prompt rails are the contract:
+worktree-only, no push/deploy unless spec'd; progress → `/comment`;
+blocked → `/request` or `needs-input.txt`; check `answers.jsonl`
+before finishing; deliver `dispatch-outcome-<id>.md`; on a retry, fix
+the reported failure first.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points
