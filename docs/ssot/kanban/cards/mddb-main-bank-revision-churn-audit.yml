@@ -1,7 +1,7 @@
 id: mddb-main-bank-revision-churn-audit
 title: Audit main MDDB revision churn and retention policy
 column: backlog
-updated: 2026-11-19 14:02
+updated: 2026-11-19 14:13
 brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
   retention.
 priority: medium
@@ -25,6 +25,11 @@ action:
   lane: free_lane
   subject_host: idc03
   status: queued
+  model: litellm/gemini-3.5-flash-lite
+  attempts: 1
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+  last_failure: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is
+    held'
 ref: MEM-0239
 comms:
 - at: 2026-11-19 14:00
@@ -55,3 +60,15 @@ comms:
 - at: 2026-11-19 14:02
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.33 > 1.0)'
+- at: 2026-11-19 14:13
+  from: idc02
+  text: claimed
+- at: 2026-11-19 14:13
+  from: idc02
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
+    dispatch is held — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 14:13
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-19 14:43'
+claim:
+  since: 2026-11-19 14:13
