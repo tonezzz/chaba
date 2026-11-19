@@ -21,6 +21,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 LOCK = Path("/tmp/board-api.lock")
@@ -91,8 +94,7 @@ def main(cards=None) -> int:
             __import__("datetime").timezone(
                 __import__("datetime").timedelta(hours=7))
         ).strftime("%Y-%m-%d %H:%M")
-        p.write_text(yaml.safe_dump(card, allow_unicode=True,
-                                    sort_keys=False, width=110))
+        card_io.atomic_dump_card(p, card)
     print(note)
     return 0
 

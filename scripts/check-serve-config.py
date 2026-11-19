@@ -25,6 +25,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "board"))
+import card_io
+
 REPO = Path(__file__).resolve().parent.parent
 ROUTES = REPO / "docs/ssot/infrastructure/ssot.routes.yml"
 INBOX = REPO / "docs/ssot/focus-inbox"
@@ -117,7 +120,8 @@ def write_alert(host: str, findings: list[str]) -> str:
         "source": {"date": today},
     }
     p = INBOX / f"serve-config-{host}.yml"
-    p.write_text(yaml.safe_dump(doc, sort_keys=False, width=120))
+    card_io.atomic_write_text(p, yaml.safe_dump(doc, sort_keys=False,
+                                               width=120))
     # clear a stale alert once healthy again is the caller's job via unlink
     return p.name
 

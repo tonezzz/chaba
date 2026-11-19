@@ -97,6 +97,7 @@ def _ensure_claim(card: dict) -> dict:
     return c
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
 try:
     import dispatch_repos as dr
 except Exception:  # close verb degrades to defer when the guard can't load
@@ -461,8 +462,7 @@ def main(cards=None) -> int:
             for n in fresh:
                 comms_add(card, "chaba", n)
             card["updated"] = now()
-            p.write_text(yaml.safe_dump(card, allow_unicode=True,
-                                        sort_keys=False, width=110))
+            card_io.atomic_dump_card(p, card)
             report.append(f"{cid} ({len(acted)} executed)")
     print("answer-sweep: "
           + (f"{len(report)} card(s) triaged: {', '.join(report)}"

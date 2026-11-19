@@ -19,6 +19,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+import card_io
+
 REPO = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 ACTIVE_FILE = REPO / "docs/ssot/ssot.focus.current.active.yml"
 
@@ -32,7 +35,8 @@ def load_yaml(path: Path) -> dict:
 
 
 def save_yaml(path: Path, data: dict) -> None:
-    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+    card_io.atomic_write_text(
+        path, yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
 
 
 def parse_date(s: str | None) -> dt.date | None:

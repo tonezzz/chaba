@@ -58,6 +58,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import card_io
+
 REPO = Path(os.environ.get(
     "CHABA_REPO",
     str(Path(__file__).resolve().parents[2])))
@@ -390,8 +393,7 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
     })
     if path.exists() and card == load_card(path):
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "updated" if path.exists() else "created"
 
 
@@ -404,8 +406,7 @@ def close_card(path: Path, slug: str, today: str) -> bool:
     card["note"] = (f"Auto-recovered {today}: `{slug}` check passing "
                     "again.")
     card["updated"] = today
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return True
 
 

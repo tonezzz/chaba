@@ -25,6 +25,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 CARDS_GLOB = "docs/ssot/kanban/cards/*.yml"
 COL_RE = re.compile(r"^(column:\s*)(\S+)", re.M)
 # comm texts that assert a column, in evaluation order. The LAST match
@@ -144,7 +147,7 @@ def main() -> int:
             continue
         text = text[:m.start(2)] + want + text[m.end(2):]
         try:
-            p.write_text(text, encoding="utf-8")
+            card_io.atomic_write_text(p, text)
             fixed += 1
             print(f"card-column-guard: {rel} column {was} -> {want} "
                   f"(HEAD wins — stale pop merge reverted)",

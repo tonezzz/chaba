@@ -103,6 +103,12 @@ try:
 except ImportError:  # pragma: no cover - dell has PyYAML
     yaml = None
 
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+    import card_io
+except ImportError:  # pragma: no cover - missing sibling dir or PyYAML
+    card_io = None
+
 HOME = Path.home()
 # ada-ha-events-* and ada-ha-scenario-reports are ops-plane collections
 # since the mddb-ops split — the leader copies are pre-split residue.
@@ -874,8 +880,12 @@ def write_inbox_entry(sig_row: dict, day: str) -> str:
     fname = f"{day}-{slug}-session-audit.yml"
     if not INBOX_DIR.is_dir():
         return f"skipped (inbox dir {INBOX_DIR} absent)"
-    (INBOX_DIR / fname).write_text(yaml.safe_dump(
-        item, sort_keys=False, allow_unicode=True, width=120))
+    if card_io is not None:
+        card_io.atomic_write_text(INBOX_DIR / fname, yaml.safe_dump(
+            item, sort_keys=False, allow_unicode=True, width=120))
+    else:
+        (INBOX_DIR / fname).write_text(yaml.safe_dump(
+            item, sort_keys=False, allow_unicode=True, width=120))
     return f"filed {fname}"
 
 

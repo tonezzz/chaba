@@ -28,6 +28,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 REPO = Path(__file__).resolve().parents[2]
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
 TODAY = datetime.date.today().isoformat()
@@ -106,8 +109,7 @@ def main(cards=None) -> int:
                 else:
                     req["executed"] = f"unrecognized: {req.get('answer')}"
         if decided:
-            path.write_text(yaml.safe_dump(
-                card, sort_keys=False, allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             executed.append(card.get("id") or path.stem)
             if card.get("column") != "lab":
                 continue
@@ -145,8 +147,7 @@ def main(cards=None) -> int:
             })
             changed = True
         if changed:
-            path.write_text(yaml.safe_dump(
-                card, sort_keys=False, allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
         flagged.append(card.get("id") or path.stem)
 
     out = []

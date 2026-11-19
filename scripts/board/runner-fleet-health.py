@@ -63,6 +63,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -710,8 +713,7 @@ def upsert_card(path: Path, host: str, violations: list,
     })
     if path.exists() and card == load_card(path):
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "updated"
 
 
@@ -723,8 +725,7 @@ def close_card(path: Path, host: str, today: str, why: str) -> bool:
     card["column"] = "done"
     card["note"] = f"Auto-recovered {today}: {why}."
     card["updated"] = today
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return True
 
 
@@ -799,16 +800,14 @@ def queue_satisfiability(probes: dict) -> int:
             "updated": today,
         })
         if card != load_card(path):
-            path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                           allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             return len(stranded)
         return len(stranded)
     if path.exists() and card.get("column") == "review":
         card["column"] = "done"
         card["note"] = f"Auto-recovered {today}: every queued card is claimable."
         card["updated"] = today
-        path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                       allow_unicode=True))
+        card_io.atomic_dump_card(path, card)
     return 0
 
 

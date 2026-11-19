@@ -1,0 +1,88 @@
+title: torn kanban card writes — ENOSPC + direct write_text took down board-api and kanban-commit
+subtitle: 2026-11-19 ~03:00 ICT incident on idc03; root cause named, atomic write path deployed
+icon: alert
+
+incident:
+  window: "2026-11-19 02:55-03:37 ICT (Asia/Bangkok)"
+  card: kanban-card-torn-write-investigation-b4034e
+  symptoms: >
+    Three card YAMLs torn mid-scalar at EOF:
+    adobe-stock-inpaint-defect-repair.yml (cut at 'tex' inside comms),
+    trade-lesson-ui-integration.yml and trade-lesson-workflows-automation.yml
+    (cut inside quoted comms text). Zero-byte .yml.tmp leftovers timestamped
+    02:57-03:04. kanban-commit.service refused to commit on every run after
+    03:48 (YAML syntax gate). board-api returned 'canonical card store
+    unavailable' 503 on all card reads. Manual repair 08:12: restored the
+    three files from HEAD, cleared .tmp, kanban-commit green at 423baed.
+
+root_cause:
+  trigger: >
+    mddb-backup ran `podman cp` streaming a ~19GB uncompressed mddb-ops DB
+    backup (mddb-ops-20261119-0237.db, partial) onto a disk already 99%
+    full. ENOSPC began ~02:55:41 ICT — mddb-backup mkdir failed,
+    podman container-state writes hit 'database or disk is full',
+    zones.json write failed Errno 28, runner-agent refused claims with
+    'disk headroom 0MB'. journald lost all messages 02:56:18 -> 03:37.
+  writer: >
+    board-janitor's 02:56 tick (every 15min) ran merge-sweep as its first
+    sub-check inside the journal gap. merge-sweep's flag_once(fetch_failed)
+    -> stamp() -> locked_edit() path did a DIRECT p.write_text() on card
+    files (no tmp+rename) — torn mid-scalar by ENOSPC. Proof at byte level:
+    the uncommitted torn blob for trade-lesson-workflows-automation
+    contains 'action.sweep.fetch_failed: 2026-11-19 02:57' — a merge-sweep
+    stamp never committed. The other two torn blobs are exact HEAD
+    prefixes cut at page boundaries (12288 = 3x4K, 8192 = 2x4K bytes).
+  not_the_writer: >
+    board-api's save() was already tmp+rename — under ENOSPC it left only
+    the 0-byte .yml.tmp shells (02:57-03:04) and returned 500s, which is
+    exactly the residual evidence observed. focus-dispatcher-overnight
+    fired at 03:00 but its orchestration (overnight-focus-review.py) never
+    touches card files directly — its own overnight-status.json is 0 bytes
+    at 03:00, i.e. it was a victim of the same ENOSPC, not the writer.
+    kanban-dispatch.timer has been disabled on idc03 since Nov 17.
+  why_commit_blocked: >
+    kanban-commit's YAML gate correctly refused the malformed staged cards
+    from its first post-gap run (03:48) until manual repair (08:12).
+    board-api's card readers failed on yaml.safe_load of the torn files,
+    producing the 503 'canonical card store unavailable'.
+
+fix:
+  contract: >
+    Every card/inbox write now goes through scripts/board/card_io.py:
+    serialize -> <name>.<pid>.tmp in the same dir -> flush + fsync ->
+    os.replace -> fsync dir; on any failure the tmp is removed and the
+    target is left untouched. atomic_dump_card adds refuse-before-touch
+    round-trip validation (mirrors board-api.save). fsync-before-rename
+    covers the delayed-allocation case where a rename succeeds but the
+    tail is lost when writeback hits ENOSPC.
+  files_patched: >
+    board-api.py (save + inbox write now fsync via card_io),
+    merge-sweep.py locked_edit (the proven tear path), kanban-commit.sh
+    (both embedded alert/recover card writes), merge-card-yaml.py (%A
+    write — the card-union driver), kanban-dispatch.py, answer-sweep.py,
+    request-sweep.py, review-digest.py, lab-review-sweep.py,
+    reconcile-local-conflicts.py, runner-fleet-health.py, deploy-preflight.py,
+    ref-backfill.py, board-invariants.py, card-column-guard.py,
+    backfill-briefs.py, board-render-guard.py, kanban-stats.py,
+    audit-hosts.py, command-truth.py, lifecycle-check.py,
+    disk-trend-watch.py, cms-auto-health.py, gev-auto-health.py,
+    vcast-auto-health.py, logs-kanban.py, kanban-act.py, report-watch.py,
+    backlog-spec-enrich.py, check-serve-config.py, focus-sweep.py,
+    session-audit.py, focus_dispatcher/actions.py.
+  verification: >
+    All modified modules import cleanly; merge-card-yaml --selftest OK;
+    reconcile-local-conflicts --selftest OK; functional test of card_io
+    confirms happy-path write leaves no .tmp, a mid-write failure leaves
+    the target byte-identical with tmp cleaned, and non-mapping dumps are
+    refused before the file is touched.
+
+follow_ups:
+  - idc03 disk still ~99% full (3.7G free at investigation time); the 19GB
+    partial mddb-ops-20261119-0237.db podman-cp artifact is still on disk —
+    deletion needs Tony's call, and mddb-backup should stream to a
+    filesystem with headroom or check free space first.
+  - Overnight status writer (overnight-focus-review.py -> overnight-status.json)
+    also does a non-atomic write — same fix shape applies if it matters.
+  - .yml.tmp / *.tmp leftovers are not gitignored and get staged by
+    kanban-commit's `git add` — harmless now (tmp writes are removed on
+    failure and renamed on success) but a .gitignore entry is cheap insurance.

@@ -54,6 +54,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import card_io
+
 REPO = Path(os.environ.get(
     "CHABA_REPO", str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
@@ -236,8 +239,7 @@ def enforce_card(path: Path, bars: dict, now: datetime,
                            f"(missing {', '.join(missing)})")
 
     if actions and not dry:
-        path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                       allow_unicode=True, width=110))
+        card_io.atomic_dump_card(path, card)
     return actions
 
 
@@ -264,8 +266,7 @@ def verify_gate(card: dict, path: Path, now: datetime,
         "[verify] note naming what was actually run, or amend `verify:` "
         "if the criterion is obsolete.", now)
     if not dry:
-        path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                       allow_unicode=True, width=110))
+        card_io.atomic_dump_card(path, card)
     return [f"{card.get('id')}: bounced done->doing (verify field, no "
             "evidence comms)"]
 

@@ -54,6 +54,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR_REL = Path("docs/ssot/kanban/cards")
 GENERATED_REL = Path("docs/ssot")
@@ -97,8 +100,7 @@ def load(p: Path) -> dict:
 
 
 def dump(p: Path, card: dict) -> None:
-    p.write_text(yaml.safe_dump(card, allow_unicode=True,
-                                sort_keys=False, width=110))
+    card_io.atomic_dump_card(p, card)
 
 
 def comms_add(card: dict, frm: str, text: str) -> None:

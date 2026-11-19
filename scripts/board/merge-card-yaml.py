@@ -41,6 +41,9 @@ import yaml
 
 _HERE = Path(__file__).resolve().parent
 
+sys.path.insert(0, str(_HERE))
+import card_io
+
 
 def _load_merge_cards():
     spec = importlib.util.spec_from_file_location(
@@ -71,8 +74,9 @@ def merge_files(ours_p: Path, theirs_p: Path) -> int:
         return 1
     try:
         merged, notes = merge_cards(ours, theirs)
-        ours_p.write_text(yaml.safe_dump(
-            merged, allow_unicode=True, sort_keys=False, width=110))
+        # atomic write — a direct write_text under ENOSPC tears %A and
+        # git then treats the shred as the merge result (2026-11-19)
+        card_io.atomic_dump_card(ours_p, merged)
     except Exception as e:
         print(f"merge-card-yaml: merge failed ({e}) — leaving conflict",
               file=sys.stderr)

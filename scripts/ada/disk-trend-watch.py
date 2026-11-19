@@ -69,6 +69,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(REPO / "scripts" / "board"))
 
 import board_notify as bn  # noqa: E402
+import card_io  # noqa: E402
 from lib.report import append_timeline, now_iso, write_meta  # noqa: E402
 
 HOSTS_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.audit.hosts.yml"
@@ -426,8 +427,7 @@ def upsert_alert_card(path: Path, host: str, mount: str, state: str,
     })
     if path.exists() and card == load_card(path):
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "opened" if fresh else "updated"
 
 
@@ -439,8 +439,7 @@ def close_card(path: Path, today: str, why: str) -> bool:
     card["column"] = "done"
     card["note"] = f"Auto-recovered {today}: {why}"
     card["updated"] = today
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return True
 
 
@@ -472,11 +471,11 @@ def write_report(host_reports: list[dict], reports_root: Path) -> Path:
     out_dir = reports_root / "disk-trend"
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "disk-trend.yml"
-    path.write_text(yaml.safe_dump(
+    card_io.atomic_write_text(path, yaml.safe_dump(
         {"generated_at": now_iso(), "window_d": WINDOW_D,
          "fill_threshold_d": FILL_D, "crit_pct": CRIT_PCT,
          "hosts": host_reports},
-        sort_keys=False, allow_unicode=True), encoding="utf-8")
+        sort_keys=False, allow_unicode=True))
     return path
 
 

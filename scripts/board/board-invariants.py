@@ -38,6 +38,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -191,7 +194,8 @@ def write_alerts(finds):
             "source": {"date": today},
         }
         p = INBOX / f"invariant-{slug}.yml"
-        p.write_text(yaml.safe_dump(doc, sort_keys=False, width=120))
+        card_io.atomic_write_text(p, yaml.safe_dump(
+            doc, sort_keys=False, width=120))
         wrote.append(p.name)
     return wrote
 

@@ -44,6 +44,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_io
 import dispatch_repos as dr
 import lesson_primer as lp
 import waiting_cards as wc
@@ -597,8 +598,7 @@ def load_dispatch_cards(card_dir: Path | None = None,
 
 def save_card(path: Path, card: dict) -> None:
     card["updated"] = now()
-    path.write_text(
-        yaml.safe_dump(card, allow_unicode=True, sort_keys=False, width=110))
+    card_io.atomic_dump_card(path, card)
 
 
 def mark_start(path: Path, card: dict) -> None:
