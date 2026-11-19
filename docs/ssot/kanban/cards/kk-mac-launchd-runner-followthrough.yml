@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
-column: doing
-updated: 2026-11-19 10:51
+column: backlog
+updated: 2026-11-19 10:53
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -9,17 +9,18 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: failed
   sweep:
     stale_running: 2026-11-19 09:59
     dirty: 1
     session_gone: 2026-11-19 10:51
-  result: 'exit=1 61119-103244-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261119-103244-kk-mac-launchd-runner-port-shi.service:
-    Consumed 1min 12.823s CPU time over 12min 38.775s wall clock time, 796.2M memory peak.'
+  result: 'exit=1 evin-task-20261119-105049-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''.
+    | devin-task-20261119-105049-kk-mac-launchd-runner-port-shi.service: Consumed 9.536s CPU time over 3.854s wall
+    clock time, 264.2M memory peak.'
   attempts: 2
-  last_failure: 'exit=1 61119-103244-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''. |
-    devin-task-20261119-103244-kk-mac-launchd-runner-port-shi.service: Consumed 1min 12.823s CPU time over 12min
-    38.775s wall clock time, 796.2M memory peak.'
+  last_failure: 'exit=1 evin-task-20261119-105049-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''.
+    | devin-task-20261119-105049-kk-mac-launchd-runner-port-shi.service: Consumed 9.536s CPU time over 3.854s wall
+    clock time, 264.2M memory peak.'
   runner: tony-macbook
 ref: OPS-0220
 comms:
@@ -170,6 +171,15 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261119-094842-kk-mac-launchd-runner-port-shi on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-19 10:53
+  from: tony-macbook
+  text: 'finished (failed): exit=1 evin-task-20261119-105049-kk-mac-launchd-runner-port-shi.service: Failed with
+    result ''exit-code''. | devin-task-20 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-19 10:53
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-105049-kk-mac-launchd-runner-port-shi (rate limit)
+    — tony-macbook holds new claims ~30m
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
