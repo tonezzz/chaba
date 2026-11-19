@@ -6,8 +6,16 @@ jobs:
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
+  - id: ada-jobs-consultant
+    schedule: "*-*-* *:7,37:00"
+    dispatch: "systemd"
+    persistent: true
   - id: ada-jobs-verify
     schedule: "*-*-* *:0/30:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-memory-merge-proposals
+    schedule: "Sun *-*-* 10:30:00"
     dispatch: "systemd"
     persistent: true
   - id: ada-nest-heartbeat-idc03
@@ -31,6 +39,10 @@ jobs:
     persistent: true
   - id: ada-tg-webhook-watch
     schedule: "every 5m"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-transcript-archive
+    schedule: "Sun *-*-* 05:15:00"
     dispatch: "systemd"
     persistent: true
   - id: backlog-spec-enrich
@@ -154,6 +166,10 @@ jobs:
   - id: nest-queue-watch
     schedule: "every 15m"
     dispatch: "systemd"
+  - id: netdata-nodes-watch
+    schedule: "every 15min"
+    dispatch: "systemd"
+    persistent: true
   - id: ops-error-posts
     schedule: "every 15m"
     dispatch: "systemd"
