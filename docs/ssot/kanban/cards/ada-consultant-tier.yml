@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
-column: doing
-updated: 2026-11-19 13:14
+column: review
+updated: 2026-11-19 13:23
 priority: high
 tags:
 - ada
@@ -303,9 +303,31 @@ comms:
     inert until flag flip. Corpus audit: 11/12 miss-labels correct; observe-006 relabeled defer. Re-score under
     corrected gold: 32b P/m/m (one case under def bar), 8b P/P/P/m — letter of gate hit but run4 over-acts on 8
     defer-golds = not certified. ADA_JOBS_CON'
+- at: 2026-11-19 13:23
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261119-130719-tiered-judgment-instead-of-ada.service:
+    Failed to ope'
+- at: 2026-11-19 13:23
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 13:23
+  from: chaba
+  text: banked 91 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 13:23
+  from: chaba
+  text: pushed dispatch/20261119-130719-tiered-judgment-instead-of-ada to origin
+- at: 2026-11-19 13:23
+  from: chaba
+  text: "auto-merge not done: push: To github.com:tonezzz/chaba.git\n ! [rejected]              HEAD -> master (fetch\
+    \ first)\nerror: failed to push some refs to 'github.com:tonezzz/chaba.git'\nhint: Updates were rejected because\
+    \ the remote — close will block until merged"
+- at: 2026-11-19 13:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-130719-tiered-judgment-instead-of-ada,
+    branch dispatch/20261119-130719-tiered-judgment-instead-of-ada'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 09:33
     stale_running: 2026-11-09 14:04
@@ -315,8 +337,10 @@ action:
   attempts: 2
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
-  result: 'exit=1 judgment-instead-of-ada.service: Failed with result ''exit-code''. | devin-task-20261117-232247-tiered-judgment-instead-of-ada.service:
-    Consumed 45.334s CPU time over 11min 29.698s wall clock time, 884.9M memory peak, 534.9M memory swap peak.'
+  result: 'exit=0 ice: No such file or directory | devin-task-20261119-130719-tiered-judgment-instead-of-ada.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261119-130719-tiered-judgment-instead-of-ada.service:
+    No such file or directory'
   runner: idc02
 claim:
   since: 2026-11-19 13:06
+review_kind: verify
