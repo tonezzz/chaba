@@ -1,7 +1,7 @@
 id: kk-mac-embed-lane-verify
 title: kk-mac bge-m3 embed lane — verify registration in embed-pool upstreams
 column: doing
-updated: 2026-11-19 09:48
+updated: 2026-11-19 09:50
 spec: 'bge-m3 is pulled on kk-mac and embed-pool-shim runs on idc03:11436. Verify whether kk-mac ollama :11434 is
   registered as an embed-pool upstream; if not, add it (bounded: embeddings only, admission-gated). embed-pool-fleet
   card closed on live-service evidence — this verifies kk-mac specifically joins the pool.'
@@ -25,3 +25,9 @@ comms:
 - at: 2026-11-19 09:48
   from: chaba
   text: started devin-task-20261119-094826-bge-m3-is-pulled-on-kk-mac-and on tony-omen (dispatch executor=devin)
+- at: 2026-11-19 09:50
+  from: devin
+  text: 'verify: kk-mac IS in EMBED_POOL_UPSTREAMS as http://127.0.0.1:11445 — but that is the dead ssh tunnel (stopped+disabled
+    11-17 after 19k restarts; ollama now binds tailnet directly, 100.108.217.17:11434 answers, bge-m3 pulled). Also
+    not admission-gated (bypasses :11447 shim, whose own upstream is the same dead tunnel). Fixing: repoint admission
+    shim upstream -> direct tailnet :11434, repoint pool kk-mac leg :11445 -> :11447 (gated).'
