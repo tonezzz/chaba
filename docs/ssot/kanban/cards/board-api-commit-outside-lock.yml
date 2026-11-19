@@ -1,7 +1,7 @@
 id: board-api-commit-outside-lock
 title: 'board-api: move per-write git commit out of the card flock'
 column: doing
-updated: 2026-11-19 10:11
+updated: 2026-11-19 10:20
 priority: high
 tags:
 - board-api
@@ -82,4 +82,11 @@ comms:
     Follow-up shipped to master as d40573247b (; [ops-local-conflict-guard] ROOT CAUSE found + cleared (2026-10-21):
     the served c; [board-api-exec-checkout-mismatch] FIXED 2026-11-06. Root cause was two stacked ; [board-api-write-latency]
     FIX LANDED (commit f2acf34614f on s'
+- at: 2026-11-19 10:20
+  from: devin
+  text: 'IMPLEMENTED on dispatch worktree (commit f1f0b272ca): save() now queues dirty repo paths under the flock;
+    a dedicated coalescing commit worker runs git add+commit after LOCK release (debounce 0.4s, LOCK_NB probe defers
+    while a request or safe-pull pull phase holds the flock, rebase/merge gitdir guard + retry w/ max-tries -> sweep).
+    Verified: selftest ok, 58 unit tests ok, sandboxed burst 40x /comment -> hold_s_max 0.042s + 2 coalesced commits
+    + clean tree, flock-held deferral -> commit lands on '
 ref: KNB-0224
