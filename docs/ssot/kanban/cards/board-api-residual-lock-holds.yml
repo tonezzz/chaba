@@ -1,6 +1,6 @@
 id: board-api-residual-lock-holds
 title: 'board-api: fix commit-worker false retries + measure remaining lock holds'
-column: doing
+column: done
 updated: 2026-11-19 12:59
 priority: high
 tags:
@@ -65,7 +65,7 @@ spec: 'FOLLOW-UP to board-api-commit-outside-lock (f1f0b, live since 2026-11-19 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -73,6 +73,7 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-19 12:59
+  verified: true
 comms:
 - at: 2026-11-19 12:45
   from: chaba
@@ -117,6 +118,15 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261119-124654-follow-up-to-board-api-commit- no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-19 12:59
+  from: chaba
+  text: 'merge-sweep: merged 3e2f3c97 (dispatch/20261119-124654-follow-up-to-board-api-commit- from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261119-124654-follow-up-to-board-api-commit-.md)
+    — auto-closed'
 ref: KNB-0233
 claim:
   since: 2026-11-19 12:45
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 12:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261119-124654-follow-up-to-board-api-commit-.md
