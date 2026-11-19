@@ -36,7 +36,9 @@ import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import card_io  # noqa: E402
 from lib.report import append_timeline, now_iso, write_meta  # noqa: E402
 
 def _act(card: dict) -> dict:
@@ -321,7 +323,7 @@ def main(cards=None) -> int:
         out_dir = root / OUT_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         artifact = out_dir / "kanban-stats.yml"
-        artifact.write_text(yaml.safe_dump(
+        card_io.atomic_write_text(artifact, yaml.safe_dump(
             stats, sort_keys=False, allow_unicode=True))
         meta_path = write_meta(
             out_dir / "meta.yml",

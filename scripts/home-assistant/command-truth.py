@@ -41,6 +41,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+import card_io
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SSOT = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.command-truth.yml"
 CARDS_DIR = Path(os.environ.get(
@@ -133,8 +136,7 @@ def emit_card(deltas: list[str]) -> str:
             card["column"] = "done"
             card["note"] = f"Auto-recovered {today}: all watched entities attributed."
             card["updated"] = today
-            path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                           allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             return "closed"
         return "clean"
     card.update({
@@ -161,7 +163,7 @@ def emit_card(deltas: list[str]) -> str:
     })
     if card == load():
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False, allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "updated"
 
 

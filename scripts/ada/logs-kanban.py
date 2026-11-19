@@ -49,6 +49,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import card_io
+
 MDDB = os.environ.get(
     "MDDB_OPS_URL",
     os.environ.get("MDDB_BASE_URL",
@@ -316,8 +319,7 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
     })
     if path.exists() and card == load_card(path):
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "updated" if path.exists() else "created"
 
 
@@ -367,8 +369,7 @@ def main() -> int:
         cov_card["note"] = (f"Coverage clean {today}: all {len(expected)} "
                             "expected hosts ship both journals.")
         cov_card["updated"] = today
-        cov_path.write_text(yaml.safe_dump(cov_card, sort_keys=False,
-                                           allow_unicode=True))
+        card_io.atomic_dump_card(cov_path, cov_card)
         n_close += 1
 
     # auto-close cleared condition cards
@@ -383,8 +384,7 @@ def main() -> int:
             card["note"] = (f"Auto-recovered {today}: `{slug}` condition "
                             "cleared — shipper healthy again.")
             card["updated"] = today
-            path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                           allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             n_close += 1
 
     print(f"logs-kanban: {len(bad)} open conditions "

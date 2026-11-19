@@ -5,6 +5,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+import card_io
+
 from mcp_debug.focus import log_decision, mcp_focus
 
 from .git import git_mv_inbox
@@ -292,7 +295,7 @@ def handle_intake(request, dry_run=False):
         }
         if not dry_run:
             INBOX_DIR.mkdir(parents=True, exist_ok=True)
-            path.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False))
+            card_io.atomic_write_text(path, yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False))
             changed = [path]
         result["message"] = f"Intake: saved inbox draft at {path}"
 

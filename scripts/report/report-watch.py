@@ -55,6 +55,8 @@ BAD_NOW = {"error", "missing", "stale"}
 BAD_SUSTAINED = {"delta", "unreachable"}
 
 sys.path.insert(0, str(REPO / "scripts" / "lib"))
+sys.path.insert(0, str(REPO / "scripts" / "board"))
+import card_io  # noqa: E402
 try:
     import goals as goallib  # scripts/lib/goals.py — expected_goals checks
 except Exception:  # pragma: no cover - re-probe optional
@@ -257,8 +259,7 @@ def rot_requeue(card_path: Path, cid: str, failed: list) -> bool:
             if a.get("status") == "queued":
                 return True  # already looped back
             a["last_failure"] = detail
-            card_path.write_text(yaml.safe_dump(
-                card, sort_keys=False, allow_unicode=True, width=120))
+            card_io.atomic_dump_card(card_path, card, width=120)
     except Exception:
         return False
     try:
@@ -334,7 +335,7 @@ def probe_done_goals(state: dict, now, quiet: bool, dry_run: bool,
         if not dry_run:
             fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                      f"report-watch-goal-rot-{slug(cid)}.yml")
-            (INBOX / fname).write_text(yaml.safe_dump(
+            card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(
                 make_goalrot_item(cid, failed),
                 sort_keys=False, allow_unicode=True, width=120))
         if not quiet:
@@ -430,7 +431,7 @@ def main() -> int:
                 if not dry_run:
                     fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                              f"report-watch-{slug(oid)}.yml")
-                    (INBOX / fname).write_text(yaml.safe_dump(
+                    card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(
                         make_overrun_item(node, chars, hard),
                         sort_keys=False, allow_unicode=True, width=120))
             if not quiet:
@@ -471,7 +472,7 @@ def main() -> int:
                 if not dry_run:
                     fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                              f"report-watch-{key}.yml")
-                    (INBOX / fname).write_text(yaml.safe_dump(
+                    card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(
                         make_item(node, status, obs["summary"],
                                   first_seen),
                         sort_keys=False, allow_unicode=True, width=120))

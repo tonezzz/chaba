@@ -14,6 +14,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "board"))
+import card_io
+
 # Units in the user session that are desktop/OS plumbing, not fleet
 # services — unexpected-running skips these (host-level extras go in the
 # SSOT `allowed_running` list, fnmatch globs allowed).
@@ -475,8 +478,7 @@ def emit_audit_card(host: str, deltas: list, host_ssot: dict) -> str:
             card["column"] = "done"
             card["note"] = f"Auto-recovered {today}: audit clean."
             card["updated"] = today
-            path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                           allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             return "closed"
         return "clean"
     card = _load_card(path)
@@ -510,8 +512,7 @@ def emit_audit_card(host: str, deltas: list, host_ssot: dict) -> str:
     })
     if path.exists() and card == _load_card(path):
         return "unchanged"
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
     return "updated"
 
 
@@ -529,8 +530,7 @@ def sweep_audit_cards(audited: set, ssot: dict) -> int:
             card["note"] = ("Auto-closed: host left the audit fleet "
                             "(retired or removed from ssot.audit.hosts.yml).")
             card["updated"] = time.strftime("%Y-%m-%d")
-            path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                           allow_unicode=True))
+            card_io.atomic_dump_card(path, card)
             n += 1
     return n
 

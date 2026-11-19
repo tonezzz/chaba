@@ -61,6 +61,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import card_io
+
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 MDDB = os.environ.get(
@@ -269,7 +272,7 @@ def mark_done(path: Path, card: dict, results: list[tuple[str, bool]]) -> None:
              f"  note: >-\n    {note}\n  checks:\n"
              + "".join(f"    - '{expr} -> {'pass' if ok else 'fail'}'\n"
                        for expr, ok in results))
-    path.write_text(text)
+    card_io.atomic_write_text(path, text)
 
 
 def main() -> int:

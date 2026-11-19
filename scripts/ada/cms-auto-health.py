@@ -29,6 +29,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
+import card_io
+
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 REPO = Path(os.environ.get(
     "CHABA_REPO",
@@ -143,8 +146,7 @@ def load_card(path: Path) -> dict:
 
 
 def write_card(path: Path, card: dict) -> None:
-    path.write_text(yaml.safe_dump(card, sort_keys=False,
-                                   allow_unicode=True))
+    card_io.atomic_dump_card(path, card)
 
 
 def main() -> int:

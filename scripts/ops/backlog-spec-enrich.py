@@ -37,8 +37,10 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ada"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 import yaml  # noqa: E402
 import gemini_rest  # noqa: E402
+import card_io  # noqa: E402
 
 CARD_DIR = Path(os.environ.get(
     "CARD_DIR",
@@ -148,8 +150,8 @@ def _req_id(ask: str) -> str:
 
 
 def _write(p: Path, c: dict) -> None:
-    p.write_text(yaml.dump(c, allow_unicode=True, sort_keys=False,
-                           width=100))
+    card_io.atomic_write_text(p, yaml.dump(c, allow_unicode=True,
+                                           sort_keys=False, width=100))
 
 
 def _now() -> str:
