@@ -1,21 +1,34 @@
 id: kk-mac-script-smoke
 title: kk-mac launchd runner — script executor e2e smoke
-column: backlog
+column: doing
 priority: low
 created: '2026-11-19'
-updated: '2026-11-19 10:38'
-brief: "E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd — proves the provisioned runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough)."
+updated: 2026-11-19 10:37
+brief: 'E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd — proves the provisioned
+  runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).'
 action:
   type: script
-  status: queued
+  status: running
   host: kk-mac
-  labels: [desktop, mac, arm64, cpu]
+  labels:
+  - desktop
+  - mac
+  - arm64
+  - cpu
   script:
     repo: chaba
     cmd: uname -sm && hostname && git log --oneline -1 && sw_vers | head -2
     timeout: 300
+  runner: kk-mac
+  attempts: 1
 spec: smoke — kk-mac launchd runner claim+execute verify
 comms:
-- at: '2026-11-19 10:38'
+- at: 2026-11-19 10:38
   from: devin
-  text: "filed via direct YAML under /tmp/board-api.lock — POST /card refuses action.type=script (ACTION_TYPES dispatch|manual; gap already carded in trade-docs-education-migration)"
+  text: filed via direct YAML under /tmp/board-api.lock — POST /card refuses action.type=script (ACTION_TYPES dispatch|manual;
+    gap already carded in trade-docs-education-migration)
+- at: 2026-11-19 10:37
+  from: kk-mac
+  text: claimed
+claim:
+  since: 2026-11-19 10:37
