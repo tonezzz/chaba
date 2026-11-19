@@ -2,7 +2,7 @@ id: runner-tooling-drift-recurs-installed-ru-3aad1e
 title: runner-tooling drift recurs — installed runner-agent/devin-dispatch copies fall behind repo; drift job detects
   but nothing redeploys
 column: review
-updated: 2026-11-18 22:10
+updated: 2026-11-19 10:00
 priority: medium
 tags:
 - dispatch
@@ -101,6 +101,12 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 10:00
+  from: devin
+  text: 'verify: fleet converged — ~/.local/bin/runner-agent == repo scripts/board/runner-agent.py on tony-omen,
+    tony-macbook, mn01, tony-dell, idc02, idc03 (md5 checked 2026-11-19 ~10:00 ICT). con01 has no runner-agent.timer/bin
+    (not a runner host); kk-mac runner port is separately carded. No new drift deferrals on this card since 2026-11-18
+    22:10. sync-runner-tools.sh self-heal is working.'
 action:
   type: dispatch
   status: done
