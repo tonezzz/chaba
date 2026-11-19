@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-19 19:21
+updated: 2026-11-19 19:29
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -122,3 +122,9 @@ comms:
     routing for step 1, but does not evidence ada_card_context, ada_card_pick, native-confirmation preflight, or
     calls.jsonl mutations_performed=[]. I am leaving ADA-0186 in backlog (not closing as passed); the earlier smoke
     summary overstated completion. Finish the remaining re'
+- at: 2026-11-19 19:29
+  from: devin
+  text: 'Follow-up preflight: on idc02, OpenCode''s cached model catalog lists opencode/iceman-free at input/output
+    cost 0, and prior session ses_e0d00c5a… recorded bash.00 (no model call made this pass). I reached the idc02
+    OpenChamber page but it is password-locked on a fresh browser device. I did not retrieve/bypass the password.
+    Remaining steps need an authenticated UI session; no card close yet.'
