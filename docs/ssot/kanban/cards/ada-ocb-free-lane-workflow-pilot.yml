@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
-column: review
-updated: 2026-11-19 16:49
+column: done
+updated: 2026-11-19 17:04
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -106,6 +106,18 @@ comms:
     state.metadata.metadata — the artifact was byte-identical to the host_snapshot.py output (verified manually:
     snapshot JSON == artifact.out) yet the check returned False. Fixed in 407485dc18. (2) merge-sweep task_id_for
     scanned comms oldest-fi'
+- at: 2026-11-19 16:55
+  from: chaba
+  text: 'merge-sweep: merged 9176d212 (dispatch/ada-ocb-free-lane-workflow-pilot-1795080773 from idc02) -> origin/master
+    — marked verified (exit_code=0; 9 file(s) changed vs base) — auto-closed'
+- at: 2026-11-19 16:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-ada-ocb-free-lane-workflow-pilot-1795080773,
+    branch dispatch/ada-ocb-free-lane-workflow-pilot-1795080773 on idc02'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   repo: chaba
@@ -160,9 +172,13 @@ action:
   result: 'exit=0 Started devin-task-ada-ocb-free-lane-workflow-pilot-1795080773.service - runner ada-ocb-free-lane-workflow-pilot
     staged read-only profile. | devin-task-ada-ocb-free-lane-workflow-pilot-1795080773.service: Consumed 11.534s
     CPU time.'
-  verified: false
+  verified: true
   sweep:
     dirty: 1
 claim:
   since: 2026-11-19 16:32
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 16:55
+  note: verified — exit_code=0; 9 file(s) changed vs base

@@ -1,7 +1,7 @@
 id: spike-migrate-mddb-cms-plane-11027-embed-8f86af
 title: 'spike: migrate mddb-cms plane (:11027) embed provider gemini-embedding-2 -> local bge-m3 via embed-pool-shim'
 column: review
-updated: 2026-11-18 22:10
+updated: 2026-11-19 17:04
 priority: medium
 tags:
 - mddb
@@ -122,6 +122,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 16:55
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261118-164045'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
@@ -133,5 +140,6 @@ action:
   verified: false
   sweep:
     dirty: 1
+    no_repo: 2026-11-19 16:55
 review_kind: verify
 claim: {}
