@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-stable-path
 title: 'ada-ocb: point ada-control MCP at a stable origin/main bridge, not a live checkout'
 column: done
-updated: 2026-11-19 20:02
+updated: 2026-11-20 02:36
 brief: 'Global ~/.config/opencode/opencode.json runs ada-control as `python3 /home/tony/CascadeProjects/ada-voice/opencode/ada_mcp.py`
   — a checkout that is currently on branch ada-consult-pr12-edit with uncommitted WIP. Every OpenChamber session
   silently loads whatever bridge file that checkout happens to hold (observed 2026-11-18: divergent consult WIP,
@@ -128,6 +128,11 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 02:36
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc02) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 ref: SYS-0218
 review_kind: verify
 claim: {}
@@ -135,3 +140,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-19 08:59
   note: verified — evidence checks green, closing itself
+awaiting_action: true
