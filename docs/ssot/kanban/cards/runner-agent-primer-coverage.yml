@@ -1,7 +1,7 @@
 id: runner-agent-primer-coverage
 title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
 column: doing
-updated: 2026-11-19 08:47
+updated: 2026-11-19 09:38
 brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
   — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
   no primer at all. Wire the primer into the runner-agent devin path.'
@@ -203,3 +203,9 @@ comms:
 - at: 2026-11-19 08:47
   from: chaba
   text: started devin-task-20261119-084715-evidence-reports-primer-effica on tony-macbook (dispatch executor=devin)
+- at: 2026-11-19 09:38
+  from: devin
+  text: 'implemented option A: new shared scripts/board/dispatch_task.py holds spec+TASK_RAILS+KNOWN_PITFALLS/GOOD+RETRY+REPORT
+    composition; kanban-dispatch delegates, runner-agent devin path resolves it via a dr_module-style dt_module()
+    (single-file deploy safe, warn-only fallback). opencode/kk_mac lanes untouched. New test file 9/9 ok; full board
+    suite 643 tests green (1 pre-existing env error). writing outcome doc + committing on the dispatch branch.'
