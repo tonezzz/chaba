@@ -1,0 +1,60 @@
+date: 2026-11-19
+title: BGE memory-search shadow — validation matrix on idc02 + first prod-context status=ok
+domain: ada
+job: dispatch
+cards: [ada-bge-memory-search-shadow]
+related: [ADA-1299, MEM-1129]
+host: idc02
+repo: ada-voice + chaba
+branch: dispatch/20261119-130636-bge-shadow-validation (ada-voice, local only)
+summary: >
+  Closed out the shadow's validation requirement on idc02 (staging host
+  per spec). Added 8 unit tests covering the previously-unproven
+  invariants (queue bound, collection bound, missing-endpoint no-op,
+  deadline bounding, ops-collection exclusion, person-policy + person-scope
+  ACL inheritance, non-blocking proof) and a repeatable live runner
+  scripts/bge-shadow-validate.py that exercises the real :11028 BGE plane
+  + :11555 Omen reranker through 10 scenarios. All pass. Also produced the
+  first post-MEM-1129-fix production-context sample on idc03 (prod env,
+  anonymous speaker): status=ok, 2 authorized collections, total 1.6s.
+findings:
+  - 'Live matrix 10/10 on idc02: off_switch, missing_endpoints, healthy
+    (status=ok reranked=10 total_ms=331), queue_bound (3rd schedule
+    dropped reason=busy), dead_mddb_isolation (status=empty,
+    collection_errors=4, 0.05s), dead_reranker (status=error
+    ConnectError via _run_safely), stall_timeout (non-routable endpoint
+    cut at 1.01s of a 1.0s deadline), tiny_timeout, ops_excluded
+    (collections_scanned=4 not 5), privacy_minimized (sentinel query
+    never logged; strict key=value line format).'
+  - 'Prod probe 2026-11-19 on idc03 (ada-ha-tony env, person_entity=None):
+    baseline Gemini 5 hits undegraded; shadow status=ok candidates=25
+    fetched=20 reranked=10 overlap_at_5=3 collections=2 (general+home —
+    anonymous default policy) dense_ms=131 fetch_ms=59 rerank_ms=1412
+    total_ms=1603. First status=ok in prod context since the MEM-1129
+    dense+fetch fix deployed (HEAD a2a2026).'
+  - 'ACL inheritance verified live: banks_for_person(None) on the tony
+    registry = general+home only; shadow queried exactly those 2
+    collections. Unit tests pin the same for allow-list policy and
+    person-scope bank swapping (personal-kk replaces personal).'
+  - 'Traffic drought persists on ada-ha-tony: zero memory_search calls
+    since the 2026-11-18 21:45 restart, so zero organic shadow lines —
+    the three pre-restart lines are old-format (no fetch_ms). Soak needs
+    real voice traffic or periodic probes; documented in the runbook.'
+  - 'rerank_ms is the dominant phase (~1.1-2.5s on omen :11555); dense+fetch
+    is ~200-390ms. External to the shadow — only matters if BGE is ever
+    promoted out of async shadow.'
+verify:
+  - 'cd ~/CascadeProjects/ada-voice && set -a && source
+    ~/.config/secrets/ada-lab.env && set +a && PYTHONPATH=.
+    .venv/bin/python scripts/bge-shadow-validate.py → 10/10 PASS'
+  - '.venv/bin/python -m pytest tests/test_bge_memory_shadow.py -x -q → 12 passed'
+  - 'journalctl --user -u ada-ha-tony --since today | grep
+    "bge_memory_search shadow" → status=ok lines once real traffic hits'
+measured:
+  idc02_live: '10/10 scenarios; healthy run total_ms=331 warm, stall cut at 1.01s/1.0s deadline'
+  idc03_probe: 'status=ok total_ms=1603 dense_ms=131 fetch_ms=59 rerank_ms=1412 overlap_at_5=3 collections=2'
+  unit: '12/12 test_bge_memory_shadow.py; 188 memory/bge-k tests pass; tool-lint clean'
+deploy: none — shadow already enabled on ada-dev + ada-ha-tony per Tony 2026-11-17; validation branch is local-unpushed on idc02 (salvage pattern)
+artifacts:
+  ada_voice_commit: c802286 (dispatch/20261119-130636-bge-shadow-validation)
+  runbook: docs/kb/bge-memory-search-shadow.md
