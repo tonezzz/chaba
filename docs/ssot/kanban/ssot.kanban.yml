@@ -536,7 +536,11 @@ execution:
                cap 1, labels desktop,mac,arm64,cpu (+push:chaba after
                the deploy-key probe). devin executor stays Linux-only;
                opencode/script/container lanes serve. Runbook:
-               docs/kb/kk-mac-launchd-runner.md.
+               docs/kb/kk-mac-launchd-runner.md. Verified on-metal
+               2026-11-19 (job docs/ssot/jobs/kanban/2026-11-19-kk-
+               mac-launchd-runner-verify.yml): NOT provisioned — only
+               net.adanest.kk-llm-worker (nest packs) runs under
+               launchd; onboard script never run, preflight passes.
                Push creds (2026-10-14 audit, runner-push-cred-gap):
                tony-dell pushes all dispatch_repos repos; tony-macbook's
                ada-voice clone is fetch-only (HTTPS remote / chaba-only

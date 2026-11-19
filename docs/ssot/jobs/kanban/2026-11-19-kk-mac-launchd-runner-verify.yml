@@ -1,0 +1,110 @@
+title: kk-mac launchd runner — on-metal verification (followthrough)
+subtitle: launchd seam verified NOT provisioned — only the nest-pack
+  lane runs under launchd; parity gap is the un-run onboard script
+  plus three manual gates
+icon: search
+version: 1
+
+card: kk-mac-launchd-runner-followthrough
+date: 2026-11-19
+dispatch: 20261119-094842-kk-mac-launchd-runner-port-shi
+
+question: |
+  kk-mac-launchd-runner-port shipped the launchd task-runtime seam
+  (mock-tested on Linux only). Does the launchd runner on kk-mac
+  actually claim + execute real kanban cards — or does the box only
+  run the net.adanest.* pack lane? If packs-only, spec the gap to
+  runner-agent parity.
+
+verified_on_metal: |
+  Live state on kk-mac (ssh kkkakk@kk-mac, 2026-11-19 ~10:00 +07):
+
+  launchctl list | print gui/501 — the ONLY chaba launchd job is
+  net.adanest.kk-llm-worker (LaunchAgent, StartInterval=60, runs=8,
+  last exit=0). It runs
+  ~/CascadeProjects/chaba/scripts/devnest/kk_mac_lane_worker.py
+  --remote gdrive:ada-nest/kk-llm --host local --max-packs 1 —
+  bounded read-only LLM task PACKS claimed over rclone, by design
+  never kanban cards. Passes observed gating on load_high and
+  skipping fallback_held packs; it is alive and doing its own job.
+
+  ai.chaba.runner-agent is ABSENT: no plist in
+  ~/Library/LaunchAgents, no ~/.local/bin/runner-agent, no
+  ~/.local/share/runner-agent state dir, no ~/.ssh/id_chaba_deploy,
+  no gh-chaba ssh alias, no opencode binary
+  (runner_fleet correctly lists kk-mac as STAGED, not in fleet).
+  No devin-task-*/runner-* jobs registered. Nothing on kk-mac ever
+  polls the board — it cannot claim a kanban card today.
+
+  The launchd CODE is present on the metal: the exec checkout
+  ~/CascadeProjects/chaba (master, clean, synced past the 2026-11-14
+  merge) contains the rt_launch/launchd seam in
+  scripts/board/runner-agent.py and the onboard script.
+
+  Preflight (read-only step of kk-mac-runner-onboard.sh) PASSES:
+  macOS 15.7.3, hw.model=Mac16,9, arm64, python 3.15.2, git+CLT,
+  gui/501 domain reachable (kkkakk logged in), disk 24%.
+  Gate math at check time: vm.loadavg 5m=9.96 / 14 cores = 0.71 <
+  RUNNER_MAX_LOAD_PC 1.0 — a provisioned runner would be claiming,
+  not deferring.
+
+answer: |
+  No — the launchd runner does not claim kanban cards on kk-mac.
+  It was never provisioned; only the nest-pack lane exists. The
+  shipped code is complete and the runbook + onboard script are
+  correct, but nothing on the metal exercises them.
+
+gap_to_parity: |
+  One command covers the code-provisionable part (as kkkakk on
+  kk-mac, or via ssh):
+      cd ~/CascadeProjects/chaba && bash scripts/ops/kk-mac-runner-onboard.sh
+  Steps: dirs -> deploykey -> checkout -> reposconf -> opencode ->
+  secrets -> agent (writes + bootstraps
+  ~/Library/LaunchAgents/ai.chaba.runner-agent.plist, 60s poll,
+  RUNNER_CAP=1, RUNNER_LABELS=desktop,mac,arm64,cpu,
+  RUNNER_TASK_RUNTIME=launchd, OPENCODE_LANES=1, JEV_LANE=1) -> verify.
+
+  Manual gates that cannot be completed unattended:
+    1. Deploy-key enrolment — step `deploykey` generates
+       ~/.ssh/id_chaba_deploy and prints the pubkey; a human must add
+       it at GitHub (write deploy key on tonezzz/chaba) before the
+       push probe passes and `push:chaba` can join RUNNER_LABELS.
+       Without it the runner still claims non-push lanes.
+    2. ~/.config/secrets/litellm-keys.env — copy from a provisioned
+       runner (idc02:~/.config/secrets/) for opencode-lane payloads.
+    3. gui/<uid> persistence — currently kkkakk is logged in so the
+       domain works; for headless survival either enable auto-login
+       or provision with LAUNCHD_DOMAIN=user.
+    4. exec checkout remote is plain https — fetch works, but
+       `checkout` step's reset --hard FETCH_HEAD + role stamp
+       (chaba-role=exec) still needs one run.
+
+  Boundary that stays even AFTER full provisioning (by design, not a
+  gap): executor=devin dispatch cards are declined by claimable()
+  with an explicit reason — devin-dispatch.sh drives systemd-run
+  internally. Also no cgroup: plist Nice/LowPriorityIO + ulimit -v
+  are the documented substitutes; CPUQuota/MemoryMax/IOWeight have
+  no launchd equivalent. Porting devin-dispatch itself is separate
+  cardable work. Serveable executor set once provisioned:
+  script, opencode (needs gate 2), jules (needs JULES key),
+  nlm_batch, kk_mac_local; container only if podman/docker lands.
+
+e2e_verify_recipe: |
+  After onboarding, prove a real card claims end-to-end:
+    1. runbook selftest — docs/kb/kk-mac-launchd-runner.md
+       "Verify on the metal" (rt_launch a runner-selftest-1 unit,
+       collect() must return (True, 'exit=0 …')).
+    2. Live card: file a card with action.executor=script,
+       action.labels ⊆ {desktop,mac,arm64,cpu},
+       action.script.{repo=chaba,git=true,cmd=echo/exit 0} —
+       watch `kk-mac claimed` + `finished (ok)` comms and
+       RUNNER_STATE/exit/devin-task-*.code.
+    3. Negative check: an executor=devin card must be declined with
+       the launchd defer reason (never silently claimed).
+
+boundary_note: |
+  The net.adanest.kk-llm-worker lane and the runner-agent lane are
+  complementary, not overlapping: packs flow gdrive<-producer;
+  kanban cards flow board-api<-runner. Both live under gui/501 —
+  cap stays 1 and the load gate is shared, so they can't pile on
+  each other.
