@@ -1,7 +1,7 @@
 id: kk-mac-embed-lane-verify
 title: kk-mac bge-m3 embed lane — verify registration in embed-pool upstreams
-column: doing
-updated: 2026-11-19 09:59
+column: review
+updated: 2026-11-19 10:13
 spec: 'bge-m3 is pulled on kk-mac and embed-pool-shim runs on idc03:11436. Verify whether kk-mac ollama :11434 is
   registered as an embed-pool upstream; if not, add it (bounded: embeddings only, admission-gated). embed-pool-fleet
   card closed on live-service evidence — this verifies kk-mac specifically joins the pool.'
@@ -9,11 +9,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: tony-omen
   sweep:
     stale_running: 2026-11-19 09:59
     dirty: 2
+  result: 'exit=0 rrowing to tailnet-only needs adanest plist access; noted on `kkmac-ollama-durable-bind`. | devin-task-20261119-094826-bge-m3-is-pulled-on-kk-mac-and.service:
+    Consumed 1min 30.411s CPU time over 6min 20.063s wall clock time, 1G memory peak.'
+  verified: false
 ref: MEM-0221
 comms:
 - at: 2026-11-19 08:58
@@ -49,3 +52,9 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261119-094826-bge-m3-is-pulled-on-kk-mac-and on tony-omen still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 10:13
+  from: tony-omen
+  text: 'finished (ok): exit=0 rrowing to tailnet-only needs adanest plist access; noted on `kkmac-ollama-durable-bind`.
+    | devin-task-20261119-0'
+review_kind: verify
+claim: {}
