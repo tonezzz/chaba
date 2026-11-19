@@ -1,0 +1,23 @@
+id: mddb-backup-disk-headroom-guard-d5e029
+title: mddb-backup-disk-headroom-guard
+column: backlog
+updated: 2026-11-19 10:11
+spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
+  2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
+  that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
+
+
+  Fix in ~/mddb-backup.sh (idc03, canonical copy may live in chaba repo — check): (1) pre-flight df check — require
+  >= max(15G, 2x expected dump size) free before starting, else skip + alert; (2) write to .tmp then gzip/rename
+  so partials never look like valid backups; (3) retention sweep — delete oldest .db.gz beyond N copies or size
+  cap; (4) optionally stream pg_dump|gzip instead of podman cp of live DB (also gets consistent snapshot). Alert
+  path: focus-inbox entry or card comm on failure.
+
+
+  Done when: backup script refuses to run under low headroom (tested), partial artifacts can''t masquerade as backups,
+  retention enforced, and idc03 disk stays <90% after a week of cycles.'
+ref: MEM-0226
+comms:
+- at: 2026-11-19 10:11
+  from: tony
+  text: card captured via board-api
