@@ -1,0 +1,125 @@
+# Task-scoped OpenCode agent profile — info-find
+# (card devnest-info-find-skill / DEV-0230, Phase 1: conversational
+# skill + one read-only lane).
+#
+# Read-only unified-retrieval agent. Runs the shared planner/source
+# adapters in scripts/devnest/info_find.py — the ONLY network-capable
+# command in its bash allowlist, read-only by construction (local file
+# scans + MDDB GET /health + POST /v1/search) — reads repo files, and
+# emits a ranked, cited result JSON as its final message. Sources that
+# need agent tools this profile does not hold (web_search, github MCP)
+# are reported deferred/unavailable, never faked. No writes, no edits,
+# no secrets.
+id: info-find
+version: 1
+status: enabled
+unattended: true
+description: >-
+  Read-only unified info retrieval. Routes a question through
+  info_find.py (SSOT/code/health/MDDB/MCP-policy sources), merges any
+  deferred sources it can serve through the read-only MCP allowlist,
+  and emits a ranked, per-source-statused, cited JSON artifact.
+task_classes: [read_only, report]
+stages: [S1]
+target_host:
+  required: true
+  allowed: []
+model:
+  tier: cheap
+  default: litellm/gemini-3.5-flash-lite
+  allowed:
+  - litellm/gemini-3.5-flash-lite
+  - litellm/gemini-3.5-flash
+  - litellm/ollama-qwen38b-kkmac
+  - litellm/ollama-qwen32b-kkmac
+  - litellm/or-free-nemotron-ultra
+  - litellm/or-free-nemotron-35
+  - litellm/or-free-north-code
+  - opencode/big-pickle
+  - opencode/deepseek-v4.1-flash-free
+  - opencode/glm-5.3-flash-free
+  - opencode/mimo-v2.6-flash-free
+providers: [litellm, opencode]
+agent:
+  mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  list: true
+  todoread: true
+  todowrite: true
+  bash: true               # bounded to the info_find.py allowlist below
+  write: false
+  edit: false
+  patch: false
+  task: false
+  webfetch: false
+permission:
+  edit: deny
+  webfetch: deny
+  external_directory: deny
+  doom_loop: ask
+  bash:
+    "*": deny
+    "hostname": allow
+    "hostname *": allow
+    "date": allow
+    "date *": allow
+    "python3 scripts/devnest/info_find.py": allow
+    "python3 scripts/devnest/info_find.py *": allow
+mcp:
+  # read-only discovery ceiling — mcp_mddb_doc covers the semantic-doc
+  # source when the HTTP bank is unreachable from the runner; the
+  # upstream allowlist proxy enforces the same set a second time.
+  allowed: [mcp_read_ssot, mcp_search_ssot, mcp_ssot_query,
+            mcp_ssot_get, mcp_mddb_doc]
+  denied: [mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append,
+           mcp_clipboard_set, mcp_clipboard_get, mcp_clipboard_image_get,
+           mcp_eget, mcp_screenshot, mcp_window_list, mcp_preset_run,
+           mcp_adaptive, mcp_debug, mcp_health, mcp_get_file,
+           mcp_files_list, mcp_files_stat, mcp_files_search,
+           mcp_files_tree]
+  upstream:
+    name: mcp-debug-readonly
+    proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
+    command: [/bin/bash, ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh]
+allowed_paths: []
+artifact:
+  mode: message            # agent emits the artifact as its final
+                           # message; the runner writes it — no write
+                           # tools held
+  format: json
+  dirs: [evals/opencode-lane/out/, reports/]
+  schema: >-
+    evals/opencode-lane/profiles/info-find/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py        # floor — envelopes may strengthen, never
+                           # weaken
+  ref: evals/opencode-lane/profiles/info-find/fixture/verify.py
+escalation:
+  on_fail: manual
+  allowed_on_fail: [manual, devin, retry_then_manual, hold]
+  max_retries: 1
+rollback:
+  kind: none               # agent writes nothing; the runner-written
+                           # artifact is simply removed
+rails: >-
+  You are the info-find profile agent — read-only unified retrieval.
+  Pipeline: (1) `python3 scripts/devnest/info_find.py run --query "<q>"
+  --session <job-id>` executes the planner and every locally-runnable
+  source and prints the ranked result JSON; re-run with narrower
+  --sources if a query needs a second pass. (2) For each source the run
+  marks 'deferred', serve it only if you hold the matching tool
+  (mcp_mddb_doc for semantic docs, the read-only mcp_* set for MCP
+  discovery) and merge its hits into results; web/github stay
+  'unavailable' in this lane — say so, never invent them. (3) A source
+  that is down or errors stays 'unavailable'/'error' with its reason —
+  that is a valid outcome, not a failure to work around. Do not read
+  anything under ~/.config/secrets. Bash is allowlisted to
+  info_find.py + hostname/date only; any other command is denied and
+  fails the job. Your final message is ONLY the result JSON: echo
+  question/intent/session, keep every source status, rank results
+  mddb > web > github > ssot/health > mcp > code, and give every result
+  a citation (repo path+lines, {collection,id} for mddb, url for web).

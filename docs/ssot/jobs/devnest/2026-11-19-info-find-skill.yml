@@ -1,0 +1,106 @@
+title: DevNest info-find capability — portable skill + shared
+  planner/source adapters + read-only lane profile (Phase 1)
+subtitle: DEV-0230 / card devnest-info-find-skill. Ports the
+  .devin/skills/info-find workflow into a portable, lane-servable
+  package; Tony approved conversational-skill-first (no queued
+  research executor this phase).
+icon: route
+version: 1
+
+card: devnest-info-find-skill
+date: 2026-11-19
+dispatch: 20261119-122516-explore-and-implement-a-portab
+
+shipped:
+  shared_module: >-
+    scripts/devnest/info_find.py — stdlib-only planner + source
+    adapters + CLI (plan|run|record|mddb-health|mcp-policy). classify()
+    carries the original intent table plus the documented `explore`
+    intent the Node planner lacked (internal sources -> GitHub
+    precedent rung -> generic web). run() executes the locally-runnable
+    sources (ssot, code, health, mddb via /health + /v1/search,
+    mcp-policy extraction) and emits one ranked, cited result JSON;
+    agent-tool sources (web, github) are 'deferred' for a
+    conversational agent or 'unavailable' under --offline.
+  skill: >-
+    .agents/skills/info-find/SKILL.md — agentskills-standard portable
+    package. Workflow mirrors .devin/skills/info-find (untouched) but
+    drives the shared module and phrases agent-tool steps
+    agent-agnostically; portability = copy script + folder, endpoints
+    via INFO_FIND_MDDB_URL / INFO_FIND_MDDB_COLLECTIONS /
+    INFO_FIND_CACHE / INFO_FIND_PROJECT.
+  lane: >-
+    evals/opencode-lane/profiles/info-find/ — new read-only profile
+    (stages: [S1] only). bash allowlist = info_find.py + hostname/date;
+    no write/edit/patch/webfetch; mcp ceiling = the five read-only
+    retrieval tools (mcp_read_ssot/search_ssot/ssot_query/ssot_get/
+    mddb_doc). Artifact = message-mode JSON; verifier held_out_py.
+    Canary envelope: evals/opencode-lane/jobs/p1-info-find-idc02.yaml.
+  tests: >-
+    tests/devnest/test_info_find.py — 23 tests: routing table +
+    plan flags + quick/web overrides; fallback (bank down ->
+    unavailable-with-reason, adapter exception isolated, deferred vs
+    offline); citations (rank order, dedupe, repo-path resolution,
+    policy.section citations); session isolation (separate dirs,
+    sanitized ids, worktree->repo project resolution, cache never
+    inside repo); lane packaging (profile lint, read-only surface,
+    verifier pass/fail on synthetic artifacts, envelope lint).
+
+capability_gate: |
+  WHO may invoke: any conversational agent with exec+grep+read+web/MCP
+  tools via the .agents skill; unattended, ONLY the info-find opencode
+  profile at stage S1 (supervised canary — a human watches; promotion
+  through the normal lane_gate stage review, never automatic).
+  WHAT it may touch: read-only sources only — local file scans,
+  MDDB GET /health + POST /v1/search on the configured bank,
+  policy.<domain> extraction, and the profile's five read-only MCP
+  tools. No writes, no secrets paths, no mutating endpoints anywhere
+  in the adapter code — the class bound is the safety surface.
+  FAIL-SAFE: every source reports ok|skipped|deferred|unavailable|
+  error + reason; a dead source never starves the others and is never
+  silently swapped. The held-out verifier fails artifacts whose
+  citations don't resolve or whose unavailable sources lack reasons.
+  ISOLATION: cache+audit under ~/.cache/devin/info-find/<project>/
+  sessions/<session>/ — project = repo name (worktrees resolve to the
+  main checkout via the .git pointer), session sanitized; nothing
+  written into the skill dir or the repo.
+
+phase_boundary: |
+  Phase 1 (this doc) = conversational skill access + one read-only
+  lane. NOT built: the autonomous queued-research executor (a new
+  action.executor / card task class). When Phase 2 lands it MUST reuse
+  scripts/devnest/info_find.py — no second router — and inherit this
+  gate; follow-up card devnest-upstream-skills-review (DEV-0231)
+  tracks the skill-catalog review that rides on this pilot.
+
+canary: |
+  Envelope evals/opencode-lane/jobs/p1-info-find-idc02.yaml — S1,
+  target_host idc02, mcp_allowlist [] (info_find.py reaches the bank
+  over tailnet HTTP). Run supervised via
+  `python3 scripts/devnest/opencode_profiles.py run
+  evals/opencode-lane/jobs/p1-info-find-idc02.yaml` on a host with
+  OPENCODE_LANES=1; lane_gate admits it only while the lane sits at S1.
+
+verified:
+  - "python3 scripts/devnest/opencode_profiles.py lint info-find -> ok"
+  - "python3 scripts/devnest/opencode_profiles.py lint all -> ok"
+  - "lane_gate.py lint p1-info-find-idc02.yaml -> ok"
+  - "opencode_profiles.py check p1-info-find-idc02.yaml -> ok []"
+  - "23/23 unittest tests pass (tests.devnest.test_info_find)"
+  - "live smoke: info_find.py run on tony-macbook reached the idc03
+    MDDB cms bank and returned ranked cited results (20 docs over 4
+    collections); worktree resolved to project 'chaba'"
+  - "not yet run: the S1 canary envelope itself — needs a supervised
+    host with OPENCODE_LANES=1 (pilot step, not dispatch work)"
+
+references:
+  - .agents/skills/info-find/SKILL.md
+  - .devin/skills/info-find/SKILL.md (original Devin-only skill — source)
+  - scripts/devnest/info_find.py
+  - evals/opencode-lane/profiles/info-find/ (+ fixture task.yaml/verify.py)
+  - evals/opencode-lane/jobs/p1-info-find-idc02.yaml
+  - tests/devnest/test_info_find.py
+  - evals/opencode-lane/PROCEDURE.md (graduated routing stages)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml
+  - docs/ssot/infrastructure/ssot.mcp-tools.yml (policy.<domain> source)
+  - scripts/devnest/mddb_probe.py (bank map / read-only precedent)
