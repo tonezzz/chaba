@@ -6,8 +6,16 @@ Document database backing Ada memory, CMS pages, and SSOT sync.
 
 - `mddb.container` — leader quadlet. Secrets externalized to
   `~/.config/secrets/mddb.env` (`MDDB_MCP_API_KEYS`, `MDDB_REPLICATION_SECRET`).
-- `mddb-backup.sh` — backup script (native `/v1/backup` primary on 2.15.4+,
-  filecopy fallback with verification retries).
+- `mddb-backup.sh` — CANONICAL copy of `~/mddb-backup.sh` on idc03 (deploy:
+  `scp stacks/idc03/mddb/mddb-backup.sh idc03:~/mddb-backup.sh`). Loops the
+  local instances (`MDDB_BACKUP_INSTANCES`, default
+  `mddb:11023 mddb-ops:11026 mddb-cms:11027`); native `/v1/backup` primary
+  on 2.15.4+, filecopy+open-verify fallback. Disk-headroom guards since
+  2026-11-19 (post-ENOSPC incident): per-instance pre-flight `df` check
+  (>= max(15G, 2x expected db size)), stream-to-`.tmp`+rename so partials
+  never look like valid `.db.gz`, per-instance + dir-cap retention, and
+  board-api alert (`/comment` on the timer-alert card + `/inbox`) on skip
+  or failure.
 
 ## Ports (tailnet)
 
