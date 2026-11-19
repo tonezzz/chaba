@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-11 03:00) of `obsidian-vault-backup.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u obsidian-vault-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-11 03:00) of `obsidian-vault-backup.service` on `idc03` result=exit-code — investigate
+  journal: `journalctl --user -u obsidian-vault-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-0015
 comms:
 - at: 2026-11-11 20:43
@@ -101,8 +101,9 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-19 08:21
   from: devin
-  text: '[reopened — condition recurred] Last run (11-19 03:00) of `obsidian-vault-backup.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u obsidian-vault-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-19 03:00) of `obsidian-vault-backup.service` on
+    `idc03` result=exit-code — investigate journal: `journalctl --user -u obsidian-vault-backup.service`
+    on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-19 08:31
   from: devin
   text: '[still suspicious] Last run (11-19 03:00) of `obsidian-vault-backup.service` on `idc03` result=exit-code
@@ -119,5 +120,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: Investigate why the `obsidian-vault-backup.service` failed with an exit-code on host `idc03` during
+  its last run by inspecting the journal logs using `journalctl --user -u obsidian-vault-backup.service`.
+  Review the CMS `timer-timeline-idc03` for additional context regarding the failure. Resolve the underlying
+  issue causing the systemd timer failure. The done-condition is verified when `obsidian-vault-backup.service`
+  runs successfully on `idc03` without exit-code errors.
