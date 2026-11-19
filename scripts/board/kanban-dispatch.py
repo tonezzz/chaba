@@ -320,6 +320,8 @@ def requeue_dead(path: Path, host: str) -> str:
         a.pop("runner", None)
         a.pop("task_id", None)
         _ensure_claim(card).pop("session", None)
+        if card.get("column") == "doing":
+            card["column"] = "backlog"
         comms_add(card, "chaba",
                   f"runner {host} unreachable {REQUEUE_AFTER} passes "
                   f"— requeued")
@@ -609,6 +611,40 @@ def mark_start(path: Path, card: dict) -> None:
     a["status"] = "starting"
     a["runner"] = HOST
     a["attempts"] = int(a.get("attempts") or 0) + 1
+    _ensure_claim(card)["since"] = now()
+    # honest columns: a live claim means doing — this dispatcher's claims
+    # used to leave the card in backlog/review while the unit ran
+    # (dispatch-failed-cards-park-in-doing)
+    if card.get("column") not in ("doing", "done"):
+        card["column"] = "doing"
+
+
+def _fail_or_requeue(card: dict, why: str) -> str:
+    """Stalled-claim lifecycle for a dead run (card
+    dispatch-failed-cards-park-in-doing): the claim is over, so the card
+    leaves doing — queued in backlog for another claim while attempts <
+    max_attempts (KANBAN_AUTORETRY=0 disables), else parked there as
+    failed. A manual /action do=retry resets attempts and re-arms it.
+    Returns the verdict text for the caller's comms line."""
+    a = _ensure_act(card)
+    a["last_failure"] = why[:280]
+    _ensure_claim(card).pop("session", None)
+    att = int(a.get("attempts") or 0)
+    max_att = int(a.get("max_attempts")
+                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    if os.environ.get("KANBAN_AUTORETRY", "1") != "0" and att < max_att:
+        a["status"] = "queued"
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        if card.get("column") != "done":
+            card["column"] = "backlog"
+        return (f"auto-retry queued (attempt {att + 1}/{max_att}) "
+                "(column -> backlog)")
+    a["status"] = "failed"
+    if card.get("column") == "doing":
+        card["column"] = "backlog"
+    return (f"attempt cap {max_att} reached — moved doing -> backlog; "
+            "a manual retry re-arms it")
 
 
 def finish_one(path: Path, card: dict,
@@ -636,13 +672,14 @@ def finish_one(path: Path, card: dict,
         return "still running"
     if state == "failed":
         # crashed unit — do NOT mark done or auto-merge: the branch may
-        # hold partial work; card stays in doing with a retry affordance
-        a["status"] = "failed"
-        a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
-        _ensure_claim(card).pop("session", None)
-        comms_add(card, "chaba", "run failed — check logs, then retry")
+        # hold partial work. The dead claim leaves doing: requeue under
+        # the attempts cap, else park failed in backlog.
+        why = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
+        a["result"] = why
+        verdict = _fail_or_requeue(card, why)
+        comms_add(card, "chaba", f"run failed — {verdict}")
         _notify("fail", card.get("id") or path.stem,
-                "unit failed — see devin-dispatch logs")
+                f"unit failed — {verdict}")
         return "failed"
     # Executor-owned closeout (OPS-1066): tasks run by runner-agent's
     # non-devin executors (jules, opencode, kk_mac_local) own their finish
@@ -669,12 +706,12 @@ def finish_one(path: Path, card: dict,
         ex_ok, ex_ev = (dr.unit_exit_evidence(tid) if tid
                         else (None, "no task_id"))
     if ex_ok is False:
-        a["status"] = "failed"
-        a["result"] = (f"{tid} FAILED ({ex_ev}) — see "
-                       f"`devin-dispatch logs {tid}`")
-        _ensure_claim(card).pop("session", None)
+        why = (f"{tid} FAILED ({ex_ev}) — see "
+               f"`devin-dispatch logs {tid}`")
+        a["result"] = why
+        verdict = _fail_or_requeue(card, why)
         comms_add(card, "chaba",
-                  f"run failed ({ex_ev}) — check logs, then retry")
+                  f"run failed ({ex_ev}) — {verdict}")
         return "failed"
     if ex_ok is None:
         # unproven exit — not 'ok', but not provably failed either:
@@ -914,9 +951,11 @@ def start_pending(path: Path) -> str:
         card = load_card(path)  # re-read — API may have touched the card
         a = _ensure_act(card)
         if r.returncode != 0:
-            a["status"] = "failed"
-            a["result"] = f"dispatch failed: {(r.stderr or r.stdout).strip()[:300]}"
-            comms_add(card, "chaba", f"dispatch failed: {a['result'][:120]}")
+            why = f"dispatch failed: {(r.stderr or r.stdout).strip()[:300]}"
+            a["result"] = why
+            verdict = _fail_or_requeue(card, why)
+            comms_add(card, "chaba",
+                      f"dispatch failed — {verdict}: {why[:160]}")
             save_card(path, card)
             return "dispatch failed"
         task_id = r.stdout.strip().splitlines()[-1].strip()
@@ -1002,9 +1041,13 @@ def merge_pending_one(path: Path) -> str:
                 a["status"] = "queued"
                 a.pop("runner", None)
                 a.pop("task_id", None)
+                # requeued = claimable, not in-flight — the card goes
+                # back to backlog, not sitting in doing/review
+                if card.get("column") in ("doing", "review"):
+                    card["column"] = "backlog"
                 comms_add(card, "chaba",
                           f"auto-retry queued (attempt {att + 1}/"
-                          f"{max_att}): {why}")
+                          f"{max_att}): {why} (column -> backlog)")
                 _notify("fail", card.get("id") or path.stem,
                         f"merge/goals failed — auto-retry "
                         f"{att + 1}/{max_att}")
@@ -1142,10 +1185,12 @@ def main() -> int:
                     continue
                 if int(a.get("attempts") or 0) >= retry_cap:
                     a["status"] = "held"
+                    if card.get("column") == "doing":
+                        card["column"] = "backlog"
                     comms_add(card, "chaba",
                               f"dispatch parked after {a['attempts']} attempts "
                               f"(policy retries_per_card={retry_cap}) — "
-                              "re-queue to retry")
+                              "/action do=retry re-arms it")
                     save_card(p, card)
                     changed = True
                     print(f"{card['id']}: parked (retry cap)")

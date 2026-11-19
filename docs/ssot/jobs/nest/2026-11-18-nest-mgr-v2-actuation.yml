@@ -1,0 +1,115 @@
+id: jobs/nest/2026-11-18-nest-mgr-v2-actuation
+title: nest-mgr v2 — gated actuation plane (monitor/recommend/guarded) + actions[] audit
+card: nest-mgr-v2-actuation
+date: 2026-11-18
+runner: tony-omen
+status: done-phase0
+
+# ---------------------------------------------------------------------------
+# Phase 0 of the v2 rollout: spec + recommend-mode implementation, zero
+# execution. nest-mgr v1 measured; v2 acts — but only through allowlisted,
+# gated, audited actions. The observer path is untouched: discovery,
+# adoption, probing, and CMS publish are the same; the new code is a
+# planner that runs each tick and a flag-file control surface under
+# ~/.local/share/nest/.
+# ---------------------------------------------------------------------------
+
+stack: stacks/services/nest-mgr/
+  # nest-mgr.py (v2), nest-mgr.service (unchanged), install.sh, verify.sh,
+  # README.md; HA mirror via scripts/device-telemetry/agent.py services
+  # probe -> telemetry-ha-push.py svc_nest_mgr_* sensors.
+
+modes:
+  resolution: >-
+    each tick: NEST_MGR_MODE env -> ~/.local/share/nest/mode file ->
+    default monitor. Safety flags can only LOWER the effective mode.
+  monitor: v1 behavior — detect + report only (default; what a v2
+    upgrade lands in)
+  recommend: plan allowlisted actions, log to actions[] + CMS page,
+    execute nothing — Phase-0/1 pilot mode
+  guarded: additionally executes allowlisted restarts — requires the
+    per-host opt-in flag actuation.on. Implemented but inert until a
+    host opts in; Phase-1 gate, not this card.
+
+flag_files: # all under ~/.local/share/nest/
+  actuation.off: global kill switch — present => monitor, checked every tick
+  actuation.on: per-host opt-in — guarded cannot execute without it
+  mode: monitor|recommend|guarded (below env priority)
+  host-circuit.open: host breaker (>5 executed restarts/hour); rm to reset
+  manual-units: operator-held units, 1/line — never restarted
+  restart-allowlist: restart-eligible units, 1/line
+  circuit/<unit>.open: per-unit breaker (2 failed restarts/hour); rm to reset
+
+auto_restart_policy:
+  fires_only_when_all:
+    - "state==failed on >=3 consecutive ticks (60s tick -> ~3 min)"
+    - "unit allowlisted (NEST_RESTART_OK=1 on unit env/file/drop-ins, or
+      restart-allowlist file)"
+    - "cooldown 300s since last attempt; <=2 attempts/hour/unit"
+    - "never-list clean: not card-owned (nest_nodes:), not
+      NEST_OWNER=none/unmanaged, not nest-mgr itself, not manual-units,
+      not topology prod lane (NEST_MGR_PROD_OK=1 overrides), not
+      Restart=on-success, no open unit circuit"
+    - "host budget green (<5 executed restarts/hour)"
+  mechanism: systemctl --user restart only — never start/stop/kill
+  blocked_units: >-
+    a failed-3-ticks unit that fails a gate emits ONE `held` audit row
+    naming the gate (re-emitted hourly or on gate change) — the page
+    always shows why the manager is not touching a unit.
+
+circuit_breakers:
+  per_unit: 2 failed restarts/hour -> circuit/<unit>.open written,
+    circuit-open event logged, retries stop until `rm`
+  per_host: ">5 executed restarts/hour -> host-circuit.open written,
+    effective mode drops to monitor (recommend for the rest of that
+    tick) until `rm`"
+  global: actuation.off or NEST_MGR_MODE=monitor drop-in + daemon-reload
+  rollback: revert nest-mgr.py to v1 — v1 never depended on the
+    actuation block or actions[].
+
+audit_trail:
+  state: >-
+    manager-state.json gains `actuation` (mode, flags, per-unit
+    fail_ticks/attempts, lifetime metrics) and `actions` — ring buffer,
+    last 200, records {ts, host, unit, prior_state, action, reason,
+    outcome}. mode-change events are recorded too.
+  cms: nest-<host> page gains an "Actuation" section — mode + requested,
+    flag posture, lifetime counters, last 8 audit rows. New events shift
+    the fingerprint so they publish immediately.
+  ha: >-
+    device-telemetry agent.py services["nest-mgr"] now carries mode,
+    act_1h, circuit, last — telemetry-ha-push.py turns each into
+    sensor.<dev>_svc_nest_mgr_* automatically; no HA-side change.
+
+non_goals_honored:
+  - no parallel queue — routing stays with devnest_capacity_broker;
+    phase-2 rebalancing (re-offer broker-normalized packages via MDDB
+    lease files) is a documented plug point in actuation_tick, not
+    implemented until the restart pilot proves out
+  - no synthetic work, no owner/quota bypass, no prod-lane actuation
+  - tony-macbook untouched (host offline at install attempt)
+
+verified:
+  - "27 new unit tests (tests/nest_mgr/test_nest_mgr_v2.py) pass —
+    mode resolution, never-list-beats-allowlist ordering, throttle,
+    recommend dedupe/held, guarded exec + unit/host circuits, plan_only
+    never executes"
+  - "--discover on tony-omen: 11 nodes, unchanged census"
+  - "--report renders Actuation section; mode-change audit event shown"
+  - "--once --dry-run writes manager-state.json (manager: nest-mgr v2)
+    with actuation block + actions[] — zero CMS writes"
+  - "seeded fail_ticks=2 + synthetic failed node in recommend mode ->
+    {action: restart, outcome: recommended} audit event, no systemctl
+    call (asserted by mock)"
+  - "device-telemetry agent.py surfaces mode/act_1h/circuit/last from
+    the state file"
+
+rollout:
+  phase0_this_card: >-
+    code + spec only. Deploy = install.sh on pilot hosts (lands in
+    monitor), then `echo recommend > ~/.local/share/nest/mode` on
+    idc02+con01+mn01 — needs an operator-approved session.
+  phase1: guarded on pilot hosts — actuation.on + per-unit allowlist,
+    1-week soak; compare restart success rate vs the metrics block.
+  phase2: work-stealing planner for broker-normalized packages.
+  phase3: evaluate expansion to omen/idc03/dell — per-host opt-in only.

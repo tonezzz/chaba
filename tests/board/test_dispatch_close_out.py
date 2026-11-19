@@ -1002,14 +1002,31 @@ class MergeRetryTest(unittest.TestCase):
         # dispatch-empty-closeout-verification-gap: --collect hides
         # Result=exit-code from is-active — the exit_code file is the
         # truth and a failed service is NOT 'finished (ok)'.
+        # Stalled-claim lifecycle (dispatch-failed-cards-park-in-doing):
+        # a failed claim leaves doing — auto-requeued under the attempts
+        # cap, parked failed in backlog only at the cap.
         card, msg = self._finish_card("unknown", (False, "exit_code=1"))
         self.assertEqual(msg, "failed")
-        self.assertEqual(card["action"]["status"], "failed")
-        self.assertNotEqual(card.get("column"), "review")
+        self.assertEqual(card["action"]["status"], "queued")
+        self.assertEqual(card.get("column"), "backlog")
         self.assertFalse(card["action"].get("merge_pending"))
         self.assertIn("exit_code=1", card["action"]["result"])
+        self.assertIn("exit_code=1",
+                      card["action"].get("last_failure", ""))
         self.assertTrue(any("run failed" in c.get("text", "")
                             for c in card.get("comms") or []))
+        # at the cap the dead claim parks failed in backlog, not doing
+        # (requeue cleared task_id — a fresh claim would re-set it)
+        card["action"]["status"] = "running"
+        card["action"]["attempts"] = 2
+        card["action"]["task_id"] = "t-fin"
+        card["column"] = "doing"
+        with mock.patch.object(self.mod, "unit_state",
+                               return_value="failed"):
+            self.assertEqual(self.mod.finish_one(Path("/dev/null"),
+                                                 card), "failed")
+        self.assertEqual(card["action"]["status"], "failed")
+        self.assertEqual(card["column"], "backlog")
 
     def test_finish_unproven_exit_still_finishes_but_notes(self):
         # no usable record anywhere: finish to review (a killed session

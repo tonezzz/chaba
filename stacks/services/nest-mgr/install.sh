@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # install.sh [host ...] — install + start nest-mgr on each host.
-# Default hosts: idc03 tony-omen tony-dell (the card's starting set).
+# Default hosts: the currently deployed fleet (v1 card comms 2026-11-17).
+# v2 rollout: upgrade lands in monitor mode everywhere; flip a pilot host
+# to recommend with `ssh <h> 'echo recommend > ~/.local/share/nest/mode'`.
 # Installs the self-contained manager to ~/.local/share/nest/ and the user
 # unit to ~/.config/systemd/user/ — no repo checkout is required on the
 # target host.
 set -euo pipefail
 cd "$(dirname "$0")"
 HOSTS=("$@")
-[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc03 tony-omen tony-dell)
+[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc02 idc03 con01 mn01 tony-omen tony-dell)
 
 for host in "${HOSTS[@]}"; do
   echo "== $host"
