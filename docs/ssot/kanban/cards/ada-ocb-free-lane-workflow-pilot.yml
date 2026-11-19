@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: review
-updated: 2026-11-19 16:34
+updated: 2026-11-19 16:35
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -95,6 +95,10 @@ comms:
 - at: 2026-11-19 16:34
   from: chaba
   text: 'staged profile closeout held: artifact differs from original host tool output'
+- at: 2026-11-19 16:35
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-ada-ocb-free-lane-workflow-pilot-1795075647 on idc02 still dirty — 1
+    uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   repo: chaba
@@ -150,6 +154,8 @@ action:
     staged read-only profile. | devin-task-ada-ocb-free-lane-workflow-pilot-1795080773.service: Consumed 11.534s
     CPU time.'
   verified: false
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-19 16:32
 review_kind: verify
