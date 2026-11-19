@@ -349,6 +349,7 @@ litellm_settings:
   success_callback: ["generic_api"]   # -> spend-hook :18001
   failure_callback: ["generic_api"]
   drop_params: true
+  callbacks: ["custom_callbacks.proxy_handler_instance", "custom_callbacks.cf_content_handler_instance"]
   # proxy-wide spend cap — belt over the per-virtual-key budgets
   max_budget: 50
   budget_duration: 30d
