@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
 column: doing
-updated: 2026-11-19 16:29
+updated: 2026-11-19 16:33
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -144,6 +144,12 @@ comms:
     merge-sweep: no session/worktree found for devin-tas; [claude-lane-pilot-verify-executor-contra-385db1] merge-sweep:
     no session/worktr; [cms-11023-parked-writers] merge-sweep: no session/worktree found for devin-task; [devnest-queue-consolidation]
     merge-sweep: no session/worktre'
+- at: 2026-11-19 16:33
+  from: devin
+  text: 'attempt 2 (devin executor, tony-omen): root-caused the 11-19 admission fail — free_lane-classified cards
+    route to the opencode lane on OPENCODE_LANES hosts where start_opencode_lane hard-requires a staged action.lane_envelope;
+    an unstaged card burns an attempt per claim. Fix: claim-time hold in runner-agent + completing piece 4 (bounded-retry
+    eval loop + repo-validate + CI gate) in card-run.py.'
 action:
   type: dispatch
   status: running
