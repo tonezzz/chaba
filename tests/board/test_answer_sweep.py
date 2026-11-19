@@ -68,7 +68,8 @@ class Classify(unittest.TestCase):
                           ("hold", "hold"),
                           ("close — not needed", "close"),
                           ("keep open — tail remains ★", "hold"),
-                          ("stay free — parked queue covers it ★", "hold")):
+                          ("stay free — parked queue covers it ★", "hold"),
+                          ("postpone — revisit next sprint", "hold")):
             r = req("r1", ans, options=[ans])
             self.assertEqual(swe.classify(r)[0], want, ans)
 

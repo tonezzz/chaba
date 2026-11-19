@@ -1602,6 +1602,11 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
             answer = _opt_label(hit[0])
         # ambiguous or unmatched free text stands as its own answer
     if ask.get("status") == "answered" and not body.get("reopen"):
+        # idempotent retry: the same answer again is a no-op success —
+        # voice/UI double-submits and relay retries must not error
+        # (KNB-0180). A different answer still requires reopen.
+        if str(ask.get("answer") or "") == answer[:500]:
+            return "already answered"
         raise ValueError("ask already answered")
     verb = "re-answered" if ask.get("status") == "answered" else "answered"
     card["ask"] = ask  # writes back the dict when ask was a bare string
@@ -1667,6 +1672,10 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
             verb = "answered"
             if r.get("status") == "answered":
                 if not body.get("reopen"):
+                    # idempotent retry: same answer again -> no-op
+                    # success; a different answer still needs reopen
+                    if str(r.get("answer") or "") == answer[:500]:
+                        return "already answered"
                     raise ValueError("already answered")
                 verb = "re-answered"
             r["status"] = "answered"
@@ -4924,6 +4933,12 @@ def _selftest() -> None:
     assert any(m["from"] == "ada" and "answered r1" in m["text"]
                for m in card["comms"])
     assert card.get("awaiting_action") is True  # no armed action -> nudge
+    # idempotent retry: same answer again is a no-op success, a
+    # different one still requires reopen (KNB-0180)
+    n_comms = len(card["comms"])
+    assert do_respond(card, {"request_id": "r1", "answer": "yes"},
+                      "tony") == "already answered"
+    assert len(card["comms"]) == n_comms
     rejects(lambda: do_respond(card, {"request_id": "r1", "answer": "b"}, "tony"),
             "already answered")
     do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
@@ -4947,6 +4962,8 @@ def _selftest() -> None:
     assert any(m["from"] == "tony" and "answered ask: Yes — go" in m["text"]
                for m in acard["comms"])
     assert acard.get("awaiting_action") is True  # same triage nudge
+    # idempotent retry on the ask path too — same option, no error
+    assert do_respond(acard, {"option": 0}, "tony") == "already answered"
     rejects(lambda: do_respond(acard, {"option": 1}, "tony"),
             "ask already answered")
     do_respond(acard, {"option": 1, "reopen": True}, "tony")

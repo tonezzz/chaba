@@ -66,6 +66,34 @@ BANGKOK = datetime.timezone(datetime.timedelta(hours=7))
 STALE_REVIEW_H = 48
 TOUCHED_H = 24
 DISPATCH_DAYS = 7
+DEAD_LETTER_DAYS = 7
+
+_ANSWER_SWEEP_MOD = None
+
+
+def _answer_sweep_pending(card: dict) -> int | None:
+    """Count of answered-but-unexecuted requests on a card, via
+    answer-sweep.pending() so the dead-letter definition can never
+    drift from the sweep's own. None when the module can't load —
+    the stat degrades, it never breaks the report."""
+    global _ANSWER_SWEEP_MOD
+    if _ANSWER_SWEEP_MOD is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "answer_sweep",
+            Path(__file__).resolve().parent / "answer-sweep.py")
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+            _ANSWER_SWEEP_MOD = mod
+        except Exception:
+            _ANSWER_SWEEP_MOD = False
+    if not _ANSWER_SWEEP_MOD:
+        return None
+    try:
+        return len(_ANSWER_SWEEP_MOD.pending(card))
+    except Exception:
+        return None
 
 _RE_DISPATCHED = re.compile(r"^dispatched \S+")
 _RE_FINISHED = re.compile(r"^run finished")
@@ -134,6 +162,9 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
     touched_cut = now - datetime.timedelta(hours=TOUCHED_H)
     stale_cut = now - datetime.timedelta(hours=STALE_REVIEW_H)
     disp_cut = now - datetime.timedelta(days=DISPATCH_DAYS)
+    dead_cut = now - datetime.timedelta(days=DEAD_LETTER_DAYS)
+    awaiting_n = 0
+    dead_letters: list[dict] = []
 
     for c in cards:
         col = str(c.get("column") or "backlog")
@@ -163,6 +194,18 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
         touched = last_touched(c)
         if touched and touched >= touched_cut:
             touched_24h += 1
+        # dead-letter aging (KNB-0180): awaiting_action cards nobody
+        # has touched in DEAD_LETTER_DAYS are the answered-but-
+        # unexecuted pile — count them so they cannot grow silently
+        if c.get("awaiting_action"):
+            awaiting_n += 1
+            if touched is None or touched < dead_cut:
+                dead_letters.append({
+                    "id": c["id"],
+                    "age_d": (round((now - touched).total_seconds() / 86400, 1)
+                              if touched else None),
+                    "unanswered": _answer_sweep_pending(c),
+                })
         if col == "review" and (touched is None or touched < stale_cut):
             age_h = (round((now - touched).total_seconds() / 3600, 1)
                      if touched else None)
@@ -218,6 +261,13 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
             "cards": sorted(stale_review,
                             key=lambda r: -(r["age_h"] or 1e9)),
         },
+        "dead_letters": {
+            "threshold_d": DEAD_LETTER_DAYS,
+            "awaiting_action": awaiting_n,
+            "count": len(dead_letters),
+            "cards": sorted(dead_letters,
+                            key=lambda r: -(r["age_d"] or 1e9)),
+        },
     }
     return stats
 
@@ -266,6 +316,20 @@ def render_md(stats: dict) -> str:
         lines.append(f"- open requests: **{reqs['count']}** — {items}")
     else:
         lines.append("- open requests: none")
+    dl = stats["dead_letters"]
+    if dl["cards"]:
+        items = ", ".join(
+            f"`{c['id']}` ({c['age_d']}d)" if c["age_d"] is not None
+            else f"`{c['id']}` (age unknown)"
+            for c in dl["cards"][:10])
+        lines.append(
+            f"- answered-but-unexecuted >{dl['threshold_d']}d: "
+            f"**{dl['count']}** of {dl['awaiting_action']} awaiting_action"
+            f" — {items}")
+    else:
+        lines.append(
+            f"- answered-but-unexecuted >{dl['threshold_d']}d: none "
+            f"({dl['awaiting_action']} awaiting_action)")
     lines += [
         "",
         ("_Generated file — do not hand-edit. Source: "
