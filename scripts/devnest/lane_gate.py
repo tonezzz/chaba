@@ -316,6 +316,7 @@ ENVELOPE_REQUIRED = [
 PROVIDER_PROBE = {          # envelope provider -> probe.net keys needed
     "litellm": ["litellm", "litellm_authed"],
     "zen": ["wan"],
+    "opencode": ["wan"],    # OpenCode Zen free models ride the same WAN leg
     "openrouter": ["wan"],
     "ollama": ["ollama_local", "ollama_idc02", "ollama_idc03"],  # any-of
     "devin": ["wan", "devin_cloud"],

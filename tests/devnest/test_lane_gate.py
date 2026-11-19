@@ -176,6 +176,19 @@ class Admit(unittest.TestCase):
         self.assertFalse(d["admit"])
         self.assertIn("failed_provider:litellm", d["reasons"])
 
+    def test_opencode_zen_provider_probe(self):
+        # opencode/<model> envelopes (Zen free lane) probe the WAN leg —
+        # the provider id is the opencode prefix, not litellm/openrouter.
+        env = mk_env(provider="opencode",
+                     model="opencode/deepseek-v4.1-flash-free")
+        d = admit(env)
+        self.assertTrue(d["admit"], d["reasons"])
+        no_wan = json.loads(json.dumps(PROBE_OK))
+        no_wan["net"]["wan"] = False
+        d2 = admit(env, probe=no_wan)
+        self.assertFalse(d2["admit"])
+        self.assertIn("failed_provider:opencode", d2["reasons"])
+
     def test_concurrency_cap(self):
         d = admit(mk_env(), inflight=1)  # S0 cap is 1
         self.assertFalse(d["admit"])
