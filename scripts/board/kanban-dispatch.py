@@ -165,9 +165,22 @@ def ratelimit_reason() -> str:
 
 
 def ratelimit_scan_task(tid: str) -> None:
-    """Survey-side scan of a finished task's journal for provider
-    throttle signatures — runs lock-free, so the journalctl cost never
-    extends the card flock."""
+    """Survey-side scan of a finished task's lane logs/journal for
+    provider throttle signatures — runs lock-free, so the journalctl
+    cost never extends the card flock. opencode/profile runs redirect
+    provider errors to the taskdir (stderr.log/events.jsonl), not the
+    unit journal, so those are checked first."""
+    tdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    for name in ("stderr.log", "events.jsonl", "run.json",
+                 "usage.json", "verdict.json"):
+        try:
+            tail = (tdir / name).read_text(errors="replace")[-8000:]
+        except OSError:
+            continue
+        sig = dr.rate_limit_hit(tail)
+        if sig:
+            ratelimit_record(f"devin-task-{tid}", sig)
+            return
     tail = (sh(["journalctl", "--user", "-u", f"devin-task-{tid}",
                 "-n", "80", "--no-pager", "-o", "cat"],
                timeout=15).stdout or "")[-8000:]
@@ -553,8 +566,7 @@ def _fail_or_requeue(card: dict, why: str) -> str:
     a["last_failure"] = why[:280]
     _ensure_claim(card).pop("session", None)
     att = int(a.get("attempts") or 0)
-    max_att = int(a.get("max_attempts")
-                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    max_att = dr.dispatch_attempt_cap(card)
     if os.environ.get("KANBAN_AUTORETRY", "1") != "0" and att < max_att:
         a["status"] = "queued"
         a.pop("runner", None)
@@ -954,8 +966,7 @@ def merge_pending_one(path: Path) -> str:
             # while attempts_used < max_attempts (max_attempts = total
             # dispatches incl. retries; mirrors merge-sweep fail_attempt).
             att = int(a.get("attempts") or 0)
-            max_att = int(a.get("max_attempts")
-                          or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+            max_att = dr.dispatch_attempt_cap(card)
             if (os.environ.get("KANBAN_AUTORETRY", "1") != "0"
                     and att < max_att):
                 why = ("; ".join(dr.close_out_notes(res)) or
@@ -1106,13 +1117,14 @@ def main() -> int:
                 if budget and claims_today(state_file) + claimed >= budget:
                     print(f"{card['id']}: daily session budget {budget} hit")
                     continue
-                if int(a.get("attempts") or 0) >= retry_cap:
+                attempt_cap = min(retry_cap, dr.dispatch_attempt_cap(card))
+                if int(a.get("attempts") or 0) >= attempt_cap:
                     a["status"] = "held"
                     if card.get("column") == "doing":
                         card["column"] = "backlog"
                     comms_add(card, "chaba",
                               f"dispatch parked after {a['attempts']} attempts "
-                              f"(policy retries_per_card={retry_cap}) — "
+                              f"(cap {attempt_cap}) — "
                               "/action do=retry re-arms it")
                     save_card(p, card)
                     changed = True

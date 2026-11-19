@@ -82,8 +82,10 @@ def resolve_ref(ref, source_rel, all_files):
             path = ""
     elif "#" in ref:
         target, _, path = ref.partition("#")
-    elif "/" in ref and (ref.startswith("docs/") or ref.startswith("reports/") or ref.startswith("scripts/")):
-        # repo-relative file path to a non-SSOT file (e.g., kb_ref, plan_ref)
+    elif "/" in ref and ref.startswith(
+            ("docs/", "reports/", "scripts/", "evals/", "tests/")):
+        # repo-relative file path to a non-SSOT file (e.g., kb_ref,
+        # plan_ref, card verifier refs under evals/)
         target = ref
         path = ""
         if not (REPO / target).exists():

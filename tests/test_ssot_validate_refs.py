@@ -27,3 +27,11 @@ class ValidateRefsTests(unittest.TestCase):
                 )
             ],
         )
+
+    def test_evals_ref_resolves_repo_relative(self):
+        # card verifier/artifact refs point at repo-root evals/, not
+        # docs/ssot/evals — the validator must not rewrite them under
+        # docs/ssot (ADA-0242 pilot card false positive).
+        self.assertIsNone(VALIDATOR.resolve_ref(
+            "evals/opencode-lane/profiles/ops-readonly/fixture/verify.py",
+            "docs/ssot/kanban/cards/example.yml", {}))

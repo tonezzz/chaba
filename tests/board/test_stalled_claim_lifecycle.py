@@ -85,6 +85,24 @@ class BoardApiLifecycleTest(unittest.TestCase):
             self.assertEqual(c["action"]["status"], "failed")
             self.assertEqual(c["column"], "backlog")
 
+    def test_finish_fail_lane_envelope_zero_retries_parks(self):
+        # ADA-0242 contract: a typed lane_envelope may tighten the retry
+        # budget — escalation.max_retries:0 means one dispatch total,
+        # so a failed finish parks instead of auto-requeueing attempt 2.
+        c = self.card()
+        c["action"]["attempts"] = 1
+        c["action"]["lane_envelope"] = {
+            "escalation": {"on_fail": "manual", "max_retries": 0}}
+        msg = self.api.do_finish(c, {"host": "idc02", "ok": False,
+                                     "result": "provider 429"})
+        a = c["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(c["column"], "backlog")
+        self.assertEqual(msg, "marked failed")
+        self.assertEqual(a.get("last_failure"), "provider 429")
+        self.assertTrue(any("attempt cap 1" in m["text"]
+                            for m in c["comms"]))
+
     def test_finish_ok_still_goes_review(self):
         c = self.card()
         self.api.do_finish(c, {"host": "idc02", "ok": True})
@@ -116,6 +134,19 @@ class BoardApiLifecycleTest(unittest.TestCase):
             self.assertIn("attempt cap", str(e))
             return
         raise AssertionError("claim at cap should be refused")
+
+    def test_claim_refused_at_lane_envelope_cap(self):
+        c = {"id": "lc-env-cap", "column": "backlog", "comms": [],
+             "action": {"type": "dispatch", "status": "queued",
+                        "attempts": 1,
+                        "lane_envelope": {"escalation":
+                                          {"max_retries": 0}}}}
+        try:
+            self.api.do_claim(c, {"host": "mn01"})
+        except ValueError as e:
+            self.assertIn("attempt cap reached (1/1)", str(e))
+            return
+        raise AssertionError("claim at lane-envelope cap should be refused")
 
     # -- verbs --------------------------------------------------------
     def test_retry_resets_attempts_and_column(self):
@@ -176,6 +207,21 @@ class DispatchLifecycleTest(unittest.TestCase):
         self.assertEqual(card["column"], "backlog")
         self.assertIn("attempt cap", verdict)
 
+    def test_fail_or_requeue_lane_envelope_zero_retries(self):
+        card = {"id": "lc-f-env", "column": "doing", "comms": [],
+                "action": {"status": "running", "attempts": 1,
+                           "runner": "idc02", "task_id": "t-env",
+                           "lane_envelope": {"escalation":
+                                             {"max_retries": 0}}},
+                "claim": {"session": "t-env"}}
+        verdict = self.kd._fail_or_requeue(card, "provider 429")
+        a = card["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(card["column"], "backlog")
+        self.assertEqual(a.get("last_failure"), "provider 429")
+        self.assertIn("attempt cap 1", verdict)
+        self.assertNotIn("session", card.get("claim") or {})
+
     def test_finish_one_failed_unit_requeues(self):
         # probe = (task_id, unit_state, ex_ok, ex_ev, sess_probe)
         card = {"id": "lc-fo", "column": "doing", "comms": [],
@@ -188,6 +234,52 @@ class DispatchLifecycleTest(unittest.TestCase):
         self.assertEqual(msg, "failed")
         self.assertEqual(card["action"]["status"], "queued")
         self.assertEqual(card["column"], "backlog")
+
+
+class AttemptCapTest(unittest.TestCase):
+    """dispatch_repos.dispatch_attempt_cap — the shared cap used by
+    board-api, kanban-dispatch, and merge-sweep."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = _load("stalled_dr", "dispatch_repos.py")
+
+    def cap(self, action):
+        return self.dr.dispatch_attempt_cap({"action": action})
+
+    def test_default_cap_is_two(self):
+        self.assertEqual(self.cap({"type": "dispatch"}), 2)
+
+    def test_max_attempts_override(self):
+        self.assertEqual(self.cap({"type": "dispatch",
+                                   "max_attempts": 4}), 4)
+
+    def test_envelope_zero_retries_caps_at_one(self):
+        self.assertEqual(self.cap({
+            "type": "dispatch",
+            "lane_envelope": {"escalation": {"max_retries": 0}}}), 1)
+
+    def test_envelope_retries_tighten_generic_cap(self):
+        # max_retries counts retries AFTER the first dispatch: 1 retry
+        # under a generic cap of 4 still means two total dispatches.
+        self.assertEqual(self.cap({
+            "type": "dispatch", "max_attempts": 4,
+            "lane_envelope": {"escalation": {"max_retries": 1}}}), 2)
+
+    def test_envelope_cannot_widen_generic_cap(self):
+        self.assertEqual(self.cap({
+            "type": "dispatch", "max_attempts": 1,
+            "lane_envelope": {"escalation": {"max_retries": 5}}}), 1)
+
+    def test_envelope_without_max_retries_keeps_generic_cap(self):
+        self.assertEqual(self.cap({
+            "type": "dispatch", "max_attempts": 3,
+            "lane_envelope": {"escalation": {"on_fail": "manual"}}}), 3)
+
+    def test_invalid_max_retries_fails_closed(self):
+        self.assertEqual(self.cap({
+            "type": "dispatch", "max_attempts": 3,
+            "lane_envelope": {"escalation": {"max_retries": "x"}}}), 1)
 
 
 class ReaperTest(unittest.TestCase):

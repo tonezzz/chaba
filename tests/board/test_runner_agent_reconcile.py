@@ -140,5 +140,30 @@ class ReconcilePassTest(unittest.TestCase):
         self.assertEqual(self.started, [])
 
 
+class WaitingHoldReasonTest(unittest.TestCase):
+    """runner-agent's standalone mirror of waiting_cards eligibility —
+    a typed lane_envelope must satisfy the artifact/verifier contract."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.m = _load()
+
+    def _card(self, envelope):
+        return {"id": "env-card", "recoverability": "R0",
+                "action": {"type": "dispatch", "target_host": "idc02",
+                           "lane_envelope": envelope}}
+
+    def test_lane_envelope_artifact_and_verifier_pass(self):
+        card = self._card({"artifact": {"path": "out/x.json"},
+                           "verifier": {"type": "held_out_py",
+                                        "ref": "fixture/verify.py"}})
+        self.assertEqual(self.m._waiting_hold_reason(card), "")
+
+    def test_lane_envelope_without_verifier_still_holds(self):
+        card = self._card({"artifact": {"path": "out/x.json"}})
+        self.assertEqual(self.m._waiting_hold_reason(card),
+                         "no declared verifier")
+
+
 if __name__ == "__main__":
     unittest.main()

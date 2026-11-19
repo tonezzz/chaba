@@ -294,6 +294,24 @@ class Case(unittest.TestCase):
         self.assertIs(a.get("verified"), False)
         self.assertFalse(self.remote_has("master", "p.py"))
 
+    def test_gate_failure_lane_envelope_zero_retries_parks(self):
+        # ADA-0242 contract: a typed lane_envelope may tighten the retry
+        # budget — escalation.max_retries:0 means one dispatch total,
+        # so a verified-gate failure parks instead of requeueing.
+        (self.task_dir / "exit_code").write_text("1\n")
+        commit(self.wt, "p.py", "x=1\n", "partial")
+        card = self.write_card(
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "attempts": 1,
+                    "lane_envelope": {"escalation":
+                                      {"max_retries": 0}}})
+        ms.sweep_card(card, {}, dry=False)
+        a = self.read_card()["action"]
+        self.assertEqual(a.get("status"), "failed")
+        self.assertIs(a.get("verified"), False)
+        self.assertEqual(a.get("attempts"), 1)
+        self.assertFalse(self.remote_has("master", "p.py"))
+
     def test_no_exit_record_with_work_holds(self):
         # produced work, mergeable, but no usable exit record anywhere
         # (pre-exit_code era) -> merge lands, verified is withheld and

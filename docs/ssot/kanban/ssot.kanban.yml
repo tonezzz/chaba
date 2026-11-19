@@ -196,7 +196,9 @@ card_schema:
   # RUNNER_WAITING_GATE) evaluate queued cards against
   # ssot.devin-autonomy.yml waiting_cards — eligibility needs the fields
   # above (recoverability, artifact/verifier via action.artifact|report|
-  # pipeline.goals + auto_done_when|action.verifier|pipeline.goals) plus
+  # pipeline.goals|action.lane_envelope.artifact +
+  # auto_done_when|action.verifier|pipeline.goals|
+  # action.lane_envelope.verifier) plus
   # an explicit action.target_host or action.host pin. This gates CLAIMS;
   # kanban-act still gates CLOSE separately.
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with

@@ -31,6 +31,7 @@ import tempfile
 import time
 import types
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -313,6 +314,23 @@ class RunnerRateLimitTest(unittest.TestCase):
         sig = m.rate_limit_scan("runner-x", "exit=1 (no signature here)")
         self.assertTrue(sig)
 
+    def test_taskdir_lane_logs_catch_signature(self):
+        # ADA-0242: opencode/profile runs redirect provider errors to
+        # the dispatch taskdir (stderr.log/events.jsonl), not the unit
+        # journal — the scan must read them before the journal fallback.
+        m = self.m
+        home = Path(self._tmpdir.name)
+        tdir = home / ".local/share/devin-dispatch/tasks" / "t-rl"
+        tdir.mkdir(parents=True)
+        (tdir / "stderr.log").write_text(
+            "litellm.RateLimitError: 429 "
+            "free-models-per-day-high-balance\n")
+        m.sh = lambda *a, **k: _proc(rc=0, out="")
+        with mock.patch.object(Path, "home", return_value=home):
+            sig = m.rate_limit_scan("devin-task-t-rl",
+                                    "exit=1 missing_artifact")
+        self.assertTrue(sig)
+
 
 class KanbanDispatchGuardTest(unittest.TestCase):
     """(b)+(c) kanban-dispatch claim path: push-incapable host leaves an
@@ -445,6 +463,24 @@ class KanbanDispatchGuardTest(unittest.TestCase):
             rc=0, out="devin: provider 429 rate limit hit\n")
         try:
             kd.ratelimit_scan_task("dead-1")
+        finally:
+            kd.sh = saved_sh
+        self.assertIn("rate-limited", kd.ratelimit_reason())
+
+    def test_ratelimit_scan_arms_from_taskdir_logs(self):
+        # opencode/profile provider errors land in the taskdir, not the
+        # unit journal — the survey must scan them too.
+        kd = self.kd
+        home = self.tmp
+        tdir = home / ".local/share/devin-dispatch/tasks" / "dead-rl"
+        tdir.mkdir(parents=True)
+        (tdir / "stderr.log").write_text(
+            "litellm.RateLimitError: 429 quota exhausted\n")
+        saved_sh = kd.sh
+        kd.sh = lambda *a, **k: _proc(rc=0, out="")
+        try:
+            with mock.patch.object(Path, "home", return_value=home):
+                kd.ratelimit_scan_task("dead-rl")
         finally:
             kd.sh = saved_sh
         self.assertIn("rate-limited", kd.ratelimit_reason())

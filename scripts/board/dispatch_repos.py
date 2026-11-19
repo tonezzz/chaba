@@ -45,6 +45,32 @@ def _act(card: dict) -> dict:
     a = card.get("action")
     return a if isinstance(a, dict) else {}
 
+
+def dispatch_attempt_cap(card: dict) -> int:
+    """Total dispatch attempts allowed before a human re-arms.
+
+    action.max_attempts/KANBAN_MAX_ATTEMPTS is the generic cap; a typed
+    lane_envelope may only tighten it. escalation.max_retries is the
+    lane's own retry budget, so board re-dispatch stops at 1+retries —
+    max_retries:0 means one shot (the ADA-0242 pilot contract)."""
+    a = _act(card)
+    try:
+        cap = int(a.get("max_attempts")
+                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    except (TypeError, ValueError):
+        cap = 2
+    env = a.get("lane_envelope")
+    if isinstance(env, dict):
+        esc = env.get("escalation")
+        if isinstance(esc, dict) and "max_retries" in esc:
+            try:
+                retries = int(esc.get("max_retries"))
+            except (TypeError, ValueError):
+                retries = 0
+            cap = min(cap, retries + 1)
+    return max(1, cap)
+
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
 try:
     import goals as goallib  # scripts/lib/goals.py — expected_goals exec

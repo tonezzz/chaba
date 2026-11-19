@@ -944,6 +944,22 @@ class MergeRetryTest(unittest.TestCase):
                             for c in card.get("comms") or []),
                         card.get("comms"))
 
+    def test_lane_envelope_zero_retries_does_not_requeue(self):
+        # ADA-0242 contract: escalation.max_retries:0 caps total
+        # dispatches at one — a merge/gate failure must not queue a
+        # second attempt even though the generic cap would allow it.
+        card = self._merge_card(
+            "action: {type: dispatch, status: done, task_id: t-gate, "
+            "attempts: 1, lane_envelope: {escalation: {max_retries: 0}}}\n",
+            self.RES)
+        a = card["action"]
+        self.assertNotEqual(a["status"], "queued")
+        self.assertIs(a["verified"], False)
+        self.assertEqual(a["attempts"], 1)
+        self.assertFalse(any("auto-retry queued" in (c.get("text") or "")
+                             for c in card.get("comms") or []),
+                         card.get("comms"))
+
     def test_autoretry_off_does_not_requeue(self):
         os.environ["KANBAN_AUTORETRY"] = "0"
         self.addCleanup(os.environ.pop, "KANBAN_AUTORETRY")

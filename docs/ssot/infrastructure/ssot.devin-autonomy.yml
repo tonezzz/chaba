@@ -23,7 +23,10 @@ dispatch:
   kill_switch: /tmp/no-kanban-dispatch   # touch to freeze new claims instantly
   quiet_hours: "00:00-06:00"             # ICT — no new claims inside window
   sessions_per_day: 12                   # claimed-session budget per host per day
-  retries_per_card: 2                    # action.attempts > this -> parked + comms
+  retries_per_card: 2                    # action.attempts > this -> parked + comms;
+                                         # action.lane_envelope.escalation.max_retries
+                                         # may only tighten the effective cap
+                                         # (max_retries:0 = one shot)
   max_autonomy: t3                       # cards carrying autonomy:t4 are never claimed
   state_file: /tmp/kanban-dispatch-state.json
 
@@ -75,7 +78,7 @@ waiting_cards:
       - "action.type in [dispatch, script, container] — an executor exists"
       - "action.host/repo resolves to a live runner for this card"
       - "autonomy tier <= dispatch.max_autonomy (t3 ceiling; t4 never)"
-      - "card declares artifact + verifier (action.artifact/verifier or auto_done_when/pipeline.goals)"
+      - "card declares artifact + verifier (action.artifact/verifier, action.lane_envelope.artifact/verifier, or auto_done_when/pipeline.goals)"
       - "no open requests: entries on the card"
       - "recoverability class declared (recoverability: R0-R4)"
       - "preflight passes (below)"

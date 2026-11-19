@@ -524,11 +524,14 @@ def _waiting_hold_reason(card: dict) -> str:
         return f"action.type={a.get('type')!r} has no executor"
     if not (a.get("target_host") or a.get("host")):
         return "no explicit action.target_host/host"
-    if not (a.get("artifact") or card.get("report")
+    env = a.get("lane_envelope")
+    env = env if isinstance(env, dict) else {}
+    if not (a.get("artifact") or env.get("artifact")
+            or card.get("report")
             or (card.get("pipeline") or {}).get("goals")):
         return "no declared artifact"
     if not (card.get("auto_done_when") or a.get("verifier")
-            or a.get("verify")
+            or a.get("verify") or env.get("verifier")
             or (card.get("pipeline") or {}).get("goals")):
         return "no declared verifier"
     for r in card.get("requests") or []:
@@ -4035,11 +4038,27 @@ def rate_limit_hit(text: str) -> str:
 
 def rate_limit_scan(unit: str, result: str) -> str:
     """Signature from a finished unit's output — the collect() result
-    tail first, then a wider journal/log read (the 240-char result tail
-    can truncate the throttle line out of view)."""
+    tail first, then the dispatch taskdir's lane logs (opencode/profile
+    runs redirect provider errors to stderr.log/events.jsonl, not the
+    unit journal), then a wider journal/log read (the 240-char result
+    tail can truncate the throttle line out of view)."""
     sig = rate_limit_hit(result)
     if sig:
         return sig
+    tid = unit[len("devin-task-"):] \
+        if unit.startswith("devin-task-") else ""
+    if tid:
+        tdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+        for name in ("stderr.log", "events.jsonl", "run.json",
+                     "usage.json", "verdict.json"):
+            try:
+                tail = (tdir / name).read_text(
+                    errors="replace")[-8000:]
+            except OSError:
+                continue
+            sig = rate_limit_hit(tail)
+            if sig:
+                return sig
     if task_runtime() == "launchd":
         try:
             tail = _launchd_log(unit).read_text()[-8000:]

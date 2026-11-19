@@ -1416,8 +1416,7 @@ def do_claim(card: dict, body: dict) -> str:
     # that keeps failing can be parked instead of re-dispatched forever.
     # /action do=retry resets attempts; that is the human re-arm.
     att = int(a.get("attempts") or 0)
-    max_att = int(a.get("max_attempts")
-                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    max_att = dr.dispatch_attempt_cap(card)
     if att >= max_att:
         raise ValueError(
             f"attempt cap reached ({att}/{max_att}) — /action do=retry "
@@ -1535,8 +1534,7 @@ def do_finish(card: dict, body: dict) -> str:
     a["last_failure"] = (result or "runner reported failure")[:280]
     _ensure_claim(card).pop("session", None)
     att = int(a.get("attempts") or 0)
-    max_att = int(a.get("max_attempts")
-                  or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+    max_att = dr.dispatch_attempt_cap(card)
     if os.environ.get("KANBAN_AUTORETRY", "1") != "0" and att < max_att:
         a["status"] = "queued"
         a.pop("runner", None)

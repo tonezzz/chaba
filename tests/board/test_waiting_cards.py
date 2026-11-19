@@ -86,6 +86,17 @@ class TestEligibility(unittest.TestCase):
         v = wc.evaluate(c, env=_env())
         self.assertTrue(v["eligible"], v["reasons"])
 
+    def test_lane_envelope_counts_as_artifact_and_verifier(self):
+        c = _card(action={
+            "type": "script", "host": "idc03",
+            "lane_envelope": {
+                "artifact": {"path": "out/report.json"},
+                "verifier": {"type": "held_out_py",
+                             "ref": "fixture/verify.py"}}})
+        c.pop("auto_done_when")
+        v = wc.evaluate(c, env=_env())
+        self.assertTrue(v["eligible"], v["reasons"])
+
     def test_open_request_blocks(self):
         c = _card(requests=[{"ask": "which host?", "status": "open"}])
         v = wc.evaluate(c, env=_env())

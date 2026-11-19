@@ -960,8 +960,7 @@ def fail_attempt(card: dict, why: str, dry: bool,
         # same predicate — its old att+1<max variant double-counted,
         # card kanban-autoretry-off-by-one)
         att = int(a.get("attempts") or 0)
-        max_att = int(a.get("max_attempts")
-                      or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+        max_att = dr.dispatch_attempt_cap(c)
         if os.environ.get("KANBAN_AUTORETRY", "1") != "0" \
                 and att < max_att:
             a["status"] = "queued"

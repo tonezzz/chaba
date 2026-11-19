@@ -109,14 +109,19 @@ def recoverability(card: dict) -> str:
 
 def declares_artifact(card: dict) -> bool:
     a = _action(card)
+    env = a.get("lane_envelope")
+    env = env if isinstance(env, dict) else {}
     return bool(a.get("artifact") or card.get("report")
+                or env.get("artifact")
                 or (card.get("pipeline") or {}).get("goals"))
 
 
 def declares_verifier(card: dict) -> bool:
     a = _action(card)
+    env = a.get("lane_envelope")
+    env = env if isinstance(env, dict) else {}
     return bool(card.get("auto_done_when") or a.get("verifier")
-                or a.get("verify")
+                or a.get("verify") or env.get("verifier")
                 or (card.get("pipeline") or {}).get("goals"))
 
 
