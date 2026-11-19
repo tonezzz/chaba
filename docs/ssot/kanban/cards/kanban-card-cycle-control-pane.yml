@@ -1,0 +1,44 @@
+id: kanban-card-cycle-control-pane
+title: Extend the control pane for the Kanban card cycle
+column: backlog
+updated: 2026-11-19 11:26
+brief: Design a thin, evidence-first operations pane over the existing board/API, DevNest/JevTeam routing, and OpenChamber
+  sessions.
+priority: medium
+program: devnest
+tags:
+- kanban
+- devnest
+- jevteam
+- opencode
+- mcp
+- control-pane
+spec: Extend the existing Chaba control surfaces; do not create a second card database or scheduler. Show the card
+  lifecycle and timeline, eligibility/claim reason, executor/provider/model, host/session, queue/run duration, evidence-backed
+  tokens/cost, artifact/verifier, attempts/failure, and suggested escalation with reason/confidence. Board-api remains
+  the only card mutation door; DevNest owns durable bounded execution; JevTeam classifies/recommends/gates; OpenChamber
+  is the interactive session cockpit. Start with a read-only projection. Any queue/hold/respond/retry/lane-reroute
+  actions must use narrow typed board-api-backed MCP tools with confirmation and audit. Measure queue wait, cycle
+  time, first-pass verifier rate, retries, operator review time, and cost per verified completion. No production
+  deployment or broad autonomous mutation is included in this design card.
+ref: KNB-0229
+comms:
+- at: 2026-11-19 11:26
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-19 11:26
+  from: devin
+  text: 'raised request control-pane-surface: Choose the phase-one home for the card-cycle control pane.'
+requests:
+- id: control-pane-surface
+  ask: Choose the phase-one home for the card-cycle control pane.
+  status: open
+  at: 2026-11-19 11:26
+  from: devin
+  options:
+  - 'Extend Board page — recommended: keep card operations beside the source of truth and link to OpenChamber sessions.'
+  - Use Ada/OpenCode panel — bring card-cycle operations into the protected OpenChamber surface.
+  - Build a separate app — independent control UI/service; not recommended because it risks duplicating state and
+    policy.
+  suggested: 'Extend Board page — recommended: keep card operations beside the source of truth and link to OpenChamber
+    sessions.'
