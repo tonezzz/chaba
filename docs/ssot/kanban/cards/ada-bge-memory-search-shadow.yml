@@ -1,7 +1,7 @@
 id: ada-bge-memory-search-shadow
 title: Run BGE retrieval as an isolated Ada memory_search shadow
 column: backlog
-updated: 2026-11-19 08:59
+updated: 2026-11-19 13:04
 priority: high
 tags:
 - ada
@@ -132,14 +132,20 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
     it'
+- at: 2026-11-19 13:04
+  from: chaba
+  text: classified as codemod (kw:lock conf 1.00)
+- at: 2026-11-19 13:04
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: codemod
   lane_source: kw
-  runner: idc02
   result: 'exit=1 RE | devin-task-20261117-232220-add-an-opt-in-asynchronous-sha.service: Failed with result ''exit-code''.
     | devin-task-20261117-232220-add-an-opt-in-asynchronous-sha.service: Consumed 19.804s CPU time, 131.5M memory
     peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
+claim: {}
