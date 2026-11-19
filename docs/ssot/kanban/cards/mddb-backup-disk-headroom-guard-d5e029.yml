@@ -1,7 +1,7 @@
 id: mddb-backup-disk-headroom-guard-d5e029
 title: mddb-backup-disk-headroom-guard
-column: review
-updated: 2026-11-19 10:30
+column: done
+updated: 2026-11-19 10:36
 spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
   2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
   that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
@@ -102,6 +102,9 @@ comms:
 - at: 2026-11-19 10:30
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 10:36
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -117,3 +120,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 10:36
+  note: verified — evidence checks green, closing itself
