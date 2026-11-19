@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
-column: doing
-updated: 2026-11-19 16:35
+column: done
+updated: 2026-11-19 17:02
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -150,9 +150,12 @@ comms:
     route to the opencode lane on OPENCODE_LANES hosts where start_opencode_lane hard-requires a staged action.lane_envelope;
     an unstaged card burns an attempt per claim. Fix: claim-time hold in runner-agent + completing piece 4 (bounded-retry
     eval loop + repo-validate + CI gate) in card-run.py.'
+- at: 2026-11-19 17:02
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite

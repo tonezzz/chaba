@@ -2,18 +2,24 @@ id: runner-auto-tony-macbook
 title: Runner host `tony-macbook` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note,
   fix on the host, close the card.
-column: done
+column: review
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Auto-recovered 2026-11-19: all bootstrap checks pass.'
+note: 'Failing: ~/.local/bin/runner-agent sha 963e22d2e0a747ad != repo b0f36cffcb99a131 — installed copy drifted;
+  redeploy. Info: chaba origin is push-capable; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card
+  cards; no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
+  can''t take action.repo=gods-eye-view cards; ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS
+  for the fast path (live probe still gates); ada-pi: push probe ok — declare push:ada-voice in RUNNER_LABELS for
+  the fast path (live probe still gates); dispatch_repos copy differs from repo (sha 29222331754e7176 vs c366cccbe404f20a)
+  — functional attrs present; devin: /home/tony/.local/bin/devin (devin 3000.14.30821 (a09cd7f323ee)).'
 help: 'Per-check fixes:
 
   - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
   scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-11-19'
+updated: 2026-11-19 17:02
 action:
   status: done
 claim: {}
@@ -84,4 +90,8 @@ comms:
 - at: 2026-11-18 22:05
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
