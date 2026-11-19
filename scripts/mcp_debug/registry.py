@@ -11,8 +11,12 @@ from .ssot import mcp_query_ssot, mcp_read_ssot
 def _safe_path(path):
     p = Path(path) if Path(path).is_absolute() else REPO_DIR / path
     try:
-        p.relative_to(REPO_DIR)
+        rel = p.relative_to(REPO_DIR)
     except ValueError:
+        return None
+    if ".." in rel.parts:
+        # pathlib's relative_to is lexical: a '..' segment stays inside
+        # while prefixed by REPO_DIR but resolves outside when opened.
         return None
     return p
 

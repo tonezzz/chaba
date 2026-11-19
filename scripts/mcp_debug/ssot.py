@@ -25,8 +25,12 @@ _SSOT_PARSED_CACHE = {}
 def _safe_path(path):
     p = Path(path) if os.path.isabs(path) else REPO_DIR / path
     try:
-        p.relative_to(REPO_DIR)
+        rel = p.relative_to(REPO_DIR)
     except ValueError:
+        return None
+    if ".." in rel.parts:
+        # pathlib's relative_to is lexical: a '..' segment stays inside
+        # while prefixed by REPO_DIR but resolves outside when opened.
         return None
     return p
 
