@@ -1,7 +1,7 @@
 id: mddb-main-bank-revision-churn-audit
 title: Audit main MDDB revision churn and retention policy
-column: backlog
-updated: 2026-11-19 17:04
+column: done
+updated: 2026-11-19 18:06
 brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
   retention.
 priority: medium
@@ -24,7 +24,7 @@ action:
   repo: chaba
   lane: free_lane
   subject_host: idc03
-  status: failed
+  status: done
   model: litellm/gemini-3.5-flash-lite
   attempts: 2
   result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
@@ -132,5 +132,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:06
+  from: devin
+  text: 'Reconciliation: action.status=failed is stale. Timeline — merge-sweep stamped verified-gate failure at
+    14:29, but the Devin executor delivered at 14:35 and dispatch/20261119-142416 auto-merged to origin/master at
+    14:36 (46cdddd3). Artifact verified present on origin/master: docs/reports/mddb-main-bank-revision-churn-audit-2026-11-19.md
+    + per-doc census JSONs (10,979 docs). Audit complete: only devin-tony has maxRevisions; home/general/handoff
+    unguarded; home flood docs ~18k revs from metadata-on'
+- at: 2026-11-19 18:06
+  from: devin
+  text: closed by devin
 claim:
   since: 2026-11-19 14:22
