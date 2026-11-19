@@ -1,7 +1,7 @@
 id: opencode-ops-readonly-tool-discipline
 title: ops-readonly profile — models probe outside bash allowlist (denials fail closeout)
 column: done
-updated: 2026-11-19 19:09
+updated: 2026-11-19 20:05
 brief: OpenCode executor smoke showed flash-lite models gather real data but probe non-allowlisted commands (git
   status, python3 -c /proc/uptime). Any denial fails the merge closeout even when all verifier data checks pass.
   Tighten the profile prompt or add pre-denial guidance so executor models stay in-lane.
@@ -110,6 +110,10 @@ comms:
 - at: 2026-11-19 19:09
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
