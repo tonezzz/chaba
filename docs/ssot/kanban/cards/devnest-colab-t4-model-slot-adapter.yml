@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
-column: doing
-updated: 2026-11-18 22:27
+column: backlog
+updated: 2026-11-19 08:27
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -136,6 +136,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 08:27
+  from: devin
+  text: put on hold
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -175,10 +178,9 @@ requests:
     approval; no download or inference has been authorized by this request.'
 action:
   type: dispatch
-  status: failed
+  status: idle
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
   result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
-awaiting_action: true
