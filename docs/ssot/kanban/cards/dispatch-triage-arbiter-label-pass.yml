@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
-column: backlog
-updated: 2026-11-19 08:47
+column: doing
+updated: 2026-11-19 08:48
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -215,9 +215,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 08:48
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
@@ -227,3 +230,4 @@ action:
     Failed with result ''exit-code''. | devin-task-20261117-092646-approved-strategy-b-per-the-bo.service: Consumed
     2min 57.306s CPU time.'
   attempts: 2
+  runner: idc02
