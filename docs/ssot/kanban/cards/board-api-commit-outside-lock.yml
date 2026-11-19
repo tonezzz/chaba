@@ -1,7 +1,7 @@
 id: board-api-commit-outside-lock
 title: 'board-api: move per-write git commit out of the card flock'
-column: doing
-updated: 2026-11-19 10:20
+column: review
+updated: 2026-11-19 10:23
 priority: high
 tags:
 - board-api
@@ -47,10 +47,13 @@ spec: 'EVIDENCE (2026-11-19 ~10:00 ICT): board-api-lock-contention soak is NOT c
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: mn01
+  result: 'exit=0 s over 24h) can be measured. Outcome doc + SSOT job trail written; card comms posted. | devin-task-20261119-031056-evidence-2026-11-19-10-00-ict-.service:
+    Consumed 1min 46.096s CPU time over 9min 45.770s wall clock time, 643.1M memory peak.'
+  verified: true
 comms:
 - at: 2026-11-19 10:09
   from: chaba
@@ -96,4 +99,10 @@ comms:
     worker + _commit_paths + commit_pending_flush), comment updates in git-safe-pull.sh / kanban-commit.sh / test-kanban-commit.sh,
     test mock rename, selftest coverage, SSOT job doc. Verify path: merge to master, restart chaba-board-api on
     idc03, watch /lock-stats hold_s_max <5s '
+- at: 2026-11-19 10:23
+  from: mn01
+  text: 'finished (ok): exit=0 s over 24h) can be measured. Outcome doc + SSOT job trail written; card comms posted.
+    | devin-task-20261119-03105'
 ref: KNB-0224
+review_kind: verify
+claim: {}
