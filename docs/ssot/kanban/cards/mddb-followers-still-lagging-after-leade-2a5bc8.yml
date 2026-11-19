@@ -1,0 +1,21 @@
+id: mddb-followers-still-lagging-after-leade-2a5bc8
+title: MDDB followers still lagging after leader recovery — verify catch-up
+column: backlog
+updated: 2026-11-19 14:48
+priority: medium
+tags:
+- mddb
+- replication
+- idc03
+- recovery
+spec: 'Read-only follow-up to MEM-0799/MEM-0194. Snapshot 2026-11-19 14:48 ICT: idc03 leader health=healthy, LSN
+  256259657; idc02 follower connected but healthy=false, LSN 256242032, lag 176s; con01 connected but healthy=false,
+  LSN 256246986, lag 127s. Leader embedding queue depth=851 with dropped=0. Determine whether this is transient
+  catch-up under write load or sustained apply lag; gather one bounded follow-up sample and confirm both followers
+  return healthy with acceptable lag. Do not restart, promote, reseed, or change replication configuration without
+  explicit approval. Keep the leader-plane BGE migration blocked until replication is stable.'
+ref: MEM-0241
+comms:
+- at: 2026-11-19 14:48
+  from: devin
+  text: card captured via board-api
