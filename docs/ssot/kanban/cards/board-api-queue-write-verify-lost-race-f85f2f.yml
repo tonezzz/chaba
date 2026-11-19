@@ -1,6 +1,6 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
-column: doing
+column: backlog
 updated: 2026-11-19 10:45
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
@@ -58,12 +58,25 @@ comms:
     Implementing: (a) verify-or-loud — request waits for the queued commit + re-reads the card before answering;
     (b) autostash pop preserves stage-3 as .local-conflict so reconcile folds the write back; (2) test-gate timeout
     = infra flake — docs-only diff override + one retr'
+- at: 2026-11-19 10:45
+  from: idc02
+  text: 'finished (failed): exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed
+    with result ''exit-code''. | devin-t — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 10:45
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-104100-two-dispatch-pipeline-robustne (rate limit)
+    — idc02 holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: codemod
   lane_source: kw
-  runner: idc02
   attempts: 1
+  result: 'exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
+    | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Consumed 16.779s CPU time, 217.3M memory
+    peak, 0B memory swap peak.'
+  last_failure: 'exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed with result
+    ''exit-code''. | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Consumed 16.779s CPU time,
+    217.3M memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-19 10:40
