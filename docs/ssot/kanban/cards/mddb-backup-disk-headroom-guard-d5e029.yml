@@ -1,7 +1,7 @@
 id: mddb-backup-disk-headroom-guard-d5e029
 title: mddb-backup-disk-headroom-guard
 column: doing
-updated: 2026-11-19 10:15
+updated: 2026-11-19 10:17
 spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
   2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
   that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
@@ -46,6 +46,9 @@ comms:
 - at: 2026-11-19 10:15
   from: tony-macbook
   text: claimed
+- at: 2026-11-19 10:17
+  from: chaba
+  text: started devin-task-20261119-101741-add-a-disk-headroom-guard-to-m on tony-macbook (dispatch)
 action:
   type: dispatch
   status: running
