@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
-column: backlog
-updated: 2026-11-19 15:06
+column: doing
+updated: 2026-11-19 15:07
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -31,6 +31,9 @@ comms:
 - at: 2026-11-19 15:06
   from: devin
   text: re-spawned from report page
+- at: 2026-11-19 15:07
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -75,4 +78,9 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: queued
+  status: running
+  agent_profile: ops-readonly
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-19 15:07
