@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-19 16:58
+updated: 2026-11-19 16:59
 priority: medium
 tags:
 - merge-sweep
@@ -191,6 +191,9 @@ comms:
     primer injected 8 lesson(s): [dispatch-worktre; [ada-write-fidelity-drop-parity] merge-sweep: devin-task-20261117-233349-observe;
     [board-api-compact-cards] Landed manually: merge-sweep test gate failed on unrel; [board-attachments-photo-image-evidence-o-6fc9c2]
     merge-sweep'
+- at: 2026-11-19 16:59
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-233349-observe'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -214,6 +217,7 @@ action:
     stale_running: 2026-11-19 13:44
     dirty: 1
     zero_commit: 2026-11-19 16:55
+    no_repo: 2026-11-19 16:59
   result: 'exit=0 test tests/board/test_dispatch_close_out.py tests/board/test_merge_sweep.py -x -q`. | devin-task-20261119-131744-observed-on-hands-off-waiting-.service:
     Consumed 10min 35.842s CPU time over 19min 38.630s wall clock time, 965.3M memory peak.'
   verified: false
