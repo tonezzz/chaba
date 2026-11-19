@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: backlog
-updated: 2026-11-19 15:55
+updated: 2026-11-19 16:31
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -69,11 +69,17 @@ comms:
     The lane logs show RateLimitError/HTTP 429 `free-models-per-day-high-balance`, `X-RateLimit-Remaining: 0`, and
     repeated "No deployments available" cooldown messages; the run recorded 0 input/output tokens, $0.00 provider
     cost, no artifact, verifier_pass=false. `missing_artifact` was only the surface classification — the provid'
+- at: 2026-11-19 16:31
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-19 16:31
+  from: devin
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
   host: idc02
-  model: litellm/or-free-nemotron-ultra
+  model: opencode/deepseek-v4.1-flash-free
   executor: opencode
   profile: ops-readonly
   target_host: idc02
@@ -89,8 +95,8 @@ action:
     target_host: idc02
     executor: opencode
     profile: ops-readonly
-    model: litellm/or-free-nemotron-ultra
-    provider: litellm
+    model: opencode/deepseek-v4.1-flash-free
+    provider: opencode
     unattended: true
     mcp_allowlist: []
     allowed_paths:
@@ -113,12 +119,9 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: idle
+  status: queued
   agent_profile: ops-readonly
-  attempts: 1
-  result: 'exit=1 ain process exited, code=exited, status=1/FAILURE | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service:
-    Failed with result ''exit-code''. | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service: Consumed
-    13.145s CPU time.'
+  attempts: 0
   last_failure: 'exit=1 ain process exited, code=exited, status=1/FAILURE | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service:
     Failed with result ''exit-code''. | devin-task-ada-ocb-free-lane-workflow-pilot-1795075647.service: Consumed
     13.145s CPU time.'
