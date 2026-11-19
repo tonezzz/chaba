@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: backlog
-updated: 2026-11-19 08:18
+updated: 2026-11-19 08:30
 priority: medium
 tags:
 - idc03
@@ -85,6 +85,12 @@ comms:
     still lists them, so every fleet deploy `systemctl --user restart`s them back up (~750MB still resident on idc03).
     Full reclaim needs: (a) repoint ada-scenario units on idc03 from ws://127.0.0.1:8005/:8009 to ws://100.75.102.88:8005/:8009
     — hourly smoke + nightly suites ride the LOCA'
+- at: 2026-11-19 08:30
+  from: devin
+  text: 'Twin-reclaim data point from the stagger re-verify (2026-11-19): omen :8005/:8009 unreachable from idc03
+    right now (connect fail) — the omen-uptime dependency for repointing ada-scenario-smoke ADA_LIVE_URL (ws://127.0.0.1:8005,
+    hourly FREE-key lane) is concrete. idc03 twins (ada-dev ~427MB, ada-kk-dev ~200MB RSS) stay load-bearing until
+    either scenarios get a reliable target or Tony accepts omen as the dep.'
 action:
   type: dispatch
   status: idle
