@@ -1,7 +1,7 @@
 id: ada-ocb-free-lane-workflow-pilot
 title: 'Ada OCB free-lane workflow pilot: preflight and one guarded canary'
 column: backlog
-updated: 2026-11-19 15:18
+updated: 2026-11-19 15:20
 brief: The pilot is approved, but no zero-cost model route is currently verified on idc02. Confirm an available
   free route before queueing one bounded read-only canary; do not use a paid fallback.
 priority: medium
@@ -48,6 +48,13 @@ comms:
 - at: 2026-11-19 15:18
   from: devin
   text: put on hold
+- at: 2026-11-19 15:20
+  from: devin
+  text: 'Canary preflight/run: model litellm/or-free-nemotron-ultra resolved via authenticated LiteLLM model-info
+    to OpenRouter nvidia/nemotron-3-ultra-550b-a55b:free. Attempt 1 on idc02/S3 (ops-readonly) failed missing_artifact
+    after 252.2s; no artifact landed and verifier_pass=false. Runtime metric: 0 input/output tokens, $0.00 provider
+    cost, 0 tool denials/mutations/scope violations; no billing delta independently checked. Runner auto-queued
+    attempt 2/2 despite envelope max_retries=0; held at 15:18 be'
 action:
   type: dispatch
   repo: chaba
