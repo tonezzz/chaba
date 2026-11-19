@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
 column: review
-updated: 2026-11-19 10:03
+updated: 2026-11-19 10:14
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -77,17 +77,25 @@ comms:
 - at: 2026-11-19 10:03
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 10:14
+  from: tony
+  text: 'answered verified-kk-mac-only-runs-net-adanest-kk-d55ef4: proceed'
+- at: 2026-11-19 10:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
     — no ai.chaba.runner-agent, no deploy key, no opencode. Preflight PASSES now (gui/501 live, load/core 0.71<1.0).
     Provision it? options: [yes-run-onboard] I run kk-mac-runner-onboard.sh via ssh (installs LaunchAgent + generates
     id_chaba_deploy; GitHub enrolment + litellm keys stay manual); [no-spec-only] leave boundary documented'
-  status: open
+  status: answered
   at: 2026-11-19 09:50
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
 claim: {}
+awaiting_action: true
