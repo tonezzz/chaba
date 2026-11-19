@@ -1,7 +1,7 @@
 id: ada-ocb-openchamber-e2e-smoke
 title: 'Ada-OCB: fresh OpenChamber session smoke'
 column: backlog
-updated: 2026-11-19 13:39
+updated: 2026-11-19 15:08
 brief: Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control
   MCP tools; separate from ADA-0173 direct-bridge verification.
 priority: low
@@ -82,3 +82,10 @@ comms:
     Global config also lists omen-llamacpp/qwen3-coder, but its configured baseURL http://127.0.0.1:8780/v1 is not
     listening on idc02. No zero-cost route is currently verified, so I did not create a session or send a prompt.
     Next gate: verify/restore a local/free route, or Tony explicitly authorizes one small Gemini test.'
+- at: 2026-11-19 15:08
+  from: devin
+  text: '2026-11-19 15:08 +07 status refresh: idc02 OpenChamber active/healthy with LiteLLM key; tony-dell remains
+    active/healthy as tailnet-only fallback. Public edge returns the expected Cloudflare Access redirect (HTTP 302).
+    The 15:00 ada-ocb-smoke run passed (exit 0), but it tests the local Ada MCP bridge, not the pane. Still no verified
+    zero-cost model route for a fresh session; no session or model call made. Next: Tony chooses local/free route
+    verification or explicitly authorizes one small Gemini '
