@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
 column: backlog
-updated: 2026-11-19 17:05
+updated: 2026-11-19 17:08
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -175,6 +175,13 @@ comms:
 - at: 2026-11-19 17:05
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-19 17:08
+  from: devin
+  text: 'attempt 2 COMPLETE (commit 094c25b529 on dispatch/20261119-162739, unpushed for merge-sweep). (a) FIXED
+    the 11-19 admission fail class: _claimable + executor_defer_reason now hold opencode-routed cards lacking a
+    staged action.lane_envelope AT CLAIM — queued not failed, no attempt burned (DEV-0253 gate-at-claim). (b) Piece
+    4 landed: --lifecycle --attempts N (default 2, cap 3) retries the SAME opencode session via --continue with
+    eval evidence; per-attempt eval = changes→normalize→repo-validate→de'
 action:
   type: dispatch
   status: queued
