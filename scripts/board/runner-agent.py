@@ -1791,6 +1791,17 @@ def _claimable(card: dict) -> tuple:
                 return "", "executor=opencode but OPENCODE_LANES=0"
             if not opencode_bin():
                 return "", "executor=opencode but no opencode binary"
+            # Staged-admission hold at CLAIM (ada-card-runner 2026-11-19):
+            # start_opencode_lane hard-requires a complete
+            # action.lane_envelope — claiming without one guarantees a
+            # start failure that burns the card's attempt budget.
+            # Deterministic ineligibility gates here (DEV-0253: gate at
+            # claim, not mid-run); the card stays queued for the staging
+            # edit, no attempt spent.
+            if not isinstance(a.get("lane_envelope"), dict):
+                return "", ("executor=opencode declared but no "
+                            "action.lane_envelope staged — admission "
+                            "holds at start; stage the envelope")
         elif ex in ("", "devin", "kk_mac_local"):
             # the devin path launches devin-dispatch, which drives
             # systemd-run itself — outside the launchd seam's reach. On
@@ -1814,6 +1825,28 @@ def _claimable(card: dict) -> tuple:
                                 "script to serve it here)")
             elif not Path(DISPATCH).exists():
                 return "", "no devin-dispatch on host"
+            # Unstaged-opencode hold at claim (ada-card-runner,
+            # 2026-11-19): an executor-unset card whose start path would
+            # resolve to the opencode lane (classified/pinned lane in
+            # LANE_MODELS + this host serves opencode + a profile
+            # resolves) is GUARANTEED to fail admission at
+            # start_opencode_lane when it carries no
+            # action.lane_envelope — the old flow claimed it and burned
+            # one attempt per scan (idc02 'free_lane (kw:launch)'
+            # admission fail). Hold it here instead: stays queued for a
+            # staged envelope or an executor=devin pin, no attempt
+            # burned. executor=devin pins lane="" at start so it can
+            # never hit this branch; kk_mac_local reaches it only on
+            # the try-first fallback, where the same guarantee applies.
+            if ex != "devin" and OPENCODE_LANES and opencode_bin():
+                lane0 = str(a.get("lane") or "") or classify_lane(card)
+                if lane0 in LANE_MODELS and \
+                        (card_profile(card) or LANE_PROFILES.get(lane0)) \
+                        and not isinstance(a.get("lane_envelope"), dict):
+                    return "", (f"lane {lane0} routes to the opencode "
+                                "executor but action.lane_envelope is "
+                                "not staged — held for staging or an "
+                                "executor=devin pin")
         # runner-push-cred-gap: never claim a repo this host can't push
         # — finishing here strands the branch (ADA-0673). Applies to the
         # OpenCode lane too: its close-out pushes the session branch.
@@ -1862,6 +1895,12 @@ def executor_defer_reason(card: dict) -> str:
                     f"serve it ({', '.join(missing)}) — the card stays "
                     "queued for an OpenCode-capable runner; it will "
                     "never silently fall back to devin")
+        if not isinstance(a.get("lane_envelope"), dict):
+            return ("executor=opencode declared but action."
+                    "lane_envelope is not staged — admission would "
+                    "hold at start, so the claim is held too: stage "
+                    "the envelope or pin executor=devin (no attempt "
+                    "burned)")
     if ex == "claude":
         missing = []
         if not CLAUDE_LANES:
@@ -1927,6 +1966,26 @@ def executor_defer_reason(card: dict) -> str:
             and not (a.get("script") or {}).get("cmd"):
         return ("executor=script declared but action.script.cmd is "
                 "missing — the card can't be served; fix the card")
+    # Unstaged-opencode hold — mirror of the _claimable gate so the
+    # skip surfaces on the board instead of looking like silent
+    # starvation: an executor-unset dispatch card this host would route
+    # to the opencode lane is held when no action.lane_envelope is
+    # staged (the claim can only fail admission after burning an
+    # attempt — ada-card-runner idc02 fail, 2026-11-19). kk_mac_tried
+    # cards fall back through the same lane resolution and are covered
+    # the same way; executor=devin never routes there by construction.
+    if (not ex or (ex == "kk_mac_local" and a.get("kk_mac_tried"))) \
+            and (a.get("type") or "dispatch") == "dispatch" \
+            and OPENCODE_LANES and opencode_bin():
+        lane0 = str(a.get("lane") or "") or classify_lane(card)
+        if lane0 in LANE_MODELS and \
+                (card_profile(card) or LANE_PROFILES.get(lane0)) \
+                and not isinstance(a.get("lane_envelope"), dict):
+            return (f"lane {lane0} resolves to the opencode executor "
+                    "but action.lane_envelope is not staged — the card "
+                    "stays queued for a staged envelope or an "
+                    "executor=devin pin (unstaged dispatch is held, "
+                    "not attempt-burned)")
     return ""
 
 

@@ -101,7 +101,11 @@ class ClaimableContractTest(unittest.TestCase):
     def test_opencode_executor_claimable_when_capable(self):
         self.mod.OPENCODE_LANES = True
         self.mod.opencode_bin = lambda: "/home/x/.opencode/bin/opencode"
-        c = _card(executor="opencode", agent_profile="ops-readonly")
+        # a claimable opencode card must now also carry its staged
+        # lane_envelope — start_opencode_lane requires it, so the claim
+        # gate holds envelope-less cards (ada-card-runner, 2026-11-19)
+        c = _card(executor="opencode", agent_profile="ops-readonly",
+                  lane_envelope={"id": "env-1"})
         self.assertEqual(self.mod.claimable(c), "dispatch")
 
     def test_opencode_executor_deferred_when_lanes_off(self):
@@ -128,7 +132,8 @@ class ClaimableContractTest(unittest.TestCase):
         self.mod.opencode_bin = lambda: "/x/opencode"
         self.mod.push_capable = lambda repo: False
         self.assertEqual(
-            self.mod.claimable(_card(executor="opencode")), "")
+            self.mod.claimable(_card(executor="opencode",
+                                     lane_envelope={"id": "e"})), "")
 
     def test_devin_executor_claimable(self):
         self.assertEqual(
@@ -158,6 +163,102 @@ class ClaimableContractTest(unittest.TestCase):
         c["action"]["type"] = "script"
         c["action"]["script"] = {"cmd": "x", "repo": "chaba"}
         self.assertEqual(self.mod.claimable(c), "")
+
+
+# ------------------------------------------------- staged-admission hold
+
+class UnstagedOpencodeHoldTest(unittest.TestCase):
+    """Claim-time hold for opencode-routed cards lacking a staged
+    action.lane_envelope (ada-card-runner idc02 fail, 2026-11-19):
+    start_opencode_lane hard-requires the envelope, so an unstaged card
+    claimed anyway burns one attempt per scan. The hold converts that
+    deterministic ineligibility into a defer — queued, not failed."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("OPENCODE_LANES", "DISPATCH", "LABELS", "HOST")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("opencode_bin", "push_capable",
+                           "shutil_which")}
+        m.DISPATCH = str(SCRIPT)
+        m.push_capable = lambda repo: True
+        m.shutil_which = lambda name: True
+        m.HOST = "testhost"
+        m.LABELS = set()
+        m.OPENCODE_LANES = True
+        m.opencode_bin = lambda: "/x/opencode"
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def test_declared_opencode_without_envelope_held(self):
+        c = _card(executor="opencode", agent_profile="ops-readonly")
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("lane_envelope", r)
+        self.assertIn("staged", r)
+
+    def test_declared_opencode_with_envelope_claims(self):
+        c = _card(executor="opencode", agent_profile="ops-readonly",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    def test_free_lane_card_without_envelope_held(self):
+        """The exact ada-card-runner case: classifier-stamped free_lane
+        routes to ops-readonly on this host — held at claim, not
+        failed at start."""
+        c = _card(lane="free_lane")
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("free_lane", r)
+        self.assertIn("lane_envelope", r)
+        self.assertIn("executor=devin", r)
+
+    def test_free_lane_card_with_envelope_claims(self):
+        c = _card(lane="free_lane", lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    def test_lanes_off_host_still_serves_devin_path(self):
+        """OPENCODE_LANES=0 hosts never route to the opencode lane —
+        an unstaged free_lane card stays claimable for devin."""
+        self.mod.OPENCODE_LANES = False
+        self.assertEqual(
+            self.mod.claimable(_card(lane="free_lane")), "dispatch")
+        self.assertEqual(
+            self.mod.executor_defer_reason(_card(lane="free_lane")), "")
+
+    def test_devin_lane_never_held(self):
+        """lane=devin is not in LANE_MODELS — devin path regardless."""
+        self.assertEqual(
+            self.mod.claimable(_card(lane="devin")), "dispatch")
+
+    def test_devin_executor_pin_never_held(self):
+        """executor=devin forces lane='' at start — it can never hit
+        the opencode route, so the hold must not touch it either."""
+        c = _card(executor="devin", lane="free_lane")
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    def test_paid_frontier_without_profile_not_held(self):
+        """paid_frontier is in LANE_MODELS but has no LANE_PROFILES
+        mapping — without a declared profile it keeps the devin path."""
+        self.assertEqual(
+            self.mod.claimable(_card(lane="paid_frontier")),
+            "dispatch")
+
+    def test_paid_frontier_with_profile_held(self):
+        """A declared profile routes even paid_frontier to opencode —
+        the same unstaged hold applies."""
+        c = _card(lane="paid_frontier", agent_profile="ops-readonly")
+        self.assertEqual(self.mod.claimable(c), "")
+        self.assertIn("lane_envelope",
+                      self.mod.executor_defer_reason(c))
 
 
 # ------------------------------------------------------------- routing

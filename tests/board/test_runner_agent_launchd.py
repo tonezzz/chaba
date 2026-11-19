@@ -404,9 +404,18 @@ class ClaimableDevinGateTest(LaunchdBase):
         self.patch("classify_lane", lambda card: "free_lane")
         self.patch("card_profile", lambda card: "ops-readonly")
         self.patch("LANE_MODELS", {"free_lane": "litellm/x"})
-        typ, why = m._claimable(self._card(repo="chaba"))
+        # the opencode route additionally needs a staged lane_envelope —
+        # start_opencode_lane holds anything unstaged, so the claim gate
+        # does too (ada-card-runner, 2026-11-19)
+        typ, why = m._claimable(
+            self._card(repo="chaba", lane_envelope={"id": "env-1"}))
         self.assertEqual(typ, "dispatch")
         self.assertEqual(why, "")
+        # ...and the unstaged variant is held at claim rather than
+        # burning an attempt on a guaranteed admission failure
+        typ, why = m._claimable(self._card(repo="chaba"))
+        self.assertEqual(typ, "")
+        self.assertIn("lane_envelope", why)
 
 
 class WrapperContentsTest(LaunchdBase):
