@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
 column: backlog
-updated: 2026-11-19 20:37
+updated: 2026-11-19 20:38
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -112,3 +112,9 @@ comms:
     read-only evidence is requested. Latest queue snapshot showed queued/not yet claimed, so no provider call or
     artifact is confirmed yet. OPS-1025 stays open until OPS-0245 produces a durable artifact and its held-out verifier
     passes.
+- at: 2026-11-19 20:38
+  from: devin
+  text: OPS-0245 was claimed on idc02 at 20:37:35 as task devin-task-ops-1025-remote-read-smoke-idc03-1795095438
+    using litellm/or-free-nemotron-nano (free-only route). Runner logged recoverability class undeclared (R0-R4)
+    but proceeded; the read-only job remains one-shot via escalation.max_retries=0. Artifact and held-out verifier
+    are pending; OPS-1025 remains open.
