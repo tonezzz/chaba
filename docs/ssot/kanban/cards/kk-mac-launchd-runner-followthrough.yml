@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
 column: doing
-updated: 2026-11-19 10:34
+updated: 2026-11-19 10:43
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -110,6 +110,11 @@ comms:
   from: devin
   text: follow-through session started — answer=proceed received; running approved kk-mac-runner-onboard.sh via
     ssh, then e2e card-claim verify
+- at: 2026-11-19 10:43
+  from: devin
+  text: 'E2E VERIFIED on metal: kk-mac claimed+finished script card kk-mac-script-smoke (exit=0, sw_vers 15.7.3
+    output). Negative check: kk-mac defers executor=devin card with explicit launchd reason. Gap found live: action.host=kk-mac
+    names no declared runner — _FLEET_HOST_RE misses kk-* hosts; fixing regex+fleet prose in worktree'
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
