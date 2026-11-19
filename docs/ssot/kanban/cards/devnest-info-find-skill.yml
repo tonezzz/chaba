@@ -1,7 +1,7 @@
 id: devnest-info-find-skill
 title: Port unified info-find workflow to DevNest
 column: backlog
-updated: 2026-11-19 12:15
+updated: 2026-11-19 12:20
 priority: medium
 program: devnest
 tags:
@@ -37,10 +37,27 @@ comms:
 - at: 2026-11-19 12:15
   from: devin
   text: 'raised request which-devnest-surface-should-phase-1-tar-f78894: Which DevNest surface should Phase 1 target?'
+- at: 2026-11-19 12:20
+  from: tony
+  text: 'answered which-devnest-surface-should-phase-1-tar-f78894: Conversational skill first'
+- at: 2026-11-19 12:20
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-19 12:20
+  from: devin
+  text: Tony approved Phase 1 = conversational skill first. Proceed with the portable Agent Skill + shared planner/source
+    adapters, integrated into one read-only DevNest conversational agent lane; do not add a queued research executor
+    in this phase.
+- at: 2026-11-19 12:20
+  from: chaba
+  text: classified as paid_frontier (kw:implement a conf 1.00)
+- at: 2026-11-19 12:20
+  from: tony
+  text: queued for processing
 requests:
 - id: which-devnest-surface-should-phase-1-tar-f78894
   ask: Which DevNest surface should Phase 1 target?
-  status: open
+  status: answered
   at: 2026-11-19 12:15
   from: devin
   options:
@@ -48,3 +65,11 @@ requests:
   - Queued research task
   - Both
   suggested: Conversational skill first
+  answer: Conversational skill first
+action:
+  type: dispatch
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+claim: {}
