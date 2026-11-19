@@ -1,7 +1,7 @@
 id: chaba-testgate-suite-timeout
 title: chaba merge test gate (240s) can't fit the pytest suite — dispatch merges held on timeout
 column: done
-updated: 2026-11-19 19:08
+updated: 2026-11-19 20:02
 brief: dispatch_repos.py REPO_TESTS['chaba'] gate = python3 -m pytest tests -x -q @240s, but the suite (122 test
   files) runs >>1h on tony-omen — every chaba dispatch merge holds on 'suite timeout'. Observed 2026-11-15 holding
   dispatch/20261113-201329-per-docs-kb-ncm-jev-nest-explo (NCM P0 packet). CI has no pytest job, so this gate is
@@ -95,6 +95,10 @@ comms:
 - at: 2026-11-19 19:08
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
