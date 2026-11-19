@@ -1,7 +1,7 @@
 id: kanban-card-torn-write-investigation-b4034e
 title: kanban-card-torn-write-investigation
-column: doing
-updated: 2026-11-19 08:36
+column: review
+updated: 2026-11-19 08:39
 spec: 'Investigate torn/truncated kanban card YAML writes that took down board-api + kanban-commit on 2026-11-19
   ~03:00 ICT.
 
@@ -102,9 +102,13 @@ comms:
 - at: 2026-11-19 08:36
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 08:39
+  from: tony-omen
+  text: 'finished (ok): exit=0 rtial backup still on disk — deletion and a headroom check in mddb-backup are his
+    call. | devin-task-20261119-081'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -112,3 +116,7 @@ action:
   sweep:
     stale_running: 2026-11-19 08:36
     dirty: 1
+  result: 'exit=0 rtial backup still on disk — deletion and a headroom check in mddb-backup are his call. | devin-task-20261119-081822-investigate-torn-truncated-kan.service:
+    Consumed 4min 34.922s CPU time over 15min 5.091s wall clock time, 1.3G memory peak.'
+review_kind: verify
+claim: {}
