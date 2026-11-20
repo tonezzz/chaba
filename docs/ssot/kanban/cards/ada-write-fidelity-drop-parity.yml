@@ -1,7 +1,7 @@
 id: ada-write-fidelity-drop-parity
 title: Review staged Ada write-fidelity drop parity without weakening guards
 column: doing
-updated: 2026-11-20 13:10
+updated: 2026-11-20 13:11
 brief: 'Pre-commit blocks PR #138 CI repair because the staged write-fidelity.patch diverges against canonical Ada
   main; canonical fidelity tests still pass 17/17.'
 priority: high
@@ -187,6 +187,10 @@ comms:
     (context-only refreshed artifact, verified byte-exact vs canonical) + docs/ssot/jobs/ada/2026-11-20-write-fidelity-drop-parity.yml
     (provenance, root cause = bcd6530 context rot, handoff recipe). Open request drop-artifact-swap/refreshed-context-only-artifact-is-ready-ae54ec
     asks who performs the chaba-knb1257 swap to unblock PR #138.'
+- at: 2026-11-20 13:11
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233349-observe no longer active on tony-omen but card still says running
+    — sweeping its branch'
 requests:
 - id: guard-parity-scope
   ask: 'Recommended: prepare a separate, reviewed parity refresh of the staged integration artifact, keeping runtime
@@ -225,6 +229,7 @@ action:
     wall clock time, 255.8M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
+    stale_running: 2026-11-20 13:11
   runner: tony-omen
   attempts: 1
 claim:
