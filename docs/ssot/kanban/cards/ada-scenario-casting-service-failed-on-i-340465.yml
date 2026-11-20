@@ -1,29 +1,29 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 18:53
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
   from: devin
-  text: 'Found in board sweep 2026-10-12: unit is in failed state on idc03. Gated by ada-bench-casting
-    preflight — check journalctl -u ada-scenario-casting for the actual error before rerun.'
+  text: 'Found in board sweep 2026-10-12: unit is in failed state on idc03. Gated by ada-bench-casting preflight
+    — check journalctl -u ada-scenario-casting for the actual error before rerun.'
 - at: 2026-10-12 17:28
   from: devin
-  text: 'root cause found: NOT a code bug — scenario lock :8199 held >30min by a concurrent run (02:00-02:30
-    10-12), suite timed out waiting and exited 1. Lock is free now; rerun should pass. Watch: if the nightly
-    fires while another suite holds the lock, this recurs — consider serialize-by-timer or stagger.'
+  text: 'root cause found: NOT a code bug — scenario lock :8199 held >30min by a concurrent run (02:00-02:30 10-12),
+    suite timed out waiting and exited 1. Lock is free now; rerun should pass. Watch: if the nightly fires while
+    another suite holds the lock, this recurs — consider serialize-by-timer or stagger.'
 - at: 2026-10-12 22:30
   from: devin
-  text: 'Still failed; next weekly run Fri 2026-10-16. Broader: smoke suite now failing auto-report-worthy
-    + cms_public_url_lane + cms-translate (new card).'
+  text: 'Still failed; next weekly run Fri 2026-10-16. Broader: smoke suite now failing auto-report-worthy + cms_public_url_lane
+    + cms-translate (new card).'
 - at: 2026-10-26 07:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
 - at: 2026-10-26 08:21
   from: tony
-  text: 'answered the-weekly-ada-scenario-castin-b86681: ★ Implement serialize-by-timer or stagger for
-    the nightly suites to prevent lock :8199 contention and investigate the new smoke/cms failures.'
+  text: 'answered the-weekly-ada-scenario-castin-b86681: ★ Implement serialize-by-timer or stagger for the nightly
+    suites to prevent lock :8199 contention and investigate the new smoke/cms failures.'
 - at: 2026-10-26 08:21
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -96,16 +96,16 @@ comms:
   text: started devin-task-20261117-233737-ada-scenario-casting-service-f on tony-macbook (dispatch)
 - at: 2026-11-17 23:38
   from: tony-macbook
-  text: 'finished (failed): exit=1 in-task-20261117-233737-ada-scenario-casting-service-f.service: Failed
-    with result ''exit-code''. | devin-task-2026'
+  text: 'finished (failed): exit=1 in-task-20261117-233737-ada-scenario-casting-service-f.service: Failed with result
+    ''exit-code''. | devin-task-2026'
 - at: 2026-11-17 23:38
   from: chaba
   text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-18 00:08'
 - at: 2026-11-17 23:39
   from: chaba
-  text: 'merge-sweep: devin-task-20261117-233737-ada-scenario-casting-service-f failed — its branch isn''t
-    auto-merged (unverified partial work). Retry the card or merge dispatch/20261117-233737-ada-scenario-casting-service-f
-    by hand.'
+  text: 'merge-sweep: devin-task-20261117-233737-ada-scenario-casting-service-f failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-233737-ada-scenario-casting-service-f by
+    hand.'
 - at: 2026-11-18 17:30
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -132,8 +132,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-19 08:59
   from: chaba
-  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry
-    re-arms it'
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
+    it'
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -153,25 +153,28 @@ comms:
 - at: 2026-11-20 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
-  ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over
-    30 minutes by a concurrent run, and though the lock was freed, a rerun still failed and broader suite
-    failures have emerged (smoke suite, cms_public_url_lane, cms-translate). We need owner direction on
-    how to handle the broader suite failures and whether to implement a serialization or stagger mechanism
-    to prevent recurring lock contention.
+  ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
+    by a concurrent run, and though the lock was freed, a rerun still failed and broader suite failures have emerged
+    (smoke suite, cms_public_url_lane, cms-translate). We need owner direction on how to handle the broader suite
+    failures and whether to implement a serialization or stagger mechanism to prevent recurring lock contention.
   options:
-  - ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention
-    and investigate the new smoke/cms failures.
-  - Rerun the casting benchmark manually on idc03 now that the lock is free and ignore the broader suite
-    failures for this card.
-  - Defer this card until the next scheduled weekly run on Fri 2026-10-16 while focusing solely on the
-    newly created cms-translate card.
+  - ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention and investigate
+    the new smoke/cms failures.
+  - Rerun the casting benchmark manually on idc03 now that the lock is free and ignore the broader suite failures
+    for this card.
+  - Defer this card until the next scheduled weekly run on Fri 2026-10-16 while focusing solely on the newly created
+    cms-translate card.
   status: answered
   at: 2026-10-26 07:20
   from: backlog-spec-enrich
-  answer: ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention
-    and investigate the new smoke/cms failures.
+  answer: ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention and
+    investigate the new smoke/cms failures.
 action:
   type: dispatch
   repo: chaba
@@ -181,14 +184,13 @@ action:
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
   result: 'exit=1 in-task-20261117-233737-ada-scenario-casting-service-f.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233737-ada-scenario-casting-service-f.service: Consumed 12.360s CPU time over
-    11.403s wall clock time, 202.4M memory peak.'
+    | devin-task-20261117-233737-ada-scenario-casting-service-f.service: Consumed 12.360s CPU time over 11.403s
+    wall clock time, 202.4M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
 awaiting_action: true
-spec: Investigate and resolve the failure of ada-scenario-casting.service on host idc03 during the weekly
-  casting benchmark. The host idc03 has reported a runner-agent drift, so first redeploy the runner-agent
-  by copying scripts/board/runner-agent.py from the chaba repo to idc03:~/.local/bin/runner-agent. Once
-  the agent is updated, inspect the status and logs of ada-scenario-casting.service on idc03 to identify
-  and fix the root cause of the weekly casting benchmark failure. The done-condition is verified when
-  ada-scenario-casting.service runs successfully on idc03 without failure logs.
+spec: Investigate and resolve the failure of ada-scenario-casting.service on host idc03 during the weekly casting
+  benchmark. The host idc03 has reported a runner-agent drift, so first redeploy the runner-agent by copying scripts/board/runner-agent.py
+  from the chaba repo to idc03:~/.local/bin/runner-agent. Once the agent is updated, inspect the status and logs
+  of ada-scenario-casting.service on idc03 to identify and fix the root cause of the weekly casting benchmark failure.
+  The done-condition is verified when ada-scenario-casting.service runs successfully on idc03 without failure logs.

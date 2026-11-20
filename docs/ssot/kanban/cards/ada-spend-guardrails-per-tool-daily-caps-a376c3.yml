@@ -1,21 +1,19 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 18:53
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec (ada-voice repo, main): spend tools have no caps surfaced to Ada — bench virtual key hit
-    $2/30d cap 2026-11-08 and coverage silently skipped; a confused voice session could burn render/dispatch
-    quota.
+  text: 'spec (ada-voice repo, main): spend tools have no caps surfaced to Ada — bench virtual key hit $2/30d cap
+    2026-11-08 and coverage silently skipped; a confused voice session could burn render/dispatch quota.
 
 
     1. Budget tool (e.g. ada_budget): reports per-tool daily usage vs cap — counters in ~/.local/share/ada/spend-state.json
     (or mddb doc), incremented by the spend tools themselves.
 
-    2. Caps on: render_image, render_video, devin/opencode dispatch triggers, market quote if metered.
-    Pattern preceden'
+    2. Caps on: render_image, render_video, devin/opencode dispatch triggers, market quote if metered. Pattern preceden'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -91,11 +89,14 @@ comms:
 - at: 2026-11-20 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   repo: ada-voice
-spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository.
-  The implementation must enforce strict limits on individual tool usage to prevent runaway costs and
-  provide a clear status readout of remaining daily budgets. Verify the implementation by running local
-  unit tests and checking that the budget readout correctly queries and displays current spending totals.
-  Execute the work targeting the ada-voice repository.
+spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository. The implementation
+  must enforce strict limits on individual tool usage to prevent runaway costs and provide a clear status readout
+  of remaining daily budgets. Verify the implementation by running local unit tests and checking that the budget
+  readout correctly queries and displays current spending totals. Execute the work targeting the ada-voice repository.

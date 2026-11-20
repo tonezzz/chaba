@@ -1,7 +1,7 @@
 id: ada-control-mcp-session-dir-race-9d9284
 title: ada-control-mcp-session-dir-race
 column: done
-updated: 2026-11-19 20:05
+updated: 2026-11-20 18:53
 spec: 'ada-control MCP in opencode intermittently fails with FileSystem.access NotFound on ephemeral per-session
   dirs (~/.config/openchamber/chats/<date>/session-<id>) — connect race: MCP handshake fires before OpenChamber
   creates the session working dir. Evidence: idc02 ~/.local/share/opencode/log/opencode.log WARN mcp connect failed
@@ -121,6 +121,10 @@ comms:
 - at: 2026-11-19 20:05
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
