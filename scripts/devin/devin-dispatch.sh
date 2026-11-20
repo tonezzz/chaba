@@ -171,9 +171,24 @@ _devin_run() { # unit worktree prompt_file extra-args...
     --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
     ${MODEL:+--setenv=DEVIN_MODEL="$MODEL"} \
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
-    /bin/bash -c 'rc=0; "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
-      ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
-      --respect-workspace-trust false --prompt-file "$PROMPT" "$@" || rc=$?; \
+    ${DISPATCH_RETRY_MAX:+--setenv=DISPATCH_RETRY_MAX="$DISPATCH_RETRY_MAX"} \
+    ${DISPATCH_RETRY_SLEEP:+--setenv=DISPATCH_RETRY_SLEEP="$DISPATCH_RETRY_SLEEP"} \
+    /bin/bash -c 'attempt=1; max="${DISPATCH_RETRY_MAX:-3}"; \
+      while :; do \
+        rc=0; \
+        "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
+          ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
+          --respect-workspace-trust false --prompt-file "$PROMPT" "$@" \
+          2>&1 | tee "$TASK_DIR/run.$attempt.log"; \
+        rc=${PIPESTATUS[0]}; \
+        [ "$rc" -eq 0 ] && break; \
+        if [ "$attempt" -ge "$max" ] || \
+           ! grep -qiE "rate.?limit|retryable\" *: *true|errorKind\" *: *\"unavailable\"" \
+             "$TASK_DIR/run.$attempt.log" 2>/dev/null; then break; fi; \
+        attempt=$((attempt+1)); \
+        echo "devin-dispatch: transient provider error — retry $attempt/$max in ${DISPATCH_RETRY_SLEEP:-45}s" >&2; \
+        sleep "${DISPATCH_RETRY_SLEEP:-45}"; \
+      done; \
       echo "$rc" > "$TASK_DIR/exit_code"; exit "$rc"' _ "$@"
 }
 
