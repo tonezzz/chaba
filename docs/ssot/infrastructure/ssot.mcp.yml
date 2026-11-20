@@ -77,16 +77,36 @@ fleet_observation:
       hosts: a YAML list of host keys — expected only on those hosts
     rule: >-
       Scope alone decides which hosts expect a server. A per_host map is an
-      implementation override (wrapper/pattern/env), not an inclusion
-      filter — a server with a per_host entry for one lane stays in scope on
-      other lanes its scope names. Use a named-host list to restrict a
-      server. Unknown scope values fail the producer instead of silently
-      widening what counts as missing.
+      implementation override (wrapper/pattern/env), not an inclusion filter;
+      use a named-host list to restrict a server. Unknown scope values fail
+      the producer instead of silently widening what counts as missing.
   finding_states: [open, carded, suppressed]
   # Human-owned triage of stable finding IDs (open | carded | suppressed).
   # Producers read this map and annotate findings; they never write it.
   # `suppressed` requires a reason; `until` (YYYY-MM-DD) expires it.
-  finding_triage: {}
+  finding_triage:
+    mcp-tony-omen-missing-active:
+      state: carded
+      reason: 'mcp-kornia declared on the omen agent lane but configured only on dell'
+      card: OPS-0035
+      by: tony
+    mcp-tony-dell-missing-active:
+      state: carded
+      reason: 'alphavantage allowlist + mcp-llama retire/repoint decision (AUD-0886)'
+      card: OPS-0036
+      by: tony
+    mcp-tony-dell-undeclared-configured:
+      state: suppressed
+      reason: 'ada-control is injected into opencode.json by OpenChamber, not provisioned as a fleet-managed MCP server'
+      by: tony
+    mcp-idc02-undeclared-configured:
+      state: suppressed
+      reason: 'idc02 is a job host with no agent lane; these are OpenChamber Code Mode tools in opencode.json, not fleet declarations'
+      by: tony
+    mcp-michael-ha-host-unreachable:
+      state: suppressed
+      reason: 'michael-ha is an HA appliance: SSH key auth is refused by design and the web UI is reachable, so no SSH config surface will ever exist'
+      by: tony
   note: >-
     L0 artifacts under reports/mcp-inventory/ are append-only; each host's
     meta.*.yml carries observed state. An unreachable host is reported as
@@ -543,6 +563,34 @@ servers:
       sessions. No Colab Enterprise/GCP runtime provisioning.
 
       '
+  colab-mcp:
+    name: Colab MCP (official, kernel-level)
+    description: Google's official Colab MCP - kernel-level access; complements the chaba mcp-colab fleet/queue control plane (OPS-0808)
+    implementation: /home/tony/.local/venvs/colab-test/bin/uvx
+    wrapper: none
+    args:
+    - git+https://github.com/googlecolab/colab-mcp
+    filter: none
+    single_instance: false
+    status: operational
+    scope: [tony_omen]
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Declared 2026-11-20 from live config; omen only (dell/macbook use the separate chaba mcp-colab).'
+  icloud:
+    name: iCloud Bridge
+    description: iCloud access via the SSH wrapper on tony-omen
+    implementation: /home/tony/.config/devin/mcp-scripts/mcp-icloud-ssh.sh
+    wrapper: none
+    filter: none
+    single_instance: false
+    status: operational
+    scope: [tony_omen]
+    config_files:
+    - devin: true
+    - windsurf: true
+    notes: 'Declared 2026-11-20 from live config; present on both omen devin and windsurf surfaces.'
   mcp-kornia:
     name: Kornia GS Capture Evaluator
     description: Read-only Gaussian Splat capture-set evaluation — image metrics, view matching, mask proposals, manifest scoring, run comparison
@@ -573,11 +621,12 @@ servers:
     filter: none
     single_instance: false
     status: operational
-    scope: [mn01]
+    scope: [mn01, tony_omen]
     config_files:
     - devin: true
     - windsurf: false
     notes: 'FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
+      Scope widened 2026-11-20 to include tony_omen (omen calls the mn01 endpoint over tailnet).
 
       Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
 
