@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
 column: backlog
-updated: 2026-11-20 12:32
+updated: 2026-11-20 13:15
 priority: high
 tags:
 - ada
@@ -23,9 +23,9 @@ spec: 'Observed 2026-11-09: Tony asked ada-code "what is kk-mac processing" — 
 action:
   type: dispatch
   repo: chaba
-  executor: jules
+  executor: devin
   lane: jules
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:19
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) TTER_IM_MODULE=''''
@@ -35,7 +35,6 @@ action:
   result: 'journal=exit-code D_PRECONDITION" |   } | } | devin-task-ada-status-live-state-preference-1794932595.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-status-live-state-preference-1794932595.service:
     Failed with result ''exit-code''.'
-  runner: tony-omen
 ref: ADA-1294
 comms:
 - at: 2026-11-09 18:36
@@ -309,3 +308,6 @@ comms:
   text: Jules lane is retired (provider EOL, session creation disabled; see OPS-0156). The earlier failures were
     this, not a code bug. Do not requeue as executor=jules. Staged ada-control dispatch only admits read-only profiles,
     so run via card-run.py --lifecycle on opencode, or pick up manually.
+- at: 2026-11-20 13:15
+  from: tony
+  text: re-spawned from report page
