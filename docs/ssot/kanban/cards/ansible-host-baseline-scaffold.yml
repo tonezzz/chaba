@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: doing
-updated: 2026-11-20 17:29
+updated: 2026-11-20 17:30
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -149,6 +149,10 @@ comms:
     FIXED 2026-11-06. Root cause was two stacked ; [report-graph-producer-metas-never-reach-7b0982] [devin] DONE
     — option (a) live ; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
     [progress] '
+- at: 2026-11-20 17:30
+  from: devin
+  text: '[progress] ansible/ scaffold created verbatim in worktree (8 files). ansible-core 2.22.0 installed via
+    uv tool (no sudo/pipx on tony-macbook). Running verification: ping baseline, site.yml --check --diff, YAML sanity.'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
