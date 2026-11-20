@@ -9,8 +9,8 @@ Ansible scaffold for the chaba fleet. Companion to (not a replacement for)
 ```
 ansible.cfg               # inventory + become defaults
 inventory/hosts.yml       # all hosts, groups, tailscale IPs (SSOT-linked)
-group_vars/all.yml        # common_packages, unattended-upgrades policy
-host_vars/<host>.yml      # per-host opt-ins (e.g. docker_enabled)
+inventory/group_vars/all.yml   # common_packages, unattended-upgrades policy
+inventory/host_vars/<host>.yml  # per-host opt-ins (e.g. docker_enabled)
 playbooks/site.yml        # baseline: packages, security updates, docker check
 ```
 
@@ -56,7 +56,7 @@ ansible kk-mac -m ping
 
 - Keep `site.yml` safe: no dist-upgrades, no firewall changes, no service
   restarts beyond the declared handlers.
-- New host → add to `inventory/hosts.yml` + a `host_vars/<host>.yml`, and
+- New host → add to `inventory/hosts.yml` + a `inventory/host_vars/<host>.yml`, and
   update `ssot.host-roles.yml` / `ssot.audit.hosts.yml` so the audit
   contract and the playbook stay in sync.
 - After running, `python3 scripts/audit-hosts.py --host <h>` should show

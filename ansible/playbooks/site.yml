@@ -6,7 +6,7 @@
 # group design — run them explicitly with --limit when needed.
 #
 # What it does:
-#   1. Common tooling packages (common_packages in group_vars/all.yml)
+#   1. Common tooling packages (common_packages in inventory/group_vars/all.yml)
 #   2. unattended-upgrades: security updates on, auto-reboot off
 #   3. Docker presence check on hosts with docker_enabled: true
 #
@@ -68,7 +68,7 @@
         msg: >-
           docker_enabled is true for {{ inventory_hostname }} but `docker`
           is not on PATH. Install docker first or set docker_enabled: false
-          in host_vars.
+          in inventory/host_vars.
       when: docker_enabled | bool and docker_check.rc != 0
       tags: [docker]
 
