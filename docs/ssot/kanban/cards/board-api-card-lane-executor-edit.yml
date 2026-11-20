@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
 column: doing
-updated: 2026-11-20 18:59
+updated: 2026-11-20 19:12
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -39,6 +39,8 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-20 19:12
 ref: OPS-0027
 comms:
 - at: 2026-11-20 18:43
@@ -86,5 +88,9 @@ comms:
 - at: 2026-11-20 18:59
   from: devin
   text: 'started: adding POST /card-set (lane/executor/tags whitelist) + board-cli subcommand + selftests; worktree-only'
+- at: 2026-11-20 19:12
+  from: chaba
+  text: 'merge-sweep: devin-task-20261120-185720-repo-work-chaba-scripts-board- no longer active on idc02 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-20 18:56
