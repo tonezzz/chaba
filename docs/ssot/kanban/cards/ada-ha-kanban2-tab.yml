@@ -1,7 +1,7 @@
 id: ada-ha-kanban2-tab
 title: Add Kanban 2 layout tab to Ada HA chaba-admin
 column: doing
-updated: 2026-11-20 12:22
+updated: 2026-11-20 12:46
 brief: Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after
   it as a separate Kanban 2 tab.
 priority: medium
@@ -64,6 +64,13 @@ comms:
   text: At 12:21 ICT the served checkout still has uncommitted unrelated work and is 11 commits ahead of its stale
     origin/master; normal kanban-commit timer is next at 12:23:58. Per single-writer rules I will not pull or edit
     that checkout manually; waiting for its canonical timer, then I will re-check the static asset.
+- at: 2026-11-20 12:46
+  from: devin
+  text: 'Live implementation is now verified: PR #192 merged as 5beaf455e280; canonical idc03 render produced classic.html,
+    and the standard idc02 web-srv-sync carried it to the edge (classic 200/40,898 bytes; Board2 200/56,303 bytes).
+    WebSocket save updated Kanban to classic.html?v=1 and kept Kanban 2 immediately after it at board2/index.html?v=1.
+    Sanitized live readback confirms the remaining view order is unchanged. Snapshot/SSOT commit 0a7ff36 is on PR
+    #193; the Ada Control discrepancy is separately '
 requests:
 - id: home-assistant-mcp-and-browser-tool-disc-01c7e6
   ask: Home Assistant MCP and browser tool discovery failed, so I cannot use those connectors. May I apply the already-requested
