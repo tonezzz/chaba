@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: backlog
-updated: 2026-11-20 14:12
+updated: 2026-11-20 15:04
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -61,3 +61,10 @@ comms:
   text: '2026-11-20 correction from live ssot.llm-gateway.yml: step 1 — CF routes renamed after upstream 410s (llama4-scout,
     qwen38-27b, gemma4-26b replace llama-8b, qwen3-30b, nemotron-120b); step 3 — or-free-north-code removed (404,
     no provider serves it), so retest only nemotron-ultra / nemotron-35.'
+- at: 2026-11-20 15:04
+  from: tony
+  text: '2026-11-20 read-only baseline: gateway /health/liveliness=200 ("I''m alive!"), /health/readiness=200 {"status":"healthy","db":"connected"}.
+    /v1/models=401 "No api key passed in" — no provider credential was read or used, so the live route list could
+    NOT be enumerated. ada_spend_summary is stale (report ~7 days old) and still shows openrouter/anthropic/claude-fable-5.1
+    as top 24h spend ($20.17 / 162 calls), contradicting the 2026-11-07 chaba key model-allowlist that blocks paid
+    or-* — treat that l'
