@@ -1,6 +1,6 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
-column: doing
+column: backlog
 updated: 2026-11-21 06:36
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
@@ -69,17 +69,15 @@ spec: 'GOAL: Benchmark Ansible against the existing fleet tooling on 2-3 real jo
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   attempts: 2
-  result: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
-    | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
-    47.327s wall clock time, 543.9M memory peak.'
-  last_failure: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
-    | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
-    47.327s wall clock time, 543.9M memory peak.'
+  result: 'journal=exit-code hmark-ansible-against.service: Failed with result ''exit-code''. | devin-task-20261121-063216-goal-benchmark-ansible-against.service:
+    Consumed 1min 16.318s CPU time over 3min 53.657s wall clock time, 985.8M memory peak, 494M memory swap peak.'
+  last_failure: 'journal=exit-code hmark-ansible-against.service: Failed with result ''exit-code''. | devin-task-20261121-063216-goal-benchmark-ansible-against.service:
+    Consumed 1min 16.318s CPU time over 3min 53.657s wall clock time, 985.8M memory peak, 494M memory swap peak.'
   runner: tony-dell
 comms:
 - at: 2026-11-21 06:06
@@ -165,6 +163,11 @@ comms:
     Report: docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md (commit f10ddb0ba85). Verdicts: (1) service audit
     — ANSIBLE (66.3s legacy vs 30.9s, identical deltas; 14.1s on dell). (2) disk headroom — TIE: ansible enforces
     SSOT max_root_disk_percent+15GiB floor (previously unenforc'
+- at: 2026-11-21 06:36
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code hmark-ansible-against.service: Failed with result ''exit-code''. |
+    devin-task-20261121-063216-goal-bench — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
 ref: BEN-0005
 claim:
   since: 2026-11-21 06:31
