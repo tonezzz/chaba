@@ -1,7 +1,7 @@
 id: mcp-dell-alphavantage-llama-decision
 title: Decide alphavantage allowlist and mcp-llama retirement on tony-dell
-column: backlog
-updated: 2026-11-20 19:02
+column: done
+updated: 2026-11-20 19:14
 brief: Two operational declarations absent from tony-dell config; resolve the AUD-0886 allowlist/retire verdict.
 priority: medium
 tags:
@@ -19,3 +19,18 @@ comms:
 - at: 2026-11-20 19:02
   from: devin
   text: card captured via board-api
+- at: 2026-11-20 19:14
+  from: devin
+  text: 'DONE 2026-11-20 - resolved by narrowing declarations to observed reality, not by adding config to dell.
+    Both servers are configured on tony-omen only and absent from tony-dell, so `scope: agent-lanes` was wrong for
+    them. Set both to `scope: [tony_omen]`; kept status operational (both are live on omen). Also corrected mcp-llama''s
+    implementation path to the omen chaba checkout and dropped the stale tony_dell per_host override that pointed
+    at the frozen mirror.
+
+
+    Rationale: alphavantage - AUD-0886 m'
+- at: 2026-11-20 19:14
+  from: devin
+  text: closed by devin
+action:
+  status: done

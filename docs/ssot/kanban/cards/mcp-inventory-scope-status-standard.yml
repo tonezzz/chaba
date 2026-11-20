@@ -1,7 +1,7 @@
 id: mcp-inventory-scope-status-standard
 title: Standardize MCP scope, status vocabulary and finding IDs
 column: done
-updated: 2026-11-20 19:07
+updated: 2026-11-20 19:14
 brief: 'Make the fleet MCP report''s declarations and findings computable and triageable: explicit per-server scope,
   no-config on the report status contract, and stable finding IDs with human-owned triage state.'
 priority: high
@@ -91,3 +91,10 @@ comms:
     2 mcp-tony-omen-undeclared-configured -> FIXED AT SOURCE, not suppressed: declared colab-mcp (scope [tony_omen],
     official Google kernel-level MCP complements mcp-colab) + icloud (scope [tony_omen], both omen surfaces), and
     widened google-home-lan scope to [mn01, tony_omen] since o'
+- at: 2026-11-20 19:14
+  from: devin
+  text: 'FOLLOW-UP CLOSE 2026-11-20: OPS-0035 and OPS-0036 both done. Final live producer run: all 4 config-bearing
+    hosts clean (tony_omen ok 22, tony_dell ok 17, idc02 ok 3, mn01 no-config, idc03 no-config, michael-ha unreachable/appliance).
+    Fleet report republished (evt-91180d192abb2ef4) with 3 suppressed findings only - no open, no carded. Both carded
+    findings were resolved at source rather than left in triage, so their triage entries were removed; the cards
+    hold the decision trail. Remaining suppress'
