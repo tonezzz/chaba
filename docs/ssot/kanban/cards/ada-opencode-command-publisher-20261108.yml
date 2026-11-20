@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: doing
-updated: 2026-11-21 06:47
+column: backlog
+updated: 2026-11-21 06:48
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -560,6 +560,10 @@ comms:
     is clean. +887802518c job-record/outcome updates. Verified: 24 opencode tests green, board-api door wired, canonical
     ada.md 077aaff3, deployed idc02 hash ALREADY == canonical (manual post-ADA0186 fix; ada-code.service active)
     — sync op is a no-op. Bench: measured 74-80% ingested-byt'
+- at: 2026-11-21 06:48
+  from: tony-macbook
+  text: 'finished (failed): journal=exit-code 1121-062509-canonicalize-the-opencode-ada-.service: Failed with result
+    ''exit-code''. | devin-task-20261 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -593,7 +597,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   sweep:
@@ -602,10 +606,12 @@ action:
     session_gone: 2026-11-20 13:56
     dirty: 1
   attempts: 2
-  last_failure: 'journal=exit-code icalize-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261121-061014-canonicalize-the-opencode-ada-.service:
-    Consumed 10min 24.519s CPU time over 9min 6.995s wall clock time, 1G memory peak, 5.9M memory swap peak.'
-  result: 'journal=exit-code icalize-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261121-061014-canonicalize-the-opencode-ada-.service:
-    Consumed 10min 24.519s CPU time over 9min 6.995s wall clock time, 1G memory peak, 5.9M memory swap peak.'
+  last_failure: 'journal=exit-code 1121-062509-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
+    | devin-task-20261121-062509-canonicalize-the-opencode-ada-.service: Consumed 21min 21.542s CPU time over 22min
+    23.510s wall clock time, 516.9M memory peak.'
+  result: 'journal=exit-code 1121-062509-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
+    | devin-task-20261121-062509-canonicalize-the-opencode-ada-.service: Consumed 21min 21.542s CPU time over 22min
+    23.510s wall clock time, 516.9M memory peak.'
   runner: tony-macbook
 claim:
   since: 2026-11-21 06:22
