@@ -1,7 +1,7 @@
 id: cards-api-summary-gzip
 title: '/cards read door: gzip + summary projection + discoverable filters'
 column: backlog
-updated: 2026-11-20 18:54
+updated: 2026-11-20 19:00
 brief: GET /cards bare returns the full board (~15MB, ~2.6s) — card_query already supports id/column/action_status/since/offset/limit/fields
   but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.
 priority: medium
@@ -99,3 +99,10 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:00
+  from: devin
+  text: 'VERIFICATION COMPLETE (opencode, 2026-11-20): broader tests/board suite finished — 796 passed, 17 subtests
+    passed, 6 failed. All 6 failures are PRE-EXISTING and unrelated: 3 in test_control_pane_projection.py and 3
+    in ClaimPassLaneTest/test_runner_agent_lane.py. Reproduced identically at this branch''s exact base commit 7598297b5f
+    in a pristine worktree AND at current origin/master — so the KNB-0147 patch neither caused nor worsened them.
+    Targeted suite 41/41 pass; done-condition numbers posted i'
