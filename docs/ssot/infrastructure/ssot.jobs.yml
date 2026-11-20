@@ -1785,6 +1785,23 @@ jobs:
     weeks then covers ~new sessions/week. Sunday 05:15 sits inside the
     approved early-morning window and clear of the 04:20 telemetry prune.
     Added 2026-11-18.'
+- id: ada-morning-brief
+  name: Ada proactive morning brief -> Tony TG DM
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 07:35:00'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/morning-brief.py
+  note: 'card ada-proactive-digest-morning-brief-via-t-3abb02 — Ada is
+    poll-only; this is the push half. Renders a <=9-line SMS-length brief
+    (education due via /lesson op=list source=wiki, open board requests,
+    overnight dispatch outcomes from the local devin-dispatch ledger,
+    red health flags) and POSTs it to the ada-tg-relay loopback /send on
+    127.0.0.1:8911 (Tony DM — msg-lane-standard contract, no creds in the
+    job). 07:35 lands after daily-brief (07:05) + narration and the
+    lessons-due refresh (07:30). --print renders without sending.
+    Added 2026-11-20.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py

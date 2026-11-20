@@ -1,0 +1,62 @@
+title: Ada proactive morning brief — push digest to Tony's TG DM
+id: 2026-11-20-ada-morning-brief
+status: completed
+owner: devin
+project: chaba
+started: "2026-11-20"
+completed: "2026-11-20"
+card: ada-proactive-digest-morning-brief-via-t-3abb02
+
+summary: |
+  Ada is poll-only — Tony must ask before she says anything. This job is
+  the push half: every morning at 07:35 on idc03 a ≤9-line SMS-length
+  brief lands in Tony's Telegram DM through the existing ada-tg-relay
+  loopback /send (:8911) — no new transport, no bot creds outside the
+  relay itself (msg-lane-standard contract).
+
+gathers:
+  education: "due lessons via board-api POST /lesson {op:list, source:wiki}
+    — scripts/lessons-due.py fetch_rows/bucket_rows imported so the
+    due-bucket rule (next_review <= today, status != learned) cannot
+    drift between the Education:Due page and the brief"
+  requests: "open card requests: blocks (the board's needs-Tony list)"
+  overnight: "dispatch results finished in the last 24h — the host-local
+    devin-dispatch ledger (~/.local/share/devin-dispatch/tasks/*/meta.json,
+    same source daily-brief reads); card-side action.status+updated is
+    the fallback on hosts without a ledger (noisy: sweeps bump updated)"
+  health: "red flags — bad node states in reports/system-report.yml +
+    ~/var/chaba/health/meta.yml (same sources as daily-brief)"
+
+implementation:
+  - "scripts/ada/morning-brief.py — new. Renders '[ada] morning brief —
+    <date>' + one line per section + a Details: link to the daily-brief
+    CMS page; POSTs {text} to MB_SEND_URL (default
+    http://127.0.0.1:8911/send), optional MB_CHAT_ID, --print renders
+    without sending. Every collector is best-effort — a dead source
+    degrades its line, never kills the brief."
+  - "docs/ssot/infrastructure/ssot.jobs.yml — ada-morning-brief systemd
+    job, idc03, on_calendar *-*-* 07:35:00 (after daily-brief 07:05 +
+    narration and the lessons-due refresh 07:30). Install:
+    scripts/render-jobs.py --host idc03 --install."
+
+format_example: |
+  [ada] morning brief — Fri 2026-11-20
+  Education: 159 due — household persona naming convention, ... +156
+  Board: 4 open request(s) — "..." +3 more
+  Overnight: 4 done, 3 failed — 20261119-134850-kk-mac-classes-eval +2
+  Health: <only when flags exist>
+  Details: https://idc03.taila0626a.ts.net/cms/#/daily-brief
+
+verified:
+  - "2026-11-20 on tony-omen worktree: --print rendered live data — 159
+    education due via /lesson wiki source, 4 open requests, 4 done /
+    3 failed dispatches from the local ledger. /send POST NOT exercised
+    here (loopback on idc03 only) — first real send is the 07:35 timer
+    fire after render-jobs install."
+
+deployment:
+  pending: "render-jobs.py --host idc03 --install after this branch merges
+    to master + the idc03 exec checkout syncs (chaba-repo-sync.timer).
+    Production install = Tony approval per deploy policy."
+  manual_smoke: "ssh idc03 'python3 ~/CascadeProjects/chaba/scripts/ada/
+    morning-brief.py --print' then a one-off send without --print."
