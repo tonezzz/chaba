@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
-column: doing
-updated: 2026-11-20 13:27
+column: done
+updated: 2026-11-20 13:33
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -590,9 +590,14 @@ comms:
     — 14GB load alone breached the 50% mem-abort floor (48-49%); qwen3:30b-a3b cold pass at 92 tok/s but warm fell
     to 20% free — 20B+ NOT lane-safe under owner workloads; MEM-1043 guard verified live failing closed, node recovered
     74% free. No 14B pulled (empty rung — needs pull approval'
+- at: 2026-11-20 13:33
+  from: chaba
+  text: 'merge-sweep: merged f48e570c (dispatch/20261120-131818-use-kk-mac-apple-m4-max-36-gib from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261120-131818-use-kk-mac-apple-m4-max-36-gib.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service:
     Failed with result ''exit-code''.'
@@ -605,6 +610,7 @@ action:
   model: litellm/gemini-2.5-flash
   runner: idc02
   attempts: 1
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-20 13:17
@@ -800,3 +806,7 @@ requests:
   answer: framework-ab — ★ Compare actual Hermes Agent vs OpenClaw/Clawbot on the same local Qwen3:8B backend, synthetic
     read-only fixtures, same tool allowlist/verifier, no live channels or external egress (recommended)
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-20 13:33
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261120-131818-use-kk-mac-apple-m4-max-36-gib.md
