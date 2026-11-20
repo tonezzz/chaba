@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: doing
-updated: 2026-11-20 18:40
+updated: 2026-11-20 18:43
 priority: high
 tags:
 - board
@@ -44,6 +44,8 @@ action:
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:41
+    stale_running: 2026-11-20 18:42
+    session_gone: 2026-11-20 18:43
   last_failure: 'exit=1  devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''.
     | devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Consumed 1min 9.340s CPU time, 280.9M memory
     peak, 0B memory swap peak.'
@@ -180,6 +182,14 @@ comms:
     merge-sweep: devin-task-20261117-233349-observe; [board-api-compact-cards] Landed manually: merge-sweep test
     gate failed on unrel; [board-janitor-locked-edit-atomic-write-db7bed] primer injected 8 lesson(s): [ka; [merge-conflict-requests-re-raise-every-s-f981d2]
     finished (f'
+- at: 2026-11-20 18:42
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233349-observe no longer active on tony-macbook but card still says running
+    — sweeping its branch'
+- at: 2026-11-20 18:43
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261117-233349-observe on tony-macbook — if the
+    work was never pushed it may be gone'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
