@@ -1,6 +1,6 @@
 id: jules-session-create-failed-precondition
 title: 'Jules executor: session creation returns FAILED_PRECONDITION on tony-omen'
-column: backlog
+column: done
 updated: 2026-11-20 12:32
 brief: 'Two independent Jules dispatch attempts on tony-omen failed before agent work on 2026-11-17: ADA-1279 at
   09:01 and ADA-1084 at 09:14 ICT. Both journaled HTTP 400 POST /sessions with status FAILED_PRECONDITION. OPS-1049
@@ -105,3 +105,9 @@ comms:
     (GET /sources ok). No session was created; quota use stayed at 0; no stuck sessions; last successful create
     was 2026-11-11. This matches the Jules wind-down notice (read-only until 2026-12-31, creation disabled account-wide).
     Root cause is the provider EOL, not request construction'
+- at: 2026-11-20 12:32
+  from: tony
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}
