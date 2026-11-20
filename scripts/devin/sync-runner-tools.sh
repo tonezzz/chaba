@@ -23,6 +23,10 @@
 # runner-agent's _self_update() stays the faster path for its own file.
 #
 # Rules:
+#   * src sha != pinned sha     -> warn + skip (a tool change must bump its
+#                                  pin in runner-tooling.manifest.json in
+#                                  the SAME commit — never hot-patch a pin
+#                                  on a host to make a sync go through)
 #   * dest identical            -> skip
 #   * dest differs, src clean   -> syntax-check src, install -m 0755
 #   * dest newer-mtime + differs-> warn + keep (never downgrade — a manual
@@ -73,6 +77,30 @@ esac
 BIN="$HOME/.local/bin"
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 
+# Content pins — a tool can only be installed when the checkout copy is
+# byte-identical to the hash committed alongside it. This is the gate that
+# stops a half-purge (or a dirty local edit) from being propagated fleet-wide
+# by this very script. Read once; a missing/unreadable manifest fails closed.
+MANIFEST="$REPO/scripts/devin/runner-tooling.manifest.json"
+PINS="$(python3 - "$MANIFEST" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    for key, val in json.load(open(sys.argv[1])).get("tools", {}).items():
+        print("%s\t%s\t%s" % (key, val.get("source", ""), val.get("sha256", "")))
+except Exception:
+    pass
+PY
+)"
+[ -n "$PINS" ] || warn "no usable content pins in $MANIFEST — all tool syncs skipped until fixed"
+
+_pinned_sha() {
+    local rel="$1" key src sha
+    while IFS=$'\t' read -r key src sha; do
+        [ "$src" = "$rel" ] && { printf '%s' "$sha"; return 0; }
+    done <<< "$PINS"
+    return 1
+}
+
 # src is safe to install: exists, not dirty in the checkout, parses.
 _src_ok() {
     local src="$1" rel="$2"
@@ -112,6 +140,13 @@ _sync_one() {
     local src="$REPO/$rel" name
     name="$(basename "$dest")"
     _src_ok "$src" "$rel" || return 0
+    local want got
+    want="$(_pinned_sha "$rel")" || { warn "$rel has no content pin — skipped"; return 0; }
+    got="$(sha256sum "$src" 2>/dev/null | awk '{print $1}')"
+    if [ "$got" != "$want" ]; then
+        warn "$rel sha $got != pinned $want — source/manifest mismatch, skipped (bump the pin in the same commit; never hand-edit the manifest on a host)"
+        return 0
+    fi
     if [ ! -e "$dest" ]; then
         if _provisioned "$name"; then
             install -m 0755 "$src" "$dest" \
