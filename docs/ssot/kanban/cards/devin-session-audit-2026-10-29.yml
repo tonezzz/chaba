@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
-updated: 2026-11-20 19:17
+column: backlog
+updated: 2026-11-20 19:20
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -367,24 +367,34 @@ comms:
     Source evidence preserved from the frozen mirr; [devin-session-audit-2026-10-29] AUD-0973 reconciliation 2026-11-20:
     confirmed t; [devin-session-audit-2026-10-29] Resume 2026-11-20 18:2x ICT on tony-macbook: re; [devin-session-audit-2026-10-29]
     finished (failed): exit=1 26'
+- at: 2026-11-20 19:20
+  from: tony-omen
+  text: 'finished (failed): exit=1 evin-task-20261120-191728-finish-artifact-landing-verifi.service: Failed with
+    result ''exit-code''. | devin-task-20 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-20 19:20
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-191728-finish-artifact-landing-verifi (rate limit)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
   attempts: 2
-  last_failure: 'exit=1 61120-183021-finish-artifact-landing-verifi.service: Failed with result ''exit-code''. |
-    devin-task-20261120-183021-finish-artifact-landing-verifi.service: Consumed 25min 9.586s CPU time over 35min
-    48.881s wall clock time, 757.9M memory peak.'
+  last_failure: 'exit=1 evin-task-20261120-191728-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261120-191728-finish-artifact-landing-verifi.service: Consumed 30.294s CPU time over 15.417s
+    wall clock time, 919M memory peak.'
   sweep:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
-  result: 'exit=1 61120-183021-finish-artifact-landing-verifi.service: Failed with result ''exit-code''. | devin-task-20261120-183021-finish-artifact-landing-verifi.service:
-    Consumed 25min 9.586s CPU time over 35min 48.881s wall clock time, 757.9M memory peak.'
+  result: 'exit=1 evin-task-20261120-191728-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261120-191728-finish-artifact-landing-verifi.service: Consumed 30.294s CPU time over 15.417s
+    wall clock time, 919M memory peak.'
   runner: tony-omen
 claim:
   since: 2026-11-20 19:16
