@@ -1,7 +1,7 @@
 id: ocb-models-status-patch-durability
 title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
-column: review
-updated: 2026-11-20 17:38
+column: done
+updated: 2026-11-20 18:15
 brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
   route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
   — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
@@ -128,6 +128,16 @@ comms:
 - at: 2026-11-20 17:38
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-20 18:15
+  from: devin
+  text: 'VERIFIED by opencode (via devin door, 2026-11-20): durable mechanism is real and landed. (1) origin/master
+    316631894c now carries stacks/idc02/openchamber/{openchamber-models-status.patch,apply-models-status-patch.sh},
+    the ssot.audit.hosts.yml notes and the job record — the dispatch branch''s useful commit was cherry-picked;
+    only the auto-generated assessment checkpoint was left unmerged. (2) Producer: idc02 openchamber.service active;
+    openchamber-update.service has ExecStartPost patch-first, no '
+- at: 2026-11-20 18:15
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
   status: done
