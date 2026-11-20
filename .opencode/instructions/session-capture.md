@@ -15,6 +15,8 @@ Follow `docs/ssot/ssot.knowledge-capture.yml` and procedures `knowledge-capture`
 4. **Evidence:** attach outcomes/evidence to cards/reports; capture only reusable deltas.
 5. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
 
+Where available (Chaba pipeline), `scripts/chaba/immediate-pin.py` and `scripts/chaba/recent-event.py` may record structured resume/events, but they do **not** replace durable sinks or the handoff packet.
+
 ## Session Handoff Packet (required fields)
 - `objective` — what this session/task was doing
 - `as_of` — YYYY-MM-DD[ HH:MM TZ]

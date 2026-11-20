@@ -38,6 +38,10 @@ Standard workflow for ending a session when the user asks to finish/close.
      touched it — flag unsynced/uncommitted work instead of closing blind.
    - If the session pushed dashboard changes, run
      `scripts/home-assistant/sync-ssot-from-live.sh` and commit before closing.
+   - **Session-capture sweep (mandatory, per `ssot.knowledge-capture.yml` / `session-capture` procedure):**
+     route every unmet/unfinished request or follow-up to a durable sink (card/request/comment via board-api, focus-inbox, lesson, KB/SSOT promotion, or pointer note) and record where filed;
+     save/update deduped pointer notes for non-obvious discoveries; file retainable/educate-me answers as lessons (`scripts/lesson-add.py` or `/lesson`, state if write fails);
+     attach outcomes/evidence to cards/reports (reusable deltas only). Where available, `scripts/chaba/immediate-pin.py` and `scripts/chaba/recent-event.py` may record resume/events, but they do not replace durable sinks or the handoff packet.
 
 3. Summarize and review
    - Summarize what was done, what is pending, and any errors or surprises.
@@ -83,38 +87,24 @@ Standard workflow for ending a session when the user asks to finish/close.
    - Anything still pending at close — deferred subtasks, follow-ups, "would be nice"
      items — must not die in the summary. File it in `docs/ssot/focus-inbox/` per the
      save-to-focus convention: one `<UTC-timestamp>-<slug>.yml` per coherent topic,
-     `status: draft`, following `TEMPLATE.yml`.
+     `status: draft`, following `TEMPLATE.yml` (or route to a card/request via board-api when actionable).
    - Prefer one inbox file with a `subtasks:` list over many tiny files.
    - Items deliberately dropped or already tracked elsewhere don't need parking.
    - Tell the user what was parked; the next active session triages it from the inbox.
 
-7b. Session handoff (when live state outlives the session)
-   - If the session leaves live external state — a Colab runtime awaiting
-     a UI flip, a staged job manifest, an in-flight dispatch, a warm cache
-     that costs real time to rebuild — the focus-inbox entry is not just a
-     task note: it is the *handoff document*.
-   - The entry must answer, with no conversation context needed:
-     1. What is staged/live right now (paths, manifest, runtime state)
-     2. The exact next action, including any UI-only steps only Tony can do
-     3. What survives a fresh start (durable artifacts) vs what dies
-        (ephemeral runtime state)
-     4. Subtasks for each unfinished lane
-   - Name it `handoff`-style: `<UTC-ts>-<slug>-handoff.yml` or keep the
-     plain `<ts>-<slug>.yml` naming — the `tags: [handoff]` marks it.
-   - Push is implied for handoffs: another session (possibly another host)
-     is the consumer — use `scripts/git-safe-push.sh` on satellite
-     checkouts. State that can't be pushed (live runtimes, Drive mounts)
-     gets its resume recipe written into the entry.
+7b. Session Handoff Packet (required, when closing/handing off/pausing)
+   - Produce and save a **Session Handoff Packet** per `docs/ssot/ssot.knowledge-capture.yml` (OpenChamber project knowledge note preferred and/or card comms refs): `objective`, `as_of`, `current_state` (done|in progress|blocked, evidence refs), `canonical_refs`, `open_asks_decisions` (each routed to a durable sink with owner/options/default), `next_action`, `where_filed` (**mandatory**: `item -> sink/ID/path`), `notes` (risks/gaps/refresh; label state `canonical(served)` / `branch/unmerged` / `live runtime` when relevant).
+   - If live external state outlives the session (Colab runtime awaiting UI, staged job manifest, in-flight dispatch, warm cache), the handoff must include: staged/live now (paths/manifest/state), exact next action incl. UI-only steps, what survives vs dies, and subtasks per unfinished lane. A focus-inbox handoff entry (`tags: [handoff]`, `*-handoff.yml` or equivalent) may complement the packet with operational detail.
+   - Push is implied for handoffs consumed by another session/host — use `scripts/git-safe-push.sh` on satellite checkouts. State that can't be pushed gets its resume recipe written into the packet/entry.
 
-8. Push (only if asked — except handoff entries, which exist to be read
-   by another session and always push)
+8. Push (only if asked — except handoff entries/packets consumed by another session/host, which must be pushed)
    - Push to `origin` for the current branch only when the user explicitly asks for it
      ('push', 'push/etc.', or similar).
    - Report the remote tracking status.
 
 9. Close
-   - Report final status, commit hash(es), and anything the pre-close sweep surfaced
-     (running dispatches, open requests, dirty live checkout).
+   - Report final status, commit hash(es), anything the pre-close sweep surfaced
+     (running dispatches, open requests, dirty live checkout), and the **`where_filed`** list from the Session Handoff Packet (no chat-only outcomes).
    - End with 'Session closed.'
 
 Edge cases
