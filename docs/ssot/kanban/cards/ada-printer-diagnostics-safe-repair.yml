@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
-column: doing
-updated: 2026-11-20 21:01
+column: backlog
+updated: 2026-11-20 21:02
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -284,6 +284,18 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261117-233547-us on tony-omen — if the work was
     never pushed it may be gone'
+- at: 2026-11-20 21:02
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code 261120-205713-use-the-existing-ada-document-.service: Failed with
+    result ''exit-code''. | devin-task-202 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-20 21:02
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-205713-use-the-existing-ada-document- (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-20 21:02
+  from: chaba
+  text: 'tony-omen retry backoff: fail 2/3 — next claim not before 11-20 22:02'
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
@@ -304,20 +316,20 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: devin
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 21:01
     session_gone: 2026-11-20 21:01
-  last_failure: 'journal=exit-code 261120-201909-use-the-existing-ada-document-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-201909-use-the-existing-ada-document-.service: Consumed 1min 20.220s CPU time over 4min
-    14.534s wall clock time, 845.3M memory peak.'
+  last_failure: 'journal=exit-code 261120-205713-use-the-existing-ada-document-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-205713-use-the-existing-ada-document-.service: Consumed 1min 11.030s CPU time over 3min
+    32.365s wall clock time, 878.6M memory peak.'
   attempts: 2
-  result: 'journal=exit-code 261120-201909-use-the-existing-ada-document-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-201909-use-the-existing-ada-document-.service: Consumed 1min 20.220s CPU time over 4min
-    14.534s wall clock time, 845.3M memory peak.'
+  result: 'journal=exit-code 261120-205713-use-the-existing-ada-document-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-205713-use-the-existing-ada-document-.service: Consumed 1min 11.030s CPU time over 3min
+    32.365s wall clock time, 878.6M memory peak.'
   runner: tony-omen
 claim:
   since: 2026-11-20 20:55

@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
-column: doing
-updated: 2026-11-20 20:58
+column: backlog
+updated: 2026-11-20 21:02
 priority: medium
 tags:
 - ada
@@ -20,20 +20,19 @@ spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries f
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
     session_gone: 2026-11-17 09:39
-  last_failure: 'journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed with result
-    ''exit-code''. | devin-task-20261120-201852-ada-voice-backend-realtime-pro.service: Consumed 56.161s CPU time
-    over 4min 15.904s wall clock time, 792.1M memory peak.'
+  last_failure: unit did not exit 0 (finish report 'failed') — unmerged partial work isn't auto-merged
   attempts: 2
   lane: codemod
   result: 'journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed with result ''exit-code''.
     | devin-task-20261120-201852-ada-voice-backend-realtime-pro.service: Consumed 56.161s CPU time over 4min 15.904s
     wall clock time, 792.1M memory peak.'
   runner: tony-omen
+  verified: false
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -363,5 +362,16 @@ comms:
     diagnosis (2026-11-19): the prior Jules session creation ; [ada-prompt-slim] idc02 defers: executor=jules declared
     but this runner can''t se; [ada-prompt-slim] merge-sweep: no session/worktree found for devin-task-ada-prom;
     [ada-prompt-slim] mn01 defers: executor=jules declared but th'
+- at: 2026-11-20 21:01
+  from: chaba
+  text: 'merge-sweep: verified gate failed — unit did not exit 0 (finish report ''failed'') — unmerged partial work
+    isn''t auto-merged; attempt limit reached, needs a human (column -> backlog)'
+- at: 2026-11-20 21:02
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-205837-ada-voice-backend-realtime-pro (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-20 21:02
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-20 21:32'
 claim:
   since: 2026-11-20 20:57
