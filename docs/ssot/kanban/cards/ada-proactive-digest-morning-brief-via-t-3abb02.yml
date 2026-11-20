@@ -1,7 +1,7 @@
 id: ada-proactive-digest-morning-brief-via-t-3abb02
 title: Ada proactive digest — morning brief via TG/LINE relay
-column: doing
-updated: 2026-11-20 13:42
+column: review
+updated: 2026-11-20 13:49
 ref: ADA-1201
 comms:
 - at: 2026-11-08 13:52
@@ -320,9 +320,19 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261120-132819-ada-proactive-digest-morning-b on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-20 13:49
+  from: tony-omen
+  text: 'finished (ok): exit=0 outcome written to `dispatch-outcome-20261120-132819-ada-proactive-digest-morning-b.md`.
+    | devin-task-20261120-13'
+- at: 2026-11-20 13:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 13:49
+  from: chaba
+  text: 'session-end checkpoint 79da0d7c: 2 leftover file(s) committed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:48
@@ -332,10 +342,10 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
     2.943s CPU time.'
   attempts: 2
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-093950-ada-proactive-digest-morning-b.service:
-    Failed with result ''exit-code''. | devin-task-20261117-093950-ada-proactive-digest-morning-b.service: Consumed
-    4.428s CPU time.'
+  result: 'exit=0 outcome written to `dispatch-outcome-20261120-132819-ada-proactive-digest-morning-b.md`. | devin-task-20261120-132819-ada-proactive-digest-morning-b.service:
+    Consumed 2min 2.786s CPU time over 9min 48.593s wall clock time, 1.1G memory peak.'
   runner: tony-omen
+  verified: false
 requests:
 - id: every-candidate-runner-host-to-ce7d7a
   ask: Every candidate runner host (tony-omen, idc02, idc03, tony-macbook) has deferred execution due to a drifted
@@ -356,3 +366,4 @@ requests:
 claim:
   since: 2026-11-20 13:26
 awaiting_action: true
+review_kind: verify
