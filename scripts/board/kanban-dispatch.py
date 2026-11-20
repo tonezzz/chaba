@@ -1159,6 +1159,12 @@ def main() -> int:
                 # Tony's hands, anything unknown fails closed. Never
                 # silently run them on devin.
                 ex = str(a.get("executor") or "").strip()
+                if str(a.get("lane") or "").strip() == "manual":
+                    # lane=manual is Tony's hands even when a classifier
+                    # stamped it — never a devin claim, never a fleet gap
+                    print(f"{card['id']}: skipped — lane=manual "
+                          "(Tony's hands — never claimed)")
+                    continue
                 if str(a.get("lane") or "").strip() in ("jules", "nlm_batch"):
                     # lane pin routes to a JULES_LANES runner —
                     # this dispatcher only runs devin claims

@@ -1034,12 +1034,14 @@ class BoardApiContractTest(unittest.TestCase):
                       "deploy": {}},
                      "deploy.target")
 
-    def test_queue_warns_manual_executor(self):
+    def test_queue_refuses_manual_executor(self):
         card = {"id": "c-em", "column": "backlog",
                 "action": {"type": "dispatch", "executor": "manual"}}
         msg = self.mod.do_action(card, "queue", "tony")
         self.assertIn("executor=manual", msg)
-        self.assertIn("starve", msg)
+        self.assertIn("not queued", msg)
+        self.assertNotEqual(card["action"].get("status"), "queued")
+        self.assertTrue(card.get("awaiting_action"))
 
     def test_claim_persists_executor_fields(self):
         card = {"id": "c-claim",
@@ -1133,6 +1135,14 @@ class KanbanDispatchContractTest(unittest.TestCase):
         self.assertIn("executor=manual", out)
         self.assertIn("Tony's hands", out)
         self.assertIn("not a known executor", out)
+        self.assertEqual(self.started, [])
+
+    def test_manual_lane_skipped(self):
+        out = self._run(("c-lane", {"action": {"status": "queued",
+                                               "lane": "manual",
+                                               "lane_source": "kw"}}))
+        self.assertIn("lane=manual", out)
+        self.assertIn("Tony's hands", out)
         self.assertEqual(self.started, [])
 
     def test_devin_executor_claimed(self):

@@ -53,18 +53,79 @@ class BoardApiQueueWarnTest(unittest.TestCase):
     def setUpClass(cls):
         cls.mod = _load("board-api.py")
 
-    def test_queue_warns_on_manual_type(self):
+    def test_queue_refuses_manual_type(self):
         card = {"id": "c-manual", "column": "backlog",
                 "action": {"type": "manual"}}
         msg = self.mod.do_action(card, "queue", "tony")
-        self.assertIn("starve", msg)
-        self.assertIn("type=manual", msg)
-        # queued but type NOT auto-flipped — semantics unchanged
-        self.assertEqual(card["action"]["status"], "queued")
+        self.assertIn("not queued", msg)
+        self.assertIn("manual", msg)
+        # never armed for dispatch — type NOT auto-flipped, status not queued
         self.assertEqual(card["action"]["type"], "manual")
-        warns = [c for c in card["comms"]
-                 if c["from"] == "chaba" and "starve" in c["text"]]
-        self.assertEqual(len(warns), 1)
+        self.assertNotEqual(card["action"].get("status"), "queued")
+        self.assertTrue(card.get("awaiting_action"))
+        self.assertTrue(any("queue skipped" in c["text"]
+                            for c in card["comms"]))
+
+    def test_queue_refuses_executor_and_lane_manual(self):
+        for action in ({"type": "dispatch", "executor": "manual"},
+                       {"type": "dispatch", "lane": "manual"}):
+            card = {"id": "c-human", "column": "backlog",
+                    "action": dict(action)}
+            msg = self.mod.do_action(card, "queue", "tony")
+            self.assertIn("not queued", msg)
+            self.assertNotEqual(card["action"].get("status"), "queued")
+            self.assertTrue(card.get("awaiting_action"))
+
+    def test_retry_refuses_manual(self):
+        card = {"id": "c-manual", "column": "backlog",
+                "action": {"type": "manual", "status": "failed",
+                           "result": "nope"}}
+        msg = self.mod.do_action(card, "retry", "tony")
+        self.assertIn("not re-queued", msg)
+        self.assertEqual(card["action"]["status"], "failed")
+        self.assertTrue(card.get("awaiting_action"))
+
+    def test_claim_refuses_queued_manual(self):
+        card = {"id": "c-manual", "column": "backlog",
+                "action": {"type": "manual", "status": "queued"}}
+        with self.assertRaises(ValueError) as cm:
+            self.mod.do_claim(card, {"host": "idc03"})
+        self.assertIn("not claimable", str(cm.exception))
+        self.assertIn("manual", str(cm.exception))
+
+    def test_queue_reconciles_legacy_queued_manual(self):
+        """A card already stuck at status=queued is fixed by the same
+        write door — queue becomes the reconcile verb, not 'already
+        queued' forever."""
+        card = {"id": "c-stuck", "column": "backlog",
+                "action": {"type": "manual", "status": "queued"}}
+        msg = self.mod.do_action(card, "queue", "tony")
+        self.assertIn("not queued", msg)
+        self.assertEqual(card["action"]["status"], "idle")
+        self.assertTrue(card.get("awaiting_action"))
+
+    def test_queue_reconciles_classifier_stamped_manual_lane(self):
+        """lane_source=kw manual is still unclaimable while queued; once
+        parked idle a fresh queue may re-classify it."""
+        card = {"id": "c-lane", "column": "backlog",
+                "action": {"type": "dispatch", "lane": "manual",
+                           "lane_source": "kw", "status": "queued"}}
+        msg = self.mod.do_action(card, "queue", "tony")
+        self.assertIn("not queued", msg)
+        self.assertEqual(card["action"]["status"], "idle")
+        self.assertTrue(card.get("awaiting_action"))
+
+    def test_hold_flags_manual_waiting(self):
+        card = {"id": "c-hold", "column": "doing",
+                "action": {"type": "dispatch", "executor": "manual",
+                           "status": "queued"}}
+        msg = self.mod.do_action(card, "hold", "tony")
+        self.assertEqual(msg, "back to backlog")
+        self.assertEqual(card["action"]["status"], "idle")
+        self.assertEqual(card["column"], "backlog")
+        self.assertTrue(card.get("awaiting_action"))
+        self.assertTrue(any("executor=manual" in c["text"]
+                            for c in card["comms"]))
 
     def test_queue_dispatch_type_no_warn(self):
         for action in ({"type": "dispatch"}, {}):
@@ -75,31 +136,56 @@ class BoardApiQueueWarnTest(unittest.TestCase):
             self.assertFalse(any("starve" in c["text"]
                                  for c in card["comms"]))
 
-    def test_create_requeue_warns_on_manual(self):
-        """on_exists:'queue' re-arm on a manual card warns too."""
+    def test_create_requeue_refuses_manual(self):
+        """on_exists:'queue' never re-arms a manual card for dispatch."""
+        import yaml
         with tempfile.TemporaryDirectory() as td:
             self.mod.CARD_DIR = Path(td)
-            _write_card(Path(td), "c-re",
-                        column="done",
-                        action={"type": "manual", "status": "done"})
+            _write_card(Path(td), "c-re", column="backlog",
+                        action={"type": "manual", "status": "failed"})
             res = self.mod.do_create(
                 {"id": "c-re", "title": "re", "on_exists": "queue"},
                 "tony")
-            self.assertIn("starve", res["message"])
-            self.assertEqual(res["status"], "queued")
+            self.assertIn("not queued", res["message"])
+            self.assertEqual(res["status"], "idle")
+            saved = yaml.safe_load((Path(td) / "c-re.yml").read_text())
+            self.assertEqual(saved["action"]["type"], "manual")
+            self.assertEqual(saved["action"]["status"], "idle")
+            self.assertTrue(saved.get("awaiting_action"))
+            self.assertTrue(any("re-spawn skipped" in c["text"]
+                                for c in saved["comms"]))
 
-    def test_create_queue_true_warns_on_manual(self):
+    def test_create_requeue_reconciles_queued_manual(self):
+        """on_exists:'queue' on a legacy queued manual card parks it —
+        'already active' would leave it looking claimable forever."""
+        import yaml
+        with tempfile.TemporaryDirectory() as td:
+            self.mod.CARD_DIR = Path(td)
+            _write_card(Path(td), "c-q", column="backlog",
+                        action={"type": "manual", "status": "queued"})
+            res = self.mod.do_create(
+                {"id": "c-q", "title": "q", "on_exists": "queue"},
+                "tony")
+            self.assertIn("not queued", res["message"])
+            self.assertEqual(res["status"], "idle")
+            saved = yaml.safe_load((Path(td) / "c-q.yml").read_text())
+            self.assertEqual(saved["action"]["status"], "idle")
+            self.assertTrue(saved.get("awaiting_action"))
+
+    def test_create_queue_true_refuses_manual(self):
+        import yaml
         with tempfile.TemporaryDirectory() as td:
             self.mod.CARD_DIR = Path(td)
             res = self.mod.do_create(
                 {"id": "c-new", "title": "new", "queue": True,
                  "action": {"type": "manual"}}, "tony")
-            self.assertIn("starve", res["message"])
-            self.assertIn("queued", res["message"])
-            import yaml
+            self.assertIn("not queued", res["message"])
+            self.assertEqual(res["status"], "idle")
             saved = yaml.safe_load((Path(td) / "c-new.yml").read_text())
             self.assertEqual(saved["action"]["type"], "manual")
-            self.assertTrue(any("starve" in c["text"]
+            self.assertEqual(saved["action"]["status"], "idle")
+            self.assertTrue(saved.get("awaiting_action"))
+            self.assertTrue(any("human-owned" in c["text"]
                                 for c in saved["comms"]))
 
     def test_requeue_updates_approved_executor_envelope(self):
@@ -130,6 +216,61 @@ class BoardApiQueueWarnTest(unittest.TestCase):
             self.assertEqual(action["target_host"], "idc02")
             self.assertEqual(action["artifact"],
                              "evals/opencode-lane/out/ops-1039.json")
+
+
+class QueueViewHumanWaitingTest(unittest.TestCase):
+    """GET /queue separates claimable dispatch work from human-waiting
+    cards that still carry a legacy action.status=queued."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("board-api.py")
+
+    def test_human_waiting_split_from_claimable_queue(self):
+        mod = self.mod
+        cards = [
+            {"id": "c-man", "title": "Manual", "column": "backlog",
+             "updated": "2026-01-01 00:00",
+             "action": {"type": "manual", "status": "queued"},
+             "requests": [{"id": "r1", "ask": "decide",
+                           "status": "open"}]},
+            {"id": "c-dis", "title": "Dispatch", "column": "backlog",
+             "updated": "2026-01-02 00:00",
+             "action": {"type": "dispatch", "status": "queued"}},
+            {"id": "c-idle", "title": "Idle manual", "column": "backlog",
+             "updated": "2026-01-03 00:00", "awaiting_action": True,
+             "action": {"type": "dispatch", "executor": "manual",
+                        "status": "idle"}},
+            {"id": "c-unserved", "title": "Unserved", "column": "backlog",
+             "updated": "2026-01-04 00:00", "awaiting_action": True,
+             "action": {"type": "devin", "status": "idle"}},
+            {"id": "c-lane", "title": "Lane manual", "column": "backlog",
+             "updated": "2026-01-05 00:00",
+             "action": {"type": "dispatch", "lane": "manual",
+                        "lane_source": "kw", "status": "queued"}},
+        ]
+        saved = (mod.load_cards, mod._ready_load)
+        mod.load_cards = lambda: {"cards": cards}
+        mod._ready_load = lambda: {"hosts": {}}
+        try:
+            v = mod.queue_view()
+        finally:
+            mod.load_cards, mod._ready_load = saved
+        self.assertEqual([c["id"] for c in v["queued"]], ["c-dis"])
+        self.assertEqual([c["id"] for c in v["human_waiting"]],
+                         ["c-man", "c-idle", "c-unserved", "c-lane"])
+        by_id = {c["id"]: c for c in v["human_waiting"]}
+        self.assertEqual(by_id["c-man"]["kind"], "human")
+        self.assertEqual(by_id["c-man"]["owner"], "tony")
+        self.assertIn("r1", by_id["c-man"]["next_action"])
+        self.assertEqual(by_id["c-idle"]["kind"], "human")
+        self.assertIn("human decision", by_id["c-idle"]["next_action"])
+        self.assertEqual(by_id["c-unserved"]["kind"], "unserved")
+        self.assertEqual(by_id["c-unserved"]["owner"], "chaba")
+        self.assertIn("fix action.type", by_id["c-unserved"]["next_action"])
+        self.assertIn("lane=manual", by_id["c-lane"]["reason"])
+        self.assertEqual(v["counts"]["queued"], 1)
+        self.assertEqual(v["counts"]["human_waiting"], 4)
 
 
 class DispatchSkipLogTest(unittest.TestCase):

@@ -1178,6 +1178,8 @@ def queue_starve_warn(card: dict) -> str:
     'not for dispatch'. Same for the executor contract: executor=manual
     means Tony's hands — automation never claims it."""
     a = _act(card)
+    if str(a.get("status") or "") != "queued":
+        return ""
     t = str(a.get("type") or "dispatch")
     if t == "dispatch":
         if str(a.get("executor") or "") == "manual":
@@ -1210,6 +1212,78 @@ def queue_unclaimable_warn(card: dict) -> str:
             + "; ".join(reasons)
             + ". Fix action.labels/host pins or teach a runner the "
               "capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)")
+
+
+def human_wait_reason(card: dict) -> str:
+    """Why this card is human-owned rather than runner-dispatchable.
+
+    Manual is a first-class lane/type, not a queue error: executor=manual,
+    lane=manual, or type=manual all mean Tony's hands. A type outside
+    dispatch_repos.SERVED_TYPES has no unattended executor at all.
+    Returns '' when automation may claim the card."""
+    a = _act(card)
+    if str(a.get("executor") or "") == "manual":
+        return ("action.executor=manual — Tony's hands, "
+                "not runner-dispatchable")
+    lane = str(a.get("lane") or "")
+    if lane == "manual" and not a.get("lane_source"):
+        return ("action.lane=manual — Tony's hands, "
+                "not runner-dispatchable")
+    typ = str(a.get("type") or "dispatch")
+    if typ == "manual":
+        return ("action.type=manual — human-owned work, "
+                "not runner-dispatchable")
+    if typ not in dr.SERVED_TYPES:
+        return f"action.type={typ!r} has no unattended executor"
+    return ""
+
+
+def queue_wait_reason(card: dict) -> str:
+    """Why a queued/claimed-read card is not runner-dispatchable.
+
+    Same contract as human_wait_reason, plus classifier-stamped
+    lane=manual: runners never claim lane=manual regardless of
+    lane_source, so /queue and /claim must not call it dispatchable.
+    Write-door queueing still uses human_wait_reason so a stamped lane
+    can be re-classified instead of refused forever."""
+    reason = human_wait_reason(card)
+    if reason:
+        return reason
+    if str(_act(card).get("lane") or "") == "manual":
+        return ("action.lane=manual — Tony's hands, "
+                "not runner-dispatchable")
+    return ""
+
+
+def _wait_kind(card: dict) -> tuple[str, str]:
+    """(kind, owner) for a queue_wait_reason hit — manual lanes/types are
+    Tony's hands; anything else is an unserved contract for chaba to fix."""
+    a = _act(card)
+    if (str(a.get("executor") or "") == "manual"
+            or str(a.get("type") or "") == "manual"
+            or str(a.get("lane") or "") == "manual"):
+        return "human", "tony"
+    return "unserved", "chaba"
+
+
+def _refuse_human_queue(card: dict, frm: str, verb: str,
+                        reason: str = "") -> str:
+    """Record a refused queue/retry on human-owned work.
+
+    The write door never arms a manual card for dispatch: it stays out of
+    action.status=queued, is flagged awaiting_action for triage, and the
+    caller gets the reason. Returns '' when the card is dispatchable."""
+    reason = reason or human_wait_reason(card)
+    if not reason:
+        return ""
+    a = _ensure_act(card)
+    if a.get("status") == "queued":
+        a["status"] = "idle"  # legacy queued-manual cannot stay claimable
+    card["awaiting_action"] = True
+    comms_add(card, frm, f"{verb} skipped — {reason}")
+    comms_add(card, "chaba", reason)
+    return ("not re-queued" if verb == "retry" else "not queued") \
+        + f" — {reason}"
 
 
 def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
@@ -1258,8 +1332,21 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     card.pop("awaiting_action", None)  # any deliberate action is triage
     st = a.get("status", "idle")
     if verb == "queue":
-        if st in ("queued", "running"):
-            return f"already {st}"
+        if st == "queued":
+            # a legacy queued manual card is reconciled here, not left
+            # looking claimable; classifier-stamped lane=manual counts
+            # too (runners never claim it) but a fresh queue below can
+            # still re-classify it once it is out of queued.
+            refused = _refuse_human_queue(
+                card, frm, verb, queue_wait_reason(card))
+            if refused:
+                return refused
+            return "already queued"
+        if st == "running":
+            return "already running"
+        refused = _refuse_human_queue(card, frm, verb)
+        if refused:
+            return refused
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         a.pop("runner", None)   # a re-queue after done/failed must be
@@ -1287,6 +1374,10 @@ def do_action(card: dict, verb: str, frm: str) -> str:
                 x for x in (warn, uncl) if x)
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
+        refused = _refuse_human_queue(card, frm, verb,
+                                      queue_wait_reason(card))
+        if refused:
+            return refused
         a["status"] = "queued"
         prev = a.pop("result", None)
         if prev:
@@ -1315,6 +1406,10 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a["status"] = "idle"
         card["column"] = "backlog"
         comms_add(card, frm, "put on hold")
+        reason = queue_wait_reason(card)
+        if reason:
+            card["awaiting_action"] = True
+            comms_add(card, "chaba", reason)
         return "back to backlog"
     raise ValueError(f"unknown verb {verb}")
 
@@ -1411,6 +1506,9 @@ def do_claim(card: dict, body: dict) -> str:
     a = _ensure_act(card)
     if a.get("status") != "queued":
         raise ValueError(f"not claimable (status={a.get('status', 'idle')})")
+    human = queue_wait_reason(card)
+    if human:
+        raise ValueError(f"not claimable ({human})")
     host = (body.get("host") or "").strip()
     if not host:
         raise ValueError("claim needs host")
@@ -2176,7 +2274,8 @@ def do_create(body: dict, frm: str) -> dict:
         card = load(p)
         a = _ensure_act(card)
         st = a.get("status", "idle")
-        if st in ("queued", "running"):
+        queued_human = st == "queued" and bool(queue_wait_reason(card))
+        if st in ("queued", "running") and not queued_human:
             return {"message": f"card {cid} already active ({st})",
                     "id": cid, "status": st}
         # A re-queue may carry a freshly approved executor envelope. Preserve
@@ -2192,6 +2291,21 @@ def do_create(body: dict, frm: str) -> dict:
                 # over it (lane_source semantics: _apply_classify_at_queue)
                 a.pop("lane_source", None)
         a.setdefault("type", "dispatch")
+        human = (queue_wait_reason(card) if st == "queued"
+                 else human_wait_reason(card))
+        if human:
+            # A manual/human card is never re-armed for dispatch — keep the
+            # lifecycle honest (done stays done) and flag it for triage.
+            if a.get("status") not in ("done",):
+                a["status"] = "idle"
+            if card.get("column") != "done":
+                card["awaiting_action"] = True
+            comms_add(card, frm, f"re-spawn skipped — {human}")
+            comms_add(card, "chaba", human)
+            card["updated"] = now()
+            save(p, card)
+            return {"message": f"card {cid} not queued — {human}",
+                    "id": cid, "status": a.get("status") or "idle"}
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue
         a.pop("task_id", None)
@@ -2271,11 +2385,18 @@ def do_create(body: dict, frm: str) -> dict:
     if body.get("queue"):
         a = _ensure_act(card)
         a.setdefault("type", "dispatch")
-        a["status"] = "queued"
-        # same queue-time classification as /action do=queue (OPS-0838 +
-        # kk-mac-auto-lane-classifier) — a spawn-and-queue gets the same
-        # route pins instead of silently bypassing classification
-        cmsg = _apply_classify_at_queue(card, a)
+        human = human_wait_reason(card)
+        if human:
+            a["status"] = "idle"
+            card["awaiting_action"] = True
+            comms_add(card, "chaba", human)
+            cmsg = f"not queued — {human}"
+        else:
+            a["status"] = "queued"
+            # same queue-time classification as /action do=queue (OPS-0838 +
+            # kk-mac-auto-lane-classifier) — a spawn-and-queue gets the same
+            # route pins instead of silently bypassing classification
+            cmsg = _apply_classify_at_queue(card, a)
     note = str(body.get("note") or "").strip()
     if note:
         card["note"] = note[:500]
@@ -4646,15 +4767,41 @@ def queue_view() -> dict:
                 if cv is not None
                 for v in [cv]}
 
-    queued = [c for c in cards
-              if (_act(c)).get("status") == "queued"]
+    queued_all = [c for c in cards
+                  if (_act(c)).get("status") == "queued"]
+    claimable_cards, waiting = [], []
+    seen_wait = set()
+    for c in queued_all:
+        reason = queue_wait_reason(c)
+        if reason:
+            waiting.append((c, reason))
+            seen_wait.add(c.get("id"))
+        else:
+            claimable_cards.append(c)
+    # The write door parks human-owned work at idle/failed + awaiting_action
+    # instead of queued — keep that explicit wait visible here too, or the
+    # card would vanish from every queue surface.
+    for c in cards:
+        cid = c.get("id") or ""
+        a = _act(c)
+        if (cid in seen_wait or a.get("status") == "queued"
+                or a.get("status") in ("running", "starting", "claimed",
+                                       "done")
+                or c.get("column") == "done"
+                or not c.get("awaiting_action")):
+            continue
+        reason = queue_wait_reason(c)
+        if reason:
+            waiting.append((c, reason))
+            seen_wait.add(cid)
     try:
-        queued = dr.sort_claimable(queued)
+        claimable_cards = dr.sort_claimable(claimable_cards)
     except Exception:
         pass  # dr unavailable -> keep board order; still truthful
+    waiting.sort(key=lambda cr: str(cr[0].get("updated") or ""))
 
     out_q = []
-    for i, c in enumerate(queued, 1):
+    for i, c in enumerate(claimable_cards, 1):
         cid = c.get("id") or ""
         a = _act(c)
         v = verdicts_for(cid)
@@ -4677,6 +4824,34 @@ def queue_view() -> dict:
             "unreported": sorted(
                 h for h, hb in hosts.items()
                 if not hb["stale"] and h not in v)})
+
+    out_wait = []
+    for c, reason in waiting:
+        cid = c.get("id") or ""
+        a = _act(c)
+        kind, owner = _wait_kind(c)
+        open_reqs = [str(r.get("id") or "?") for r in _reqs(c)
+                     if r.get("status") not in ("answered", "closed")]
+        if open_reqs:
+            next_action = "answer open request(s): " + ", ".join(open_reqs)
+        elif kind == "human":
+            next_action = "human decision — not runner-dispatchable"
+        else:
+            next_action = ("fix action.type/executor/lane or declare a "
+                           "served lane")
+        out_wait.append({
+            "id": cid, "ref": c.get("ref") or "",
+            "title": c.get("title") or "",
+            "priority": c.get("priority") or "",
+            "updated": c.get("updated") or "",
+            "kind": kind,
+            "reason": reason,
+            "owner": owner,
+            "next_action": next_action,
+            "action": {k: a.get(k) for k in
+                       ("repo", "type", "lane", "executor", "model",
+                        "labels", "host", "target_host", "runner")
+                       if a.get(k) not in (None, "", [])}})
 
     # in-flight: card action.status plus the runner's own active report
     # (richer — unit name + start epoch) when one exists
@@ -4702,7 +4877,10 @@ def queue_view() -> dict:
             "at": rep.get("at") or "",
             "repo": a.get("repo") or ""})
     return {"ok": True, "at": now(), "stale_after_s": READY_STALE_S,
-            "hosts": hosts, "queued": out_q, "claimed": claimed}
+            "hosts": hosts, "queued": out_q, "human_waiting": out_wait,
+            "counts": {"queued": len(out_q), "human_waiting": len(out_wait),
+                       "claimed": len(claimed)},
+            "claimed": claimed}
 
 
 class H(BaseHTTPRequestHandler):

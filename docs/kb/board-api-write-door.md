@@ -51,6 +51,14 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   looked up in the sweep's VERBS table, and decision answers stay
   flagged for human triage. `board-cli.py request` exposes this as
   `--option 'id|label|action'` (repeatable; action optional).
+- **`/action do=queue|retry` and `/card queue:true|on_exists:queue`** —
+  human-owned actions are never armed as `action.status=queued`.
+  `action.type=manual`, `action.executor=manual`, an explicit
+  `action.lane=manual`, or a type outside `dispatch_repos.SERVED_TYPES`
+  parks the card at `idle`/`failed` with `awaiting_action` plus a comms
+  reason; `GET /queue` reports those separately under `human_waiting`
+  (`kind: human|unserved`, `owner`, `next_action`) instead of mixing them
+  into claimable `queued` (KNB-0013).
 - **`/attach`** — card file/photo evidence
   (`board-attachments-photo-image-evidence`, 2026-11-17). `payload` is
   base64 (a `data:` URI prefix is stripped); `filename` is sanitized to
