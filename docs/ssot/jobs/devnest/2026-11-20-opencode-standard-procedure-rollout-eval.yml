@@ -1,0 +1,291 @@
+title: OpenCode as supervised executor for Chaba standard procedures —
+  evaluation and bounded rollout decision
+subtitle: OPS-0964 / card opencode-standard-procedure-rollout. Evaluates
+  whether OpenCode should run bounded pieces of the ssot.procedures
+  standard library, building on the completed 3-job free-lane savings
+  pilot and the graduated lane-gate evidence chain.
+icon: route
+version: 1
+
+card: opencode-standard-procedure-rollout
+date: 2026-11-20
+dispatch: 20261120-213459-evaluate-opencode-as-a-supervi
+attempt: 2  # prior dispatch attempts died at runner level (exit-code /
+  # provider rate-limit), not on task substance
+
+spec_source: |
+  Evaluate OpenCode as a supervised executor for Chaba standard
+  procedures, building on the completed 3-job free-lane pilot. Keep
+  deterministic procedures as scripts. For tasks that need agent
+  judgment, use a fresh task-scoped session, isolated dispatch worktree,
+  per-task tool/path allowlist, free lane by default, declared artifact
+  plus independent verifier, and token/time/intervention record. S0-S2
+  read-only/report/doc/small-test tasks only; production changes,
+  secrets, external publication, key/budget changes, and service
+  restarts remain human-gated. Do not enable OPENCODE_LANES fleet-wide
+  or run OpenCode inside Colab.
+  Scope answer (board request opencode-procedure-rollout-scope,
+  2026-10-28): supervised-s0-s2.
+
+verdict: >-
+  ADOPT, BOUNDED. OpenCode is a viable supervised executor for the
+  judgment-needing slices of standard procedures at S0-S2 scope
+  (read-only reports, doc drafts, bounded research, small verifiable
+  chores) TODAY — but only through the existing admission machinery
+  (task-scoped profiles + lane_gate + lane_envelope dispatch contract),
+  never as a generic agent. The trust lives in the control stack, not
+  the model: every observed failure mode was caught deterministically.
+  Deterministic procedures stay scripts — routing them through an LLM
+  executor is strictly worse on cost, latency and verifiability.
+  Mutating/destructive/secret/spend classes remain outside the lane by
+  construction and stay human-gated.
+
+evidence:
+  free_lane_pilot: >-
+    2026-10-26, tony-dell (docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml):
+    3/3 supervised jobs (doc / code+test / report) on
+    litellm/gemini-3.5-flash-lite — all merged, 0 human-intervention
+    minutes, 0 escalations, wall 36-46s vs Devin baseline 57.9-66.1s
+    (30-38% faster), $0.0700 LiteLLM list-price delta ($0.0233/passed
+    gate). OPS-0846 proves the worktree+push+baseline-gate+auto-merge
+    trajectory end-to-end.
+  graduated_lane: >-
+    evals/opencode-lane/PROCEDURE.md + scripts/devnest/lane_gate.py +
+    opencode_profiles.py implement the S0->S5 stage ladder with
+    task-scoped profiles (envelope must narrow the profile), message-mode
+    artifacts, held-out or independent_devin verifiers, metrics ledger
+    (tokens/wall/queue/retries/denials/human_minutes), kill switch,
+    weekly promote/hold/rollback review, and append-only S2 attestation
+    finalization. Lane state on idc02 as of 2026-11-19 preflight
+    (card ada-ocb-free-lane-workflow-pilot): stage S3, not killed.
+  stage_history: >-
+    S0 passed twice (2026-10-27; OPS-1255 requalification
+    2026-11-09 after the Oct-29 manual rollback — flash-lite 3/5,
+    zero safety flags); S1 watched canary passed with measured
+    human_minutes + explicit observer attestation (2026-11-09);
+    S2 completed 2026-11-09 — 5/5 ops-readonly artifacts independently
+    attested by a separate-session reviewer (append-only certificates,
+    hash-bound, no primary-row rewrite). stor-01 tool_denial
+    (2026-11-12: verifier PASSED but 3 refused bash probes) correctly
+    triggered operator-contract rollback S3->S0 and the lane re-earned
+    its stage; that is the gate working as designed, not a defect.
+  dispatch_bridge: >-
+    executor=opencode requires a complete action.lane_envelope at
+    claim time (runner-agent.py ~L1741): no envelope = held, never
+    silently rerouted. The admitted contract serves only S3
+    read-only/report profiles on idc02 (ops-readonly; broadened per
+    Tony option A to ssot-research + storage-dryrun). Generic
+    opencode dispatch rows carry stage="" and cannot qualify as S3
+    evidence by construction.
+  qc_layer: >-
+    scripts/devnest/opencode_session_audit.py audits every OpenCode
+    session against the opencode.db store (276 sessions covered
+    2026-11-07); sequence-anomaly audit verified stage labels vs
+    promote timestamps; pending-review certificates carry
+    frozen evidence hashes.
+  failure_modes_observed: >-
+    cheap-model early-stop (missing_artifact — dominant mode, always
+    caught; see MEM-0871 eval run1 and ada-ocb canary 2026-11-19);
+    denied bash probes (stor-01 -> rollback); free-model schema
+    variance (nemotron-ultra 1/3 valid artifacts on ssot-research);
+    dead free model routes (or-free-nemotron-ultra returned 0 tokens —
+    preflight the route before queueing); timeout evidence loss and
+    fleet runner-agent drift (both fixed by
+    opencode-lane-s3-dispatch-hardening).
+
+spec_to_machinery_map:
+  fresh_task_scoped_session: >-
+    each job is one `opencode_profiles.py run` (or one
+    start_opencode_lane dispatch) — no shared session state; the
+    task-scoped profile IS the session contract.
+  isolated_dispatch_worktree: >-
+    free-lane dispatch runs in dispatch/<tid> worktrees; profile-lane
+    jobs are message-mode (agent holds no write tools — the runner
+    writes the artifact to the admitted path), so isolation is
+    stronger than a worktree for read-only work.
+  per_task_tool_path_allowlist: >-
+    profile.yml declares bash command allowlist, builtin tool toggles,
+    MCP ceiling (S0: none; S1+: 8 read-only mcp-debug tools max),
+    allowed artifact paths, model/provider allowlist, target_host.
+    Envelope must narrow it — widening denies on 17 named axes.
+  free_lane_by_default: >-
+    LANE_PROFILES maps free_lane -> ops-readonly; profile model
+    defaults are cheap-tier (gemini-3.5-flash-lite + OR free
+    alternates). Paid models require explicit envelope model + stay
+    inside the profile allowlist.
+  declared_artifact_plus_verifier: >-
+    envelope artifact {path, schema} + verifier
+    {held_out_py|command|independent_devin, ref} are fail-closed
+    required fields; waiting_cards.py additionally wants a top-level
+    verifier for queued cards.
+  token_time_intervention_record: >-
+    <state>/metrics.jsonl per job: input/cache/output tokens,
+    provider cost, wall+queue time, retries, tool denials,
+    human_minutes, verifier pass, escalation, failure reason.
+  s0_s2_scope: >-
+    the stage gate itself enforces it — stage in the envelope must
+    equal the lane's current stage; S4/S5 profiles (artifact-write,
+    branch-code) cannot admit below their stage.
+  human_gated_classes: >-
+    production/destructive/deploy/secret/payment/credential classes
+    are never admitted — hard-coded deny row in the stage table, not
+    a convention.
+  opencode_lanes_scope: >-
+    OPENCODE_LANES=1 is a per-host env opt-in (runner-agent default 0;
+    fleet-wide remains off per spec). Colab stays the compute-pack
+    plane — no OpenCode executor there.
+
+procedure_decision_matrix:
+  # Buckets every ssot.procedures.yml entry by execution mode.
+  # "OpenCode slice" = only the judgment/report step is delegable;
+  # every mutating or gated step stays where it is today.
+  keep_as_deterministic_scripts:
+    why: "deterministic -> script wins on cost, latency, verifiability;
+      an LLM adds nothing where the procedure is already a script/timer"
+    ids:
+      - board-report            # render-board.py timer
+      - key-watch               # key-watch.py timer (probe+alert)
+      - deploy-diff             # deploy-diff.sh matrix scan
+      - drift-reconcile         # audit-hosts.py diff (script half)
+      - ssh-mesh                # ssh-mesh-sync.sh
+      - mddb-backup             # file-level backup/binlog
+      - timer-expectations      # census + expected_services diff
+      - command-truth           # command-truth.py context probe
+      - git-push                # git-safe-push.sh
+      - kanban-throughput       # queue_satisfiability checks
+      - incident-capture        # incident-capture.sh evidence grab
+      - session-close           # finish-and-close mechanics
+      - idea-intake             # deterministic capture plumbing
+      - vocab                   # terminology table maintenance
+  opencode_eligible_s0_s2:
+    why: "the judgment/report/draft slice benefits from an agent;
+      every listed procedure already ends in a report/card/doc artifact
+      that fits the declared-artifact + verifier contract"
+    candidates:
+      - {id: backlog-audit, slice: "bucket triage + rationale per card -> JSON/markdown report; the do:move/do:queue mutations stay board-api + human/Devin", profile: ssot-research}
+      - {id: session-audit, slice: "artifact-landing QC reads + finding writeups; card filing stays board-api", profile: ops-readonly/ssot-research}
+      - {id: drift-reconcile, slice: "interpret audit deltas -> audit-auto-* card drafts (script produces the delta)", profile: ops-readonly}
+      - {id: deploy-diff, slice: "explain drift verdicts -> report (script gathers the data)", profile: ops-readonly}
+      - {id: key-watch, slice: "expiry/quota alert summarization for the incident card", profile: ops-readonly}
+      - {id: cms-report, slice: "report drafting to the anatomy contract; publish step stays the cms-report gate", profile: doc-draft (S4-gated direct-write stays OFF — message-mode only until S4)}
+      - {id: ssot-research + info-find, slice: "retrieval questions with resolvable citations", profile: ssot-research/info-find}
+      - {id: storage-dryrun, slice: "inventory + candidate classification; deletions always [] by construction", profile: storage-dryrun}
+      - {id: incident-capture, slice: "turn grabbed evidence into the incident note", profile: ops-readonly/doc-draft}
+      - {id: command-truth, slice: "unattributed-change investigation -> cast-auto-command-truth card draft", profile: ops-readonly}
+      - {id: model-eval/idea-bench, slice: "bench result interpretation + report writing", profile: doc-draft/ssot-research}
+      - {id: timer-expectations, slice: "census anomaly explanation", profile: ops-readonly}
+      - {id: place-report/media-inbox, slice: "dossier drafting — hold supervised: member-facing prose needs quality check first", profile: doc-draft}
+  human_gated_always:
+    why: "production/destructive/deploy/secret/payment/credential/
+      service-restart classes — never admitted to the lane; also any
+      procedure whose done-state is a changed production surface"
+    ids:
+      - deploy-ada, deploy-board-static, github-process      # deploy/prod
+      - host-restart, host-hardening, net-tune, new-host     # host mutation
+      - serve-restore, edge-add-host, tailnet-device-unreachable  # edge/prod
+      - ha-node-migrate, ha-20268-http, ha-ada-isolate       # HA prod
+      - member-node, member-device-heavy-job, member-user, member-tg  # access/identity
+      - msg-lane, tg-lane-setup, telegram-conversation       # secrets/lanes
+      - bank-assign, chaba-guest-service                     # policies/secrets
+      - mddb-prune-compact, capacity-adjust, placement       # mutating/prod-sizing
+      - dashboard-mutate, persona-lane-ci                    # prod surfaces
+      - colab-serve, colab-gdrive-cache, colab-mcp, colab-batch-queue  # colab plane (spec: no opencode in Colab)
+      - llm-credit-outage                                    # key/budget
+      - display-scale, cam-onboard, lane-bringup-verify      # actuation on live surfaces
+      - board-write, card-ops-sweep, ada-next-card           # mutation-door authority stays Devin/board-api
+      - where-things-go, knowledge-capture, pointer-note, session-capture  # meta-duties of the supervising agent, not delegable work
+      - frustration-procedure, subtract-first, devin-error-standard, session-blocked-protocol, lane-bringup-verify  # doctrine/gates, not tasks
+      - idea-bench (bench execution), ncm-jev-nest-explore, feature-explore, persona-eval  # GPU/prod-adjacent benches
+      - ai-lane-delegate, devnest-performance-research, lane-cms-coverage, voice-fx, websearch-failfast, relay-latency-stack, cms-page-standard  # doctrine/config or prod-path work
+
+operating_contract:
+  admission: >-
+    A procedure step runs on OpenCode only via a complete lane_envelope
+    (card action) or an explicit `opencode_profiles.py run <envelope>`
+    on the lane host. Envelope resolves a task-scoped profile;
+    unmapped/unprofilename work never reaches OpenCode.
+  models: >-
+    free_lane default = litellm/gemini-3.5-flash-lite; OR free
+    alternates allowed per profile. PREFLIGHT the route — a dead free
+    model silently wastes the job (0 tokens, missing_artifact).
+    paid_frontier needs explicit envelope model + profile allowlist.
+  verification: >-
+    declared artifact + verifier fail-closed. independent_devin
+    attestations come from a separate reviewer session via
+    finalize-review — never self-verified, never post-hoc relabeled.
+  supervision: >-
+    S0-S2 = the spec's scope. S1 additionally needs a human watcher
+    recording human_minutes. S3+ expansion is a separate lane-gate
+    promotion, not part of this rollout.
+  records: >-
+    metrics.jsonl per job is the token/time/intervention record;
+    weekly lane_gate review is the standing QC; card comms carry the
+    outcome.
+  explicit_non_goals: >-
+    no OPENCODE_LANES fleet enablement (per-host opt-in only); no
+    OpenCode inside Colab; no branch-code (profile disabled, S5
+    decision pending zen-free-code-corpus-eval); no mutating artifact
+    writes below S4.
+
+gaps_and_followups:
+  - "S3 sample quota unfinished: lane needs 10-20 genuine read-only
+    production samples (>=80% verified, 0 denials) fed by REAL backlog
+    cards — do not manufacture snapshot jobs. This is the next gate
+    before any S4 write capability discussion."
+  - "waiting_cards.py requires a top-level verifier and ignores
+    lane_envelope.verifier (noted on ada-ocb pilot 2026-11-19) — queued
+    opencode cards need the verifier duplicated at action.verifier
+    until that's reconciled."
+  - "Free-model route preflight is manual: add a cheap probe (model
+    /models or 1-token call) to the envelope admission path so dead
+    routes deny at claim, not at missing_artifact time."
+  - "missing_artifact retry: escalation.max_retries exists but auto-
+    retry on early-stop was still partial at eval time — a single
+    bounded retry absorbs the dominant failure mode."
+  - "runner-agent fleet drift recurs (every host defers: installed
+    runner-agent drifted) — redeploy ~/.local/bin/runner-agent per host
+    or wire the declared sync; the version gate added by
+    s3-dispatch-hardening only detects it."
+  - "Procedure metadata: tag ssot.procedures.yml entries with
+    executor affinity (script|opencode-slice|human-gated) in a
+    follow-up card so routing is data-driven instead of tribal."
+  - "doc-draft/artifact-write profiles: direct-write modes are S4-
+    gated — keep reports message-mode until S4 qualifies; do not
+    quietly re-enable."
+
+decision:
+  rollout: >-
+    Adopt OpenCode as the supervised executor for the read-only/report/
+    doc/small-test judgment slices enumerated above, under the existing
+    lane_envelope + profile + stage contract. No new machinery needed
+    — the build-out already happened through the graduated-routing
+    cards; this evaluation ratifies the operating boundary.
+  not_now: >-
+    S4 reversible writes and S5 branch/code stay gated on the lane's
+    own evidence chain (S3 quota, rollback drills, strong-model
+    decision). Fleet OPENCODE_LANES and Colab execution stay off.
+  owner_of_gate: >-
+    lane_gate.py stage.json on the lane host (idc02) + weekly review;
+    the board lane_envelope contract is the only dispatch door.
+
+references:
+  - evals/opencode-lane/PROCEDURE.md
+  - docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+  - docs/ssot/jobs/devnest/pilot-runs/2026-10-26-*.yml
+  - docs/ssot/jobs/devnest/2026-10-27-opencode-graduated-routing-procedure.yml
+  - docs/ssot/jobs/devnest/2026-10-27-opencode-task-agent-profiles.yml
+  - docs/ssot/jobs/devnest/2026-10-28-nest-opencode-executor-eval.yml
+  - docs/ssot/jobs/devnest/2026-11-07-opencode-session-audit.yml
+  - evals/opencode-lane/reports/2026-11-12-stor01-rollback-review.json
+  - docs/ssot/kanban/cards/opencode-lane-regraduation.yml
+  - docs/ssot/kanban/cards/opencode-lane-s3-dispatch-hardening.yml
+  - docs/ssot/kanban/cards/ada-ocb-free-lane-workflow-pilot.yml
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml#free-opencode
+  - docs/reports/opencode-lane-status-2026-10-30.md
+  - scripts/devnest/lane_gate.py, scripts/devnest/opencode_profiles.py
+  - scripts/board/runner-agent.py (lane_envelope admission contract)
+
+verify:
+  - "python3 yaml.safe_load on this file — parses"
+  - "no card/spec claim conflicts: scope answer supervised-s0-s2 honored;
+    no OPENCODE_LANES fleet flag touched; no profile re-enabled"
