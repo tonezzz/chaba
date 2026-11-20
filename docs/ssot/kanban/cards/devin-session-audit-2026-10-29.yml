@@ -1,6 +1,6 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
+column: backlog
 updated: 2026-11-20 18:25
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
@@ -306,15 +306,18 @@ comms:
   text: 'Resume 2026-11-20 18:2x ICT on tony-macbook: recovered the Nov-19 tony-omen audit-scratch (claims ledger,
     CMS key inventory, Drive check results, repo verdicts). Now completing the dedupe + miss reconciliation the
     rate-limited run never reached.'
+- at: 2026-11-20 18:25
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
-  attempts: 1
+  attempts: 0
   last_failure: 'exit=1 evin-task-20261119-185950-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
     | devin-task-20261119-185950-finish-artifact-landing-verifi.service: Consumed 9.342s CPU time over 3.983s wall
     clock time, 247.6M memory peak.'
@@ -322,6 +325,5 @@ action:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
-  runner: tony-macbook
 claim:
   since: 2026-11-20 18:18
