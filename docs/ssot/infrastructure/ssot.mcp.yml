@@ -67,6 +67,9 @@ fleet_observation:
     L0 artifacts under reports/mcp-inventory/ are append-only; each host's
     meta.*.yml carries observed state. An unreachable host is reported as
     unreachable with no missing-server findings — unobserved is not missing.
+    A reachable host with no MCP client configs is reported as no-config
+    (informational, not drift) — an infra host without an agent lane is not
+    a declaration violation.
   hosts:
     tony_omen: {ssh: tony-omen, role: primary-workstation}
     tony_dell: {ssh: tony-dell, role: headless-primary}
