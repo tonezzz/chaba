@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
-column: backlog
-updated: 2026-11-20 13:16
+column: doing
+updated: 2026-11-20 13:17
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -562,9 +562,16 @@ comms:
 - at: 2026-11-20 13:16
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.15 > 1.0)'
+- at: 2026-11-20 13:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 13:17
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service:
     Failed with result ''exit-code''.'
@@ -575,8 +582,11 @@ action:
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
+  runner: idc02
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-20 13:17
 requests:
 - id: does-today-s-kk-mac-permission-include-o-6d3988
   ask: Does today’s KK-Mac permission include one local 30-minute Qwen3:8B inference benchmark using the already-staged

@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: doing
-updated: 2026-11-20 13:06
+updated: 2026-11-20 13:17
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -197,6 +197,13 @@ comms:
   from: devin
   text: 'dispatch session started (worktree dispatch/20261120-060606): reading shadow_eval + fixtures + prior pack
     attempt; arm is model-only per answered request.'
+- at: 2026-11-20 13:17
+  from: devin
+  text: 'Pack rebuilt + staged (0-diff verified). 30m slot on Drive at ada-nest/packs/devnest-model-slot-30m: prep
+    now extracts the pre-staged tar (the missing link last time), fixtures moved inside the pack, Colab-only guard,
+    HF offline env, manifest pin+sha256 reverify. New: shadow_eval.py t4slot {--check,--fetch} control plane + repo-only
+    devnest-model-slot-60m gated on 30m pass via preflight.json. Queue idle (~22d); NOT launched. Prestage already
+    done (con01, pinned 16.4GB snapshot verified remote).'
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
