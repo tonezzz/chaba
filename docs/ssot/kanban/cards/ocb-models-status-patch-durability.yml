@@ -1,0 +1,47 @@
+id: ocb-models-status-patch-durability
+title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
+column: backlog
+updated: 2026-11-20 17:15
+brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
+  route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
+  — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
+priority: high
+tags:
+- openchamber
+- idc02
+spec: 'Context: 2026-11-20 incident — a hand-patch to node_modules added models.status (openchamber-control service.js/actions.js,
+  self-update/openchamber-routes.js, runtime.js lazy controlService getter, server-frame/bootstrap-runtime.js) and
+  initially crash-looped the service via an eager destructure TDZ bug (fixed in-place same day).
+
+
+  Durability problem: node_modules is not a source of truth. Next ''npm i -g @openchamber/web'' (openchamber-update.service
+  fires monthly, ExecStart now uses node24 npm --prefix=~/.local/node) restores pristine files and the feature vanishes
+  with no warning.
+
+
+  Task:
+
+  1. Extract the current patch: diff the 5 modified files on idc02 (~/.local/node/lib/node_modules/@openchamber/web/build/...)
+  against pristine @openchamber/web@2.7.3 (npm pack). Files: build/server/runtime.js, build/server/lib/server-frame/bootstrap-runtime.js,
+  build/server/lib/openchamber-control/{service.js,actions.js}, build/server/lib/self-update/openchamber-routes.js.
+
+  2. Decide durable home (in order of preference): (a) upstream PR to the OpenChamber repo if it is public/forkable;
+  (b) a patch file + postinstall/apply script in a repo (e.g. chaba stacks/ or ada-voice scripts/) that openchamber-update.service
+  runs after npm i -g; (c) pin @openchamber/web version and document manual re-apply.
+
+  3. Wire the apply step into openchamber-update.service ExecStartPost (or a dedicated ocb-patch.service) on idc02
+  so updates cannot silently drop the feature.
+
+  4. Verify: reinstall @openchamber/web@2.7.3 into a scratch prefix, apply the durable mechanism, confirm /api/openchamber/models/status
+  responds and openchamber.service stays active.
+
+  5. Record the mechanism in docs/ssot/infrastructure/ssot.audit.hosts.yml openchamber.service note.
+
+
+  Done when: a fresh npm install + the documented apply step yields a working models.status endpoint, and the update
+  unit cannot regress it silently.'
+ref: OPS-0022
+comms:
+- at: 2026-11-20 17:15
+  from: tony
+  text: card captured via board-api
