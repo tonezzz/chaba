@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
 column: doing
-updated: 2026-11-20 19:44
+updated: 2026-11-20 19:48
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -148,5 +148,12 @@ comms:
   from: devin
   text: 'attempt 2 started on tony-macbook: adding POST /card-set (lane/executor/tags whitelist) + board-cli subcommand
     + selftests; prior attempt died on provider rate-limit'
+- at: 2026-11-20 19:48
+  from: devin
+  text: 'DONE on dispatch/20261120-194241-repo-work-chaba-scripts-board- (commits 5b50f56 + ae02d63, rebased on
+    origin/master). POST /card-set {id,set:{lane?,executor?,tags?},from,reason} — whitelisted routing-field door:
+    lane in valid_lanes() (LANE_MODELS|LANE_EXECUTORS minus catalog-retired, shares RETIRE_RE with the new lane-retirement
+    contract test), executor in dr.EXECUTORS, tags list-or-{add,remove} <=20/<=40ch; empty value unpins; explicit
+    lane drops lane_source (author-set wins over queue classif'
 claim:
   since: 2026-11-20 19:40
