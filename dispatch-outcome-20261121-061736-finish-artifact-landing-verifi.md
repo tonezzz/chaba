@@ -60,3 +60,11 @@ lessons:
 - Repeated dispatch exit-code failures on this card were post-completion teardown on the rate-limited free model, not missing work — check card comms for "posted-then-died" before redoing a completed audit.
 - The session-audit marker is per-host (`~/.local/share/devin/session-audit-marker`); tony-omen's was first written 2026-11-21 06:13 by run-1, the canonical 2026-11-20T18:50:37 marker lives on tony-macbook.
 - `GET /cards` returns ~11 MB — pipe to a file with `--max-time 60`, not into a parse pipe with a short timeout, or json.load hits an unterminated string.
+
+## Run-2 addendum (2026-11-21 ~06:2x ICT)
+
+The unit restarted after run-1's post-completion teardown. Run-2 re-confirmed the
+final state rather than redoing work: report `status: complete` (timeline 19),
+outcome doc committed (`bf4299e0df`), final "Done" comms on the card (06:19),
+local marker `2026-11-21T06:13:13` with 0 newer summaries, working tree clean.
+No additional changes needed.
