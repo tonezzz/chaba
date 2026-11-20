@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
-updated: 2026-11-21 06:19
+column: backlog
+updated: 2026-11-21 06:23
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -602,25 +602,34 @@ comms:
     10 audit-miss cards live (8 backlog/1 review/1 done); PR #196/#197 re-verified on origin. Outcome doc committed
     on dispatch/20261121-061736-finish-artifact-landing-verifi (bf4299e0df). Prior exit-codes were teardown, not
     missing work — card can move to review.'
+- at: 2026-11-21 06:23
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code 20261121-061736-finish-artifact-landing-verifi.service: Failed with
+    result ''exit-code''. | devin-task-2 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-21 06:23
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261121-061736-finish-artifact-landing-verifi (rate-limited)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
   attempts: 2
-  last_failure: 'journal=exit-code NT | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Failed
-    with result ''exit-code''. | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Consumed 50.542s
-    CPU time, 492.6M memory peak, 0B memory swap peak.'
+  last_failure: 'journal=exit-code 20261121-061736-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261121-061736-finish-artifact-landing-verifi.service: Consumed 1min 19.103s CPU time over 4min
+    42.257s wall clock time, 938M memory peak.'
   sweep:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
-  result: 'journal=exit-code NT | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Failed with
-    result ''exit-code''. | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Consumed 50.542s
-    CPU time, 492.6M memory peak, 0B memory swap peak.'
+  result: 'journal=exit-code 20261121-061736-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261121-061736-finish-artifact-landing-verifi.service: Consumed 1min 19.103s CPU time over 4min
+    42.257s wall clock time, 938M memory peak.'
   runner: tony-omen
 claim:
   since: 2026-11-21 06:15
