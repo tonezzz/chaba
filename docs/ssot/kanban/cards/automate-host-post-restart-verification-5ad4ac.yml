@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 14:54
 action:
   type: manual
   status: idle
@@ -10,61 +10,57 @@ comms:
 - at: 2026-10-25 15:49
   from: devin
   text: The standard manual procedure exists in docs/kb/host-reboot-verification.md and docs/ssot/infrastructure/ssot.operations.yml#transition.post_restart.
-    The existing mcp-health-snapshot.timer has OnBootSec=5min/OnUnitActiveSec=15min and did run after
-    the latest Omen boot; however scripts/mcp-health-snapshot.mjs only records a global health summary
-    and opens focus-inbox findings. It does not invoke the full host-specific post_restart checklist.
-    Add boot-id-change detection and one check-only run for
+    The existing mcp-health-snapshot.timer has OnBootSec=5min/OnUnitActiveSec=15min and did run after the latest
+    Omen boot; however scripts/mcp-health-snapshot.mjs only records a global health summary and opens focus-inbox
+    findings. It does not invoke the full host-specific post_restart checklist. Add boot-id-change detection and
+    one check-only run for
 - at: 2026-10-25 15:49
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
-    in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
 - at: 2026-10-25 15:50
   from: devin
-  text: Verified the current gap. host-reboot-verification.md and ssot.operations.yml#transition.post_restart
-    define the manual checklist. mcp-health-snapshot.timer is active with OnBootSec=5min/OnUnitActiveSec=15min
-    and ran at 15:33 local; its script only calls get_health_status, logs the global summary, and creates
-    inbox findings. It does not invoke host-specific post_restart checks. This systemd timer is model-independent,
-    so swe-high -> gpt-6 luna cannot suppress it. Full checklist invocation was ma
+  text: Verified the current gap. host-reboot-verification.md and ssot.operations.yml#transition.post_restart define
+    the manual checklist. mcp-health-snapshot.timer is active with OnBootSec=5min/OnUnitActiveSec=15min and ran
+    at 15:33 local; its script only calls get_health_status, logs the global summary, and creates inbox findings.
+    It does not invoke host-specific post_restart checks. This systemd timer is model-independent, so swe-high ->
+    gpt-6 luna cannot suppress it. Full checklist invocation was ma
 - at: 2026-10-25 15:51
   from: devin
   text: 'Post-restart investigation complete: the existing mcp-health-snapshot.timer is active (OnBootSec=5min,
-    OnUnitActiveSec=15min) and did run after this Omen boot; its log has the 15:33 snapshot. It only records
-    global health and raises focus-inbox findings; it does not run the host-specific transition.post_restart
-    checklist. Devin model selection is unrelated to systemd timer execution. The Omen post-check found
-    Tailscale/GPU/cpufreq/Ollama/sensor/GDrive okay, but Barrier KVM degraded; GPU is busy '
+    OnUnitActiveSec=15min) and did run after this Omen boot; its log has the 15:33 snapshot. It only records global
+    health and raises focus-inbox findings; it does not run the host-specific transition.post_restart checklist.
+    Devin model selection is unrelated to systemd timer execution. The Omen post-check found Tailscale/GPU/cpufreq/Ollama/sensor/GDrive
+    okay, but Barrier KVM degraded; GPU is busy '
 - at: 2026-10-25 15:53
   from: devin
-  text: 'Follow-up findings: the manual restart runbook/SSOT also still expects a 2.20GHz Omen CPU cap,
-    while the live approved service is 2.00GHz (2000000 kHz); update that reference in the automation
-    work. Post-boot mcp-health snapshot ran, but full transition.post_restart remains manual. Current
-    Omen-only exception is Barrier KVM waiting for missing X0; global quick-health failures are Playlived/GPU
-    Queue on Dell, not Omen.'
+  text: 'Follow-up findings: the manual restart runbook/SSOT also still expects a 2.20GHz Omen CPU cap, while the
+    live approved service is 2.00GHz (2000000 kHz); update that reference in the automation work. Post-boot mcp-health
+    snapshot ran, but full transition.post_restart remains manual. Current Omen-only exception is Barrier KVM waiting
+    for missing X0; global quick-health failures are Playlived/GPU Queue on Dell, not Omen.'
 - at: 2026-10-26 11:35
   from: devin
-  text: 'Follow-up: Barrier KVM has now been retired on Omen/Dell; the future post-restart checklist should
-    not expect barriers.service/barrier-client or port 24800. Keep only barrier-pin-vt as a physical-seat
-    helper if that remains in the display profile.'
+  text: 'Follow-up: Barrier KVM has now been retired on Omen/Dell; the future post-restart checklist should not
+    expect barriers.service/barrier-client or port 24800. Keep only barrier-pin-vt as a physical-seat helper if
+    that remains in the display profile.'
 - at: 2026-10-27 05:35
   from: tony
   text: queued for processing
 - at: 2026-10-27 05:35
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
-    in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
 - at: 2026-10-29 11:33
   from: devin
-  text: 'Missed-job sweep 2026-10-29: this card is Doing but action.type=manual, action.status=queued;
-    kanban-dispatch cannot claim it and there is no active task. Holding it in Backlog so it no longer
-    appears to be an executing job; resume only with a dispatchable implementation spec or a named manual
-    owner.'
+  text: 'Missed-job sweep 2026-10-29: this card is Doing but action.type=manual, action.status=queued; kanban-dispatch
+    cannot claim it and there is no active task. Holding it in Backlog so it no longer appears to be an executing
+    job; resume only with a dispatchable implementation spec or a named manual owner.'
 - at: 2026-10-29 11:33
   from: devin
   text: moved doing -> backlog
 - at: 2026-10-29 11:34
   from: devin
-  text: 'Missed-job sweep 2026-10-29: The manual action remained queued after being moved to Backlog,
-    but this card is not dispatchable and no runner is active. Clearing that stale queue badge; keep the
-    card in Backlog for a human/spec owner.'
+  text: 'Missed-job sweep 2026-10-29: The manual action remained queued after being moved to Backlog, but this card
+    is not dispatchable and no runner is active. Clearing that stale queue badge; keep the card in Backlog for a
+    human/spec owner.'
 - at: 2026-10-29 11:34
   from: devin
   text: put on hold
@@ -143,17 +139,31 @@ comms:
 - at: 2026-11-20 13:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-20 14:54
+  from: ada
+  text: 'answered multiple-hosts-tony-omen-idc02-a913db: ★ Redeploy completed (2026-11-20) before this run: copied
+    /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent on tony-omen, idc02
+    (localhost), idc03, and tony-m'
+- at: 2026-11-20 14:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: multiple-hosts-tony-omen-idc02-a913db
-  ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed
-    runner-agent has drifted from the repository version located at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
-    Before the post-restart verification can be automated, the runner-agent must be updated across the
-    affected infrastructure.
+  ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed runner-agent
+    has drifted from the repository version located at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
+    Before the post-restart verification can be automated, the runner-agent must be updated across the affected
+    infrastructure.
   options:
   - ★ Redeploy runner-agent to tony-omen, idc02, idc03, and tony-macbook via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     and retry the card
   - Postpone automation until the runner-agent deployment pipeline is centralized
   - Scope the post-restart verification task to a single host first
-  status: open
+  status: answered
   at: 2026-11-20 13:20
   from: backlog-spec-enrich
+  answer: '★ Redeploy completed (2026-11-20) before this run: copied /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    to ~/.local/bin/runner-agent on tony-omen, idc02 (localhost), idc03, and tony-macbook via scp/install; md5 verified
+    identical on all hosts (3152244e0372fa88ff6cafe36e1c228d). runner-agent.service restarted on tony-omen/idc03/tony-macbook
+    (ran post-restart claim passes; oneshot exits 0 on tony-omen/idc03, active on tony-macbook); idc02 binary updated
+    (service was inactive). Dri'
+awaiting_action: true
