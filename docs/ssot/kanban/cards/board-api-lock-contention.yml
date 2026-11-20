@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
-column: doing
-updated: 2026-11-20 19:12
+column: review
+updated: 2026-11-20 19:15
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -306,11 +306,33 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261120-182834-symptom-2026-11-17-18-20-ict-i on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-20 19:14
+  from: tony-omen
+  text: 'finished (ok): exit=0 fter merge — watch `/lock-stats` timeouts and journal `lock wait >25s` lines for
+    a day. | devin-task-20261120-182'
+- at: 2026-11-20 19:15
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 19:15
+  from: chaba
+  text: 'session-end checkpoint df632dad: 1 leftover file(s) committed'
+- at: 2026-11-20 19:15
+  from: chaba
+  text: banked 106 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 19:15
+  from: chaba
+  text: pushed dispatch/20261120-182834-symptom-2026-11-17-18-20-ict-i to origin
+- at: 2026-11-20 19:15
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-20 19:15
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests: []
 action:
   lane: paid_frontier
   type: dispatch
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-17 21:09
     stale_running: 2026-11-17 21:39
@@ -322,6 +344,9 @@ action:
   attempts: 1
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=0 fter merge — watch `/lock-stats` timeouts and journal `lock wait >25s` lines for a day. | devin-task-20261120-182834-symptom-2026-11-17-18-20-ict-i.service:
+    Consumed 16min 23.887s CPU time over 34min 17.843s wall clock time, 1G memory peak.'
+  verified: false
 review_kind: triage
 claim:
   since: 2026-11-20 18:26
