@@ -217,6 +217,7 @@ import card_io
 import dispatch_repos as dr
 import board_notify as bn
 import publication as pub
+import opencode_command as opc
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -2583,7 +2584,8 @@ MDDB_LESSONS = os.environ.get("BOARD_API_MDDB_LESSONS",
                               "chaba-lessons")
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
-                      "/wiki/news-diagnose", "/wiki/page"}
+                      "/wiki/news-diagnose", "/wiki/page",
+                      "/opencode-command"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -4191,6 +4193,26 @@ def do_report(body: dict, frm: str) -> dict:
             "slug": r["slug"]}
 
 
+def do_opencode_command(body: dict, frm: str) -> dict:
+    """/opencode-command — the narrow OpenCode command publisher (card
+    ada-opencode-command-publisher-20261108). All path/git/shape logic
+    lives in opencode_command.py behind a fixed COMMANDS allowlist; this
+    door only adds the writer-pipeline commit hook and actor audit.
+    publish -> canonical write in the served checkout + _queue_commit
+    (kanban-commit safe-pull+push lands it upstream); sync -> fixed-argv
+    ssh/local atomic copy + sha verify."""
+    try:
+        res = opc.handle(
+            body,
+            commit_hook=lambda p: _queue_commit(
+                p, f"opencode-command "
+                   f"{str(body.get('name') or 'ada')}"))
+    except opc.PublishError as e:
+        raise UpstreamError(str(e))
+    res["actor"] = frm
+    return res
+
+
 # --- /publish — provider-neutral publication door ---------------------------
 # One canonical PublicationEvent fans out to sink adapters (see
 # scripts/board/publication.py for schema/policy/outbox). Each adapter
@@ -5055,6 +5077,8 @@ class H(BaseHTTPRequestHandler):
                         res = do_wiki_news_diagnose(body, frm)
                     elif path == "/wiki/page":
                         res = do_wiki_page(body, frm)
+                    elif path == "/opencode-command":
+                        res = do_opencode_command(body, frm)
                     else:
                         res = do_report(body, frm)
                 finally:

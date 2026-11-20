@@ -36,6 +36,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | **`/report`** | `{query}` \| `{slug, note, lang?}` \| `{title|slug, content_md, meta?}` | ada-cms-pages search / session-log append / create |
 | **`/inbox`** | `{text, label?, priority?, tags?, missing_info?, subtasks?, session?, owner?, safe_to_parallel?}` | `docs/ssot/focus-inbox/<ts>-<slug>.yml` + commit |
 | **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
+| **`/opencode-command`** | `{op: preview\|validate\|publish\|sync\|verify, name: ada, content?, confirm?, expect_sha?}` | allowlisted OpenCode command file — canonical write + commit queue + atomic idc02 deploy + sha verify (runbook: `docs/kb/opencode-command-publisher.md`) |
 
 ## Endpoint notes
 
