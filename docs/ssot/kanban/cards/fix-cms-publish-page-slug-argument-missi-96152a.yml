@@ -1,7 +1,7 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
-column: doing
-updated: 2026-11-20 21:02
+column: backlog
+updated: 2026-11-20 21:04
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
 ref: KNB-0624
@@ -281,6 +281,17 @@ comms:
     gate on the card''s declared action.repo — ada-voice/ada-pi ; [ada-card-runner] primer injected 8 lesson(s):
     [ada-expert-consult-tool] merge-s; [ada-expert-consult-tool] tony-dell defers: executor=jules declared but this
     run; [ada-sweep-tool-preflight-batch] DEPLOYED: deploy-ada.sh on i'
+- at: 2026-11-20 21:04
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code the-cms-publish-page-call-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-210221-fix-t — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 21:04
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-210221-fix-the-cms-publish-page-call- (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-20 21:04
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-20 21:34'
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -320,17 +331,18 @@ requests:
     runner agents
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 cutes at the deploy gate — landing it is `git apply` + `deploy-ada.sh` on tony-dell. | devin-task-20261027-064822-fix-cms-publish-page-slug-argu.service:
-    Consumed 1min 29.197s CPU time over 9min 30.702s wall clock time, 1005.3M memory peak.'
+  status: queued
+  result: 'journal=exit-code the-cms-publish-page-call-.service: Failed with result ''exit-code''. | devin-task-20261120-210221-fix-the-cms-publish-page-call-.service:
+    Consumed 58.196s CPU time over 2min 20.922s wall clock time, 900.5M memory peak, 116K memory swap peak.'
   sweep:
     dirty: 1
     stale_running: 2026-11-20 21:02
     no_repo: 2026-11-20 21:02
   lane: devin
   lane_source: fallback
-  runner: tony-dell
   attempts: 1
+  last_failure: 'journal=exit-code the-cms-publish-page-call-.service: Failed with result ''exit-code''. | devin-task-20261120-210221-fix-the-cms-publish-page-call-.service:
+    Consumed 58.196s CPU time over 2min 20.922s wall clock time, 900.5M memory peak, 116K memory swap peak.'
 review_kind: verify
 claim:
   since: 2026-11-20 21:00
@@ -342,3 +354,4 @@ spec: Fix the cms_publish_page call error where the slug argument is missing, ta
   repository. The task runner must locate the definition of cms_publish_page, identify where the slug argument is
   expected but not provided, and update the function call or signature accordingly. The done-condition is verified
   when automated tests for cms_publish_page pass without raising missing argument errors for the slug.
+awaiting_action: true
