@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
 column: doing
-updated: 2026-11-20 13:42
+updated: 2026-11-20 13:43
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -221,6 +221,13 @@ comms:
     /wiki/news-review for PrivateNews:, chaba-lessons vector + Education index + /report for search). Live-verified
     against real board-api: Education:Ada-Deploy-Flow reads clean, search returns real hits. Generic read/search
     door = chaba follow-up.'
+- at: 2026-11-20 13:43
+  from: devin
+  text: 'done. Branch dispatch/20261120-133005-ada-tools-wiki-read-wiki-searc (commits 068522f+3981a18, not pushed):
+    backend/tools.d/wiki_read.py + wiki_search.py, manifest+count_cap+tool_guide+scenarios+13 tests. Gates: tool-lint
+    clean, pytest 1854 pass. LIVE-verified: Education:Ada-Deploy-Flow reads real wikitext; search returns real hits.
+    Spec correction: /wiki/page has no mode=read and /wiki/search does not exist — tools call the spec doors first
+    (auto-upgrade later) and fall back to /lesson source=w'
 action:
   type: dispatch
   repo: ada-voice
