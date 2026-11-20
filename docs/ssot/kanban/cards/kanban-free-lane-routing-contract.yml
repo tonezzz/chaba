@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 18:38
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -64,3 +64,8 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:38
+  from: devin
+  text: '2026-11-20 update: Jules lane RETIRED (provider EOL, OPS-0156) — remove jules from the free-lane list in
+    this contract; free lanes are now OpenCode Zen free / nlm_batch / deterministic / codemod. JULES_LANES env gates
+    removed on tony-omen+idc03, scripts/jules/jules.py deleted.'
