@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-20 20:07
+updated: 2026-11-20 20:09
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -179,6 +179,13 @@ comms:
     confirmed. bridge{} envelope on every tools/call result (checked ada_bridge_info + ada_card_context). calls.jsonl:
     startup event + per-call bridge_version. stderr startup line OK. Live tony-dell calls.jsonl shows TWO versions
     serving real sessions (git-d073d8d-dirty x30, git-7c5b'
+- at: 2026-11-20 20:09
+  from: devin
+  text: 'run-2 resume confirmed committed state: feature was already merged to main 11-18 (83c8098 via aa31f29);
+    run-1 of this dispatch re-verified end-to-end and committed 4818807 (report + outcome doc) on dispatch/20261120-200415.
+    Re-ran tests this run: 7/7 pass. Deliverables: reports/2026-11-20-ada-ocb-bridge-version-reverify.md + dispatch-outcome
+    doc in worktree. Live calls.jsonl on tony-dell already shows two bridge versions serving sessions — stale-copy
+    detection working.'
 review_kind: verify
 claim:
   since: 2026-11-20 20:02
