@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
 column: doing
-updated: 2026-11-20 19:40
+updated: 2026-11-20 19:42
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -41,6 +41,7 @@ action:
   sweep:
     stale_running: 2026-11-20 19:12
     dirty: 5
+    session_gone: 2026-11-20 19:42
   result: 'exit=1 devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
     | devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Consumed 7min 34.648s CPU time, 356.7M
     memory peak, 0B memory swap peak.'
@@ -129,5 +130,9 @@ comms:
 - at: 2026-11-20 19:40
   from: tony-macbook
   text: claimed
+- at: 2026-11-20 19:42
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261120-192009-canonicalize-the-opencode-ada- on
+    tony-macbook — if the work was never pushed it may be gone'
 claim:
   since: 2026-11-20 19:40
