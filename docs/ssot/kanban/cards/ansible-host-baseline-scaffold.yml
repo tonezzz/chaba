@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: review
-updated: 2026-11-20 17:42
+updated: 2026-11-20 18:32
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -191,6 +191,11 @@ comms:
     vs origin/master: ansible/inventory/group_vars (symlink), ansible/inventory/host_vars (symlink) — merge blocked
     (a symlink, or a file whose name is ignored only as a directory — the 2026-10-10 .venv incident class). Untrack/rename
     it or add the bare ignore name and the next pass lands it.'
+- at: 2026-11-20 18:32
+  from: devin
+  text: 'shadow-guard fix pushed to dispatch branch (09158a4128): replaced inventory/{group_vars,host_vars} symlinks
+    with real dirs — ansible auto-loads vars adjacent to the inventory file, no symlinks needed. Verified ansible-inventory
+    graph + host vars + site.yml --syntax-check. merge-sweep should retry on new head sha.'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
