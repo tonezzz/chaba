@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
 column: done
-updated: 2026-11-19 20:04
+updated: 2026-11-20 16:08
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -222,6 +222,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 16:08
+  from: devin
+  text: 'Independent reconciliation 2026-11-20: origin/master contains merge d9b324556a, and card comms record the
+    merged pieces (#159/#163 and piece 4) plus the 150-test validation and successful AUD-0060 pilot. The action.result
+    admission error is from an earlier failed start, not the final delivery. The done state is supported; no re-dispatch
+    needed.'
 action:
   type: dispatch
   status: done

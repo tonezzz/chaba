@@ -1,7 +1,7 @@
 id: mddb-main-bank-revision-churn-audit
 title: Audit main MDDB revision churn and retention policy
 column: done
-updated: 2026-11-19 20:05
+updated: 2026-11-20 16:08
 brief: Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded
   retention.
 priority: medium
@@ -154,5 +154,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 16:08
+  from: devin
+  text: 'Independent reconciliation 2026-11-20: origin/master contains docs/reports/mddb-main-bank-revision-churn-audit-2026-11-19.md
+    and all four per-collection census JSONs; the report documents the 10,979-document census. Existing comms record
+    merge 46cdddd3 and the completed audit. The action last_failure/result and verified:false fields are stale from
+    the earlier failed start; do not re-dispatch. The done state is supported by the merged artifact, though the
+    metadata flag remains inconsistent.'
 claim:
   since: 2026-11-19 14:22
