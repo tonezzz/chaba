@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
-column: doing
-updated: 2026-11-20 19:48
+column: review
+updated: 2026-11-20 19:50
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -36,19 +36,19 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   attempts: 2
   sweep:
     stale_running: 2026-11-20 19:12
     dirty: 5
     session_gone: 2026-11-20 19:42
-  result: 'exit=1 devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Consumed 7min 34.648s CPU time, 356.7M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=0 1120-194241-repo-work-chaba-scripts-board-.md` and final summary posted to card comms. | devin-task-20261120-194241-repo-work-chaba-scripts-board-.service:
+    Consumed 1min 40.931s CPU time over 6min 7.779s wall clock time, 393.3M memory peak.'
   last_failure: 'exit=1 devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
     | devin-task-20261120-185720-repo-work-chaba-scripts-board-.service: Consumed 7min 34.648s CPU time, 356.7M
     memory peak, 0B memory swap peak.'
   runner: tony-macbook
+  verified: true
 ref: OPS-0027
 comms:
 - at: 2026-11-20 18:43
@@ -155,5 +155,16 @@ comms:
     lane in valid_lanes() (LANE_MODELS|LANE_EXECUTORS minus catalog-retired, shares RETIRE_RE with the new lane-retirement
     contract test), executor in dr.EXECUTORS, tags list-or-{add,remove} <=20/<=40ch; empty value unpins; explicit
     lane drops lane_source (author-set wins over queue classif'
+- at: 2026-11-20 19:50
+  from: tony-macbook
+  text: 'finished (ok): exit=0 1120-194241-repo-work-chaba-scripts-board-.md` and final summary posted to card comms.
+    | devin-task-20261120-1942'
+- at: 2026-11-20 19:50
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 19:50
+  from: chaba
+  text: banked 114 outcome lesson(s) → devin-handoff bank
 claim:
   since: 2026-11-20 19:40
+review_kind: verify
