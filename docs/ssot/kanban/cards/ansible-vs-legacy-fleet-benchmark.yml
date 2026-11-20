@@ -1,7 +1,7 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
 column: doing
-updated: 2026-11-21 06:33
+updated: 2026-11-21 06:36
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
 priority: medium
@@ -158,6 +158,13 @@ comms:
   from: devin
   text: 'Attempt 2 (tony-dell): prior run on tony-macbook reported DONE with commit 970a4175b5 but unit exited non-zero.
     Recovering artifacts from the macbook worktree, re-verifying from dell, then landing on this branch.'
+- at: 2026-11-21 06:36
+  from: devin
+  text: 'DONE (attempt 2, tony-dell). Recovered attempt-1 artifacts verbatim from the macbook worktree (they were
+    complete — unit just died at close-out) and re-verified all 4 playbooks read-only from dell: identical findings.
+    Report: docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md (commit f10ddb0ba85). Verdicts: (1) service audit
+    — ANSIBLE (66.3s legacy vs 30.9s, identical deltas; 14.1s on dell). (2) disk headroom — TIE: ansible enforces
+    SSOT max_root_disk_percent+15GiB floor (previously unenforc'
 ref: BEN-0005
 claim:
   since: 2026-11-21 06:31
