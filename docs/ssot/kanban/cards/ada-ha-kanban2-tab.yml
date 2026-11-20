@@ -1,0 +1,23 @@
+id: ada-ha-kanban2-tab
+title: Add Kanban 2 layout tab to Ada HA chaba-admin
+column: backlog
+updated: 2026-11-20 11:51
+brief: Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after
+  it as a separate Kanban 2 tab.
+priority: medium
+tags:
+- home-assistant
+- dashboard
+- kanban
+spec: 'On the Ada HA chaba-admin dashboard at ada-ha.surf-thailand.com/chaba-admin, leave the existing view unchanged:
+  title Kanban, path kanban, panel iframe https://tony-ha.surf-thailand.com/apps/board/index.html?v=6. Add exactly
+  one view immediately after it: title Kanban 2, path kanban2, icon mdi:view-column-outline, type panel, one iframe
+  card at https://tony-ha.surf-thailand.com/apps/board2/index.html?v=1. Do not alter any other views. Save using
+  the documented push-dashboard.py Home Assistant WebSocket path; then run scripts/home-assistant/sync-ssot-from-live.sh
+  --instance ada-ha and commit the sanitized snapshot/SSOT update. Verify order and both URLs. Execution is waiting
+  for Tony approval to use the websocket mutation path because HA MCP/browser tool discovery failed.'
+ref: HOM-0014
+comms:
+- at: 2026-11-20 11:51
+  from: tony
+  text: card captured via board-api
