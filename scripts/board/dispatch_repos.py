@@ -159,7 +159,7 @@ LANE_MODELS = {
     "paid_frontier": "litellm/gemini-2.5-flash",
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None,
-                "jules": "jules", "nlm_batch": "nlm_batch"}
+                "nlm_batch": "nlm_batch"}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 
 # ------------------------------------------------- executor contract
@@ -190,13 +190,8 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              the admitted task classes. Serving requires KK_MAC_LANES=1
 #              on the runner (off by default until the supervised
 #              dispatch passes).
-#   jules    — the Jules REST lane (OPS-1048/OPS-1049): Google AI
-#              Pro's async coding agent. A card carries
-#              action.executor=jules (or action.lane=jules); a
-#              JULES_LANES=1 runner shells scripts/jules/jules.py
-#              (create --auto-pr + wait) and Jules opens the
-#              GitHub PR itself — no local worktree, no push
-#              creds. Declared = fail closed like opencode.
+#   jules    — REMOVED 2026-11-20 (provider EOL, OPS-0156): no lane,
+#              no executor, no client, no key. A stale pin fails closed.
 #   claude   — the claude-dispatch sibling lane (2026-11-18 eval:
 #              sonnet best tokens-per-verified-fix). Same contract as
 #              devin-dispatch — shared task dirs, devin-task-<id>
@@ -213,7 +208,7 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch", "claude"}
+            "nlm_batch", "claude"}
 # Bounded task classes the kk_mac_local executor may ever run — mirrors
 # scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
 # validates the contract without importing the devnest package).

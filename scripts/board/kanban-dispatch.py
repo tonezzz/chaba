@@ -1166,11 +1166,11 @@ def main() -> int:
                           "(Tony's hands — never claimed)")
                     continue
                 if str(a.get("lane") or "").strip() in ("jules", "nlm_batch"):
-                    # lane pin routes to a JULES_LANES runner —
+                    # stale jules pins (lane retired 2026-11-20) and
+                    # nlm_batch pins route to a remote runner —
                     # this dispatcher only runs devin claims
-                    print(f"{card['id']}: skipped — lane=jules "
-                          "routes to the jules executor "
-                          "(runner-agent)")
+                    print(f"{card['id']}: skipped — remote lane "
+                          "(jules retired / nlm_batch)")
                     continue
                 if ex and ex != "devin":
                     why = ("not a known executor"

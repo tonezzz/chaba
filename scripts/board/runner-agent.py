@@ -152,7 +152,7 @@ full fleet use 2026-10-30):
   "runner-agent"'` stays available as a second surface. The overload
   gate reads `sysctl vm.loadavg` on darwin. devin-dispatch itself
   stays systemd-only (its port is a separate job) — a launchd runner
-  serves executor=opencode|script|container|jules|nlm_batch|
+  serves executor=opencode|script|container|nlm_batch|
   kk_mac_local and the opencode lane route, while plain devin cards
   wait for a Linux runner.
 
@@ -287,7 +287,7 @@ LANE_PROFILES = {
 # dispatch_repos.EXECUTORS — kept local because this file deploys as a
 # single file and may run where dispatch_repos isn't importable.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch", "claude"}
+            "nlm_batch", "claude"}
 # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
 # bounded read-only LLM lane on KKs-Mac-Studio. Try-first, not strict —
 # the admitted task classes mirror kk_mac_llm.ALLOWED_TASKS; a card the
@@ -298,27 +298,6 @@ KK_MAC_LANES = os.environ.get("KK_MAC_LANES", "0") == "1"
 KK_MAC_TASK_CLASSES = {
     "summary", "operator_brief", "structured_extract", "safe_route"}
 KK_MAC_FALLBACK = "__kk_mac_fallback__"
-# jules executor (OPS-1048/OPS-1049): the Google AI Pro async
-# coding lane. JULES_LANES=1 marks a host jules-capable — it
-# needs scripts/jules/jules.py in the chaba checkout, a filled
-# ~/.config/secrets/jules.env, and egress to jules.googleapis.com.
-# Jules pushes its own branch+PR via the GitHub app, so push
-# creds and the push_capable() gate do NOT apply to this lane.
-JULES_LANES = os.environ.get("JULES_LANES", "0") == "1"
-JULES_ENV_FILE = Path.home() / ".config/secrets/jules.env"
-# dispatch repo name -> GitHub slug Jules can see (the GitHub
-# app must be installed on the repo — that gate is the Jules
-# sources list, not this map). The map IS the lane whitelist.
-JULES_REPO_MAP = {"chaba": "tonezzz/chaba",
-                "ada-voice": "tonezzz/ada-voice",
-                "sunsynk-card": "tonezzz/sunsynk-power-flow-card"}
-# Pro shares 100 tasks/day with the Jules web UI — the lane stays
-# well under it; a cap hit fails the start so the card retries
-# on the next claim instead of starving the account.
-JULES_LANE_DAILY_CAP = int(os.environ.get("JULES_LANE_DAILY_CAP",
-                                         "20"))
-JULES_LANE_TIMEOUT = int(os.environ.get("JULES_LANE_TIMEOUT",
-                                       "3600"))
 # nlm_batch executor (OPS-1048 finding #3): NotebookLM batch lane on
 # Google AI Pro quota (500 notebooks / 500 chats-day / 20 audio-day).
 # NLM_LANES=1 on hosts with `nlm` installed + authed profile
@@ -328,11 +307,6 @@ NLM_LANES = os.environ.get("NLM_LANES", "0") == "1"
 NLM_BIN = Path(os.environ.get("NLM_BIN",
                               str(Path.home() / ".local/bin/nlm")))
 NLM_PROFILE = Path.home() / ".notebooklm"
-# JULES_AUTO_MERGE=1 (precedent approved by Tony 2026-11-07,
-# OPS-1049): squash-merge a delivered Jules PR via the deploy key
-# when the session is COMPLETED and the PR is clean. Off = PR
-# lands for a human merge (verified=False review).
-JULES_AUTO_MERGE = os.environ.get("JULES_AUTO_MERGE", "0") == "1"
 
 
 def card_profile(card: dict) -> str:
@@ -1292,18 +1266,6 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     if dr is None:
         return None, ["auto-merge skipped: dispatch_repos module not "
                       "found on this host — merge by hand"]
-    # jules lane: the merge already happened on GitHub inside
-    # finish_jules_lane (PR squash-merge via deploy key) — there is no
-    # local dispatch worktree to merge.
-    tid0 = ent.get("tid") or (ent.get("unit") or "").removeprefix("devin-task-")
-    mfile = (Path.home() / ".local/share/devin-dispatch/tasks" / tid0 /
-             "meta.json")
-    try:
-        if json.loads(mfile.read_text()).get("executor") == "jules":
-            return True, ["jules: PR merged on GitHub — nothing local "
-                          "to merge"]
-    except Exception:
-        pass
     a = _act(card)
     pseudo = {"id": cid,
               "expected_goals": card.get("expected_goals"),
@@ -1756,22 +1718,6 @@ def _claimable(card: dict) -> tuple:
             if not nlm_available():
                 return "", "executor=nlm_batch but no nlm/profile"
             return "dispatch", ""
-        if ex == "jules" or (not ex and a.get("lane") == "jules"):
-            # Declared jules executor / lane pin: claimable only where
-            # the lane can actually run — JULES_LANES=1, the client +
-            # filled key, and the repo installed in Jules. push_capable()
-            # does NOT gate this lane: Jules pushes its own branch via
-            # the GitHub app and there is no local worktree to merge
-            # (OPS-1049).
-            if not JULES_LANES:
-                return "", "executor=jules but JULES_LANES=0"
-            if not jules_script() or not jules_keyed():
-                return "", "executor=jules but no jules.py/key"
-            if not jules_repo_slug(str(a.get("repo") or "chaba")):
-                return "", (f"executor=jules: repo "
-                            f"{a.get('repo') or 'chaba'} not in "
-                            "JULES_REPO_MAP")
-            return "dispatch", ""
         if ex == "claude":
             # Declared Claude executor: same contract as opencode —
             # claimable only where the lane can actually run
@@ -1938,20 +1884,6 @@ def executor_defer_reason(card: dict) -> str:
             return ("executor=nlm_batch declared but this runner lacks "
                     "nlm — the card stays queued for a NotebookLM-capable "
                     "runner; it will never silently fall back to devin")
-    if ex == "jules" or (not ex and a.get("lane") == "jules"):
-        if (a.get("type") or "dispatch") == "dispatch":
-            missing = []
-            if not JULES_LANES:
-                missing.append("JULES_LANES=0")
-            if not jules_script():
-                missing.append("no jules.py")
-            if not jules_keyed():
-                missing.append("no jules key")
-            if missing:
-                return (f"executor=jules declared but this runner can't "
-                        f"serve it ({', '.join(missing)}) — the card stays "
-                        "queued for a Jules-capable runner; it will never "
-                        "silently fall back to devin")
     if ex == "devin" and task_runtime() != "systemd" \
             and (a.get("type") or "dispatch") == "dispatch":
         return ("executor=devin declared but this runner is launchd — "
@@ -2033,47 +1965,9 @@ def opencode_needs_standalone(oc_bin: str) -> bool:
     return _OPENCODE_V2
 
 
-def jules_script() -> str:
-    """scripts/jules/jules.py in the chaba dispatch checkout, else ""."""
-    root = (_repo_checkout("chaba")
-            or (Path.home() / "CascadeProjects/chaba"))
-    p = root / "scripts" / "jules" / "jules.py"
-    return str(p) if p.is_file() else ""
-
-
-def jules_keyed() -> bool:
-    """~/.config/secrets/jules.env holds a real (non-placeholder) key."""
-    try:
-        for line in JULES_ENV_FILE.read_text().splitlines():
-            if line.startswith("JULES_API_KEY="):
-                v = line.split("=", 1)[1].strip()
-                return bool(v) and not v.startswith("__")
-    except OSError:
-        pass
-    return False
-
-
 def nlm_available() -> bool:
     """nlm CLI installed and an auth profile exists."""
     return NLM_BIN.is_file() and NLM_PROFILE.is_dir()
-
-
-def jules_repo_slug(repo: str) -> str:
-    """dispatch repo name -> 'owner/name' Jules source slug, else ""."""
-    return JULES_REPO_MAP.get(repo, "")
-
-
-def jules_daily_used() -> int:
-    """Jules sessions created today UTC; -1 on probe failure (the probe
-    does not gate — if quota were actually out the API would 429)."""
-    js = jules_script()
-    if not js:
-        return -1
-    r = sh(["python3", js, "usage"], timeout=60)
-    try:
-        return int((r.stdout or "").strip())
-    except (ValueError, AttributeError):
-        return -1
 
 
 # --- task unit resource limits ---------------------------------------
@@ -3395,210 +3289,6 @@ def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
                    f"run.log tail: {log or '(none)'}"]
 
 
-def start_jules_lane(card: dict, unit: str) -> tuple:
-    """Run a Jules REST session as a dispatch executor (OPS-1049).
-
-    Unlike every other executor there is NO local worktree: Jules clones
-    the repo itself, plans, patches, and opens a GitHub PR
-    (automationMode AUTO_CREATE_PR). The unit shells `jules.py create --
-    auto-pr` then `wait`; the session id and final session JSON land in
-    the task dir for finish_jules_lane. The PR IS the evidence — the
-    merge path is a human squash-merge (auto-merge is a follow-up)."""
-    if not JULES_LANES:
-        return "", "", ("JULES_LANES=0 on this runner — the jules "
-                        "executor is disabled; the card needs a "
-                        "Jules-capable runner, not a devin run")
-    js = jules_script()
-    if not js or not jules_keyed():
-        return "", "", ("jules lane needs scripts/jules/jules.py and a "
-                        "filled ~/.config/secrets/jules.env")
-    a = _act(card)
-    cid = card.get("id") or ""
-    repo = str(a.get("repo") or "chaba")
-    slug = jules_repo_slug(repo)
-    if not slug:
-        return "", "", f"jules lane: repo {repo} not in JULES_REPO_MAP"
-    dr = dr_module()
-    ent = (dr.repos().get(repo) if dr else None) or {}
-    branch = str(a.get("branch") or ent.get("default_branch") or "master")
-    used = jules_daily_used()
-    if used >= JULES_LANE_DAILY_CAP:
-        return "", "", (f"jules daily cap reached ({used} sessions "
-                        f"today >= {JULES_LANE_DAILY_CAP}) — retry "
-                        "after the daily window")
-    spec = (card.get("spec") or "").strip() or card.get("title", "")
-    tid = unit.removeprefix("runner-")
-    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
-    try:
-        taskdir.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        return "", "", f"taskdir: {e}"
-    prompt = (f"{card.get('title', '')}\n\n{spec}\n\n"
-              "Constraints: keep the change minimal and inside the "
-              "declared scope. Open a pull request with the result.")
-    try:
-        (taskdir / "prompt.txt").write_text(prompt)
-        (taskdir / "meta.json").write_text(json.dumps({
-            "card": cid, "task": tid, "host": HOST, "executor": "jules",
-            "repo": repo, "slug": slug, "branch": branch,
-            "model": "jules (Gemini 3 Pro via Google AI Pro)"},
-            indent=1))
-    except OSError as e:
-        return "", "", f"taskdir write: {e}"
-    shell = (
-        f"cd {shlex.quote(str(taskdir))} && "
-        f"python3 {shlex.quote(js)} create --repo {shlex.quote(slug)} "
-        f"--branch {shlex.quote(branch)} --auto-pr "
-        f"--title {shlex.quote(str(card.get('title') or '')[:80])} "
-        "--prompt-file prompt.txt > create.json || exit 1; "
-        "SID=$(python3 -c \"import json; "
-        "print(json.load(open('create.json'))['id'])\" 2>/dev/null); "
-        "test -n \"$SID\" || exit 1; "
-        "echo \"$SID\" > session.id; "
-        f"python3 {shlex.quote(js)} wait \"$SID\" --approve "
-        f"--timeout {JULES_LANE_TIMEOUT} > wait.log 2>&1; "
-        f"python3 {shlex.quote(js)} status \"$SID\" "
-        "> session.json 2>&1; "
-        f"python3 {shlex.quote(js)} result \"$SID\" "
-        "> result.txt 2>&1; "
-        "STATE=$(python3 -c \"import json; "
-        "print(json.load(open('session.json')).get('state',''))\" "
-        "2>/dev/null); "
-        "test \"$STATE\" != \"FAILED\""
-    )
-    u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} jules {repo}", shell)
-    if err:
-        return "", "", err
-    return u2, tid, ""
-
-
-def jules_merge_pr(repo: str, head_ref: str, tid: str,
-                   title: str) -> tuple:
-    """Squash-merge a delivered Jules PR head into origin/<default_branch>
-    via a throwaway worktree + deploy-key push (no gh on runners).
-    Returns (merged: bool, note: str). Conflicts/failures -> False and the
-    card stays on the human-merge path."""
-    dr = dr_module()
-    ent = (dr.repos().get(repo) if dr else None) or {}
-    root = Path(ent.get("path") or "")
-    branch = ent.get("default_branch") or "master"
-    if not root.is_dir() or not head_ref:
-        return False, "merge skipped: no local checkout or empty headRef"
-    wt = Path.home() / ".local/share/devin-dispatch/jules-merge" / tid
-    if wt.exists():
-        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
-            "--force"], timeout=30)
-    try:
-        if sh(["git", "-C", str(root), "fetch", "-q", "origin",
-               branch, head_ref], timeout=90).returncode:
-            return False, "merge failed: git fetch"
-        r = sh(["git", "-C", str(root), "worktree", "add", str(wt),
-                f"origin/{branch}"], timeout=60)
-        if r.returncode:
-            return False, f"merge failed: worktree {(r.stderr or '')[:120]}"
-        r = sh(["git", "-C", str(wt), "merge", "--squash",
-                f"origin/{head_ref}"], timeout=60)
-        if r.returncode:
-            return False, ("merge failed: conflict "
-                           f"{(r.stderr or r.stdout or '')[:160]}")
-        r = sh(["git", "-C", str(wt), "commit", "-q", "-m",
-                f"{title or 'jules lane task'}\n\n"
-                f"Jules lane auto-merge (JULES_AUTO_MERGE)"],
-               timeout=30)
-        if r.returncode:
-            return False, f"merge failed: commit {(r.stderr or '')[:120]}"
-        # deploy-key push — exec checkouts carry https origin (no
-        # creds); the gh-chaba ssh alias is the write path on runners
-        # with chaba deploy keys. JULES_PUSH_URL overrides.
-        slug = JULES_REPO_MAP.get(repo, "")
-        purl = os.environ.get("JULES_PUSH_URL") or \
-            (f"gh-chaba:{slug}.git" if slug else "origin")
-        r = sh(["git", "-C", str(wt), "push", "-q", purl,
-                f"HEAD:{branch}"], timeout=90)
-        if r.returncode:
-            return False, ("merge failed: push — likely raced; human "
-                           "rebase+merge the PR "
-                           f"{(r.stderr or '')[:120]}")
-        return True, f"PR head {head_ref} squash-merged to {branch}"
-    finally:
-        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
-            "--force"], timeout=30)
-
-
-def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
-    """Jules closeout — runs BEFORE close_out_merge like the other
-    executor closeouts. There is no local worktree, so 'merged' here
-    means the Jules PR landed on GitHub — v1 leaves the PR for a human
-    squash-merge.
-
-    Returns (may_merge, notes): (True, []) for non-jules tasks so the
-    normal merge gate proceeds unchanged; (False, notes) for jules tasks
-    so finish posts verified=False ('checked and NOT merged — stays for
-    a human') with the PR/session URL in comms. That IS the contract —
-    a declared executor fails into review, never silently into a
-    different lane."""
-    tid = ent.get("tid") or ""
-    if not tid:
-        u = ent.get("unit") or ""
-        tid = (u[len("devin-task-"):]
-               if u.startswith("devin-task-") else "")
-    if not tid:
-        return True, []
-    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
-    try:
-        meta = json.loads((taskdir / "meta.json").read_text())
-    except Exception:
-        return True, []  # no meta -> not a jules task
-    if str(meta.get("executor") or "") != "jules":
-        return True, []
-    sid = ""
-    try:
-        sid = (taskdir / "session.id").read_text().strip()
-    except OSError:
-        pass
-    try:
-        sess = json.loads((taskdir / "session.json").read_text())
-    except Exception:
-        sess = {}
-    state = sess.get("state") or "unknown"
-    pr = ""
-    for o in sess.get("outputs") or []:
-        if (o.get("pullRequest") or {}).get("url"):
-            pr = o["pullRequest"]["url"]
-            break
-    surl = (sess.get("url")
-            or (f"https://jules.google.com/session/{sid}" if sid else ""))
-    if state == "COMPLETED" and pr:
-        head_ref = ""
-        for o in sess.get("outputs") or []:
-            if (o.get("pullRequest") or {}).get("url") == pr:
-                head_ref = o["pullRequest"].get("headRef") or ""
-        if JULES_AUTO_MERGE:
-            repo = str(meta.get("repo") or "chaba")
-            merged, mnote = jules_merge_pr(
-                repo, head_ref, tid,
-                str(card.get("title") or ""))
-            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr}; "
-                     f"{mnote}"]
-            if merged:
-                return True, notes
-            notes.append("auto-merge did not land — PR stays open for "
-                         "a human squash-merge")
-        else:
-            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr} "
-                     "opened; squash-merge it, then close this card "
-                     "(JULES_AUTO_MERGE=1 enables lane auto-merge)"]
-    elif state == "COMPLETED":
-        notes = [f"jules session {sid or '?'} COMPLETED but produced no "
-                 f"PR ({surl}) — check whether it yielded a changeset "
-                 "only"]
-    else:
-        notes = [f"jules session {sid or '?'} ended state={state} "
-                 f"({surl}) — no PR delivered"]
-    return False, notes
-
-
 def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
@@ -3691,13 +3381,6 @@ def start_task(card: dict, typ: str) -> tuple:
                 return start_nlm_lane(card, unit)
             except Exception as e:
                 return "", "", f"nlm_batch executor: {e}"
-        if ex == "jules" or (not ex and
-                             str(a.get("lane") or "") == "jules"):
-            try:
-                return start_jules_lane(card, unit)
-            except Exception as e:
-                # contract failures fail the task — never a devin fallback
-                return "", "", f"jules executor: {e}"
         if ex == "manual" or (ex and ex not in EXECUTORS):
             return "", "", (f"action.executor={ex or '?'!r} cannot be "
                             "auto-claimed — fail closed")
@@ -3939,8 +3622,6 @@ def finish_pass(st: dict) -> bool:
                     changed = True
                     continue  # still claimed — no finish post yet
             elif may_merge:
-                may_merge, jules_notes = finish_jules_lane(cid, ent, card)
-                notes += jules_notes
                 if may_merge:
                     may_merge, nlm_notes = finish_nlm_lane(cid, ent, card)
                     notes += nlm_notes
