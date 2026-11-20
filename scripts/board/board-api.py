@@ -219,6 +219,13 @@ import board_notify as bn
 import host_status as hs
 import publication as pub
 
+# libyaml C loader/dumper — a pure-Python dump+re-parse of the larger
+# cards (~194KB, hundreds of comms) held the card flock 5-16s per write
+# (2026-11-20 journal: save_ms=16237); the C pair is ~10x. Same
+# fallback rule as render-board.py / card_io.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+_YAML_DUMPER = getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 # /attach store (board-attachments-photo-image-evidence): kept inside the
@@ -355,30 +362,79 @@ def now() -> str:
     return datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 
 
-_ARCHIVE_INDEX = {"t": 0.0, "map": {}}
-_ARCHIVE_INDEX_TTL = 60.0
+# id/ref -> path resolution without a YAML parse. A miss on
+# CARD_DIR/<id>.yml used to safe_load every live card (~1018 files,
+# card_path_ms=59598 observed inside the flock 2026-11-20) plus every
+# archive card — a single bogus/ref lookup wedged all writers ~60s.
+# Top-level `id:`/`ref:` are plain scalars emitted at column 0 by every
+# writer, so a raw-text regex finds them in one pass (<0.5s for the
+# whole tree); the index is cached on the dir signature below.
+_ID_FIELD_RE = re.compile(
+    r"(?m)^(id|ref):[ \t]*([^#\s][^#\n]*?)[ \t]*(?:#.*)?\r?$")
+
+
+def _dir_sig(d: Path) -> tuple:
+    """(mtime_ns, entry count) — staleness key for the id index. Every
+    repo writer lands card files via tmp+rename (card_io), so adds,
+    removes, and renames all bump the dir mtime; count guards an
+    add+remove pair inside one mtime tick."""
+    try:
+        st = d.stat()
+        return (st.st_mtime_ns, sum(1 for _ in d.glob("*.yml")))
+    except OSError:
+        return (0, 0)
+
+
+def _id_text_index(d: Path) -> dict:
+    """id/ref/stem -> path via raw-text field scan (no YAML parse).
+    Column-0 anchors can't match nested fields; values are stripped of
+    quotes/trailing comments. Later files don't shadow earlier keys —
+    same precedence as the parse-and-scan loops this replaces."""
+    m = {}
+    if not d.is_dir():
+        return m
+    for cand in d.glob("*.yml"):
+        try:
+            txt = cand.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for _f, v in _ID_FIELD_RE.findall(txt):
+            k = v.strip().strip("'\"")
+            if k and k not in ("null", "~"):
+                m.setdefault(k, cand)
+        m.setdefault(cand.stem, cand)
+    return m
+
+
+_INDEX_TTL = 120.0
+
+
+def _cached_index(cache: dict, d: Path) -> dict:
+    """Shared (sig, TTL) cache over _id_text_index for one directory.
+    sig catches atomic writes immediately; TTL bounds staleness for
+    stray in-place writers (none in-tree, but cheap insurance)."""
+    now_t = time.time()
+    sig = _dir_sig(d)
+    if sig == cache.get("sig") and now_t - cache["t"] < _INDEX_TTL:
+        return cache["map"]
+    m = _id_text_index(d)
+    cache.update(t=now_t, sig=sig, map=m)
+    return m
+
+
+_ARCHIVE_INDEX = {"t": 0.0, "sig": None, "map": {}}
+_LIVE_INDEX = {"t": 0.0, "sig": None, "map": {}}
 
 
 def _archive_index() -> dict:
-    """id/ref/stem -> path for cards/archive/*.yml, cached 60s. The
-    archive only changes via /action do=archive (which commits through
-    this process), so a short TTL is safe and keeps lookups O(1)."""
-    now_t = time.time()
-    if now_t - _ARCHIVE_INDEX["t"] < _ARCHIVE_INDEX_TTL:
-        return _ARCHIVE_INDEX["map"]
-    m = {}
-    adir = CARD_DIR / "archive"
-    if adir.is_dir():
-        for cand in adir.glob("*.yml"):
-            try:
-                c = yaml.safe_load(cand.read_text()) or {}
-            except Exception:
-                continue
-            for k in (c.get("id"), c.get("ref"), cand.stem):
-                if k:
-                    m.setdefault(str(k), cand)
-    _ARCHIVE_INDEX.update(t=now_t, map=m)
-    return m
+    """id/ref/stem -> path for cards/archive/*.yml (KNB-1178 lookups)."""
+    return _cached_index(_ARCHIVE_INDEX, CARD_DIR / "archive")
+
+
+def _live_index() -> dict:
+    """id/ref/stem -> path for live cards/*.yml — the drift-scan
+    fallback for card_path when <id>.yml is absent."""
+    return _cached_index(_LIVE_INDEX, CARD_DIR)
 
 
 def card_path(cid: str) -> Path:
@@ -389,16 +445,12 @@ def card_path(cid: str) -> Path:
         p = CARD_DIR / f"{cid}.yml"
         if not p.exists():
             # filename/id drift happens when a session renames a card's
-            # id without renaming the file — fall back to an id-field
-            # scan so respond/action/comment still find it. Refs
-            # (ADA-0042) resolve through the same scan.
-            for cand in CARD_DIR.glob("*.yml"):
-                try:
-                    c = yaml.safe_load(cand.read_text()) or {}
-                except Exception:
-                    continue
-                if c.get("id") == cid or c.get("ref") == cid:
-                    return cand
+            # id without renaming the file — fall back to the text-scan
+            # id index so respond/action/comment still find it. Refs
+            # (ADA-0042) resolve through the same index.
+            cand = _live_index().get(cid)
+            if cand is not None:
+                return cand
             # archived cards stay resolvable via the cached archive index
             # (KNB-1178) — a per-request yaml scan of cards/archive/ would
             # be too slow for the GET path
@@ -453,17 +505,22 @@ REF_ID_HINTS = (
 )
 
 
+_REF_FIELD_RE = re.compile(
+    r"(?m)^ref:[ \t]*[A-Z]{3}-(\d{4})[ \t]*(?:#.*)?\r?$")
+
+
 def _ref_seed() -> int:
-    """Highest ref number already on the board (for first-run init)."""
+    """Highest ref number already on the board (for first-run init).
+    Raw-text `^ref:` scan — the old safe_load-per-file version cost a
+    full corpus parse on the first /card after .ref-seq went missing."""
     hi = 0
     for cand in CARD_DIR.glob("*.yml"):
         try:
-            r = (yaml.safe_load(cand.read_text()) or {}).get("ref") or ""
-        except Exception:
+            txt = cand.read_text(encoding="utf-8", errors="replace")
+        except OSError:
             continue
-        m = re.match(r"^[A-Z]{3}-(\d{4})$", str(r))
-        if m:
-            hi = max(hi, int(m.group(1)))
+        for num in _REF_FIELD_RE.findall(txt):
+            hi = max(hi, int(num))
     return hi
 
 
@@ -628,9 +685,7 @@ def _post_write_loop() -> None:
 def load(p: Path) -> dict:
     t0 = _phase_clock()
     try:
-        d = yaml.load(p.read_text(),
-                      Loader=getattr(yaml, "CSafeLoader",
-                                     yaml.SafeLoader)) or {}
+        d = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
         if not isinstance(d, dict):
             raise ValueError(f"card {p.name} is not a YAML mapping")
         return d
@@ -657,9 +712,9 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     interval — short enough that autostash can't eat them in practice."""
     t0 = _phase_clock()
     try:
-        text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
-                              width=110)
-        if not isinstance(yaml.safe_load(text), dict):
+        text = yaml.dump(card, Dumper=_YAML_DUMPER, allow_unicode=True,
+                         sort_keys=False, width=110)
+        if not isinstance(yaml.load(text, Loader=_YAML_LOADER), dict):
             raise ValueError(
                 f"refusing to write {p.name}: serialized card did not "
                 "re-parse as a mapping")

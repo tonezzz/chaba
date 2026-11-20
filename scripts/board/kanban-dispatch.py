@@ -50,6 +50,10 @@ import dispatch_task as dt
 import lesson_primer as lp
 import waiting_cards as wc
 
+# libyaml C loader — load_card runs under the card flock; a pure-Python
+# parse of the largest cards (~194KB) holds it for seconds.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -475,7 +479,7 @@ def overloaded() -> bool:
 
 
 def load_card(path: Path) -> dict:
-    card = yaml.safe_load(path.read_text()) or {}
+    card = yaml.load(path.read_text(), Loader=_YAML_LOADER) or {}
     card.setdefault("id", path.stem)
     return card
 

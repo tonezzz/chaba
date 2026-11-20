@@ -34,6 +34,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import board_notify as bn
 import card_io
 
+# libyaml C loader — pass-2/3 card parses run under the card flock.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 REPO = Path(os.environ.get(
     "CHABA_REPO", str(Path(__file__).resolve().parents[2])))
 CARD_DIR = REPO / "docs" / "ssot" / "kanban" / "cards"
@@ -110,7 +113,7 @@ def main(cards=None) -> int:
     else:
         for p in sorted(CARD_DIR.glob("*.yml")):
             try:
-                card = yaml.safe_load(p.read_text()) or {}
+                card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             except Exception:
                 continue
             hits = overdue_requests(card, ref)
@@ -138,7 +141,7 @@ def main(cards=None) -> int:
         touched = []  # (path, card, [req_ids])
         for p, cid, _ in candidates:
             try:
-                card = yaml.safe_load(p.read_text()) or {}
+                card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             except Exception:
                 continue
             hits = overdue_requests(card, ref)
@@ -174,7 +177,7 @@ def main(cards=None) -> int:
         fcntl.flock(lf, fcntl.LOCK_EX)
         for p, _old, ids in touched:
             try:
-                card = yaml.safe_load(p.read_text()) or {}
+                card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             except Exception:
                 continue
             hits = overdue_requests(card, ref)

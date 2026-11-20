@@ -31,6 +31,13 @@ from pathlib import Path
 
 import yaml
 
+# libyaml C pair — atomic_dump_card's dump+re-parse is on every board
+# write path (board-api save(), sweeps, locked_edit fallbacks); the
+# pure-Python round-trip held the card flock 5-16s on ~194KB cards
+# (2026-11-20). Fall back when libyaml is absent.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+_YAML_DUMPER = getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+
 
 def atomic_write_text(p: Path, text: str) -> None:
     """Replace `p` with `text` atomically (tmp + fsync + rename)."""
@@ -66,8 +73,9 @@ def atomic_dump_card(p: Path, card: dict, **dump_kw) -> None:
     dump_kw.setdefault("allow_unicode", True)
     dump_kw.setdefault("sort_keys", False)
     dump_kw.setdefault("width", 110)
-    text = yaml.safe_dump(card, **dump_kw)
-    if not isinstance(yaml.safe_load(text), dict):
+    dump_kw.setdefault("Dumper", _YAML_DUMPER)
+    text = yaml.dump(card, **dump_kw)
+    if not isinstance(yaml.load(text, Loader=_YAML_LOADER), dict):
         raise ValueError(
             f"refusing to write {Path(p).name}: serialized card did not "
             "re-parse as a mapping")

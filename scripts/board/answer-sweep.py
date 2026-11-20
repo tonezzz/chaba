@@ -72,6 +72,9 @@ from pathlib import Path
 
 import yaml
 
+# libyaml C loader — the locked triage pass parses candidates in-flock.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
     carry scalars ('spec-review'). Returns {} for non-dict WITHOUT
@@ -414,7 +417,7 @@ def main(cards=None) -> int:
     else:
         for p in sorted(CARD_DIR.glob("*.yml")):
             try:
-                card = yaml.safe_load(p.read_text()) or {}
+                card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             except Exception:
                 continue
             if card.get("awaiting_action") or (
@@ -426,7 +429,7 @@ def main(cards=None) -> int:
         return 0
     if dry:
         for p, cid in cands:
-            card = yaml.safe_load(p.read_text()) or {}
+            card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             if card.get("column") in ("done", "lab"):
                 if card.get("awaiting_action"):
                     print(f"  {cid}: done/lab — would clear stale flag")
@@ -446,7 +449,7 @@ def main(cards=None) -> int:
         fcntl.flock(lf, fcntl.LOCK_EX)
         for p, cid in cands:
             try:
-                card = yaml.safe_load(p.read_text()) or {}
+                card = yaml.load(p.read_text(), Loader=_YAML_LOADER) or {}
             except Exception:
                 continue
             if card.get("column") in ("done", "lab"):

@@ -162,6 +162,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
 import dispatch_repos as dr
 
+# libyaml C loader — load_card runs under the card flock (locked_edit).
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 HOST = os.uname().nodename
 LOCK = Path("/tmp/board-api.lock")
 API = os.environ.get("BOARD_API", "http://127.0.0.1:8787").rstrip("/")
@@ -602,7 +605,7 @@ def runner_task_ids(host: str) -> dict:
 # ----------------------------------------------------------- card i/o
 def load_card(path: Path) -> dict:
     try:
-        card = yaml.safe_load(path.read_text()) or {}
+        card = yaml.load(path.read_text(), Loader=_YAML_LOADER) or {}
     except Exception:
         return {}
     card.setdefault("id", path.stem)

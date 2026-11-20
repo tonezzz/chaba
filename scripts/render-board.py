@@ -19,6 +19,7 @@ import functools
 import hashlib
 import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -68,10 +69,15 @@ def write_board_pages(out_path: Path, classic_page: str) -> Path:
 
 
 def dir_hash(card_dir: Path) -> str:
+    """Stat signature (name + size + mtime_ns), not a content hash — every
+    --if-changed tick used to read the full ~1700-file corpus. Card writes
+    land via tmp+rename so a change always moves mtime; stat-only is the
+    same skip-detection at ~1% of the I/O (render-board2 --if-changed CPU,
+    board-api-lock-contention)."""
     h = hashlib.sha256()
     for p in sorted(card_dir.glob("*.yml")):
-        h.update(p.name.encode())
-        h.update(p.read_bytes())
+        st = p.stat()
+        h.update(f"{p.name}:{st.st_size}:{st.st_mtime_ns};".encode())
     return h.hexdigest()
 
 
@@ -111,17 +117,103 @@ def _run_branches() -> dict:
     return out
 
 
+@functools.lru_cache(maxsize=1)
+def _merged_dispatch_set() -> frozenset:
+    """dispatch/* branches whose tip is an ancestor of origin/master —
+    ONE walk covers every ancestry check the render needs (the per-branch
+    merge-base --is-ancestor calls were subprocess fan-out)."""
+    rc, txt = _git("branch", "--merged", "origin/master",
+                   "--format=%(refname:short)", "--list", "dispatch/*")
+    return frozenset(txt.split()) if rc == 0 else frozenset()
+
+
+# Patch-equivalence cache (board-api-lock-contention): a dispatch branch
+# lands via merge --no-ff, then the served checkout's pull --rebase
+# linearizes it onto master — the work is present as patch-identical
+# commits with new SHAs, so ancestry alone lies. git cherry answered
+# this but re-derived patch-ids for ALL of mb..origin/master per branch
+# (~15s each on the ~109k-commit upstream — the ~93%-CPU render that
+# starved the card flock 2026-11-17). The upstream patch-id set is
+# instead kept incrementally in /tmp: seeded to a bounded depth once,
+# topped up with just the newest commits each render (the repo adds
+# ~100-300/day so steady-state cost is <1s; landed work always sits at
+# the tip end of history).
+_PATCHID_SEED = int(os.environ.get("RENDER_PATCHID_SEED", "10000"))
+_PATCHID_STATE = Path(f"/tmp/render-upstream-patchids-{os.getuid()}.json")
+# cap on one top-up: a stale cache (host asleep weeks) must not turn the
+# next render into a full-history scan — it reseeds to the bounded depth
+_PATCHID_TOPUP_MAX = int(os.environ.get("RENDER_PATCHID_TOPUP_MAX",
+                                        "40000"))
+
+
+def _patch_ids(rev_range: str, timeout: int = 120) -> frozenset:
+    """patch-id set for commits in rev_range (merges carry no diff and
+    yield no ids — matching git cherry's comparison domain). Streams
+    log|patch-id: buffering the diff text would be GBs on a reseed."""
+    try:
+        log = subprocess.Popen(
+            ["git", "-C", str(REPO), "log", "--no-merges", "-p",
+             "--format=%H", rev_range], stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, text=True)
+        pid = subprocess.Popen(
+            ["git", "patch-id", "--stable"], stdin=log.stdout,
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        log.stdout.close()  # let log receive SIGPIPE if patch-id exits
+        out, _ = pid.communicate(timeout=timeout)
+        log.wait(timeout=30)
+    except Exception:
+        return frozenset()
+    return frozenset(ln.split()[0] for ln in out.splitlines() if ln)
+
+
+@functools.lru_cache(maxsize=1)
+def _upstream_patchids() -> frozenset:
+    tip = _git("rev-parse", "origin/master")[1]
+    if not tip:
+        return frozenset()
+    st = {}
+    try:
+        st = json.loads(_PATCHID_STATE.read_text())
+    except Exception:
+        st = {}
+    ids = set(st.get("ids") or [])
+    last = st.get("tip")
+    top_up = bool(last) and _git(
+        "merge-base", "--is-ancestor", last, "origin/master")[0] == 0
+    if top_up:
+        n = _git("rev-list", "--count", f"{last}..origin/master")[1]
+        top_up = n.isdigit() and int(n) <= _PATCHID_TOPUP_MAX
+    if top_up:
+        rng = f"{last}..origin/master"
+    else:
+        base = _git("rev-parse", f"origin/master~{_PATCHID_SEED}")[1]
+        rng = f"{base}..origin/master" if base else "origin/master"
+        ids = set()
+    ids |= _patch_ids(rng)
+    try:
+        tmp = _PATCHID_STATE.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"tip": tip, "ids": sorted(ids)}))
+        tmp.replace(_PATCHID_STATE)
+    except OSError:
+        pass
+    return frozenset(ids)
+
+
 @functools.lru_cache(maxsize=None)
 def _branch_merged(br: str) -> bool:
-    """True if br's work is on origin/master — by ancestry, or by patch
-    (a plain `git rebase` linearizes merge commits, so ancestry alone
-    lies after an autostash rebase; git cherry catches that). Memoized
-    per process — one render can ask about the same run branch for
-    several cards (multi-run retries)."""
-    if _git("merge-base", "--is-ancestor", br, "origin/master")[0] == 0:
+    """True if br's work is on origin/master — by ancestry (one batched
+    --merged walk), or by patch equivalence against the incremental
+    upstream patch-id cache (same domain as git cherry, none of its
+    per-branch O(history) cost)."""
+    if br in _merged_dispatch_set():
         return True
-    rc, out = _git("cherry", "origin/master", br)
-    return rc == 0 and not any(l.startswith("+") for l in out.splitlines())
+    mb = _git("merge-base", "origin/master", br)[1]
+    if not mb:
+        return False
+    ours = _patch_ids(f"{mb}..{br}", timeout=60)
+    # empty `ours` (merge-only branch) is vacuously merged — same verdict
+    # the old cherry check gave on empty output
+    return ours <= _upstream_patchids()
 
 
 def _outcome_index() -> dict:
