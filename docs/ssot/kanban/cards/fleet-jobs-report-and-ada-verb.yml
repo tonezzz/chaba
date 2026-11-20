@@ -1,14 +1,14 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: backlog
-updated: 2026-11-20 18:54
+updated: 2026-11-20 19:52
 priority: high
 tags:
 - devnest
 - report
 - ada
-- jules
-spec: 'Two-part deliverable, repo work only (jules-shaped):
+- devin
+spec: 'Two-part deliverable, repo work only (deterministic):
 
 
   1) AGGREGATOR — scripts/fleet-jobs-report.py: per-host jobs/queue/lane status from EXISTING sources (no new instrumentation):
@@ -25,18 +25,13 @@ spec: 'Two-part deliverable, repo work only (jules-shaped):
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  executor: devin
+  lane: devin
+  status: queued
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
-  last_failure: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
-    Failed with result ''exit-code''.'
-  attempts: 1
-  result: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
-    Failed with result ''exit-code''.'
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -268,5 +263,10 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-claim:
-  since: 2026-11-20 18:18
+- at: 2026-11-20 19:52
+  from: tony
+  text: 'Re-laned from retired jules to executor=devin / lane=devin after the fleet-wide purged runner-agent deploy
+    (18597619d1). Cleared the stale claim, FAILED_PRECONDITION failure/result and attempt; re-queued for a live
+    runner. Prior un-merged work is preserved on origin/fix/fleet-jobs-report-accuracy (2c9fa451b5fe) — build on
+    that branch, do not discard it. All "jules" executor/lane cards in the SSOT are done; this was the last live
+    backlog card still tagged for the retired lane.'
