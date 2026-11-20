@@ -32,7 +32,7 @@ def run_on_host(host, command, compact, shell=False):
     h = HOSTS[host]
     if compact and not h.get("compact", True):
         return {"ok": False, "error": f"compact mcp_debug not supported for host: {host}", "host": host, "rc": 1, "out": "", "err": ""}
-    mcp_debug = h.get("mcp_debug_path", "/home/tony/.local/bin/mcp-debug")
+    mcp_debug = h.get("mcp_debug_path") or "/home/tony/.local/bin/mcp-debug"
 
     if not compact and not shell:
         base = shlex.split(command)[0]
