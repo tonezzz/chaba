@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: backlog
-updated: 2026-11-20 18:42
+updated: 2026-11-20 18:48
 priority: high
 tags:
 - devnest
@@ -35,7 +35,7 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: idle
   sweep:
     failed_noted: 2026-11-09 20:34
   last_failure: 'journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794918460.service:
@@ -260,4 +260,13 @@ comms:
 - at: 2026-11-20 18:42
   from: chaba
   text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-20 18:48
+  from: devin
+  text: '2026-11-20 held: card is code work (runner-agent.py change) — no ENABLED unattended free-lane profile can
+    write code (branch-code is status:disabled pending its S5 gate; doc-draft/ops-readonly/ssot-research/info-find
+    are read-only). Queued-unpinned would claim as devin (paid). Needs lane decision: paid_frontier/devin, re-scope
+    to a read-only design artifact for free lane, or enable branch-code via its gate card.'
+- at: 2026-11-20 18:48
+  from: devin
+  text: put on hold
 claim: {}

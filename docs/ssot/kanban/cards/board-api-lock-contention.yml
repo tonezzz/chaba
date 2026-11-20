@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: doing
-updated: 2026-11-20 18:28
+updated: 2026-11-20 18:48
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -263,6 +263,13 @@ comms:
     primer injected 8 lesson(s): [board-api-writes-e; [board-api-write-latency] FIX LANDED (commit f2acf34614f on
     served checkout, awa; [board-janitor-locked-edit-atomic-write-db7bed] primer injected 8 lesson(s): [ka; [idc03-served-checkout-convergence-unbloc-0acb20]
     RESOLVED — '
+- at: 2026-11-20 18:48
+  from: devin
+  text: 'Attempt 4 landed the 18:22 plan: card_path/_archive_index/_ref_seed now text-scan id:/ref: (1019-card corpus
+    miss scan 54.1s->0.36s; ref lookup 11ms in smoke); save+atomic_dump_card on CSafeDumper/Loader (fat-card dump+parse
+    1526ms->~130ms); dir_hash stat-sig; _branch_merged batched via git branch --merged + bounded cached cherry (steady-state
+    render 57s->8s, --if-changed tick 0.2s); /lock-stats gains per-endpoint load/save/card_path_ms attribution.
+    Selftest + sandboxed HTTP smoke pass.'
 requests: []
 action:
   lane: paid_frontier
