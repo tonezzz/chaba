@@ -3,7 +3,7 @@ title: Evaluate NousResearch Hermes for the fleet — evidence-first trial
 column: done
 priority: low
 created: 2026-10-10
-updated: 2026-11-08 13:22
+updated: 2026-11-20 12:28
 note: 'Procedure: card → tier declaration (model-routing T1 local via ollama hermes3:8b) → bench probes (tool-call
   JSON fidelity, routing, reasoning — Hermes'' claimed strengths) → lane fit decision → OpenClaw/GhostRoute slot
   if proven. Clawd/OpenClaw reuse: it''s the agent surface Hermes is designed for — tool-calling loop, OR-backed,
@@ -79,6 +79,20 @@ comms:
 - at: 2026-11-08 13:22
   from: tony
   text: archived (28d in done, verified)
+- at: 2026-11-20 12:25
+  from: ada
+  text: 'SSOT update (2026-11-20): Hermes Agent framework — NousResearch. Repo: NousResearch/hermes-agent, MIT,
+    default branch main; install: `curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash`. Fleet SSOT
+    terminology (Tony, 2026-11-04): ''Hermes'' for fleet work = the hermes-agent FRAMEWORK. The old ''hermes'' bench
+    lane (2026-10-22, done) = the hermes3:8b MODEL inside an OpenClaw-shaped loop — not framework evidence. Fleet
+    SSOT lanes: T1-local-mid = hermes3:8b (omen, verified up); T2-openr'
+- at: 2026-11-20 12:28
+  from: ada
+  text: 'Note (try Hermes with our local free models — 2026-11-20): omen Ollama is verified up — models: hermes3:8b,
+    qwen3:8b, qwen3:4b, gpt-oss:20b, gemma3:12b, llama3.2:3b, llama3.2:1b, phi3:gguf, phi3, qwen2.5:7b, gemma3:4b,
+    plus bge-m3/nomic embeddings. After install: `hermes model` → Custom endpoint → `http://100.75.102.88:11434/v1`
+    with model `hermes3:8b` (the SSOT T1 lane — only omen model good at both native tool calls and prompted-JSON).
+    Smoke: `hermes doctor`, then `hermes chat` — ask a simple '
 claim:
   since: 2026-10-10 19:23
 review_kind: verify
