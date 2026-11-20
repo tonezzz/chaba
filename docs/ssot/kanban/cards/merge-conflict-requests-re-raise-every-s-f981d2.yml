@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: backlog
-updated: 2026-11-19 20:03
+updated: 2026-11-20 18:34
 priority: high
 tags:
 - board
@@ -39,10 +39,9 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: codemod
   lane_source: kw
-  runner: idc02
   result: 'exit=1  devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''.
     | devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Consumed 1min 9.340s CPU time, 280.9M memory
     peak, 0B memory swap peak.'
@@ -135,6 +134,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:34
+  from: chaba
+  text: classified as codemod (kw:raise  conf 1.00)
+- at: 2026-11-20 18:34
+  from: tony
+  text: queued for processing
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
@@ -150,4 +155,4 @@ requests:
     actually queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
   answer: signature-dedupe + execute-answer — stop re-asking on the same conflict AND make the resolve option actually
     queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
-awaiting_action: true
+claim: {}
