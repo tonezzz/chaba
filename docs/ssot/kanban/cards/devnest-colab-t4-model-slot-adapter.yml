@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: doing
-updated: 2026-11-20 13:17
+updated: 2026-11-20 13:18
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -204,6 +204,13 @@ comms:
     HF offline env, manifest pin+sha256 reverify. New: shadow_eval.py t4slot {--check,--fetch} control plane + repo-only
     devnest-model-slot-60m gated on 30m pass via preflight.json. Queue idle (~22d); NOT launched. Prestage already
     done (con01, pinned 16.4GB snapshot verified remote).'
+- at: 2026-11-20 13:18
+  from: devin
+  text: 'DONE (staged-not-launched). Deliverables: scripts/colab/packs/{devnest-qwen3-8b-hf-prestage (vendored,
+    done remote), devnest-model-slot-30m (restaged 0-diff), devnest-model-slot-60m (repo-only, gate-enforced)};
+    shadow_eval.py t4slot {--check pass, --fetch verified}; runbook docs/ssot/jobs/devnest/2026-11-20-colab-t4-model-slot-pack.yml;
+    branch dispatch/20261120-060606 commit f5b508d1d7. Slot sorts immediately before img-gen-bench-t4. Queue idle
+    ~22d — no launch performed. Next Colab launch runs '
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -252,3 +259,4 @@ action:
   attempts: 1
 claim:
   since: 2026-11-20 13:05
+awaiting_action: true
