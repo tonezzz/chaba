@@ -1,7 +1,7 @@
 id: ocb-models-status-patch-durability
 title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
-column: backlog
-updated: 2026-11-20 17:16
+column: doing
+updated: 2026-11-20 17:17
 brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
   route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
   — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
@@ -60,10 +60,16 @@ comms:
 - at: 2026-11-20 17:16
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 3.91 > 0.85)'
+- at: 2026-11-20 17:17
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-claim: {}
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-20 17:17
