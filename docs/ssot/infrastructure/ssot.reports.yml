@@ -110,6 +110,10 @@ status_enum:
   missing: declared node with no meta and no artifacts
   unreachable: target-side — generator ran, its audit target did not
     answer (host off tailnet, endpoint down); `offline_ok` nodes exempt
+  no-config: target answered, but no producer config surfaces were found
+    on it (e.g. an infrastructure host with no agent lane); informational,
+    never declaration drift and never an alarm — distinct from `unreachable`
+    (probe failed) and from `missing` (declared node never produced meta)
   planned: registered but generator not built yet (registry state
     field=planned) — informational, not an alarm
   remote: observe:remote — artifacts live off this checkout; meta is
