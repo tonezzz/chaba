@@ -117,9 +117,14 @@ def server_names_from_config(path: str, text: str) -> list[str]:
 
 
 def read_configs(host: str) -> tuple[dict, bool]:
-    """Return {surface: {path, present, servers}} and an all-unreachable flag."""
+    """Return {surface: {path, present, servers}} and a host-reachable flag.
+
+    A missing config file is not proof of an unreachable host: `cat` exits 1
+    for a file that is not there, while SSH failure exits 255 (or 124 on
+    timeout). Only the latter means the host could not be observed.
+    """
     out = {}
-    any_answered = False
+    codes = []
     for surface, rel in CONFIG_PATHS.items():
         expanded = os.path.expanduser(rel)
         if is_local(host):
@@ -130,15 +135,15 @@ def read_configs(host: str) -> tuple[dict, bool]:
         else:
             rc, text = run_remote(host, "cat %s 2>/dev/null" % rel)
             present = rc == 0 and bool(text.strip())
-        if rc == 0:
-            any_answered = True
+        codes.append(rc)
         out[surface] = {
             "path": rel,
             "present": present,
             "read_ok": rc == 0,
             "servers": redact(server_names_from_config(rel, text)) if present else [],
         }
-    return out, any_answered
+    reachable = is_local(host) or any(rc in (0, 1) for rc in codes)
+    return out, reachable
 
 
 def running_processes(host: str) -> list[str]:
@@ -201,8 +206,8 @@ def produce_host(ssot: dict, host: str, force_local: bool = False) -> dict:
 
 def _produce_host(ssot: dict, host: str) -> dict:
     stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S")
-    configs, answered = read_configs(host)
-    procs = running_processes(host) if answered else []
+    configs, reachable = read_configs(host)
+    procs = running_processes(host) if reachable else []
     declared = declared_for_host(ssot, host)
     configured = sorted({s for c in configs.values() for s in c["servers"]})
 
@@ -215,11 +220,17 @@ def _produce_host(ssot: dict, host: str) -> dict:
     )
     missing_active = sorted(set(active_declared) - set(configured))
 
-    if not answered:
+    if not reachable:
         status = "unreachable"
         summary = f"{host}: no config surfaces answered (SSH/probe failed)"
         # An unprobed host has no observed configuration — reporting its
         # servers as "missing" would be a false finding.
+        missing_active = []
+    elif not configured:
+        status = "no-config"
+        summary = f"{host}: reachable, no MCP client configs present (0 configured)"
+        # An infra host without agent configs is not a declaration drift:
+        # global server entries apply to agent lanes, not to every host.
         missing_active = []
     elif missing_active:
         status = "delta"
@@ -304,6 +315,7 @@ def consolidate(ssot: dict) -> dict:
     for r in rows:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
     drift = [r for r in rows if r["status"] in ("delta", "unreachable", "error")]
+    # "no-config" is informational: the host answered but runs no agent lane.
     status = "delta" if drift else "ok"
     headline = (f"{len(rows)} hosts observed; "
                 f"{len(drift)} with findings "
@@ -338,7 +350,7 @@ def consolidate(ssot: dict) -> dict:
         for r in drift:
             md.append(f"- **{r['host']}** ({r['status']}): {r['summary']}")
             wiki.append(f"* '''{r['host']}''' ({r['status']}): {r['summary']}")
-            if r["status"] != "unreachable" and r["missing_active"]:
+            if r["status"] not in ("unreachable", "no-config") and r["missing_active"]:
                 missing = ", ".join(r["missing_active"])
                 md.append(f"  - active declared but not configured: {missing}")
                 wiki.append(f"** Active declared but not configured: {missing}")
