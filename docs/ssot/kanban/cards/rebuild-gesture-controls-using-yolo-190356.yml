@@ -1,6 +1,6 @@
 id: rebuild-gesture-controls-using-yolo-190356
 title: Rebuild gesture controls using YOLO
-column: doing
+column: backlog
 updated: 2026-11-20 21:50
 note: Tony initiated idea to rebuild gesture controls using YOLO on the desk companion.
 ref: OPS-0683
@@ -265,6 +265,10 @@ comms:
     tool, kiosk UI wiring, 16 unit tests + scenario. Gates green: 16/16 new tests, 1870 suite, tool-lint. Committed
     ae425e0+fbd48cf on dispatch/20261120-213624-rebuild-gesture-controls-using (not pushed). Job record: docs/ssot/jobs/ada/2026-11-20-gesture-controls-yolo.yml.
     Deploy vi'
+- at: 2026-11-20 21:50
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code 0261120-213624-rebuild-gesture-controls-using.service: Failed with
+    result ''exit-code''. | devin-task-20 — auto-retry queued (attempt 2/2) (column -> backlog)'
 requests:
 - id: tony-initiated-an-idea-to-rebu-92b479
   ask: Tony initiated an idea to rebuild gesture controls using YOLO on the desk companion, but the target repository,
@@ -280,16 +284,18 @@ requests:
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
-  result: 'exit=1 vin-task-20261117-233916-rebuild-gesture-controls-using.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233916-rebuild-gesture-controls-using.service: Consumed 12.441s CPU time over 3.187s wall
-    clock time, 627.2M memory peak.'
+  result: 'journal=exit-code 0261120-213624-rebuild-gesture-controls-using.service: Failed with result ''exit-code''.
+    | devin-task-20261120-213624-rebuild-gesture-controls-using.service: Consumed 3min 10.045s CPU time over 14min
+    10.467s wall clock time, 1.4G memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:55
-  runner: tony-omen
   attempts: 1
+  last_failure: 'journal=exit-code 0261120-213624-rebuild-gesture-controls-using.service: Failed with result ''exit-code''.
+    | devin-task-20261120-213624-rebuild-gesture-controls-using.service: Consumed 3min 10.045s CPU time over 14min
+    10.467s wall clock time, 1.4G memory peak.'
 claim:
   since: 2026-11-20 21:35
 awaiting_action: true
