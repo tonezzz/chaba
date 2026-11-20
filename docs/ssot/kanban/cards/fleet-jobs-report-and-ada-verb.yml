@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
-column: doing
-updated: 2026-11-20 20:13
+column: backlog
+updated: 2026-11-20 20:14
 priority: high
 tags:
 - devnest
@@ -27,13 +27,16 @@ action:
   repo: chaba
   executor: devin
   lane: devin
-  status: running
+  status: queued
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
-  runner: tony-dell
   attempts: 1
+  result: 'journal=exit-code iverable-repo-work.service: Failed with result ''exit-code''. | devin-task-20261120-200209-two-part-deliverable-repo-work.service:
+    Consumed 4min 18.208s CPU time over 11min 39.070s wall clock time, 941.2M memory peak, 655.2M memory swap peak.'
+  last_failure: 'journal=exit-code iverable-repo-work.service: Failed with result ''exit-code''. | devin-task-20261120-200209-two-part-deliverable-repo-work.service:
+    Consumed 4min 18.208s CPU time over 11min 39.070s wall clock time, 941.2M memory peak, 655.2M memory swap peak.'
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -306,5 +309,9 @@ comms:
     unrelated reports timeline.jsonl — wrong schema, always empty), board-api /queue for runner heartbeats+verdicts
     (was globbing ~/var/chaba/health/*.json = unrelated snapshots inventing bogus hosts), plus hostname normalization
     tony_dell->tony-dell so declared timers join. Live run '
+- at: 2026-11-20 20:14
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code iverable-repo-work.service: Failed with result ''exit-code''. | devin-task-20261120-200209-two-part-deli
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
 claim:
   since: 2026-11-20 20:00
