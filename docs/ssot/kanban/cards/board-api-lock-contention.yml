@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: doing
-updated: 2026-11-20 18:53
+updated: 2026-11-20 18:54
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -277,6 +277,13 @@ comms:
     render-board ran git cherry per branch over 109k commits (15-42s each). Fixes on dispatch/20261120-181845-...:
     C loader/dumper on all card write paths, cached text-scan id/ref index, incremental upstream patch-id cache
     for render merge checks (53s→12s). Verified: selftest ok, 100 boar'
+- at: 2026-11-20 18:54
+  from: devin
+  text: 'Independent live verification 2026-11-20 18:53 ICT: tailnet /health=200/101ms, /queue=200/1133ms. Live
+    /lock-stats (cumulative since process start) shows /comment n=1088 wait_max=25.12s, hold_max=102.71s; /action
+    n=423, 16 timeouts, wait_max=25.46s, hold_max=22.68s; /inbox n=17, 3 timeouts, wait_max=25.26s. Recent journal
+    examples: /comment wait=0, held=6.2s with save_ms=6079; another /comment waited=8.7s, held=0.3s. idc03 load
+    averages were 12.25/13.79/13.15. Served code still yaml.safe_load-sc'
 requests: []
 action:
   lane: paid_frontier
