@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: doing
-updated: 2026-11-20 17:30
+updated: 2026-11-20 17:35
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -153,6 +153,13 @@ comms:
   from: devin
   text: '[progress] ansible/ scaffold created verbatim in worktree (8 files). ansible-core 2.22.0 installed via
     uv tool (no sudo/pipx on tony-macbook). Running verification: ping baseline, site.yml --check --diff, YAML sanity.'
+- at: 2026-11-20 17:35
+  from: devin
+  text: '[done] ansible/ scaffold landed on dispatch branch (commit 2c9b819ded) — all 8 spec files verbatim + additive
+    fix: inventory/{group_vars,host_vars} symlinks. REASON: ansible only auto-loads vars from inventory/ or playbook/
+    dirs; the spec layout leaves them unloaded and site.yml fails with common_packages undefined. PING baseline:
+    tony-omen ok, tony-dell ok, idc02 ok, idc03 ok (4/4 over tailscale). CHECK+DIFF (dry-run only, nothing applied):
+    tony-omen/tony-dell changed=2 (new 52chaba-unattended-'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
