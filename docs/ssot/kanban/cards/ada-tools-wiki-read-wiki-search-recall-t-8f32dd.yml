@@ -6,14 +6,15 @@ ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
   from: devin
-  text: 'spec (ada-voice repo, main): Ada cannot read the wiki she now co-owns — Education/Reports migrated 2026-11-08,
-    lessons+reports live only there.
+  text: 'spec (ada-voice repo, main): Ada cannot read the wiki she now co-owns — Education/Reports migrated
+    2026-11-08, lessons+reports live only there.
 
 
     Build two tools.d modules:
 
-    1. wiki_read(title) — read a wiki page''s wikitext/parse via board-api /wiki/page mode=read (guarded door exists
-    for Education:/Reports:/templates; verify read op works for News: too or extend allowlist deliberately). Actor=ada.
+    1. wiki_read(title) — read a wiki page''s wikitext/parse via board-api /wiki/page mode=read (guarded
+    door exists for Education:/Reports:/templates; verify read op works for News: too or extend allowlist
+    deliberately). Actor=ada.
 
     2. wiki_search(query) — search wiki pages. If board-api lacks a search op, add a minimal guarded /wi'
 - at: 2026-11-08 13:53
@@ -49,14 +50,14 @@ comms:
   text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:'
 - at: 2026-11-09 09:49
   from: chaba
-  text: 'merge-sweep: devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc failed — its branch isn''t auto-merged
-    (unverified partial work). Retry the card or merge dispatch/20261108-143413-ada-tools-wiki-read-wiki-searc by
-    hand.'
+  text: 'merge-sweep: devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc failed — its branch isn''t
+    auto-merged (unverified partial work). Retry the card or merge dispatch/20261108-143413-ada-tools-wiki-read-wiki-searc
+    by hand.'
 - at: 2026-11-11 02:32
   from: chaba
-  text: 'idc02 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
-    eligible runner (idc02) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
-    pins or teach a runner the capability'
+  text: 'idc02 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails
+    on the only eligible runner (idc02) — it needs push:ada-voice creds or the card needs re-routing —
+    fix action.labels/host pins or teach a runner the capability'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -95,16 +96,16 @@ comms:
   text: started devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc on tony-omen (dispatch)
 - at: 2026-11-17 09:39
   from: chaba
-  text: 'merge-sweep: devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc no longer active on tony-omen but
-    card still says running — sweeping its branch'
+  text: 'merge-sweep: devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc no longer active on tony-omen
+    but card still says running — sweeping its branch'
 - at: 2026-11-17 09:39
   from: chaba
-  text: 'merge-sweep: no session/worktree found for devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc on
-    tony-omen — if the work was never pushed it may be gone'
+  text: 'merge-sweep: no session/worktree found for devin-task-20261108-143413-ada-tools-wiki-read-wiki-searc
+    on tony-omen — if the work was never pushed it may be gone'
 - at: 2026-11-17 09:39
   from: tony-omen
-  text: 'finished (failed): exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result
-    ''exit-code''. | devin-task-20261117-'
+  text: 'finished (failed): exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with
+    result ''exit-code''. | devin-task-20261117-'
 - at: 2026-11-17 18:10
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -172,6 +173,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 action:
   type: dispatch
   repo: ada-voice
@@ -182,10 +186,25 @@ action:
     stale_running: 2026-11-17 09:39
     session_gone: 2026-11-17 09:39
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
-    Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
-    2.730s CPU time.'
+    Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
+    Consumed 2.730s CPU time.'
   attempts: 1
   runner: tony-omen
-  result: 'exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result ''exit-code''. |
-    devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Consumed 26.454s CPU time over 1min 22.212s
-    wall clock time, 768.7M memory peak.'
+  result: 'exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result ''exit-code''.
+    | devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Consumed 26.454s CPU time over
+    1min 22.212s wall clock time, 768.7M memory peak.'
+requests:
+- id: multiple-runner-agents-across-3dd40d
+  ask: Multiple runner-agents across hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution
+    because the installed runner-agent script has drifted from the main repository at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
+    Before the Ada tools wiki-read and wiki-search recall card can be dispatched and executed, the runner-agent
+    deployment issue must be resolved across the infrastructure.
+  options:
+  - ★ Redeploy the updated runner-agent script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    to all affected hosts using scp and resume normal dispatch
+  - Temporarily disable or bypass the drift check on the affected runner agents to allow immediate card
+    execution
+  - Postpone all card dispatches until infrastructure runner-agent synchronization is fully automated
+  status: open
+  at: 2026-11-20 07:20
+  from: backlog-spec-enrich

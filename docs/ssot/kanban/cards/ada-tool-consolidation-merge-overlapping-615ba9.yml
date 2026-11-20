@@ -6,13 +6,14 @@ ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection — cms_publish_page vs cms_edit vs
-    wp_post vs cpt_post (+ place_report variants).
+  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection — cms_publish_page vs
+    cms_edit vs wp_post vs cpt_post (+ place_report variants).
 
 
-    Audit actual overlap: which tools hit the same backend doors (board-api /report, /publish, WP CPTs). Propose+implement
-    consolidation: one canonical write tool per sink with action= param, old names kept as aliases for one release.
-    Update manifest.yml, instructions tool list, and any scenario fixtures referencing old names.
+    Audit actual overlap: which tools hit the same backend doors (board-api /report, /publish, WP CPTs).
+    Propose+implement consolidation: one canonical write tool per sink with action= param, old names kept
+    as aliases for one release. Update manifest.yml, instructions tool list, and any scenario fixtures
+    referencing old names.
 
 
     DEPENDENCY: do NOT di'
@@ -88,6 +89,24 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 action:
   type: dispatch
   repo: ada-voice
+requests:
+- id: multiple-target-hosts-tony-ome-99110b
+  ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their
+    installed runner-agents have drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
+    Before the agent can execute the tool consolidation task, the runner-agent must be redeployed to these
+    hosts.
+  options:
+  - ★ Redeploy runner-agent to tony-omen, idc02, idc03, and tony-macbook via scp and resume the task
+  - Postpone the Ada tool consolidation merge until runner-agent deployment drift is resolved across all
+    infrastructure
+  - Run the tool consolidation task locally on the primary development machine instead of dispatching
+    to the deferred nodes
+  status: open
+  at: 2026-11-20 07:20
+  from: backlog-spec-enrich

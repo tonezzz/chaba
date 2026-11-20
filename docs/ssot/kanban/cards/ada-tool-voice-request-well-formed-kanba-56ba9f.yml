@@ -10,10 +10,10 @@ comms:
     card, not a vague note.
 
 
-    New tool (e.g. card_draft or extend kanban.py): takes the dictated request text -> produces {title, spec, done_when,
-    suggested lane/executor, priority} using a template informed by real dispatch briefs (see OPS-1187 comms for
-    the shape: goal, exact files/dirs, sequence, hard limits, verify steps) -> shows Tony the draft -> on confirm
-    POSTs /card column=backlog (NOT aut'
+    New tool (e.g. card_draft or extend kanban.py): takes the dictated request text -> produces {title,
+    spec, done_when, suggested lane/executor, priority} using a template informed by real dispatch briefs
+    (see OPS-1187 comms for the shape: goal, exact files/dirs, sequence, hard limits, verify steps) ->
+    shows Tony the draft -> on confirm POSTs /card column=backlog (NOT aut'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -86,6 +86,15 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 action:
   type: dispatch
   repo: ada-voice
+spec: Implement the Ada tool capability to convert a voice request into a well-formed kanban card spec
+  in the ada-voice repository. The runner must deploy on host tony-dell, ensuring it operates within the
+  local development environment without drifting from repository scripts. Constraints include using existing
+  voice-to-text pipeline definitions and validating the generated card structure against standard Chaba
+  board schemas. The testable done-condition is a passing integration test where a recorded voice input
+  successfully generates a correctly formatted card JSON in the board queue.
