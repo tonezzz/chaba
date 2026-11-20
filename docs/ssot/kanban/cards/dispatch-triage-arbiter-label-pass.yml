@@ -316,6 +316,10 @@ comms:
     code 595 / research 337 / docs 124 / clarify 36 (conf_mean 0.897). Below-threshold rows were NOT silently labeled:
     review queue = 100 rows (2 low-confidence + 98 stratified spot-check = the golden-seed sample). Artifacts in
     scripts/bench/dispatch-triage/: label.py (ide'
+- at: 2026-11-20 20:33
+  from: devin
+  text: 'raised request spot-check-the-100-row-review-queue-30-5-080d21: Spot-check the 100-row review queue (~30-50min
+    at 20-30s/row): 2 low-confidence rows need adjudication, 98 high-confiden'
 action:
   type: dispatch
   status: running
@@ -331,3 +335,17 @@ action:
   runner: idc02
 claim:
   since: 2026-11-20 19:48
+requests:
+- id: spot-check-the-100-row-review-queue-30-5-080d21
+  ask: 'Spot-check the 100-row review queue (~30-50min at 20-30s/row): 2 low-confidence rows need adjudication,
+    98 high-confidence rows are the stratified sample that seeds the golden tier. Full list in docs/ssot/jobs/nest/2026-11-20-arbiter-label-pass.yml
+    (spot_check_list_for_tony) and scripts/bench/dispatch-triage/review-queue-2026-11-20.jsonl. Options: (a) ★ check
+    first, then I run the one-command suite append to orch-triage-cases.jsonl on the tony-dell ada-voice checkout;
+    (b) append now, spot-check async after — errors are surfaced-not-buried either way, the check just gates golden-seed
+    quality.'
+  status: open
+  at: 2026-11-20 20:33
+  from: devin
+  options:
+  - proceed
+  - hold
