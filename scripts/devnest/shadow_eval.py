@@ -7,6 +7,15 @@ worktrees, then verifies the artifacts with held-out verifiers and emits
 a benchmark report. Nothing in shadow mode merges, pushes, or mutates
 production state.
 
+A fourth arm, "colab-t4", is deliberately NOT a fixture arm: it is the
+model-only local-inference slot staged as ada-nest queue packs
+(scripts/colab/packs/devnest-model-slot-{30m,60m}, weights pre-staged by
+devnest-qwen3-8b-hf-prestage). It runs synthetic structured-output
+checks only — throughput/format smoke, never replay quality — so it
+cannot touch the held-out verifier boundary. The `t4slot` subcommand is
+its control plane: --check lints the pack contract locally, --fetch
+ingests the remote metrics/report artifacts after a queue run.
+
 The rainy-day ladder routes a task to the cheapest rung that can still
 pass given a live connectivity/model probe:
 
@@ -833,6 +842,182 @@ def cmd_matrix(args):
     return 0
 
 
+# ------------------------------------------------ colab-t4 model slot arm
+
+COLAB_PACKS = REPO / "scripts" / "colab" / "packs"
+T4_PRESTAGE_PACK = "devnest-qwen3-8b-hf-prestage"
+T4_SLOT_PACKS = ("devnest-model-slot-30m", "devnest-model-slot-60m")
+T4_PIN_REPO = "Qwen/Qwen3-8B"
+T4_PIN_REV = "b968826d9c46dd6066d109eabc6255188de91218"
+T4_REMOTE = os.environ.get("SHADOW_NEST_REMOTE", "gdrive:ada-nest")
+
+
+def _rclone(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
+    return subprocess.run(["rclone"] + args, capture_output=True,
+                          text=True, timeout=timeout)
+
+
+def _t4_pack_check(name: str) -> dict:
+    """Contract lint of one model-slot pack source dir — no GPU, no
+    weights. Mirrors the runner/pack-preflight rules plus this arm's own
+    pin + self-containment rules."""
+    checks = []
+    d = COLAB_PACKS / name
+    p = d / "pack.yml"
+
+    def ck(cid, ok, detail):
+        checks.append({"id": cid, "ok": bool(ok), "detail": str(detail)})
+
+    ck("dir_exists", d.is_dir(), d)
+    if not d.is_dir():
+        return {"pack": name, "verdict": "fail", "checks": checks}
+    try:
+        spec = _load_yaml_min(p)
+    except Exception as e:
+        ck("pack_yml_parse", False, e)
+        return {"pack": name, "verdict": "fail", "checks": checks}
+    ck("pack_yml_parse", isinstance(spec, dict) and bool(spec), "parsed")
+    ck("name_matches_dir", spec.get("name") == name,
+       spec.get("name"))
+    needs = spec.get("needs") or {}
+    ck("needs_gpu", needs.get("gpu_gb", 0) > 0, needs.get("gpu_gb"))
+    ck("needs_disk", needs.get("disk_gb", 0) >= 40, needs.get("disk_gb"))
+    cap = {"devnest-model-slot-30m": 1800,
+           "devnest-model-slot-60m": 3600}.get(name, 1800)
+    ck("timeout_cap", spec.get("timeout_s") == cap,
+       f"{spec.get('timeout_s')}s vs {cap}s cap")
+    want_req = ([T4_PRESTAGE_PACK] if name == "devnest-model-slot-30m"
+                else ["devnest-model-slot-30m"])
+    ck("requires_gate", spec.get("requires") == want_req, spec.get("requires"))
+    arts = spec.get("artifacts") or []
+    ck("artifacts_present", len(arts) >= 3
+       and all(a.startswith(f"packs/{name}/") for a in arts),
+       f"{len(arts)} globs")
+    ck("gate_artifact", f"packs/{name}/preflight.json" in arts,
+       "preflight.json is the runner requires-gate")
+    blob = p.read_text()
+    ck("pin_in_pack", T4_PIN_REV in blob and T4_PIN_REPO in blob,
+       "revision+repo pinned in prep")
+    ck("no_hub_in_run", "HF_HUB_OFFLINE=1" in blob,
+       "run_sh exports HF_HUB_OFFLINE")
+    ck("self_contained_fixtures", "$PACK_DIR/inputs/fixtures.json" in blob
+       and (d / "inputs" / "fixtures.json").is_file(),
+       "fixtures inside pack, not queue/")
+    script = d / "run_hf_slot.py"
+    ck("script_present", script.is_file(), script.name)
+    if script.is_file():
+        src = script.read_text()
+        ck("pin_in_script", T4_PIN_REV in src and T4_PIN_REPO in src,
+           "PIN constants in script")
+        r = subprocess.run(
+            [sys.executable, str(script), "--self-check",
+             "--fixtures", str(d / "inputs" / "fixtures.json")],
+            capture_output=True, text=True, timeout=60)
+        try:
+            verdict = json.loads(r.stdout).get("verdict")
+        except Exception:
+            verdict = f"unparseable: {r.stdout[:80]} {r.stderr[:80]}"
+        ck("self_check", r.returncode == 0 and verdict == "pass",
+           verdict)
+    return {"pack": name, "verdict":
+            "pass" if all(c["ok"] for c in checks) else "fail",
+            "checks": checks}
+
+
+def _t4_remote_check() -> dict:
+    """Best-effort remote state: prestage done marker + manifest pin +
+    weight archive present. Skips cleanly without rclone."""
+    out = {"remote": T4_REMOTE, "checks": [], "available": False}
+    if not shutil.which("rclone"):
+        out["checks"].append({"id": "rclone", "ok": None,
+                              "detail": "rclone not on PATH"})
+        return out
+    base = f"{T4_REMOTE}/packs/{T4_PRESTAGE_PACK}"
+    r = _rclone(["lsf", f"{base}/done"])
+    out["checks"].append({"id": "prestage_done", "ok": r.returncode == 0
+                          and "done" in r.stdout,
+                          "detail": r.stdout.strip() or r.stderr.strip()})
+    r = _rclone(["cat", f"{base}/out/model-manifest.json"])
+    pin_ok = False
+    detail = "manifest unreadable"
+    if r.returncode == 0:
+        try:
+            m = json.loads(r.stdout)
+            pin_ok = (m.get("repo_id") == T4_PIN_REPO
+                      and m.get("revision") == T4_PIN_REV)
+            detail = (f"{m.get('repo_id')}@{str(m.get('revision'))[:8]} "
+                      f"{m.get('total_bytes', 0) / 1e9:.1f}GB "
+                      f"{len(m.get('files') or {})} files")
+        except Exception as e:
+            detail = f"manifest parse: {e}"
+    out["checks"].append({"id": "prestage_pin", "ok": pin_ok,
+                          "detail": detail})
+    r = _rclone(["lsf", f"{base}/out/qwen3-8b-hf-cache.tar.zst",
+                 "--format", "s"])
+    ok = r.returncode == 0 and (r.stdout.strip().isdigit()
+                                and int(r.stdout.strip()) > 1e9)
+    out["checks"].append({"id": "weight_archive", "ok": ok,
+                          "detail": f"{r.stdout.strip()} bytes"
+                          if ok else (r.stderr.strip() or "missing")})
+    out["available"] = True
+    return out
+
+
+def cmd_t4slot(args):
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    day = datetime.now().strftime("%Y-%m-%d")
+    if args.fetch:
+        packs = [args.pack] if args.pack else [T4_SLOT_PACKS[0]]
+        ingested = []
+        for name in packs:
+            base = f"{T4_REMOTE}/packs/{name}"
+            bundle = {"pack": name, "remote": base,
+                      "fetched_at": now_iso(), "artifacts": {}}
+            for rel in ("out/metrics.json", "out/verdict.json",
+                        "out/report.md", "preflight.json", "done"):
+                r = _rclone(["cat", f"{base}/{rel}"])
+                bundle["artifacts"][rel] = (
+                    r.stdout if r.returncode == 0 else None)
+            try:
+                v = json.loads(bundle["artifacts"]["out/verdict.json"])
+                bundle["verdict"] = v.get("status")
+            except Exception:
+                bundle["verdict"] = ("not_run" if not bundle["artifacts"]
+                                     .get("done") else "unknown")
+            out = REPORTS / f"{day}-colab-t4-{name}.json"
+            out.write_text(json.dumps(bundle, indent=1))
+            md = REPORTS / f"{day}-colab-t4-{name}.md"
+            md.write_text(
+                f"# colab-t4 slot ingest — {name}\n\n"
+                f"- remote: `{base}`\n- fetched: {bundle['fetched_at']}\n"
+                f"- verdict: **{bundle['verdict']}**\n\n"
+                + ("\n".join(
+                    f"- `{k}`: {'present' if v else 'absent'}"
+                    for k, v in bundle["artifacts"].items()))
+                + "\n\n---\n\n"
+                + (bundle["artifacts"].get("out/report.md")
+                   or "_no remote report.md yet_\n"))
+            print(json.dumps({"pack": name, "verdict": bundle["verdict"],
+                              "ingest": str(out)}, indent=1))
+            ingested.append(bundle["verdict"])
+        return 0
+    rep = {"kind": "colab-t4-pack-check", "at": now_iso(),
+           "host": os.uname().nodename,
+           "packs": [_t4_pack_check(n) for n in T4_SLOT_PACKS],
+           "remote": _t4_remote_check()}
+    fails = [c for pk in rep["packs"] for c in pk["checks"]
+             if c["ok"] is False]
+    rfails = [c for c in rep["remote"]["checks"] if c["ok"] is False]
+    rep["verdict"] = "fail" if fails or rfails else "pass"
+    out = REPORTS / f"{day}-colab-t4-pack-check.json"
+    out.write_text(json.dumps(rep, indent=1))
+    print(json.dumps({"verdict": rep["verdict"], "report": str(out),
+                      "packs": {p["pack"]: p["verdict"]
+                                for p in rep["packs"]},
+                      "remote": rep["remote"]["checks"]}, indent=1))
+    return 0 if rep["verdict"] == "pass" else 2
+
+
 # ----------------------------------------------------------------- report
 
 def _load_runs(run_id: str = "") -> list:
@@ -979,11 +1164,21 @@ def main():
 
     sub.add_parser("prestage")
 
+    sp = sub.add_parser("t4slot",
+                        help="colab-t4 model-slot arm: --check lints the "
+                             "pack contract, --fetch ingests remote "
+                             "metrics/report artifacts")
+    sp.add_argument("--check", action="store_true")
+    sp.add_argument("--fetch", action="store_true")
+    sp.add_argument("--pack", default="",
+                    help="pack name for --fetch (default 30m)")
+
     sp = sub.add_parser("run")
     sp.add_argument("--fixture", required=True,
                     help="fixture id or 'all'")
     sp.add_argument("--arm", required=True,
-                    help="l0 | opencode | devin | comma list")
+                    help="l0 | opencode | devin | comma list "
+                         "(colab-t4 is not a fixture arm — see t4slot)")
     sp.add_argument("--model", default="")
     sp.add_argument("--run-id", default=datetime.now().strftime(
         "%Y%m%d-%H%M%S"))
@@ -1024,6 +1219,8 @@ def main():
         return cmd_simulate(args)
     elif args.cmd == "prestage":
         return cmd_prestage(args)
+    elif args.cmd == "t4slot":
+        return cmd_t4slot(args)
     elif args.cmd == "run":
         return cmd_run(args)
     elif args.cmd == "verify":

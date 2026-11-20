@@ -1,0 +1,14 @@
+name: devnest-qwen3-8b-hf-prestage
+needs:
+  ram_gb: 20
+  disk_gb: 40
+  egress_only_ok: true
+timeout_s: 5400
+venv: true
+artifacts:
+  - packs/devnest-qwen3-8b-hf-prestage/out/qwen3-8b-hf-cache.tar.zst
+  - packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json
+prep: |
+  python -m pip install -q huggingface_hub==0.30.2 zstandard==0.23.0
+run_sh: |
+  python3 "$PACK_DIR/prestage.py" --out "$PACK_DIR/out"

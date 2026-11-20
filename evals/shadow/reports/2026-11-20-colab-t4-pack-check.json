@@ -1,0 +1,191 @@
+{
+ "kind": "colab-t4-pack-check",
+ "at": "2026-11-20T06:15:06.820599+00:00",
+ "host": "mn01",
+ "packs": [
+  {
+   "pack": "devnest-model-slot-30m",
+   "verdict": "pass",
+   "checks": [
+    {
+     "id": "dir_exists",
+     "ok": true,
+     "detail": "/home/tony/CascadeProjects/dispatch-wt-20261120-060606-build-a-reusable-local-only-co/scripts/colab/packs/devnest-model-slot-30m"
+    },
+    {
+     "id": "pack_yml_parse",
+     "ok": true,
+     "detail": "parsed"
+    },
+    {
+     "id": "name_matches_dir",
+     "ok": true,
+     "detail": "devnest-model-slot-30m"
+    },
+    {
+     "id": "needs_gpu",
+     "ok": true,
+     "detail": "10"
+    },
+    {
+     "id": "needs_disk",
+     "ok": true,
+     "detail": "45"
+    },
+    {
+     "id": "timeout_cap",
+     "ok": true,
+     "detail": "1800s vs 1800s cap"
+    },
+    {
+     "id": "requires_gate",
+     "ok": true,
+     "detail": "['devnest-qwen3-8b-hf-prestage']"
+    },
+    {
+     "id": "artifacts_present",
+     "ok": true,
+     "detail": "4 globs"
+    },
+    {
+     "id": "gate_artifact",
+     "ok": true,
+     "detail": "preflight.json is the runner requires-gate"
+    },
+    {
+     "id": "pin_in_pack",
+     "ok": true,
+     "detail": "revision+repo pinned in prep"
+    },
+    {
+     "id": "no_hub_in_run",
+     "ok": true,
+     "detail": "run_sh exports HF_HUB_OFFLINE"
+    },
+    {
+     "id": "self_contained_fixtures",
+     "ok": true,
+     "detail": "fixtures inside pack, not queue/"
+    },
+    {
+     "id": "script_present",
+     "ok": true,
+     "detail": "run_hf_slot.py"
+    },
+    {
+     "id": "pin_in_script",
+     "ok": true,
+     "detail": "PIN constants in script"
+    },
+    {
+     "id": "self_check",
+     "ok": true,
+     "detail": "pass"
+    }
+   ]
+  },
+  {
+   "pack": "devnest-model-slot-60m",
+   "verdict": "pass",
+   "checks": [
+    {
+     "id": "dir_exists",
+     "ok": true,
+     "detail": "/home/tony/CascadeProjects/dispatch-wt-20261120-060606-build-a-reusable-local-only-co/scripts/colab/packs/devnest-model-slot-60m"
+    },
+    {
+     "id": "pack_yml_parse",
+     "ok": true,
+     "detail": "parsed"
+    },
+    {
+     "id": "name_matches_dir",
+     "ok": true,
+     "detail": "devnest-model-slot-60m"
+    },
+    {
+     "id": "needs_gpu",
+     "ok": true,
+     "detail": "10"
+    },
+    {
+     "id": "needs_disk",
+     "ok": true,
+     "detail": "45"
+    },
+    {
+     "id": "timeout_cap",
+     "ok": true,
+     "detail": "3600s vs 3600s cap"
+    },
+    {
+     "id": "requires_gate",
+     "ok": true,
+     "detail": "['devnest-model-slot-30m']"
+    },
+    {
+     "id": "artifacts_present",
+     "ok": true,
+     "detail": "4 globs"
+    },
+    {
+     "id": "gate_artifact",
+     "ok": true,
+     "detail": "preflight.json is the runner requires-gate"
+    },
+    {
+     "id": "pin_in_pack",
+     "ok": true,
+     "detail": "revision+repo pinned in prep"
+    },
+    {
+     "id": "no_hub_in_run",
+     "ok": true,
+     "detail": "run_sh exports HF_HUB_OFFLINE"
+    },
+    {
+     "id": "self_contained_fixtures",
+     "ok": true,
+     "detail": "fixtures inside pack, not queue/"
+    },
+    {
+     "id": "script_present",
+     "ok": true,
+     "detail": "run_hf_slot.py"
+    },
+    {
+     "id": "pin_in_script",
+     "ok": true,
+     "detail": "PIN constants in script"
+    },
+    {
+     "id": "self_check",
+     "ok": true,
+     "detail": "pass"
+    }
+   ]
+  }
+ ],
+ "remote": {
+  "remote": "gdrive:ada-nest",
+  "checks": [
+   {
+    "id": "prestage_done",
+    "ok": true,
+    "detail": "done"
+   },
+   {
+    "id": "prestage_pin",
+    "ok": true,
+    "detail": "Qwen/Qwen3-8B@b968826d 16.4GB 12 files"
+   },
+   {
+    "id": "weight_archive",
+    "ok": true,
+    "detail": "12867510174 bytes"
+   }
+  ],
+  "available": true
+ },
+ "verdict": "pass"
+}

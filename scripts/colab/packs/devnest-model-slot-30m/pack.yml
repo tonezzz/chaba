@@ -1,0 +1,78 @@
+# devnest-model-slot-30m — bounded, local-only Colab T4 model slot.
+# Card: devnest-colab-t4-model-slot-adapter (model-only arm, Tony 2026-10-29).
+#
+# Runs a pinned, pre-staged Qwen3-8B HF snapshot through synthetic
+# structured-output checks and reports throughput/format smoke ONLY —
+# this is not a fixture replay and not a held-out-verifier verdict.
+#
+# Contract chain:
+#   requires devnest-qwen3-8b-hf-prestage (done marker + manifest) — the
+#   snapshot was fetched once on a CPU host; this pack NEVER downloads
+#   weights. prep extracts the tar to /tmp, pins repo+revision, installs
+#   deps only if absent, and refuses off-Colab workers (test -d /content).
+#   run_sh exports HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE and the script
+#   re-verifies every manifest file (size + sha256) before loading.
+#
+# Cap rule: default slot = 30 min (timeout_s 1800, soft cap 1500 s so
+# artifacts always land before SIGALRM). A 60-minute slot exists as
+# devnest-model-slot-60m (repo only); it requires this pack's done marker
+# AND reads this pack's preflight.json — written here with verdict pass
+# only on a fully clean slot, so the 60m extension can never claim after
+# a partial/failed first slot.
+#
+# Queue position: name-sorts immediately before img-gen-bench-t4 / the
+# held kk-video render pack, so the render packs' heavy CPU/network prep
+# is what overlaps this slot's GPU time.
+name: devnest-model-slot-30m
+requires:
+  - devnest-qwen3-8b-hf-prestage
+needs:
+  gpu_gb: 10       # NF4 Qwen3-8B ~6.5GB + activations; T4 advertises ~15
+  ram_gb: 8
+  disk_gb: 45      # 16.4GB extracted snapshot + tar read + headroom
+  egress_only_ok: true
+timeout_s: 1800
+artifacts:
+  - packs/devnest-model-slot-30m/out/metrics.json
+  - packs/devnest-model-slot-30m/out/verdict.json
+  - packs/devnest-model-slot-30m/out/report.md
+  - packs/devnest-model-slot-30m/preflight.json
+prep: |
+  set -eu
+  # Colab T4 lane only — a fleet worker mounting this store bails here,
+  # releasing the claim instead of running off-lane.
+  test -d /content
+  TAR="$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/qwen3-8b-hf-cache.tar.zst"
+  MAN="$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json"
+  test -s "$TAR" && test -s "$MAN"
+  python3 - "$MAN" <<'PY'
+  import json, sys
+  m = json.load(open(sys.argv[1]))
+  want = {"repo_id": "Qwen/Qwen3-8B",
+          "revision": "b968826d9c46dd6066d109eabc6255188de91218"}
+  sys.exit(0 if all(m.get(k) == v for k, v in want.items()) else 1)
+  PY
+  command -v zstd >/dev/null || apt-get install -y -qq zstd
+  mkdir -p /tmp/qwen3-8b-hf
+  if [ ! -s /tmp/qwen3-8b-hf/config.json ]; then
+    tar -I zstd -xf "$TAR" -C /tmp/qwen3-8b-hf
+  fi
+  test -s /tmp/qwen3-8b-hf/config.json
+  python3 - <<'PY'
+  import importlib.util, subprocess, sys
+  mods = ("torch", "transformers", "bitsandbytes", "accelerate")
+  if any(importlib.util.find_spec(m) is None for m in mods):
+      subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
+                             "transformers==4.51.3", "bitsandbytes==0.45.5",
+                             "accelerate==1.6.0"])
+  PY
+  python3 -c "import torch, transformers, bitsandbytes; assert torch.cuda.is_available()"
+run_sh: |
+  HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python3 \
+    "$PACK_DIR/run_hf_slot.py" \
+    --model-dir /tmp/qwen3-8b-hf \
+    --manifest "$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json" \
+    --fixtures "$PACK_DIR/inputs/fixtures.json" \
+    --out "$PACK_DIR/out" \
+    --max-seconds 1500 \
+    --gate-file "$PACK_DIR/preflight.json"
