@@ -24,6 +24,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | Path | Body | Writes |
 |---|---|---|
 | `/card` | `{id?, title, column?, spec?, report?, action?, queue?, ...}` | new card YAML + commit |
+| **`/card-set`** | `{id, set:{lane?, executor?, tags?}, from, reason}` | routing-field edit on an existing card (see note) |
 | `/comment` | `{id, from, text}` | card comms append |
 | **`/attach`** | `{id, filename, payload|b64|data, from?}` (alias `/upload`) | file/photo evidence → `docs/ssot/kanban/attachments/<id>/<file>` + comms link |
 | `/request` | `{id, ask, options?, suggested?, to?}` | card `requests[]` |
@@ -39,6 +40,26 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 
 ## Endpoint notes
 
+- **`/card-set` — the routing-field door** (card
+  `board-api-card-lane-executor-edit`): corrects `action.lane`,
+  `action.executor`, and `tags` on an existing card — no other card
+  fields are admitted (workflow fields — `column`, `requests`, `comms`
+  — are human/producer-owned and move via `/action`, `/request`,
+  `/comment`). `lane` must be in the `/card` whitelist
+  (`LANE_MODELS ∪ LANE_EXECUTORS`, minus lanes the catalog
+  `infrastructure/ssot.devnest-lanes.yml` marks removed/retired) —
+  **`devin` is NOT a lane**: `executor=devin` is how you pin devin.
+  `executor` must be in `dr.EXECUTORS`. An empty string clears the
+  field (unpin → the queue-time classifier decides). `tags` takes a
+  list (replace; ≤20, each ≤40 chars) or `{add:[], remove:[]}`. A
+  non-empty `reason` is required — every edit appends
+  `routing edited: <fields> by <from>: <reason>` to comms for audit.
+  Refused (400) while `action.status` is running or a runner holds the
+  claim; the write runs under the card flock so it can't race a claim.
+  An explicit `lane` set drops `lane_source`, making it author-set —
+  it wins over `_apply_classify_at_queue` instead of being
+  re-classified on the next queue. CLI:
+  `board-cli.py card-set CARD --reason "why" [--lane L|''] [--executor E|''] [--tags a,b|--tag-add a --tag-remove b]`.
 - **`/request` options** — `options[]` entries are strings or dicts
   `{id, label, action?}`. A dict option lets the emitter declare the
   answer's consequence at request time: when the answer picks that

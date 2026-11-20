@@ -164,6 +164,19 @@ Endpoints (after prefix strip):
       is re-armed to queued + comms 're-spawned from report page' — a
       second click on a report page's spawn button is safe. Response
       carries id (+ status when the card is armed).
+  POST /card-set {id, set:{lane?, executor?, tags?}, from, reason}
+      the routing-field door (card board-api-card-lane-executor-edit):
+      corrects action.lane / action.executor / tags on an EXISTING card
+      without a hand YAML edit. Whitelisted fields only — workflow
+      fields (column, requests, comms) stay producer/human-owned and
+      are refused. lane must be in valid_lanes() (LANE_MODELS ∪
+      LANE_EXECUTORS minus catalog-retired lanes — note 'devin' is NOT
+      a lane; executor=devin pins devin), executor in dr.EXECUTORS, and
+      an empty value clears the field. tags takes a list (replace,
+      <=20, each <=40 chars) or {add:[], remove:[]}. An explicit lane
+      set drops lane_source so it counts as author-set and wins over
+      the queue-time classifier. Refused while the card is running or
+      claimed; every edit appends an audit comms line.
 
 Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
@@ -2150,10 +2163,9 @@ def do_create(body: dict, frm: str) -> dict:
         # or the write door silently drops the declaration — the first
         # OPS-1021 claims failed closed on exactly that (2026-10-30).
         ln = str(act.get("lane") or "").strip()
-        if ln and ln not in (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)):
+        if ln and ln not in valid_lanes():
             raise ValueError(
-                f"action.lane must be one of "
-                f"{sorted(set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS))}")
+                f"action.lane must be one of {sorted(valid_lanes())}")
         for pk in ("agent_profile", "profile"):
             pv = str(act.get(pk) or "").strip()
             if pv and not dr.PROFILE_ID_RE.match(pv):
@@ -2442,6 +2454,157 @@ def do_create(body: dict, frm: str) -> dict:
         elif cmsg:
             res["message"] = msg + f" — {cmsg}"
     return res
+
+
+# mirrors RETIRE_RE in tests/board/test_runner_tooling_contract.py —
+# one definition of "lane is gone" across the door and the contract test
+_RETIRE_RE = re.compile(
+    r"^\s*(removed|retired|deprecated|disabled|dead)\b", re.I)
+
+
+def _retired_lanes() -> set:
+    """Lane ids the DevNest catalog (ssot.devnest-lanes.yml) marks
+    removed/retired/dead — excluded from the lane whitelist. Same rule
+    as the lane-retirement contract test; falls back to a line scan
+    when the prose-heavy catalog doesn't yaml-load — the
+    LANE_MODELS/LANE_EXECUTORS tables are the real gate either way."""
+    try:
+        txt = (REPO / "docs/ssot/infrastructure/"
+               "ssot.devnest-lanes.yml").read_text()
+    except OSError:
+        return set()
+    try:
+        doc = yaml.safe_load(txt) or {}
+        lanes = doc.get("lanes") or {}
+        return {k for k, v in lanes.items()
+                if isinstance(v, dict)
+                and _RETIRE_RE.match(str(v.get("status") or ""))}
+    except Exception:
+        pass
+    retired, cur = set(), None
+    in_lanes = False
+    for line in txt.splitlines():
+        if re.match(r"^lanes:\s*$", line):
+            in_lanes = True
+            continue
+        if not in_lanes:
+            continue
+        if line and not line.startswith(" "):
+            break                    # next top-level block ends lanes:
+        m = re.match(r"^  ([a-zA-Z0-9_-]+):\s*$", line)
+        if m:
+            cur = m.group(1)
+            continue
+        if cur:
+            sm = re.match(r"^    status:\s*(.+)$", line)
+            if sm and _RETIRE_RE.match(sm.group(1)):
+                retired.add(cur)
+    return retired
+
+
+def valid_lanes() -> set:
+    """action.lane values the write door admits — the same union /card
+    validates against (LANE_MODELS ∪ LANE_EXECUTORS), minus any lane the
+    DevNest lane catalog marks removed/retired."""
+    return (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)) \
+        - _retired_lanes()
+
+
+def do_card_set(card: dict, body: dict, frm: str) -> str:
+    """POST /card-set — the routing-field door (card
+    board-api-card-lane-executor-edit): corrects action.lane,
+    action.executor and tags on an EXISTING card without hand-editing
+    YAML. Refused while the card is running or claimed; runs under the
+    request flock so it can't race a claim. Field-ownership rule:
+    workflow fields (column, requests, comms) are NOT admitted here —
+    producers must not use this door on them."""
+    a = _ensure_act(card)
+    st = a.get("status", "idle")
+    if st in ("running", "claimed", "starting") or a.get("runner"):
+        raise ValueError(
+            f"card is {st}"
+            + (f" (runner={a['runner']})" if a.get("runner") else "")
+            + " — routing fields are frozen until the claim finishes")
+    s = body.get("set")
+    if not isinstance(s, dict) or not s:
+        raise ValueError("set must be a non-empty object "
+                         "{lane?, executor?, tags?}")
+    bad = set(s) - {"lane", "executor", "tags"}
+    if bad:
+        raise ValueError(
+            f"set only admits lane|executor|tags (got {sorted(bad)}) — "
+            "workflow fields move via /action")
+
+    # validate everything first — a rejected edit must not half-apply
+    ln = ex = None
+    new_tags = None
+    if "lane" in s:
+        ln = str(s["lane"] or "").strip()
+        if ln and ln not in valid_lanes():
+            raise ValueError(
+                f"action.lane must be one of {sorted(valid_lanes())} — "
+                "note 'devin' is an executor, not a lane")
+    if "executor" in s:
+        ex = str(s["executor"] or "").strip()
+        if ex and ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"action.executor must be one of {sorted(dr.EXECUTORS)}")
+    if "tags" in s:
+        t = s["tags"]
+        cur = card.get("tags")
+        new_tags = list(cur) if isinstance(cur, list) else []
+        if isinstance(t, dict):
+            add = t.get("add") or []
+            rem = t.get("remove") or []
+            if not isinstance(add, list) \
+                    or not isinstance(rem, list):
+                raise ValueError("tags add/remove must be lists")
+            new_tags = [x for x in new_tags
+                        if x not in {str(r) for r in rem}]
+            for x in add:
+                x = str(x).strip()
+                if x and x not in new_tags:
+                    new_tags.append(x)
+        elif isinstance(t, list):
+            new_tags = [str(x).strip() for x in t if str(x).strip()]
+        else:
+            raise ValueError("tags must be a list or {add, remove}")
+        if len(new_tags) > 20:
+            raise ValueError("tags must be <=20 entries")
+        if any(len(x) > 40 for x in new_tags):
+            raise ValueError("each tag must be <=40 chars")
+
+    reason = str(body.get("reason") or "").strip()
+    if not reason:
+        raise ValueError("reason required — routing edits are audited")
+
+    changed = []
+    if "lane" in s:
+        if ln:
+            a["lane"] = ln
+            # author-set lane: drop classifier provenance so the next
+            # queue does not re-classify over it
+            # (_apply_classify_at_queue lane_source semantics)
+            a.pop("lane_source", None)
+            changed.append(f"lane={ln}")
+        else:
+            a.pop("lane", None)
+            a.pop("lane_source", None)
+            changed.append("lane cleared")
+    if "executor" in s:
+        if ex:
+            a["executor"] = ex
+            changed.append(f"executor={ex}")
+        else:
+            a.pop("executor", None)
+            changed.append("executor cleared")
+    if "tags" in s:
+        card["tags"] = new_tags
+        changed.append("tags")
+    comms_add(card, frm,
+              f"routing edited: {', '.join(changed)} "
+              f"by {frm}: {reason}")
+    return f"routing edited ({', '.join(changed)})"
 
 
 # --- request push notifications (card kanban-push-notify) ---------------
@@ -5269,6 +5432,13 @@ class H(BaseHTTPRequestHandler):
                     msg = res["message"]
                     resp_extra = {k: v for k, v in res.items()
                                   if k != "message"}
+                elif path == "/card-set":
+                    frm = actor(body)
+                    p = card_path(body.get("id", ""))
+                    card = load(p)
+                    msg = do_card_set(card, body, frm)
+                    card["updated"] = now()
+                    save(p, card)
                 elif path == "/pipeline":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
@@ -5686,6 +5856,89 @@ def _selftest() -> None:
     assert card["pipeline"]["benchmark"]["before"] == "2"
     do_pipeline(card, {"opt_in": False}, "devin")
     assert "pipeline" not in card
+
+    # /card-set (board-api-card-lane-executor-edit) — the routing-field
+    # door: lane/executor/tags whitelisted, refused while running or
+    # claimed, audit line in comms
+    scard = {"id": "set-1", "column": "backlog",
+             "tags": ["stale-tag"],
+             "action": {"type": "dispatch", "status": "queued",
+                        "lane": "free_lane",
+                        "lane_source": "classifier"},
+             "comms": []}
+    # set lane — author-set: lane_source provenance is dropped so the
+    # queue-time classifier cannot re-route over it
+    msg = do_card_set(scard, {"set": {"lane": "paid_frontier"},
+                              "reason": "needs frontier reasoning"},
+                      "tony")
+    assert scard["action"]["lane"] == "paid_frontier"
+    assert "lane_source" not in scard["action"]
+    assert "lane=paid_frontier" in msg
+    assert scard["comms"][-1]["text"].startswith(
+        "routing edited: lane=paid_frontier by tony: ")
+    assert "needs frontier reasoning" in scard["comms"][-1]["text"]
+    # set executor — same door, contract-validated
+    do_card_set(scard, {"set": {"executor": "devin"},
+                        "reason": "pin devin after jules EOL"}, "devin")
+    assert scard["action"]["executor"] == "devin"
+    # tags — add/remove form and wholesale replace
+    do_card_set(scard,
+                {"set": {"tags": {"add": ["dispatch", "fix"],
+                                  "remove": ["stale-tag"]}},
+                 "reason": "retag after lane fix"}, "devin")
+    assert scard["tags"] == ["dispatch", "fix"]
+    do_card_set(scard, {"set": {"tags": ["only"]},
+                        "reason": "reset tags"}, "devin")
+    assert scard["tags"] == ["only"]
+    # lane/executor clear — empty value unpins the field
+    do_card_set(scard, {"set": {"lane": "", "executor": ""},
+                        "reason": "unpin — let the classifier decide"},
+                "tony")
+    assert "lane" not in scard["action"] \
+        and "executor" not in scard["action"]
+    # refusals — running/claimed cards freeze routing fields
+    scard["action"]["status"] = "running"
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "free_lane"}, "reason": "x"}, "devin"),
+        "frozen until the claim finishes")
+    scard["action"]["status"] = "queued"
+    scard["action"]["runner"] = "idc02"   # claimed w/o running stamp
+    rejects(lambda: do_card_set(
+        scard, {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
+        "runner=idc02")
+    scard["action"].pop("runner")
+    # invalid lane/executor and workflow fields fail closed
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "jules"}, "reason": "x"}, "devin"),
+        "action.lane must be one of")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "devin"}, "reason": "x"}, "devin"),
+        "'devin' is an executor")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"executor": "jules"}, "reason": "x"}, "devin"),
+        "action.executor must be one of")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"column": "doing"}, "reason": "x"}, "devin"),
+        "only admits lane|executor|tags")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": ["x"]}}, "devin"), "reason required")
+    rejects(lambda: do_card_set(scard, {"reason": "x"}, "devin"),
+            "non-empty object")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": "a,b"}, "reason": "x"}, "devin"),
+        "list or {add, remove}")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": ["x" * 41]}, "reason": "x"}, "devin"),
+        "<=40 chars")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": [str(i) for i in range(21)]},
+                "reason": "x"}, "devin"), "<=20 entries")
+    # the classifier still respects an author-set lane on next queue
+    scard2 = {"id": "set-2", "comms": [],
+              "action": {"type": "dispatch", "status": "queued"}}
+    do_card_set(scard2, {"set": {"lane": "manual"},
+                         "reason": "human owns it"}, "tony")
+    assert "lane_source" not in scard2["action"]
 
     # /card spawn fields + on_exists (report-session-loop §1a). CARD_DIR
     # is redirected to a temp dir — do_create writes real card files.
