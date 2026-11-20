@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: review
-updated: 2026-11-20 17:38
+updated: 2026-11-20 17:42
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -119,6 +119,8 @@ action:
   result: 'exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`. | devin-task-20261120-172937-goal-land-the-chaba-ansible-ho.service:
     Consumed 2min 5.732s CPU time over 5min 53.069s wall clock time, 678.1M memory peak.'
   verified: false
+  sweep:
+    shadow_blocked: 2c9b819ded2d
 comms:
 - at: 2026-11-20 17:24
   from: chaba
@@ -183,6 +185,12 @@ comms:
 - at: 2026-11-20 17:38
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-20 17:42
+  from: chaba
+  text: 'merge-sweep: dispatch/20261120-172937-goal-land-the-chaba-ansible-ho adds gitignored-dir shadow path(s)
+    vs origin/master: ansible/inventory/group_vars (symlink), ansible/inventory/host_vars (symlink) — merge blocked
+    (a symlink, or a file whose name is ignored only as a directory — the 2026-10-10 .venv incident class). Untrack/rename
+    it or add the bare ignore name and the next pass lands it.'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
