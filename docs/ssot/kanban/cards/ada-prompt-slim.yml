@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
 column: backlog
-updated: 2026-11-20 18:54
+updated: 2026-11-20 19:26
 priority: medium
 tags:
 - ada
@@ -20,19 +20,15 @@ spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries f
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
     session_gone: 2026-11-17 09:39
-  last_failure: 'journal=exit-code  code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794229791.service:
-    Failed with result ''exit-code''. | devin-task-ada-prompt-slim-1794229791.service: Consumed 1.427s CPU time
-    over 24min 42.780s wall clock time, 17.7M memory peak.'
-  attempts: 1
-  result: 'journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1795015278.service:
+  last_failure: 'journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1795015278.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1795015278.service: Failed with
     result ''exit-code''.'
-  runner: tony-omen
+  attempts: 0
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -247,3 +243,7 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:26
+  from: tony
+  text: retry requested
+claim: {}
