@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: doing
-updated: 2026-11-20 13:18
+updated: 2026-11-20 13:27
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -583,6 +583,13 @@ comms:
   from: devin
   text: Dispatch 20261120-131818 started on idc02. Reviewing existing kk-mac lane tooling (kk_mac_admission.py,
     resource gate, launchd port) before fresh read-only preflight + bounded smoke/bench per spec.
+- at: 2026-11-20 13:27
+  from: devin
+  text: 'Dispatch 20261120-131818 done. Runtime: Ollama Metal 0.40.8 healthy (no install needed). Bench via executor
+    contract on the trusted dell hop: qwen3:8b PASS 2/2 (60 tok/s, ~1s load, mem 82->63%); gpt-oss:20b fallback
+    — 14GB load alone breached the 50% mem-abort floor (48-49%); qwen3:30b-a3b cold pass at 92 tok/s but warm fell
+    to 20% free — 20B+ NOT lane-safe under owner workloads; MEM-1043 guard verified live failing closed, node recovered
+    74% free. No 14B pulled (empty rung — needs pull approval'
 action:
   type: dispatch
   status: running
