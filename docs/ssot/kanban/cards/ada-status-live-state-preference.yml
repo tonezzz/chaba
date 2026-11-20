@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
 column: doing
-updated: 2026-11-20 13:22
+updated: 2026-11-20 13:29
 priority: high
 tags:
 - ada
@@ -344,5 +344,12 @@ comms:
     (kk_mac heartbeat probe + nest-mgr page + runner claims + board records w/ age tags + contradiction flags),
     board-api GET /host-status, ada-voice tools.d drop, unit tests for the offline-vs-live + disk-disagree conflict
     case'
+- at: 2026-11-20 13:29
+  from: devin
+  text: 'DONE (devin lane, attempt 2 — jules lane is EOL, prior failures were FAILED_PRECONDITION not code bugs).
+    Shipped on branch dispatch/20261120-131725-observed-2026-11-09-tony-asked @ 653700bb: (1) scripts/board/host_status.py
+    — live-first aggregator: kk_mac lane probe/ada-nest-heartbeats + nest-mgr page + runner claims BEFORE board
+    records, every board claim tagged "as of Xh ago", conflicts flagged (offline_vs_live/blocked_vs_eligible/disk_disagree
+    >10GiB) with both sides shown; (2) board-api GET '
 claim:
   since: 2026-11-20 13:16
