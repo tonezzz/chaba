@@ -326,9 +326,11 @@ def model_provider(model: str) -> str:
 
 LANE_KW = {
     # Keep in lockstep with dispatch_repos.LANE_KW — this vendored copy
-    # runs on remote hosts where dispatch_repos is absent. Bare "spend"
-    # removed 2026-11-17 (dispatch-lane-classifier-spend-false-manual):
-    # context-free spend mentions in spec bodies forced manual.
+    # runs on remote hosts where dispatch_repos is absent, and
+    # tests/board/test_codemod_lane_gate.py asserts the two dicts are
+    # identical. Bare "spend" removed 2026-11-17
+    # (dispatch-lane-classifier-spend-false-manual): context-free spend
+    # mentions in spec bodies forced manual.
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend money", "paid compute", "real spend", "costs money",
                "order the", "blocked on tony", "rotation", "rekey",
@@ -340,19 +342,53 @@ LANE_KW = {
                       "versus", "benchmark", "bench ", "productionize",
                       "promotion gate", "hardening", "hybrid recall",
                       "discussion board", "work bridge"],
-    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
-                "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift", "delete old", "purge",
-                "schedule", "recurring", "nest job"],
+    # codemod = deterministic pattern change, known transform, no
+    # judgment (OPS-0028, 2026-11-20). Entries are TITLE-scoped
+    # word-boundary matches — 'lock' no longer substring-hits
+    # block/clock/unlock (ADA-1285 routed codemod on "tools block" in
+    # its spec). Bare 'config'/'lock'/'script'/'raise ' dropped or
+    # qualified: any spec discussing a script or config matched.
+    # "codemod_body" holds the strong multi-word phrases that may also
+    # match the spec body; classify_lane picks codemod only on a title
+    # hit OR >=2 distinct hits — a lone body mention is context, not a
+    # known transform.
+    "codemod": ["retire", "remove", "bump", "deprecate", "purge",
+                "cap", "flag", "inject", "drift", "parallelism",
+                "raise", "schedule", "recurring", "change the"],
+    "codemod_body": ["delete old", "copies task tests", "nest job"],
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
               "roster", "protocol", "provision", "host", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
     "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
+                  "docs-only", "documentation", "docs/", "checklist", "testable", "unit test", "python helper", "small code", "plan",
+                  "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+
+def _kw_hit(kw: str, text: str) -> bool:
+    """Word-boundary keyword match — 'lock' hits 'lock' but not
+    block/clock/unlock; phrase words may span any whitespace run.
+    Lockstep with dispatch_repos._kw_hit."""
+    pat = r"\b" + r"\s+".join(re.escape(w) for w in kw.split()) + r"\b"
+    return re.search(pat, text) is not None
+
+
+def _codemod_hit(title: str, text: str):
+    """Codemod gate (OPS-0028), lockstep with dispatch_repos._codemod_hit:
+    a TITLE hit on any codemod keyword is decisive; the spec body counts
+    only through the LANE_KW['codemod_body'] multi-word phrases, and
+    codemod still needs >=2 distinct hits when the title says nothing —
+    a lone body mention is context, not a known transform. Returns the
+    first matched keyword (LANE_KW order) or None."""
+    title_hits = [k for k in LANE_KW["codemod"] + LANE_KW["codemod_body"]
+                  if _kw_hit(k, title)]
+    body_hits = [k for k in LANE_KW["codemod_body"]
+                 if k not in title_hits and _kw_hit(k, text)]
+    hits = title_hits + body_hits
+    return hits[0] if title_hits or len(hits) >= 2 else None
 
 
 def classify_lane(card: dict) -> str:
@@ -360,8 +396,9 @@ def classify_lane(card: dict) -> str:
     Lockstep with dispatch_repos.classify_lane: an explicit action.lane
     (no lane_source provenance) wins; manual keywords match the TITLE
     only so spec-body spend/hardware discussion can't force Tony's
-    hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17)."""
-    import re as _re
+    hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17);
+    codemod needs a title hit or >=2 distinct hits via _codemod_hit
+    (OPS-0028)."""
     a = card.get("action") or {}
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
@@ -371,13 +408,16 @@ def classify_lane(card: dict) -> str:
             (card.get("brief") or card.get("spec") or "")).lower()
     if any(k in title for k in LANE_KW["manual"]):
         return "manual"
-    if _re.search(LANE_COMPARE, text):
+    if re.search(LANE_COMPARE, text):
         return "paid_frontier"
+    codemod_kw = _codemod_hit(title, text)
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
                       ("devin", LANE_KW["devin"]),
                       ("free_lane", LANE_KW["free_lane"])):
-        if any(k in text for k in kws):
+        kw = codemod_kw if lane == "codemod" else next(
+            (k for k in kws if k in text), None)
+        if kw:
             return lane
     return "devin"
 

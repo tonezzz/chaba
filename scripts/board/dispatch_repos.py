@@ -308,10 +308,20 @@ LANE_KW = {
                       "versus", "benchmark", "bench ", "productionize",
                       "promotion gate", "hardening", "hybrid recall",
                       "discussion board", "work bridge"],
-    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
-                "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift", "delete old", "purge",
-                "schedule", "recurring", "nest job"],
+    # codemod = deterministic pattern change, known transform, no
+    # judgment (OPS-0028, 2026-11-20). Entries are TITLE-scoped
+    # word-boundary matches — 'lock' no longer substring-hits
+    # block/clock/unlock (ADA-1285 routed codemod on "tools block" in
+    # its spec). Bare 'config'/'lock'/'script'/'raise ' dropped or
+    # qualified: any spec discussing a script or config matched.
+    # "codemod_body" holds the strong multi-word phrases that may also
+    # match the spec body; classify_lane picks codemod only on a title
+    # hit OR >=2 distinct hits — a lone body mention is context, not a
+    # known transform.
+    "codemod": ["retire", "remove", "bump", "deprecate", "purge",
+                "cap", "flag", "inject", "drift", "parallelism",
+                "raise", "schedule", "recurring", "change the"],
+    "codemod_body": ["delete old", "copies task tests", "nest job"],
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
               "roster", "protocol", "provision", "host", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
@@ -322,6 +332,28 @@ LANE_KW = {
                   "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+
+def _kw_hit(kw: str, text: str) -> bool:
+    """Word-boundary keyword match — 'lock' hits 'lock' but not
+    block/clock/unlock; phrase words may span any whitespace run."""
+    pat = r"\b" + r"\s+".join(re.escape(w) for w in kw.split()) + r"\b"
+    return re.search(pat, text) is not None
+
+
+def _codemod_hit(title: str, text: str):
+    """Codemod gate (OPS-0028): a TITLE hit on any codemod keyword is
+    decisive; the spec body counts only through the LANE_KW
+    ['codemod_body'] multi-word phrases, and codemod still needs >=2
+    distinct hits when the title says nothing — a lone body mention is
+    context, not a known transform. Returns the first matched keyword
+    (LANE_KW order) or None."""
+    title_hits = [k for k in LANE_KW["codemod"] + LANE_KW["codemod_body"]
+                  if _kw_hit(k, title)]
+    body_hits = [k for k in LANE_KW["codemod_body"]
+                 if k not in title_hits and _kw_hit(k, text)]
+    hits = title_hits + body_hits
+    return hits[0] if title_hits or len(hits) >= 2 else None
 
 
 def classify_lane(card: dict, with_detail: bool = False):
@@ -338,7 +370,10 @@ def classify_lane(card: dict, with_detail: bool = False):
     Manual-lane keywords match the TITLE only — a spec body that
     discusses spend or hardware as decision context must not force the
     card onto Tony's hands (dispatch-lane-classifier-spend-false-manual
-    false positives, 2026-11-17). Other lanes still read the spec."""
+    false positives, 2026-11-17). Codemod keywords are word-boundary
+    TITLE hits, or >=2 distinct hits counting codemod_body phrases in
+    the spec (OPS-0028 — see _codemod_hit). Other lanes still read the
+    spec as raw substrings."""
     a = _act(card)
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
@@ -352,11 +387,13 @@ def classify_lane(card: dict, with_detail: bool = False):
     if re.search(LANE_COMPARE, text):
         return ("paid_frontier", "kw:compare", 1.0) if with_detail \
             else "paid_frontier"
+    codemod_kw = _codemod_hit(title, text)
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
                       ("devin", LANE_KW["devin"]),
                       ("free_lane", LANE_KW["free_lane"])):
-        kw = next((k for k in kws if k in text), None)
+        kw = codemod_kw if lane == "codemod" else next(
+            (k for k in kws if k in text), None)
         if kw:
             return (lane, f"kw:{kw}", 1.0) if with_detail else lane
     state = {"card": card.get("id"), "title": card.get("title", ""),
