@@ -22,6 +22,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -68,10 +69,20 @@ def write_board_pages(out_path: Path, classic_page: str) -> Path:
 
 
 def dir_hash(card_dir: Path) -> str:
+    """Change signature from stat only (name+size+mtime_ns), no content
+    reads — the byte hash re-read all ~1000 cards on EVERY --if-changed
+    tick, the same tax that kept render-board2 pinned ~93% CPU inside
+    write bursts (board-api-lock-contention). Every writer lands via
+    atomic rename or git checkout — both bump mtime — so a stat sig
+    misses no real change; at worst a touched-but-identical file
+    renders once extra."""
     h = hashlib.sha256()
     for p in sorted(card_dir.glob("*.yml")):
-        h.update(p.name.encode())
-        h.update(p.read_bytes())
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        h.update(f"{p.name}:{st.st_size}:{st.st_mtime_ns};".encode())
     return h.hexdigest()
 
 
@@ -87,10 +98,11 @@ _DEPLOY_PY = re.compile(r"\bdeploy", re.I)
 _TASK_TS = re.compile(r"^(\d{8}-\d{6})-")
 
 
-def _git(*args: str):
+def _git(*args: str, timeout: int = 15):
     try:
         p = subprocess.run(["git", "-C", str(REPO), *args],
-                           capture_output=True, text=True, timeout=15)
+                           capture_output=True, text=True,
+                           timeout=timeout)
         return p.returncode, p.stdout.strip()
     except Exception:
         return 1, ""
@@ -111,6 +123,59 @@ def _run_branches() -> dict:
     return out
 
 
+# Merged-verdict cache, keyed by branch tip sha — a branch merged by
+# patch (cherry '-'/empty output) can never un-merge, and a negative
+# verdict at a fixed tip only flips when master's patch-id set grows,
+# so negatives re-check daily, positives never. The cache makes each
+# unmerged run branch's bounded `git cherry` a once-a-day cost instead
+# of once per render — unbounded per-render cherry was the multi-minute
+# ~93% CPU burn behind the lock convoy (board-api-lock-contention).
+_MERGE_CACHE_PATH = REPO / "docs/ssot/kanban/.render-merge-cache.json"
+_MERGE_NEG_TTL_S = 24 * 3600
+_merge_cache: dict | None = None
+_merge_cache_dirty = False
+
+
+def _mcache() -> dict:
+    global _merge_cache
+    if _merge_cache is None:
+        try:
+            _merge_cache = json.loads(_MERGE_CACHE_PATH.read_text())
+        except Exception:
+            _merge_cache = {}
+        if not isinstance(_merge_cache, dict):
+            _merge_cache = {}
+    return _merge_cache
+
+
+def _flush_mcache() -> None:
+    global _merge_cache_dirty
+    if not _merge_cache_dirty or _merge_cache is None:
+        return
+    try:
+        _MERGE_CACHE_PATH.write_text(json.dumps(_merge_cache))
+        _merge_cache_dirty = False
+    except OSError:
+        pass
+
+
+_merged_set: frozenset | None = None
+
+
+def _merged_branches() -> frozenset:
+    """All dispatch/* branches whose tip is an ancestor of origin/master
+    — ONE subprocess instead of a `merge-base --is-ancestor` per branch
+    (~0.25s × ~240 branches measured = the render's dominant cost)."""
+    global _merged_set
+    if _merged_set is None:
+        rc, txt = _git("branch", "--merged", "origin/master",
+                       "--format=%(refname:short)", "--list",
+                       "dispatch/*")
+        _merged_set = frozenset(txt.splitlines()) if rc == 0 \
+            else frozenset()
+    return _merged_set
+
+
 @functools.lru_cache(maxsize=None)
 def _branch_merged(br: str) -> bool:
     """True if br's work is on origin/master — by ancestry, or by patch
@@ -118,10 +183,32 @@ def _branch_merged(br: str) -> bool:
     lies after an autostash rebase; git cherry catches that). Memoized
     per process — one render can ask about the same run branch for
     several cards (multi-run retries)."""
-    if _git("merge-base", "--is-ancestor", br, "origin/master")[0] == 0:
+    global _merge_cache_dirty
+    if br in _merged_branches():
         return True
-    rc, out = _git("cherry", "origin/master", br)
-    return rc == 0 and not any(l.startswith("+") for l in out.splitlines())
+    # patch-equivalence fallback — bounded. git cherry walks the whole
+    # symmetric difference (measured ~45s on an old diverged branch), so
+    # it gets a tight timeout and a tip-keyed disk cache: misses are
+    # conservative "not merged" chips, never a stalled render.
+    rc, tip = _git("rev-parse", br)
+    tip = tip if rc == 0 else ""
+    ent = _mcache().get(br)
+    if not isinstance(ent, dict):
+        ent = {}
+    if tip and ent.get("tip") == tip:
+        if ent.get("merged") is True:
+            return True
+        if time.time() - float(ent.get("at") or 0) < _MERGE_NEG_TTL_S:
+            return False
+    rc, out = _git("cherry", "origin/master", br, timeout=10)
+    merged = rc == 0 and not any(
+        l.startswith("+") for l in out.splitlines())
+    if tip:
+        ent = {"tip": tip, "merged": merged, "at": time.time()}
+        if ent != _mcache().get(br):
+            _merge_cache[br] = ent
+            _merge_cache_dirty = True
+    return merged
 
 
 def _outcome_index() -> dict:
@@ -1092,6 +1179,7 @@ setInterval(load, POLL_MS);
     classic_path = write_board_pages(out_path, page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
+    _flush_mcache()
     print(
         f"wrote {out_path} (redirect stub -> board2), {classic_path}, "
         f"+ cards.json ({len(cards)} cards, v{ver})"

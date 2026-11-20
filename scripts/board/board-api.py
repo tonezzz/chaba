@@ -241,6 +241,13 @@ import board_notify as bn
 import host_status as hs
 import publication as pub
 
+# libyaml: same emit/parse semantics as the pure-Python safe pair,
+# ~10-20x faster — a pure-Python round-trip on fat cards measured
+# save_ms up to ~16s INSIDE the card flock (2026-11-20 profiling,
+# board-api-lock-contention). Falls back cleanly without libyaml.
+_YAML_DUMP = getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+_YAML_LOAD = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 # /attach store (board-attachments-photo-image-evidence): kept inside the
@@ -380,6 +387,44 @@ def now() -> str:
 _ARCHIVE_INDEX = {"t": 0.0, "map": {}}
 _ARCHIVE_INDEX_TTL = 60.0
 
+# Top-level `id:`/`ref:` extractor for miss-path scans. A drifted or
+# ref-addressed lookup (e.g. KNB-0233) used to yaml.safe_load ALL ~1000
+# cards under the card flock — measured card_path_ms=59598 on idc03
+# (2026-11-20), the >25s holds behind the 503 storm. The line scan
+# covers every shape the repo's writers emit (block style, optional
+# quotes/comments); a file where NO id:/ref: line is found falls back
+# to a real parse so odd YAML (anchors, flow style) still resolves.
+_KEY_RE = re.compile(r"^(id|ref)[ \t]*:[ \t]*['\"]?([^\s'\"#]+)", re.M)
+
+
+def _text_id_ref(text: str) -> dict:
+    """{id?, ref?} scalars visible to a line scan; last key wins to
+    match yaml semantics on duplicate keys."""
+    out = {}
+    for k, v in _KEY_RE.findall(text):
+        out[k] = v
+    return out
+
+
+def _cand_id_ref(cand: Path) -> dict:
+    """id/ref of a card file via the text scan, yaml-parsed only when no
+    top-level id:/ref: line exists at all."""
+    try:
+        text = cand.read_text()
+    except OSError:
+        return {}
+    kv = _text_id_ref(text)
+    if kv:
+        return kv
+    try:
+        c = yaml.safe_load(text) or {}
+    except Exception:
+        return {}
+    if isinstance(c, dict):
+        return {k: v for k in ("id", "ref")
+                if (v := c.get(k)) is not None}
+    return {}
+
 
 def _archive_index() -> dict:
     """id/ref/stem -> path for cards/archive/*.yml, cached 60s. The
@@ -392,11 +437,8 @@ def _archive_index() -> dict:
     adir = CARD_DIR / "archive"
     if adir.is_dir():
         for cand in adir.glob("*.yml"):
-            try:
-                c = yaml.safe_load(cand.read_text()) or {}
-            except Exception:
-                continue
-            for k in (c.get("id"), c.get("ref"), cand.stem):
+            kv = _cand_id_ref(cand)
+            for k in (kv.get("id"), kv.get("ref"), cand.stem):
                 if k:
                     m.setdefault(str(k), cand)
     _ARCHIVE_INDEX.update(t=now_t, map=m)
@@ -413,13 +455,11 @@ def card_path(cid: str) -> Path:
             # filename/id drift happens when a session renames a card's
             # id without renaming the file — fall back to an id-field
             # scan so respond/action/comment still find it. Refs
-            # (ADA-0042) resolve through the same scan.
+            # (ADA-0042) resolve through the same scan — as a text pass,
+            # not a per-file YAML parse in the flock (see _KEY_RE).
             for cand in CARD_DIR.glob("*.yml"):
-                try:
-                    c = yaml.safe_load(cand.read_text()) or {}
-                except Exception:
-                    continue
-                if c.get("id") == cid or c.get("ref") == cid:
+                kv = _cand_id_ref(cand)
+                if kv.get("id") == cid or kv.get("ref") == cid:
                     return cand
             # archived cards stay resolvable via the cached archive index
             # (KNB-1178) — a per-request yaml scan of cards/archive/ would
@@ -479,10 +519,7 @@ def _ref_seed() -> int:
     """Highest ref number already on the board (for first-run init)."""
     hi = 0
     for cand in CARD_DIR.glob("*.yml"):
-        try:
-            r = (yaml.safe_load(cand.read_text()) or {}).get("ref") or ""
-        except Exception:
-            continue
+        r = _cand_id_ref(cand).get("ref") or ""
         m = re.match(r"^[A-Z]{3}-(\d{4})$", str(r))
         if m:
             hi = max(hi, int(m.group(1)))
@@ -548,7 +585,7 @@ _lock_stats_mu = threading.Lock()
 
 
 def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
-               timeout: bool = False) -> None:
+               timeout: bool = False, phases: dict | None = None) -> None:
     b = next((f"<{x:g}s" for x in _LOCK_STAT_BUCKETS if wait_s < x),
              f">={_LOCK_STAT_BUCKETS[-1]:g}s")
     hb = next((f"h<{x:g}s" for x in _LOCK_STAT_BUCKETS if hold_s < x),
@@ -567,6 +604,15 @@ def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
         st[hb] = st.get(hb, 0) + 1
         if timeout:
             st["timeouts"] += 1
+        # in-flock phase attribution — where hold time went (the
+        # card_path_ms=59598 convoy was invisible until these were
+        # per-request counters surfaced on /lock-stats)
+        for k in ("load_ms", "save_ms", "card_path_ms"):
+            v = round(float((phases or {}).get(k) or 0.0), 1)
+            if v:
+                st[k + "_total"] = round(
+                    st.get(k + "_total", 0.0) + v, 1)
+                st[k + "_max"] = max(st.get(k + "_max", 0.0), v)
 
 
 # In-flock phase timing (board-api-residual-lock-holds): commits moved
@@ -650,9 +696,7 @@ def _post_write_loop() -> None:
 def load(p: Path) -> dict:
     t0 = _phase_clock()
     try:
-        d = yaml.load(p.read_text(),
-                      Loader=getattr(yaml, "CSafeLoader",
-                                     yaml.SafeLoader)) or {}
+        d = yaml.load(p.read_text(), Loader=_YAML_LOAD) or {}
         if not isinstance(d, dict):
             raise ValueError(f"card {p.name} is not a YAML mapping")
         return d
@@ -679,9 +723,9 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     interval — short enough that autostash can't eat them in practice."""
     t0 = _phase_clock()
     try:
-        text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
-                              width=110)
-        if not isinstance(yaml.safe_load(text), dict):
+        text = yaml.dump(card, Dumper=_YAML_DUMP, allow_unicode=True,
+                         sort_keys=False, width=110)
+        if not isinstance(yaml.load(text, Loader=_YAML_LOAD), dict):
             raise ValueError(
                 f"refusing to write {p.name}: serialized card did not "
                 "re-parse as a mapping")
@@ -5459,12 +5503,14 @@ class H(BaseHTTPRequestHandler):
         finally:
             hold_s = time.monotonic() - t_lock - wait_s
             lf.close()
-            _lock_stat(path, wait_s, hold_s)
+            load_ms = getattr(_phase_t, "load_ms", 0.0)
+            save_ms = getattr(_phase_t, "save_ms", 0.0)
+            cp_ms = getattr(_phase_t, "card_path_ms", 0.0)
+            _lock_stat(path, wait_s, hold_s,
+                       phases={"load_ms": load_ms, "save_ms": save_ms,
+                               "card_path_ms": cp_ms})
             _phase_t.on = False
             if wait_s >= LOCK_SLOW_S or hold_s >= LOCK_SLOW_S:
-                load_ms = getattr(_phase_t, "load_ms", 0.0)
-                save_ms = getattr(_phase_t, "save_ms", 0.0)
-                cp_ms = getattr(_phase_t, "card_path_ms", 0.0)
                 mutate_ms = max(
                     0.0, hold_s * 1000 - load_ms - save_ms - cp_ms)
                 sys.stderr.write(

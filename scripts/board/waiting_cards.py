@@ -94,6 +94,12 @@ def _action(card: dict) -> dict:
     return _act(card)
 
 
+def _pipe(card: dict) -> dict:
+    """card['pipeline'] read accessor — scalar-tolerant like _act."""
+    p = card.get("pipeline")
+    return p if isinstance(p, dict) else {}
+
+
 def autonomy_tier(card: dict) -> str:
     return str(card.get("autonomy") or "t1").lower()
 
@@ -113,7 +119,7 @@ def declares_artifact(card: dict) -> bool:
     env = env if isinstance(env, dict) else {}
     return bool(a.get("artifact") or card.get("report")
                 or env.get("artifact")
-                or (card.get("pipeline") or {}).get("goals"))
+                or _pipe(card).get("goals"))
 
 
 def declares_verifier(card: dict) -> bool:
@@ -122,7 +128,7 @@ def declares_verifier(card: dict) -> bool:
     env = env if isinstance(env, dict) else {}
     return bool(card.get("auto_done_when") or a.get("verifier")
                 or a.get("verify") or env.get("verifier")
-                or (card.get("pipeline") or {}).get("goals"))
+                or _pipe(card).get("goals"))
 
 
 def open_requests(card: dict) -> list:
