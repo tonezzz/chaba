@@ -93,7 +93,7 @@ fleet_observation:
       by: tony
     mcp-idc02-undeclared-configured:
       state: suppressed
-      reason: 'idc02 is a job host with no agent lane; these are OpenChamber Code Mode tools in opencode.json, not fleet declarations'
+      reason: 'idc02 is a job host with no agent lane, so its opencode.json holds local-only tooling that its scope never expects - OpenChamber Code Mode tools plus fleet-declared servers installed for local use (e.g. mcp-weaviate) - not fleet drift'
       by: tony
     mcp-michael-ha-host-unreachable:
       state: suppressed
