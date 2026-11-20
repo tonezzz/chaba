@@ -1,8 +1,8 @@
 id: jules-lane-feedback-state-handling
 title: 'jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail — map the state to card surface,
   not death'
-column: doing
-updated: 2026-11-20 18:18
+column: backlog
+updated: 2026-11-20 18:19
 priority: high
 tags:
 - devnest
@@ -27,14 +27,16 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:34
-  last_failure: 'journal=exit-code ECONDITION" |   } | } | devin-task-jules-lane-feedback-state-handling-1794918386.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-jules-lane-feedback-state-handling-1794918386.service:
+  last_failure: 'journal=exit-code ECONDITION" |   } | } | devin-task-jules-lane-feedback-state-handling-1795173534.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-jules-lane-feedback-state-handling-1795173534.service:
     Failed with result ''exit-code''.'
   attempts: 1
-  runner: tony-omen
+  result: 'journal=exit-code ECONDITION" |   } | } | devin-task-jules-lane-feedback-state-handling-1795173534.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-jules-lane-feedback-state-handling-1795173534.service:
+    Failed with result ''exit-code''.'
 ref: OPS-1295
 comms:
 - at: 2026-11-09 18:47
@@ -324,5 +326,12 @@ comms:
 - at: 2026-11-20 18:18
   from: chaba
   text: started devin-task-jules-lane-feedback-state-handling-1795173534 on tony-omen (dispatch executor=jules)
+- at: 2026-11-20 18:19
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code ECONDITION" |   } | } | devin-task-jules-lane-feedback-state-handling-1795173534.service:
+    Main process — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 18:19
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-20 18:49'
 claim:
   since: 2026-11-20 18:18
