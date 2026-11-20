@@ -273,6 +273,13 @@ def apply_verb(card: dict, verb: str) -> str:
         # into a devin dispatch — those belong to a human/runner-agent
         return f"DEFER:card action type={a.get('type')} — not " \
                "dispatch-claimable"
+    if verb in ("queue", "retry") and (
+            str(a.get("executor") or "") == "manual"
+            or str(a.get("lane") or "") == "manual"):
+        # same human-owned contract as board-api: manual executor/lane is
+        # Tony's hands — an answered 'queue' must not arm it for runners
+        return "DEFER:action executor/lane=manual — Tony's hands, " \
+               "not dispatch-claimable"
     if verb == "queue":
         a.setdefault("type", "dispatch")
         a["status"] = "queued"

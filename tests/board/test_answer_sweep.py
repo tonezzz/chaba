@@ -134,6 +134,16 @@ class TriageCard(unittest.TestCase):
         self.assertEqual(c["requests"][0]["executed"], f"{REF} queue")
         self.assertFalse(swe.card_needs_triage(c))
 
+    def test_manual_executor_or_lane_queue_defers(self):
+        for action in ({"type": "dispatch", "executor": "manual"},
+                       {"type": "dispatch", "lane": "manual"}):
+            c = card(action=dict(action, status="idle"),
+                     requests=[req("r1", "queue it")])
+            acted, notes = swe.triage_card(c, REF, [5])
+            self.assertEqual(acted, [], action)
+            self.assertTrue(any("manual" in n for n in notes), notes)
+            self.assertNotEqual(c["action"].get("status"), "queued")
+
     def test_hold_executes(self):
         c = card(column="review",
                  requests=[req("r1", "keep open — tail remains")])
