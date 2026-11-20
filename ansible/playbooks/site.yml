@@ -60,6 +60,7 @@
       register: docker_check
       changed_when: false
       failed_when: false
+      check_mode: no
       when: docker_enabled | bool
       tags: [docker]
 
@@ -69,7 +70,7 @@
           docker_enabled is true for {{ inventory_hostname }} but `docker`
           is not on PATH. Install docker first or set docker_enabled: false
           in inventory/host_vars.
-      when: docker_enabled | bool and docker_check.rc != 0
+      when: docker_enabled | bool and docker_check.rc is defined and docker_check.rc != 0
       tags: [docker]
 
   handlers:
