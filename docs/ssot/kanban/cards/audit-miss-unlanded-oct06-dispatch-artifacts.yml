@@ -1,0 +1,28 @@
+id: audit-miss-unlanded-oct06-dispatch-artifacts
+title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
+column: backlog
+updated: 2026-11-20 16:38
+brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
+  mirror; origin/master does not contain them.
+priority: medium
+program: audit
+tags:
+- audit
+- artifact-landing
+- dispatch-worktree
+spec: 'Reconcile these three Oct 6 outputs found only as untracked files on tony-dell''s frozen chaba-tony-dell
+  mirror: dispatch-outcome-20261006-101400-verify-after-act-for-gev-casts.md; dispatch-outcome-20261006-103616-inventory-remaining-hardcoded-.md;
+  ddocs/ssot/jobs/infrastructure/2026-10-06-tailnet-ip-indirection-inventory.yml. Compare their conclusions with
+  current durable docs and the related archived cards (GEV verify-after-act; service-name-indirection OPS-0124).
+  If still useful, salvage through a dedicated branch/worktree to canonical repo paths and verify the merge; otherwise
+  document why superseded on the related card/report. Do not edit or clean the dirty frozen mirror and do not commit
+  directly to the served checkout. Exclude docs/ssot/jobs/infrastructure/2026-10-05-ha-michael-worktree-sync-verify-addendum.yml
+  unless its duplicate content adds unique evidence: the primary HA/michael job and audit report are already on
+  origin/master. The archived ada-dead-turn-guard card is tracked and is not a miss.'
+action:
+  type: manual
+ref: AUD-0020
+comms:
+- at: 2026-11-20 16:38
+  from: devin
+  text: card captured via board-api
