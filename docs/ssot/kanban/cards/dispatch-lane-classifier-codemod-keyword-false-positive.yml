@@ -2,7 +2,7 @@ id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
 column: doing
-updated: 2026-11-20 19:02
+updated: 2026-11-20 19:12
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -41,6 +41,8 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-20 19:12
 ref: OPS-0028
 comms:
 - at: 2026-11-20 18:43
@@ -89,5 +91,9 @@ comms:
   from: devin
   text: 'working: word-boundary matcher + codemod gate (title hit OR >=2 distinct hits, body=phrases only) in dispatch_repos
     + vendored runner-agent copy; regression tests for ADA-1285/spend cards/block-clock-lockfile'
+- at: 2026-11-20 19:12
+  from: chaba
+  text: 'merge-sweep: devin-task-20261120-185849-repo-work-chaba-scripts-board- no longer active on idc02 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-20 18:57
