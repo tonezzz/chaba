@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
 column: backlog
-updated: 2026-11-20 11:45
+updated: 2026-11-20 12:01
 priority: high
 tags:
 - kanban
@@ -56,6 +56,13 @@ comms:
     cards as idle+awaiting_action, and GET /queue reports human_waiting (kind human|unserved, owner, next_action)
     separately from claimable queued. answer-sweep and kanban-dispatch got the same manual executor/lane guard.
     Tests: 151 focused board tests + board-api selftest passed; execut'
+- at: 2026-11-20 12:01
+  from: devin
+  text: 'Deployed to origin/master @ 33a06385718 and live on idc03 (served checkout pulled, chaba-board-api restarted
+    12:00 +07). Verified live: GET /queue now returns counts {queued:0, human_waiting:3, claimed:0} with human_waiting[]
+    carrying kind/owner/next_action; ADA-0783 re-held under the new build -> awaiting_action=True + comms reason,
+    now listed as human_waiting owner=tony; POST /action do=queue on ADA-0783 returns "not queued — action.type=manual
+    — human-owned work, not runner-dispatchable" and '
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
