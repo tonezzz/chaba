@@ -1,0 +1,70 @@
+id: 2026-11-20-colab-t4-model-slot-pack
+title: Colab T4 model-slot pack (model-only shadow arm)
+date: 2026-11-20
+domain: devnest
+card: devnest-colab-t4-model-slot-adapter
+status: staged-not-launched
+what: >
+  Reusable, local-only Colab T4 model-slot pack set — the model-only arm
+  Tony chose for the frozen S0 shadow fixtures (answer 2026-10-29). The
+  arm runs a pinned pre-staged Qwen3-8B HF snapshot through independent
+  synthetic structured-output checks and reports throughput/format smoke
+  only — never fixture replay, never the held-out verifiers, so the
+  verifier boundary is untouched. Canonical source now lives in-repo
+  (previously the packs existed only on Drive, and the slot pack had a
+  broken prep contract).
+packs:
+  devnest-qwen3-8b-hf-prestage:
+    lane: cpu-worker (ram_gb 20 floor keeps it off the 13.6GB Colab runtime)
+    state: done on Drive (claimed by con01); vendored to repo 0-diff
+    produces: out/model/ snapshot + qwen3-8b-hf-cache.tar.zst (12.9GB) +
+      model-manifest.json (Qwen/Qwen3-8B @ b968826d, 12 files, sha256 each)
+  devnest-model-slot-30m:
+    lane: colab-t4 (prep does test -d /content — fleet workers bail)
+    state: STAGED on Drive, verified 0-diff vs repo
+    cap: timeout_s 1800 + internal soft cap 1500s
+    contract_fixes_vs_prior:
+      - prep now extracts qwen3-8b-hf-cache.tar.zst to /tmp/qwen3-8b-hf
+        (prior pack asserted the dir but nothing populated it — latent
+        fail; the 2026-10-29 run also mismatched Ollama-vs-HF before the
+        script was switched to transformers)
+      - fixtures moved inside the pack (inputs/fixtures.json); prior
+        read queue/devnest-model-slot-fixtures.json, which made the pack
+        non-self-contained
+      - writes preflight.json {verdict} at pack root = the queue-runner
+        requires-gate token
+      - HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE in run env; manifest
+        repo+revision pin re-verified, per-file size+sha256 before load
+      - conditional pinned dep install only if missing
+        (transformers 4.51.3 / bitsandbytes 0.45.5 / accelerate 1.6.0)
+  devnest-model-slot-60m:
+    lane: colab-t4, REPO ONLY — not uploaded to Drive on purpose; uploading
+      is the operator's explicit "take a 60m slot" decision
+    gate: requires devnest-model-slot-30m done AND its preflight.json
+      verdict pass — a partial/failed first slot can never unlock 60m
+    cap: timeout_s 3600, soft cap 3300s, --repeat 3 battery
+queue_position: >
+  Pending packs on gdrive:ada-nest/packs sort devnest-model-slot-30m then
+  img-gen-bench-t4 (a GPU render pack whose requires are all done) then
+  kk-video-c9f99fee6146-preview-v2 (held on its resume-authorized gate).
+  The slot therefore sits immediately before the render pack, and the
+  render's ~33GB CPU/network prep is what overlaps the slot's GPU time.
+  Queue heartbeat is ~22d stale — no active runner; per card spec the
+  pack was staged but NOT launched (queue launch is Tony's Colab action).
+verify: |
+  Local:  python3 scripts/devnest/shadow_eval.py t4slot --check
+          (pack lint + script self-check + remote prestage probe -> pass)
+  Remote: python3 scripts/devnest/shadow_eval.py t4slot --fetch
+          (ingests packs/<name>/out/{metrics,verdict,report} + preflight
+          into evals/shadow/reports/<date>-colab-t4-<name>.{json,md})
+  Manual: rclone cat gdrive:ada-nest/packs/devnest-model-slot-30m/out/metrics.json
+extend_to_60m: >
+  rclone copy scripts/colab/packs/devnest-model-slot-60m
+  gdrive:ada-nest/packs/devnest-model-slot-60m — only after the 30m slot's
+  remote verdict.json shows status pass; the requires+preflight gate
+  enforces this even if staged early.
+safety: no paid API, no secrets, no personal data, no production writes;
+  no model download inside the paid slot (offline env + manifest pin +
+  sha256); read-only Drive writes are limited to the pack's own dir.
+verdict: ready for next Colab launch — slot pack staged, gate chain
+  verified end-to-end without spending GPU time.
