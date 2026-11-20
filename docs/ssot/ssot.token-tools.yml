@@ -337,6 +337,28 @@ sections:
           preset (MCP surface change — explicit gate), storage_probe.py
           job-pack for drift scans"
 
+      - label: "/opencode-command publisher (ADA-1224)"
+        text: "Allowlisted OpenCode command-file publisher — the manual
+          flow made the agent cat the whole deployed ada.md (~10KB)
+          plus diff/git/ssh orchestration; the door returns a bounded
+          diff + ~0.5KB receipts per op, with confirm+sha gates.
+          Canonical source lives in chaba so live edits can't silently
+          drop the sweep native-menu block again (the ADA0186 loss)."
+        type: api-endpoint
+        savings: "74-80% ingested bytes, 8->5 / 6->3 calls (measured)"
+        benchmark: docs/reports/opencode-command-bench-2026-11-20.md
+        status: implemented
+        pending_tests: "activate on idc03 board-api restart post-merge;
+          ada-voice MCP wrapper carded"
+        pros:
+          - name-locked allowlist — no arbitrary paths/shell/git
+          - confirm+expect_sha gates; drift becomes a hard error
+          - shared by Ada (MCP wrapper) and Devin (CLI), one audit trail
+        cons:
+          - first sync needs idc03->idc02 BatchMode ssh for the
+            board-api user
+          - publish request still carries the full candidate (~11KB)
+
   - title: Monitoring and Measurement
     icon: 📈
     layout: list
