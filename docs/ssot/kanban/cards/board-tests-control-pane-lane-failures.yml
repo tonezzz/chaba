@@ -1,0 +1,34 @@
+id: board-tests-control-pane-lane-failures
+title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
+column: backlog
+updated: 2026-11-20 19:09
+brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
+  Find the real cause; do not weaken asserts.
+priority: medium
+tags:
+- tests
+- board-api
+- runner-agent
+spec: 'Observed 2026-11-20 while shipping KNB-0147: full tests/board suite = 796 passed, 17 subtests passed, 6 failed.
+  Reproduced identically in three clean worktrees: the KNB-0147 branch, its exact base commit 7598297b5f, and current
+  origin/master — so these are pre-existing, not caused by the gzip/summary read-door change.
+
+
+  Failures:
+
+  - tests/board/test_control_pane_projection.py: test_card_record_is_the_pane_card, test_eligibility_and_claim_reason_sources_present,
+  test_pane_data_contract_on_board_payload
+
+  - tests/board/test_runner_agent_lane.py::ClaimPassLaneTest: test_pinned_lane_gets_lane_model_when_unset, test_pinned_lane_survives_claim_classification,
+  test_unset_lane_still_classifies_at_claim (duplicate ''lane-card'' in self.classified).
+
+
+  Do not weaken asserts or guards to make these pass. Determine whether the tests are stale relative to current
+  control-pane/lane behaviour or whether the behaviour regressed; fix the correct side. Done when tests/board passes
+  clean on a pristine origin/master worktree with these asserts intact.'
+note: Filed from the KNB-0147 session (card closed 2026-11-20). Evidence is in KNB-0147 comms.
+ref: KNB-0039
+comms:
+- at: 2026-11-20 19:09
+  from: devin
+  text: card captured via board-api
