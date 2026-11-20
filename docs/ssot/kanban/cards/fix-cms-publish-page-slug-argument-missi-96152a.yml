@@ -1,7 +1,7 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
-column: backlog
-updated: 2026-11-20 21:10
+column: doing
+updated: 2026-11-20 21:11
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
 ref: KNB-0624
@@ -308,6 +308,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210532-evaluate-opencode-as-a-supervi)
     — claims held ~29m'
+- at: 2026-11-20 21:11
+  from: idc02
+  text: claimed
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -347,7 +350,7 @@ requests:
     runner agents
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'journal=exit-code the-cms-publish-page-call-.service: Failed with result ''exit-code''. | devin-task-20261120-210221-fix-the-cms-publish-page-call-.service:
     Consumed 58.196s CPU time over 2min 20.922s wall clock time, 900.5M memory peak, 116K memory swap peak.'
   sweep:
@@ -356,12 +359,13 @@ action:
     no_repo: 2026-11-20 21:02
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   last_failure: 'journal=exit-code the-cms-publish-page-call-.service: Failed with result ''exit-code''. | devin-task-20261120-210221-fix-the-cms-publish-page-call-.service:
     Consumed 58.196s CPU time over 2min 20.922s wall clock time, 900.5M memory peak, 116K memory swap peak.'
+  runner: idc02
 review_kind: verify
 claim:
-  since: 2026-11-20 21:00
+  since: 2026-11-20 21:11
 auto_close:
   by: merge-sweep
   at: 2026-10-27 07:01
@@ -370,4 +374,3 @@ spec: Fix the cms_publish_page call error where the slug argument is missing, ta
   repository. The task runner must locate the definition of cms_publish_page, identify where the slug argument is
   expected but not provided, and update the function call or signature accordingly. The done-condition is verified
   when automated tests for cms_publish_page pass without raising missing argument errors for the slug.
-awaiting_action: true
