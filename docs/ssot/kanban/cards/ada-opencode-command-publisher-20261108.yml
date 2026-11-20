@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: backlog
-updated: 2026-11-20 18:58
+updated: 2026-11-20 19:05
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -307,6 +307,13 @@ comms:
 - at: 2026-11-20 18:58
   from: devin
   text: put on hold
+- at: 2026-11-20 19:05
+  from: devin
+  text: '2026-11-20 diagnosis (devin): the earlier ''exit=1 unexplained'' is superseded — attempt devin-task-20261120-132007
+    ran 13:20-13:35 on idc02, exited 0, and committed 2 commits on dispatch/20261120-132007-canonicalize-the-opencode-ada-
+    (12 files: canonical stacks/idc02/ada-code/commands/ada.md, scripts/board/opencode_command.py + board-api wiring
+    + thin client + tests + bench + runbook + job record). BUT the branch was never pushed and the dispatch worktree
+    was GC''d — git for-each-ref/fsck on idc02'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -354,3 +361,4 @@ action:
 claim:
   since: 2026-11-20 13:19
 review_kind: verify
+awaiting_action: true
