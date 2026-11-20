@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
 column: doing
-updated: 2026-11-20 19:03
+updated: 2026-11-20 19:04
 priority: low
 tags:
 - wiki
@@ -189,6 +189,17 @@ comms:
 - at: 2026-11-20 19:03
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261119-105301-extend-wiki-page-door-to-allow'
+- at: 2026-11-20 19:04
+  from: devin
+  text: 'running (attempt 3, idc02): WIKI_PAGE_PREFIXES now includes Infrastructure: + new gate test + runbook documents
+    /wiki/page; live siteinfo confirms ns 3000 registered. Testing next.'
+- at: 2026-11-20 19:04
+  from: devin
+  text: 'DONE (commit 3ac5d7f6f6 on dispatch/20261120-190141-extend-wiki-page-door-to-allow): WIKI_PAGE_PREFIXES
+    admits Infrastructure: — same siteinfo registration + Lockdown ACL gates as before. New test test_wiki_page_infrastructure_ns;
+    72/72 publication + 38/38 mutation tests pass; selftest ok. Live siteinfo confirms ns 3000 registered. Runbook
+    now documents /wiki/page. After merge+pull+board-api restart on idc03, Infrastructure:Hosts/tony-dell/Backup-and-Recovery
+    can publish via POST /wiki/page (ver'
 action:
   type: dispatch
   status: running
