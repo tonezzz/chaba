@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: backlog
-updated: 2026-11-20 18:36
+updated: 2026-11-20 18:46
 priority: medium
 program: ai-workforce
 tags:
@@ -403,10 +403,16 @@ comms:
     jules.status=retired, JULES_LANES drop-ins removed on tony-omen/idc03). lane=jules/executor=jules pins on this
     card are dead and being stripped so a future re-queue classifies onto a live lane. Work itself is still valid
     — needs re-lane, not cancellation.
+- at: 2026-11-20 18:46
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-20 18:46
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-11 23:36
     stale_running: 2026-11-17 09:25
@@ -415,10 +421,12 @@ action:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-expert-consult-tool-1794469903.service:
     Failed with result ''exit-code''.'
   attempts: 2
-  runner: tony-omen
   result: 'journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-expert-consult-tool-1794881640.service:
     Failed with result ''exit-code''.'
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
 requests:
 - id: consult-key-budget-cap
   ask: 'Choose the hard max_budget for the new LITELLM_KEY_CONSULT before provisioning or live smoke. Evidence:
@@ -455,4 +463,4 @@ requests:
     label: Other amount
   suggested: cap-010-call
   answer: cap-010-call — $0.10 / call — recommended
-awaiting_action: true
+claim: {}
