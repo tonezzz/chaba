@@ -1,18 +1,18 @@
 id: ada-proactive-digest-morning-brief-via-t-3abb02
 title: Ada proactive digest — morning brief via TG/LINE relay
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 13:23
 ref: ADA-1201
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec: Ada is poll-only — Tony must ask. Add a proactive morning brief using existing relay infra
-    (no new transport).
+  text: 'spec: Ada is poll-only — Tony must ask. Add a proactive morning brief using existing relay infra (no new
+    transport).
 
 
-    1. Script (chaba repo scripts/ada/ or ada-voice): gathers — Education:Due count + top due topics (via
-    board-api /lesson op or wiki), open card requests addressed to tony, overnight dispatch outcomes (action.status
-    done/failed last 24h), health alerts if any. Keep it short — a voice/SMS-length brief, not a report.
+    1. Script (chaba repo scripts/ada/ or ada-voice): gathers — Education:Due count + top due topics (via board-api
+    /lesson op or wiki), open card requests addressed to tony, overnight dispatch outcomes (action.status done/failed
+    last 24h), health alerts if any. Keep it short — a voice/SMS-length brief, not a report.
 
     2. Delivery: post via existing TG relay send path (ada-tg-relay :89'
 - at: 2026-11-08 13:53
@@ -152,9 +152,9 @@ comms:
   text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:'
 - at: 2026-11-09 09:48
   from: chaba
-  text: 'merge-sweep: devin-task-20261108-135811-ada-proactive-digest-morning-b failed — its branch isn''t
-    auto-merged (unverified partial work). Retry the card or merge dispatch/20261108-135811-ada-proactive-digest-morning-b
-    by hand.'
+  text: 'merge-sweep: devin-task-20261108-135811-ada-proactive-digest-morning-b failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261108-135811-ada-proactive-digest-morning-b by
+    hand.'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -264,6 +264,13 @@ comms:
 - at: 2026-11-20 01:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-20 13:23
+  from: ada
+  text: 'answered every-candidate-runner-host-to-ce7d7a: ★ Update runner-agent on tony-omen via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    and run the card there. Proceed with runner-agent redeploy/sync to other affected hosts a'
+- at: 2026-11-20 13:23
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: failed
@@ -271,24 +278,28 @@ action:
   sweep:
     failed_noted: 2026-11-09 09:48
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:
-    Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:
-    Consumed 2.943s CPU time.'
+    Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
+    2.943s CPU time.'
   attempts: 1
   runner: idc02
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-093950-ada-proactive-digest-morning-b.service:
-    Failed with result ''exit-code''. | devin-task-20261117-093950-ada-proactive-digest-morning-b.service:
-    Consumed 4.428s CPU time.'
+    Failed with result ''exit-code''. | devin-task-20261117-093950-ada-proactive-digest-morning-b.service: Consumed
+    4.428s CPU time.'
 requests:
 - id: every-candidate-runner-host-to-ce7d7a
-  ask: Every candidate runner host (tony-omen, idc02, idc03, tony-macbook) has deferred execution due
-    to a drifted runner-agent script compared to the chaba repository version. To proceed with the morning
-    brief implementation, we need to establish which host should be updated with the current runner-agent
-    or where the proactive digest should ultimately execute.
+  ask: Every candidate runner host (tony-omen, idc02, idc03, tony-macbook) has deferred execution due to a drifted
+    runner-agent script compared to the chaba repository version. To proceed with the morning brief implementation,
+    we need to establish which host should be updated with the current runner-agent or where the proactive digest
+    should ultimately execute.
   options:
   - ★ Update runner-agent on tony-omen via scp and run the card there
   - Update runner-agent on idc02 via scp and run the card there
   - Update runner-agent on idc03 via scp and run the card there
   - Postpone the card until runner-agent deployments are centrally managed
-  status: open
+  status: answered
   at: 2026-11-20 01:20
   from: backlog-spec-enrich
+  answer: ★ Update runner-agent on tony-omen via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    and run the card there. Proceed with runner-agent redeploy/sync to other affected hosts as needed to unblock
+    follow-on dispatch.
+awaiting_action: true
