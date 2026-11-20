@@ -1,7 +1,7 @@
 id: trade-lesson-ui-integration
 title: 'Trade lesson draft: trade-ui (free-lane drafting)'
 column: review
-updated: 2026-11-20 16:17
+updated: 2026-11-20 16:27
 brief: Distill trade docs (features/ui/* (TRADECANVAS_INTEGRATION, TRADECANVAS_QUICKSTART, WICK_INTEGRATION, UI_COMPARISON_EVALUATION,
   TRADING_TERMINAL_INTEGRATION, TRADING_TERMINAL_QUICKSTART)) into lesson trade-trade-ui; drafting on the $0 free
   lane via trade-lesson-migrate.py.
@@ -379,6 +379,14 @@ comms:
 - at: 2026-11-20 16:17
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-20 16:27
+  from: chaba
+  text: 'merge-sweep: dispatch/20261116-202622-free-lane-draft-publish-for-tr conflicts with origin/master: scripts/lesson-drift-map.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-20 16:27
+  from: chaba
+  text: 'raised request merge-conflict-14: merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr:
+    2 commit(s) conflict with origin/master '
 review_kind: verify
 claim: {}
 requests:
@@ -553,4 +561,16 @@ requests:
   suggested: let devin resolve the conflict and land it ★
   escalated_at: 2026-11-20 05:47
   answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-14
+  ask: 'merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/lesson-drift-map.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261116-202622-free-lane-draft-publish-for-tr
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-20 16:27
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
 awaiting_action: true
