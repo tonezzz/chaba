@@ -200,8 +200,22 @@ hosts:
           ~/.local/node24/bin/node (@openchamber/web >=2.7 requires node
           >=24.14) and spawns @opencode/cli serve v2.2.7 (requires >=2.2.4)
           per session on an allocated 127.0.0.1 port. Manual update:
-          `openchamber update` + `npm i -g @opencode/cli` under
-          ~/.local/node24/bin. Debug: `journalctl --user -u
+          node24 npm with explicit prefix —
+          `PATH=~/.local/node24/bin:$PATH npm i -g --prefix=~/.local/node
+          @openchamber/web@<ver> @opencode/cli` (bare `npm i -g` resolves
+          /usr/bin/node v18 and dies EACCES; the package lives under
+          ~/.local/node even though node24 is the runtime). Since
+          2.7.3 the CLI moved bin/cli.js -> build/bin/cli.js — ExecStart
+          points at build/bin/cli.js. node_modules also carries a managed
+          patch (models.status action + /api/openchamber/models/status
+          route, LiteLLM probe) — diff vs pristine in
+          stacks/idc02/openchamber/openchamber-models-status.patch,
+          re-applied by apply-models-status-patch.sh via
+          openchamber-update.service ExecStartPost; card
+          ocb-models-status-patch-durability (OPS-0022). 2026-11-20:
+          @openchamber/web pinned to 2.7.3 — 2.7.0-2.7.2 crash-loop on
+          start (openChamberControlService TDZ) and upstream layout
+          churn; unpin after soak. Debug: `journalctl --user -u
           openchamber.service`, `openchamber logs -p 3000`,
           ~/.config/openchamber/logs/. Gotchas: SameSite=Strict session
           cookie => iframe only works when dashboard is opened same-site
