@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
-column: review
-updated: 2026-11-19 20:03
+column: backlog
+updated: 2026-11-20 13:15
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -547,9 +547,15 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 13:15
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-20 13:15
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: done
+  status: queued
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service:
     Failed with result ''exit-code''.'
@@ -557,7 +563,9 @@ action:
     session_gone: 2026-10-28 21:32
     stale_running: 2026-10-29 16:33
     no_repo: 2026-10-29 16:33
-  runner: idc02
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
 review_kind: verify
 claim: {}
 requests:
@@ -751,4 +759,3 @@ requests:
   escalated_at: 2026-11-06 20:16
   answer: framework-ab — ★ Compare actual Hermes Agent vs OpenClaw/Clawbot on the same local Qwen3:8B backend, synthetic
     read-only fixtures, same tool allowlist/verifier, no live channels or external egress (recommended)
-awaiting_action: true

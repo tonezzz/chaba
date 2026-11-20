@@ -1,7 +1,7 @@
 id: ada-write-fidelity-drop-parity
 title: Review staged Ada write-fidelity drop parity without weakening guards
-column: doing
-updated: 2026-11-20 13:11
+column: review
+updated: 2026-11-20 13:15
 brief: 'Pre-commit blocks PR #138 CI repair because the staged write-fidelity.patch diverges against canonical Ada
   main; canonical fidelity tests still pass 17/17.'
 priority: high
@@ -195,6 +195,33 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261117-233349-observe on tony-omen — if the work
     was never pushed it may be gone'
+- at: 2026-11-20 13:15
+  from: tony-omen
+  text: 'finished (ok): exit=0 the seven SSOT fixes for PR #138, since that worktree is outside this dispatch''s
+    reach. | devin-task-20261120-130'
+- at: 2026-11-20 13:15
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 13:15
+  from: chaba
+  text: 'session-end checkpoint 7d96292d: 3 leftover file(s) committed'
+- at: 2026-11-20 13:15
+  from: chaba
+  text: banked 40 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 13:15
+  from: chaba
+  text: pushed dispatch/20261120-130531-observed-on-tony-dell-chaba-te to origin
+- at: 2026-11-20 13:15
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 198.3s)
+- at: 2026-11-20 13:15
+  from: chaba
+  text: auto-merged 0d31fe28 (dispatch/20261120-130531-observed-on-tony-dell-chaba-te) → origin/main
+- at: 2026-11-20 13:15
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-130531-observed-on-tony-dell-chaba-te,
+    branch dispatch/20261120-130531-observed-on-tony-dell-chaba-te'
 requests:
 - id: guard-parity-scope
   ask: 'Recommended: prepare a separate, reviewed parity refresh of the staged integration artifact, keeping runtime
@@ -225,17 +252,18 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
-  result: 'exit=1 in-task-20261117-233349-observed-on-tony-dell-chaba-te.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233349-observed-on-tony-dell-chaba-te.service: Consumed 11.373s CPU time over 12.399s
-    wall clock time, 255.8M memory peak.'
+  result: 'exit=0 the seven SSOT fixes for PR #138, since that worktree is outside this dispatch''s reach. | devin-task-20261120-130531-observed-on-tony-dell-chaba-te.service:
+    Consumed 1min 15.899s CPU time over 5min 29.504s wall clock time, 1.1G memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 13:11
     session_gone: 2026-11-20 13:11
   runner: tony-omen
   attempts: 1
+  verified: true
 claim:
   since: 2026-11-20 13:04
+review_kind: verify
