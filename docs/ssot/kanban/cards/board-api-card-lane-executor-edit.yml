@@ -1,0 +1,44 @@
+id: board-api-card-lane-executor-edit
+title: 'board-api: door to edit action.lane/executor/tags on an existing card'
+column: backlog
+updated: 2026-11-20 18:43
+brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
+  creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
+  on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
+  cleared through the door, and the re-queue then misclassified onto lane=codemod.'
+priority: medium
+tags:
+- board-api
+- dispatch
+spec: 'REPO work (chaba, scripts/board/board-api.py + docs/kb/board-api-write-door.md). WORKTREE ONLY. Do NOT deploy
+  to idc03 and do not restart chaba-board-api: promotion needs Tony''s explicit approval; deliver a branch + outcome
+  note.
+
+
+  GOAL: add one narrow write door so a card''s routing fields can be corrected without hand-editing YAML.
+
+
+  DESIGN: POST /card-set {id, set:{lane?, executor?, tags?}, from, reason}. Whitelist ONLY action.lane (same allowed
+  set as /card validation: sorted(set(dr.LANE_MODELS)|set(dr.LANE_EXECUTORS)), minus any lane retired in ssot.devnest-lanes.yml),
+  action.executor (must be in dr.EXECUTORS), and tags (list, <=20, each <=40 chars; support add/remove forms). An
+  explicit lane set clears lane_source so it counts as author-set (wins over the classifier, per _apply_classify_at_queue).
+  REFUSE while action.status is running or the card is claimed. Hold the existing card flock (no network/git inside
+  it). Append a comms line ''routing edited: <fields> by <from>: <reason>'' for audit. Field-ownership rule: producers
+  must not use it on workflow fields (column, requests, comms). Also add a board-cli subcommand. Note: ''devin''
+  is currently not a valid action.lane value at /card (executor=devin is the way to pin devin) — document that,
+  do not widen it here.
+
+
+  DONE-CONDITION: selftest cases in board-api.py covering set lane, set executor, tags add/remove, refusal when
+  running, invalid lane/executor, comms audit line; docs/kb/board-api-write-door.md endpoint table row; all existing
+  selftests pass. Deliver a dispatch-outcome note with the diff summary.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-0027
+comms:
+- at: 2026-11-20 18:43
+  from: devin
+  text: card captured via board-api

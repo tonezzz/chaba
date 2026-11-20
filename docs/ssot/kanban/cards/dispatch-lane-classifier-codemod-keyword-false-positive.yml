@@ -1,0 +1,46 @@
+id: dispatch-lane-classifier-codemod-keyword-false-positive
+title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
+  lane'
+column: backlog
+updated: 2026-11-20 18:43
+brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
+  bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
+  a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
+  class as dispatch-lane-classifier-spend-false-manual (done 2026-11-19, bare ''spend'' forcing manual).'
+priority: medium
+tags:
+- dispatch
+- classifier
+spec: 'REPO work (chaba: scripts/board/dispatch_repos.py LANE_KW/classify_lane, lockstep vendored copy in scripts/board/runner-agent.py,
+  plus tests). WORKTREE ONLY. No deploy, no service restart; deliver branch + outcome note.
+
+
+  PROBLEM: bare-substring keywords (''lock'' also matches block/clock/unlock; ''config'', ''cap'', ''flag'', ''script'',
+  ''raise '', ''change the'') route anything mentioning them to the cheap deterministic codemod lane (semantics:
+  ''deterministic pattern change, known transform, no judgment'').
+
+
+  FIX DIRECTION (follow the approach used for the spend/manual fix): word-boundary matching; match the TITLE first
+  and the spec body only for strong multi-word phrases; require a title hit OR >=2 distinct keyword hits before
+  choosing codemod; drop or qualify the broadest single words; keep dispatch_repos.LANE_KW and the runner-agent
+  vendored copy in lockstep (add a test asserting they are identical). The fallback stays devin-safe.
+
+
+  REGRESSION CASES (must classify NOT codemod): the ADA-1285 title+spec (docs/ssot/kanban/cards/ada-tools-command-reference.yml,
+  read from git), the two cards named in dispatch-lane-classifier-spend-false-manual, and a body that only contains
+  ''block''/''clock''/''lock file''. Must STILL classify codemod: a card titled like ''bump pinned dependency version
+  in X'' or ''retire flag Y across configs''.
+
+
+  DONE-CONDITION: tests added and passing alongside the existing classifier tests; the outcome note lists keyword
+  changes and before/after classification of the regression cases.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-0028
+comms:
+- at: 2026-11-20 18:43
+  from: devin
+  text: card captured via board-api
