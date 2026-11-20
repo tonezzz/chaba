@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
 column: backlog
-updated: 2026-11-19 20:06
+updated: 2026-11-20 18:35
 priority: low
 tags:
 - wiki
@@ -140,18 +140,17 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:35
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  attempts: 2
-  result: 'exit=1 devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
-    | devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Consumed 10.173s CPU time over 3.958s wall
-    clock time, 264M memory peak.'
+  attempts: 0
   last_failure: 'exit=1 devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
     | devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Consumed 10.173s CPU time over 3.958s wall
     clock time, 264M memory peak.'
-  runner: tony-macbook
 claim:
   since: 2026-11-19 10:51
