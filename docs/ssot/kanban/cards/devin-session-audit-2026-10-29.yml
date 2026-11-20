@@ -1,6 +1,6 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: backlog
+column: doing
 updated: 2026-11-21 06:08
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
@@ -506,15 +506,18 @@ comms:
     complete + marker 2026-11-20T18:50:37 on tony-macbook. Now checking tony-omen-local state: no marker file here,
     2 summaries newer than that marker (19:46:48, 20:02:57) — auditing those for artifact claims before writing
     the local marker and closing.'
+- at: 2026-11-21 06:08
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
-  attempts: 0
+  attempts: 1
   last_failure: 'journal=exit-code -20261120-201613-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
     | devin-task-20261120-201613-finish-artifact-landing-verifi.service: Consumed 1min 43.110s CPU time over 6min
     5.496s wall clock time, 1.1G memory peak.'
@@ -522,5 +525,6 @@ action:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
+  runner: idc02
 claim:
-  since: 2026-11-21 06:05
+  since: 2026-11-21 06:08
