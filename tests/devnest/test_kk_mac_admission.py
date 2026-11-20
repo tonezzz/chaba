@@ -198,3 +198,42 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("node_busy:load1", result["reasons"])
+
+
+class QuietHoursTests(unittest.TestCase):
+    """quiet_hours_active: do-not-run window in kk-mac local time (ICT
+    +7), wraps midnight; malformed windows return None so callers can
+    fail closed."""
+
+    def _ts(self, hm):
+        # anchor an ICT wall-clock time: 2026-11-20 is a Friday; the
+        # helper only reads hour/minute in the +7 zone.
+        from datetime import datetime, timedelta, timezone
+        h, m = (int(x) for x in hm.split(":"))
+        dt = datetime(2026, 11, 20, h, m,
+                      tzinfo=timezone(timedelta(hours=7)))
+        return dt.timestamp()
+
+    def test_inside_simple_window(self):
+        from scripts.devnest.kk_mac_admission import quiet_hours_active
+        self.assertIs(quiet_hours_active("23:00-07:00",
+                                         now=self._ts("23:30")), True)
+        self.assertIs(quiet_hours_active("23:00-07:00",
+                                         now=self._ts("02:15")), True)
+
+    def test_outside_window(self):
+        from scripts.devnest.kk_mac_admission import quiet_hours_active
+        self.assertIs(quiet_hours_active("23:00-07:00",
+                                         now=self._ts("12:00")), False)
+        self.assertIs(quiet_hours_active("23:00-07:00",
+                                         now=self._ts("07:00")), False)
+        self.assertIs(quiet_hours_active("08:00-18:00",
+                                         now=self._ts("09:00")), True)
+
+    def test_malformed_windows(self):
+        from scripts.devnest.kk_mac_admission import quiet_hours_active
+        for bad in ("", "overnight", "23-07", "25:00-07:00",
+                    "23:60-07:00", "07:00-07:00"):
+            self.assertIsNone(quiet_hours_active(bad,
+                                                 now=self._ts("12:00")),
+                              msg=bad)

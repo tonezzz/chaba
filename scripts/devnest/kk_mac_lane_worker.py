@@ -89,12 +89,14 @@ def say(msg: str) -> None:
     print(f'{time.strftime("%H:%M:%S")} {msg}', flush=True)
 
 
-def gate(*, host: str, drain_file: str, environ: dict | None = None
+def gate(*, host: str, drain_file: str, environ: dict | None = None,
+         quiet_hours: str | None = None, now: float | None = None
          ) -> dict:
     """Worker-level fitness check taken before any claim. env kill
-    switch and drain file deny instantly; then local ground truth when
-    the worker IS the node, heartbeat snapshot when it is orchestrating
-    the node remotely."""
+    switch, drain file, and the configured quiet-hours window
+    (DEVNEST_KK_MAC_QUIET_HOURS="HH:MM-HH:MM", kk-mac local time) deny
+    instantly; then local ground truth when the worker IS the node,
+    heartbeat snapshot when it is orchestrating the node remotely."""
     env = os.environ if environ is None else environ
     if env.get("DEVNEST_KK_MAC_ENABLED", "true").lower() != "true":
         return {"eligible": False, "lane": "kk_mac_local",
@@ -102,6 +104,15 @@ def gate(*, host: str, drain_file: str, environ: dict | None = None
     if drain_file and os.path.exists(drain_file):
         return {"eligible": False, "lane": "kk_mac_local",
                 "reasons": ["drain_file"], "source": "drain"}
+    win = env.get("DEVNEST_KK_MAC_QUIET_HOURS", "") \
+        if quiet_hours is None else quiet_hours
+    if str(win or "").strip():
+        qh = kk_mac_admission.quiet_hours_active(str(win), now=now)
+        if qh is not False:
+            return {"eligible": False, "lane": "kk_mac_local",
+                    "reasons": ["quiet_hours" if qh else
+                                "quiet_hours_malformed"],
+                    "source": "quiet_hours"}
     try:
         if kk_mac_llm.is_local_host(host):
             return kk_mac_admission.local_snapshot(host=host)

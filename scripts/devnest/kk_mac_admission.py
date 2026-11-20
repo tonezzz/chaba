@@ -15,7 +15,7 @@ import re
 import subprocess
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 def _search(url: str) -> list[dict]:
@@ -203,6 +203,33 @@ def snapshot(
 
 
 LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})
+
+# KK-Mac local time is ICT (+7) — the same fixed offset kanban-dispatch
+# uses for its quiet-hours windows.
+QUIET_TZ_OFFSET_H = 7
+
+
+def quiet_hours_active(win: str, *, now: float | None = None,
+                       tz_offset_h: int = QUIET_TZ_OFFSET_H
+                       ) -> bool | None:
+    """True when `now` falls inside the do-not-run window
+    "HH:MM-HH:MM" (kk-mac local time; wraps midnight), False outside,
+    None when the configured window is malformed — callers decide, and
+    the lane worker treats a malformed configured window as a deny
+    (fail closed, same posture as every other gate in this lane)."""
+    m = re.match(r"^\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*$",
+                 win or "")
+    if not m:
+        return None
+    lo = int(m.group(1)) * 60 + int(m.group(2))
+    hi = int(m.group(3)) * 60 + int(m.group(4))
+    if not (0 <= lo < 1440 and 0 <= hi < 1440) or lo == hi:
+        return None
+    t = time.time() if now is None else now
+    local = datetime.fromtimestamp(
+        t, tz=timezone(timedelta(hours=tz_offset_h)))
+    cur = local.hour * 60 + local.minute
+    return lo <= cur < hi if lo < hi else (cur >= lo or cur < hi)
 
 
 def _which(*names: str) -> str | None:

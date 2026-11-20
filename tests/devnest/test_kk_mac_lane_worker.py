@@ -300,3 +300,46 @@ class LocalHostModeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class QuietHoursGateTests(unittest.TestCase):
+    def _ts(self, hm):
+        from datetime import datetime, timedelta, timezone
+        h, m = (int(x) for x in hm.split(":"))
+        return datetime(2026, 11, 20, h, m,
+                        tzinfo=timezone(timedelta(hours=7))).timestamp()
+
+    def test_env_window_denies_inside(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot") as ls:
+            g = lw.gate(host="local", drain_file="",
+                        environ={"DEVNEST_KK_MAC_QUIET_HOURS":
+                                 "23:00-07:00"},
+                        now=self._ts("02:00"))
+        self.assertFalse(g["eligible"])
+        self.assertIn("quiet_hours", g["reasons"])
+        ls.assert_not_called()  # deny is instant — no probe at all
+
+    def test_env_window_passes_outside(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot",
+                          return_value={"eligible": True}):
+            g = lw.gate(host="local", drain_file="",
+                        environ={"DEVNEST_KK_MAC_QUIET_HOURS":
+                                 "23:00-07:00"},
+                        now=self._ts("12:00"))
+        self.assertTrue(g["eligible"])
+
+    def test_malformed_window_fails_closed(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot") as ls:
+            g = lw.gate(host="local", drain_file="",
+                        environ={"DEVNEST_KK_MAC_QUIET_HOURS":
+                                 "overnight"},
+                        now=self._ts("12:00"))
+        self.assertFalse(g["eligible"])
+        self.assertIn("quiet_hours_malformed", g["reasons"])
+        ls.assert_not_called()
+
+    def test_no_window_configured_unchanged(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot",
+                          return_value={"eligible": True}):
+            g = lw.gate(host="local", drain_file="", environ={},
+                        now=self._ts("02:00"))
+        self.assertTrue(g["eligible"])
