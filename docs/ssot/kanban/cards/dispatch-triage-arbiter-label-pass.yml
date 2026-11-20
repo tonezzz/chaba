@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
-column: doing
-updated: 2026-11-20 20:36
+column: backlog
+updated: 2026-11-20 20:38
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -332,19 +332,29 @@ comms:
   text: 'run.3 resume: verified committed state — label.py idempotent re-run made 0 calls over 1730 rows, exit 0,
     worktree clean. All deliverables landed in d355325f47 (script, corpus 1728, review queue 100, suite-append,
     ledger, job doc, outcome doc). Spot-check request still open for Tony.'
+- at: 2026-11-20 20:38
+  from: idc02
+  text: 'finished (failed): journal=exit-code devin-task-20261120-194941-approved-strategy-b-per-the-bo.service:
+    Failed with result ''exit-code''. | d — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 20:38
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-194941-approved-strategy-b-per-the-bo (rate limit)
+    — idc02 holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
     stale_running: 2026-11-17 09:39
     dirty: 1
-  last_failure: 'exit=1 ice: No such file or directory | devin-task-20261119-084806-approved-strategy-b-per-the-bo.service:
-    Failed to open /run/user/1000/systemd/transient/devin-task-20261119-084806-approved-strategy-b-per-the-bo.service:
-    No such file or directory'
+  last_failure: 'journal=exit-code devin-task-20261120-194941-approved-strategy-b-per-the-bo.service: Failed with
+    result ''exit-code''. | devin-task-20261120-194941-approved-strategy-b-per-the-bo.service: Consumed 6min 33.395s
+    CPU time, 463.7M memory peak, 0B memory swap peak.'
   attempts: 1
-  runner: idc02
+  result: 'journal=exit-code devin-task-20261120-194941-approved-strategy-b-per-the-bo.service: Failed with result
+    ''exit-code''. | devin-task-20261120-194941-approved-strategy-b-per-the-bo.service: Consumed 6min 33.395s CPU
+    time, 463.7M memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-20 19:48
 requests:
