@@ -1,0 +1,32 @@
+id: board-api-card-set-non-dispatch-guard
+title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
+column: backlog
+updated: 2026-11-21 06:12
+brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
+  no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
+  a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
+  on every /card and /card-set request inside the card flock.'
+priority: low
+tags:
+- board-api
+- dispatch
+spec: 'REPO work (chaba, scripts/board/board-api.py do_card_set + valid_lanes, selftest). WORKTREE ONLY; no deploy
+  without Tony''s approval.
+
+
+  1) In do_card_set refuse (400) when the card has no action block or action.type is not ''dispatch'' (clear message:
+  use /card to arm it first). Do not let _ensure_act create an action block here.
+
+  2) Cache valid_lanes()/_retired_lanes() keyed on the catalog file mtime so the YAML parse is not repeated per
+  request inside the flock.
+
+  3) Selftests: no-action card refused and left untouched; cache invalidates when the file mtime changes; existing
+  /card-set and /card lane tests still pass.
+
+
+  Evidence: review probes 2026-11-21 (non-dispatch card -> ''routing edited (executor=devin)'' with no type).'
+ref: OPS-0007
+comms:
+- at: 2026-11-21 06:12
+  from: devin
+  text: card captured via board-api
