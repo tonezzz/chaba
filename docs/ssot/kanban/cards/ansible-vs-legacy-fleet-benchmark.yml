@@ -1,7 +1,7 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
-column: doing
-updated: 2026-11-21 06:28
+column: backlog
+updated: 2026-11-21 06:30
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
 priority: medium
@@ -69,12 +69,17 @@ spec: 'GOAL: Benchmark Ansible against the existing fleet tooling on 2-3 real jo
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  runner: tony-macbook
   attempts: 1
+  result: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
+    | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
+    47.327s wall clock time, 543.9M memory peak.'
+  last_failure: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
+    | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
+    47.327s wall clock time, 543.9M memory peak.'
 comms:
 - at: 2026-11-21 06:06
   from: chaba
@@ -120,6 +125,10 @@ comms:
     (2) disk headroom 27.8s vs 24.5s → tie: ansible enforces SSOT max_root_disk_percent+15GiB floor (nothing enforced
     those before), legacy owns trend→card→push. (3) stagger verify 11s/11 checks vs 0.6s manual → tie. (4) runner-tools
     --check --diff is the only dry-run '
+- at: 2026-11-21 06:30
+  from: tony-macbook
+  text: 'finished (failed): journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result
+    ''exit-code''. | devin-task-2026 — auto-retry queued (attempt 2/2) (column -> backlog)'
 ref: BEN-0005
 claim:
   since: 2026-11-21 06:08
