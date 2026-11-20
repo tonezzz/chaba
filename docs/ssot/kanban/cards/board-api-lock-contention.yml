@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-21 06:10
+updated: 2026-11-21 06:11
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -370,6 +370,13 @@ comms:
     clean. Post-rebase: focused pytest 157 passed; tests/test-kanban-commit.sh 65/65; board-api selftest ok (non-fatal
     `No module named ''lib''` report-index warning); diff check clean. Full SSOT validation: 5,405 checked, 5,400
     valid; four unrelated missing-title errors and one unrelated emp'
+- at: 2026-11-21 06:11
+  from: devin
+  text: 'Post-rebase CI update: with explicit approval, PR #197 was rebased onto current master and force-pushed
+    with lease; new head d5f2ea605a, working tree clean. GitHub `syntax` passed; `validate` failed again. Latest
+    full validator reports 5 errors: four missing-title files already documented on open PR #196 (AUD-0020), plus
+    one empty focus-inbox file; all are outside OPS-0725 and were left untouched. Focused tests pass (157 pytest,
+    65 kanban-commit), but the full-suite gate remains unresolved (240s'
 requests: []
 action:
   lane: paid_frontier
