@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-20 20:06
+updated: 2026-11-20 20:13
 priority: high
 tags:
 - devnest
@@ -299,5 +299,12 @@ comms:
     (report timeline, wrong schema — host/status=failing never match) instead of the timer-timeline CMS rollup;
     (2) runner health globbed ~/var/chaba/health/*.json which holds unrelated producer snapshots and invents bogus
     hosts. Rewiring to MDDB ada-cms-pages timer-timel'
+- at: 2026-11-20 20:13
+  from: devin
+  text: 'Done on dispatch branch dispatch/20261120-200209-two-part-deliverable-repo-work (3 commits; built on preserved
+    fix branch per Tony). Aggregator repointed to real sources: timer-timeline CMS rollup via MDDB (was reading
+    unrelated reports timeline.jsonl — wrong schema, always empty), board-api /queue for runner heartbeats+verdicts
+    (was globbing ~/var/chaba/health/*.json = unrelated snapshots inventing bogus hosts), plus hostname normalization
+    tony_dell->tony-dell so declared timers join. Live run '
 claim:
   since: 2026-11-20 20:00
