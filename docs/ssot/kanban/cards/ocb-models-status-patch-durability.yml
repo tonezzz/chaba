@@ -1,7 +1,7 @@
 id: ocb-models-status-patch-durability
 title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
 column: done
-updated: 2026-11-20 18:15
+updated: 2026-11-20 18:54
 brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
   route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
   — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
@@ -138,6 +138,10 @@ comms:
 - at: 2026-11-20 18:15
   from: devin
   text: closed by devin
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
