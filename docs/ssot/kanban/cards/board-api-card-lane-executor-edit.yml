@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
-column: backlog
-updated: 2026-11-20 18:46
+column: doing
+updated: 2026-11-20 18:56
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -36,7 +36,9 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-0027
 comms:
 - at: 2026-11-20 18:43
@@ -68,3 +70,8 @@ comms:
 - at: 2026-11-20 18:46
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.69 > 0.85)'
+- at: 2026-11-20 18:56
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-20 18:56
