@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
 column: doing
-updated: 2026-11-20 13:43
+updated: 2026-11-20 13:47
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -228,6 +228,11 @@ comms:
     clean, pytest 1854 pass. LIVE-verified: Education:Ada-Deploy-Flow reads real wikitext; search returns real hits.
     Spec correction: /wiki/page has no mode=read and /wiki/search does not exist — tools call the spec doors first
     (auto-upgrade later) and fall back to /lesson source=w'
+- at: 2026-11-20 13:47
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261120-133005-ada-tools-wiki-read-wiki-searc failed: push: remote: error:\
+    \ refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current\
+    \ branch in a non-bare repository        \nremote: is denied, because it will"
 action:
   type: dispatch
   repo: ada-voice
@@ -237,6 +242,7 @@ action:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-17 09:39
     session_gone: 2026-11-17 09:39
+    merge_err: 2026-11-20 13:47
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
     Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
     2.730s CPU time.'
