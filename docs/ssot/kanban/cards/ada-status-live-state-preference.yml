@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
-column: doing
-updated: 2026-11-20 13:31
+column: done
+updated: 2026-11-20 13:32
 priority: high
 tags:
 - ada
@@ -25,7 +25,7 @@ action:
   repo: chaba
   executor: devin
   lane: jules
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 20:19
     stale_running: 2026-11-20 13:31
@@ -37,6 +37,7 @@ action:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-status-live-state-preference-1794932595.service:
     Failed with result ''exit-code''.'
   runner: idc02
+  verified: true
 ref: ADA-1294
 comms:
 - at: 2026-11-09 18:36
@@ -356,5 +357,14 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261120-131725-observed-2026-11-09-tony-asked no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-20 13:32
+  from: chaba
+  text: 'merge-sweep: merged a2b762d4 (dispatch/20261120-131725-observed-2026-11-09-tony-asked from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261120-131725-observed-2026-11-09-tony-asked.md)
+    — auto-closed'
 claim:
   since: 2026-11-20 13:16
+auto_close:
+  by: merge-sweep
+  at: 2026-11-20 13:32
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261120-131725-observed-2026-11-09-tony-asked.md
