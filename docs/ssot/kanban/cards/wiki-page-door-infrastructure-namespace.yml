@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
-column: doing
-updated: 2026-11-20 19:04
+column: review
+updated: 2026-11-20 19:14
 priority: low
 tags:
 - wiki
@@ -200,9 +200,27 @@ comms:
     72/72 publication + 38/38 mutation tests pass; selftest ok. Live siteinfo confirms ns 3000 registered. Runbook
     now documents /wiki/page. After merge+pull+board-api restart on idc03, Infrastructure:Hosts/tony-dell/Backup-and-Recovery
     can publish via POST /wiki/page (ver'
+- at: 2026-11-20 19:14
+  from: idc02
+  text: 'finished (ok): exit=0 mit crashes, not approach problems. Card comms updated; outcome written to `dispatch-outcome-20261120-190141-exte'
+- at: 2026-11-20 19:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 19:14
+  from: chaba
+  text: 'session-end checkpoint 2cc42675: 1 leftover file(s) committed'
+- at: 2026-11-20 19:14
+  from: chaba
+  text: banked 113 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 19:14
+  from: chaba
+  text: pushed dispatch/20261120-190141-extend-wiki-page-door-to-allow to origin
+- at: 2026-11-20 19:14
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 1
@@ -213,5 +231,9 @@ action:
   sweep:
     stale_running: 2026-11-20 19:03
     no_repo: 2026-11-20 19:03
+  result: 'exit=0 mit crashes, not approach problems. Card comms updated; outcome written to `dispatch-outcome-20261120-190141-extend-wiki-page-door-to-allow.md`.
+    | devin-task-20261120-190141-extend-wiki-page-door-to-allow.service: Consumed 38.071s CPU time.'
+  verified: false
 claim:
   since: 2026-11-20 18:59
+review_kind: verify
