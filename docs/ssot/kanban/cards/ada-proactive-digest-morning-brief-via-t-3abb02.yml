@@ -1,7 +1,7 @@
 id: ada-proactive-digest-morning-brief-via-t-3abb02
 title: Ada proactive digest — morning brief via TG/LINE relay
 column: backlog
-updated: 2026-11-20 13:23
+updated: 2026-11-20 13:26
 ref: ADA-1201
 comms:
 - at: 2026-11-08 13:52
@@ -271,9 +271,12 @@ comms:
 - at: 2026-11-20 13:23
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-20 13:26
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:48
@@ -281,7 +284,6 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
     2.943s CPU time.'
   attempts: 1
-  runner: idc02
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-093950-ada-proactive-digest-morning-b.service:
     Failed with result ''exit-code''. | devin-task-20261117-093950-ada-proactive-digest-morning-b.service: Consumed
     4.428s CPU time.'
@@ -302,4 +304,4 @@ requests:
   answer: ★ Update runner-agent on tony-omen via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     and run the card there. Proceed with runner-agent redeploy/sync to other affected hosts as needed to unblock
     follow-on dispatch.
-awaiting_action: true
+claim: {}

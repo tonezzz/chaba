@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
 column: backlog
-updated: 2026-11-20 13:23
+updated: 2026-11-20 13:26
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -182,10 +182,13 @@ comms:
 - at: 2026-11-20 13:23
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-20 13:26
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -195,7 +198,6 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
     2.730s CPU time.'
   attempts: 1
-  runner: tony-omen
   result: 'exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result ''exit-code''. |
     devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Consumed 26.454s CPU time over 1min 22.212s
     wall clock time, 768.7M memory peak.'
@@ -215,4 +217,4 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy the updated runner-agent script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     to all affected hosts using scp and resume normal dispatch.
-awaiting_action: true
+claim: {}
