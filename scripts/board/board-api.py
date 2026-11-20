@@ -2928,7 +2928,7 @@ def _wiki_page_templates(env: dict) -> set:
     return out
 
 
-WIKI_PAGE_PREFIXES = ("Education:", "Reports:")
+WIKI_PAGE_PREFIXES = ("Education:", "Reports:", "Infrastructure:")
 WIKI_PAGE_TITLE_MAX = 150
 WIKI_PAGE_TEXT_MAX = 200000
 
@@ -2936,13 +2936,16 @@ WIKI_PAGE_TEXT_MAX = 200000
 def do_wiki_page(body: dict, frm: str) -> dict:
     """POST /wiki/page — guarded raw page write for support pages the
     kind-gated sinks can't reach: แม่แบบ:Education / แม่แบบ:Report
-    templates and Education:/Reports: index/portal pages
-    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
-    allowlist keeps this from becoming a generic write backdoor around
-    the News review gate — main space, News/, PrivateNews: and every
-    other namespace are refused. Education:/Reports: writes additionally
+    templates and Education:/Reports:/Infrastructure: index/portal/host
+    pages (card wiki-member-knowledge-surface-migrate-wp-3a1cf2;
+    Infrastructure: admitted by wiki-page-door-infrastructure-namespace).
+    The allowlist keeps this from becoming a generic write backdoor
+    around the News review gate — main space, News/, PrivateNews: and
+    every other namespace are refused. Prefixed writes additionally
     verify the namespace is actually registered (siteinfo) so a premature
-    call can't litter main space with 'Education:Foo' pages."""
+    call can't litter main space with 'Education:Foo' pages — and
+    Infrastructure: edits still have to pass the wiki-side Lockdown
+    group check (inhouse/sysop), the prefix gate is not an ACL grant."""
     title = str(body.get("title") or body.get("wiki_title") or "").strip()
     text = str(body.get("wikitext") or body.get("text") or "")
     if not title or "\n" in title or "\r" in title \
