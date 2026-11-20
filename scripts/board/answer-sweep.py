@@ -112,7 +112,10 @@ TZ = timezone(timedelta(hours=7))  # same stamp board-api's now() writes
 
 # Requests another component executes — their answers are not generic
 # verbs (lab-review outcomes stamp lab.outcome; merge-conflict answers
-# are resolved by the human merge + re-raise lifecycle).
+# are executed by merge-sweep's signature-deduped conflict lane —
+# resolve queues a devin merge-resolution, drop re-dispatches, hold
+# suppresses the re-raise; card merge-conflict-requests-re-raise-
+# every-s-f981d2).
 OWNED_PREFIXES = ("lab-review", "merge-conflict")
 
 ACTIONS = {"queue", "retry", "close", "hold", "none"}

@@ -38,8 +38,15 @@ For each card in doing/review with action.type=dispatch:
      safe-pull path converges it). CONFLICT POLICY = stop-and-report:
      ANY conflicted path aborts and posts a card request naming the
      files. Unlike close_out this sweep never silently resolves either
-     side — the branch may carry state a human already reviewed. A clean
-     merge still holds when the branch adds gitignored-dir shadow paths
+     side — the branch may carry state a human already reviewed. The
+     conflict request is signature-deduped (conflict_sig = head +
+     conflicted paths): the same conflict never re-asks once answered
+     — the sweep EXECUTES the answer instead (resolve -> queue a devin
+     merge-resolution dispatch via action.merge_resolve, drop -> fresh
+     re-dispatch, hold -> idle+backlog). Only a changed signature earns
+     a new merge-conflict-N request (the 2026-11-17 infinite re-ask
+     loop). A clean merge still holds when the branch adds gitignored-dir
+     shadow paths
      (symlinks, or files ignored only as directories — the 2026-10-10
      .venv incident): merge_strict flags them pre-push; sweep_card posts
      comms and stamps action.sweep.shadow_blocked keyed to the head sha
@@ -664,8 +671,11 @@ def card_note(cid: str, text: str, dry: bool) -> None:
     locked_edit(cid, add, touch=False)
 
 
-def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
-    """Raise a requests[] entry (merge-conflict lane)."""
+def card_request(cid: str, rid: str, ask: str, dry: bool,
+                 sig: str = "") -> None:
+    """Raise a requests[] entry (merge-conflict lane). `sig` binds the
+    request to one conflict event (conflict_sig) so a later pass can
+    tell 'same conflict, already answered' from a genuinely new one."""
     if dry:
         print(f"  [dry] request {cid}/{rid}: {ask[:120]}")
         return
@@ -675,18 +685,23 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
     opts = ["let devin resolve the conflict and land it ★",
             "drop this dispatch — re-dispatch fresh from current main",
             "hold the card"]
-    r = api_post("/request", {"id": cid, "from": "chaba",
-                              "ask": ask, "request_id": rid,
-                              "options": opts, "suggested": opts[0]})
+    body = {"id": cid, "from": "chaba", "ask": ask, "request_id": rid,
+            "options": opts, "suggested": opts[0]}
+    if sig:
+        body["sig"] = sig
+    r = api_post("/request", body)
     if not r.get("error"):
         return
     def add(c):
         reqs = c.setdefault("requests", [])
         if any(x.get("id") == rid for x in reqs):
             return False
-        reqs.append({"id": rid, "ask": ask, "status": "open",
-                     "options": opts, "suggested": opts[0],
-                     "at": now(), "from": "chaba"})
+        req = {"id": rid, "ask": ask, "status": "open",
+               "options": opts, "suggested": opts[0],
+               "at": now(), "from": "chaba"}
+        if sig:
+            req["sig"] = sig
+        reqs.append(req)
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba",
              "text": f"raised request {rid}: {ask[:120]}"})
@@ -709,10 +724,12 @@ def stamp(cid: str, key: str, val, dry: bool) -> None:
 
 
 def open_conflict_req(card: dict) -> bool:
-    """An unanswered merge-conflict* request already sits on the card."""
+    """An unanswered merge-conflict* request already sits on the card.
+    'closed' counts as resolved (same lifecycle states do_respond's
+    open_reqs uses) — only genuinely open requests block a re-raise."""
     for r in card.get("requests") or []:
         if str(r.get("id", "")).startswith("merge-conflict") \
-                and r.get("status") != "answered":
+                and r.get("status") not in ("answered", "closed"):
             return True
     return False
 
@@ -723,6 +740,172 @@ def conflict_rid(card: dict) -> str:
     n = sum(1 for r in card.get("requests") or []
             if str(r.get("id", "")).startswith("merge-conflict"))
     return "merge-conflict" if n == 0 else f"merge-conflict-{n + 1}"
+
+
+def conflict_sig(head: str, conflicts: list) -> str:
+    """Signature of one conflict event — the session head plus the
+    sorted conflicted paths. The stop-and-report policy re-raises a
+    merge-conflict request ONLY when this changes: the 2026-11-17
+    re-ask loop was open_conflict_req() treating 'answered' as 'no
+    request', so every pass re-asked the same decision."""
+    paths = ",".join(sorted(str(p) for p in conflicts))
+    return f"{str(head)[:12]}|{paths}"
+
+
+def latest_conflict_req(card: dict) -> dict | None:
+    """Newest merge-conflict* request (highest -N suffix), else None."""
+    best, bestn = None, -1
+    for r in card.get("requests") or []:
+        if not isinstance(r, dict):
+            continue
+        rid = str(r.get("id") or "")
+        if not rid.startswith("merge-conflict"):
+            continue
+        tail = rid.rsplit("-", 1)[-1]
+        n = int(tail) if tail.isdigit() else 1
+        if n > bestn:
+            best, bestn = r, n
+    return best
+
+
+def _conflict_choice(text: str) -> str:
+    """resolve|drop|hold for one option label or a free-text answer."""
+    t = str(text or "").replace("★", "").replace("✓", "").lower()
+    if not t.strip():
+        return ""
+    if "devin" in t and ("resolve" in t or "land" in t):
+        return "resolve"
+    if t.lstrip().startswith("drop") or "re-dispatch" in t:
+        return "drop"
+    if "hold" in t or "park" in t:
+        return "hold"
+    return ""
+
+
+def conflict_answer_action(req: dict) -> str:
+    """Map the answered merge-conflict option to resolve|drop|hold.
+    '' when the answer maps to nothing — it stays flagged for human
+    triage instead of silently doing board work."""
+    opts = req.get("options") or []
+    norm = str(req.get("answer") or "").replace("★", "").replace(
+        "✓", "").strip()
+    for o in opts:  # exact/prefix match against the request's options
+        lbl = str(o if not isinstance(o, dict)
+                  else o.get("label") or o.get("id") or "")
+        lbl = lbl.replace("★", "").replace("✓", "").strip()
+        if lbl and (norm.lower() == lbl.lower()
+                    or lbl.lower().startswith(norm.lower())):
+            return _conflict_choice(lbl)
+    return _conflict_choice(norm)
+
+
+def exec_conflict_answer(card: dict, req: dict, repo: Path,
+                         head: str, probe: dict, base: str,
+                         sig: str, dry: bool) -> bool:
+    """Execute the answered merge-conflict decision ONCE (Tony's
+    fix-approach on merge-conflict-requests-re-raise-every-s-f981d2 —
+    answers used to sit unexecuted while the same conflict re-asked
+    every pass). The request is stamped executed + sig so later passes
+    neither re-execute nor re-raise the same conflict; a sig change is
+    a new conflict event and earns a fresh request.
+
+      resolve -> queue a devin merge-resolution dispatch
+                 (action.merge_resolve drives MERGE_RESOLVE_RAILS; the
+                 stranded head is pushed to refs/heads/<branch> first so
+                 the resolver can fetch it from origin)
+      drop    -> mark the attempt failed-ish and queue a fresh
+                 re-dispatch from current base
+      hold    -> action.status=idle in backlog; the bound sig keeps the
+                 same conflict from re-asking
+      ''      -> unmapped answer: comms flag for human triage, still
+                 bound+stamped so it doesn't re-ask every pass"""
+    cid = card.get("id") or "?"
+    rid = str(req.get("id") or "")
+    act = conflict_answer_action(req)
+    ans = str(req.get("answer") or "")[:80]
+    branch = str(probe.get("branch") or "")
+    if not branch and probe.get("_tid"):
+        branch = f"dispatch/{probe['_tid']}"
+    if dry:
+        print(f"  [dry] {cid}: conflict answer {rid!r} "
+              f"'{ans[:40]}' -> {act or 'unmapped'}")
+        return True
+    on_origin = False
+    if act == "resolve" and branch and ".." not in branch:
+        # land the session branch ref so the resolver session can fetch
+        # the stranded head from origin — the merge path's own
+        # 'land the session branch ref' idiom; dispatch-merged-branch-
+        # prune GCs it later.
+        on_origin = sh(["git", "-C", str(repo), "push", "-q", "origin",
+                        f"{head}:refs/heads/{branch}"],
+                       timeout=60).returncode == 0
+    out = {}
+
+    def apply(c):
+        if terminal(c):
+            return False
+        target = None
+        for r in c.get("requests") or []:
+            if isinstance(r, dict) and str(r.get("id") or "") == rid:
+                target = r
+                break
+        if target is None or target.get("executed"):
+            return False  # answered+executed between scan and lock
+        target["sig"] = sig
+        target["executed"] = f"{now()} {act or 'none'}"
+        a = _ensure_act(c)
+        if act:
+            c.pop("awaiting_action", None)
+        else:
+            c["awaiting_action"] = True  # unmapped — human triage
+        if act in ("resolve", "drop"):
+            a["status"] = "queued"
+            a.pop("runner", None)
+            a.pop("task_id", None)
+            a.pop("verified", None)
+            if c.get("column") in ("doing", "review"):
+                c["column"] = "backlog"
+            if act == "resolve":
+                a["merge_resolve"] = {
+                    "branch": branch, "head": head, "base": base,
+                    "on_origin": on_origin,
+                    "runner": str(probe.get("_runner") or ""),
+                    "worktree": str(probe.get("worktree") or ""),
+                    "at": now()}
+                out["note"] = (
+                    f"merge-sweep: conflict answer executed ({rid}): "
+                    f"queued a devin merge-resolution — {branch} "
+                    f"head {head[:8]} vs {base} "
+                    f"(branch {'on' if on_origin else 'NOT on'} origin)")
+            else:
+                a.pop("merge_resolve", None)
+                a["last_failure"] = (
+                    f"merge conflict on {branch or 'session branch'} "
+                    f"head {head[:8]} — dropped; fresh re-dispatch")
+                out["note"] = (
+                    f"merge-sweep: conflict answer executed ({rid}): "
+                    "dropped the conflicted dispatch — re-queued the "
+                    "card for a fresh run from current base")
+        elif act == "hold":
+            a["status"] = "idle"
+            a.pop("merge_resolve", None)
+            if c.get("column") != "backlog":
+                c["column"] = "backlog"
+            out["note"] = (
+                f"merge-sweep: conflict answer executed ({rid}): "
+                "card held — re-raise suppressed while this conflict "
+                "is unchanged")
+        else:
+            out["note"] = (
+                f"merge-sweep: conflict answer on {rid} "
+                f"('{ans[:60]}') maps to no resolve/drop/hold action — "
+                "needs human triage")
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba", "text": out["note"][:500]})
+    changed = locked_edit(cid, apply)
+    if changed and out.get("note"):
+        print(f"  {cid}: {out['note'][:120]}")
+    return changed
 
 
 # ------------------------------------------------------- verified gate
@@ -1266,6 +1449,7 @@ def drain_verified(card: dict, dry: bool) -> bool:
         a = _ensure_act(c)
         changed = a.get("status") != "done"
         a["status"] = "done"
+        a.pop("merge_resolve", None)
         _ensure_claim(c).pop("session", None)
         hold = close_hold_reason(c)
         out["hold"] = hold
@@ -1491,6 +1675,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
                 a = _ensure_act(c)
                 a["verified"] = True
                 a["status"] = "done"
+                a.pop("merge_resolve", None)  # resolution landed
                 _ensure_claim(c).pop("session", None)
                 hold = close_hold_reason(c)
                 if hold:
@@ -1566,20 +1751,35 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return True
     if res.get("conflicts"):
         files = ", ".join(str(f) for f in res["conflicts"][:10])
-        # comms rides the request — without it, every 15min pass would
-        # repost the same conflict line while it waits on a human
-        if not open_conflict_req(card):
-            card_note(cid, f"merge-sweep: {probe.get('branch')} "
-                           f"conflicts with {base_ref}: {files} — "
-                           "merge aborted, card stays for human "
-                           "resolution", dry)
-            card_request(cid, conflict_rid(card),
-                         f"merge-sweep can't land dispatch/{tid}: "
-                         f"{m['unmerged']} commit(s) conflict with "
-                         f"{base_ref} in {repo_name or 'repo'} — "
-                         f"conflicted paths: {files}. Merge "
-                         f"{runner or 'local'}:{probe.get('worktree')} "
-                         "by hand, or retry/abandon the card.", dry)
+        sig = conflict_sig(head, res["conflicts"])
+        # Stop-and-report, but signature-deduped (the 2026-11-17 re-ask
+        # loop): an OPEN merge-conflict request covers the conflict;
+        # an answered+unexecuted one runs its decision once; a decided
+        # request re-raises ONLY when the conflict signature (head +
+        # conflicted paths) actually changed.
+        if open_conflict_req(card):
+            return False  # open request covers it — waiting on a human
+        req = latest_conflict_req(card)
+        if req is not None and not req.get("executed") \
+                and str(req.get("status") or "") == "answered":
+            probe["_runner"] = runner
+            probe["_tid"] = tid
+            return exec_conflict_answer(card, req, repo, head, probe,
+                                        base, sig, dry)
+        if req is not None and str(req.get("sig") or "") == sig:
+            return False  # same conflict already decided — no re-ask
+        card_note(cid, f"merge-sweep: {probe.get('branch')} "
+                       f"conflicts with {base_ref}: {files} — "
+                       "merge aborted, card stays for human "
+                       "resolution", dry)
+        card_request(cid, conflict_rid(card),
+                     f"merge-sweep can't land dispatch/{tid}: "
+                     f"{m['unmerged']} commit(s) conflict with "
+                     f"{base_ref} in {repo_name or 'repo'} — "
+                     f"conflicted paths: {files}. Merge "
+                     f"{runner or 'local'}:{probe.get('worktree')} "
+                     "by hand, or retry/abandon the card.", dry,
+                     sig=sig)
         return True
     flag_once(card, "merge_err",
               f"merge-sweep: landing devin-task-{tid} failed: "

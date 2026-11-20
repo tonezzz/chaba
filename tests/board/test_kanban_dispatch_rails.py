@@ -65,6 +65,35 @@ class BuildTaskRailsTest(unittest.TestCase):
                 "action": {"type": "dispatch"}}
         self.assertNotIn("report-linked", self.mod.build_task(card))
 
+    def test_merge_resolve_rails_when_stamped(self):
+        # merge-sweep's conflict lane queues resolution dispatches with
+        # action.merge_resolve — the prompt must carry the stranded
+        # branch coordinates + resolve-only instructions (card
+        # merge-conflict-requests-re-raise-every-s-f981d2).
+        card = {"id": "c4", "title": "t",
+                "action": {"type": "dispatch",
+                           "merge_resolve": {
+                               "branch": "dispatch/20261117-1-x",
+                               "head": "abc123def456789",
+                               "base": "master",
+                               "on_origin": True,
+                               "runner": "mn01",
+                               "worktree": "/home/u/wt"}}}
+        task = self.mod.build_task(card)
+        self.assertIn("merge-resolution dispatch", task)
+        self.assertIn("git fetch origin dispatch/20261117-1-x", task)
+        self.assertIn("abc123def456", task)
+        self.assertIn("mn01:/home/u/wt", task)
+        self.assertIn("do NOT redo", task)
+
+    def test_no_merge_resolve_rails_without_stamp(self):
+        card = {"id": "c5", "title": "t",
+                "action": {"type": "dispatch"}}
+        self.assertNotIn("merge-resolution", self.mod.build_task(card))
+        # a merge_resolve without a branch is inert too
+        card["action"]["merge_resolve"] = {"head": "x"}
+        self.assertNotIn("merge-resolution", self.mod.build_task(card))
+
 
 if __name__ == "__main__":
     unittest.main()

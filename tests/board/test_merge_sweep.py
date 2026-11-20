@@ -689,6 +689,156 @@ class Case(unittest.TestCase):
             sum(1 for r in c2.get("requests") or []
                 if str(r.get("id", "")).startswith("merge-conflict")), 1)
 
+    # ------------------------------------------- conflict answer lane
+    # The 2026-11-17 re-ask loop fix: requests carry a conflict sig;
+    # answered+unexecuted requests execute once (resolve/drop/hold);
+    # a decided conflict re-raises only when the signature changes.
+
+    def _raise_conflict(self, tag: str = "") -> None:
+        """Session branch + upstream both touch file<tag>.txt."""
+        fname = f"file{tag}.txt"
+        commit(self.wt, fname, f"session{tag}\n", f"session change{tag}")
+        other = self.tmp / f"other{tag or '-0'}"
+        subprocess.run(["git", "clone", "-q", str(self.origin),
+                        str(other)], capture_output=True)
+        commit(other, fname, f"upstream{tag}\n", f"upstream change{tag}")
+        r = git(other, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+
+    def _save_card(self, card: dict) -> None:
+        (self.cards / f"{card['id']}.yml").write_text(
+            yaml.safe_dump(card, allow_unicode=True, sort_keys=False))
+
+    def _answer_last_req(self, card: dict, idx: int) -> dict:
+        """Mark the newest merge-conflict request answered with
+        options[idx] and persist — simulates a board /respond."""
+        req = (card.get("requests") or [])[-1]
+        req["status"] = "answered"
+        req["answer"] = (req.get("options") or [])[idx]
+        self._save_card(card)
+        return card
+
+    def test_conflict_request_carries_sig(self):
+        self._raise_conflict()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        req = (self.read_card().get("requests") or [])[-1]
+        head = dr._rev_parse(self.runner_repo, f"dispatch/{TID}") or ""
+        self.assertEqual(req.get("sig"),
+                         f"{head[:12]}|file.txt")
+
+    def test_conflict_answer_resolve_queues_resolution(self):
+        # option 0: 'let devin resolve the conflict and land it' ->
+        # the card requeues as a merge-resolution dispatch carrying the
+        # stranded branch's coordinates; the head is pushed to origin
+        # so the resolver session can fetch it.
+        self._raise_conflict()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        self._answer_last_req(self.read_card(), 0)
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c = self.read_card()
+        a = c["action"]
+        head = dr._rev_parse(self.runner_repo, f"dispatch/{TID}") or ""
+        self.assertEqual(a.get("status"), "queued")
+        self.assertEqual(c.get("column"), "backlog")
+        mr = a.get("merge_resolve") or {}
+        self.assertEqual(mr.get("branch"), f"dispatch/{TID}")
+        self.assertEqual(mr.get("head"), head)
+        self.assertEqual(mr.get("base"), "master")
+        self.assertTrue(mr.get("on_origin"))
+        req = (c.get("requests") or [])[-1]
+        self.assertTrue(req.get("executed"))
+        self.assertEqual(req.get("sig"), f"{head[:12]}|file.txt")
+        rr = subprocess.run(
+            ["git", "--git-dir", str(self.origin), "rev-parse",
+             f"refs/heads/dispatch/{TID}"],
+            capture_output=True, text=True)
+        self.assertEqual(rr.stdout.strip(), head)
+        # queued -> out of scope: no re-ask, no new request
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+        self.assertEqual(
+            len(self.read_card().get("requests") or []), 1)
+
+    def test_conflict_answer_drop_requeues_fresh(self):
+        self._raise_conflict()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        self._answer_last_req(self.read_card(), 1)
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c = self.read_card()
+        a = c["action"]
+        self.assertEqual(a.get("status"), "queued")
+        self.assertEqual(c.get("column"), "backlog")
+        self.assertNotIn("merge_resolve", a)
+        self.assertIn("dropped", str(a.get("last_failure") or ""))
+        self.assertTrue(
+            (c.get("requests") or [])[-1].get("executed"))
+
+    def test_conflict_answer_hold_parks(self):
+        self._raise_conflict()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        self._answer_last_req(self.read_card(), 2)
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["action"].get("status"), "idle")
+        self.assertEqual(c.get("column"), "backlog")
+        self.assertTrue(
+            (c.get("requests") or [])[-1].get("executed"))
+
+    def test_conflict_unmapped_flags_once_no_reraise(self):
+        # a free-text answer that maps to no option: flag for triage
+        # once, bind+stamp so it doesn't re-ask every pass — and a NEW
+        # conflict event still earns a fresh request.
+        self._raise_conflict()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        c = self.read_card()
+        req = (c.get("requests") or [])[-1]
+        req["status"] = "answered"
+        req["answer"] = "I'll sort it out myself"
+        self._save_card(c)
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c = self.read_card()
+        self.assertTrue(
+            (c.get("requests") or [])[-1].get("executed"))
+        self.assertTrue(any("no resolve/drop/hold" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        # same conflict signature — suppressed, nothing written
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+        n_comms = len(self.read_card().get("comms") or [])
+        # a different conflict (new head + new path) re-asks
+        self._raise_conflict("-2")
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c = self.read_card()
+        ids = [str(r.get("id")) for r in c.get("requests") or []]
+        self.assertIn("merge-conflict-2", ids)
+        self.assertEqual(len(c.get("comms") or []), n_comms + 2)
+
+    def test_conflict_legacy_answered_req_executes(self):
+        # pre-sig requests (the production cards with 13 re-asks): an
+        # answered request with no sig/executed binds to the current
+        # conflict and executes once.
+        self._raise_conflict()
+        card = self.write_card(requests=[{
+            "id": "merge-conflict", "ask": "old ask",
+            "status": "answered",
+            "answer": "let devin resolve the conflict and land it ★",
+            "options": [
+                "let devin resolve the conflict and land it ★",
+                "drop this dispatch — re-dispatch fresh from current "
+                "main",
+                "hold the card"]}])
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        a = c["action"]
+        self.assertEqual(a.get("status"), "queued")
+        self.assertTrue(a.get("merge_resolve"))
+        req = (c.get("requests") or [])[-1]
+        self.assertTrue(req.get("executed"))
+        self.assertTrue(req.get("sig"))
+
     def _commit_symlink(self, name: str, target: str,
                         msg: str) -> None:
         os.symlink(target, self.wt / name)

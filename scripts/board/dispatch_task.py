@@ -77,6 +77,34 @@ cleanly. Prior failure: {failure}
 - Fix the reported failure FIRST; do not repeat the failed approach.
 """.strip()
 
+# Appended after TASK_RAILS when merge-sweep queued the card as a
+# merge-resolution dispatch (action.merge_resolve — the 'let devin
+# resolve the conflict and land it' answer on a merge-conflict
+# request; card merge-conflict-requests-re-raise-every-s-f981d2). The
+# session's only job is resolving the stranded branch's conflicts —
+# its worktree HEAD becomes the resolved merge merge-sweep lands.
+MERGE_RESOLVE_RAILS = """
+---
+This is a merge-resolution dispatch (action.merge_resolve): a previous
+session's branch {branch} (head {head}) conflicts with origin/{base}
+and the human chose 'let devin resolve the conflict and land it'.
+Your job is ONLY the conflict resolution — do NOT redo the card's work.
+- Fetch the stranded branch and merge it into your worktree:
+    git fetch origin {branch}
+    git merge --no-edit FETCH_HEAD      # the conflicts surface here
+- If origin does not have {branch}, fetch the head from the runner's
+  worktree instead (tailnet ssh, not the github-only repo key):
+    git -c core.sshCommand=ssh fetch {runner}:{worktree} HEAD
+    git merge --no-edit FETCH_HEAD
+- Resolve every conflicted path — the stranded branch's intent wins on
+  its deliverable files; keep incoming {base} changes elsewhere.
+  Sanity-check the resolved tree (run the tests the change touches
+  when cheap).
+- Commit the merge. Your session HEAD is the deliverable — merge-sweep
+  lands it into {base} on its next pass. Write dispatch-outcome as
+  usual noting what you resolved.
+""".strip()
+
 # Design docs/design/report-session-loop.md §2b — appended after
 # TASK_RAILS when the card carries `report: <cms-slug>`; the session
 # keeps ada-cms-pages/<slug> updated via scripts/ada/cms-report-note.py.
@@ -131,6 +159,14 @@ def build_task_text(card: dict, host: str, api: str,
             id=card["id"], api=api, n=attempts + 1,
             failure=str(a.get("last_failure")
                         or "(no detail — inspect the card comms)")[:400])
+    mr = a.get("merge_resolve")
+    if isinstance(mr, dict) and mr.get("branch"):
+        task += "\n\n" + MERGE_RESOLVE_RAILS.format(
+            branch=mr.get("branch"),
+            head=str(mr.get("head") or "")[:12],
+            base=mr.get("base") or "master",
+            runner=mr.get("runner") or "<runner-host>",
+            worktree=mr.get("worktree") or "<worktree>")
     slug = str(card.get("report") or "").strip()
     if slug:
         task += "\n\n" + REPORT_RAILS.format(slug=slug)

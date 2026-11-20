@@ -1666,6 +1666,20 @@ def _opt_value(o) -> str:
         else str(o.get("id") or o.get("label") or "")
 
 
+def _note_ignored_reanswer(card: dict, rid: str, old: str,
+                           new: str) -> None:
+    """Comms audit for a differing answer to an already-answered
+    request/ask — the API returns 'already answered' (idempotent 200),
+    this line is the visible record that a change was attempted and
+    ignored. Deduped against recent comms so a retry loop can't spam."""
+    note = (f"ignored re-answer on {rid} — already answered "
+            f"'{old[:60]}' (got '{new[:60]}'; reopen to change)")
+    recent = {str(m.get("text")) for m in (card.get("comms") or [])[-8:]
+              if isinstance(m, dict)}
+    if note[:500] not in recent:
+        comms_add(card, "chaba", note)
+
+
 def do_ask_respond(card: dict, body: dict, frm: str) -> str:
     """Answer the card-level `ask:` — one standing decision per card.
     {option: N} picks ask.options[N]; free text is kept verbatim unless it
@@ -1704,12 +1718,15 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
             answer = _opt_label(hit[0])
         # ambiguous or unmatched free text stands as its own answer
     if ask.get("status") == "answered" and not body.get("reopen"):
-        # idempotent retry: the same answer again is a no-op success —
-        # voice/UI double-submits and relay retries must not error
-        # (KNB-0180). A different answer still requires reopen.
-        if str(ask.get("answer") or "") == answer[:500]:
-            return "already answered"
-        raise ValueError("ask already answered")
+        # idempotent: re-answering a decided ask is a no-op success —
+        # voice/UI double-submits and retries must not 400 (KNB-0180,
+        # the 2026-11-17 /respond noise). A DIFFERENT answer doesn't
+        # silently win either: it's noted in comms and the recorded
+        # answer stands — changing it requires reopen.
+        if str(ask.get("answer") or "") != answer[:500]:
+            _note_ignored_reanswer(
+                card, "ask", str(ask.get("answer") or ""), answer)
+        return "already answered"
     verb = "re-answered" if ask.get("status") == "answered" else "answered"
     card["ask"] = ask  # writes back the dict when ask was a bare string
     ask["status"] = "answered"
@@ -1774,11 +1791,16 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
             verb = "answered"
             if r.get("status") == "answered":
                 if not body.get("reopen"):
-                    # idempotent retry: same answer again -> no-op
-                    # success; a different answer still needs reopen
-                    if str(r.get("answer") or "") == answer[:500]:
-                        return "already answered"
-                    raise ValueError("already answered")
+                    # idempotent: re-answering a decided request is a
+                    # no-op success — re-raised merge-conflict rids and
+                    # UI retries must not 400 (2026-11-17 noise). A
+                    # different answer is noted in comms; the recorded
+                    # answer stands until reopen.
+                    if str(r.get("answer") or "") != answer[:500]:
+                        _note_ignored_reanswer(
+                            card, rid, str(r.get("answer") or ""),
+                            answer)
+                    return "already answered"
                 verb = "re-answered"
             r["status"] = "answered"
             r["answer"] = answer[:500]
@@ -2093,6 +2115,10 @@ def do_request(card: dict, body: dict) -> str:
         if sug not in valid:
             raise ValueError("suggested must match one of the options")
         req["suggested"] = sug
+    if body.get("sig"):
+        # opaque emitter token (merge-sweep's conflict signature) — the
+        # owner reads it back to dedupe re-raises of the same event
+        req["sig"] = str(body["sig"])[:200]
     reqs.append(req)
     comms_add(card, frm, f"raised request {rid}: {ask[:120]}")
     return f"request {rid} raised"
@@ -5284,14 +5310,23 @@ def _selftest() -> None:
     assert any(m["from"] == "ada" and "answered r1" in m["text"]
                for m in card["comms"])
     assert card.get("awaiting_action") is True  # no armed action -> nudge
-    # idempotent retry: same answer again is a no-op success, a
-    # different one still requires reopen (KNB-0180)
+    # idempotent retry: same answer again is a no-op success; a
+    # different answer is also a 200 no-op — noted in comms, the
+    # recorded answer stands, changing it requires reopen (KNB-0180 +
+    # the 2026-11-17 /respond 400 noise)
     n_comms = len(card["comms"])
     assert do_respond(card, {"request_id": "r1", "answer": "yes"},
                       "tony") == "already answered"
     assert len(card["comms"]) == n_comms
-    rejects(lambda: do_respond(card, {"request_id": "r1", "answer": "b"}, "tony"),
-            "already answered")
+    assert do_respond(card, {"request_id": "r1", "answer": "b"},
+                      "tony") == "already answered"
+    assert card["requests"][0]["answer"] == "yes"
+    assert any("ignored re-answer on r1" in m["text"]
+               for m in card["comms"])
+    # the identical ignored re-answer dedupes — no comms spam on retry
+    n_comms = len(card["comms"])
+    do_respond(card, {"request_id": "r1", "answer": "b"}, "tony")
+    assert len(card["comms"]) == n_comms
     do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
     assert card["requests"][0]["answer"] == "b"
     assert any("re-answered r1" in m["text"] for m in card["comms"])
@@ -5313,10 +5348,13 @@ def _selftest() -> None:
     assert any(m["from"] == "tony" and "answered ask: Yes — go" in m["text"]
                for m in acard["comms"])
     assert acard.get("awaiting_action") is True  # same triage nudge
-    # idempotent retry on the ask path too — same option, no error
+    # idempotent retry on the ask path too — same option or a different
+    # one is a no-op success; the differing pick is comms-noted
     assert do_respond(acard, {"option": 0}, "tony") == "already answered"
-    rejects(lambda: do_respond(acard, {"option": 1}, "tony"),
-            "ask already answered")
+    assert do_respond(acard, {"option": 1}, "tony") == "already answered"
+    assert acard["ask"]["answer"] == "Yes — go"
+    assert any("ignored re-answer on ask" in m["text"]
+               for m in acard["comms"])
     do_respond(acard, {"option": 1, "reopen": True}, "tony")
     assert acard["ask"]["answer"] == "No — hold"
     assert any("re-answered ask" in m["text"] for m in acard["comms"])
