@@ -1,7 +1,7 @@
 id: mcp-inventory-scope-status-standard
 title: Standardize MCP scope, status vocabulary and finding IDs
 column: done
-updated: 2026-11-20 18:54
+updated: 2026-11-20 19:07
 brief: 'Make the fleet MCP report''s declarations and findings computable and triageable: explicit per-server scope,
   no-config on the report status contract, and stable finding IDs with human-owned triage state.'
 priority: high
@@ -80,3 +80,14 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:07
+  from: devin
+  text: 'TRIAGE APPLIED 2026-11-20 (follow-up to OPS-0025). Tony chose one action per finding; written to ssot.mcp.yml
+    fleet_observation.finding_triage by: tony.
+
+
+    1 mcp-tony-omen-missing-active (mcp-kornia) -> CARDED, OPS-0035.
+
+    2 mcp-tony-omen-undeclared-configured -> FIXED AT SOURCE, not suppressed: declared colab-mcp (scope [tony_omen],
+    official Google kernel-level MCP complements mcp-colab) + icloud (scope [tony_omen], both omen surfaces), and
+    widened google-home-lan scope to [mn01, tony_omen] since o'
