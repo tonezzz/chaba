@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
-column: doing
-updated: 2026-11-20 18:54
+column: backlog
+updated: 2026-11-20 19:07
 priority: high
 tags:
 - board
@@ -39,18 +39,19 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: codemod
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:41
     stale_running: 2026-11-20 18:42
     session_gone: 2026-11-20 18:43
-  last_failure: 'exit=1  devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''.
-    | devin-task-20261117-232017-symptom-tony-2026-11-17-answer.service: Consumed 1min 9.340s CPU time, 280.9M memory
-    peak, 0B memory swap peak.'
+  last_failure: 'exit=1 61120-184035-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''. |
+    devin-task-20261120-184035-symptom-tony-2026-11-17-answer.service: Consumed 7min 47.677s CPU time over 26min
+    50.614s wall clock time, 480.6M memory peak.'
   attempts: 1
-  runner: tony-macbook
+  result: 'exit=1 61120-184035-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''. | devin-task-20261120-184035-symptom-tony-2026-11-17-answer.service:
+    Consumed 7min 47.677s CPU time over 26min 50.614s wall clock time, 480.6M memory peak.'
 ref: KNB-0178
 comms:
 - at: 2026-11-17 22:19
@@ -199,6 +200,17 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:07
+  from: tony-macbook
+  text: 'finished (failed): exit=1 61120-184035-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''.
+    | devin-task-20261120-184035 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 19:07
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-184035-symptom-tony-2026-11-17-answer (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-20 19:07
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-20 19:37'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
