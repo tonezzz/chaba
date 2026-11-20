@@ -1,0 +1,83 @@
+id: ansible-vs-legacy-fleet-benchmark
+title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
+column: backlog
+updated: 2026-11-21 06:06
+brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
+  disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
+priority: medium
+tags:
+- ansible
+- benchmark
+- infrastructure
+spec: 'GOAL: Benchmark Ansible against the existing fleet tooling on 2-3 real jobs, and report which tool wins per
+  use-case. Read-only audits only — do NOT apply changes to any host.
+
+
+  CONTEXT: ansible/ scaffold is on master (controller: tony-dell, ansible-core 2.21.6 via uv). Inventory covers
+  tony-omen, tony-dell, idc02, idc03, con01 (baseline) + tony-macbook, mn01 (portable) + kk-mac (macos, often offline).
+  First audit playbook: ansible/playbooks/audit-runner-tools.yml (job 2026-11-18-runner-tooling-selfheal-sync).
+  Existing ''old method'' tools: scripts/audit-hosts.py, scripts/board/runner-fleet-health.py, scripts/devin/sync-runner-tools.sh,
+  kanban timers, manual ssh loops.
+
+
+  CANDIDATES (pick at least 2, prefer service audit + disk guard):
+
+  1. Host service audit — ssot.audit.hosts.yml expected_services/expected_absent vs ansible systemd asserts. Old
+  method: python3 scripts/audit-hosts.py --host <h>.
+
+  2. Disk headroom guard — job docs/ssot/jobs/mddb/2026-11-19-backup-disk-headroom-guard.yml; df/statvfs thresholds
+  fleet-wide vs the job''s guard script.
+
+  3. Runner-tool convergence ENFORCEMENT — extend audit-runner-tools.yml with a sync mode (copy module) vs sync-runner-tools.sh.
+  DRY-RUN ONLY (--check).
+
+  4. ada-fleet-start-stagger verification — checksum ada-start-stagger.sh + stagger.conf drop-ins on idc03 vs the
+  declared stacks/idc03/ada-start-stagger/ copies.
+
+
+  PROTOCOL per candidate:
+
+  - Implement the check in Ansible (new playbook under ansible/playbooks/ or ad-hoc) AND run the old method on the
+  same hosts.
+
+  - Record: wall time, hosts reached/unreachable, whether findings match (parity), safety (--check vs script dry-run),
+  rerun cost, audit trail quality.
+
+  - Verdict per candidate: ansible / legacy / tie — with one-line reasoning.
+
+
+  DELIVERABLE:
+
+  - New/updated playbooks under ansible/playbooks/ committed on your session branch.
+
+  - A comparison report at docs/reports/ansible-vs-legacy-benchmark-<date>.md (or docs/kb/ if reports/ is wrong
+  — check conventions) with the per-candidate table + verdicts.
+
+  - Final card comms: summary table + where the report lives.
+
+
+  CONSTRAINTS:
+
+  - READ-ONLY: ansible-playbook --check or audit-only playbooks; no real applies, no service restarts, no file writes
+  on remote hosts.
+
+  - Run ansible from tony-dell if your worktree host lacks ansible/ssh mesh; document which controller you used.
+
+  - kk-mac is often offline — exclude it from timing claims or note it separately.
+
+  - Do not edit ssot.*.yml or kanban card files directly; use board API comms.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+comms:
+- at: 2026-11-21 06:06
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-21 06:06
+  from: devin
+  text: card captured via board-api
+ref: BEN-0005
