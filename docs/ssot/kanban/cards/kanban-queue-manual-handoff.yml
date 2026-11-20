@@ -1,0 +1,58 @@
+id: kanban-queue-manual-handoff
+title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
+column: backlog
+updated: 2026-11-20 10:40
+priority: high
+tags:
+- kanban
+- queue
+- dispatch
+- manual
+- claim
+spec: 'Make the dispatch queue truthful: only cards a runner can claim should have action.status=queued and appear
+  claimable in GET /queue. Evidence 2026-11-20 10:30: ADA-0783 is action.type=manual + status=queued, pos 1, eligible=[],
+  every runner verdict "unknown type ''manual''", claimed=0. board-api do_action/do_create still set status=queued
+  for non-dispatch types and only add a warning comms; /queue includes every status==queued card regardless of type;
+  runner-agent rejects non-dispatch types.
+
+
+  Scope: (1) write-door invariant — /action do=queue and /card queue:true must not leave action.type=manual, executor=manual,
+  or type outside dispatch_repos.SERVED_TYPES as status=queued; set awaiting_action/human-waiting semantics plus
+  a clear comms reason instead. Never auto-flip type. (2) Reconcile existing queued-but-unclaimable cards (start
+  with ADA-0783) into an explicit human-waiting state or backlog-with-request, preserving Tony''s decision. (3)
+  /queue and Board should separate claimable dispatch work from human-waiting/blocked, showing owner + next action
+  + reason. (4) Tests: board-api selftest/pytest for manual queue rejection/warning, /queue projection, and no regression
+  for dispatch cards.
+
+
+  Non-goals: no auto-dispatch of manual cards; no second mutation backend; board-api remains sole writer; no deploy
+  without tests; do not change ADA-0783''s promotion decision.
+
+
+  Done when: a manual card cannot remain status=queued via board-api; GET /queue labels human-waiting separately;
+  ADA-0783 has an explicit human owner/next action; dispatch cards still claim; tests pass.'
+help: Verify with board-api selftest + tests/board; reproduce POST /action do=queue on a manual test card and GET
+  /queue.
+ref: KNB-0013
+comms:
+- at: 2026-11-20 10:40
+  from: devin
+  text: 'Captured from chat: ADA-0783 is queued as action.type=manual and no runner can claim it; propose queue-truth
+    fix.'
+- at: 2026-11-20 10:40
+  from: devin
+  text: 'raised request queue-truth-sequencing: How should we sequence the queue-truth fix?'
+requests:
+- id: queue-truth-sequencing
+  ask: How should we sequence the queue-truth fix?
+  status: open
+  at: 2026-11-20 10:40
+  from: devin
+  options:
+  - id: write-door-first
+    label: Write-door first — stop queueing manual cards, then reconcile existing ones
+  - id: queue-view-first
+    label: Queue view first — show human-waiting separately, then fix writes
+  - id: audit-only
+    label: Audit only — report unclaimable queued cards and runner drift before changing behavior
+  suggested: write-door-first
