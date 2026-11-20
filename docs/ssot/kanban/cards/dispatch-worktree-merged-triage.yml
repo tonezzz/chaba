@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
 column: doing
-updated: 2026-11-20 19:52
+updated: 2026-11-20 19:57
 priority: medium
 tags:
 - devnest
@@ -20,6 +20,7 @@ action:
   repo: chaba
   sweep:
     failed_noted: 2026-11-17 22:25
+    stale_running: 2026-11-20 19:57
   last_failure: 'exit=1 evin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
     | devin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Consumed 9.944s CPU time over 4.116s wall
     clock time, 249.7M memory peak.'
@@ -298,5 +299,9 @@ comms:
   text: 'RUN 2026-11-20 idc02: prior failures were provider rate-limits, not logic. Local fleet is 65 dispatch-wt-*
     (task text said 16 — stale). Classifying all via git-cherry vs origin/master; drops only for merged-equivalent/empty-abandoned,
     partial work recorded before drop.'
+- at: 2026-11-20 19:57
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-221333-triage no longer active on idc02 but card still says running —
+    sweeping its branch'
 claim:
   since: 2026-11-20 19:49
