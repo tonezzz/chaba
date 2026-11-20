@@ -1,7 +1,7 @@
 id: ada-ha-dashboard-live-view-drift
 title: Reconcile Ada HA chaba-admin live-view drift
 column: backlog
-updated: 2026-11-20 13:23
+updated: 2026-11-20 13:34
 brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
   verify whether this drift is intentional before restoring anything.
 priority: medium
@@ -32,6 +32,9 @@ comms:
 - at: 2026-11-20 13:23
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-20 13:34
+  from: chaba
+  text: 'answer-sweep: executed ''Keep current live views (recommended). Do not restore Ada Co'' -> put on hold'
 requests:
 - id: the-live-ada-ha-chaba-admin-dashboard-co-8567e7
   ask: The live Ada HA chaba-admin dashboard contains Hosts and Services but no Ada Control; the previous repo snapshot
@@ -46,4 +49,6 @@ requests:
   - Restore Ada Control after verification
   answer: Keep current live views (recommended). Do not restore Ada Control now; reconcile the repo snapshot/dashboard
     state to the current live view set unless explicitly requested later after card resources are verified.
-awaiting_action: true
+  executed: 2026-11-20 hold
+action:
+  status: idle

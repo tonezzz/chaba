@@ -4,7 +4,7 @@
   "type": "tab",
   "label": "DevNest observe map",
   "disabled": false,
-  "info": "DevNest visual map \u2014 Phase 1 READ-ONLY (card node-red-devnest-visual-map).\n\nPolls board-api /health + /cards, ada-nest queue heartbeat (via the\n~/var/chaba/health mirror file \u2014 producer: scripts/ops/nest-queue-health.py),\nJEV lane /health endpoints, Colab runtime sessions (same mirror), Omen\n(ollama + JEV lanes + HA temps) and LiteLLM liveness. Composes one markdown\nreport -> MDDB ada-cms-pages key 'devnest-visual-map' on the CMS fork :11027\n(the old demo writes :11023 \u2014 wrong bank since the 10-13 mddb split).\nPage: https://idc03.taila0626a.ts.net/cms/#/devnest-visual-map\n\nPHASE 2 contract (not wired): only allowlisted board-api writes \u2014\nPOST /action {do: queue|hold} and POST /request \u2014 each behind a manual\nconfirmation inject. Never shell, restart, delete, partition or deploy\nfrom Node-RED."
+  "info": "DevNest visual map — Phase 1 READ-ONLY (card node-red-devnest-visual-map).\n\nPolls board-api /health + /cards, ada-nest queue heartbeat (via the\n~/var/chaba/health mirror file — producer: scripts/ops/nest-queue-health.py),\nJEV lane /health endpoints, Colab runtime sessions (same mirror), Omen\n(ollama + JEV lanes + HA temps) and LiteLLM liveness. Composes one markdown\nreport -> MDDB ada-cms-pages key 'devnest-visual-map' on the CMS fork :11027\n(the old demo writes :11023 — wrong bank since the 10-13 mddb split).\nPage: https://idc03.taila0626a.ts.net/cms/#/devnest-visual-map\n\nPHASE 2 contract (not wired): only allowlisted board-api writes —\nPOST /action {do: queue|hold} and POST /request — each behind a manual\nconfirmation inject. Never shell, restart, delete, partition or deploy\nfrom Node-RED."
  },
  {
   "id": "dn-inj",
@@ -104,7 +104,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: board-stats",
-  "func": "const d=msg.payload||{};const cards=d.cards||[];const col={};\nfor(const c of cards){col[c.column||'?']=(col[c.column||'?']||0)+1;}\nconst ny=cards.filter(c=>(c.requests||[]).some(r=>(r.status||'open')!=='answered'&&!r.answered)).length;\nlet genAge='?';try{genAge=Math.round((Date.now()-new Date(String(d.generated).replace(' ','T')))/60000)+'m';}catch(e){}\nmsg.fact={name:'kanban',ok:cards.length>0,ts:Date.now(),ny,\n line:cards.length+' cards \u00b7 '+ny+' needs-you \u00b7 '+(col.doing||0)+' doing \u00b7 '+(col.review||0)+' review \u00b7 '+(col.backlog||0)+' backlog \u00b7 '+(col.lab||0)+' lab \u00b7 rendered '+genAge+' ago'};\nreturn msg;",
+  "func": "const d=msg.payload||{};const cards=d.cards||[];const col={};\nfor(const c of cards){col[c.column||'?']=(col[c.column||'?']||0)+1;}\nconst ny=cards.filter(c=>(c.requests||[]).some(r=>(r.status||'open')!=='answered'&&!r.answered)).length;\nlet genAge='?';try{genAge=Math.round((Date.now()-new Date(String(d.generated).replace(' ','T')))/60000)+'m';}catch(e){}\nmsg.fact={name:'kanban',ok:cards.length>0,ts:Date.now(),ny,\n line:cards.length+' cards · '+ny+' needs-you · '+(col.doing||0)+' doing · '+(col.review||0)+' review · '+(col.backlog||0)+' backlog · '+(col.lab||0)+' lab · rendered '+genAge+' ago'};\nreturn msg;",
   "x": 620,
   "y": 120,
   "wires": [
@@ -118,7 +118,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: dispatch-queue",
-  "func": "const cards=(msg.payload||{}).cards||[];const A=c=>(c.action||{});\nconst q=cards.filter(c=>A(c).status==='queued');\nconst run=cards.filter(c=>A(c).status==='running');\nconst hosts={};for(const c of run){const h=A(c).runner||'?';hosts[h]=(hosts[h]||0)+1;}\nconst stale=run.filter(c=>{try{return(Date.now()-new Date(String(c.updated).replace(' ','T')))>864e5}catch(e){return false}}).length;\nconst hl=Object.entries(hosts).map(e=>e[0]+' x'+e[1]).join(', ')||'none';\nmsg.fact={name:'dispatch-queue',ok:stale===0,ts:Date.now(),\n line:q.length+' queued \u00b7 '+run.length+' running ('+hl+')'+(stale?(' \u00b7 '+stale+' stale-claims>24h \u26a0'):' \u00b7 no stale claims')};\nreturn msg;",
+  "func": "const cards=(msg.payload||{}).cards||[];const A=c=>(c.action||{});\nconst q=cards.filter(c=>A(c).status==='queued');\nconst run=cards.filter(c=>A(c).status==='running');\nconst hosts={};for(const c of run){const h=A(c).runner||'?';hosts[h]=(hosts[h]||0)+1;}\nconst stale=run.filter(c=>{try{return(Date.now()-new Date(String(c.updated).replace(' ','T')))>864e5}catch(e){return false}}).length;\nconst hl=Object.entries(hosts).map(e=>e[0]+' x'+e[1]).join(', ')||'none';\nmsg.fact={name:'dispatch-queue',ok:stale===0,ts:Date.now(),\n line:q.length+' queued · '+run.length+' running ('+hl+')'+(stale?(' · '+stale+' stale-claims>24h ⚠'):' · no stale claims')};\nreturn msg;",
   "x": 620,
   "y": 160,
   "wires": [
@@ -148,7 +148,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: jev-gate",
-  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-gate',ok:up,ts:Date.now(),role:'prod confirm gate',\n line:up?('up \u00b7 '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') \u2014 prod confirm gate')};\nreturn msg;",
+  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-gate',ok:up,ts:Date.now(),role:'prod confirm gate',\n line:up?('up · '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') — prod confirm gate')};\nreturn msg;",
   "x": 620,
   "y": 240,
   "wires": [
@@ -178,7 +178,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: jev-idc02",
-  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-idc02',ok:up,ts:Date.now(),role:'prod advisory',\n line:up?('up \u00b7 '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') \u2014 prod advisory')};\nreturn msg;",
+  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-idc02',ok:up,ts:Date.now(),role:'prod advisory',\n line:up?('up · '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') — prod advisory')};\nreturn msg;",
   "x": 620,
   "y": 300,
   "wires": [
@@ -208,7 +208,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: jev-omen-heavy",
-  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-omen-heavy',ok:up,ts:Date.now(),role:'omen gemma-3-4b',\n line:up?('up \u00b7 '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') \u2014 omen gemma-3-4b')};\nreturn msg;",
+  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-omen-heavy',ok:up,ts:Date.now(),role:'omen gemma-3-4b',\n line:up?('up · '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') — omen gemma-3-4b')};\nreturn msg;",
   "x": 620,
   "y": 360,
   "wires": [
@@ -238,7 +238,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: jev-omen-student",
-  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-omen-student',ok:up,ts:Date.now(),role:'omen gemma-3-1b',\n line:up?('up \u00b7 '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') \u2014 omen gemma-3-1b')};\nreturn msg;",
+  "func": "const p=msg.payload||{};const up=msg.statusCode===200&&p.ok===true;\nmsg.fact={name:'jev-omen-student',ok:up,ts:Date.now(),role:'omen gemma-3-1b',\n line:up?('up · '+String(p.model||'?').split('/').pop()+(p.thr?(' thr='+p.thr):'')+(p.device?(' '+p.device):'')):('DOWN ('+(msg.statusCode||'no-response')+') — omen gemma-3-1b')};\nreturn msg;",
   "x": 620,
   "y": 420,
   "wires": [
@@ -268,7 +268,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: omen-ollama",
-  "func": "const ms=(msg.payload&&msg.payload.models)||[];\nconst names=ms.slice(0,4).map(m=>m.name.split(':')[0]).join(',');\nmsg.fact={name:'omen-ollama',ok:msg.statusCode===200,ts:Date.now(),\n line:msg.statusCode===200?(ms.length+' models ('+names+(ms.length>4?',\u2026':'')+')'):'ollama DOWN'};\nreturn msg;",
+  "func": "const ms=(msg.payload&&msg.payload.models)||[];\nconst names=ms.slice(0,4).map(m=>m.name.split(':')[0]).join(',');\nmsg.fact={name:'omen-ollama',ok:msg.statusCode===200,ts:Date.now(),\n line:msg.statusCode===200?(ms.length+' models ('+names+(ms.length>4?',…':'')+')'):'ollama DOWN'};\nreturn msg;",
   "x": 620,
   "y": 480,
   "wires": [
@@ -328,7 +328,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: nest-queue",
-  "func": "let d=null;try{d=JSON.parse(msg.payload);}catch(e){}\nif(!d||!d.heartbeat){\n msg.fact={name:'nest-queue',ok:null,ts:Date.now(),\n  line:'no mirror file \u2014 arm nest-queue-health.timer on tony-dell (scripts/ops/nest-queue-health.py)'};\n return msg;\n}\nconst h=d.heartbeat,s=d.sessions||{},f=s.freshest,p=d.packs||{};\nconst fm=a=>a==null?'?':(a<120?Math.round(a)+'s':Math.round(a/60)+'m');\nconst sess=f?('runtime '+String(f.boot_id||'').slice(0,8)+' '+(f.gpu||'')+' seen '+fm(f.age_s)+' ago'):'no managed runtime';\nconst run=d.runner_id?('runner pid '+d.runner_id.pid):'runner stopped';\nconst fileAge=Math.round(Date.now()/1000-(d.checked_at||0));\nconst v=d.verdict||'?';\nconst kk=d.kk_llm||{},vd=d.video||{},wk=d.kk_worker||{},vs=d.verdicts||{};\nconst kkline='kk '+(vs.kk_llm||'?')+' '+(kk.pending||0)+'p/'+(kk.total||0)+'p'+(wk.cpu_temp_c?' '+wk.cpu_temp_c+'C':'')+(wk.age_s?' hb'+fm(wk.age_s):'');\nconst vdline='vid '+(vs.video||'?')+' '+(vd.pending||0)+'p/'+(vd.total||0)+'p'+(vd.active_claims?' '+vd.active_claims+'claims':'');\nmsg.fact={name:'nest-queue',ok:v!=='unreadable'&&v!=='stale-heartbeat',ts:Date.now(),verdict:v,\n line:v+' \u00b7 hb '+fm(h.age_s)+' ('+String(h.state||'').slice(0,50)+') \u00b7 '+run+' \u00b7 '+sess+' \u00b7 '+(p.pending||0)+' pending/'+ (p.total||0) +' packs \u00b7 '+kkline+' \u00b7 '+vdline+' \u00b7 snap '+fm(fileAge)+' old'};\nreturn msg;",
+  "func": "let d=null;try{d=JSON.parse(msg.payload);}catch(e){}\nif(!d||!d.heartbeat){\n msg.fact={name:'nest-queue',ok:null,ts:Date.now(),\n  line:'no mirror file — arm nest-queue-health.timer on tony-dell (scripts/ops/nest-queue-health.py)'};\n return msg;\n}\nconst h=d.heartbeat,s=d.sessions||{},f=s.freshest,p=d.packs||{};\nconst fm=a=>a==null?'?':(a<120?Math.round(a)+'s':Math.round(a/60)+'m');\nconst sess=f?('runtime '+String(f.boot_id||'').slice(0,8)+' '+(f.gpu||'')+' seen '+fm(f.age_s)+' ago'):'no managed runtime';\nconst run=d.runner_id?('runner pid '+d.runner_id.pid):'runner stopped';\nconst fileAge=Math.round(Date.now()/1000-(d.checked_at||0));\nconst v=d.verdict||'?';\nconst kk=d.kk_llm||{},vd=d.video||{},wk=d.kk_worker||{},vs=d.verdicts||{};\nconst kkline='kk '+(vs.kk_llm||'?')+' '+(kk.pending||0)+'p/'+(kk.total||0)+'p'+(wk.cpu_temp_c?' '+wk.cpu_temp_c+'C':'')+(wk.age_s?' hb'+fm(wk.age_s):'');\nconst vdline='vid '+(vs.video||'?')+' '+(vd.pending||0)+'p/'+(vd.total||0)+'p'+(vd.active_claims?' '+vd.active_claims+'claims':'');\nmsg.fact={name:'nest-queue',ok:v!=='unreadable'&&v!=='stale-heartbeat',ts:Date.now(),verdict:v,\n line:v+' · hb '+fm(h.age_s)+' ('+String(h.state||'').slice(0,50)+') · '+run+' · '+sess+' · '+(p.pending||0)+' pending/'+ (p.total||0) +' packs · '+kkline+' · '+vdline+' · snap '+fm(fileAge)+' old'};\nreturn msg;",
   "x": 620,
   "y": 620,
   "wires": [
@@ -357,7 +357,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: ops-health",
-  "func": "try{const d=JSON.parse(msg.payload);const n=d.stale_count||0;const us=(d.stale_units||[]).join(', ');\nmsg.fact={name:'ops-health',ok:n===0,ts:Date.now(),\n line:n===0?('all services fresh ('+d.host+')'):(n+' stale: '+us+' \u26a0')};\n}catch(e){msg.fact={name:'ops-health',ok:false,ts:Date.now(),line:'sentinel unreadable'}}\nreturn msg;",
+  "func": "try{const d=JSON.parse(msg.payload);const n=d.stale_count||0;const us=(d.stale_units||[]).join(', ');\nmsg.fact={name:'ops-health',ok:n===0,ts:Date.now(),\n line:n===0?('all services fresh ('+d.host+')'):(n+' stale: '+us+' ⚠')};\n}catch(e){msg.fact={name:'ops-health',ok:false,ts:Date.now(),line:'sentinel unreadable'}}\nreturn msg;",
   "x": 620,
   "y": 680,
   "wires": [
@@ -386,7 +386,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: runner-host",
-  "func": "try{const d=JSON.parse(msg.payload);const h=d.host||d.hostname||'?';\nlet line,ok=true;\nif(d.checks&&d.checks.systemctl&&Array.isArray(d.checks.systemctl.u)){\n const us=d.checks.systemctl.u;\n const run=us.filter(u=>u.a==='running').length;\n const bad=us.filter(u=>u.a==='failed').length;\n line=h+' (node-red host): '+run+'/'+us.length+' units running'+(bad?(' \u00b7 '+bad+' failed \u26a0'):'');\n ok=bad===0;\n}else{\n const dk=(d.disk||[])[0]||{};\n const use=parseInt(String(dk.use_pct||'0'))||0;\n line=h+' (node-red host): load '+(d.loadavg_1m!=null?d.loadavg_1m:'?')+' \u00b7 mem '+(d.mem_available_mb!=null?d.mem_available_mb:'?')+'M free \u00b7 swap '+(d.swap_used_pct!=null?d.swap_used_pct:'?')+'% \u00b7 / '+(dk.use_pct||'?');\n ok=!use||use<90;\n}\nmsg.fact={name:'runner-host',ok,ts:Date.now(),line};\n}catch(e){msg.fact={name:'runner-host',ok:false,ts:Date.now(),line:'snapshot unreadable'}}\nreturn msg;",
+  "func": "try{const d=JSON.parse(msg.payload);const h=d.host||d.hostname||'?';\nlet line,ok=true;\nif(d.checks&&d.checks.systemctl&&Array.isArray(d.checks.systemctl.u)){\n const us=d.checks.systemctl.u;\n const run=us.filter(u=>u.a==='running').length;\n const bad=us.filter(u=>u.a==='failed').length;\n line=h+' (node-red host): '+run+'/'+us.length+' units running'+(bad?(' · '+bad+' failed ⚠'):'');\n ok=bad===0;\n}else{\n const dk=(d.disk||[])[0]||{};\n const use=parseInt(String(dk.use_pct||'0'))||0;\n line=h+' (node-red host): load '+(d.loadavg_1m!=null?d.loadavg_1m:'?')+' · mem '+(d.mem_available_mb!=null?d.mem_available_mb:'?')+'M free · swap '+(d.swap_used_pct!=null?d.swap_used_pct:'?')+'% · / '+(dk.use_pct||'?');\n ok=!use||use<90;\n}\nmsg.fact={name:'runner-host',ok,ts:Date.now(),line};\n}catch(e){msg.fact={name:'runner-host',ok:false,ts:Date.now(),line:'snapshot unreadable'}}\nreturn msg;",
   "x": 620,
   "y": 740,
   "wires": [
@@ -415,7 +415,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: mcp-health",
-  "func": "try{const d=JSON.parse(msg.payload);const s=d.overall_score;\nconst bad=(d.service_scores||[]).filter(x=>x.status!=='healthy').map(x=>x.service).join(', ');\nmsg.fact={name:'mcp-health',ok:s>=70,ts:Date.now(),\n line:'score '+s+'/100 ('+d.services_checked+' checked)'+(bad?(' \u00b7 degraded: '+bad):'')};\n}catch(e){msg.fact={name:'mcp-health',ok:false,ts:Date.now(),line:'mcp-health unreadable'}}\nreturn msg;",
+  "func": "try{const d=JSON.parse(msg.payload);const s=d.overall_score;\nconst bad=(d.service_scores||[]).filter(x=>x.status!=='healthy').map(x=>x.service).join(', ');\nmsg.fact={name:'mcp-health',ok:s>=70,ts:Date.now(),\n line:'score '+s+'/100 ('+d.services_checked+' checked)'+(bad?(' · degraded: '+bad):'')};\n}catch(e){msg.fact={name:'mcp-health',ok:false,ts:Date.now(),line:'mcp-health unreadable'}}\nreturn msg;",
   "x": 620,
   "y": 800,
   "wires": [
@@ -459,7 +459,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "specialist: house-pulse",
-  "func": "const ss=Array.isArray(msg.payload)?msg.payload:[];\nconst by=function(id){const s=ss.find(function(x){return x.entity_id===id});return s?s.state:null};\nconst tony=by(\"person.tony\")||\"?\";\nconst cpu=by(\"sensor.tony_omen_cpu_package_temp\"),gpu=by(\"sensor.tony_omen_gpu_temp\");\nconst sun=by(\"sun.sun\")||\"?\";\nconst temps=[cpu,gpu].map(Number).filter(function(t){return !isNaN(t)});\nconst hot=temps.some(function(t){return t>85}),warm=temps.some(function(t){return t>75});\nconst tail=hot?\" \u26a0HOT\":(warm?\" (warm)\":\"\");\nmsg.fact={name:\"house-pulse\",ok:!hot&&ss.length>0,ts:Date.now(),\n line:ss.length?(\"tony \"+tony+\" \u00b7 sun \"+sun+\" \u00b7 omen cpu \"+(cpu||\"?\")+\"\u00b0C gpu \"+(gpu||\"?\")+\"\u00b0C\"+tail):'HA states unreadable (auth?)'};\nreturn msg;",
+  "func": "const ss=Array.isArray(msg.payload)?msg.payload:[];\nconst by=function(id){const s=ss.find(function(x){return x.entity_id===id});return s?s.state:null};\nconst tony=by(\"person.tony\")||\"?\";\nconst cpu=by(\"sensor.tony_omen_cpu_package_temp\"),gpu=by(\"sensor.tony_omen_gpu_temp\");\nconst sun=by(\"sun.sun\")||\"?\";\nconst temps=[cpu,gpu].map(Number).filter(function(t){return !isNaN(t)});\nconst hot=temps.some(function(t){return t>85}),warm=temps.some(function(t){return t>75});\nconst tail=hot?\" ⚠HOT\":(warm?\" (warm)\":\"\");\nmsg.fact={name:\"house-pulse\",ok:!hot&&ss.length>0,ts:Date.now(),\n line:ss.length?(\"tony \"+tony+\" · sun \"+sun+\" · omen cpu \"+(cpu||\"?\")+\"°C gpu \"+(gpu||\"?\")+\"°C\"+tail):'HA states unreadable (auth?)'};\nreturn msg;",
   "x": 620,
   "y": 860,
   "wires": [
@@ -473,7 +473,7 @@
   "type": "function",
   "z": "tab-devnest",
   "name": "compose report",
-  "func": "if(!msg.fact) return null;\nconst f=msg.fact;const stash=flow.get('facts')||{};stash[f.name]=f;flow.set('facts',stash);\nconst facts=Object.values(stash);\nconst ts=new Date().toISOString().slice(0,19).replace('T',' ');\nconst mark=x=>x.ok===true?'\u2705':(x.ok===false?'\u274c':'\u23f3');\nconst bad=facts.filter(x=>x.ok===false).map(x=>x.name).join(', ')||'none';\nconst get=n=>stash[n]||{line:'awaiting first poll'};\nlet md='# DevNest visual map \u2014 observe\\n\\n';\nmd+='_Auto-refreshed every 5 min by Node-RED on tony-dell (flow `devnest-observe`). fresh_for=15m \u2014 STALE means the flow stopped._\\n\\n';\nmd+='## The mental model \u2014 cards \u2192 queue \u2192 JEV \u2192 lanes/runners \u2192 GPU/Colab \u2192 verify\\n\\n';\nmd+='1. **Board** '+mark(get('kanban'))+' '+get('kanban').line+'\\n';\nmd+='2. **Dispatch queue** '+mark(get('dispatch-queue'))+' '+get('dispatch-queue').line+'\\n';\nmd+='3. **JEV decision lanes** '+mark(get('jev-gate'))+' gate: '+get('jev-gate').line+' \u00b7 '+mark(get('jev-idc02'))+' idc02: '+get('jev-idc02').line+'\\n';\nmd+='4. **Omen JEV + GPU** '+mark(get('jev-omen-heavy'))+' '+get('jev-omen-heavy').line+' \u00b7 '+mark(get('jev-omen-student'))+' '+get('jev-omen-student').line+' \u00b7 '+mark(get('omen-ollama'))+' '+get('omen-ollama').line+'\\n';\nmd+='5. **Colab queue heartbeat** '+mark(get('nest-queue'))+' '+get('nest-queue').line+'\\n';\nmd+='6. **Edge + runner health** '+mark(get('board-api'))+' '+get('board-api').line+' \u00b7 '+mark(get('litellm'))+' '+get('litellm').line+' \u00b7 '+mark(get('runner-host'))+' '+get('runner-host').line+'\\n';\nmd+='7. **Verify** \u2014 pack `done` markers + artifact globs, JEV/Noul gates, card merge guard; Education = WP `lesson` CPT via board-api /lesson\\n';\nmd+='\\n## Specialist table\\n\\n| fact | state | line |\\n|---|---|---|\\n';\nfor(const x of facts){md+='| '+x.name+' | '+mark(x)+' | '+x.line+' |\\n';}\nmd+='\\n## Phase 2 \u2014 controlled actions (NOT wired in this tab)\\n\\n';\nmd+='Allowlisted board-api writes only: `POST /action {do: queue|hold}` and `POST /request` \u2014 each behind a manual confirmation inject; no card create/move/finish. Never arbitrary shell, restart, delete, partition or deploy from Node-RED.\\n';\nmd+='\\n## Heartbeat\\n\\n';\nmd+='ts='+ts+'Z \u00b7 host=tony-dell \u00b7 facts='+facts.length+' \u00b7 unhealthy: '+bad+'\\n';\nmd+='\\n_Sources: board-api :10000 \u00b7 JEV lanes idc03:8778 idc02:8777 omen:8777/8778 \u00b7 ollama omen:11434 \u00b7 litellm :4000 \u00b7 ~/var/chaba/health mirror files \u00b7 HA tony-omen._\\n';\nmsg.payload=JSON.stringify({collection:'ada-cms-pages',key:'devnest-visual-map',lang:'en',contentMd:md,meta:{kind:['report'],slug:['devnest-visual-map'],title:['DevNest visual map \u2014 observe'],format:['markdown'],lang:['en'],written_by:['node-red'],source:['node-red'],domain:['ops'],fresh_for:['15m'],confidence:['high'],subject:['devnest-visual-map'],attribute:['page'],bank:['cms'],scope:['tony'],status:['active'],instance:['ada'],report_role:['live'],summary:['DevNest observe map \u2014 '+facts.length+' specialists, unhealthy: '+bad],updated:[new Date().toISOString()]}});\nmsg.headers={'Content-Type':'application/json'};\nreturn msg;",
+  "func": "const EXPECTED=[\"board-api\", \"kanban\", \"dispatch-queue\", \"jev-gate\", \"jev-idc02\", \"jev-omen-heavy\", \"jev-omen-student\", \"omen-ollama\", \"litellm\", \"nest-queue\", \"ops-health\", \"runner-host\", \"mcp-health\", \"house-pulse\"];\nconst f=msg.fact; if(!f) return null;\nconst stash=flow.get(\"facts\")||{}; stash[f.name]=Object.assign({},f,{_ts:Date.now()}); flow.set(\"facts\",stash);\nconst have=EXPECTED.filter(n=>stash[n]);\nconst complete=have.length===EXPECTED.length;\nconst oldest=have.length?Math.min.apply(null,have.map(n=>stash[n]._ts)):Date.now();\nif(!complete && Date.now()-oldest<600000) return null;\nconst facts=have.map(n=>stash[n]); flow.set(\"facts\",{});\nconst ts=new Date().toISOString().slice(0,19).replace('T',' ');\nconst mark=x=>x.ok===true?'✅':(x.ok===false?'❌':'⏳');\nconst bad=facts.filter(x=>x.ok===false).map(x=>x.name).join(', ')||'none';\nconst get=n=>stash[n]||{line:'awaiting first poll'};\nlet md='# DevNest visual map — observe\\n\\n';\nmd+='_Auto-refreshed every 5 min by Node-RED on tony-dell (flow `devnest-observe`). fresh_for=15m — STALE means the flow stopped._\\n\\n';\nmd+='## The mental model — cards → queue → JEV → lanes/runners → GPU/Colab → verify\\n\\n';\nmd+='1. **Board** '+mark(get('kanban'))+' '+get('kanban').line+'\\n';\nmd+='2. **Dispatch queue** '+mark(get('dispatch-queue'))+' '+get('dispatch-queue').line+'\\n';\nmd+='3. **JEV decision lanes** '+mark(get('jev-gate'))+' gate: '+get('jev-gate').line+' · '+mark(get('jev-idc02'))+' idc02: '+get('jev-idc02').line+'\\n';\nmd+='4. **Omen JEV + GPU** '+mark(get('jev-omen-heavy'))+' '+get('jev-omen-heavy').line+' · '+mark(get('jev-omen-student'))+' '+get('jev-omen-student').line+' · '+mark(get('omen-ollama'))+' '+get('omen-ollama').line+'\\n';\nmd+='5. **Colab queue heartbeat** '+mark(get('nest-queue'))+' '+get('nest-queue').line+'\\n';\nmd+='6. **Edge + runner health** '+mark(get('board-api'))+' '+get('board-api').line+' · '+mark(get('litellm'))+' '+get('litellm').line+' · '+mark(get('runner-host'))+' '+get('runner-host').line+'\\n';\nmd+='7. **Verify** — pack `done` markers + artifact globs, JEV/Noul gates, card merge guard; Education = WP `lesson` CPT via board-api /lesson\\n';\nmd+='\\n## Specialist table\\n\\n| fact | state | line |\\n|---|---|---|\\n';\nfor(const x of facts){md+='| '+x.name+' | '+mark(x)+' | '+x.line+' |\\n';}\nmd+='\\n## Phase 2 — controlled actions (NOT wired in this tab)\\n\\n';\nmd+='Allowlisted board-api writes only: `POST /action {do: queue|hold}` and `POST /request` — each behind a manual confirmation inject; no card create/move/finish. Never arbitrary shell, restart, delete, partition or deploy from Node-RED.\\n';\nmd+='\\n## Heartbeat\\n\\n';\nmd+='ts='+ts+'Z · host=tony-dell · facts='+facts.length+' · unhealthy: '+bad+'\\n';\nmd+='\\n_Sources: board-api :10000 · JEV lanes idc03:8778 idc02:8777 omen:8777/8778 · ollama omen:11434 · litellm :4000 · ~/var/chaba/health mirror files · HA tony-omen._\\n';\nmsg.payload=JSON.stringify({collection:'ada-cms-pages',key:'devnest-visual-map',lang:'en',contentMd:md,meta:{kind:['report'],slug:['devnest-visual-map'],title:['DevNest visual map — observe'],format:['markdown'],lang:['en'],written_by:['node-red'],source:['node-red'],domain:['ops'],fresh_for:['15m'],confidence:['high'],subject:['devnest-visual-map'],attribute:['page'],bank:['cms'],scope:['tony'],status:['active'],instance:['ada'],report_role:['live'],summary:['DevNest observe map — '+facts.length+' specialists, unhealthy: '+bad],updated:[new Date().toISOString()]}});\nmsg.headers={'Content-Type':'application/json'};\nreturn msg;",
   "x": 900,
   "y": 420,
   "wires": [

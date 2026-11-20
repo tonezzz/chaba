@@ -3,9 +3,14 @@ title: "kk_mac_lane_worker — dedicated gated consumer for the kk-llm
 date: 2026-11-14
 card: kk-mac-continuous-llm-worker
 session: "dispatch-wt-20261114-131026-build-a-dedicated-kk-mac-llm-n (tony-omen)"
-status: "implemented + soak-verified — launchd plist cutover on kk-mac
-  still pending (deploy needs Tony approval); JEV promotion gate
-  unchanged"
+status: "PRODUCTION — launchd cutover done 2026-11-17 (plist
+  net.adanest.kk-llm-worker -> kk_mac_lane_worker.py --host local
+  --max-packs 1, backup .bak-20261117); supervised production-queue
+  pass verified same day (claim -> memory-guard fallback -> artifacts
+  -> release). JEV promotion APPROVED by Tony 2026-11-17 — intake
+  pipeline (report-feed -> broker -> producer -> queue -> worker) and
+  board-api kk_mac auto-route already live; lane now serves automatic
+  routing for the four bounded read-only classes."
 
 context: >
   The kk-llm lane existed since 2026-10-30 (pack queue + launchd

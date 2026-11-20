@@ -198,9 +198,14 @@ requires a verified soak and no owner-impact incidents.
 
 ## Current next step
 
-The dedicated lane worker (`kk_mac_lane_worker.py`), the capacity-aware
-producer, broker, and report feed are built and the 10-package soaks
-passed. Remaining before automatic JEV promotion: swap the live
-LaunchAgent onto the lane worker (plist in `scripts/ops/`), one fresh
-supervised soak against the lane worker, and the weekly-review policy
-sign-off.
+DONE 2026-11-17: the live LaunchAgent `net.adanest.kk-llm-worker` on
+kk-mac now runs `kk_mac_lane_worker.py --host local --max-packs 1`
+(previous plist kept as `.bak-20261117`), and a supervised production
+queue pass verified claim -> admission -> memory-guard fallback ->
+markers/artifacts -> claim release. Tony approved automatic JEV
+promotion the same day; the intake pipeline (report-feed -> broker ->
+producer -> queue -> worker, all timers live on tony-dell) and the
+board-api `kk_mac_local` auto-route at queue time are the promotion
+surface. Weekly review continues to govern capacity changes (concurrency,
+model, retirement) — promotion covers routing only, not capacity
+increases.
