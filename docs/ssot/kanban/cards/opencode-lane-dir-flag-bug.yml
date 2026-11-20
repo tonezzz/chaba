@@ -1,7 +1,7 @@
 id: opencode-lane-dir-flag-bug
 title: opencode lane spawn bug — --dir flag rejected, dispatches die at start
 column: done
-updated: 2026-11-19 20:03
+updated: 2026-11-20 18:49
 brief: 'Two dispatch cards failed on idc02 with ''unrecognized flag: --dir in command opencode run'' (cross-repo-lesson-harvest,
   voice-dispatch-card-autocreate — 2026-11-09). runner-agent.py ~line 1690 passes --dir to opencode run; the installed
   opencode rejects it. Fix the spawn command.'
@@ -114,4 +114,8 @@ comms:
 - at: 2026-11-19 20:03
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
