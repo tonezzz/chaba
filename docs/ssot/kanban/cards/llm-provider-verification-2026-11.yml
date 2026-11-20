@@ -1,0 +1,58 @@
+id: llm-provider-verification-2026-11
+title: LLM provider verification — four open questions from the Education hierarchy
+column: backlog
+updated: 2026-11-20 13:57
+brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
+  leg is promoted in the idc03 gateway chains.
+priority: medium
+program: devnest
+tags:
+- llm
+- litellm
+- cloudflare
+- gemini
+- openrouter
+- groq
+- verification
+- education
+- wiki
+spec: 'Four verification steps (one card, tracked together). Source: the Education:LLM Providers rollup + leaves
+  created 2026-11-20 (SYS-1086 survey, ssot.llm-gateway, ssot.audit).
+
+
+  1. Cloudflare agentic retest — after a neuron reset, re-run the tony-dell opencode host-health fixture on cf-llama-70b
+  and cf-gpt-oss-120b with gemini-3.5-flash-lite as control. Baseline 2026-11-07: control PASS ~23s, cf-llama-70b
+  FAIL 163s (bash-statelessness loop, empty health.json), cf-gpt-oss-120b FAIL ~100s (no artifact). Only promote
+  a cf-* leg above the last slot if it now passes. Also confirm which dashboard token actually carries Account >
+  Workers AI — do not edit cfut_/cfat_ again; mint a new token value. Keep cf-embed-m3 out of cross-model embedding
+  chains.
+
+
+  2. Groq probe — GROQ_API_KEY is on record (~/.config/secrets/groq.env on idc03) but unwired; live config.yaml
+  has dead groq legs in voice-aux/classify that never made it back to repo. Probe the OpenAI-compatible endpoint
+  with that key; capture the model list, rate limits and one full agent loop. Then either wire a clean groq/* route
+  on idc03 or remove the dead legs. Status stays "GAP" on the leaf until a probe exists.
+
+
+  3. OpenRouter free-leg retest — re-run a full agent fixture on or-free-nemotron-ultra and or-free-north-code (added
+  2026-11-13, PASS on that day''s simple check) before treating them as agent-grade. Known failures to keep out
+  of primary slots: or-free-nemotron-nano (60/77 bash denials + daily cap), or-free-gemma31b (upstream dead), or-gemini-3.5-flash-lite
+  (emptied mid-loop). Confirm the weekly OR key rotation still leaves each :free leg live.
+
+
+  4. Gemini paid-key isolation — verify in AI Studio whether the paid keys (…0MDA Tony, …bheg KK, …B7MQ infra pool,
+  …F6Pg ops) sit in separate GCP projects. Same-project billing makes an outage account-wide, so the per-lane keys
+  are not real redundancy. Re-probe any 429/RESOURCE_EXHAUSTED and record the project number from the error body.
+
+
+  Done when: each step has a dated evidence note posted on this card; the four leaves (Education:LLM Providers/Cloudflare
+  Workers AI, /Gemini API, /Openrouter, /Groq) and the rollup have their "Open questions" blocks updated with the
+  result, and any promoted/demoted route change is reflected in ssot.llm-gateway.yml. No merge, deploy, or credential
+  change is authorized by this card — those stay gated with Tony.'
+note: Raised at Tony's request from the wiki Education hierarchy work (2026-11-20). No dispatch envelope staged;
+  this is a manual verification card.
+ref: OPS-0018
+comms:
+- at: 2026-11-20 13:57
+  from: tony
+  text: Raised from Education:LLM Providers hierarchy setup — four open verification questions to be tracked together.
