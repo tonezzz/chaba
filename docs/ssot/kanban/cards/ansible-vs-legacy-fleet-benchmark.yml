@@ -1,7 +1,7 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
 column: doing
-updated: 2026-11-21 06:11
+updated: 2026-11-21 06:13
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
 priority: medium
@@ -108,6 +108,11 @@ comms:
     entries exist in ssot.audit.host; [devin-session-audit-2026-10-29] Resume 2026-11-20 18:2x ICT on tony-macbook:
     re; [mddb-backup-disk-headroom-guard-d5e029] DONE (worktree, not deployed — scp afte; Deploy note: hosts need
     the new file via their chaba checkout'
+- at: 2026-11-21 06:13
+  from: devin
+  text: 'Starting benchmark. Controller: tony-macbook (ansible-core 2.22.0). Ping: idc02/idc03/tony-dell/tony-omen
+    OK; mn01/con01/macbook need host-key bypass (hostname ssh works — IP keys missing); kk-mac offline. Candidates:
+    service-audit, disk-headroom, ada-stagger checksum (+ maybe runner-tools --check).'
 ref: BEN-0005
 claim:
   since: 2026-11-21 06:08
