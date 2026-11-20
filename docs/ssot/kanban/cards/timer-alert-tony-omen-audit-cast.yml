@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-audit-cast
 title: Timer audit-cast on tony-omen disabled
 column: done
-updated: 2026-11-19 20:04
+updated: 2026-11-20 18:50
 priority: high
 tags:
 - timer-alert
@@ -1656,6 +1656,10 @@ comms:
 - at: 2026-11-19 20:04
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to ensure `audit-cast.timer` is enabled and active on host `tony-omen`. The runner must check
   if the disabled state is deliberate, and if not, execute `systemctl --user enable --now audit-cast.timer`. The

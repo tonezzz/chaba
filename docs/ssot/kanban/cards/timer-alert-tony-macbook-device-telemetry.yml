@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-device-telemetry
 title: Timer device-telemetry on tony-macbook failing
 column: done
-updated: 2026-11-19 20:04
+updated: 2026-11-20 18:50
 priority: high
 tags:
 - timer-alert
@@ -221,6 +221,10 @@ comms:
 - at: 2026-11-19 20:04
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate why `device-telemetry.service` on `tony-macbook` failed with an exit code on the last run at 11-12
   20:49 by inspecting the user journal via `journalctl --user -u device-telemetry.service` on the host. Reference
