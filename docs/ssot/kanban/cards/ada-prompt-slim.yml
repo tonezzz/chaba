@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
-column: doing
-updated: 2026-11-20 20:20
+column: backlog
+updated: 2026-11-20 20:23
 priority: medium
 tags:
 - ada
@@ -20,17 +20,19 @@ spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries f
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
     session_gone: 2026-11-17 09:39
-  last_failure: 'journal=exit-code k failed.", |     "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-prompt-slim-1795015278.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1795015278.service: Failed with
-    result ''exit-code''.'
+  last_failure: 'journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed with result
+    ''exit-code''. | devin-task-20261120-201852-ada-voice-backend-realtime-pro.service: Consumed 56.161s CPU time
+    over 4min 15.904s wall clock time, 792.1M memory peak.'
   attempts: 1
   lane: codemod
-  runner: tony-dell
+  result: 'journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed with result ''exit-code''.
+    | devin-task-20261120-201852-ada-voice-backend-realtime-pro.service: Consumed 56.161s CPU time over 4min 15.904s
+    wall clock time, 792.1M memory peak.'
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -312,5 +314,13 @@ comms:
   from: devin
   text: 'started on tony-dell: compacting DEFAULT_ADA_INSTRUCTIONS duties to one-liners + AGENTS.md canonical duties
     section; dedup found (DONE MEANS DONE x2). Target ~50% block shrink, tests next.'
+- at: 2026-11-20 20:23
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed
+    with result ''exit-code''. | devin-tas — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 20:23
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-201852-ada-voice-backend-realtime-pro (rate limit)
+    — tony-dell holds new claims ~30m
 claim:
   since: 2026-11-20 20:18
