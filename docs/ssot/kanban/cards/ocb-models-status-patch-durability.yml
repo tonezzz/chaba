@@ -1,7 +1,7 @@
 id: ocb-models-status-patch-durability
 title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
 column: doing
-updated: 2026-11-20 17:26
+updated: 2026-11-20 17:28
 brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
   route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
   — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
@@ -91,6 +91,13 @@ comms:
     byte-identical (md5) to live files; live endpoint returns 200 with litellm probe summary (38 models, 7 unavailable
     cf-*). ExecStartPost wired into openchamber-update.service before restart; patch failure fails unit loudly (no
     silent regress). Upstream repo is public (githu'
+- at: 2026-11-20 17:28
+  from: devin
+  text: 'DONE. Durable mechanism landed: stacks/idc02/openchamber/{openchamber-models-status.patch,apply-models-status-patch.sh}
+    (branch dispatch/20261120-171843, commit 4a1bef83d3); ExecStartPost wired into idc02 openchamber-update.service
+    before restart — patch failure fails the unit loudly, no silent regress. Verified: scratch-prefix npm i -g @2.7.3
+    + apply = md5-identical to live files; live /api/openchamber/models/status -> 200 {total:38, active:31, unavailable:7};
+    idempotent + failure path tested. '
 action:
   type: dispatch
   status: running
