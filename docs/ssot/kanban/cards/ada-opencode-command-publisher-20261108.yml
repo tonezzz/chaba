@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: doing
-updated: 2026-11-20 19:20
+column: backlog
+updated: 2026-11-20 19:21
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -351,6 +351,17 @@ comms:
     LANDED (PR #163 merged). card-run.py --lifecycle doe; [ada-opencode-command-publisher-20261108] auto-merge not
     done: push: To github.c; [ada-opencode-command-publisher-20261108] finished (failed): exit=1 devin-task-2; [ada-opencode-command-publisher-20261108]
     primer injected 8 l'
+- at: 2026-11-20 19:20
+  from: tony-omen
+  text: 'finished (failed): exit=1 in-task-20261120-192009-canonicalize-the-opencode-ada-.service: Failed with result
+    ''exit-code''. | devin-task-2026 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-20 19:21
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-192009-canonicalize-the-opencode-ada- (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-20 19:21
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-20 19:51'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -384,18 +395,21 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
-  result: 'exit=0 ispatch-outcome doc and job record `docs/ssot/jobs/ada/2026-11-20-opencode-command-publisher.yml`.
-    | devin-task-20261120-132007-canonicalize-the-opencode-ada-.service: Consumed 3min 39.850s CPU time, 471.6M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=1 in-task-20261120-192009-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-192009-canonicalize-the-opencode-ada-.service: Consumed 30.988s CPU time over 35.557s
+    wall clock time, 893.8M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 13:41
     session_gone: 2026-11-20 13:56
   attempts: 2
   runner: tony-omen
+  last_failure: 'exit=1 in-task-20261120-192009-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-192009-canonicalize-the-opencode-ada-.service: Consumed 30.988s CPU time over 35.557s
+    wall clock time, 893.8M memory peak.'
 claim:
   since: 2026-11-20 19:18
 review_kind: verify
