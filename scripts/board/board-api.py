@@ -34,10 +34,18 @@ Endpoints (after prefix strip):
                  compact=2 -> {id,ref,title,column,priority,updated,
                                brief,spec,action_status} — card-detail
                                tier, no comms/action bulk
+                 summary=1 -> same slim set as compact=1 under a
+                             discoverable name — the cheap overview
+                             read (KNB-0147; no comms/spec/brief)
+                 fields=all -> explicit full card body, opting out of
+                             projection (previously a silent empty dict)
       comms:      comms_tail=<n> keeps only the last n comms entries per
                  card (0 drops comms) and stamps comms_total; combines
                  with fields/compact and also applies to /card/<id>
       pagination: limit=<n> (cap 1000), offset=<n>
+      gzip:       JSON bodies >=1KB are gzip'd when Accept-Encoding
+                 allows (Content-Encoding + Vary headers); small
+                 replies and identity clients stay uncompressed
   GET  /card/<id>[?fields=|compact=1|comms_tail=<n>] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
@@ -190,6 +198,7 @@ Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import base64
 import fcntl
+import gzip
 import hashlib
 import hmac
 import json
@@ -4527,6 +4536,14 @@ COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref",
 # dict. action_status stays synthesized (OPS-1107).
 COMPACT2_FIELDS = ("id", "ref", "title", "column", "priority", "updated",
                    "brief", "spec", "action_status")
+# KNB-0147: `summary=1` is the cheap overview projection. It is the same
+# field set as compact=1 — kept as a distinct named constant so overview
+# callers get a stable, discoverable contract that can be trimmed further
+# later without silently changing compact's shape.
+SUMMARY_FIELDS = COMPACT_FIELDS
+# Gzip only pays off above ~1KB; the full /cards dump is ~15MB so it always
+# qualifies, while small replies stay untouched for legacy clients.
+GZIP_MIN_BYTES = 1024
 CARDS_MAX_LIMIT = 1000
 
 
@@ -4667,14 +4684,40 @@ def _truthy(v: str) -> bool:
     return v.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _accepts_gzip(header: str) -> bool:
+    """True when Accept-Encoding explicitly allows gzip (q>0) (KNB-0147).
+    Absent, `identity` and `gzip;q=0` stay uncompressed so legacy clients
+    are untouched."""
+    for part in (header or "").lower().split(","):
+        bits = [b.strip() for b in part.split(";")]
+        if bits[0] != "gzip":
+            continue
+        for param in bits[1:]:
+            if param.startswith("q="):
+                try:
+                    return float(param[2:]) > 0
+                except ValueError:
+                    return False
+        return True
+    return False
+
+
 def _field_set(q: dict) -> set:
+    fv = _q1(q, "fields").strip()
+    if fv.lower() == "all":
+        # KNB-0147: explicit full-body opt-out. Before this, fields=all
+        # matched no card key and silently projected every card to {}.
+        return set()
     cv = _q1(q, "compact").strip()
     if cv and cv.lower() not in ("0", "false", "no", "off"):
         # compact=2 is the detail tier; any other enabled value is the
         # original slim tier. Before this, compact=2 fell through to a
         # full-card dump — the heaviest possible miss.
         return set(COMPACT2_FIELDS) if cv == "2" else set(COMPACT_FIELDS)
-    return {f.strip() for f in _q1(q, "fields").split(",") if f.strip()}
+    if _truthy(_q1(q, "summary")):
+        # KNB-0147: cheap overview projection — no comms/spec/brief.
+        return set(SUMMARY_FIELDS)
+    return {f.strip() for f in fv.split(",") if f.strip()}
 
 
 def _comms_tail(q: dict):
@@ -4894,9 +4937,18 @@ class H(BaseHTTPRequestHandler):
 
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False, default=str).encode()
+        zipped = (len(body) >= GZIP_MIN_BYTES
+                  and _accepts_gzip(self.headers.get("Accept-Encoding", "")))
+        if zipped:
+            body = gzip.compress(body)
         try:
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
+            # Vary on every representation so a Caddy/CDN cache cannot
+            # hand a gzip body to an identity-only client (KNB-0147).
+            self.send_header("Vary", "Accept-Encoding")
+            if zipped:
+                self.send_header("Content-Encoding", "gzip")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)

@@ -17,12 +17,13 @@ that answers the question.
 | one card's state | `GET /card/<id>` | ~2-4 KB |
 | one field of one card | `GET /card/<id>?fields=column,updated` | <300 B |
 | board index / "what's where" | `GET /cards?compact=1` | ~220 KB |
+| cheap overview (fleet agents) | `GET /cards?summary=1` (add `Accept-Encoding: gzip`) | ~220 KB JSON → ~20 KB on the wire |
 | queued/claimable set | `GET /cards?action_status=queued&fields=id,title,action,blocked_by,priority,updated` | ~2 KB |
 | or the ready projection | `GET /queue` | ~2 KB |
 | "did anything change since T" | `GET /cards?since=<updated-string>&fields=id,updated` | KBs |
 | one column | `GET /cards?column=doing[&fields=…]` | small |
 | "is host X up / what's it processing" | `GET /host-status?host=<name>` | ~1-4 KB + live probe |
-| whole rendered board (export only) | `GET /cards` | 5.2 MB — last resort |
+| whole rendered board (export only) | `GET /cards` (+ gzip if you must) | 5.2 MB JSON → ~500 KB gzipped — last resort |
 
 ## Response contract
 
@@ -35,7 +36,16 @@ that answers the question.
   `action.status` so queue checks don't need the full action dict.
   `compact=1` is the canned slim set
   `{id,title,column,updated,priority,ref,action_status}` and wins over
-  `fields`.
+  `fields`. `summary=1` is an alias of that same slim set under a
+  discoverable name — use it for overviews (KNB-0147); it also wins over
+  `fields`. `fields=all` explicitly opts out of projection and returns
+  the full card body (before KNB-0147 this returned `{}`).
+- **gzip**: JSON bodies ≥1 KB are gzip-encoded when the request sends
+  `Accept-Encoding: gzip` (q>0); replies carry `Content-Encoding: gzip`
+  and `Vary: Accept-Encoding`. Add `-H 'Accept-Encoding: gzip'` to curl
+  (plain curl sends `identity`), or use `curl --compressed`. Small
+  replies and identity clients are unchanged. Transport-only — the JSON
+  contract is identical.
 - **pagination**: `limit` (cap 1000), `offset`; `truncated:true` means
   more pages exist. Order: filters → pagination → projection, so
   `total` is the filtered count.
@@ -62,7 +72,9 @@ that answers the question.
 3. Watching for a change → `since=` + `fields=id,updated`, not a full
    re-fetch; the payload's `generated` stamp is the version token.
 4. Fleet/queue state → `/queue` (already the compact projection with
-   per-runner verdicts).
+   per-runner verdicts). For a plain whole-board overview use
+   `GET /cards?summary=1` with `Accept-Encoding: gzip` — never bare
+   `/cards`, and never `compact=1` + `comms_tail` when summary suffices.
 5. Host health/"what is X processing" → `/host-status?host=` — never
    answer host state by quoting card comms; this endpoint already
    prefers live telemetry and freshness-tags whatever comes from the

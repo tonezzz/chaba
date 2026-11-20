@@ -11,6 +11,7 @@ CARDS_JSON pointed at a fixture — no network beyond loopback.
 
 from __future__ import annotations
 
+import gzip
 import importlib.util
 import json
 import tempfile
@@ -122,6 +123,47 @@ class CardQueryTest(unittest.TestCase):
             FIXTURE_CARDS, {"compact": ["1"], "fields": ["spec"]})
         self.assertNotIn("spec", r["cards"][0])
 
+    def test_summary_projection(self):
+        # KNB-0147 — the cheap overview set: no comms/spec/brief.
+        r = self.q(summary="1")
+        want = set(self.mod.SUMMARY_FIELDS)
+        for c in r["cards"]:
+            self.assertLessEqual(set(c), want)
+        first = r["cards"][0]
+        self.assertEqual(first["action_status"], "queued")
+        self.assertNotIn("action", first)
+        for heavy in ("spec", "brief", "comms"):
+            self.assertNotIn(heavy, first)
+
+    def test_summary_alias_of_compact(self):
+        self.assertEqual(self.q(summary="1")["cards"],
+                         self.q(compact="1")["cards"])
+
+    def test_summary_beats_fields(self):
+        r = self.mod.card_query(
+            FIXTURE_CARDS, {"summary": ["1"], "fields": ["spec"]})
+        self.assertNotIn("spec", r["cards"][0])
+
+    def test_fields_all_is_full_body(self):
+        # KNB-0147 — fields=all used to project every card to {}.
+        r = self.mod.card_query(FIXTURE_CARDS, {"fields": ["all"]})
+        self.assertEqual(r["cards"], FIXTURE_CARDS)
+
+    def test_fields_all_beats_summary(self):
+        r = self.mod.card_query(
+            FIXTURE_CARDS, {"summary": ["1"], "fields": ["all"]})
+        self.assertIn("comms", r["cards"][0])
+
+    def test_accepts_gzip(self):
+        a = self.mod._accepts_gzip
+        self.assertTrue(a("gzip"))
+        self.assertTrue(a("deflate, gzip, br"))
+        self.assertTrue(a("gzip;q=0.5"))
+        self.assertFalse(a(""))
+        self.assertFalse(a("identity"))
+        self.assertFalse(a("gzip;q=0"))
+        self.assertFalse(a("br"))
+
     def test_pagination(self):
         r = self.q(limit="2")
         self.assertEqual(r["count"], 2)
@@ -194,6 +236,14 @@ class GetRoutingTest(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read())
 
+    def get_raw(self, path, headers=None):
+        """Raw bytes + lowercased headers; urllib does not decompress gzip."""
+        url = f"http://127.0.0.1:{self.port}{path}"
+        req = urllib.request.Request(url, headers=headers or {})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            hdrs = {k.lower(): v.lower() for k, v in r.headers.items()}
+            return r.status, hdrs, r.read()
+
     def test_health(self):
         st, body = self.get("/health")
         self.assertEqual((st, body), (200, {"ok": True}))
@@ -213,6 +263,44 @@ class GetRoutingTest(unittest.TestCase):
         self.assertEqual(body["total"], 2)
         self.assertEqual(body["count"], 2)
         self.assertNotIn("spec", body["cards"][0])
+
+    def test_cards_summary_over_http(self):
+        # id filter keeps the assertion deterministic — load_cards sorts
+        # by filename, so c-four is first in the unfiltered set.
+        st, body = self.get("/cards?id=c-one&summary=1")
+        self.assertEqual(st, 200)
+        self.assertTrue(body["ok"])
+        first = body["cards"][0]
+        self.assertNotIn("spec", first)
+        self.assertNotIn("comms", first)
+        self.assertEqual(first["action_status"], "queued")
+
+    def test_gzip_when_client_accepts(self):
+        st, h, raw = self.get_raw("/cards", {"Accept-Encoding": "gzip"})
+        self.assertEqual(st, 200)
+        self.assertEqual(h.get("content-encoding"), "gzip")
+        self.assertEqual(h.get("vary"), "accept-encoding")
+        self.assertEqual(len(json.loads(gzip.decompress(raw))["cards"]), 4)
+        _, _, plain = self.get_raw("/cards")
+        self.assertLess(len(raw), len(plain))  # 5KB spec compresses well
+
+    def test_identity_client_not_zipped(self):
+        st, h, raw = self.get_raw("/cards")  # urllib sends identity
+        self.assertEqual(st, 200)
+        self.assertNotIn("content-encoding", h)
+        self.assertEqual(h.get("vary"), "accept-encoding")
+        self.assertEqual(len(json.loads(raw)["cards"]), 4)
+
+    def test_gzip_q_zero_not_zipped(self):
+        st, h, raw = self.get_raw("/cards", {"Accept-Encoding": "gzip;q=0"})
+        self.assertEqual(st, 200)
+        self.assertNotIn("content-encoding", h)
+        self.assertEqual(len(json.loads(raw)["cards"]), 4)
+
+    def test_small_reply_not_zipped(self):
+        st, h, raw = self.get_raw("/health", {"Accept-Encoding": "gzip"})
+        self.assertEqual(st, 200)
+        self.assertNotIn("content-encoding", h)
 
     def test_single_card(self):
         st, body = self.get("/card/c-one")
