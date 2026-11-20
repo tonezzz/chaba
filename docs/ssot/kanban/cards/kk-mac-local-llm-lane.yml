@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: done
-updated: 2026-11-20 13:33
+updated: 2026-11-20 13:37
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -599,6 +599,25 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-131818-use-kk-mac-apple-m4-max-36-gib,
     branch dispatch/20261120-131818-use-kk-mac-apple-m4-max-36-gib on idc02'
+- at: 2026-11-20 13:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 13:37
+  from: chaba
+  text: 'session-end checkpoint 3e387673: 10 leftover file(s) committed'
+- at: 2026-11-20 13:37
+  from: chaba
+  text: banked 94 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 13:37
+  from: chaba
+  text: pushed dispatch/20261120-131818-use-kk-mac-apple-m4-max-36-gib to origin
+- at: 2026-11-20 13:37
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-20 13:37
+  from: chaba
+  text: 'auto-merge not done: merge: merge: dispatch/20261120-131818-use-kk-mac-apple-m4-max-36-gib - not something
+    we can merge — close will block until merged'
 action:
   type: dispatch
   status: done
@@ -809,7 +828,6 @@ requests:
   escalated_at: 2026-11-06 20:16
   answer: framework-ab — ★ Compare actual Hermes Agent vs OpenClaw/Clawbot on the same local Qwen3:8B backend, synthetic
     read-only fixtures, same tool allowlist/verifier, no live channels or external egress (recommended)
-awaiting_action: true
 auto_close:
   by: merge-sweep
   at: 2026-11-20 13:33
