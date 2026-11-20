@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Render the kanban board: ssot.kanban.yml + cards/*.yml -> cards.json + index.html.
+"""Render the classic Kanban view alongside the default Board2 redirect.
 
 Layout follows the CMS page standard (ada-voice/pwa/cms/index.html):
 nav bar with EN/ไทย toggle + refresh, filterable card sidebar, main
 board pane, italic provenance footer. Document-first: edit a card file,
 re-run this script, commit.
 
-The page is dynamic: it fetches cards.json (served next to index.html)
-on load and every POLL_SECONDS so card edits appear without a reload.
+The classic page is dynamic: it fetches cards.json (served next to
+classic.html) on load and every POLL_SECONDS so card edits appear without a
+reload. index.html remains a redirect to Board2 for existing links.
 Buttons post to /apps/board-api/ (Caddy -> board-api.service on tony-dell),
 which writes back into the card YAML and re-runs this renderer.
 
@@ -47,6 +48,23 @@ I18N = {
 
 def esc(v) -> str:
     return html.escape(str(v))
+
+
+BOARD2_REDIRECT_STUB = """<!doctype html><html><head>
+<meta http-equiv="refresh" content="0; url=/apps/board2/">
+<link rel="canonical" href="/apps/board2/"><title>Kanban</title></head>
+<body><p>Board moved to <a href="/apps/board2/">/apps/board2/</a>&hellip;</p>
+<script>location.replace("/apps/board2/" + location.search + location.hash);</script>
+</body></html>
+"""
+
+
+def write_board_pages(out_path: Path, classic_page: str) -> Path:
+    """Keep the classic view addressable while /board/ defaults to Board2."""
+    classic_path = out_path.with_name("classic.html")
+    classic_path.write_text(classic_page, encoding="utf-8")
+    out_path.write_text(BOARD2_REDIRECT_STUB, encoding="utf-8")
+    return classic_path
 
 
 def dir_hash(card_dir: Path) -> str:
@@ -1069,20 +1087,15 @@ setInterval(load, POLL_MS);
     json_path.write_text(json.dumps(payload, ensure_ascii=False,
                                     default=str))  # yaml scalars -> date/datetime
 
-    # board2 is the default kanban view (Tony 2026-10-22): /apps/board
-    # serves a redirect stub so every origin/dashboard link lands on the
-    # living board. Classic render stays one `git revert` away.
-    stub = """<!doctype html><html><head>
-<meta http-equiv="refresh" content="0; url=/apps/board2/">
-<link rel="canonical" href="/apps/board2/"><title>Kanban</title></head>
-<body><p>Board moved to <a href="/apps/board2/">/apps/board2/</a>&hellip;</p>
-<script>location.replace("/apps/board2/" + location.search + location.hash);</script>
-</body></html>
-"""
-    out_path.write_text(stub)
+    # The standard route remains Board2. Publish the classic template at an
+    # explicit sibling URL for dashboards that need the legacy layout.
+    classic_path = write_board_pages(out_path, page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
-    print(f"wrote {out_path} (redirect stub -> board2) + cards.json ({len(cards)} cards, v{ver})")
+    print(
+        f"wrote {out_path} (redirect stub -> board2), {classic_path}, "
+        f"+ cards.json ({len(cards)} cards, v{ver})"
+    )
     return 0
 
 
