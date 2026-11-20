@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: backlog
-updated: 2026-11-19 20:03
+updated: 2026-11-20 18:36
 priority: high
 tags:
 - devnest
@@ -235,3 +235,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:36
+  from: devin
+  text: 2026-11-20 Jules lane RETIRED — provider EOL, session creation disabled account-wide (OPS-0156; ssot.devnest-lanes.yml
+    jules.status=retired, JULES_LANES drop-ins removed on tony-omen/idc03). lane=jules/executor=jules pins on this
+    card are dead and being stripped so a future re-queue classifies onto a live lane. Still relevant for nlm_batch/opencode
+    remote lanes — needs re-lane, not cancellation.

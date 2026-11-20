@@ -1,7 +1,7 @@
 id: jules-lane-feedback-state-handling
 title: 'jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail — map the state to card surface,
   not death'
-column: backlog
+column: done
 updated: 2026-11-20 18:36
 priority: high
 tags:
@@ -27,7 +27,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: idle
+  status: done
   sweep:
     failed_noted: 2026-11-09 20:34
   last_failure: 'journal=exit-code ECONDITION" |   } | } | devin-task-jules-lane-feedback-state-handling-1795173534.service:
@@ -358,5 +358,12 @@ comms:
     no new sessions). There will be no new Jules sessions to handle, so this card can never be validated and retry
     just re-queues a guaranteed failure. Card held to stop churn. Recommend close as obsolete (or reopen only if
     a Jules successor lane is approved).'
+- at: 2026-11-20 18:36
+  from: devin
+  text: 2026-11-20 CANCELLED — this card's entire scope was Jules-lane session-state handling; the lane is retired
+    (provider EOL, OPS-0156). Closing as done-cancelled since the board has no cancelled column; safe to archive.
+- at: 2026-11-20 18:36
+  from: devin
+  text: closed by devin
 claim:
   since: 2026-11-20 18:18
