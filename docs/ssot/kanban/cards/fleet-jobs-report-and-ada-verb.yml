@@ -1,6 +1,6 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
-column: backlog
+column: doing
 updated: 2026-11-20 20:15
 priority: high
 tags:
@@ -27,16 +27,17 @@ action:
   repo: chaba
   executor: devin
   lane: devin
-  status: queued
+  status: running
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
-  attempts: 1
+  attempts: 2
   result: 'journal=exit-code iverable-repo-work.service: Failed with result ''exit-code''. | devin-task-20261120-200209-two-part-deliverable-repo-work.service:
     Consumed 4min 18.208s CPU time over 11min 39.070s wall clock time, 941.2M memory peak, 655.2M memory swap peak.'
   last_failure: 'journal=exit-code iverable-repo-work.service: Failed with result ''exit-code''. | devin-task-20261120-200209-two-part-deliverable-repo-work.service:
     Consumed 4min 18.208s CPU time over 11min 39.070s wall clock time, 941.2M memory peak, 655.2M memory swap peak.'
+  runner: idc02
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -319,5 +320,8 @@ comms:
 - at: 2026-11-20 20:15
   from: chaba
   text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-20 20:45'
+- at: 2026-11-20 20:15
+  from: idc02
+  text: claimed
 claim:
-  since: 2026-11-20 20:00
+  since: 2026-11-20 20:15
