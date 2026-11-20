@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
-column: backlog
-updated: 2026-11-20 20:11
+column: doing
+updated: 2026-11-20 20:16
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -19,16 +19,17 @@ spec: 'In ada-voice opencode/ada_mcp.py: define BRIDGE_VERSION (git sha or semve
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: jevos
   sweep:
     failed_noted: 2026-11-17 22:24
   last_failure: 'journal=exit-code e-opencode-ada-mcp-.service: Failed with result ''exit-code''. | devin-task-20261120-200415-in-ada-voice-opencode-ada-mcp-.service:
     Consumed 1min 29.854s CPU time over 5min 39.958s wall clock time, 887.8M memory peak, 479.9M memory swap peak.'
-  attempts: 1
+  attempts: 2
   result: 'journal=exit-code e-opencode-ada-mcp-.service: Failed with result ''exit-code''. | devin-task-20261120-200415-in-ada-voice-opencode-ada-mcp-.service:
     Consumed 1min 29.854s CPU time over 5min 39.958s wall clock time, 887.8M memory peak, 479.9M memory swap peak.'
+  runner: tony-omen
 ref: ADA-0177
 comms:
 - at: 2026-11-17 22:11
@@ -201,6 +202,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: provider rate-limited (rate-limit on devin-task-20261120-195551-finish-artifact-landing-verifi)
     — claims held ~22m'
+- at: 2026-11-20 20:16
+  from: tony-omen
+  text: claimed
 review_kind: verify
 claim:
-  since: 2026-11-20 20:02
+  since: 2026-11-20 20:16
