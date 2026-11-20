@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
 column: backlog
-updated: 2026-11-19 20:02
+updated: 2026-11-20 12:32
 priority: high
 tags:
 - ada
@@ -304,3 +304,8 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 12:32
+  from: devin
+  text: Jules lane is retired (provider EOL, session creation disabled; see OPS-0156). The earlier failures were
+    this, not a code bug. Do not requeue as executor=jules. Staged ada-control dispatch only admits read-only profiles,
+    so run via card-run.py --lifecycle on opencode, or pick up manually.
