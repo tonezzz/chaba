@@ -1,7 +1,7 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
 column: backlog
-updated: 2026-11-20 18:52
+updated: 2026-11-20 19:49
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
 priority: medium
@@ -170,6 +170,12 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:49
+  from: chaba
+  text: classified as devin (fallback conf 0.09)
+- at: 2026-11-20 19:49
+  from: tony
+  text: queued for processing
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
@@ -190,13 +196,12 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-omen
   result: 'exit=1 devin-task-20261117-233554-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
     | devin-task-20261117-233554-evaluate-opencode-as-a-supervi.service: Consumed 988ms CPU time over 14.738s wall
     clock time, 75.9M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:41
-awaiting_action: true
+claim: {}
