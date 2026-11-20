@@ -1,0 +1,20 @@
+id: mcp-kornia-omen-registration
+title: Register mcp-kornia on tony-omen agent lane
+column: backlog
+updated: 2026-11-20 19:02
+brief: mcp-kornia is declared operational/agent-lanes but configured only on tony-dell; add it to tony-omen.
+priority: medium
+tags:
+- mcp
+- fleet-inventory
+spec: 'Finding mcp-tony-omen-missing-active (Reports:Fleet-MCP-Inventory, 2026-11-20). ssot.mcp.yml declares mcp-kornia
+  status operational, scope agent-lanes, config_files devin:true. server.py exists at /home/tony/CascadeProjects/chaba/mcp-servers/mcp-kornia/server.py
+  on omen and the server is configured on tony-dell, but it is absent from tony-omen''s ~/.config/devin/mcp_config.json.
+  Done: add mcp-kornia to omen''s devin config using the same read-only invocation as dell, verify its tool list
+  responds, and confirm the finding clears. If omen should not carry the GS evaluator, instead narrow scope to [tony_dell]
+  in ssot.mcp.yml and close with that rationale.'
+ref: OPS-0035
+comms:
+- at: 2026-11-20 19:02
+  from: devin
+  text: card captured via board-api

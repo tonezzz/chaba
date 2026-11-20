@@ -1,0 +1,21 @@
+id: mcp-dell-alphavantage-llama-decision
+title: Decide alphavantage allowlist and mcp-llama retirement on tony-dell
+column: backlog
+updated: 2026-11-20 19:02
+brief: Two operational declarations absent from tony-dell config; resolve the AUD-0886 allowlist/retire verdict.
+priority: medium
+tags:
+- mcp
+- fleet-inventory
+spec: 'Finding mcp-tony-dell-missing-active (Reports:Fleet-MCP-Inventory, 2026-11-20). AUD-0886 ruled: alphavantage
+  injects ~5.6k schema lines (~15k tokens) per session - allowlist or per-session profile it; mcp-llama is superseded
+  by the LiteLLM gateway - retire/repoint recommended. Both remain status: operational in ssot.mcp.yml with config_files
+  devin:true but are absent from tony-dell''s mcp_config.json. Done: decide each server explicitly - (a) alphavantage:
+  add to dell config with an allowlist/profile, or set status retired-YYYY-MM-DD and drop config_files devin:true;
+  (b) mcp-llama: repoint to LiteLLM or retire the same way. Update config and ssot.mcp.yml, verify the finding clears,
+  and record the verdict in card comms.'
+ref: OPS-0036
+comms:
+- at: 2026-11-20 19:02
+  from: devin
+  text: card captured via board-api
