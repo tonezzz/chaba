@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-20 20:02
+updated: 2026-11-20 20:06
 priority: high
 tags:
 - devnest
@@ -292,5 +292,12 @@ comms:
     Ada Report-Verb Read Path Contract ; [ada-t4-micro-entity-design] [scheduler live] ada-jobs-verify.timer installed
     on; [fleet-jobs-report-and-ada-verb] idc02 defers: executor=jules declared but this ; [fleet-jobs-report-and-ada-verb]
     kk-mac defers: executor=jule'
+- at: 2026-11-20 20:06
+  from: devin
+  text: 'Picked up on dispatch worktree; cherry-picked un-merged fix branch 2c9fa451b5f (clean — master had not
+    touched those files). Found two more source bugs beyond the known gaps: (1) timer source read ~/var/chaba/reports/timeline.jsonl
+    (report timeline, wrong schema — host/status=failing never match) instead of the timer-timeline CMS rollup;
+    (2) runner health globbed ~/var/chaba/health/*.json which holds unrelated producer snapshots and invents bogus
+    hosts. Rewiring to MDDB ada-cms-pages timer-timel'
 claim:
   since: 2026-11-20 20:00
