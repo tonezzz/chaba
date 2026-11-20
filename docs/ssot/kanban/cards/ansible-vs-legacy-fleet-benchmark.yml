@@ -1,6 +1,6 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
-column: backlog
+column: doing
 updated: 2026-11-21 06:08
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
@@ -69,10 +69,12 @@ spec: 'GOAL: Benchmark Ansible against the existing fleet tooling on 2-3 real jo
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
+  runner: tony-macbook
+  attempts: 1
 comms:
 - at: 2026-11-21 06:06
   from: chaba
@@ -90,4 +92,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 06:08
+  from: tony-macbook
+  text: claimed
 ref: BEN-0005
+claim:
+  since: 2026-11-21 06:08
