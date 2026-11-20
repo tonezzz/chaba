@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-19 20:02
+updated: 2026-11-20 18:18
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -116,6 +116,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:18
+  from: devin
+  text: 'idc02 load findings 2026-11-20 (load 6-11 on 4 cores; runner claim gate 1.5/core blocks ADA-1285 and others).
+    (1) mddb-lab mddbd spins 80-96% CPU; a restart did not fix it, the new process re-spun within ~15 min with no
+    log output; cause unknown, separate from ollama (mddb-lab embeds via idc03:11436, not local ollama). (2) Local
+    ollama (OLLAMA_MAX_LOADED_MODELS=1, SYS-1082 clamp) alternates nomic-embed-text and bge-m3: 26 model reloads
+    in 15 min, a one-word bge-m3 embed took 27.8s. 21 of 25 /api'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
