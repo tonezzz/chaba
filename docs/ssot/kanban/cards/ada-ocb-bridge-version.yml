@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: backlog
-updated: 2026-11-20 19:28
+updated: 2026-11-20 19:29
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -141,5 +141,9 @@ comms:
 - at: 2026-11-20 19:28
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
+- at: 2026-11-20 19:29
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 review_kind: verify
 claim: {}
