@@ -1,6 +1,6 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
-column: backlog
+column: doing
 updated: 2026-11-20 13:28
 ref: ADA-1199
 comms:
@@ -201,10 +201,13 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 13:28
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -213,10 +216,11 @@ action:
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
     Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
     2.730s CPU time.'
-  attempts: 1
+  attempts: 2
   result: 'exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result ''exit-code''. |
     devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Consumed 26.454s CPU time over 1min 22.212s
     wall clock time, 768.7M memory peak.'
+  runner: tony-omen
 requests:
 - id: multiple-runner-agents-across-3dd40d
   ask: Multiple runner-agents across hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because
@@ -233,4 +237,5 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy the updated runner-agent script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     to all affected hosts using scp and resume normal dispatch.
-claim: {}
+claim:
+  since: 2026-11-20 13:28
