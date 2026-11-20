@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: review
-updated: 2026-11-20 13:52
+updated: 2026-11-20 13:56
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -281,6 +281,10 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261120-132007-canonicalize-the-opencode-ada- — close will block
     until merged'
+- at: 2026-11-20 13:56
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261120-132007-canonicalize-the-opencode-ada- on
+    idc02 — if the work was never pushed it may be gone'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -322,6 +326,7 @@ action:
   sweep:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 13:41
+    session_gone: 2026-11-20 13:56
   runner: idc02
   attempts: 1
 claim:
