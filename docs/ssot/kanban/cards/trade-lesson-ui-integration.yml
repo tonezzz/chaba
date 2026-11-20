@@ -1,7 +1,7 @@
 id: trade-lesson-ui-integration
 title: 'Trade lesson draft: trade-ui (free-lane drafting)'
 column: review
-updated: 2026-11-20 19:33
+updated: 2026-11-20 20:27
 brief: Distill trade docs (features/ui/* (TRADECANVAS_INTEGRATION, TRADECANVAS_QUICKSTART, WICK_INTEGRATION, UI_COMPARISON_EVALUATION,
   TRADING_TERMINAL_INTEGRATION, TRADING_TERMINAL_QUICKSTART)) into lesson trade-trade-ui; drafting on the $0 free
   lane via trade-lesson-migrate.py.
@@ -39,6 +39,7 @@ action:
   sweep:
     stale_running: 2026-11-16 20:42
     fetch_failed: 2026-11-19 08:59
+    session_gone: 2026-11-20 20:27
   result: 'exit=0 haba/trade-lesson-migrate/runs/20261116-203051-trade-ui/`; full details in `dispatch-outcome-20261116-202622-free-lane-draft-publish-for-tr.md`.
     | devin-task-20261116-202622-free-lane-draft-publish-for-tr.service: Consumed 30.400s CPU time.'
   verified: false
@@ -447,6 +448,10 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-18: merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr:
     2 commit(s) conflict with origin/master '
+- at: 2026-11-20 20:27
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261116-202622-free-lane-draft-publish-for-tr on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
 requests:
