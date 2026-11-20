@@ -1,7 +1,7 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
-column: backlog
-updated: 2026-11-21 06:30
+column: doing
+updated: 2026-11-21 06:31
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
 priority: medium
@@ -69,17 +69,18 @@ spec: 'GOAL: Benchmark Ansible against the existing fleet tooling on 2-3 real jo
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  attempts: 1
+  attempts: 2
   result: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
     | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
     47.327s wall clock time, 543.9M memory peak.'
   last_failure: 'journal=exit-code 61121-061106-goal-benchmark-ansible-against.service: Failed with result ''exit-code''.
     | devin-task-20261121-061106-goal-benchmark-ansible-against.service: Consumed 7min 34.479s CPU time over 17min
     47.327s wall clock time, 543.9M memory peak.'
+  runner: tony-dell
 comms:
 - at: 2026-11-21 06:06
   from: chaba
@@ -140,6 +141,9 @@ comms:
 - at: 2026-11-21 06:30
   from: chaba
   text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-21 07:00'
+- at: 2026-11-21 06:31
+  from: tony-dell
+  text: claimed
 ref: BEN-0005
 claim:
-  since: 2026-11-21 06:08
+  since: 2026-11-21 06:31
