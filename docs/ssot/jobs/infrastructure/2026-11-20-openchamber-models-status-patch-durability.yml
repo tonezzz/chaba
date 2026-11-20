@@ -1,0 +1,76 @@
+id: 2026-11-20-openchamber-models-status-patch-durability
+title: OpenChamber models.status patch made durable across npm i -g
+card: ocb-models-status-patch-durability
+date: "2026-11-20"
+domain: infrastructure
+status: implemented
+summary: >
+  The hand-patch that adds the models.status control action and
+  /api/openchamber/models/status (LiteLLM gateway liveness probe) to
+  @openchamber/web@2.7.3 on idc02 lived only in node_modules — the next
+  monthly `npm i -g` would silently revert it. The patch is now
+  extracted into the chaba repo and re-applied by
+  openchamber-update.service before the service restarts, with
+  fail-loud semantics if upstream changes break the patch.
+
+why: >
+  2026-11-20 incident: patch applied by hand to
+  ~/.local/node/lib/node_modules/@openchamber/web/build/... including
+  a TDZ crash-loop fixed in place. node_modules is not a source of
+  truth; openchamber-update.timer (monthly 1st 06:30) restores
+  pristine files with no warning.
+
+mechanism:
+  patch_file: stacks/idc02/openchamber/openchamber-models-status.patch
+    # unified diff vs pristine @openchamber/web@2.7.3 (npm pack);
+    # 161 lines across 5 built files, apply with `patch -p1 -d <pkg root>`
+  apply_script: stacks/idc02/openchamber/apply-models-status-patch.sh
+    # idempotent (marker grep on 'models.status' in actions.js);
+    # `patch --dry-run` gate -> exit 1 with regenerate instructions
+    # if upstream context moved; node --check on all 5 patched files;
+    # arg: install prefix, default $HOME/.local/node
+  unit_wiring: >
+    idc02 ~/.config/systemd/user/openchamber-update.service gained
+    `ExecStartPost=/home/tony/CascadeProjects/chaba/stacks/idc02/openchamber/apply-models-status-patch.sh`
+    BEFORE the existing `ExecStartPost=systemctl --user restart
+    openchamber.service`. No '-' prefix: a patch failure fails the
+    oneshot unit (visible in failed-units triage) and skips the
+    restart — the old process keeps serving; the feature never
+    silently disappears.
+  files_patched:
+    - build/server/runtime.js                        # lazy `get controlService()`
+    - build/server/lib/server-frame/bootstrap-runtime.js  # pass controlService dep
+    - build/server/lib/openchamber-control/service.js     # modelsStatus() + probeGatewayModel()
+    - build/server/lib/openchamber-control/actions.js     # action catalog entry
+    - build/server/lib/self-update/openchamber-routes.js  # GET /api/openchamber/models/status
+  env: LITELLM_URL / LITELLM_KEY read at request time (litellm-ada.env drop-in).
+
+verification:
+  - "fresh `npm i -g --prefix=/tmp/ocb-verify @openchamber/web@2.7.3` +
+    apply script -> all 5 files md5-identical to the live (verified)
+    install; node --check clean; second run reports already-applied."
+  - "failure path: corrupted scratch file -> dry-run fails, exit 1,
+    regenerate instructions printed."
+  - "live endpoint: POST /auth/session (UI password) then GET
+    /api/openchamber/models/status -> 200, 38 models, summary
+    {active:31, unavailable:7, error:0}; cf-* litellm models correctly
+    flagged unavailable (Cloudflare daily-neuron quota 429)."
+  - "earlier transient 502 'Location plugins did not finish
+    activating' came from the opencode backend during plugin
+    activation, not the patch; retried OK."
+
+upstream:
+  repo: https://github.com/openchamber/openchamber  # public, MIT, main
+  decision: >
+    patch-and-reapply chosen for now; an upstream PR is a follow-up
+    card — the probe is site-specific (hardcoded provider 'litellm',
+    LITELLM_URL/LITELLM_KEY env) and would need generalizing against
+    the TS source, not the dist bundle the patch edits.
+
+regenerate_if_upstream_changes: >
+  On the version bump that breaks the unit: npm pack the new
+  @openchamber/web, port the hunks (service.js modelsStatus +
+  probeGatewayModel, actions.js catalog line, openchamber-routes.js
+  route + destructure, runtime.js lazy getter, bootstrap-runtime.js
+  dep pass-through), regenerate the diff vs the new pristine package,
+  update the patch file; do NOT weaken the failure gate.

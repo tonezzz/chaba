@@ -2232,9 +2232,15 @@ hosts:
       - {name: openchamber.service, type: service, scope: user,
          note: "OpenChamber ada-ocb pane — migrated tony-dell -> idc02 2026-11-18
           (card openchamber-migrate-tony-dell-to-idc02). Same recipe as dell:
-          node24 (~/.local/node24/bin/node) running @openchamber/web@2.7.0 +
+          node24 (~/.local/node24/bin/node) running @openchamber/web@2.7.3 +
           @opencode/cli@2.3.2 installed under ~/.local/node prefix, binds
-          127.0.0.1:3000, managed opencode child per session. startup.env
+          127.0.0.1:3000, managed opencode child per session. Carries a
+          hand-patch adding models.status action +
+          /api/openchamber/models/status (LiteLLM gateway liveness probe;
+          needs LITELLM_URL/LITELLM_KEY from litellm-ada.env) — durable
+          re-application via openchamber-update.service ExecStartPost,
+          patch in stacks/idc02/openchamber/ (card
+          ocb-models-status-patch-durability). startup.env
           mode 600 (OPENCHAMBER_UI_PASSWORD, OPENCHAMBER_FRAME_ANCESTORS,
           OPENCODE_BINARY=~/.local/node/bin/opencode); drop-in
           10-litellm-env.conf loads %h/.config/secrets/litellm-ada.env.
@@ -2242,9 +2248,17 @@ hosts:
           (was dell tailscale :8443). claude-agent lane pending interactive
           `claude auth login` on this host."}
       - {name: openchamber-update.service, type: service, scope: user,
-         note: "oneshot — npm i -g @openchamber/web @opencode/cli then restarts
+         note: "oneshot — npm i -g @openchamber/web @opencode/cli, then
+          ExecStartPost apply-models-status-patch.sh, then restarts
           openchamber.service; fired by openchamber-update.timer (migrated
-          with the pane 2026-11-18)"}
+          with the pane 2026-11-18). The patch step (added 2026-11-20, card
+          ocb-models-status-patch-durability) re-applies the models.status
+          feature patch — ~/CascadeProjects/chaba/stacks/idc02/openchamber/
+          openchamber-models-status.patch — because npm i -g restores
+          pristine node_modules. No '-' prefix on purpose: if the patch
+          stops applying on a new upstream version the unit FAILS instead
+          of silently dropping /api/openchamber/models/status (and the
+          restart is skipped, leaving the old process serving)."}
       - {name: openchamber-update.timer, type: timer, scope: user,
          note: "monthly 1st 06:30 OpenChamber+opencode update cadence
           (migrated tony-dell -> idc02 2026-11-18)"}
