@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
-column: backlog
-updated: 2026-11-20 20:11
+column: doing
+updated: 2026-11-20 20:18
 priority: medium
 tags:
 - mddb
@@ -192,10 +192,13 @@ comms:
 - at: 2026-11-20 20:11
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-20 20:18
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   executor: devin
   sweep:
@@ -203,6 +206,8 @@ action:
   last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261117-184837-scripts-embed-embed-lane-py-do.service:
     Failed with result ''exit-code''. | devin-task-20261117-184837-scripts-embed-embed-lane-py-do.service: Consumed
     42.457s CPU time.'
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-20 20:18
