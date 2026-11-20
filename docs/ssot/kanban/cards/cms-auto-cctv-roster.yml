@@ -7,7 +7,7 @@ priority: high
 note: 'Auto-recovered 2026-11-16: cctv-roster healthy for 2 consecutive ticks (status=ok, state=ok).'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-19 20:02
+updated: 2026-11-20 18:48
 brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
 ref: KNB-0175
 comms:
@@ -81,4 +81,8 @@ comms:
 - at: 2026-11-19 20:02
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
