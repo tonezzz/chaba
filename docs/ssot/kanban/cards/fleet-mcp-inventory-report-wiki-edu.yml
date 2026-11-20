@@ -1,0 +1,48 @@
+id: fleet-mcp-inventory-report-wiki-edu
+title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
+column: backlog
+updated: 2026-11-20 16:25
+brief: 'Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation
+  script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons
+  in Education:.'
+priority: high
+tags:
+- mcp
+- ssot
+- reports
+- education
+- wiki
+- inventory
+spec: 'Context: MDDB on tony-dell is a dead/retired follower (canonical primary migrated to idc03 100.102.134.91:11023
+  / mddbd 9000/mcp). tony-dell runs a mix of operational, retired and repointed MCP servers declared in docs/ssot/infrastructure/ssot.mcp.yml;
+  agent tool bindings live in ssot.tools.yml; host inventory in ssot.host-roles.yml. Reporting follows ssot.reports.yml
+  (L0 raw -> L1 producer -> L2 domain -> L3 overview). Wiki write mode is wiki-primary for lessons; /wiki/page allowlist
+  currently covers Education: and Reports: (Infrastructure: deferred to card wiki-page-door-infrastructure-namespace).
+
+
+  Deliverables:
+
+  1) Extend declared SSOT (no new registry): enrich ssot.mcp.yml with per-host observed state + cloud/bridge classification;
+  align ssot.tools.yml agent bindings; reference ssot.host-roles.yml for fleet membership.
+
+  2) Observation script scripts/mcp-inventory.py: per-host probe of configured vs running MCP servers across devin/windsurf/codeium/opencode
+  configs, writes L0 artifact + meta.yml via scripts/lib/report.py::write_meta. Register as node mcp-inventory/<host>
+  (L1-producer) in ssot.reports.yml with cadence.
+
+  3) L2 node mcp-fleet (reports/mcp-fleet/MCP-FLEET-REPORT.md + meta) rolling up per-host nodes; add to fleet/system-report
+  children as appropriate; schedule via ssot.jobs.yml.
+
+  4) Publication sinks: generated report -> wiki Reports: via wiki-reports sink; durable lessons/runbook -> Education:
+  via board-api POST /lesson. Do not write Infrastructure: until its door card lands.
+
+
+  Done when: SSOT declarations updated, script runs and writes meta, L2 report renders with per-host inventory +
+  drift, job registered, and one verified Reports: page plus at least one Education: lesson exist with evidence
+  on this card. No hand-written digests; evidence-bound only.'
+action:
+  type: manual
+ref: KNB-0019
+comms:
+- at: 2026-11-20 16:25
+  from: ada
+  text: card captured via board-api
