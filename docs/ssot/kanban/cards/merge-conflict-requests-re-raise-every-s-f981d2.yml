@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: doing
-updated: 2026-11-20 18:43
+updated: 2026-11-20 18:50
 priority: high
 tags:
 - board
@@ -190,6 +190,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261117-233349-observe on tony-macbook — if the
     work was never pushed it may be gone'
+- at: 2026-11-20 18:50
+  from: devin
+  text: 'dispatch started (attempt 2, tony-macbook) — implementing Tony-approved option: signature-dedupe + execute-answer
+    in merge-sweep, MERGE_RESOLVE_RAILS prompt block, idempotent /respond. Previous idc02 attempt died exit=1 with
+    no pushed branch; starting fresh.'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
@@ -207,3 +212,4 @@ requests:
     queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
 claim:
   since: 2026-11-20 18:37
+awaiting_action: true

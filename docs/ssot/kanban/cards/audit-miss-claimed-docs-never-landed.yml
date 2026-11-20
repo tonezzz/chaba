@@ -1,0 +1,21 @@
+id: audit-miss-claimed-docs-never-landed
+title: Claimed reports/KB docs never landed
+column: backlog
+updated: 2026-11-20 18:50
+brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
+  on master or any located copy.'
+priority: low
+program: audit
+tags:
+- audit
+- artifact-landing
+- docs
+spec: docs/reports/ops0790-rollout-idc03.md (rollout note claimed in dispatcher-jobs-migration envelope, card OPS-0790/OPS-0983);
+  docs/reports/plan-route-checklist.md (plan-route eval artifact, history_7b9fc747144a4351); docs/kb/edge-add-public-host.md
+  — referenced in ssot.procedures registry with status:verified but the file has never existed on master, any branch,
+  or disk; either the KB page was never written or the registry entry is wrong — write the doc or fix the registry.
+ref: AUD-0032
+comms:
+- at: 2026-11-20 18:50
+  from: tony
+  text: card captured via board-api

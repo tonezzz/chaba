@@ -1,0 +1,23 @@
+id: audit-miss-vanished-board-cards
+title: Board-api card creations acknowledged but cards vanished
+column: backlog
+updated: 2026-11-20 18:50
+brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
+  exists on the live board and no card file exists on master, any branch, or disk.'
+priority: high
+program: audit
+tags:
+- audit
+- artifact-landing
+- board-api
+spec: dispatch-worktree-debt-audit was created as AUD-0734 (board-api response captured in history_764432035aa041d6.md);
+  session-report-jsondecodeerror-in-daily-d0662a was created as KNB-0733 (response in history_d3c8499f85ca4e6c.md;
+  its underlying concern is now tracked on ADA-0209). Neither id nor ref appears on the live board, in docs/ssot/kanban/cards,
+  in the archive, or in git history. Investigate board-api/card-file persistence (kanban-commit pull clobber? rejected
+  write?) — same failure class as AUD-0021 (done) but different later cards. Recreate the two cards if the work
+  is still relevant.
+ref: AUD-0034
+comms:
+- at: 2026-11-20 18:50
+  from: tony
+  text: card captured via board-api

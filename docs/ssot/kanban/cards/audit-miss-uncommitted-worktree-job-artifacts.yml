@@ -1,0 +1,28 @@
+id: audit-miss-uncommitted-worktree-job-artifacts
+title: Job records and eval artifacts uncommitted in live dispatch worktrees
+column: backlog
+updated: 2026-11-20 18:50
+brief: 'Session audit 2026-11-20 (AUD-0973): produced artifacts found only as uncommitted or local-branch files
+  in still-existing worktrees; never reached origin/master.'
+priority: medium
+program: audit
+tags:
+- audit
+- artifact-landing
+- dispatch-worktree
+spec: 'Land or consciously discard these produced artifacts, currently only in worktrees under ~/CascadeProjects
+  on tony-macbook: chaba-wt-kk-mac-video-render-probe-20261029 (untracked: docs/ssot/jobs/nest/2026-10-29-kk-mac-storyboard-i2v-probe.yml,
+  2026-10-30-kk-mac-i2v-fullshot-probe.yml, 2026-10-30-kk-mac-i2v-shot02-test.yml, 2026-10-30-kk-mac-nest-dispatch-standard.yml,
+  2026-11-04-kk-mac-dance-party-local-render.yml; modified docs/kb/colab-mcp-jobs.md); chaba-wt-kk-pdf-image-audit
+  (docs/ssot/jobs/nest/2026-10-29-kk-private-v2-preview.yml); chaba-wt-sacred-father-panel-procedure-20261031 (modified-on-branch
+  docs/ssot/jobs/nest/2026-10-31-storyboard-panel-to-cut-procedure.yml, docs/kb/storyboard-panel-to-cut-procedure.md,
+  docs/kb/nang-sibsong-lxmf-contacts.md); chaba-wt-opencode-first-eval-20261029 (untracked evals/opencode-lane additions:
+  compile_proposal.py, jobs/plan-proposal-v2-*.yml + v3, profiles, reports, runs outputs; docs/ssot/jobs/devnest/2026-10-29-opencode-jev-plan-route-eval.yml);
+  plus docs/ssot/jobs/ops/2026-11-03-ops1037-command-efficiency-apply.yml and docs/ssot/jobs/models/2026-11-03-kk-ltx23-gpu-format-audit.yml
+  in other worktrees. Related systemic cards: OPS-0941 (zero-commit sessions), OPS-1288 (dispatch-worktree-merged-triage).
+  Salvage via branch+merge, not direct master commits.'
+ref: AUD-0029
+comms:
+- at: 2026-11-20 18:50
+  from: tony
+  text: card captured via board-api
