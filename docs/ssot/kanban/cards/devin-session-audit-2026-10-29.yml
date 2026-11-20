@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: backlog
-updated: 2026-11-20 20:11
+column: doing
+updated: 2026-11-20 20:14
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -437,15 +437,18 @@ comms:
 - at: 2026-11-20 20:11
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-20 20:14
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
-  attempts: 1
+  attempts: 2
   last_failure: 'journal=exit-code 0261120-195551-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
     | devin-task-20261120-195551-finish-artifact-landing-verifi.service: Consumed 1min 3.915s CPU time over 6min
     44.180s wall clock time, 396.8M memory peak.'
@@ -456,5 +459,6 @@ action:
   result: 'journal=exit-code 0261120-195551-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
     | devin-task-20261120-195551-finish-artifact-landing-verifi.service: Consumed 1min 3.915s CPU time over 6min
     44.180s wall clock time, 396.8M memory peak.'
+  runner: tony-omen
 claim:
-  since: 2026-11-20 19:53
+  since: 2026-11-20 20:14
