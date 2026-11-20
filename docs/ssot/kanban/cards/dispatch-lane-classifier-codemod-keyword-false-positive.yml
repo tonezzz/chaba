@@ -1,8 +1,8 @@
 id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
-column: doing
-updated: 2026-11-20 20:08
+column: backlog
+updated: 2026-11-20 20:27
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -38,17 +38,17 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: failed
   attempts: 2
   sweep:
     stale_running: 2026-11-20 19:12
     dirty: 3
-  result: 'exit=1 | devin-task-20261120-185849-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-185849-repo-work-chaba-scripts-board-.service: Consumed 1min 562ms CPU time, 198.9M memory
-    peak, 0B memory swap peak.'
-  last_failure: 'exit=1 | devin-task-20261120-185849-repo-work-chaba-scripts-board-.service: Failed with result
-    ''exit-code''. | devin-task-20261120-185849-repo-work-chaba-scripts-board-.service: Consumed 1min 562ms CPU
-    time, 198.9M memory peak, 0B memory swap peak.'
+  result: 'journal=exit-code 1120-194516-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-194516-repo-work-chaba-scripts-board-.service: Consumed 43min 27.318s CPU time over 41min
+    53.951s wall clock time, 391.9M memory peak.'
+  last_failure: 'journal=exit-code 1120-194516-repo-work-chaba-scripts-board-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-194516-repo-work-chaba-scripts-board-.service: Consumed 43min 27.318s CPU time over 41min
+    53.951s wall clock time, 391.9M memory peak.'
   runner: tony-macbook
 ref: OPS-0028
 comms:
@@ -147,5 +147,13 @@ comms:
   text: 'attempt 2 working: word-boundary _kw_hit + _codemod_hit gate landed in dispatch_repos + vendored runner-agent
     copy (lockstep, identical LANE_KW incl. free_lane drift fix). 15 new tests green in tests/board/test_codemod_lane_gate.py;
     running existing suites — they are slow here because unstubbed /cards calls take ~30s each'
+- at: 2026-11-20 20:27
+  from: tony-macbook
+  text: 'finished (failed): journal=exit-code 1120-194516-repo-work-chaba-scripts-board-.service: Failed with result
+    ''exit-code''. | devin-task-20261 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-20 20:27
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-194516-repo-work-chaba-scripts-board- (rate limit)
+    — tony-macbook holds new claims ~30m
 claim:
   since: 2026-11-20 19:42
