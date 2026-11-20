@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
-column: done
-updated: 2026-11-20 18:50
+column: backlog
+updated: 2026-11-21 01:30
 priority: high
 tags:
 - timer-alert
@@ -1670,6 +1670,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 01:30
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-21 01:30
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-21 01:18) of `wp-cam-snapshot.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining
