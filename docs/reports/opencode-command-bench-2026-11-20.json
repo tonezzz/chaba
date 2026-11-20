@@ -1,0 +1,184 @@
+{
+ "meta": {
+  "date": "2026-11-20",
+  "reps": 5,
+  "canonical": "/home/tony/CascadeProjects/dispatch-wt-20261120-132007-canonicalize-the-opencode-ada-/stacks/idc02/ada-code/commands/ada.md",
+  "deployed": "/home/tony/.local/share/ada-code/workspace/.opencode/commands/ada.md"
+ },
+ "results": [
+  {
+   "scenario": "publish-update",
+   "manual": {
+    "calls": [
+     {
+      "cmd": "cat deployed",
+      "bytes": 10007,
+      "ms": 6.6664209589362144
+     },
+     {
+      "cmd": "sha256sum deployed",
+      "bytes": 127,
+      "ms": 7.133449427783489
+     },
+     {
+      "cmd": "diff -u deployed candidate",
+      "bytes": 1447,
+      "ms": 6.985178217291832
+     },
+     {
+      "cmd": "cp candidate -> canonical",
+      "bytes": 0,
+      "ms": 6.8647973239421844
+     },
+     {
+      "cmd": "git add+commit",
+      "bytes": 55,
+      "ms": 18.310469575226307
+     },
+     {
+      "cmd": "cp+mv deploy",
+      "bytes": 0,
+      "ms": 7.595870643854141
+     },
+     {
+      "cmd": "sha256sum verify",
+      "bytes": 127,
+      "ms": 5.864840932190418
+     },
+     {
+      "cmd": "sha256sum canonical",
+      "bytes": 141,
+      "ms": 6.220768205821514
+     }
+    ],
+    "n_calls": 8,
+    "response_bytes": 11904,
+    "verified": true,
+    "median_ms": 65.6,
+    "tokens_est": 3456
+   },
+   "tool": {
+    "calls": [
+     {
+      "op": "preview",
+      "request_bytes": 32,
+      "response_bytes": 484,
+      "ms": 1.1579450219869614
+     },
+     {
+      "op": "validate",
+      "request_bytes": 11024,
+      "response_bytes": 379,
+      "ms": 0.10228157043457031
+     },
+     {
+      "op": "publish",
+      "request_bytes": 11122,
+      "response_bytes": 515,
+      "ms": 1.2867050245404243
+     },
+     {
+      "op": "sync",
+      "request_bytes": 128,
+      "response_bytes": 447,
+      "ms": 1.1515077203512192
+     },
+     {
+      "op": "verify",
+      "request_bytes": 31,
+      "response_bytes": 510,
+      "ms": 0.7340442389249802
+     }
+    ],
+    "n_calls": 5,
+    "request_bytes": 22337,
+    "response_bytes": 2335,
+    "verified": true,
+    "median_ms": 5.8,
+    "tokens_est": 884
+   },
+   "delta": {
+    "response_bytes_pct": 80.38,
+    "calls": 3,
+    "tokens_pct": 74.42
+   },
+   "evidence_equal": true
+  },
+  {
+   "scenario": "drift-repair",
+   "manual": {
+    "calls": [
+     {
+      "cmd": "cat deployed",
+      "bytes": 10007,
+      "ms": 8.64086952060461
+     },
+     {
+      "cmd": "sha256sum deployed",
+      "bytes": 125,
+      "ms": 12.91619148105383
+     },
+     {
+      "cmd": "diff -u deployed candidate",
+      "bytes": 1443,
+      "ms": 36.81936766952276
+     },
+     {
+      "cmd": "cp+mv deploy",
+      "bytes": 0,
+      "ms": 3.2751932740211487
+     },
+     {
+      "cmd": "sha256sum verify",
+      "bytes": 125,
+      "ms": 2.585027366876602
+     },
+     {
+      "cmd": "sha256sum canonical",
+      "bytes": 139,
+      "ms": 5.007151514291763
+     }
+    ],
+    "n_calls": 6,
+    "response_bytes": 11839,
+    "verified": true,
+    "median_ms": 56.0,
+    "tokens_est": 3320
+   },
+   "tool": {
+    "calls": [
+     {
+      "op": "preview",
+      "request_bytes": 32,
+      "response_bytes": 1837,
+      "ms": 0.9647207334637642
+     },
+     {
+      "op": "sync",
+      "request_bytes": 128,
+      "response_bytes": 445,
+      "ms": 0.80863106995821
+     },
+     {
+      "op": "verify",
+      "request_bytes": 31,
+      "response_bytes": 508,
+      "ms": 1.500612124800682
+     }
+    ],
+    "n_calls": 3,
+    "request_bytes": 191,
+    "response_bytes": 2790,
+    "verified": true,
+    "median_ms": 7.0,
+    "tokens_est": 878
+   },
+   "delta": {
+    "response_bytes_pct": 76.43,
+    "calls": 3,
+    "tokens_pct": 73.55
+   },
+   "evidence_equal": true
+  }
+ ]
+}
