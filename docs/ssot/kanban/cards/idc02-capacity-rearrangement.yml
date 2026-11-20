@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-20 18:20
+updated: 2026-11-20 18:25
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -130,6 +130,13 @@ comms:
     = idc03:11434, idc02 (100.123.163.11):11434, tony-omen:11434, 100.72.146.39:11434, 127.0.0.1:11447. idc02 is
     one of five racing upstreams and is CPU-bound with MAX_LOADED_MODELS=1, so it loses races and times out at 8s
     (the 400s); its ollama keeps w'
+- at: 2026-11-20 18:25
+  from: devin
+  text: 'APPLIED 2026-11-20 ~18:23: idc02 removed from embed-pool-shim races. idc03 drop-in ~/.config/systemd/user/embed-pool-shim.service.d/drop-idc02.conf
+    overrides EMBED_POOL_UPSTREAMS to idc03, tony-omen, 100.72.146.39, 127.0.0.1:11447; shim restarted, bge-m3 via
+    shim 200 in 0.9s. Pre-check: all remaining upstreams up (bge-m3 everywhere; nomic only on idc03+tony-omen; 11447
+    answers bge-m3 in 0.09s). Result on idc02 over 2 min: 0 /api/embed requests, 0 HTTP 400s; ollama CPU ~33% ->
+    ~16% and falling. N'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
