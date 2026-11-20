@@ -1,0 +1,82 @@
+title: "host_status — live-first host answers (telemetry > board records, freshness tags, conflict flags)"
+date: 2026-11-20
+card: ada-status-live-state-preference
+ref: OPS-1045 / ADA-1294
+session: "dispatch-wt-20261120-131725-observed-2026-11-09-tony-asked (devin executor)"
+attempt: 2
+
+prior_failure:
+  what: >-
+    Earlier attempts never ran code: executor=jules was declared but the
+    Jules lane was EOL (Google disabled session creation account-wide,
+    read-only until 2026-12-31 — see OPS-0156). Every claim died at
+    FAILED_PRECONDITION, not on a code bug. This attempt ran the devin
+    lane.
+  miss_being_fixed: >-
+    2026-11-09: "what is kk-mac processing" was answered from board card
+    comms (OPS-1045, ~2 days stale): "offline 22h, 15GiB free" while the
+    live host was online — kk_mac lane probe eligible, heartbeat 4min,
+    ~92-115GiB free. Confidently-stale answer.
+
+changes:
+  host_status_module:
+    file: scripts/board/host_status.py
+    what: >-
+      New live-first host status aggregator + CLI. Order: (1) live
+      surfaces — kk_mac_admission.snapshot() lane probe for kk-mac
+      (ada-nest-heartbeats MDDB :11026), the same heartbeat collection
+      for other hosts, nest-mgr ada-cms-pages/nest-<host> page freshness
+      (:11027), runner claims; (2) board records — comms/request asks
+      mentioning the host, each tagged "as of Xh ago"; (3) conflict
+      detection — offline_vs_live, blocked_vs_eligible, disk_disagree
+      (>10GiB). Composes a speakable `answer` that leads with live
+      telemetry and names both sides of every conflict. All inputs
+      injectable; probes fail soft (fetched:false, never fatal).
+      Host aliases normalize (kk mac/kk_mac/KKs-Mac-Studio/kk-imac →
+      kk-mac; kk-macbook stays distinct).
+  board_api_endpoint:
+    file: scripts/board/board-api.py
+    what: >-
+      GET /host-status?host=<name> — read-door route, no lock, 400+hint
+      without host. Cards come from load_cards() with default_cards()
+      dir-scan fallback. Same open-read posture as /cards.
+  ada_voice_drop:
+    file: integrations/ada-voice/backend/tools.d/host_status.py +
+      manifest.host_status.yml + tool_guide.host_status.yml
+    what: >-
+      Staged ada-voice drop 19 (README updated): tools.d host_status
+      tool = thin HTTP adapter over the board-api endpoint
+      (ADA_HOST_STATUS_API env, default idc03 :10000). The tool_guide
+      fragment carries the behavioral fix — host-state asks go through
+      this tool; conflicts are named both-sides; board comms are never
+      quoted as current state. Deploy is a normal ada-drops merge, not
+      this dispatch.
+  registry_and_docs:
+    what: >-
+      ssot.tools.yml gains the host.status row (agents: ada-voice,
+      ada-dev, ada-ocb, devin). docs/kb/board-api-read-door.md gains the
+      endpoint row + contract + checklist item.
+    files: docs/ssot/infrastructure/ssot.tools.yml,
+      docs/kb/board-api-read-door.md
+
+verification:
+  - "python3 -m unittest tests.board.test_host_status — 23 tests:
+    alias canon, live probe (lane snapshot/generic/stale/missing/
+    fail-soft), board record age tags + kk-macbook boundary, processing
+    claims, all three conflict kinds incl. the OPS-1045 shape
+    (offline 22h + 15GiB record vs eligible + 92GiB live), compose
+    ordering (live leads, CONFLICT lines), board_only freshness tag,
+    nest page, helpers"
+  - "tests/board/test_board_api_reads.py — /host-status 400 without
+    host, routes to hs.host_status over loopback"
+  - "CLI: python3 scripts/board/host_status.py kk-mac --board-only --text"
+
+remaining_gates:
+  - "board-api redeploy on idc03 (runs from chaba-tony-dell served
+    checkout) — until then /host-status 404s; the tools.d drop errors
+    cleanly in that state"
+  - "ada-voice drop install (tools.d file + manifest merge + tool_guide
+    append + backend restart) — normal ada-drops merge path"
+  - "ada-ocb ada_status in ada-voice repo could ALSO call /host-status
+    internally for host-shaped references — follow-up if wanted; not
+    staged here (no patch base in this worktree)"

@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Eighteen drops live here:
+chaba dispatches. Nineteen drops live here:
 
 **Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
 card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
@@ -70,6 +70,9 @@ re-staging the diff, never by hand-merging hunks.
 18. LINE proactive persona sends — `chat_send` `intent='proactive'` +
     `mention=` member pings — card `line-proactive-persona`
     (2026-10-27)
+19. `host_status` — live-first host answers (telemetry probe before
+    board records, freshness tags, contradiction flags) — card
+    `ada-status-live-state-preference` (OPS-1045, 2026-11-20)
 
 ---
 
@@ -1553,3 +1556,59 @@ drawing on her own memory bank.
 - `LINE_BULK_LANES`-demoted lanes CAN still send proactive (class is
   orthogonal) — a lane that shouldn't speak proactively just stays out
   of `LINE_PROACTIVE_ALLOW`.
+
+---
+
+## Drop 19 — host_status tool (live-first host answers)
+
+**Status (2026-11-20): STAGED, not yet deployed.** New tools.d module —
+card `ada-status-live-state-preference` (the OPS-1045 miss: a "what is
+kk-mac processing" ask was answered from board comms hours stale —
+"offline 22h, 15GiB free" — while the live lane probe reported
+eligible with a 4-minute heartbeat and ~92-115GiB free).
+
+The chaba side ships the read door: `scripts/board/host_status.py`
+(live heartbeat/lane probe + nest-mgr page + runner claims + board
+records with age tags + contradiction flags) behind board-api
+`GET /host-status?host=`. This drop is the Ada-side surface — a thin
+HTTP adapter so the model answers host-state asks from live telemetry,
+never from card comms parroted as current.
+
+### Files
+
+- `backend/tools.d/host_status.py` — DECLARATION + `run()` calling
+  `GET {ADA_HOST_STATUS_API}/host-status?host=` (default
+  `https://idc03.taila0626a.ts.net:10000`).
+- `backend/tools.d/manifest.host_status.yml` — merge under `tools:` in
+  ada-voice `backend/tools.d/manifest.yml` (policy read,
+  secondary_allowed, timeout 45s).
+- `backend/tool_guide.host_status.yml` — append to ada-voice
+  `backend/tool_guide.yml` (the guidance is the behavioral fix:
+  host-state asks go through this tool, not card comms; conflicts are
+  named both-sides).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/host_status.py
+   <ada-voice>/backend/tools.d/host_status.py`
+2. Merge `manifest.host_status.yml`'s `host_status:` block into
+   `<ada-voice>/backend/tools.d/manifest.yml` under `tools:`.
+3. Append `tool_guide.host_status.yml` to
+   `<ada-voice>/backend/tool_guide.yml`.
+4. Optional env: `ADA_HOST_STATUS_API` if a lane should hit a
+   different board-api base.
+5. Gates: `python3 scripts/tool-lint.py`, ada-voice test suite, restart
+   the persona backends so tools.d reloads.
+
+### Contract
+
+- `host_status(host)` → `{ok, host, confidence, contradiction, live,
+  nest_mgr, processing, board_records, conflicts, answer}`.
+- `confidence: live` means telemetry backed the answer;
+  `board_only` means no live surface was reachable — say that.
+- `conflicts[]` non-empty = a board record contradicted live
+  telemetry (`offline_vs_live`, `disk_disagree`,
+  `blocked_vs_eligible`) — relay both sides, flag the record stale.
+- Requires the chaba side (`GET /host-status`) deployed on the
+  board-api the lane calls — a 404 there means the chaba half isn't
+  live yet.

@@ -1,0 +1,9 @@
+# host_status manifest fragment — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml. New drop for card
+# ada-status-live-state-preference (OPS-1045: status ask answered from
+# hours-stale board records instead of live telemetry).
+host_status:
+  module: host_status
+  policy: read
+  secondary_allowed: true
+  timeout_s: 45

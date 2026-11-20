@@ -21,6 +21,7 @@ that answers the question.
 | or the ready projection | `GET /queue` | ~2 KB |
 | "did anything change since T" | `GET /cards?since=<updated-string>&fields=id,updated` | KBs |
 | one column | `GET /cards?column=doing[&fields=…]` | small |
+| "is host X up / what's it processing" | `GET /host-status?host=<name>` | ~1-4 KB + live probe |
 | whole rendered board (export only) | `GET /cards` | 5.2 MB — last resort |
 
 ## Response contract
@@ -40,6 +41,15 @@ that answers the question.
   `total` is the filtered count.
 - `GET /card/<id>` → `{ok, card}` | 404 `{error:"card not found",id}`;
   `GET /card` bare → 400 with `hint`.
+- `GET /host-status?host=<name>` → `{ok, host, confidence,
+  contradiction, live, nest_mgr, processing, board_records, conflicts,
+  answer}` — live telemetry first (ada-nest heartbeats, kk_mac lane
+  probe, nest-mgr page, runner claims), board records tagged `as of
+  Xh ago`, telemetry/board contradictions in `conflicts[]` (card
+  ada-status-live-state-preference; OPS-1045). Bare → 400 with `hint`.
+  Unlike the other reads it makes a bounded upstream call (MDDB
+  probe ≤15s) — `live.fetched:false` + `confidence:board_only` on
+  probe failure, never a hard error.
 - Bare `GET /cards` is the legacy payload, untouched — existing
   consumers keep working.
 
@@ -53,7 +63,11 @@ that answers the question.
    re-fetch; the payload's `generated` stamp is the version token.
 4. Fleet/queue state → `/queue` (already the compact projection with
    per-runner verdicts).
-5. Writes stay exactly as before — POST door, tailnet identity; nothing
+5. Host health/"what is X processing" → `/host-status?host=` — never
+   answer host state by quoting card comms; this endpoint already
+   prefers live telemetry and freshness-tags whatever comes from the
+   board.
+6. Writes stay exactly as before — POST door, tailnet identity; nothing
    in this doc changes mutation rules.
 
 ## Notes
