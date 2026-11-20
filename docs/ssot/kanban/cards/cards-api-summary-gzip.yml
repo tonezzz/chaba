@@ -1,7 +1,7 @@
 id: cards-api-summary-gzip
 title: '/cards read door: gzip + summary projection + discoverable filters'
 column: backlog
-updated: 2026-11-20 18:26
+updated: 2026-11-20 18:43
 brief: GET /cards bare returns the full board (~15MB, ~2.6s) — card_query already supports id/column/action_status/since/offset/limit/fields
   but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.
 priority: medium
@@ -85,3 +85,13 @@ comms:
     gzip + ?summary=1 + fields=all + docs + tests only; no live service change, merge or deploy without explicit
     approval. Note: the runner-agent drift defers in this card''s comms are stale — installed hashes match the repo
     on idc02/idc03/tony-omen/tony-dell (verified 2026-11-'
+- at: 2026-11-20 18:43
+  from: devin
+  text: 'PROGRESS (opencode, 2026-11-20): implemented in isolated worktree opencode/knb-0147-cards-read, local commit
+    47b2dca003 (NOT pushed, NOT deployed, no live service change).
+
+    (1) ?summary=1 -> slim overview projection {id,ref,title,column,priority,updated,action_status}, no comms/spec/brief;
+    also fixed fields=all, which previously silently projected every card to {}.
+
+    (2) gzip on JSON bodies >=1KB when Accept-Encoding allows (q>0), with Content-Encoding + Vary; small replies
+    and identity clients unc'
