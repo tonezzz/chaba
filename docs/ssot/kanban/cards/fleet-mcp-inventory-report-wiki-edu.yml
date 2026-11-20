@@ -1,7 +1,7 @@
 id: fleet-mcp-inventory-report-wiki-edu
 title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
 column: backlog
-updated: 2026-11-20 16:38
+updated: 2026-11-20 16:40
 brief: 'Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation
   script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons
   in Education:.'
@@ -55,3 +55,10 @@ comms:
 
 
     Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-b7b402858bd4a320]'
+- at: 2026-11-20 16:40
+  from: devin
+  text: 'Implementation landed in worktree ada/fleet-mcp-inventory-report (branch off origin/master, /home/tony/CascadeProjects/ada-ocb).
+    SSOT: ssot.mcp.yml gained fleet_observation + findings; ssot.tools.yml gained live-inventory pointer; ssot.reports.yml
+    gained 6 L1 mcp-inventory/* nodes + L2 mcp-fleet (+ publish block); ssot.jobs.yml gained mcp-fleet-report (idc03,
+    24h, DECLARED ONLY - install with render-jobs.py --host idc03 --install after review). Producer scripts/mcp-inventory.py:
+    --host/--all/--c'
