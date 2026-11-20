@@ -33,10 +33,18 @@ def test_scope_agent_lanes_and_named_hosts():
     assert not mcp.in_scope(FLEET, "x", {"scope": ["mn01"]}, "tony_dell")
 
 
-def test_per_host_narrows_scope():
+def test_per_host_is_override_not_inclusion_filter():
+    # A single-host implementation override must not drop other agent lanes
+    # (the 2026-11-20 false-delta bug for mcp-gpu/llama/weaviate on omen).
     spec = {"scope": "agent-lanes", "per_host": {"tony_dell": {}}}
     assert mcp.in_scope(FLEET, "x", spec, "tony_dell")
-    assert not mcp.in_scope(FLEET, "x", spec, "tony_omen")
+    assert mcp.in_scope(FLEET, "x", spec, "tony_omen")
+    assert not mcp.in_scope(FLEET, "x", spec, "idc02")
+
+
+def test_named_host_scope_is_the_way_to_restrict():
+    assert mcp.in_scope(FLEET, "x", {"scope": ["mn01"]}, "mn01")
+    assert not mcp.in_scope(FLEET, "x", {"scope": ["mn01"]}, "tony_omen")
 
 
 @pytest.mark.parametrize("spec", [{}, {"scope": "everywhere"}])

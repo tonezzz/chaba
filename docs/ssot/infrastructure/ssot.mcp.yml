@@ -76,9 +76,12 @@ fleet_observation:
       agent-lanes: expected only on agent_lane_hosts
       hosts: a YAML list of host keys — expected only on those hosts
     rule: >-
-      Scope is evaluated first, then a server's per_host map narrows the
-      set further. Unknown scope values fail the producer instead of
-      silently widening what counts as missing.
+      Scope alone decides which hosts expect a server. A per_host map is an
+      implementation override (wrapper/pattern/env), not an inclusion
+      filter — a server with a per_host entry for one lane stays in scope on
+      other lanes its scope names. Use a named-host list to restrict a
+      server. Unknown scope values fail the producer instead of silently
+      widening what counts as missing.
   finding_states: [open, carded, suppressed]
   # Human-owned triage of stable finding IDs (open | carded | suppressed).
   # Producers read this map and annotate findings; they never write it.

@@ -13,8 +13,9 @@ Part of the layered reporting standard (docs/ssot/infrastructure/ssot.reports.ym
   reports/mcp-fleet/MCP-FLEET-REPORT.md + meta.yml from the L1 metas/artifacts.
 
 Expected sets are computed from `fleet_observation.scope_model` in
-ssot.mcp.yml: a server's `scope` (fleet | agent-lanes | [named hosts]) plus
-its optional `per_host` narrowing. Findings carry stable IDs and human-owned
+ssot.mcp.yml: a server's `scope` (fleet | agent-lanes | [named hosts]) decides
+which hosts expect it; `per_host` only overrides declaration details for a
+host and never removes a host from scope. Findings carry stable IDs and human-owned
 triage state read from `fleet_observation.finding_triage` — this producer
 never writes triage state or card workflow fields.
 
@@ -176,7 +177,13 @@ def observation_config(ssot: dict) -> dict:
 
 
 def in_scope(fleet: dict, name: str, spec: dict, host: str) -> bool:
-    """Evaluate a server's declared scope, then its per_host narrowing.
+    """Evaluate a server's declared scope for a host.
+
+    `per_host` is an implementation override applied by declared_for_host,
+    not an inclusion filter. Treating it as a filter made every server with
+    a single-host override (mcp-gpu, mcp-llama, mcp-weaviate) vanish from
+    other agent lanes and manufacture false 'undeclared configured' findings.
+    Use `scope: [host, ...]` to restrict a server to named hosts.
 
     Unknown or absent scope is a declaration bug: fail loudly so a bad
     SSOT edit cannot silently widen the expected set into false deltas.
@@ -196,12 +203,7 @@ def in_scope(fleet: dict, name: str, spec: dict, host: str) -> bool:
     else:
         raise ValueError(
             f"ssot.mcp.yml: server {name!r} has unsupported scope {scope!r}")
-    if not applies:
-        return False
-    per = spec.get("per_host")
-    if isinstance(per, dict) and per and host not in per:
-        return False
-    return True
+    return applies
 
 
 def declared_for_host(ssot: dict, host: str) -> dict:
