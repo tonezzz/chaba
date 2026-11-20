@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-20 20:03
+updated: 2026-11-20 20:04
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -335,6 +335,17 @@ comms:
     Focused verification: board-api selftest ok (with non-fatal report-index warning: No module named ''lib'');
     157 focused pytest tests passed; tests/test-kanban-commit.sh passed 65/65; diff check clean. Full SSOT validation
     found 4 existing missi'
+- at: 2026-11-20 20:04
+  from: devin
+  text: 'Session handoff (2026-11-20 20:04 ICT)
+
+    objective: integrate OPS-0725 lock-contention fix and gate it before production.
+
+    as_of/current_state: in progress; draft PR #197 is open and syntax/validate checks were in progress at last
+    snapshot. Production is unchanged.
+
+    canonical_refs: card board-api-lock-contention; PR https://github.com/tonezzz/chaba/pull/197; branch fix/ops0725-lock-contention-clean
+    (commits 982a26635e, dfc31263fd); runbook docs/ssot/jobs/kanban/2026-11-20-board-api-lock-contention-i'
 requests: []
 action:
   lane: paid_frontier
