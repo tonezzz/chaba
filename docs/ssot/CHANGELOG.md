@@ -13,6 +13,14 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-11-20
+
+- **File**: docs/ssot/ssot.procedures.yml (+ docs/kb/board-static-deploy.md, scripts/board/deploy-check.sh)
+- **Change Type**: minor
+- **Description**: Added deploy-board-static procedure and runbook — source-path-only deploy for board/board2 static UI (scoped commit + git-safe-push -> idc03 repo-sync -> board render -> web-srv-sync -> deploy-check); explicitly forbids writes to the rsync target /home/tony/web-srv/public. deploy-check wired as ignored-failure ExecStartPost on web-srv-sync.service.
+- **Impact**: Standard deploy path documented and post-sync verification added; stale nested board2/board2 copies removed from idc03 canonical tree and idc02 mirror.
+- **Rollback**: Remove the procedure entry, runbook and deploy-check.sh; remove the ExecStartPost line from ~/.config/systemd/user/web-srv-sync.service and daemon-reload.
+
 ### 2026-09-24
 
 - **File**: docs/ssot/infrastructure/ssot.security.yml (+ 7 new files)
