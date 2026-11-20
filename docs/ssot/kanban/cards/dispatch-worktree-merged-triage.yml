@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
-column: doing
-updated: 2026-11-20 19:57
+column: backlog
+updated: 2026-11-20 20:23
 priority: medium
 tags:
 - devnest
@@ -15,18 +15,20 @@ spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 mer
   documented; matching card comms on the cards that spawned them.'
 action:
   type: dispatch
-  status: running
+  status: queued
   executor: devin
   repo: chaba
   sweep:
     failed_noted: 2026-11-17 22:25
     stale_running: 2026-11-20 19:57
     session_gone: 2026-11-20 19:57
-  last_failure: 'exit=1 evin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Failed with result ''exit-code''.
-    | devin-task-20261119-134825-triage-2026-11-09-cascadeproje.service: Consumed 9.944s CPU time over 4.116s wall
-    clock time, 249.7M memory peak.'
+  last_failure: 'journal=exit-code  devin-task-20261120-195108-triage-2026-11-09-cascadeproje.service: Failed with
+    result ''exit-code''. | devin-task-20261120-195108-triage-2026-11-09-cascadeproje.service: Consumed 17min 45.252s
+    CPU time, 2.3G memory peak, 0B memory swap peak.'
   attempts: 1
-  runner: idc02
+  result: 'journal=exit-code  devin-task-20261120-195108-triage-2026-11-09-cascadeproje.service: Failed with result
+    ''exit-code''. | devin-task-20261120-195108-triage-2026-11-09-cascadeproje.service: Consumed 17min 45.252s CPU
+    time, 2.3G memory peak, 0B memory swap peak.'
 ref: OPS-1288
 comms:
 - at: 2026-11-09 17:39
@@ -308,5 +310,16 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261117-221333-triage on idc02 — if the work was
     never pushed it may be gone'
+- at: 2026-11-20 20:23
+  from: idc02
+  text: 'finished (failed): journal=exit-code  devin-task-20261120-195108-triage-2026-11-09-cascadeproje.service:
+    Failed with result ''exit-code''. |  — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 20:23
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-195108-triage-2026-11-09-cascadeproje (rate-limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-20 20:23
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-20 20:53'
 claim:
   since: 2026-11-20 19:49

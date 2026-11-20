@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
-column: doing
-updated: 2026-11-20 20:21
+column: backlog
+updated: 2026-11-20 20:23
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -19,16 +19,18 @@ spec: 'In ada-voice opencode/ada_mcp.py: define BRIDGE_VERSION (git sha or semve
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: devin
   lane_source: jevos
   sweep:
     failed_noted: 2026-11-17 22:24
-  last_failure: 'journal=exit-code e-opencode-ada-mcp-.service: Failed with result ''exit-code''. | devin-task-20261120-200415-in-ada-voice-opencode-ada-mcp-.service:
-    Consumed 1min 29.854s CPU time over 5min 39.958s wall clock time, 887.8M memory peak, 479.9M memory swap peak.'
+  last_failure: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
+    11.419s wall clock time, 927.1M memory peak.'
   attempts: 2
-  result: 'journal=exit-code e-opencode-ada-mcp-.service: Failed with result ''exit-code''. | devin-task-20261120-200415-in-ada-voice-opencode-ada-mcp-.service:
-    Consumed 1min 29.854s CPU time over 5min 39.958s wall clock time, 887.8M memory peak, 479.9M memory swap peak.'
+  result: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
+    | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
+    11.419s wall clock time, 927.1M memory peak.'
   runner: tony-omen
 ref: ADA-0177
 comms:
@@ -220,6 +222,18 @@ comms:
   text: 'attempt3: feature was already merged (83c8098); found+fixed a gap — untracked copies inside a checkout
     collided with canonical git-<sha>. Now append +copy-<hash> when file is untracked (porcelain ?? check). 8/8
     bridge tests + 18/18 envelope tests pass; live probe: canonical=git-00090e9-dirty vs copy=git-00090e9-dirty+copy-880ff2.'
+- at: 2026-11-20 20:23
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with
+    result ''exit-code''. | devin-task-202 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-20 20:23
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp- (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-20 20:23
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-20 20:53'
 review_kind: verify
 claim:
   since: 2026-11-20 20:16
