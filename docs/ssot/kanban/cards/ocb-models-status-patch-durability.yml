@@ -1,7 +1,7 @@
 id: ocb-models-status-patch-durability
 title: OpenChamber models.status patch lives in node_modules — wiped by next npm install
 column: doing
-updated: 2026-11-20 17:28
+updated: 2026-11-20 17:32
 brief: ada-ocb on idc02 runs @openchamber/web@2.7.3 with a hand-patch adding a models.status action + /api/openchamber/models/status
   route (LiteLLM gateway liveness probe). The patch is applied directly to files under ~/.local/node/lib/node_modules/@openchamber/web/build/
   — any npm i -g (manual or openchamber-update.timer, monthly 1st) silently reverts it.
@@ -98,6 +98,10 @@ comms:
     before restart — patch failure fails the unit loudly, no silent regress. Verified: scratch-prefix npm i -g @2.7.3
     + apply = md5-identical to live files; live /api/openchamber/models/status -> 200 {total:38, active:31, unavailable:7};
     idempotent + failure path tested. '
+- at: 2026-11-20 17:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261120-171843-context-2026-11-20-incident-a- no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -106,5 +110,7 @@ action:
   model: litellm/gemini-3.5-flash-lite
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-20 17:32
 claim:
   since: 2026-11-20 17:17
