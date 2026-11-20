@@ -557,8 +557,9 @@ def load_yaml_safe(path: Path) -> dict:
 # board-api is the only mutation door; no wiki credentials are read here.
 # A stable wiki_title means the daily job UPDATES one Reports: page instead
 # of spawning a new page each run. The board sink also records the event on
-# the coordination card as an audit trail. No Infrastructure: writes until
-# the wiki-page-door-infrastructure-namespace card lands.
+# the coordination card as an audit trail. Infrastructure: host pages go
+# through POST /wiki/page — that prefix is allowlisted there since card
+# wiki-page-door-infrastructure-namespace.
 BOARD_API = os.environ.get(
     "BOARD_API_URL", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 WIKI_TITLE = os.environ.get(
