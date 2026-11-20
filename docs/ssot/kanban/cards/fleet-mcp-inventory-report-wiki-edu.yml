@@ -1,7 +1,7 @@
 id: fleet-mcp-inventory-report-wiki-edu
 title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
-column: backlog
-updated: 2026-11-20 17:35
+column: done
+updated: 2026-11-20 17:37
 brief: 'Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation
   script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons
   in Education:.'
@@ -41,6 +41,7 @@ spec: 'Context: MDDB on tony-dell is a dead/retired follower (canonical primary 
   on this card. No hand-written digests; evidence-bound only.'
 action:
   type: manual
+  status: done
 ref: KNB-0019
 comms:
 - at: 2026-11-20 16:25
@@ -80,3 +81,13 @@ comms:
 
 
     Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-43dace0c71669e8c]'
+- at: 2026-11-20 17:37
+  from: devin
+  text: 'VERIFIED 2026-11-20: done-condition met. Merged to master (served idc03) and pushed: 80fbdaf030d (SSOT+producer+publication),
+    1c7e15613fc (audit declaration mcp-fleet-report.timer on idc03), d5c93c96500 (host-status fix: reachable-no-config
+    vs unreachable). Exec checkout ~/CascadeProjects/chaba synced to d5c93c96500. Timer installed via render-jobs.py
+    --host idc03 --ids mcp-fleet-report --install: mcp-fleet-report.timer enabled (24h), service static; first scheduled
+    run 17:31 +07 exit 0, correct'
+- at: 2026-11-20 17:37
+  from: devin
+  text: closed by devin
