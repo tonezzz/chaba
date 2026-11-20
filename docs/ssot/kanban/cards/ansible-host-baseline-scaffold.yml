@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
-column: doing
-updated: 2026-11-20 17:35
+column: review
+updated: 2026-11-20 17:38
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -111,11 +111,14 @@ spec: "GOAL: Land the chaba Ansible host-baseline scaffold on master and verify 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`. | devin-task-20261120-172937-goal-land-the-chaba-ansible-ho.service:
+    Consumed 2min 5.732s CPU time over 5min 53.069s wall clock time, 678.1M memory peak.'
+  verified: false
 comms:
 - at: 2026-11-20 17:24
   from: chaba
@@ -160,6 +163,27 @@ comms:
     dirs; the spec layout leaves them unloaded and site.yml fails with common_packages undefined. PING baseline:
     tony-omen ok, tony-dell ok, idc02 ok, idc03 ok (4/4 over tailscale). CHECK+DIFF (dry-run only, nothing applied):
     tony-omen/tony-dell changed=2 (new 52chaba-unattended-'
+- at: 2026-11-20 17:38
+  from: tony-macbook
+  text: 'finished (ok): exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`.
+    | devin-task-20261120-1729'
+- at: 2026-11-20 17:38
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 17:38
+  from: chaba
+  text: banked 106 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 17:38
+  from: chaba
+  text: pushed dispatch/20261120-172937-goal-land-the-chaba-ansible-ho to origin
+- at: 2026-11-20 17:38
+  from: chaba
+  text: 'merge held — gitignored-dir shadow path(s): ansible/inventory/group_vars (symlink), ansible/inventory/host_vars
+    (symlink) — untrack/rename them or add the bare ignore name (the 2026-10-10 .venv incident class)'
+- at: 2026-11-20 17:38
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
+review_kind: verify
