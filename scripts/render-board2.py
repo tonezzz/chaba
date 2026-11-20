@@ -117,6 +117,43 @@ PAGE = r"""<!doctype html>
     #modal pre { white-space:pre-wrap; }
     #modal-x { line-height:1; }
 
+    /* ---- card cycle control (read-only pane — KNB-0229 design) ---- */
+    /* RED: the control section is deliberately vivid — it is the active
+       surface Tony reads while cycling cards. */
+    #control { background:#241212; border:1px solid #7f1d1d;
+               border-left:4px solid #ef4444; border-radius:8px;
+               padding:6px 12px 10px; margin:4px 8px 0; }
+    .cp-head-small { font-size:10px; color:#fecaca; font-weight:600;
+                     text-transform:uppercase; letter-spacing:.06em;
+                     padding:2px 2px 6px; }
+    #control .cp-title { color:#fde2e2; }
+    .cp-card { margin-bottom:6px; }
+    .cp-head { width:100%; text-align:left; background:none; border:1px solid #33415f;
+               border-radius:8px; padding:6px 9px; color:#cbd5e1; font-size:13px; cursor:pointer;
+               display:flex; align-items:center; gap:8px; }
+    .cp-head:hover { border-color:#38bdf8; }
+    .cp-caret { color:#64748b; min-width:12px; }
+    .cp-title { flex:1; }
+    .cp-st { font-size:9px; padding:1px 7px; border-radius:9px; white-space:nowrap; }
+    .cp-st-idle { background:#334155; color:#94a3b8; }
+    .cp-st-queued { background:#b4530940; color:#fbbf24; }
+    .cp-st-running { background:#0e749040; color:#67e8f9; }
+    .cp-st-done { background:#14532d60; color:#4ade80; }
+    .cp-st-other { background:#374151; color:#94a3b8; }
+    .cp-pane { margin-top:6px; display:grid; gap:10px; }
+    .cp-sec { border-left:2px solid #33415f; padding:6px 10px; background:#0f1730;
+              border-radius:0 6px 6px 0; }
+    .cp-sec-t { font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+                color:#64748b; margin-bottom:4px; }
+    .cp-rows { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:12px; color:#cbd5e1; }
+    .cp-rk { color:#64748b; font-size:11px; }
+    .cp-rv { color:#e2e8f0; white-space:pre-wrap; word-break:break-word; min-width:0; }
+    .cp-rv.muted { color:#64748b; font-style:italic; }
+    .cp-hint { color:#64748b; font-size:10px; }
+    .cp-tl { font-size:11px; color:#94a3b8; }
+    .cp-tl b { color:#7dd3fc; }
+    .cp-src { color:#475569; font-size:9px; font-style:italic; }
+
     /* ---- zoom + ticker ---- */
     .zoom-btn { width:24px; height:24px; border-radius:6px; background:#263356; color:#cbd5e1;
                 font-size:14px; font-weight:700; display:inline-flex; align-items:center;
@@ -170,6 +207,8 @@ PAGE = r"""<!doctype html>
   </nav>
 
   <div id="needs-you" class="px-3 pt-2"></div>
+
+  <div id="control"></div>
 
   <div id="board" class="d-normal"></div>
 
@@ -614,6 +653,240 @@ function healPending() {
   }
 }
 
+// ---- card cycle control pane (read-only, KNB-0229 design) ----
+// The pane lists cards with an active cycle (doing/review + queued/running
+// action) and, when expanded, the 9 design sections mapped to sources:
+// card record (DATA.cards), live board-api /cards rows (read-only GET),
+// envelope/usage contracts are the design's evidence backends.
+const cpLive = {};   // id -> live /apps/board-api/cards row (read-only)
+const cpLiveAt = {}; // id -> fetch timestamp (TTL so polls don't loop)
+const cpOpen = new Set(JSON.parse(localStorage.getItem('b2-cp-open') || '[]'));
+const CP_MAX_TIMELINE = 5;
+const CP_LIVE_TTL = 30000;
+
+async function getApi(path) {
+  try { const r = await fetch(API + path, {cache:'no-store'}); return await r.json(); }
+  catch (e) { return {ok:false, error:String(e)}; }
+}
+
+function cpAct(c) { return (cpLive[c.id] && cpLive[c.id].action) || c.action || {}; }
+
+function cpReason(c) {
+  const a = cpAct(c);
+  if (['done', 'archive'].includes(c.column)) return 'finished';
+  const open = (c.requests || []).filter(r => !['answered', 'closed'].includes(r.status || ''));
+  if (open.length) return 'open request ' + (open[0].id || '?');
+  if (['claimed', 'running', 'queued', 'verifying', 'stalled'].includes(a.status || ''))
+    return (a.status || '') + (a.target_host ? ' @ ' + a.target_host : '');
+  if (c.awaiting_action) return 'awaiting action';
+  return 'eligible';
+}
+
+function cpChip(v, cls) { return `<span class="cp-st ${cls}">${esc(v || '')}</span>`; }
+
+function cpSection(t, rows) {
+  return `<div class="cp-sec"><div class="cp-sec-t">${esc(t)}</div>` +
+    `<div class="cp-rows">${rows.map(r =>
+      `<div class="cp-rk">${esc(r.k)}</div><div class="cp-rv${r.muted ? ' muted' : ''}">` +
+      (r.v ? esc(r.v) : '') +
+      (r.hint ? `<div class="cp-hint">${esc(r.hint)}</div>` : '') +
+      (r.rows ? r.rows : '') +
+      (r.src ? `<div class="cp-src">from: ${esc(r.src)}</div>` : '') +
+      `</div>`).join('')}</div></div>`;
+}
+
+const SRC_CARD = 'card record';
+const SRC_LIVE = 'live action (board-api)';
+const SRC_METRIC = 'DevNest lane metric (metrics.jsonl)';
+const SRC_USAGE = 'runner usage.json (devin-dispatch/tasks)';
+const cpEv = {};      // card id -> latest lane-metric rows (from /apps/board-api/jobs?card=)
+const cpEvInf = new Set(); // card ids already fetched — evidence is host-local (read-once)
+
+async function cpFetchEv(c) {
+  const r = await getApi('/jobs?card=' + encodeURIComponent(c.id) + '&limit=5');
+  cpEv[c.id] = Array.isArray(r && r.jobs) ? r.jobs : [];
+  renderControl();
+}
+
+function cpTimeline(c) {
+  const tl = (c.comms || []).slice(-CP_MAX_TIMELINE)
+    .map(m => `<div class="cp-tl">${esc(m.at || '')} <b>${esc(m.from || '')}</b> — ${esc(m.text || '')}</div>`).join('');
+  return tl || '<div class="cp-tl muted">no recent comms</div>';
+}
+
+function cpEscalate(c) {
+  const ev = (cpEv[c.id] || [])[0] || {};
+  const a = cpAct(c);
+  const st = a.status || 'idle';
+  const verified = a.verified === true;
+  if (st === 'done' && verified)
+    return {s: 'archive — verified done', conf: 'high',
+            hint: 'action.verified — safe to age out', src: SRC_LIVE};
+  if (st === 'failed' || (ev.verifier_pass === false && ev.failure_reason))
+    return {s: 'review — dispatch failed', conf: 'high',
+            hint: ev.failure_reason ||
+              'review attempt result before re-arm (/action do=retry)',
+            src: ev.failure_reason ? SRC_METRIC : SRC_LIVE};
+  if (st === 'stalled')
+    return {s: 'review — stalled (attempt cap)', conf: 'medium',
+            hint: 'attempts at cap — Tony re-arms with /action do=retry',
+            src: SRC_LIVE};
+  if (st === 'queued')
+    return {s: 'queue armed — awaiting executor', conf: 'medium',
+            hint: 'dispatch rail order — watch target_host', src: SRC_LIVE};
+  if (st === 'running' || st === 'verifying')
+    return {s: 'review — in-flight, watch progress', conf: 'medium',
+            hint: ev.verifier_pass !== undefined
+              ? 'verifier_pass: ' + ev.verifier_pass
+              : 'evidence: usage.json + lane_gate metrics',
+            src: SRC_METRIC};
+  if (c.column === 'review')
+    return {s: 'review — review pass due', conf: 'medium',
+            hint: 'review_kind: ' + esc(c.review_kind || ''), src: SRC_CARD};
+  if (c.column === 'doing')
+    return {s: 'none — cycle active in doing', conf: 'n/a', src: SRC_CARD};
+  return {s: 'none — backlog/idle', conf: 'n/a', src: SRC_CARD};
+}
+
+function cpPane(c) {
+  const a = cpAct(c);
+  const open = (c.requests || []).filter(r => !['answered', 'closed'].includes(r.status || ''));
+  const ev = (cpEv[c.id] || [])[0] || {};
+  const u = ev.usage || {};
+  const sections = [];
+  // 1. Lifecycle & timeline
+  sections.push(cpSection('Lifecycle & timeline', [
+    {k: 'column', v: c.column || 'backlog', src: SRC_CARD},
+    {k: 'updated', v: c.updated || '—', src: SRC_CARD},
+    {k: 'comms (timeline)', v: '', rows: cpTimeline(c), src: SRC_CARD},
+  ]));
+  // 2. Eligibility & claim reason
+  sections.push(cpSection('Eligibility & claim reason', [
+    {k: 'status', v: cpChip(a.status || 'idle', 'cp-st-' + (a.status || 'idle')),
+     src: a.status ? SRC_LIVE : SRC_CARD},
+    {k: 'reason', v: cpReason(c),
+     src: 'card-pick reasons (scripts/board/card-pick.py)'},
+    {k: 'open requests', v: open.length ? open.map(r => r.id).join(', ') : 'none',
+     src: SRC_CARD},
+  ]));
+  // 3. Executor / provider / model
+  sections.push(cpSection('Executor / provider / model', [
+    {k: 'executor', v: a.executor || '—', muted: !a.executor, src: a.executor ? SRC_LIVE : SRC_CARD},
+    {k: 'lane', v: a.lane || '—', muted: !a.lane, src: a.lane ? SRC_LIVE : SRC_CARD},
+    {k: 'model', v: a.model || '—', muted: !a.model, src: a.model ? SRC_LIVE : SRC_CARD},
+    {k: 'profile', v: a.agent_profile || a.profile || '—',
+     muted: !(a.agent_profile || a.profile),
+     src: (a.agent_profile || a.profile) ? SRC_LIVE : SRC_CARD},
+  ]));
+  // 4. Host / session
+  sections.push(cpSection('Host / session', [
+    {k: 'target host', v: a.target_host || '—', muted: !a.target_host, src: SRC_LIVE},
+    {k: 'session', v: a.task_id || a.session || '—',
+     hint: a.task_id ? 'task dir on host' : 'not linked — design gap', src: SRC_LIVE},
+  ]));
+  // 5. Queue & run duration — DevNest lane metric (§4)
+  const dur = [];
+  if (ev.queue_s !== undefined && ev.queue_s !== null)
+    dur.push({k: 'queue wait', v: String(ev.queue_s) + 's', src: SRC_METRIC});
+  if (ev.wall_s !== undefined && ev.wall_s !== null)
+    dur.push({k: 'run duration', v: String(ev.wall_s) + 's', src: SRC_METRIC});
+  if (!dur.length) dur.push({k: 'duration', v: 'no metric — design gap §4'});
+  sections.push(cpSection('Queue & run duration', dur));
+  // 6. Evidence: tokens & cost — lane metric + usage.json
+  const inTok = ev.input_tokens !== undefined ? ev.input_tokens : u.input_tokens;
+  const outTok = ev.output_tokens !== undefined ? ev.output_tokens : u.output_tokens;
+  const costV = ev.provider_cost_usd !== undefined ? ev.provider_cost_usd : u.cost_usd;
+  const tok = [];
+  if (inTok !== undefined || outTok !== undefined)
+    tok.push({k: 'tokens', v: `in ${inTok || 0} / out ${outTok || 0}`,
+              src: ev.input_tokens !== undefined ? SRC_METRIC : SRC_USAGE});
+  if (costV !== undefined)
+    tok.push({k: 'provider cost', v: String(costV), src: SRC_METRIC});
+  if (ev.combined_cost_usd !== undefined)
+    tok.push({k: 'combined cost', v: String(ev.combined_cost_usd), src: SRC_METRIC});
+  if (!tok.length) tok.push({k: 'tokens & cost', v: 'no evidence — design gap §4'});
+  sections.push(cpSection('Evidence: tokens & cost', tok));
+  // 7. Artifact & verifier
+  sections.push(cpSection('Artifact & verifier', [
+    {k: 'artifact', v: a.artifact || '—', muted: !a.artifact,
+     src: a.artifact ? SRC_LIVE : SRC_CARD},
+    {k: 'verified', v: a.verified === true ? 'true' : (a.verified === false ? 'false' : '—'), src: SRC_LIVE},
+    {k: 'result', v: (a.result || '').slice(0, 220) || '—', src: a.result ? SRC_LIVE : undefined},
+  ]));
+  // 8. Attempts & failure
+  const failSrc = ev.failure_reason ? SRC_METRIC : (a.result || a.failure ? SRC_LIVE : undefined);
+  sections.push(cpSection('Attempts & failure', [
+    {k: 'attempts', v: String(a.attempts || 0), src: SRC_LIVE},
+    {k: 'failure', v: (ev.failure_reason || a.failure || a.result || '') || '—', src: failSrc},
+  ]));
+  // 9. Suggested escalation
+  const es = cpEscalate(c);
+  sections.push(cpSection('Suggested escalation', [
+    {k: 'suggestion', v: es.s, src: es.src || SRC_CARD},
+    {k: 'confidence', v: es.conf, src: es.src || SRC_CARD},
+    {k: 'reason', v: es.hint || '', src: es.hint ? 'derived (action + lane metric)' : undefined},
+  ]));
+  return sections.join('');
+}
+
+function cpCards() {
+  const out = [];
+  for (const c of (DATA ? DATA.cards : [])) {
+    const act = cpAct(c);
+    const col = c.column || 'backlog';
+    const active = col === 'doing' || col === 'review'
+      || ['queued', 'running'].includes(act.status || '');
+    if (active) out.push(c);
+  }
+  return out;
+}
+
+async function cpFetchLive(id) {
+  const r = await getApi('/cards?id=' + encodeURIComponent(id) + '&limit=1');
+  if (r && r.cards && r.cards[0]) {
+    cpLive[id] = r.cards[0];
+  }
+  cpLiveAt[id] = Date.now();   // empty result: don't refetch on every poll
+  renderControl();
+}
+
+function renderControl() {
+  const el = document.getElementById('control');
+  if (!el) return;
+  const items = cpCards();
+  if (!items.length) {
+    el.innerHTML = '<div class="cp-head-small">Card cycle control — nothing Doing/Review, nothing queued.</div>';
+    return;
+  }
+  if (!cpOpen.size) cpOpen.add(items[0].id);
+  el.innerHTML = '<div class="cp-head-small">Card cycle control — read-only (v1)</div>' +
+    items.map(c => {
+      const act = cpAct(c);
+      const open = (c.requests || []).filter(r => !['answered', 'closed'].includes(r.status || ''));
+      const stCls = ['queued', 'running'].includes(act.status || '') ? 'cp-st-' + act.status
+        : (['idle', 'done'].includes(act.status || '') ? 'cp-st-' + (act.status || 'idle') : 'cp-st-other');
+      const h = `<div class="cp-card">` +
+        `<button class="cp-head" data-id="${esc(c.id)}">` +
+          `<span class="cp-caret">${cpOpen.has(c.id) ? '▾' : '▸'}</span>` +
+          `<span class="cp-title">${esc((c.ref ? c.ref + ' ' : '') + (c.title || c.id))}</span>` +
+          cpChip(act.status || 'idle', stCls) +
+          (c.priority ? cpChip(c.priority, 'cp-st-other') : '') +
+          (open.length ? cpChip(open.length + ' need you', 'cp-st-queued') : '') +
+        `</button>` +
+        (cpOpen.has(c.id) ? `<div class="cp-pane">${cpPane(c)}</div>` : '') +
+        `</div>`;
+      return h;
+    }).join('');
+  for (const id of [...cpOpen])
+    if (!cpLiveAt[id] || Date.now() - cpLiveAt[id] > CP_LIVE_TTL) void cpFetchLive(id);
+  // evidence: one /apps/board-api/jobs?card= fetch per card (read-only,
+  // read-once per session — the pane shows what the ledger holds).
+  for (const c of items) if (!cpEv[c.id] && !cpEvInf.has(c.id)) {
+    cpEvInf.add(c.id);
+    void cpFetchEv(c);
+  }
+}
+
 // all interactive controls — one delegated listener survives poll
 // re-renders: per-element onclick handlers get orphaned when innerHTML
 // swaps between wiring and the user's click (2026-10-22: dead col-head
@@ -675,6 +948,14 @@ document.addEventListener('click', async (e) => {
     moreOpen.has(mc) ? moreOpen.delete(mc) : moreOpen.add(mc);
     localStorage.setItem('b2-more', JSON.stringify([...moreOpen]));
     renderBoard();
+    return;
+  }
+  el = e.target.closest('.cp-head');
+  if (el) {
+    const id = el.dataset.id;
+    if (cpOpen.has(id)) cpOpen.delete(id); else cpOpen.add(id);
+    localStorage.setItem('b2-cp-open', JSON.stringify([...cpOpen]));
+    void cpFetchLive(id);
     return;
   }
   el = e.target.closest('.card');
@@ -892,7 +1173,7 @@ async function load() {
     healPending();
     document.getElementById('gen').textContent = 'v' + (DATA.page_version||'') + ' · ' + (DATA.generated||'');
     const cm = location.hash.match(/card=([\w-]+)/); if (cm) sel = cm[1];
-    renderBoard(); renderTicker();
+    renderBoard(); renderControl(); renderTicker();
     const dot = document.getElementById('live-dot');
     dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
     dot.classList.remove('tick'); void dot.offsetWidth; dot.classList.add('tick');

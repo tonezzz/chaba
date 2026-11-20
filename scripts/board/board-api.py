@@ -4442,6 +4442,100 @@ def load_cards() -> dict:
     return dict(payload, cards=cards)
 
 
+def _lane_state_dir() -> Path:
+    """DevNest lane state dir — read-only mirror of
+    scripts/devnest/lane_gate.state_dir()."""
+    env = os.environ.get("OPENCODE_LANE_STATE")
+    if env:
+        return Path(env)
+    base = Path(os.environ.get("XDG_STATE_HOME")
+                or Path.home() / ".local" / "state")
+    return base / "opencode-lane"
+
+
+def _lane_metrics(card_id: str = "", job_id: str = "",
+                  limit: int = 25) -> list:
+    """Read-only slice of the DevNest lane ledger (metrics.jsonl,
+    METRIC_FIELDS — scripts/devnest/lane_gate.py): latest rows first."""
+    out = []
+    f = _lane_state_dir() / "metrics.jsonl"
+    if not f.is_file():
+        return out
+    try:
+        lines = f.read_text().splitlines()
+    except OSError:
+        return out
+    for ln in lines:
+        try:
+            m = json.loads(ln)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(m, dict):
+            continue
+        if card_id and m.get("card") != card_id:
+            continue
+        if job_id and m.get("job_id") != job_id:
+            continue
+        out.append(m)
+    out.sort(key=lambda m: (str(m.get("at") or ""),
+                            str(m.get("job_id") or "")), reverse=True)
+    return out[: max(1, min(limit, 100))]
+
+
+def _usage_for_job(job_id: str = "") -> dict:
+    """Runner taskdir usage.json (input/output/cache tokens, exit_code,
+    verdict, artifact_landed — scripts/board/runner-agent.py) — read-only."""
+    if not job_id:
+        return {}
+    try:
+        u = json.loads((DISPATCH_TASKS / job_id / "usage.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    return u if isinstance(u, dict) else {}
+
+
+def _envelope_for_job(job_id: str = ""):
+    """Committed DevNest envelope (evals/opencode-lane/jobs/<job_id>.yaml)
+    — read-only, best-effort."""
+    if not job_id:
+        return None
+    for p in (REPO / "evals" / "opencode-lane" / "jobs" / (job_id + ".yaml"),
+              REPO / "evals" / "opencode-lane" / "jobs" / (job_id + ".yml")):
+        try:
+            if p.is_file():
+                v = yaml.safe_load(p.read_text())
+                return v if isinstance(v, dict) else None
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def _lane_evidence(job_id: str = "", card_id: str = "",
+                   limit: int = 25) -> list:
+    """Merged evidence rows for the control pane (KNB-0229 design §4):
+    per job — ledger metric + usage.json + committed envelope, newest
+    first."""
+    out = []
+    for m in _lane_metrics(card_id=card_id, job_id=job_id, limit=limit):
+        job = {k: m.get(k) for k in (
+            "job_id", "card", "executor", "profile", "model", "provider",
+            "stage", "task_class",
+            "input_tokens", "cache_read_tokens", "cache_write_tokens",
+            "output_tokens", "provider_cost_usd", "combined_cost_usd",
+            "wall_s", "queue_s", "retries", "tool_denials",
+            "verifier_pass", "artifact_landed", "failure_reason",
+            "escalated", "at")
+            if m.get(k) is not None}
+        usage = _usage_for_job(str(m.get("job_id") or ""))
+        if usage:
+            job["usage"] = usage
+        env = _envelope_for_job(str(m.get("job_id") or ""))
+        if env is not None:
+            job["envelope"] = env
+        out.append(job)
+    return out
+
+
 def _q1(q: dict, name: str, default: str = "") -> str:
     v = q.get(name)
     return v[0] if v else default
@@ -4675,6 +4769,24 @@ class H(BaseHTTPRequestHandler):
             if tail is not None:
                 card = _tail_comms(card, tail)
             return self._send(200, {"ok": True, "card": card})
+        if path == "/jobs":
+            # Read-only evidence for the control pane (KNB-0229 design §4):
+            # DevNest lane metrics + runner usage.json + envelope per
+            # card/job. Never a write — board-api stays the card mutation
+            # door; this is the read door for execution evidence.
+            q = parse_qs(url.query)
+            card_id = _q1(q, "card").strip()
+            job_id = _q1(q, "job_id").strip()
+            if not card_id and not job_id:
+                return self._send(400, {"error": "card= or job_id= required"})
+            try:
+                limit = int(_q1(q, "limit", "25") or 25)
+            except ValueError:
+                limit = 25
+            return self._send(200, {
+                "ok": True,
+                "jobs": _lane_evidence(job_id=job_id, card_id=card_id,
+                                       limit=limit)})
         if path == "/queue":
             try:
                 return self._send(200, queue_view())
