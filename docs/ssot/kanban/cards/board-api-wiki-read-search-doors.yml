@@ -1,0 +1,16 @@
+id: board-api-wiki-read-search-doors
+title: 'board-api: /wiki/page mode=read + /wiki/search — generic wiki recall doors'
+column: backlog
+updated: 2026-11-20 13:42
+ref: KNB-0017
+comms:
+- at: 2026-11-20 13:42
+  from: devin
+  text: 'spec (chaba repo, scripts/board/board-api.py): ada-voice now ships wiki_read/wiki_search tools.d modules
+    (card ada-tools-wiki-read-wiki-search-recall-t-8f32dd). They POST /wiki/page {mode:read,title} and /wiki/search
+    {query} first, but those ops do not exist — /wiki/page is write-only and /wiki/search 404s, so the tools fall
+    back to /lesson op=get source=wiki (Education: only), /wiki/news-review (PrivateNews:), chaba-lessons vector
+    + /report search.
+
+
+    Add: 1) mode=read|parse on do_wiki_page — bot'
