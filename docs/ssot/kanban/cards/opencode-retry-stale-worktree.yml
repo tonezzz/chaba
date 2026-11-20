@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-19 20:06
+updated: 2026-11-20 17:25
 priority: low
 tags:
 - opencode
@@ -489,6 +489,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 17:25
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
@@ -504,7 +507,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: failed
+  status: queued
   labels:
   - push:chaba
   sweep:
@@ -516,7 +519,6 @@ action:
   llm_key_alias: ada
   button: test-key-alias
   attempts: 1
-  runner: idc02
   result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
@@ -559,4 +561,3 @@ requests:
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
 claim: {}
-awaiting_action: true
