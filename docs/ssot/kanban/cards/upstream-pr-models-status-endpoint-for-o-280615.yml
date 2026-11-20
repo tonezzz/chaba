@@ -1,0 +1,19 @@
+id: upstream-pr-models-status-endpoint-for-o-280615
+title: 'Upstream PR: models.status endpoint for OpenChamber'
+column: backlog
+updated: 2026-11-20 17:27
+brief: 'Follow-up to ocb-models-status-patch-durability. Upstream repo github.com/openchamber/openchamber is public
+  (MIT, main). Our models.status patch (LiteLLM gateway liveness probe, GET /api/openchamber/models/status) is applied
+  to the dist bundle — a real PR must port it to the TS source and generalize it (provider id + gateway URL/key
+  are currently hardcoded to litellm/LITELLM_URL/LITELLM_KEY env). Patch for reference: chaba stacks/idc02/openchamber/openchamber-models-status.patch.
+  Until this lands, openchamber-update.service ExecStartPost re-applies the patch each npm i -g.'
+priority: low
+tags:
+- openchamber
+- upstream
+- idc02
+ref: OPS-0024
+comms:
+- at: 2026-11-20 17:27
+  from: devin
+  text: card captured via board-api
