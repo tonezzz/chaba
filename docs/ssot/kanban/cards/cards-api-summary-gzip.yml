@@ -1,7 +1,7 @@
 id: cards-api-summary-gzip
 title: '/cards read door: gzip + summary projection + discoverable filters'
 column: backlog
-updated: 2026-11-19 20:04
+updated: 2026-11-20 18:26
 brief: GET /cards bare returns the full board (~15MB, ~2.6s) — card_query already supports id/column/action_status/since/offset/limit/fields
   but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.
 priority: medium
@@ -78,3 +78,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:26
+  from: devin
+  text: 'opencode is implementing this card directly in isolated worktree opencode/knb-0147-cards-read (off origin/master).
+    Preflight receipt ada-preflight-Va9pLspFYZXbYa09: gates green, typed dispatch not wired, so no dispatch. Scope:
+    gzip + ?summary=1 + fields=all + docs + tests only; no live service change, merge or deploy without explicit
+    approval. Note: the runner-agent drift defers in this card''s comms are stale — installed hashes match the repo
+    on idc02/idc03/tony-omen/tony-dell (verified 2026-11-'
