@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-20 18:53
+updated: 2026-11-20 19:49
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -813,6 +813,9 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:49
+  from: tony
+  text: queued for processing
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -902,14 +905,13 @@ requests:
   answer: kk-mac is online now.
 action:
   type: dispatch
-  status: failed
+  status: queued
   last_failure: 'zombie claim: restart failed: manual lane — not dispatched (Tony''s hands)'
   attempts: 1
   lane: codemod
-  runner: tony-dell
   result: 'exit=1 in-task-20261117-211736-two-lane-comparison-on-kk-mac-.service: Failed with result ''exit-code''.
     | devin-task-20261117-211736-two-lane-comparison-on-kk-mac-.service: Consumed 14.150s CPU time over 25.566s
     wall clock time, 820.7M memory peak.'
   sweep:
     failed_noted: 2026-11-17 21:25
-awaiting_action: true
+claim: {}
