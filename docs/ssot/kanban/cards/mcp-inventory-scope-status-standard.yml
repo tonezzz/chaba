@@ -1,0 +1,62 @@
+id: mcp-inventory-scope-status-standard
+title: Standardize MCP scope, status vocabulary and finding IDs
+column: doing
+updated: 2026-11-20 18:21
+brief: 'Make the fleet MCP report''s declarations and findings computable and triageable: explicit per-server scope,
+  no-config on the report status contract, and stable finding IDs with human-owned triage state.'
+priority: high
+tags:
+- mcp
+- ssot
+- reports
+- standardization
+spec: 'Context (from Tony 2026-11-20, after the Fleet MCP report was published and the delta/Configured columns
+  were explained in Education:):
+
+  ''please suggest how should we standardize and organize them properly'', then choice: ''MCP declarations + report
+  findings'' and ''Card it and implement''.
+
+
+  Verified gaps (not guesses):
+
+  1. ssot.reports.yml status_enum is finalized (ok/delta/error/stale/missing/unreachable/planned/remote/dormant)
+  but scripts/mcp-inventory.py emits `no-config`; scripts/lib/report.py::resolve_node maps any status outside its
+  STATUSES to `error`, so reachable infra hosts with no agent configs surface as errors in L3.
+
+  2. ssot.mcp.yml declares servers globally except per_host overrides; `declared_for_host` treats global entries
+  as expected on every host, so idc02 (3 configured) shows 13 false ''active declared but not configured'' names.
+
+  3. Findings are free-text strings in meta/L2, so the same fingerprint cannot be tracked, carded or suppressed
+  across daily runs.
+
+
+  Scope / deliverables:
+
+  - Extend ssot.mcp.yml `fleet_observation` with a scope model: default scope + declared agent-lane hosts; give
+  every server an explicit scope (fleet | agent-lanes | [named hosts]); keep per_host overrides as a narrowing rule.
+  Use expected_statuses as the single active-status source. Add a human-owned finding-triage map (open|carded|suppressed
+  with reason/card/by/until).
+
+  - Update scripts/mcp-inventory.py so expected sets are computed from that scope; emit stable finding IDs (deterministic
+  host+kind+names) with kind, severity, servers and triage state into L0 artifacts, L1 meta and the L2 report. Producers
+  never write triage state or card workflow fields.
+
+  - Add `no-config` to ssot.reports.yml status_enum and scripts/lib/report.py STATUSES (documented informational,
+  not red) so resolve_node stops converting it to error. Fail loud on an unknown scope/status instead of silently
+  mis-scoping.
+
+  - Update docs/kb/layered-reporting.md where it describes the status contract, and the existing Fleet MCP Education
+  lesson family in place (upsert, do not fork).
+
+
+  Done when: ssot-validate passes; a producer run on all six hosts emits scoped expected sets and IDed findings;
+  no-config resolves as no-config in L3; the L2 report is republished to Reports:Fleet-MCP-Inventory with finding
+  IDs and triage state; evidence comm on this card; Fleet MCP hub lesson updated. No Infrastructure: namespace writes
+  (still gated on wiki-page-door-infrastructure-namespace).'
+action:
+  type: manual
+ref: OPS-0025
+comms:
+- at: 2026-11-20 18:21
+  from: devin
+  text: card captured via board-api
