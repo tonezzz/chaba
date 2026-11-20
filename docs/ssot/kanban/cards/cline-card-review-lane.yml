@@ -1,6 +1,6 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
-column: doing
+column: backlog
 updated: 2026-11-20 20:14
 priority: medium
 tags:
@@ -43,12 +43,16 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: ''
   executor: devin
-  last_failure: 'start failed: manual lane — not dispatched (Tony''s hands)'
+  last_failure: 'journal=exit-code  devin-task-20261120-194810-goal-drain-the-review-column-s.service: Failed with
+    result ''exit-code''. | devin-task-20261120-194810-goal-drain-the-review-column-s.service: Consumed 1min 6.863s
+    CPU time, 407.0M memory peak, 0B memory swap peak.'
   attempts: 1
-  runner: idc02
+  result: 'journal=exit-code  devin-task-20261120-194810-goal-drain-the-review-column-s.service: Failed with result
+    ''exit-code''. | devin-task-20261120-194810-goal-drain-the-review-column-s.service: Consumed 1min 6.863s CPU
+    time, 407.0M memory peak, 0B memory swap peak.'
 ref: KNB-1009
 comms:
 - at: 2026-10-30 15:36
@@ -219,5 +223,9 @@ comms:
     raised, cards stayed in review, dedupe pass = zero new writes, ollama only). Committed on dispatch branch: script
     + docs/kb/cline-review-feed.md + docs/ssot/jobs/kanban/2026-11-20-cline-review-feed.yml. Marker is [CARDREVIEW:]
     not [CARD: — mirror owns [CARD: tasks. Follow-u'
+- at: 2026-11-20 20:14
+  from: idc02
+  text: 'finished (failed): journal=exit-code  devin-task-20261120-194810-goal-drain-the-review-column-s.service:
+    Failed with result ''exit-code''. |  — auto-retry queued (attempt 2/2) (column -> backlog)'
 claim:
   since: 2026-11-20 19:46
