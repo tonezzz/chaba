@@ -1,6 +1,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -122,3 +123,44 @@ class TestBoardCliFallback(unittest.TestCase):
             with self.assertRaises(OSError):
                 self.cli.call("GET", "/cards", None, None)
         self.assertEqual(uo.call_count, 1)
+
+
+class TestBoardCliTimeout(unittest.TestCase):
+    """board-cli-post-timeout-vs-big-card-writes: every HTTP path must
+    outwait a large-card board-api write so a retry cannot duplicate it."""
+
+    def setUp(self):
+        path = Path(__file__).resolve().parents[2] / "scripts/board/board-cli.py"
+        spec = importlib.util.spec_from_file_location("board_cli", path)
+        self.cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.cli)
+
+    @staticmethod
+    def _resp(payload=b'{"ok": true}'):
+        resp = mock.MagicMock()
+        resp.read.return_value = payload
+        resp.__enter__.return_value = resp
+        return resp
+
+    def test_default_timeout_outwaits_server_lock_wait(self):
+        # board-api LOCK_WAIT_S=25s; render + scoped commit tail follows
+        self.assertGreaterEqual(self.cli.HTTP_TIMEOUT_S, 120)
+
+    def test_http_uses_configured_timeout(self):
+        with mock.patch.object(self.cli.urllib.request, "urlopen",
+                               return_value=self._resp()) as uo:
+            out = self.cli._http("POST", "/comment", b"{}", self.cli.LOOPBACK_API)
+        self.assertEqual(out, {"ok": True})
+        self.assertEqual(uo.call_args.kwargs["timeout"], self.cli.HTTP_TIMEOUT_S)
+
+    def test_api_mode_uses_configured_timeout(self):
+        env = json.dumps({"method": "POST", "path": "/comment",
+                          "payload": {"id": "c"}}).encode()
+        stdin = mock.MagicMock()
+        stdin.buffer.read.return_value = env
+        with mock.patch.object(sys, "stdin", stdin), \
+                mock.patch.object(sys, "stdout", new_callable=io.StringIO), \
+                mock.patch.object(self.cli.urllib.request, "urlopen",
+                                  return_value=self._resp()) as uo:
+            self.assertEqual(self.cli.api_mode(), 0)
+        self.assertEqual(uo.call_args.kwargs["timeout"], self.cli.HTTP_TIMEOUT_S)

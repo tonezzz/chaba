@@ -36,6 +36,13 @@ LOOPBACK_API = "http://127.0.0.1:8787"
 TAILNET_API = "https://idc03.taila0626a.ts.net:10000"
 API = os.environ.get("BOARD_API", LOOPBACK_API)
 
+# board-api can spend >60s on a large-card write (render + scoped commit);
+# the server-side write still lands after the client gave up, so a retry
+# used to duplicate comments (board-cli-post-timeout-vs-big-card-writes).
+# One bound for both the direct and __api paths, with headroom over the
+# server's bounded LOCK_WAIT_S=25s and the render/commit tail.
+HTTP_TIMEOUT_S = int(os.environ.get("BOARD_CLI_TIMEOUT_S", "180"))
+
 
 REMOTE_SCRIPT = "~/CascadeProjects/chaba/scripts/board/board-cli.py"
 
@@ -52,7 +59,7 @@ def call(method: str, path: str, payload: dict | None,
         r = subprocess.run(
             ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
              ssh_host, "python3", REMOTE_SCRIPT, "__api"],
-            input=env, capture_output=True, timeout=90)
+            input=env, capture_output=True, timeout=HTTP_TIMEOUT_S + 30)
         if r.returncode:
             raise RuntimeError(
                 (r.stderr or r.stdout or b"ssh failed").decode()[:300])
@@ -71,7 +78,7 @@ def _http(method: str, path: str, body: bytes | None, api: str) -> dict:
     req = urllib.request.Request(
         api + path, data=body, method=method,
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as r:
         return json.loads(r.read() or "{}")
 
 
@@ -91,7 +98,7 @@ def api_mode() -> int:
         "http://127.0.0.1:8787" + path, data=body, method=method,
         headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as r:
             sys.stdout.write(r.read().decode() or "{}")
         return 0
     except Exception as exc:
