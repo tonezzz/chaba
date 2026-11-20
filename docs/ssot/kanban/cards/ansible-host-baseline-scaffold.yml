@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: review
-updated: 2026-11-20 18:32
+updated: 2026-11-20 18:54
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -196,6 +196,10 @@ comms:
   text: 'shadow-guard fix pushed to dispatch branch (09158a4128): replaced inventory/{group_vars,host_vars} symlinks
     with real dirs — ansible auto-loads vars adjacent to the inventory file, no symlinks needed. Verified ansible-inventory
     graph + host vars + site.yml --syntax-check. merge-sweep should retry on new head sha.'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27

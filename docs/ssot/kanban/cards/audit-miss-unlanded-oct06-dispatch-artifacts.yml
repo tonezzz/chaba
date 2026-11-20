@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
 column: review
-updated: 2026-11-20 17:34
+updated: 2026-11-20 18:54
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -43,4 +43,8 @@ comms:
     jobs/devnest/2026-11-19-kkmac-vision-qa-bench.yml, and jobs/devnest/2026-11-20-kk-mac-llm-lane-bench.yml. The
     restored inventory itself validates; no unrelated files were changed and no check bypass/merge attempted. PR
     #196 remain'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify

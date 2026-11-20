@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct17-cards
 title: Triage Oct 17 card records absent from live board
 column: done
-updated: 2026-11-20 17:42
+updated: 2026-11-20 18:54
 brief: Two card YAMLs created on Oct 17 are untracked on tony-dell's frozen mirror and their IDs/refs are absent
   from the current live compact board.
 priority: medium
@@ -42,4 +42,8 @@ comms:
     REST target is tony-dell:3011 (tailnet 100.68.142.13) — either the notebooklm service on dell is down or idc03
     cannot reach it. Hits on every session summary write path; session summaries may be losing their notebooklm
     ingestion leg. Reproduce: journalctl -u ada-ai-kraut | grep '
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
