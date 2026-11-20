@@ -1,7 +1,7 @@
 id: cards-api-summary-gzip
 title: '/cards read door: gzip + summary projection + discoverable filters'
-column: backlog
-updated: 2026-11-20 19:00
+column: done
+updated: 2026-11-20 19:08
 brief: GET /cards bare returns the full board (~15MB, ~2.6s) — card_query already supports id/column/action_status/since/offset/limit/fields
   but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.
 priority: medium
@@ -106,3 +106,15 @@ comms:
     in ClaimPassLaneTest/test_runner_agent_lane.py. Reproduced identically at this branch''s exact base commit 7598297b5f
     in a pristine worktree AND at current origin/master — so the KNB-0147 patch neither caused nor worsened them.
     Targeted suite 41/41 pass; done-condition numbers posted i'
+- at: 2026-11-20 19:08
+  from: devin
+  text: 'SHIPPED + VERIFIED (opencode, 2026-11-20). (1) Branch opencode/knb-0147-cards-read rebased and merged by
+    fast-forward to origin/master as 9573571028. (2) idc03 served checkout git-safe-pull completed; scripts/board/board-api.py
+    md5 e4162c25115f617fed5a3c82d0059fc9 matches the merged commit; chaba-board-api.service restarted and active.
+    (3) Live consumer surface: GET /cards?summary=1 -> HTTP 200, 231,746 bytes (<1MB), fields {id,ref,title,column,priority,updated,action_status},
+    no comms/spec; GET'
+- at: 2026-11-20 19:08
+  from: devin
+  text: closed by devin
+action:
+  status: done
