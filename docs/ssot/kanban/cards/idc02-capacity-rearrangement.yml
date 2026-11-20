@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-20 18:18
+updated: 2026-11-20 18:20
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -123,6 +123,13 @@ comms:
     log output; cause unknown, separate from ollama (mddb-lab embeds via idc03:11436, not local ollama). (2) Local
     ollama (OLLAMA_MAX_LOADED_MODELS=1, SYS-1082 clamp) alternates nomic-embed-text and bge-m3: 26 model reloads
     in 15 min, a one-word bge-m3 embed took 27.8s. 21 of 25 /api'
+- at: 2026-11-20 18:20
+  from: devin
+  text: 'Follow-up: the 8s-timeout caller is identified. It is embed-pool-shim.service on idc03 (MEM-0805, scripts/nest/embed-pool-shim.py,
+    EMBED_POOL_TIMEOUT_S=8), an ollama /api/embed racing proxy fronting the mddb banks at idc03:11436. EMBED_POOL_UPSTREAMS
+    = idc03:11434, idc02 (100.123.163.11):11434, tony-omen:11434, 100.72.146.39:11434, 127.0.0.1:11447. idc02 is
+    one of five racing upstreams and is CPU-bound with MAX_LOADED_MODELS=1, so it loses races and times out at 8s
+    (the 400s); its ollama keeps w'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
