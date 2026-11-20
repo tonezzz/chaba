@@ -272,10 +272,18 @@ instances:
     repo_snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
     note: >-
       Ada HA lab copy of chaba-admin, distinct from the tony-ha dashboard
-      above. Live view order (2026-11-12): Pair → Kanban → Diagram →
-      OpenChamber (ada-ocb) → Ada Code → Ada Control → Cline → Node-RED →
-      DevNest → Wiki → Private Wiki → Ada Pages → Monitor → Events → Log →
-      Obsidian → Gantt. Ada Code is a full-page panel iframe to
+      above. Live view order (2026-11-20): Pair → Kanban (classic board) →
+      Kanban 2 (Board2) → Diagram → OpenChamber (ada-ocb) → Ada Code → Cline
+      → Node-RED → DevNest → Wiki → Private Wiki → Ada Pages → Monitor →
+      Hosts → Services → Events → Log → Obsidian → Gantt. Kanban is a
+      full-page panel iframe to
+      https://tony-ha.surf-thailand.com/apps/board/classic.html?v=1; Kanban 2
+      is a full-page panel iframe to
+      https://tony-ha.surf-thailand.com/apps/board2/index.html?v=1. The
+      default /apps/board/ URL remains a redirect to Board2. The live storage
+      has no Ada Control view, although the previous repo snapshot did. The
+      Kanban layout update preserved all other live views. Ada Code is a
+      full-page panel iframe to
       https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
       push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
       web UI on tony-dell:3000 via tailscale serve at
@@ -566,5 +574,5 @@ conventions:
 
 status:
   last_updated: "2026-10-29"
-  last_verified: '2026-11-16'
+  last_verified: '2026-11-20'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
