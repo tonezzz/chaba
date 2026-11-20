@@ -43,7 +43,8 @@ routing:
     JEV_LANE_MIN_CONF: "min jevos confidence, default 0.5"
     JULES_LANES: "1 = executor=jules / lane=jules cards claimable
       on this runner (needs scripts/jules/jules.py + filled
-      ~/.config/secrets/jules.env)"
+      ~/.config/secrets/jules.env). RETIRED 2026-11-20: leave 0 —
+      Jules session creation is disabled (OPS-0156)"
     NLM_LANES: "1 = executor=nlm_batch cards claimable (needs
       ~/.local/bin/nlm + ~/.notebooklm profile)"
     KK_MAC_LANES: "1 = this runner serves executor=kk_mac_local (needs
@@ -258,7 +259,7 @@ lanes:
 
   jules:
     label: Jules async GitHub lane — Google AI Pro executor
-    status: live (pilot-verified OPS-1048 2026-11-06; wired OPS-1049)
+    status: retired 2026-11-20 — Jules read-only until 2026-12-31, session creation disabled account-wide (provider EOL); see OPS-0156
     plane: work
     executor: >-
       action.executor=jules (or action.lane=jules). runner-agent
