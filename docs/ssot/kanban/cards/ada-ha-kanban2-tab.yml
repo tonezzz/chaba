@@ -1,7 +1,7 @@
 id: ada-ha-kanban2-tab
 title: Add Kanban 2 layout tab to Ada HA chaba-admin
-column: doing
-updated: 2026-11-20 17:05
+column: review
+updated: 2026-11-20 17:13
 brief: Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after
   it as a separate Kanban 2 tab.
 priority: medium
@@ -110,6 +110,16 @@ comms:
 - at: 2026-11-20 17:05
   from: devin
   text: moved done -> doing
+- at: 2026-11-20 17:13
+  from: chaba
+  text: 'stalled-claim reaper: moved doing -> review — run reported done with no live claim — the verified gate
+    owns the close decision'
+- at: 2026-11-20 17:13
+  from: devin
+  text: 'Live restore complete: Kanban now uses classic.html?v=1 and Kanban 2 immediately follows at board2/index.html?v=1.
+    WebSocket readback/snapshot confirm 19 views with all 17 non-Kanban views unchanged; both assets return HTTP
+    200. Sanitized snapshot/SSOT is in PR #195. Repo-wide ref validation has one unrelated existing broken ref in
+    jobs/board/2026-11-20-host-status-live-first.yml.'
 requests:
 - id: home-assistant-mcp-and-browser-tool-disc-01c7e6
   ask: Home Assistant MCP and browser tool discovery failed, so I cannot use those connectors. May I apply the already-requested
