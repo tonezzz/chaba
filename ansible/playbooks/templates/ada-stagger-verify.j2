@@ -1,0 +1,42 @@
+{# ada-stagger-verify.j2 — verdict for stacks/idc03/ada-start-stagger.
+   Context: observed (probe json), expected_hook_sha, stagger_units? —
+   offsets come back through `stack` lookup? No: use `stagger_offsets`
+   passed via vars below. #}
+{%- set ns = namespace(checks=[], fails=0) -%}
+{%- set hook_ok = observed.hook_present and observed.hook_sha256 == expected_hook_sha -%}
+{%- set _ = ns.checks.append({
+   'check': 'hook sha256 matches repo copy',
+   'state': 'ok' if hook_ok else 'FAIL',
+   'detail': (observed.hook_sha256 | default('missing'))[:12] ~ ' vs '
+             ~ expected_hook_sha[:12] }) -%}
+{%- set _ = ns.checks.append({
+   'check': 'hook mode 0755',
+   'state': 'ok' if observed.hook_mode == '0o755' else 'FAIL',
+   'detail': observed.hook_mode | default('missing') }) -%}
+{%- for unit, offset in stagger_offsets | dictsort -%}
+{%-   set content = observed.dropins[unit] -%}
+{%-   set want_line = 'ExecStartPre=%h/.local/bin/ada-start-stagger.sh '
+        ~ offset -%}
+{%-   set ok = content is not none
+        and want_line in content
+        and 'TimeoutStartSec=180' in content -%}
+{%-   set _ = ns.checks.append({
+     'check': unit ~ ' stagger.conf',
+     'state': 'ok' if ok else 'FAIL',
+     'detail': ('missing' if content is none
+                else ('offset ' ~ offset ~ ' + TimeoutStartSec=180' if ok
+                      else 'content mismatch')) }) -%}
+{%- endfor -%}
+{%- set live_ok = 'ada-start-stagger.sh' in observed.ada_dev_execstartpre -%}
+{%- set _ = ns.checks.append({
+   'check': 'live ExecStartPre on ada-dev.service (stack.yml verify)',
+   'state': 'ok' if live_ok else 'FAIL',
+   'detail': observed.ada_dev_execstartpre[:80] | default('empty') }) -%}
+{%- for c in ns.checks -%}
+{%-   if c.state == 'FAIL' -%}{%- set ns.fails = ns.fails + 1 -%}{%- endif -%}
+{%- endfor -%}
+host: idc03
+verified_against: stacks/idc03/ada-start-stagger/
+summary: {{ ('ok — ' ~ (ns.checks | length) ~ ' checks pass' if ns.fails == 0 else 'FAIL — ' ~ ns.fails ~ '/' ~ (ns.checks | length) ~ ' checks fail') | to_json }}
+checks:
+{{ ns.checks | to_nice_yaml | indent(2, true) }}
