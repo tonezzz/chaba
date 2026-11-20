@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
-column: doing
-updated: 2026-11-20 13:47
+column: review
+updated: 2026-11-20 13:53
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -233,10 +233,33 @@ comms:
   text: "merge-sweep: landing devin-task-20261120-133005-ada-tools-wiki-read-wiki-searc failed: push: remote: error:\
     \ refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current\
     \ branch in a non-bare repository        \nremote: is denied, because it will"
+- at: 2026-11-20 13:53
+  from: tony-omen
+  text: 'finished (ok): exit=0 arch-tools.yml` + the dispatch-outcome doc; card comms updated. | devin-task-20261120-133005-ada-tools-wiki-read-'
+- at: 2026-11-20 13:53
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 13:53
+  from: chaba
+  text: banked 41 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 13:53
+  from: chaba
+  text: pushed dispatch/20261120-133005-ada-tools-wiki-read-wiki-searc to origin
+- at: 2026-11-20 13:53
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 207.1s)
+- at: 2026-11-20 13:53
+  from: chaba
+  text: auto-merged 7048cba5 (dispatch/20261120-133005-ada-tools-wiki-read-wiki-searc) → origin/main
+- at: 2026-11-20 13:53
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-133005-ada-tools-wiki-read-wiki-searc,
+    branch dispatch/20261120-133005-ada-tools-wiki-read-wiki-searc'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -247,10 +270,10 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
     2.730s CPU time.'
   attempts: 2
-  result: 'exit=1 sk-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Failed with result ''exit-code''. |
-    devin-task-20261117-093448-ada-tools-wiki-read-wiki-searc.service: Consumed 26.454s CPU time over 1min 22.212s
-    wall clock time, 768.7M memory peak.'
+  result: 'exit=0 arch-tools.yml` + the dispatch-outcome doc; card comms updated. | devin-task-20261120-133005-ada-tools-wiki-read-wiki-searc.service:
+    Consumed 3min 39.997s CPU time over 13min 32.707s wall clock time, 1.6G memory peak, 9.1M memory swap peak.'
   runner: tony-omen
+  verified: true
 requests:
 - id: multiple-runner-agents-across-3dd40d
   ask: Multiple runner-agents across hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because
@@ -270,3 +293,4 @@ requests:
 claim:
   since: 2026-11-20 13:28
 awaiting_action: true
+review_kind: verify
