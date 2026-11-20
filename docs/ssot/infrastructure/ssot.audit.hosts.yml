@@ -1983,6 +1983,7 @@ hosts:
         critical: false
         note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
           2026-10-09 after checkout drifted 190 commits behind (audit finding)
+      - {name: mcp-fleet-report.timer, type: timer, scope: user, note: "daily 24h — rendered from ssot.jobs.yml 2026-11-20 (card KNB-0019): L1 MCP inventory observation across all declared hosts + L2 rollup -> Reports:Fleet-MCP-Inventory via board-api /publish; deterministic, no LLM"}
       - name: chaba-jobs.timer
         type: timer
         scope: user
