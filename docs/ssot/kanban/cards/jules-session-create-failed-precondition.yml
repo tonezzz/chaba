@@ -1,7 +1,7 @@
 id: jules-session-create-failed-precondition
 title: 'Jules executor: session creation returns FAILED_PRECONDITION on tony-omen'
 column: done
-updated: 2026-11-20 12:32
+updated: 2026-11-20 18:51
 brief: 'Two independent Jules dispatch attempts on tony-omen failed before agent work on 2026-11-17: ADA-1279 at
   09:01 and ADA-1084 at 09:14 ICT. Both journaled HTTP 400 POST /sessions with status FAILED_PRECONDITION. OPS-1049
   (executor wiring) is done; OPS-1295 covers a different case after a session exists (AWAITING_USER_FEEDBACK). Determine
@@ -108,6 +108,12 @@ comms:
 - at: 2026-11-20 12:32
   from: tony
   text: moved backlog -> done
+- at: 2026-11-20 18:51
+  from: ada
+  text: 'CLOSEOUT 2026-11-20: Tony approved cancel + archive of Jules. Lane purged from runner-agent.py, dispatch_repos.py
+    and board-api; scripts/jules/jules.py deleted; JULES_LANES/JULES_REPO_MAP/JULES_* gates removed; API keys removed
+    on tony-omen and idc03. Done Jules cards are already on the board but are 1 day old — board archive needs done+verified+7d,
+    so the normal sweeper will archive them after 2026-11-27.'
 action:
   status: done
 claim: {}

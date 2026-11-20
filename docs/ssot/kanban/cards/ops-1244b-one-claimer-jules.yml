@@ -1,7 +1,7 @@
 id: ops-1244b-one-claimer-jules
 title: 'OPS-1244b jules: merge kanban-dispatch into runner-agent as long-running claim service (sub of devnest-queue-consolidation)'
-column: backlog
-updated: 2026-11-20 18:48
+column: done
+updated: 2026-11-20 18:51
 priority: high
 tags:
 - devnest
@@ -40,7 +40,7 @@ spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). REPO-ONLY change (cha
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   sweep:
     failed_noted: 2026-11-09 11:34
   last_failure: 'journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ops-1244b-one-claimer-jules-1794918454.service:
@@ -313,4 +313,13 @@ comms:
 - at: 2026-11-20 18:48
   from: devin
   text: put on hold
+- at: 2026-11-20 18:51
+  from: ada
+  text: closed by ada
+- at: 2026-11-20 18:51
+  from: ada
+  text: 'Jules lane purged 2026-11-20 per Tony: lane deleted from runner-agent/dispatch_repos/board-api, jules.py
+    and JULES_* gates removed, API keys deleted on tony-omen + idc03. This card was Jules-only work and is closed.
+    Note: a concurrent devin session held it minutes earlier arguing the one-claimer refactor is still valid work
+    — if you want to keep that scope, reopen on a live lane (devin/opencode).'
 claim: {}
