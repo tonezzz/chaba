@@ -1,0 +1,22 @@
+id: ada-ha-dashboard-live-view-drift
+title: Reconcile Ada HA chaba-admin live-view drift
+column: backlog
+updated: 2026-11-20 12:11
+brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
+  verify whether this drift is intentional before restoring anything.
+priority: medium
+tags:
+- home-assistant
+- dashboard
+- ssot
+spec: 'Read-only evidence from 2026-11-20: live chaba-admin view order is Pair, Kanban, Kanban 2, Diagram, ada-ocb,
+  ada-code, Cline, Node-RED, DevNest, Wiki, Private Wiki, Ada Pages, Monitor, Hosts, Services, Events, Log, Obsidian,
+  Gantt. The repo snapshot before the Kanban2 update included Ada Control but not Hosts/Services. The Kanban2 WebSocket
+  mutation only inserted its view; the renderer does not alter HA tabs. Investigate the history and confirm whether
+  Ada Control should remain absent. Preserve the current live set unless Tony explicitly requests restoration; if
+  keeping it, synchronize snapshot/SSOT. Do not restore custom cards without explicit approval.'
+ref: HOM-0015
+comms:
+- at: 2026-11-20 12:11
+  from: tony
+  text: card captured via board-api
