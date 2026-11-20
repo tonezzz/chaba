@@ -1,7 +1,7 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
-column: backlog
-updated: 2026-11-20 20:59
+column: doing
+updated: 2026-11-20 21:03
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
 priority: medium
@@ -248,6 +248,13 @@ comms:
 - at: 2026-11-20 20:59
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-20 21:03
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-205837-ada-voice-backend-realtime-pro)
+    — claims held ~29m'
+- at: 2026-11-20 21:03
+  from: tony-macbook
+  text: claimed
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
@@ -268,7 +275,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   result: 'exit=1 devin-task-20261117-233554-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
@@ -276,5 +283,7 @@ action:
     clock time, 75.9M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:41
-claim: {}
-awaiting_action: true
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-20 21:03
