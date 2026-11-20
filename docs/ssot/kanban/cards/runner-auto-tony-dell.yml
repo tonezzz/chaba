@@ -1,5 +1,5 @@
 id: runner-auto-tony-dell
-title: Runner host `tony-dell` fails 3 dispatch bootstrap check(s)
+title: Runner host `tony-dell` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note,
   fix on the host, close the card.
 column: review
@@ -11,22 +11,19 @@ note: 'Failing: sunsynk-card: 256 commits behind origin/sunsynk (limit 200, last
   declared but the push probe fails (remote: Permission to tradik/mddb.git denied to tonezzz.
 
   fatal: unable to access ''https://github.com/tradik/mddb/'': The requested URL returned error: 403 — the label
-  lies; remove it or fix the key); ~/.local/bin/runner-agent sha cc637f5db1368bd8 != repo 8c28da6b4922a207 — installed
-  copy drifted; redeploy. Info: chaba origin is fetch-only (by design — no push creds); merge-sweep salvage path
-  verified; sunsynk-card: push probe fails (?) — sunsynk-card dispatches defer to a pushable host; stranded work
-  relays via board-api; gods-eye-view: push probe fails (?) — gods-eye-view dispatches defer to a pushable host;
-  stranded work relays via board-api; ada-voice: push probe fails (?) — ada-voice dispatches defer to a pushable
-  host; stranded work re'
+  lies; remove it or fix the key). Info: chaba origin is fetch-only (by design — no push creds); merge-sweep salvage
+  path verified; sunsynk-card: push probe fails (?) — sunsynk-card dispatches defer to a pushable host; stranded
+  work relays via board-api; gods-eye-view: push probe fails (?) — gods-eye-view dispatches defer to a pushable
+  host; stranded work relays via board-api; ada-voice: push probe fails (?) — ada-voice dispatches defer to a pushable
+  host; stranded work relays via board-api; ada-pi: push probe fails (?) — ada-voice dispatches defer to a pushable
+  host; stranded w'
 help: 'Per-check fixes:
 
   - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
   that host''s repos.conf.
 
   - push-label-false: RUNNER_LABELS declares push:<repo> but `git push --dry-run` fails in the checkout — the label
-  lies about the credential scope (runner-push-cred-gap). Remove the label or fix the key.
-
-  - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
-  scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
+  lies about the credential scope (runner-push-cred-gap). Remove the label or fix the key.'
 updated: 2026-11-20 18:52
 review_kind: triage
 action:
