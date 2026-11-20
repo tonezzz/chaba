@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
-column: backlog
-updated: 2026-11-20 21:10
+column: doing
+updated: 2026-11-20 21:12
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -908,6 +908,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210532-evaluate-opencode-as-a-supervi)
     — claims held ~29m'
+- at: 2026-11-20 21:12
+  from: idc02
+  text: claimed
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -997,14 +1000,15 @@ requests:
   answer: kk-mac is online now.
 action:
   type: dispatch
-  status: queued
+  status: running
   last_failure: 'zombie claim: restart failed: manual lane — not dispatched (Tony''s hands)'
-  attempts: 1
+  attempts: 2
   lane: codemod
   result: 'exit=1 in-task-20261117-211736-two-lane-comparison-on-kk-mac-.service: Failed with result ''exit-code''.
     | devin-task-20261117-211736-two-lane-comparison-on-kk-mac-.service: Consumed 14.150s CPU time over 25.566s
     wall clock time, 820.7M memory peak.'
   sweep:
     failed_noted: 2026-11-17 21:25
-claim: {}
-awaiting_action: true
+  runner: idc02
+claim:
+  since: 2026-11-20 21:12
