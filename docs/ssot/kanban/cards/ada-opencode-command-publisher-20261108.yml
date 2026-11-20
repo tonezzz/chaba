@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-21 06:12
+updated: 2026-11-21 06:19
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -511,6 +511,13 @@ comms:
     publisher, 12 files) onto current master; 24 feature tests green, board-api compiles. Went one step past the
     dead run: exercised the tool end-to-end — sync --confirm --via local deployed canonical ada.md 077aaff3 to idc02,
     verify=match:true (was 29c878cc pre-menu). Sweep native-menu block is live again. Outcome doc + commit next.'
+- at: 2026-11-21 06:19
+  from: devin
+  text: 'DONE on dispatch/20261121-061014 (tony-omen, rebased onto current master, 2 commits). Deliverable: canonical
+    stacks/idc02/ada-code/commands/ada.md (sweep native-menu restored) + narrow allowlisted publisher — opencode_command.py
+    backend, /opencode-command board-api door (confirm+expect_sha gates, required markers, atomic ssh deploy, sha
+    verify, commits via writer pipeline), Devin thin CLI, bench evidence (measured 74-80% fewer ingested bytes),
+    24 feature tests + 80 board-api door tests green. LI'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -560,3 +567,4 @@ action:
 claim:
   since: 2026-11-21 06:08
 review_kind: verify
+awaiting_action: true
