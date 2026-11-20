@@ -1,7 +1,7 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
-updated: 2026-11-20 20:02
+column: backlog
+updated: 2026-11-20 20:03
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
 priority: high
@@ -413,22 +413,28 @@ comms:
   text: 'AUD-0973 re-check (dispatch 195551 attempt 2): confirmed already-closed state — marker 2026-11-20T18:50:37,
     report complete, AUD-0029..0034 in backlog, no dupes. Prior exit-1s were teardown failures after work finished;
     no action needed.'
+- at: 2026-11-20 20:03
+  from: tony-macbook
+  text: 'finished (failed): journal=exit-code 0261120-195551-finish-artifact-landing-verifi.service: Failed with
+    result ''exit-code''. | devin-task-20 — auto-retry queued (attempt 2/2) (column -> backlog)'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
   attempts: 1
-  last_failure: 'exit=1 evin-task-20261120-191728-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
-    | devin-task-20261120-191728-finish-artifact-landing-verifi.service: Consumed 30.294s CPU time over 15.417s
-    wall clock time, 919M memory peak.'
+  last_failure: 'journal=exit-code 0261120-195551-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261120-195551-finish-artifact-landing-verifi.service: Consumed 1min 3.915s CPU time over 6min
+    44.180s wall clock time, 396.8M memory peak.'
   sweep:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
-  runner: tony-macbook
+  result: 'journal=exit-code 0261120-195551-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
+    | devin-task-20261120-195551-finish-artifact-landing-verifi.service: Consumed 1min 3.915s CPU time over 6min
+    44.180s wall clock time, 396.8M memory peak.'
 claim:
   since: 2026-11-20 19:53
