@@ -45,13 +45,23 @@ Procedures: `knowledge-capture`, `pointer-note`, `session-capture` in `docs/ssot
 - **Execution evidence/outcomes** → existing evidence surfaces (dispatch outcomes, reports, CI/audit, card result/comms/report). Capture refs/conclusions, not volatile logs without as-of/source.
 - **Transient/live operational state** → do not persist as truth; store refresh query/recipe only.
 
-## Session-capture sweep (session end/handoff)
+## Session-capture sweep (session end/handoff/pause)
 1. **Open-ask sweep:** every unmet/unfinished request or discovered follow-up → card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note. Record where filed.
 2. **Discovery:** create/update a deduped pointer note with `scope, as_of, canonical_refs, retrieval_recipe, volatility, summary` (+ owner/promote_to/related/refresh/gaps).
 3. **Lessons:** file retainable answers (lesson-capture duty); state failure explicitly.
 4. **Outcomes/evidence:** attach to card/report/artifacts; capture only reusable deltas.
-5. **Resume state:** write a short pointer/resume note (state, open asks, next action, where filed).
-6. **Report:** list what was captured and where it landed.
+5. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
+6. **Report (mandatory):** always list `where_filed` (`item -> sink/ID/path`) — never end with chat-only outcomes.
+
+## Session Handoff Packet (required)
+- `objective` — what this session/task was doing
+- `as_of` — YYYY-MM-DD[ HH:MM TZ]
+- `current_state` — done | in progress | blocked, with evidence refs
+- `canonical_refs` — SSOT keys/paths, card IDs, lesson/report/artifact IDs, commits/paths
+- `open_asks_decisions` — none, or each ask/decision -> owner/options/default + durable sink/ID
+- `next_action` — single concrete next step
+- `where_filed` — **mandatory**: `item -> sink/ID/path`
+- `notes` — risks/gaps/refresh queries if any (label state `canonical(served)`, `branch/unmerged`, or `live runtime` when relevant)
 
 ## Pointer-note template (body)
 - `scope`, `as_of`, `volatility` (static|pointer|live-mix), `owner`, `promote_to`

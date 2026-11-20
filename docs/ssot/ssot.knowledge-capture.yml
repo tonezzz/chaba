@@ -6,7 +6,7 @@ version: 1
 config:
   status: active
   created: "2026-11-20"
-  last_updated: "2026-11-20"
+  last_updated: "2026-11-20"  # handoff packet + enforced sweep (priority 1)
   maintainer: tony
   related_files:
     - docs/ssot/ssot.index.yml
@@ -140,14 +140,49 @@ sections:
           - gap: <unknown or unresolved>
           - refresh_when: <conditions that require update>
 
+  - title: Session Handoff Packet (required)
+    icon: "📦"
+    layout: list
+    items:
+      - label: Intended use
+        text: >-
+          Required at every session end, handoff, or pause. The packet is the portable, pointer-first summary that lets
+          Devin, OpenChamber/OpenCode, or Tony resume without re-discovery. Store it as an OpenChamber project knowledge
+          note (preferred for resume) and/or attach key refs in card comms/requests; never chat-only.
+      - label: Required fields
+        text: >-
+          objective (what this session/task was doing), current_state (done/in-progress/blocked with evidence refs),
+          canonical_refs (SSOT keys/paths, card IDs, lesson/report/artifact IDs, repo paths/commits), open_asks_decisions
+          (unmet asks, decisions needed, owners/options/defaults; each routed to a durable sink), next_action (single
+          concrete next step), where_filed (every item captured this session and its sink/ID/path — mandatory), and
+          as_of (YYYY-MM-DD[ HH:MM TZ]).
+      - label: Rules
+        text: >-
+          Pointer-first and SSOT-aligned: cite stable IDs/paths/keys/queries, label state as canonical(served)/branch-unmerged/live
+          when relevant, include refresh queries for any live/volatile fact, and do not copy secrets or volatile snapshots.
+          "Filed where" must be explicit; a request with no durable record does not exist.
+      - label: Markdown template
+        text: |
+          # Session handoff — <objective> (<as_of>)
+          - objective: <what this session/task was doing>
+          - as_of: <YYYY-MM-DD[ HH:MM TZ]>
+          - current_state: <done | in progress | blocked> — <evidence refs>
+          - canonical_refs: <SSOT keys/paths, card IDs, lesson/report/artifact IDs, commits/paths>
+          - open_asks_decisions: <none | ask/decision -> owner/options/default + durable sink/ID>
+          - next_action: <single concrete next step>
+          - where_filed: <item -> sink/ID/path> (mandatory, include "none" only if truly nothing captured)
+          - notes: <risks/gaps/refresh queries if any>
+
   - title: Auto-Capture Triggers and Hooks
     icon: "⚡"
     layout: list
     items:
       - label: Session boundary / handoff (mandatory)
         text: >-
-          Before ending, run an open-ask sweep: every unmet/unfinished request or discovered follow-up is routed to a card,
-          card request/comment, focus-inbox entry, lesson, KB/SSOT promotion candidate, or pointer note; report where it was filed.
+          Before ending, run the session-capture sweep: route every unmet/unfinished request or discovered follow-up to a
+          durable sink (card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note); save/update a
+          deduped pointer or handoff note; and produce a Session Handoff Packet. Always report "where filed" (item -> sink/ID/path)
+          in the response and in the packet — no chat-only outcomes.
       - label: Discovery
         text: >-
           When a non-obvious entry point, procedure location, or domain map is resolved, create/update a pointer note with

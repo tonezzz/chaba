@@ -27,12 +27,23 @@ Apply this skill when ending a session/handoff, after meaningful discovery, when
 3. Use pointer indexes to jump to canon; fetch live state at time of use
 4. Conflicts: SSOT or designated live authority wins; fix stale pointers
 
-## Session-end sweep (mandatory)
-1. Route every unmet request/follow-up to a durable sink and record where filed
-2. Save/update a deduped pointer note: `scope, as_of, canonical_refs, retrieval_recipe, volatility, summary` (+ owner/promote_to/related/refresh/gaps)
-3. File retainable lessons (lesson-capture)
-4. Attach outcomes/evidence; capture only reusable deltas
-5. Save a short resume pointer (state, open asks, next action, where filed)
+## Session-capture sweep (mandatory at end/handoff/pause)
+1. **Open-ask:** route every unmet request/follow-up to a durable sink and record where filed
+2. **Discovery:** save/update a deduped pointer note (`scope, as_of, canonical_refs, retrieval_recipe, volatility, summary` + owner/promote_to/related/refresh/gaps)
+3. **Lessons:** file retainable answers (lesson-capture; state if write fails)
+4. **Evidence:** attach outcomes/evidence; capture only reusable deltas
+5. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and report `where_filed` in the response
+
+## Session Handoff Packet (required)
+- `objective`, `as_of`
+- `current_state` — done | in progress | blocked, with evidence refs
+- `canonical_refs` — SSOT keys/paths, card IDs, lesson/report/artifact IDs, commits/paths
+- `open_asks_decisions` — none, or each -> owner/options/default + durable sink/ID
+- `next_action` — single concrete next step
+- `where_filed` — **mandatory**: `item -> sink/ID/path` (never chat-only)
+- `notes` — risks/gaps/refresh queries if any
+
+Label state as `canonical(served)`, `branch/unmerged`, or `live runtime` when relevant.
 
 ## Guardrails
 - Pointer-first: refs/paths/keys/queries, no copied SSOT bodies, no secrets, no stale volatile snapshots

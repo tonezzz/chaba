@@ -27,6 +27,12 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Impact**: Establishes a canonical, pointer-first standard for capturing useful information alongside SSOT (board/lesson/KB/OpenChamber/evidence routing), reducing duplication and drift and improving later retrieval.
 - **Rollback**: Remove docs/ssot/ssot.knowledge-capture.yml, revert added entries in docs/ssot/ssot.procedures.yml and docs/ssot/ssot.index.yml.
 
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/ssot.procedures.yml, .opencode/instructions/session-capture.md, .opencode/skills/session-capture/SKILL.md, .devin/skills/session-capture/SKILL.md, opencode.jsonc
+- **Change Type**: minor
+- **Description**: Enforced priority-1 session-capture routine: added required Session Handoff Packet (objective, as_of, current_state, canonical_refs, open_asks_decisions, next_action, where_filed, notes) to SSOT spec; strengthened session-boundary trigger to mandate sweep + packet + explicit where_filed reporting; aligned procedures and Devin/OpenCode skills/instructions to require the sweep and packet at every session end/handoff/pause.
+- **Impact**: Makes cross-session capture behavior explicit and consistent across Devin and OpenChamber/OpenCode (pointer-first, SSOT-aligned), reducing chat-only outcomes and lost follow-ups.
+- **Rollback**: Revert the handoff-packet/enforcement edits in the listed files and procedures entries.
+
 ### 2026-09-24
 
 - **File**: docs/ssot/infrastructure/ssot.security.yml (+ 7 new files)
