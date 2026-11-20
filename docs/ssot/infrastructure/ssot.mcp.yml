@@ -46,6 +46,34 @@ hosts:
   idc02: {}
   idc03: {}
   michael-ha: {}
+
+# Observed inventory surface (card KNB-0019). `servers` above is declared
+# truth; this block only declares where the producer looks and which
+# declarations are expected to be configured. Never put live observations
+# here — they belong in append-only reports/mcp-inventory/ artifacts.
+fleet_observation:
+  producer: scripts/mcp-inventory.py
+  report_node: mcp-fleet
+  report_artifact: reports/mcp-fleet/MCP-FLEET-REPORT.md
+  cadence: 24h
+  config_surfaces:
+    devin: ~/.config/devin/mcp_config.json
+    windsurf: ~/.config/windsurf/mcp_config.json
+    codeium: ~/.config/codeium/mcp_config.json
+    opencode: ~/.config/opencode/opencode.json
+  expected_statuses:
+    - operational
+  note: >-
+    L0 artifacts under reports/mcp-inventory/ are append-only; each host's
+    meta.*.yml carries observed state. An unreachable host is reported as
+    unreachable with no missing-server findings — unobserved is not missing.
+  hosts:
+    tony_omen: {ssh: tony-omen, role: primary-workstation}
+    tony_dell: {ssh: tony-dell, role: headless-primary}
+    mn01: {ssh: mn01, role: services}
+    idc02: {ssh: idc02, role: job-host}
+    idc03: {ssh: idc03, role: canonical-mddb-primary}
+    michael-ha: {ssh: michael-ha, role: appliance}
 servers:
   github:
     name: GitHub Integration
@@ -566,6 +594,16 @@ decisions:
       to live mn01 container (dell units masked); workflows/docs/mcp-focus RETIRED
       and removed from mcp_config.json on omen+dell. See
       docs/ssot/jobs/infrastructure/2026-10-26-dead-mcp-triage.yml'
+  fleet_report_2026_11_20:
+    card: KNB-0019
+    title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
+    report_node: mcp-fleet
+    producer: scripts/mcp-inventory.py
+    findings:
+    - 'MDDB primary on idc03 (100.102.134.91:11023, mddbd :9000/mcp); the tony-dell local copy is a retired/dead follower'
+    - 'tony-dell: alphavantage + mcp-llama declared operational but absent from its config surfaces (schema-heavy / superseded by LiteLLM)'
+    - 'tony-omen: mcp-kornia declared operational but not configured on any surface'
+    - '3 of 6 declared hosts unreachable from idc02 at observation time (mn01, idc03, michael-ha) — reported unreachable, not missing'
   mcp_filter_disabled:
     date: 2026-08-07
     reason: Compatibility issues with mcp-filter implementation
@@ -602,6 +640,8 @@ validation:
   check_env_files: true
   max_servers: 20
 related_files:
+- infrastructure/ssot.reports.yml
+- scripts/mcp-inventory.py
 - ssot.devin.tools.yml
 - ssot.mysystem.home.yml
 - ssot.mysystem.mobile.yml

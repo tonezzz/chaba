@@ -1753,6 +1753,22 @@ jobs:
   every: 4h
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/fleet-jobs-report.py
   note: 'deterministic — no LLM'
+- id: mcp-fleet-report
+  name: Fleet MCP inventory observation + L2 rollup
+  host: idc03
+  dispatch: systemd
+  every: 24h
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mcp-inventory.py --all
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mcp-inventory.py --consolidate --publish
+  note: 'Card KNB-0019. Deterministic — no LLM. Writes append-only L0 artifacts
+    plus per-host metas under reports/mcp-inventory/, renders the L2
+    reports/mcp-fleet/MCP-FLEET-REPORT.{md,wiki}, then upserts one stable
+    Reports:Fleet-MCP-Inventory page via board-api /publish with
+    sinks=[wiki-reports,board]. Durable lessons are filed once via POST /lesson
+    to Education:. No Infrastructure: writes until the
+    wiki-page-door-infrastructure-namespace card lands. Declare only — install
+    the unit with render-jobs.py --host idc03 --install after review.'
 - id: chaba-pytest-suite
   name: chaba full pytest suite (nightly)
   host: tony_omen
