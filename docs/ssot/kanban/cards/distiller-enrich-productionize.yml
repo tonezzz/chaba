@@ -2,11 +2,12 @@ id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
 column: backlog
 updated: 2026-11-20 18:53
-brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
-  T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
-  pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
-  path — T1 semantic + T2 local transcript keyword fallback; (3) keep T2 transcripts locally grep-able (.md dir,
-  not GDrive-only); (4) mddb has no FTS — local BM25 over T2 dir or FTS endpoint in mddbd fork. Evidence: reports/bench-recall-v2-20261022.md'
+brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%,
+  hybrid T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich
+  in the production pipeline so devin-session docs get the Artifacts section in the pre-delete window;
+  (2) recall hook runs hybrid path — T1 semantic + T2 local transcript keyword fallback; (3) keep T2 transcripts
+  locally grep-able (.md dir, not GDrive-only); (4) mddb has no FTS — local BM25 over T2 dir or FTS endpoint
+  in mddbd fork. Evidence: reports/bench-recall-v2-20261022.md'
 ref: OPS-0778
 comms:
 - at: 2026-10-23 13:35
@@ -90,16 +91,16 @@ comms:
   text: started devin-task-20261117-233752-productionize-enriched-t1-dist on tony-macbook (dispatch)
 - at: 2026-11-17 23:38
   from: tony-macbook
-  text: 'finished (failed): exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with
-    result ''exit-code''. | devin-task-20'
+  text: 'finished (failed): exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed
+    with result ''exit-code''. | devin-task-20'
 - at: 2026-11-17 23:38
   from: chaba
   text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-18 00:08'
 - at: 2026-11-17 23:40
   from: chaba
-  text: 'merge-sweep: devin-task-20261117-233752-productionize-enriched-t1-dist failed — its branch isn''t auto-merged
-    (unverified partial work). Retry the card or merge dispatch/20261117-233752-productionize-enriched-t1-dist by
-    hand.'
+  text: 'merge-sweep: devin-task-20261117-233752-productionize-enriched-t1-dist failed — its branch isn''t
+    auto-merged (unverified partial work). Retry the card or merge dispatch/20261117-233752-productionize-enriched-t1-dist
+    by hand.'
 - at: 2026-11-18 17:30
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -126,8 +127,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-19 08:59
   from: chaba
-  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
-    it'
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry
+    re-arms it'
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -148,10 +149,14 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-card-requests-productioniz-2005e7
-  ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
-    recall path, but lacks context on which target host and repository this functionality should be deployed to.
+  ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid
+    T1/T2 recall path, but lacks context on which target host and repository this functionality should
+    be deployed to.
   options:
   - ★ Use repo chaba on host tony-dell for the deployment
   - Postpone productionization until target infrastructure is confirmed
@@ -168,9 +173,14 @@ action:
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
-  result: 'exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233752-productionize-enriched-t1-dist.service: Consumed 9.439s CPU time over 4.680s wall
-    clock time, 233.2M memory peak.'
+  result: 'exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with result
+    ''exit-code''. | devin-task-20261117-233752-productionize-enriched-t1-dist.service: Consumed 9.439s
+    CPU time over 4.680s wall clock time, 233.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
 awaiting_action: true
+spec: Productionize the enriched T1 distiller by enabling the --enrich hook and setting up the hybrid
+  T1/T2 recall path in the chaba repository on idc02. The implementation must integrate the enrichment
+  flag into the distiller pipeline and verify hybrid recall operations. The done-condition is verified
+  when running the distiller with --enrich successfully executes without error and exercises the hybrid
+  T1/T2 recall path.
