@@ -43,6 +43,11 @@ from pathlib import Path
 
 import yaml
 
+# libyaml when present — same reason as board-api/render-board: pure
+# parses of the ~1000-card corpus inside the card flock were the 2026-11
+# lock-convoy tax (board-api-lock-contention).
+_YAML_LOAD = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
 import dispatch_repos as dr
@@ -475,7 +480,7 @@ def overloaded() -> bool:
 
 
 def load_card(path: Path) -> dict:
-    card = yaml.safe_load(path.read_text()) or {}
+    card = yaml.load(path.read_text(), Loader=_YAML_LOAD) or {}
     card.setdefault("id", path.stem)
     return card
 

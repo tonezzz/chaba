@@ -1,0 +1,104 @@
+title: board-api lock contention — in-flock YAML scans + render git cost
+subtitle: text-scan id/ref index, libyaml dumps, stat-sig --if-changed, cached merge verdicts
+icon: git
+version: 1
+
+card: board-api-lock-contention
+date: 2026-11-20
+dispatch: 20261120-182834-symptom-2026-11-17-18-20-ict-i
+ops: OPS-0725
+supersedes: docs/ssot/jobs/kanban/2026-11-17-board-api-lock-latency.yml
+
+summary: |
+  Symptom (2026-11-17 ~18:20 ICT, idc03): POST /comment and /action
+  waited >25s on /tmp/board-api.lock then 503'd; GET /cards stayed fast.
+  Earlier fixes (f2acf3 comms dedupe, f1f0b commit-outside-lock,
+  60bd8a async render + /lock-stats + scalar-action guards) helped but
+  did not clear the done-condition: soaks on 2026-11-19 still showed
+  /comment timeouts, hold_max ~80s, and journal `lock wait >25s` 503s.
+
+  Phase telemetry (load/save/card_path/ms on the slow-lock line)
+  named the two remaining in-flock costs:
+  - card_path_ms=59598: any lookup that misses `cards/<id>.yml`
+    (a ref like KNB-0233, or id/filename drift) yaml.safe_load'd ALL
+    ~1019 live cards under the card flock.
+  - save_ms up to ~16s: pure-Python safe_dump + safe_load round-trip
+    check on fat cards (~194KB).
+
+  And on the render side, the ~93% CPU was two stacked costs:
+  - dir_hash re-read every card's bytes on EVERY --if-changed tick.
+  - _branch_merged ran `git merge-base --is-ancestor` per dispatch/*
+    branch (~0.25s x ~240) and `git cherry` for patch-equivalence —
+    measured ~45s on old diverged branches — per render.
+
+fixes: |
+  scripts/board/board-api.py:
+  - _text_id_ref/_cand_id_ref: top-level `id:`/`ref:` line scan
+    (regex, quotes/comment tolerant; yaml-parse fallback only for
+    files with NO id:/ref: line — flow-style/anchor edge cases still
+    resolve). card_path's drift scan, _archive_index, and _ref_seed
+    all use it: miss scan 54.1s -> 0.36s on the 1019-card corpus,
+    archive index identical output in 195ms.
+  - _YAML_DUMP/_YAML_LOAD module constants (CSafeDumper/CSafeLoader,
+    safe fallbacks). save() and load() use them: fat-card
+    dump+re-parse check 1526ms -> ~130ms.
+  - _lock_stat() gains `phases=` — /lock-stats now reports per-endpoint
+    load_ms/save_ms/card_path_ms totals+maxes, so WHERE hold time goes
+    is one GET away instead of a journal grep (task item 4).
+
+  scripts/board/card_io.py:
+  - atomic_dump_card uses the same CSafeDumper/CSafeLoader pair —
+    covers kanban-commit alert writes, merge-sweep locked edits, and
+    every other atomic_dump_card caller.
+
+  scripts/render-board.py:
+  - dir_hash is now a stat signature (name+size+mtime_ns, no content
+    reads) — every writer lands via atomic rename or git checkout, both
+    bump mtime. --if-changed tick: full corpus read -> 0.2s.
+  - _merged_branches(): ONE `git branch --merged origin/master --list
+    dispatch/*` call replaces per-branch merge-base checks.
+  - _branch_merged(): non-ancestor branches still get git cherry for
+    patch-equivalence (rebase-linearized merges), but bounded (10s cap)
+    and cached on disk keyed by branch tip sha
+    (docs/ssot/kanban/.render-merge-cache.json, gitignored): positive
+    verdicts never re-check, negatives re-check daily. Steady-state
+    render 57s -> 8s.
+  - compute_checks was already scalar-tolerant (60bd8a); audit of
+    siblings found waiting_cards.py's `(card.get("pipeline") or {})`
+    unguarded on truthy non-dicts — now uses a _pipe() accessor.
+    merge-sweep/dispatch_task/board-invariants/kanban-dispatch _act
+    accessors were already isinstance-guarded.
+
+  scripts/board/kanban-dispatch.py: load_card uses CSafeLoader.
+  .gitignore: + docs/ssot/kanban/.render-merge-cache.json
+
+  Lock architecture (task item 3) needed no changes: card flock
+  (writes), /tmp/board-api-wp.lock (remote-backed), READY_LOCK,
+  /tmp/board-render.lock, and the .repo sentinel for safe-pull
+  scoping already split correctly; the fix was removing the in-flock
+  costs, not adding more locks. Per-card sharding stays unnecessary.
+
+verify: |
+  python3 -m py_compile on all touched files — ok
+  python3 scripts/board/board-api.py --selftest — ok
+  corpus correctness: _cand_id_ref == yaml.safe_load for all 1019 live
+    cards and all 713 archive cards (0 mismatches); _ref_seed == yaml
+    truth (1316)
+  sandboxed HTTP smoke (tmp CARD_DIR, BOARD_API_LOCK_WAIT_S=3):
+    /comment by id 142ms, by ref 11ms, drifted filename 15ms,
+    missing 400 in 19ms, held flock -> 503 in 3.01s, writes verified
+    on disk; /lock-stats shows phase attribution
+  render: cold merge-cache render 39s (3 bounded cherries), warm
+    re-render 8s, --if-changed skip 0.21s; touched-card mtime bump
+    correctly triggers re-render
+
+residual: |
+  git cherry on diverged branches still costs up to 10s when the
+  negative cache is stale (>24h) or tip moved — bounded and cached,
+  but a render right at TTL expiry can pay a few of these once.
+  Done-condition (write p95 <2s, zero >25s 503s over a day) needs a
+  live soak after deploy: watch /lock-stats timeouts and journal
+  `lock wait >25s` lines.
+  render-board.py classic still renders fully per write trigger
+  (correct — writes mean changes); the timer's --if-changed path is
+  the one that got cheap.

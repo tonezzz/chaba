@@ -1355,6 +1355,7 @@ def main():
     out_path.write_text(page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
+    _rb._flush_mcache()
     print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver}"
           + (f", {n_att} attachments mirrored" if n_att else "") + ")")
     return 0
