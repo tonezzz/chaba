@@ -1,6 +1,6 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: doing
+column: review
 updated: 2026-11-20 13:52
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
@@ -273,6 +273,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-132007-canonicalize-the-opencode-ada-,
     branch dispatch/20261120-132007-canonicalize-the-opencode-ada-'
+- at: 2026-11-20 13:52
+  from: idc02
+  text: 'finished (ok): exit=0 ispatch-outcome doc and job record `docs/ssot/jobs/ada/2026-11-20-opencode-command-publisher.yml`.
+    | devin-task-2'
+- at: 2026-11-20 13:52
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261120-132007-canonicalize-the-opencode-ada- — close will block
+    until merged'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -305,12 +313,12 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
-  result: 'exit=1 devin-task-20261117-233712-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233712-canonicalize-the-opencode-ada-.service: Consumed 1.108s CPU time over 9.469s wall
-    clock time, 68.5M memory peak.'
+  result: 'exit=0 ispatch-outcome doc and job record `docs/ssot/jobs/ada/2026-11-20-opencode-command-publisher.yml`.
+    | devin-task-20261120-132007-canonicalize-the-opencode-ada-.service: Consumed 3min 39.850s CPU time, 471.6M
+    memory peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 13:41
@@ -319,3 +327,4 @@ action:
 claim:
   since: 2026-11-20 13:19
 awaiting_action: true
+review_kind: verify
