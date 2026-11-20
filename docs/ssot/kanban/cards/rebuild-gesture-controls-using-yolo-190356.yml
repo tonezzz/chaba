@@ -1,6 +1,6 @@
 id: rebuild-gesture-controls-using-yolo-190356
 title: Rebuild gesture controls using YOLO
-column: doing
+column: backlog
 updated: 2026-11-20 22:09
 note: Tony initiated idea to rebuild gesture controls using YOLO on the desk companion.
 ref: OPS-0683
@@ -301,6 +301,11 @@ comms:
     opens settings, drop dismisses. /ws/gesture + GET/PATCH /api/gestures + gesture_controls tools.d tool (confirm-gated).
     Also fixed a real runner bug the scenario caught: confirmed/confirm_token never reached tools.d run() (the _bound(**kwargs)
     wrapper hid signatures) — n'
+- at: 2026-11-20 22:09
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code sture-controls-using.service: Failed with result ''exit-code''. |
+    devin-task-20261120-215246-rebuild-ges — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
 requests:
 - id: tony-initiated-an-idea-to-rebu-92b479
   ask: Tony initiated an idea to rebuild gesture controls using YOLO on the desk companion, but the target repository,
@@ -316,18 +321,16 @@ requests:
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
-  result: 'journal=exit-code 0261120-213624-rebuild-gesture-controls-using.service: Failed with result ''exit-code''.
-    | devin-task-20261120-213624-rebuild-gesture-controls-using.service: Consumed 3min 10.045s CPU time over 14min
-    10.467s wall clock time, 1.4G memory peak.'
+  result: 'journal=exit-code sture-controls-using.service: Failed with result ''exit-code''. | devin-task-20261120-215246-rebuild-gesture-controls-using.service:
+    Consumed 2min 49.104s CPU time over 16min 31.365s wall clock time, 1.3G memory peak, 574.4M memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 23:55
   attempts: 2
-  last_failure: 'journal=exit-code 0261120-213624-rebuild-gesture-controls-using.service: Failed with result ''exit-code''.
-    | devin-task-20261120-213624-rebuild-gesture-controls-using.service: Consumed 3min 10.045s CPU time over 14min
-    10.467s wall clock time, 1.4G memory peak.'
+  last_failure: 'journal=exit-code sture-controls-using.service: Failed with result ''exit-code''. | devin-task-20261120-215246-rebuild-gesture-controls-using.service:
+    Consumed 2min 49.104s CPU time over 16min 31.365s wall clock time, 1.3G memory peak, 574.4M memory swap peak.'
   runner: tony-dell
 claim:
   since: 2026-11-20 21:52
