@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-20 13:34
+updated: 2026-11-20 13:41
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -237,6 +237,10 @@ comms:
     verified live 10,007B vs canonical 10,790B drift); opencode_command.py allowlist publisher (preview/validate/publish/sync/verify,
     confirm+expect_sha gates, fixed-argv ssh/local atomic deploy, sha verify, no arbitrary paths/shell/git); board-api
     /opencode-command under WP_LOC'
+- at: 2026-11-20 13:41
+  from: chaba
+  text: 'merge-sweep: devin-task-20261120-132007-canonicalize-the-opencode-ada- no longer active on idc02 but card
+    still says running — sweeping its branch'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -265,6 +269,7 @@ action:
     clock time, 68.5M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:39
+    stale_running: 2026-11-20 13:41
   runner: idc02
   attempts: 1
 claim:
