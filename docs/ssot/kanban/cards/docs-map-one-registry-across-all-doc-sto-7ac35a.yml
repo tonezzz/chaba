@@ -6,8 +6,8 @@ ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
   from: devin
-  text: ' spec: Single index answering ''where does each doc type live''. Stores: chaba repo docs/kb (419 files,
-    procedures/runbooks), docs/ssot (machine state), docs/reports (29), gdrive:ada-nest (packs/datasets/projects/reports/queue
+  text: ' spec: Single index answering ''where does each doc type live''. Stores: chaba repo docs/kb (419
+    files, procedures/runbooks), docs/ssot (machine state), docs/reports (29), gdrive:ada-nest (packs/datasets/projects/reports/queue
     — 69 packs), MDDB collections (semantic mirror), wiki namespaces (Education/Reports/News/Infrastructure/PrivateNews),
     WP (member surface + frozen lesson archive + ledgers). Extend Wiki:Wiki-Hierarchy pattern -> docs/ssot/infrastructure/ssot.docs-map.yml
     or wiki page listing '
@@ -87,3 +87,23 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 01:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-docs-map-one-registry-acro-3db200
+  ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation
+    registry across multiple stores (repo, gdrive, wiki, mddb, wp), but recent comms show that multiple
+    hosts (idc02, idc03, tony-macbook) are deferring tasks due to a drifted installed runner-agent. Before
+    we can implement the documentation map registry, we must resolve where the primary work should be
+    executed and fix the runner-agent drift preventing agent dispatch.
+  options:
+  - ★ Redeploy the runner-agent script to idc02, idc03, and tony-macbook from the local repo and proceed
+    with the docs map implementation on idc02.
+  - Postpone the docs-map registry task until all runner-agent drift issues across the entire infrastructure
+    are systematically resolved.
+  - Isolate the docs-map task to run locally on the main development machine without using the distributed
+    runners until they are updated.
+  status: open
+  at: 2026-11-21 01:20
+  from: backlog-spec-enrich
