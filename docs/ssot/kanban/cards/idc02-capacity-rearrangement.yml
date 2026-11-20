@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-20 18:54
+updated: 2026-11-20 19:09
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -141,6 +141,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:09
+  from: devin
+  text: 'STATE 2026-11-20 ~19:10: mddb-lab.service on idc02 is STOPPED (not disabled) — its mddbd pegged ~90% CPU
+    (7h+ before restart, re-spun within 15 min after; no clients, empty index queue, heap growing, cause unknown;
+    vector-refused/HNSW warnings on ada-ha-bank-devin-tony, ada-ha-bank-devin-handoff, ada-ha-scenario-reports).
+    It is a nightly restore of the idc03 backup (mddb-lab-pull.timer 03:15); no unit depends on it (jev-bench/log-shippers
+    use idc03:11023). WARNING: the nightly pull or a reboot m'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.

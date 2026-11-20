@@ -1,0 +1,35 @@
+id: chaba-exec-checkout-idc02-dirty-files
+title: 'idc02 exec checkout: 13 modified + ~227 untracked files with no owner; slows repo-sync'
+column: backlog
+updated: 2026-11-20 19:09
+brief: idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash;
+  pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.
+priority: medium
+tags:
+- hygiene
+- idc02
+- exec-checkout
+spec: "DECISION CARD — human-owned, NOT for dispatch. Checkout: idc02 ~/CascadeProjects/chaba (role=exec; job units\
+  \ run from it; nothing should be committed there).\n\nOBSERVED 2026-11-20 (as_of 19:10; refresh: `git -C ~/CascadeProjects/chaba\
+  \ status --short`):\n- 13 tracked files modified, all uncommitted, owner unknown:\n  docs/design/kanban-card-cycle-control-pane.md\n\
+  \  docs/ssot/infrastructure/ssot.llm-gateway.yml\n  evals/opencode-lane/profiles/info-find/profile.yml\n  evals/opencode-lane/profiles/ops-readonly/profile.yml\n\
+  \  evals/opencode-lane/profiles/ssot-research/profile.yml\n  scripts/bench-edu-manage.py\n  scripts/bench/card-judgment/distill.py\n\
+  \  scripts/board/runner-agent.py\n  scripts/colab/packs/cline-kanban-nest-bridge/bridge.py\n  scripts/colab/packs/kk-mac-image-render-poc/inputs/render-request.json\n\
+  \  scripts/render-board2.py\n  stacks/idc02/jack-ide/opencode/opencode.json\n  stacks/idc03/litellm/config.yaml\n\
+  - 12 of them (all except scripts/board/runner-agent.py, which is only a 644->755 mode change) carry an identical\
+  \ mtime 18:00:10 = the hourly chaba-repo-sync autostash re-apply, i.e. they were already dirty before today and\
+  \ are re-stashed/re-applied every sync.\n- Untracked files (~227 by count, top groups): evals/opencode-lane (183),\
+  \ docs/ssot (40), evals/shadow (3), docs/reports (1).\n\nEFFECT: chaba-repo-sync pull phase took 160s at 19:02\
+  \ with the board lock held throughout; sync-runner-tools skipped runner-agent.py as 'dirty in checkout' at 18:01\
+  \ and 19:02 (so installed runner code is only updated when someone copies it by hand). The checkout is also behind\
+  \ origin/master.\n\nNOT the Jules cleanup: that was committed and pushed (46e40ff7b1, 2026-11-20 18:59) and is\
+  \ no longer in the dirty set.\n\nDECISION NEEDED per group (do NOT auto-discard; may be someone's unfinished work):\
+  \ (a) commit from a worktree off origin/master, (b) move to a worktree/branch, or (c) discard. Owner of each group\
+  \ must be identified first (git log/blame on the files, check opencode/devin sessions). After resolution run scripts/check-single-writer.sh\
+  \ on idc02 — expect no dirty warnings.\n\nEVIDENCE/BACKUP: /tmp/opencode/chaba-exec-wip-20261120-1856/ on idc02\
+  \ (tracked.patch vs HEAD acf6a07c2d, untracked.tgz, status.txt) — /tmp, may be cleaned."
+ref: OPS-0037
+comms:
+- at: 2026-11-20 19:09
+  from: devin
+  text: card captured via board-api
