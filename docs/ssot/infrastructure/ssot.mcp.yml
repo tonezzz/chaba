@@ -85,16 +85,8 @@ fleet_observation:
   # Producers read this map and annotate findings; they never write it.
   # `suppressed` requires a reason; `until` (YYYY-MM-DD) expires it.
   finding_triage:
-    mcp-tony-omen-missing-active:
-      state: carded
-      reason: 'mcp-kornia declared on the omen agent lane but configured only on dell'
-      card: OPS-0035
-      by: tony
-    mcp-tony-dell-missing-active:
-      state: carded
-      reason: 'alphavantage allowlist + mcp-llama retire/repoint decision (AUD-0886)'
-      card: OPS-0036
-      by: tony
+    # Resolved findings are removed from this map (OPS-0035/36, 2026-11-20);
+    # the cards keep the decision trail. Only live findings are triaged here.
     mcp-tony-dell-undeclared-configured:
       state: suppressed
       reason: 'ada-control is injected into opencode.json by OpenChamber, not provisioned as a fleet-managed MCP server'
@@ -166,7 +158,7 @@ servers:
   mcp-llama:
     name: Llama.cpp Server
     description: LLM inference server interface
-    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
+    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-llama/server.py
     wrapper: mcp-single-instance.sh
     pattern: mcp-llama/server.py
     filter: none
@@ -174,13 +166,13 @@ servers:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
     status: operational
-    scope: agent-lanes
-    per_host:
-      tony_dell:
-        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
+    scope: [tony_omen]
     config_files:
     - devin: true
     - windsurf: true
+    notes: 'Scoped to omen 2026-11-20 (OPS-0036): only omen configures it, pointed at
+      idc01 Ollama. Dell never carried it; full retirement to the LiteLLM gateway
+      (AUD-0886) remains a separate decision.'
   postgres:
     name: PostgreSQL Database
     description: Database operations and management
@@ -275,13 +267,13 @@ servers:
     url: https://mcp.alphavantage.co/mcp?apikey=<PRIVATE_API_KEY>
     single_instance: false
     status: operational
-    scope: agent-lanes
+    scope: [tony_omen]
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'API key is configured in ~/.config/devin/mcp_config.json.
-
-      '
+    notes: 'Scoped to omen 2026-11-20 (OPS-0036): only omen configures it. AUD-0886
+      flagged its ~5.6k-line schema as too heavy for every agent session; dell stays
+      free of it. API key lives in ~/.config/devin/mcp_config.json.'
   docs:
     name: Documentation Search (Chaba)
     description: Full-text search across chaba project documentation
