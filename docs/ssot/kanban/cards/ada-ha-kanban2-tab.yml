@@ -1,7 +1,7 @@
 id: ada-ha-kanban2-tab
 title: Add Kanban 2 layout tab to Ada HA chaba-admin
 column: doing
-updated: 2026-11-20 11:54
+updated: 2026-11-20 12:01
 brief: Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after
   it as a separate Kanban 2 tab.
 priority: medium
@@ -35,6 +35,12 @@ comms:
 - at: 2026-11-20 11:54
   from: devin
   text: moved backlog -> doing
+- at: 2026-11-20 12:01
+  from: devin
+  text: The WebSocket save succeeded and readback shows Kanban 2 immediately after Kanban. Surface verification
+    found that the current /apps/board/index.html is a redirect to /apps/board2/, so both dashboard tabs currently
+    render Board2. The requested classic layout is not served at the existing URL; I am checking for a safe historical/legacy
+    source before changing anything else. No static-app deployment or other live view changes have been made.
 requests:
 - id: home-assistant-mcp-and-browser-tool-disc-01c7e6
   ask: Home Assistant MCP and browser tool discovery failed, so I cannot use those connectors. May I apply the already-requested
