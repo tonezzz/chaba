@@ -1,6 +1,6 @@
 id: devin-session-audit-2026-10-29
 title: Close Devin session audit — verify external artifacts since 2026-10-17
-column: doing
+column: backlog
 updated: 2026-11-21 06:14
 brief: 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker
   is intentionally unchanged.
@@ -547,22 +547,35 @@ comms:
     — marker on tony-macbook 2026-11-20T18:50:37 with 0 newer summaries (re-checked over SSH this run), report ada-cms-pages/devin-session-audit-2026-10-29
     status=complete (timeline 17), 10 audit-miss cards live. Outcome doc committed on dispatch branch (run-3 addendum
     added). No remaining work; card can move to review.'
+- at: 2026-11-21 06:14
+  from: idc02
+  text: 'finished (failed): journal=exit-code NT | devin-task-20261121-060957-finish-artifact-landing-verifi.service:
+    Failed with result ''exit-code'' — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-21 06:14
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261121-060957-finish-artifact-landing-verifi (rate-limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-21 06:14
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-21 06:44'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: jevos
   model: litellm/gemini-3.5-flash-lite
   repo: chaba
   executor: devin
   attempts: 1
-  last_failure: 'journal=exit-code -20261120-201613-finish-artifact-landing-verifi.service: Failed with result ''exit-code''.
-    | devin-task-20261120-201613-finish-artifact-landing-verifi.service: Consumed 1min 43.110s CPU time over 6min
-    5.496s wall clock time, 1.1G memory peak.'
+  last_failure: 'journal=exit-code NT | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Failed
+    with result ''exit-code''. | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Consumed 50.542s
+    CPU time, 492.6M memory peak, 0B memory swap peak.'
   sweep:
     stale_running: 2026-11-19 18:55
     dirty: 1
     session_gone: 2026-11-19 19:00
-  runner: idc02
+  result: 'journal=exit-code NT | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Failed with
+    result ''exit-code''. | devin-task-20261121-060957-finish-artifact-landing-verifi.service: Consumed 50.542s
+    CPU time, 492.6M memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-21 06:08
