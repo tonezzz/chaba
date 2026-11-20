@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: backlog
-updated: 2026-11-21 06:21
+column: doing
+updated: 2026-11-21 06:22
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -535,6 +535,9 @@ comms:
 - at: 2026-11-21 06:21
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 0.92 > 0.85)'
+- at: 2026-11-21 06:22
+  from: tony-macbook
+  text: claimed
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -568,7 +571,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -576,12 +579,12 @@ action:
     stale_running: 2026-11-20 13:41
     session_gone: 2026-11-20 13:56
     dirty: 1
-  attempts: 1
+  attempts: 2
   last_failure: 'journal=exit-code icalize-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261121-061014-canonicalize-the-opencode-ada-.service:
     Consumed 10min 24.519s CPU time over 9min 6.995s wall clock time, 1G memory peak, 5.9M memory swap peak.'
   result: 'journal=exit-code icalize-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261121-061014-canonicalize-the-opencode-ada-.service:
     Consumed 10min 24.519s CPU time over 9min 6.995s wall clock time, 1G memory peak, 5.9M memory swap peak.'
+  runner: tony-macbook
 claim:
-  since: 2026-11-21 06:08
+  since: 2026-11-21 06:22
 review_kind: verify
-awaiting_action: true
