@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-11-19 20:02
+updated: 2026-11-20 13:03
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -160,6 +160,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 13:03
+  from: chaba
+  text: classified as free_lane (kw:fixture conf 1.00)
+- at: 2026-11-20 13:03
+  from: tony
+  text: queued for processing
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -199,10 +205,10 @@ requests:
     approval; no download or inference has been authorized by this request.'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  runner: tony-dell
   result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+claim: {}
 awaiting_action: true
