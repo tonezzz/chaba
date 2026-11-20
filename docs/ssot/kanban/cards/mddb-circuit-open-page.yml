@@ -1,7 +1,7 @@
 id: mddb-circuit-open-page
 title: Page on embed circuit-open, not just probe-down
 column: done
-updated: 2026-11-21 04:36
+updated: 2026-11-21 04:48
 spec: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
   attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
   to an ops event so a cap-hit pages at minute ~2 instead of silent outage. Probe: scripts or unit mddb-embed-probe.service
@@ -189,4 +189,3 @@ auto_close:
   by: merge-sweep
   at: 2026-11-12 14:36
   note: verified — evidence checks green, closing itself
-awaiting_action: true
