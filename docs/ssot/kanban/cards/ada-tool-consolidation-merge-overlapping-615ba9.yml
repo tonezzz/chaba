@@ -1,19 +1,18 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-19 20:05
+updated: 2026-11-20 09:00
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection — cms_publish_page vs
-    cms_edit vs wp_post vs cpt_post (+ place_report variants).
+  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection — cms_publish_page vs cms_edit vs
+    wp_post vs cpt_post (+ place_report variants).
 
 
-    Audit actual overlap: which tools hit the same backend doors (board-api /report, /publish, WP CPTs).
-    Propose+implement consolidation: one canonical write tool per sink with action= param, old names kept
-    as aliases for one release. Update manifest.yml, instructions tool list, and any scenario fixtures
-    referencing old names.
+    Audit actual overlap: which tools hit the same backend doors (board-api /report, /publish, WP CPTs). Propose+implement
+    consolidation: one canonical write tool per sink with action= param, old names kept as aliases for one release.
+    Update manifest.yml, instructions tool list, and any scenario fixtures referencing old names.
 
 
     DEPENDENCY: do NOT di'
@@ -92,21 +91,28 @@ comms:
 - at: 2026-11-20 07:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-20 09:00
+  from: tony
+  text: 'answered multiple-target-hosts-tony-ome-99110b: ★ Redeploy runner-agent to tony-omen, idc02, idc03, and
+    tony-macbook via scp and resume the task'
+- at: 2026-11-20 09:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: ada-voice
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
-  ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their
-    installed runner-agents have drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
-    Before the agent can execute the tool consolidation task, the runner-agent must be redeployed to these
-    hosts.
+  ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
+    runner-agents have drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
+    Before the agent can execute the tool consolidation task, the runner-agent must be redeployed to these hosts.
   options:
   - ★ Redeploy runner-agent to tony-omen, idc02, idc03, and tony-macbook via scp and resume the task
-  - Postpone the Ada tool consolidation merge until runner-agent deployment drift is resolved across all
-    infrastructure
-  - Run the tool consolidation task locally on the primary development machine instead of dispatching
-    to the deferred nodes
-  status: open
+  - Postpone the Ada tool consolidation merge until runner-agent deployment drift is resolved across all infrastructure
+  - Run the tool consolidation task locally on the primary development machine instead of dispatching to the deferred
+    nodes
+  status: answered
   at: 2026-11-20 07:20
   from: backlog-spec-enrich
+  answer: ★ Redeploy runner-agent to tony-omen, idc02, idc03, and tony-macbook via scp and resume the task
+awaiting_action: true
