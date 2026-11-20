@@ -1790,8 +1790,9 @@ jobs:
     reports/mcp-fleet/MCP-FLEET-REPORT.{md,wiki}, then upserts one stable
     Reports:Fleet-MCP-Inventory page via board-api /publish with
     sinks=[wiki-reports,board]. Durable lessons are filed once via POST /lesson
-    to Education:. No Infrastructure: writes until the
-    wiki-page-door-infrastructure-namespace card lands. Declare only — install
+    to Education:. Infrastructure: writes go through the board-api
+    /wiki/page door (prefix allowlisted 2026-11-20, card
+    wiki-page-door-infrastructure-namespace). Declare only — install
     the unit with render-jobs.py --host idc03 --install after review.'
 - id: chaba-pytest-suite
   name: chaba full pytest suite (nightly)

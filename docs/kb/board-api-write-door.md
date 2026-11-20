@@ -37,7 +37,11 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | **`/report`** | `{query}` \| `{slug, note, lang?}` \| `{title|slug, content_md, meta?}` | ada-cms-pages search / session-log append / create |
 | **`/inbox`** | `{text, label?, priority?, tags?, missing_info?, subtasks?, session?, owner?, safe_to_parallel?}` | `docs/ssot/focus-inbox/<ts>-<slug>.yml` + commit |
 | **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
+<<<<<<< HEAD
 | **`/opencode-command`** | `{op: preview\|validate\|publish\|sync\|verify, name: ada, content?, confirm?, expect_sha?}` | allowlisted OpenCode command file — canonical write + commit queue + atomic idc02 deploy + sha verify (runbook: `docs/kb/opencode-command-publisher.md`) |
+=======
+| **`/wiki/page`** | `{title|wiki_title, wikitext|text, summary?}` | guarded raw wiki page write — `Education:`/`Reports:`/`Infrastructure:` titles + configured support templates only |
+>>>>>>> 3ac5d7f6f6 (board-api /wiki/page: admit Infrastructure: prefix writes)
 
 ## Endpoint notes
 
@@ -124,6 +128,20 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 - **`/inbox`** — lands a `docs/ssot/focus-inbox/` YAML in the TEMPLATE
   shape; runs under the card flock with the same atomic-write +
   immediate-commit discipline as cards.
+- **`/wiki/page`** — the escape hatch for support pages the kind-gated
+  sinks can't reach (portal/index/host pages, the Education/Report
+  templates). `WIKI_PAGE_PREFIXES` in board-api allowlists
+  `Education:`/`Reports:`/`Infrastructure:` titles plus the configured
+  template names; everything else (main space, `News/`, `PrivateNews:`,
+  other namespaces) is refused so this can't become a backdoor around
+  the News review gate. Prefixed titles additionally verify via siteinfo
+  that the namespace is really registered — an unregistered prefix is
+  rejected instead of littering main space. `Infrastructure:` (ns 3000)
+  was added 2026-11-20 (card `wiki-page-door-infrastructure-namespace`)
+  for host pages like `Infrastructure:Hosts/tony-dell/Backup-and-Recovery`;
+  it's Lockdown-protected, so the write only succeeds because the door's
+  wiki account sits in the inhouse/sysop group — the allowlist is a
+  guard, not an ACL grant.
 
 ## /publish — the provider-neutral publication door
 

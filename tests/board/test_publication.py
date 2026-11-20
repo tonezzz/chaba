@@ -1155,6 +1155,33 @@ class BoardApiWiringTest(PubTestBase):
             {"title": "Education:Index", "wikitext": "x"}, "devin")
         self.assertEqual(r["wiki_title"], "Education:Index")
 
+    def test_wiki_page_infrastructure_ns(self):
+        # card wiki-page-door-infrastructure-namespace: Infrastructure:
+        # (ns 3000, Lockdown-protected) joins the write allowlist —
+        # host pages like Infrastructure:Hosts/tony-dell/Backup-and-Recovery
+        # go through the same siteinfo gate as Education:/Reports:.
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls, namespaces=[
+            "Template", "Infrastructure"])
+        r = self.ba.do_wiki_page(
+            {"title": "Infrastructure:Hosts/tony-dell/Backup-and-Recovery",
+             "wikitext": "= DR plan ="}, "devin")
+        self.assertEqual(
+            r["wiki_title"],
+            "Infrastructure:Hosts/tony-dell/Backup-and-Recovery")
+        # unregistered Infrastructure -> refuse, don't litter main ns
+        calls.clear()
+        self._fake_wiki_api(calls, namespaces=["Template"])
+        try:
+            self.ba.do_wiki_page(
+                {"title": "Infrastructure:Hosts/x", "wikitext": "x"},
+                "devin")
+        except ValueError as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace gate")
+
     def test_wiki_page_edit_uses_login_session(self):
         # Regression (live 502, 2026-11-06): the edit must ride the
         # opener _wiki_login returns — it holds the session cookies.
