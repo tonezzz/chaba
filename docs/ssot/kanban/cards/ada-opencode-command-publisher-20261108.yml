@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: backlog
-updated: 2026-11-20 19:05
+updated: 2026-11-20 19:06
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -314,6 +314,12 @@ comms:
     (12 files: canonical stacks/idc02/ada-code/commands/ada.md, scripts/board/opencode_command.py + board-api wiring
     + thin client + tests + bench + runbook + job record). BUT the branch was never pushed and the dispatch worktree
     was GC''d — git for-each-ref/fsck on idc02'
+- at: 2026-11-20 19:06
+  from: chaba
+  text: classified as devin (fallback conf 0.08)
+- at: 2026-11-20 19:06
+  from: devin
+  text: queued for processing
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -347,7 +353,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   lane: devin
   lane_source: fallback
   result: 'exit=0 ispatch-outcome doc and job record `docs/ssot/jobs/ada/2026-11-20-opencode-command-publisher.yml`.
@@ -361,4 +367,3 @@ action:
 claim:
   since: 2026-11-20 13:19
 review_kind: verify
-awaiting_action: true
