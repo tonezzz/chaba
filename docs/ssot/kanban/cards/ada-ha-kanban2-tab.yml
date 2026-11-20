@@ -1,7 +1,7 @@
 id: ada-ha-kanban2-tab
 title: Add Kanban 2 layout tab to Ada HA chaba-admin
 column: doing
-updated: 2026-11-20 12:09
+updated: 2026-11-20 12:19
 brief: Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after
   it as a separate Kanban 2 tab.
 priority: medium
@@ -47,6 +47,13 @@ comms:
     it as /apps/board/classic.html while leaving the global /apps/board/ -> Board2 redirect intact. The dashboard
     mutator will point Kanban to classic.html and keep Kanban 2 on Board2. Local renderer smoke and JS syntax check
     pass; no static deployment has occurred yet.'
+- at: 2026-11-20 12:19
+  from: devin
+  text: 'Classic renderer change is committed as 36068db5f67 on fix/ada-ha-kanban2-tab; PR #192 is open. The focused
+    output test passed (1/1), generator smoke produced classic.html and preserved the Board2 redirect, and inline
+    JS syntax is clean. GitHub syntax check is pending. No code deployment has occurred; after merge and served-checkout
+    render I will switch the Kanban iframe to classic.html via the approved WebSocket path, then sync/commit the
+    live snapshot.'
 requests:
 - id: home-assistant-mcp-and-browser-tool-disc-01c7e6
   ask: Home Assistant MCP and browser tool discovery failed, so I cannot use those connectors. May I apply the already-requested
