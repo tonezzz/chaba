@@ -1,0 +1,28 @@
+---
+# Applied to every host in the inventory.
+# Keep this minimal and safe — everything here must be idempotent and
+# reversible. Host-specific divergence goes in host_vars/, not here.
+
+# Package manager facts
+debian_arch: "{{ ansible_architecture }}"
+
+# Common tooling every Linux host should have. Conservative set —
+# add per-host needs via host_vars instead of growing this list.
+common_packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - jq
+  - rsync
+  - unzip
+  - ca-certificates
+  - unattended-upgrades
+
+# unattended-upgrades: security updates only, no auto-reboot.
+unattended_upgrades_security_only: true
+unattended_upgrades_reboot: false
+
+# Docker: hosts that run containers opt in via host/group vars.
+# (docker is NOT installed fleet-wide — enable per host.)
+docker_enabled: false
