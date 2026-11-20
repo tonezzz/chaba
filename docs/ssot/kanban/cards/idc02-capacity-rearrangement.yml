@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-20 19:09
+updated: 2026-11-20 19:27
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -148,6 +148,13 @@ comms:
     vector-refused/HNSW warnings on ada-ha-bank-devin-tony, ada-ha-bank-devin-handoff, ada-ha-scenario-reports).
     It is a nightly restore of the idc03 backup (mddb-lab-pull.timer 03:15); no unit depends on it (jev-bench/log-shippers
     use idc03:11023). WARNING: the nightly pull or a reboot m'
+- at: 2026-11-20 19:27
+  from: devin
+  text: 'mddb-lab UPGRADE RESULT 2026-11-20 19:30 (live runtime facts, tested on a COPY of the 3GB db, original
+    untouched): mddb 2.19.8 starts fine (schema migration 4ms, vector index loaded 62 collections / 32931 docs in
+    4m19s, health=healthy, search returns results) BUT still burns ~120-150% CPU for 10+ min after healthy, with
+    ''rebuilding freelist'' stuck at 98.9% (logged every minute) and the same ''vector refused by the HNSW index''
+    warnings. Upgrade does NOT fix the spin; likely cause = freelist rebuil'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
