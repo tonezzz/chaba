@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
-column: backlog
-updated: 2026-11-20 19:15
+column: doing
+updated: 2026-11-20 19:17
 priority: high
 tags:
 - board
@@ -39,7 +39,7 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
   sweep:
@@ -49,9 +49,10 @@ action:
   last_failure: 'exit=1 61120-184035-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''. |
     devin-task-20261120-184035-symptom-tony-2026-11-17-answer.service: Consumed 7min 47.677s CPU time over 26min
     50.614s wall clock time, 480.6M memory peak.'
-  attempts: 1
+  attempts: 2
   result: 'exit=1 61120-184035-symptom-tony-2026-11-17-answer.service: Failed with result ''exit-code''. | devin-task-20261120-184035-symptom-tony-2026-11-17-answer.service:
     Consumed 7min 47.677s CPU time over 26min 50.614s wall clock time, 480.6M memory peak.'
+  runner: tony-omen
 ref: KNB-0178
 comms:
 - at: 2026-11-17 22:19
@@ -219,6 +220,9 @@ comms:
   from: chaba
   text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-185849-repo-work-chaba-scripts-board-)
     — claims held ~29m'
+- at: 2026-11-20 19:17
+  from: tony-omen
+  text: claimed
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
@@ -235,5 +239,4 @@ requests:
   answer: signature-dedupe + execute-answer — stop re-asking on the same conflict AND make the resolve option actually
     queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
 claim:
-  since: 2026-11-20 18:37
-awaiting_action: true
+  since: 2026-11-20 19:17
