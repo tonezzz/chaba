@@ -1166,6 +1166,30 @@ tools:
   surfaces:
     ada-ocb: ada_status
   source: ada-voice:opencode/ada_mcp.py
+- name: host.status
+  kind: tool
+  sig: host_status(host)
+  policy: read
+  secondary: true
+  backend: board-api GET /host-status?host= (live ada-nest heartbeats +
+    kk_mac lane probe + nest-mgr page + runner claims first; board
+    records carry "as of Xh ago" tags; telemetry/board contradictions
+    flagged — card ada-status-live-state-preference, OPS-1045)
+  transport: http
+  agents:
+  - ada-voice
+  - ada-dev
+  - ada-ocb
+  - devin
+  surfaces:
+    ada-voice: host_status (staged drop integrations/ada-voice)
+    ada-ocb: host_status (staged drop integrations/ada-voice)
+    devin: scripts/board/host_status.py <host> (CLI) or HTTP
+  source: chaba:scripts/board/host_status.py +
+    chaba:scripts/board/board-api.py /host-status +
+    integrations/ada-voice/backend/tools.d/host_status.py
+  notes: THE surface for "is X up / what is X processing" asks — board
+    comms quoted as current state is the OPS-1045 failure mode.
 - name: board.next_card
   kind: tool
   sig: ada_next_card()

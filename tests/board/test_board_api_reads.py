@@ -235,6 +235,24 @@ class GetRoutingTest(unittest.TestCase):
         self.assertEqual(st, 400)
         self.assertIn("hint", body)
 
+    def test_host_status_needs_host(self):
+        st, body = self.get("/host-status")
+        self.assertEqual(st, 400)
+        self.assertIn("hint", body)
+
+    def test_host_status_routes(self):
+        stub = {"ok": True, "host": "kk-mac", "confidence": "live",
+                "answer": "kk-mac is ONLINE"}
+        fake = mock.Mock()
+        fake.host_status.return_value = stub
+        fake.default_cards.return_value = FIXTURE_CARDS
+        with mock.patch.object(self.mod, "hs", fake):
+            st, body = self.get("/host-status?host=kk%20mac")
+        self.assertEqual(st, 200)
+        self.assertEqual(body["answer"], stub["answer"])
+        fake.host_status.assert_called_once()
+        self.assertEqual(fake.host_status.call_args.args[0], "kk mac")
+
     def test_post_comment_is_immediately_visible_without_render(self):
         body = json.dumps({"id": "c-one", "from": "devin", "text": "fresh canonical comment"}).encode()
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}/comment", data=body,

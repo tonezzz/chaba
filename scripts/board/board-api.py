@@ -216,6 +216,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
 import dispatch_repos as dr
 import board_notify as bn
+import host_status as hs
 import publication as pub
 
 REPO = Path(__file__).resolve().parent.parent.parent
@@ -4968,6 +4969,24 @@ class H(BaseHTTPRequestHandler):
         if path == "/queue":
             try:
                 return self._send(200, queue_view())
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
+        if path == "/host-status":
+            # Live-first host answer (card ada-status-live-state-preference,
+            # OPS-1045): heartbeat/nest-mgr/runner surfaces BEFORE board
+            # records; board claims carry ages; contradictions flagged.
+            q = parse_qs(url.query)
+            host = _q1(q, "host").strip()
+            if not host:
+                return self._send(400, {
+                    "error": "host= required",
+                    "hint": "/host-status?host=kk-mac"})
+            try:
+                cards = load_cards().get("cards") or hs.default_cards()
+            except Exception:
+                cards = hs.default_cards()
+            try:
+                return self._send(200, hs.host_status(host, cards=cards))
             except Exception as e:
                 return self._send(500, {"error": str(e)})
         if path == "/lock-stats":

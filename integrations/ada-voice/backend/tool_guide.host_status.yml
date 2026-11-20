@@ -1,0 +1,16 @@
+# host_status tool_guide fragment — append to
+# <ada-voice>/backend/tool_guide.yml. New drop for card
+# ada-status-live-state-preference.
+host_status: >-
+  THE tool for "is X up / what is X processing / how much disk on X"
+  asks about fleet hosts (kk-mac, tony-omen, idc02, idc03, mn01,
+  tony-dell, tony-macbook, kk-macbook). It queries live telemetry first
+  (ada-nest heartbeat / kk_mac lane probe / nest-mgr page / runner
+  claims) and only then board records — every board claim comes back
+  with an "as of Xh ago" age tag. Answer from `answer` (pre-composed,
+  speakable) or `live` directly. If `conflicts` is non-empty the board
+  said something live telemetry contradicts — say BOTH sides and flag
+  the record as stale; never repeat the stale figure as fact. If
+  `confidence` is board_only, say so — no live telemetry was reachable.
+  Do NOT answer host health from kanban card comms or memory: that is
+  exactly the OPS-1045 confidently-stale failure this tool fixes.
