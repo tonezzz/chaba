@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
-column: doing
-updated: 2026-11-20 18:18
+column: backlog
+updated: 2026-11-20 18:19
 priority: high
 tags:
 - devnest
@@ -27,16 +27,18 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: queued
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
-  last_failure: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1794880881.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1794880881.service:
+  last_failure: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
     Failed with result ''exit-code''.'
   attempts: 1
-  runner: tony-omen
+  result: 'journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
+    Failed with result ''exit-code''.'
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -226,5 +228,9 @@ comms:
 - at: 2026-11-20 18:18
   from: chaba
   text: started devin-task-fleet-jobs-report-and-ada-verb-1795173530 on tony-omen (dispatch executor=jules)
+- at: 2026-11-20 18:19
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code AILED_PRECONDITION" |   } | } | devin-task-fleet-jobs-report-and-ada-verb-1795173530.service:
+    Main pro — auto-retry queued (attempt 2/2) (column -> backlog)'
 claim:
   since: 2026-11-20 18:18
