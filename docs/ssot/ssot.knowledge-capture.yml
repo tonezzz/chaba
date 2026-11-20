@@ -1,0 +1,224 @@
+title: Knowledge Capture and Pointer Routing
+subtitle: Auto-capture matrix, pointer-note template, and SSOT-aligned routing for durable information
+icon: "🧭"
+version: 1
+
+config:
+  status: active
+  created: "2026-11-20"
+  last_updated: "2026-11-20"
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.index.yml
+    - docs/ssot/ssot.registry.yml
+    - docs/ssot/ssot.procedures.yml
+    - docs/ssot/ssot.procedures-index.yml
+    - docs/ssot/ssot.file-control.yml
+    - docs/ssot/ssot.terminology.yml
+    - docs/ssot/chaba/ssot.chaba.memory.yml
+    - AGENTS.md
+    - docs/kb/board-api-write-door.md
+
+overview:
+  purpose: >-
+    Define how useful information is automatically captured, routed, indexed,
+    and promoted so it can be reused later without fragmenting truth. Captured
+    artifacts are pointers, evidence, or promotion candidates unless explicitly
+    promoted into a canonical source.
+  alignment:
+    - "SSOT is authoritative for stable procedures, policies, schemas, definitions, ownership, and approved operational rules."
+    - "The board (kanban cards/requests/comms via board-api) is the authoritative list of pending/actionable work."
+    - "Live systems are authoritative for volatile state; do not freeze live state as captured truth."
+    - "OpenChamber knowledge, KB docs, lessons, reports, and focus-inbox are capture/index surfaces — use them to route and retrieve, not to replace SSOT."
+  retrieval_recipe:
+    canonical:
+      - "Identify intent/domain (procedure, policy, schema, live state, decision, how-to, evidence)."
+      - "SSOT-first: ada_ssot_search(query/domain) -> ada_ssot_get/read canonical SSOT key/path (start at ssot.index.yml, ssot.procedures.yml, ssot.registry.yml, ssot.file-control.yml as relevant)."
+      - "Consult pointer indexes (OpenChamber knowledge notes, KB, lesson topics, report/card links) to jump to the right SSOT keys or artifacts."
+      - "Fetch volatile/live data at time of use (board-api, jobs/health/audit surfaces, current reports/tools)."
+      - "On conflict, SSOT or the designated live authority wins; update/deprecate stale pointers."
+
+sections:
+  - title: Capture Matrix
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: Stable procedure, policy, schema, ownership, quality/audit rule
+        text: >-
+          Canonical sink: SSOT file in docs/ssot/** (promote via normal change workflow:
+          validate, register in ssot.index.yml, log significant changes in CHANGELOG.md per ssot.file-control.yml).
+          Index: SSOT index/registry/procedures pointers; optional short OpenChamber knowledge pointer note.
+          Volatility: low (versioned). Rule: update SSOT in place; do not maintain a parallel truth elsewhere.
+      - label: Actionable work, follow-up, blocked item, unmet request
+        text: >-
+          Canonical sink: Kanban card / card request / card comment via board-api (correct write path per board-write);
+          focus-inbox entry only as a drop-catcher/parking surface when appropriate.
+          Index: board state; OpenChamber todo for user-visible backlog tracking only (never for the agent's current-task steps).
+          Volatility: live workflow state. Rule: open-ask and kanban-first duties apply; a request with no durable record does not exist.
+      - label: Reusable explainer, lesson, comparison, assessment, or "educate-me" answer
+        text: >-
+          Canonical sink: lesson store via /lesson or scripts/lesson-add.py -> MDDB collection chaba-lessons
+          (and Education/wiki surfaces as applicable); upsert by topic slug.
+          Index: topic slug/id, MDDB search, and pointers from cards/KB/notes.
+          Volatility: curated knowledge. Rule: SSOT keeps verdict/decision-layer + pointer; lesson holds research depth
+          (lesson-capture and assessments-to-education split duties).
+      - label: Project-local navigation, pointer map, architecture entry points, lookup recipe
+        text: >-
+          Canonical sink: OpenChamber project knowledge note (kind: note), pointer-first.
+          Index: note id/title/body search within project knowledge.
+          Volatility: medium (update when entry points change). Rule: store IDs/paths/keys/queries, not copied SSOT bodies or live snapshots.
+      - label: Durable repo-local runbook or engineering knowledge
+        text: >-
+          Canonical sink: docs/kb/* or other in-repo docs per placement rules and checkout/writer constraints.
+          Index: KB links, SSOT/registry/procedure references where relevant.
+          Volatility: low-medium. Rule: promote to SSOT when it becomes a governing standard or cross-cutting procedure.
+      - label: Execution evidence and outcomes
+        text: >-
+          Canonical sink: existing evidence surfaces (dispatch-outcome artifacts, reports, CI/audit outputs, card result/comms/report, CMS/report surfaces).
+          Index: card/report indexes and pointer notes linking to artifact paths/IDs.
+          Volatility: append-only or regenerable. Rule: capture evidence refs and conclusions; do not duplicate large logs or volatile metrics without as-of/source.
+      - label: Transient or live operational state
+        text: >-
+          Canonical sink: none (do not persist as captured truth).
+          Index: pointer note/query recipe only, if navigation help is needed.
+          Volatility: high/live. Rule: fetch at time of use via authoritative tools/surfaces
+          (ada_ssot_search/get for SSOT, board-api for cards, jobs/health/audit/report tools for runtime state).
+
+  - title: Pointer-Note Template
+    icon: "📌"
+    layout: list
+    items:
+      - label: Intended use
+        text: >-
+          Use for OpenChamber project knowledge notes (and as a pattern for KB index stubs) that help future sessions
+          find canonical information quickly. Pointer notes accelerate retrieval; they do not replace SSOT or live sources.
+      - label: Required fields
+        text: >-
+          scope (what domain/question this note answers), as_of (date/time context), canonical_refs (SSOT doc IDs/paths/keys
+          and other authoritative artifact refs), retrieval_recipe (exact search/get/live queries to refresh), volatility
+          (static|pointer|live-mix), and summary (short pointer-first map, not copied bodies).
+      - label: Recommended fields
+        text: >-
+          owner (person/team/role), promote_to (ssot|kb|lesson|card|none), related (cards/reports/lessons/procedures),
+          refresh_trigger (when to update), and known_gaps.
+      - label: Content rules
+        text: >-
+          Prefer IDs, file paths, SSOT keys, tool calls/queries, and short descriptions. Do not paste full SSOT documents,
+          secrets, or volatile snapshots. If a value can change, store the query/command to obtain it and mark it live.
+      - label: Dedupe rule
+        text: >-
+          Before creating, list/search existing knowledge notes, SSOT/procedures, lessons, KB, and board artifacts for the
+          same domain; update in place or link instead of forking. Keep one current pointer note per domain/topic where possible.
+
+  - title: Pointer-Note Template (Markdown body)
+    icon: "🧩"
+    layout: text
+    items:
+      - label: Template
+        text: |
+          # <Domain/topic> (pointer note)
+          - scope: <what this helps you find>
+          - as_of: <YYYY-MM-DD[ HH:MM TZ]>
+          - volatility: <static|pointer|live-mix>
+          - owner: <role/person or n/a>
+          - promote_to: <ssot|kb|lesson|card|none>
+
+          ## Canonical refs (authoritative)
+          - SSOT: <doc id/path>::<key/section> — <why>
+          - Procedures/KB/Lesson/Report/Card: <id/path/url/ref> — <why>
+
+          ## Retrieval recipe (refresh, do not cache volatile truth)
+          1. `ada_ssot_search("<query>")` -> identify <collection/doc/key>
+          2. `ada_ssot_get(...)` or read <path> for stable detail
+          3. Live check (if needed): <board-api/job/health/report command or query>
+
+          ## Pointer map
+          - <entry point> -> <canonical ref / query>
+          - <entry point> -> <canonical ref / query>
+
+          ## Gaps / refresh triggers
+          - gap: <unknown or unresolved>
+          - refresh_when: <conditions that require update>
+
+  - title: Auto-Capture Triggers and Hooks
+    icon: "⚡"
+    layout: list
+    items:
+      - label: Session boundary / handoff (mandatory)
+        text: >-
+          Before ending, run an open-ask sweep: every unmet/unfinished request or discovered follow-up is routed to a card,
+          card request/comment, focus-inbox entry, lesson, KB/SSOT promotion candidate, or pointer note; report where it was filed.
+      - label: Discovery
+        text: >-
+          When a non-obvious entry point, procedure location, or domain map is resolved, create/update a pointer note with
+          canonical refs and the exact retrieval recipe used.
+      - label: Retainable answer
+        text: >-
+          For reusable explainers/comparisons/assessments/education-shaped answers, apply lesson-capture; keep decision/verdict
+          in SSOT (or card/report context) with a pointer to the lesson when a split applies.
+      - label: Task completion / execution
+        text: >-
+          Attach outcomes and evidence to the card/report/artifact surfaces; capture only reusable deltas (pointers, KB, lesson,
+          or SSOT promotion) rather than transient logs/state.
+      - label: Drift, repeat, or friction
+        text: >-
+          Repeated lookups, stale pointers, or missing procedures trigger pointer updates and, when systemic, a card/proposal to
+          formalize or correct SSOT/KB/procedures.
+      - label: Automated producers
+        text: >-
+          Timers/CI/sweeps/audits emit structured, idempotent outputs to designated sinks; producers must not claim workflow
+          ownership fields they do not own and must include as-of/source/evidence refs.
+
+  - title: Retrieval and Usage Flow
+    icon: "🔎"
+    layout: timeline
+    items:
+      - label: Classify
+        text: Determine whether the need is policy/procedure, live state, prior decision, evidence, or how-to.
+      - label: Resolve canonically
+        text: Query SSOT first (ada_ssot_search -> ada_ssot_get/read) using index/procedures/registry/file-control as entry points.
+      - label: Accelerate
+        text: Use pointer notes, KB, lessons, and report/card links to jump to the right canonical refs; treat them as indexes.
+      - label: Refresh live
+        text: Fetch volatile state at time of use from authoritative runtime surfaces; never rely on embedded stale snapshots.
+      - label: Reconcile
+        text: If sources conflict, prefer SSOT/designated live authority, then correct or deprecate the stale pointer and record the fix.
+
+  - title: Guardrails and Governance
+    icon: "🛡️"
+    layout: list
+    items:
+      - label: Canonicality and freshness
+        text: >-
+          Mark volatility and include as-of + refresh recipe. Pointers must be traceable to canonical refs; no silent "memory-only" truth.
+      - label: No duplication / no secrets
+        text: >-
+          Store refs/queries, not copied SSOT bodies or volatile dashboards. Never capture secrets, tokens, credentials, or private material in disallowed sinks.
+      - label: Correct write path and role
+        text: >-
+          Respect single-writer/served-checkout and checkout-role constraints, board-api mutation door for card/lesson/job/report/inbox writes,
+          and host-hygiene/secret-handling rules. Do not bypass required gates.
+      - label: Idempotence and dedupe
+        text: >-
+          Upsert or link by stable key (SSOT key, card id, topic slug, report/artifact id, note domain); avoid forks and duplicate records.
+      - label: Boundaries
+        text: >-
+          Do not write Ada personal memory banks (ada-*) from Chaba contexts; follow field-ownership rules; promotion to normative SSOT/AGENTS behavior
+          requires the appropriate governed change path.
+      - label: Promotion
+        text: >-
+          When captured knowledge becomes reusable, normative, or cross-cutting, promote it to the correct canonical home (SSOT/KB/procedure/lesson)
+          and reduce the original capture to a pointer with a deprecation/update note.
+
+  - title: Automation Implementation Notes
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Phase A (now)
+        text: Codify routing matrix and pointer-note template in SSOT; register procedures/pointers so cold sessions can follow the standard.
+      - label: Phase B
+        text: Enforce session-close capture and discovery/lesson hooks in agent prompts, skills, and workflow checklists.
+      - label: Phase C
+        text: Add idempotent capture-router and harvester/index-refresh jobs that write only to approved sinks with audit metadata and dedupe keys.
+      - label: Phase D
+        text: Measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; tune the matrix and promotion thresholds in SSOT.

@@ -21,6 +21,12 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Impact**: Standard deploy path documented and post-sync verification added; stale nested board2/board2 copies removed from idc03 canonical tree and idc02 mirror.
 - **Rollback**: Remove the procedure entry, runbook and deploy-check.sh; remove the ExecStartPost line from ~/.config/systemd/user/web-srv-sync.service and daemon-reload.
 
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/ssot.procedures.yml, docs/ssot/ssot.index.yml
+- **Change Type**: major
+- **Description**: Codified SSOT-aligned auto-capture routing: added knowledge-capture spec with capture matrix (info type -> canonical sink/index/volatility/promotion), pointer-note template and rules, auto-capture triggers/hooks, SSOT-first retrieval flow, guardrails, and phased automation notes. Added procedure pointers (knowledge-capture, pointer-note, session-capture) and registered knowledge-capture/procedures/procedures-index in the core SSOT index.
+- **Impact**: Establishes a canonical, pointer-first standard for capturing useful information alongside SSOT (board/lesson/KB/OpenChamber/evidence routing), reducing duplication and drift and improving later retrieval.
+- **Rollback**: Remove docs/ssot/ssot.knowledge-capture.yml, revert added entries in docs/ssot/ssot.procedures.yml and docs/ssot/ssot.index.yml.
+
 ### 2026-09-24
 
 - **File**: docs/ssot/infrastructure/ssot.security.yml (+ 7 new files)
