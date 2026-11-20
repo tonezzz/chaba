@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: backlog
-updated: 2026-11-20 18:36
+updated: 2026-11-20 18:37
 priority: high
 tags:
 - devnest
@@ -35,17 +35,13 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:34
-  last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '''' SDL_IM_MODULE=''''
-    XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-runner-per-executor-caps-1794226908.service:
-    Consumed 1.839s CPU time over 1h 24.268s wall clock time, 19.6M memory peak, 296K'
-  attempts: 1
-  result: 'journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794918460.service:
+  last_failure: 'journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794918460.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-runner-per-executor-caps-1794918460.service:
     Failed with result ''exit-code''.'
-  runner: tony-omen
+  attempts: 0
 ref: OPS-1284
 comms:
 - at: 2026-11-09 17:07
@@ -239,3 +235,7 @@ comms:
     jules.status=retired, JULES_LANES drop-ins removed on tony-omen/idc03). lane=jules/executor=jules pins on this
     card are dead and being stripped so a future re-queue classifies onto a live lane. Still relevant for nlm_batch/opencode
     remote lanes — needs re-lane, not cancellation.
+- at: 2026-11-20 18:37
+  from: tony
+  text: retry requested
+claim: {}
