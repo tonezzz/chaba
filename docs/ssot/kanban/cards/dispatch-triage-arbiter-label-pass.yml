@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
-column: backlog
-updated: 2026-11-20 19:47
+column: doing
+updated: 2026-11-20 19:48
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -287,9 +287,12 @@ comms:
 - at: 2026-11-20 19:47
   from: chaba
   text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-20 19:48
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
@@ -298,5 +301,7 @@ action:
   last_failure: 'exit=1 ice: No such file or directory | devin-task-20261119-084806-approved-strategy-b-per-the-bo.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261119-084806-approved-strategy-b-per-the-bo.service:
     No such file or directory'
-  attempts: 0
-claim: {}
+  attempts: 1
+  runner: idc02
+claim:
+  since: 2026-11-20 19:48
