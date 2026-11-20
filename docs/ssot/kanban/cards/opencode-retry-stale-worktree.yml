@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-20 21:16
+updated: 2026-11-20 23:30
 priority: low
 tags:
 - opencode
@@ -532,6 +532,10 @@ comms:
   from: chaba
   text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-211338-two-lane-comparison-on-kk-mac-)
     — claims held ~29m'
+- at: 2026-11-20 23:30
+  from: chaba
+  text: 'idc02 defers: executor=opencode declared but action.lane_envelope is not staged — admission would hold
+    at start, so the claim is held too: stage the envelope or pin executor=devin (no attempt burned)'
 action:
   type: dispatch
   repo: chaba
