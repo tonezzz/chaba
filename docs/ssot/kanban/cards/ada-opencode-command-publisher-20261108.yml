@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-20 20:58
+updated: 2026-11-20 21:01
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -463,6 +463,10 @@ comms:
     ada.md (menu-restored 077aaff3), opencode_command allowlist publisher + /opencode-command door + thin client,
     24 tests green, bench shows measured 74-80% ingested-byte savings. Live read-only check from tony-omen: verify=in_sync:false
     (deployed 29c878cc still pre-menu), p'
+- at: 2026-11-20 21:01
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261120-205550-canonicalize-the-opencode-ada- on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -503,6 +507,7 @@ action:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-20 13:41
     session_gone: 2026-11-20 13:56
+    dirty: 1
   attempts: 2
   last_failure: 'journal=exit-code ze-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261120-200526-canonicalize-the-opencode-ada-.service:
     Consumed 20min 34.465s CPU time over 21min 15.080s wall clock time, 1.1G memory peak, 74.8M memory swap peak.'
