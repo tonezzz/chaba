@@ -380,7 +380,15 @@ lanes:
       host pin, or side-effect ask keeps the normal classifier.
       Execution is scripts/devnest/kk_mac_executor.py run over
       ssh+ollama /api/generate (kk_mac_llm.py) — no shell, no code
-      mutation, no publish; the artifact is the only write.
+      mutation, no publish; the artifact is the only write. Gates:
+      heartbeat admission (freshness/ollama/disk/load/temp/busy),
+      MEM-1043 memory guard (60% pre-load / 50% abort — verified live
+      2026-11-20), drain file, and opt-in quiet-hours
+      DEVNEST_KK_MAC_QUIET_HOURS=HH:MM-HH:MM (ICT, fail-closed on
+      malformed). Size evidence 2026-11-20: qwen3:8b is the lane
+      default (60 tok/s); 20B+ footprints (gpt-oss:20b, qwen3:30b-a3b)
+      breach the memory floor under owner workloads — not lane-safe,
+      docs/reports/kk-mac-llm-bench-2026-11-20.md.
     task_classes:
       - "summary | operator_brief | structured_extract | safe_route
         (mirrors kk_mac_llm.ALLOWED_TASKS / dr.KK_MAC_TASK_CLASSES)"

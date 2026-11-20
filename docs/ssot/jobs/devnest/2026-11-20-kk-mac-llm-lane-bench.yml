@@ -1,0 +1,42 @@
+id: 2026-11-20-kk-mac-llm-lane-bench
+date: 2026-11-20
+domain: devnest
+card: kk-mac-local-llm-lane
+status: done
+what: >
+  Spec-pass on the KK-Mac local LLM lane: runtime check, read-only
+  inference smoke + model-size ladder through the live executor
+  contract (admission + MEM-1043 memory guard + independent verifier),
+  personal-file-access audit, quiet-hours gate shipped, one-shot
+  rollback documented, lane comparison vs Flash Lite + Devin.
+  Report: docs/reports/kk-mac-llm-bench-2026-11-20.md.
+artifacts:
+  - evals/kk-mac-lane/bench-20261120/ (prompts, expects, run-bench.sh,
+    six *.result.json contract records)
+  - docs/reports/kk-mac-llm-bench-2026-11-20.md
+results:
+  qwen3_8b:
+    cold_summary: pass — load 0.81s, 96 eval tok, 60.3 tok/s, mem 82->63%
+    warm_extract: pass — 28 eval tok, 60.3 tok/s, JSON route=deterministic
+  gpt_oss_20b:
+    verdict: fallback both calls — 13.8GB load breached 50% abort floor
+      (48-49% free) with owner apps resident; never reached generation
+  qwen3_30b_a3b:
+    cold_summary: pass — load 8.6s, 462 tok, 92.4 tok/s (MoE ~3B active)
+    warm_extract: fallback — transient overlap drove free to 20%;
+      also emits chain-of-thought despite think:false
+  guard_evidence: MEM-1043 verified live — pre-load floor + during/post
+    aborts all failed closed; node recovered 74% free, /api/ps empty
+decisions:
+  - qwen3:8b remains lane default; 20B+ footprints are NOT lane-safe on
+    36GiB with owner apps resident (a ~14GB load alone breaches the
+    floor). Dense 14B remains unrun — not pulled, needs pull approval.
+  - energy metric n/a: powermetrics requires root on macOS
+changes:
+  - "kk_mac_admission.py: + quiet_hours_active() (ICT +7, wraps
+    midnight, malformed -> None/fail-closed)"
+  - "kk_mac_lane_worker.py: gate() enforces DEVNEST_KK_MAC_QUIET_HOURS
+    (opt-in; unset = unchanged) before any probe"
+  - "tests: +7 (quiet-hours helper + worker gate)"
+rollback: "docs in report — drain file, launchctl bootout + plist rm,
+  shim .deny, tunnel stop; every decline fails closed to next lane"
