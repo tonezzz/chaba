@@ -1,7 +1,7 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
-column: doing
-updated: 2026-11-20 21:05
+column: backlog
+updated: 2026-11-20 21:08
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
 priority: medium
@@ -265,6 +265,14 @@ comms:
     DONE (aa8399e4ef9) — implemented directly. Corre; [opencode-lane-regraduation] S2 blocker found before quota
     use: opencode_profile; [ada-prompt-slim] primer injected 8 lesson(s): [ada-prompt-slim] Additional Jule; [board-api-card-lane-executor-edit]
     merge-sweep: no session/w'
+- at: 2026-11-20 21:08
+  from: tony-macbook
+  text: 'finished (failed): journal=exit-code sk-20261120-210532-evaluate-opencode-as-a-supervi.service: Failed
+    with result ''exit-code''. | devin-tas — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 21:08
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-210532-evaluate-opencode-as-a-supervi (rate limit)
+    — tony-macbook holds new claims ~30m
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
@@ -285,15 +293,17 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
-  result: 'exit=1 devin-task-20261117-233554-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233554-evaluate-opencode-as-a-supervi.service: Consumed 988ms CPU time over 14.738s wall
-    clock time, 75.9M memory peak.'
+  result: 'journal=exit-code sk-20261120-210532-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
+    | devin-task-20261120-210532-evaluate-opencode-as-a-supervi.service: Consumed 33.698s CPU time over 1min 41.682s
+    wall clock time, 252.3M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:41
-  runner: tony-macbook
   attempts: 1
+  last_failure: 'journal=exit-code sk-20261120-210532-evaluate-opencode-as-a-supervi.service: Failed with result
+    ''exit-code''. | devin-task-20261120-210532-evaluate-opencode-as-a-supervi.service: Consumed 33.698s CPU time
+    over 1min 41.682s wall clock time, 252.3M memory peak.'
 claim:
   since: 2026-11-20 21:03
