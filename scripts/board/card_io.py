@@ -31,6 +31,14 @@ from pathlib import Path
 
 import yaml
 
+# libyaml C pair — same semantics as SafeDumper/SafeLoader, ~10-20x
+# faster. The flock-serialized writers (board-api save, kanban-commit
+# alert cards, merge-sweep locked edits) were paying multi-second
+# pure-Python dumps on fat cards inside the card lock
+# (board-api-lock-contention, 2026-11-20).
+_YAML_DUMP = getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+_YAML_LOAD = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
 
 def atomic_write_text(p: Path, text: str) -> None:
     """Replace `p` with `text` atomically (tmp + fsync + rename)."""
@@ -66,8 +74,9 @@ def atomic_dump_card(p: Path, card: dict, **dump_kw) -> None:
     dump_kw.setdefault("allow_unicode", True)
     dump_kw.setdefault("sort_keys", False)
     dump_kw.setdefault("width", 110)
-    text = yaml.safe_dump(card, **dump_kw)
-    if not isinstance(yaml.safe_load(text), dict):
+    dump_kw.setdefault("Dumper", _YAML_DUMP)
+    text = yaml.dump(card, **dump_kw)
+    if not isinstance(yaml.load(text, Loader=_YAML_LOAD), dict):
         raise ValueError(
             f"refusing to write {Path(p).name}: serialized card did not "
             "re-parse as a mapping")
