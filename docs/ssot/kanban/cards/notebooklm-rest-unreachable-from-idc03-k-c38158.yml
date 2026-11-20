@@ -1,0 +1,22 @@
+id: notebooklm-rest-unreachable-from-idc03-k-c38158
+title: NotebookLM REST unreachable from idc03 (kraut session-close failures)
+column: backlog
+updated: 2026-11-20 17:42
+spec: 'Revalidated 2026-11-20; this is still live, not superseded by the service move. The idc03 ada-ai-kraut service
+  is active, but its EnvironmentFile ~/.config/secrets/michael-ha/backend.env sets NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1
+  (tony-dell). From idc03, GET http://100.68.142.13:3011/health/auth fails to connect (HTTP 000). The service is
+  now active on idc02: GET http://100.123.163.11:3011/health/auth from idc03 returns {ok:true,auth:ok}. Fix the
+  consumer URL in the idc03 env and restart only through the approved Ada deploy/operations flow; verify health
+  from idc03 and confirm no new connection failures. No env edit/restart was performed in this audit.'
+note: Restored from the frozen Dell mirror after current live evidence confirmed the old endpoint is still configured
+  and unreachable.
+ref: OPS-0732
+comms:
+- at: 2026-11-20 17:42
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-20 17:42
+  from: devin
+  text: '2026-11-20 evidence: idc03 ada-ai-kraut active; michael-ha/backend.env still points NOTEBOOKLM_REST_BASE_URL
+    at 100.68.142.13:3011/v1. That endpoint is connection-refused from idc03, while idc02 :3011/health/auth returns
+    {ok:true,auth:ok}. This card is restored as an active config drift item. No production env or service changed.'

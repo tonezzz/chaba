@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct17-cards
 title: Triage Oct 17 card records absent from live board
-column: backlog
-updated: 2026-11-20 16:41
+column: done
+updated: 2026-11-20 17:42
 brief: Two card YAMLs created on Oct 17 are untracked on tony-dell's frozen mirror and their IDs/refs are absent
   from the current live compact board.
 priority: medium
@@ -19,8 +19,20 @@ spec: Reconcile the missing card records OPS-0732 (notebooklm-rest-unreachable-f
   location. Do not edit or clean the dirty mirror, and do not re-open either item without current evidence.
 action:
   type: manual
+  status: done
 ref: AUD-0021
 comms:
 - at: 2026-11-20 16:41
   from: devin
   text: card captured via board-api
+- at: 2026-11-20 17:42
+  from: devin
+  text: '2026-11-20 disposition: OPS-0732 is confirmed live and restored through board-api (idc03 consumer env points
+    to retired/unreachable Dell :3011; idc02 endpoint is active and healthy). No env edit/restart was performed.
+    KNB-0733 is not restored as a separate card: its Oct17 JSONDecodeError has not recurred in service logs, but
+    current report output is absent for 124 later transcripts; that broader feed gap is recorded on existing ADA-0209
+    (ada-session-summary-inflow-stalled) as a successor/overlap'
+- at: 2026-11-20 17:42
+  from: devin
+  text: moved backlog -> done
+claim: {}
