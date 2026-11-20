@@ -1,7 +1,7 @@
 id: ada-proactive-digest-morning-brief-via-t-3abb02
 title: Ada proactive digest — morning brief via TG/LINE relay
 column: doing
-updated: 2026-11-20 13:37
+updated: 2026-11-20 13:42
 ref: ADA-1201
 comms:
 - at: 2026-11-08 13:52
@@ -312,12 +312,22 @@ comms:
     /send :8911 (Tony DM). Declared ada-morning-brief systemd job idc03 07:35 in ssot.jobs.yml + job doc docs/ssot/jobs/ada/2026-11-20-ada-morning-brief.yml.
     Verified --print live on tony-omen (159 due, 4 open reqs, 4 done/3 failed). Remaining: merge -> chaba-repo-sync
     -> r'
+- at: 2026-11-20 13:42
+  from: chaba
+  text: 'merge-sweep: devin-task-20261120-132819-ada-proactive-digest-morning-b no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-20 13:42
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261120-132819-ada-proactive-digest-morning-b on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:48
+    stale_running: 2026-11-20 13:42
+    dirty: 1
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:
     Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
     2.943s CPU time.'

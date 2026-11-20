@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
 column: doing
-updated: 2026-11-20 13:34
+updated: 2026-11-20 13:42
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -214,6 +214,13 @@ comms:
     finished (failed): exit=1 roce; [ada-tools-wiki-read-wiki-search-recall-t-8f32dd] finished (failed): exit=1
     sk-2; [ada-tools-wiki-read-wiki-search-recall-t-8f32dd] merge-sweep: devin-task-202611; [ada-proactive-digest-morning-brief-via-t-3abb02]
     spec: Ada i'
+- at: 2026-11-20 13:42
+  from: devin
+  text: 'running. Verified live: board-api /wiki/page is write-only (no mode=read), no /wiki/search. tools.d wiki_read+wiki_search
+    built — they try the spec doors first, then fall back to existing read doors (/lesson source=wiki for Education:,
+    /wiki/news-review for PrivateNews:, chaba-lessons vector + Education index + /report for search). Live-verified
+    against real board-api: Education:Ada-Deploy-Flow reads clean, search returns real hits. Generic read/search
+    door = chaba follow-up.'
 action:
   type: dispatch
   repo: ada-voice

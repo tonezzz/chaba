@@ -241,6 +241,14 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261120-132007-canonicalize-the-opencode-ada- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-20 13:41
+  from: chaba
+  text: 'merge-sweep: dispatch/20261120-132007-canonicalize-the-opencode-ada- conflicts with origin/master: docs/ssot/kanban/.render-state-board2
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-20 13:41
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261120-132007-canonicalize-the-opencode-ada-:
+    3 commit(s) conflict with origin/master '
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -258,6 +266,18 @@ requests:
     label: Keep manual Git flow; only make the command file versioned
   suggested: narrow
   answer: narrow
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261120-132007-canonicalize-the-opencode-ada-: 3 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/kanban/.render-state-board2. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261120-132007-canonicalize-the-opencode-ada-
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-20 13:41
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
 action:
   type: dispatch
   repo: chaba
