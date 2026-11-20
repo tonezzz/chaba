@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
-column: backlog
-updated: 2026-11-20 17:26
+column: doing
+updated: 2026-11-20 17:27
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -111,9 +111,11 @@ spec: "GOAL: Land the chaba Ansible host-baseline scaffold on master and verify 
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
+  runner: tony-macbook
+  attempts: 1
 comms:
 - at: 2026-11-20 17:24
   from: chaba
@@ -134,4 +136,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 17:27
+  from: tony-macbook
+  text: claimed
 ref: SYS-0023
+claim:
+  since: 2026-11-20 17:27
