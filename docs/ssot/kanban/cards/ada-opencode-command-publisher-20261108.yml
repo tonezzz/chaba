@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: doing
-updated: 2026-11-20 20:25
+column: backlog
+updated: 2026-11-20 20:27
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -404,6 +404,14 @@ comms:
   text: 'Dispatch 20261120-200526 on tony-dell: worktree already contains merge 947dd54 landing the idc02 deliverable
     (canonical ada.md, opencode_command publisher, board-api door, client, tests, bench, runbook). Verifying completeness
     + tests now.'
+- at: 2026-11-20 20:27
+  from: tony-dell
+  text: 'finished (failed): journal=exit-code ze-the-opencode-ada-.service: Failed with result ''exit-code''. |
+    devin-task-20261120-200526-canonicaliz — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-20 20:27
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261120-200526-canonicalize-the-opencode-ada- (rate limit)
+    — tony-dell holds new claims ~30m
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -437,7 +445,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
   sweep:
@@ -445,10 +453,10 @@ action:
     stale_running: 2026-11-20 13:41
     session_gone: 2026-11-20 13:56
   attempts: 1
-  last_failure: 'exit=1 in-task-20261120-192009-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-192009-canonicalize-the-opencode-ada-.service: Consumed 30.988s CPU time over 35.557s
-    wall clock time, 893.8M memory peak.'
-  runner: tony-dell
+  last_failure: 'journal=exit-code ze-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261120-200526-canonicalize-the-opencode-ada-.service:
+    Consumed 20min 34.465s CPU time over 21min 15.080s wall clock time, 1.1G memory peak, 74.8M memory swap peak.'
+  result: 'journal=exit-code ze-the-opencode-ada-.service: Failed with result ''exit-code''. | devin-task-20261120-200526-canonicalize-the-opencode-ada-.service:
+    Consumed 20min 34.465s CPU time over 21min 15.080s wall clock time, 1.1G memory peak, 74.8M memory swap peak.'
 claim:
   since: 2026-11-20 20:04
 review_kind: verify
