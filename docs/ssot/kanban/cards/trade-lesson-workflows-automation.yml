@@ -1,7 +1,7 @@
 id: trade-lesson-workflows-automation
 title: 'Trade lesson draft: trade-workflows (free-lane drafting)'
 column: review
-updated: 2026-11-20 19:33
+updated: 2026-11-20 20:27
 brief: Distill trade docs (workflows/*, features/automation/*, MANUAL_WORKFLOW.md, DEVELOPMENT_WORKFLOW.md, CHANGELOG_WORKFLOW.md)
   into lesson trade-trade-workflows; drafting on the $0 free lane via trade-lesson-migrate.py.
 priority: low
@@ -39,6 +39,7 @@ action:
     stale_running: 2026-11-16 20:43
     dirty: 1
     fetch_failed: 2026-11-19 08:59
+    session_gone: 2026-11-20 20:27
   result: 'exit=0 an run here unchanged. Outcome written to `dispatch-outcome-20261116-202630-free-lane-draft-publish-for-tr.md`;
     final status posted to the card. | devin-task-20261116-202630-free-lane-draft-publish-for-tr.service: Consumed
     19.535s CPU time.'
@@ -448,6 +449,10 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-17: merge-sweep can''t land dispatch/20261116-202630-free-lane-draft-publish-for-tr:
     2 commit(s) conflict with origin/master '
+- at: 2026-11-20 20:27
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261116-202630-free-lane-draft-publish-for-tr on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
 requests:
