@@ -13,6 +13,8 @@ Usage:
   board-cli.py action CARD_ID move COLUMN [--from devin]
   board-cli.py request CARD_ID "text" [--options a|b|c] [--option id|label|action ...] [--from devin]
   board-cli.py respond CARD_ID REQUEST_ID "answer" [--from devin]
+  board-cli.py card-set CARD_ID --reason "why" [--lane L|''] [--executor E|'']
+             [--tags a,b | --tag-add a,b --tag-remove c]
 
 Transport: BOARD_API env (default http://127.0.0.1:8787) or --ssh HOST
 which pipes the same HTTP call through `ssh HOST curl` (board-api binds
@@ -162,6 +164,25 @@ def main() -> int:
     rs.add_argument("text")
     rs.add_argument("--from", dest="frm", default="devin")
 
+    cs = sub.add_parser(
+        "card-set",
+        help="edit routing fields (lane/executor/tags) on an existing "
+             "card via POST /card-set")
+    cs.add_argument("id")
+    cs.add_argument("--lane", default=None,
+                    help="new action.lane; '' clears it")
+    cs.add_argument("--executor", default=None,
+                    help="new action.executor; '' clears it")
+    cs.add_argument("--tags", default=None,
+                    help="comma list — replaces card tags wholesale")
+    cs.add_argument("--tag-add", default=None,
+                    help="comma list — added to existing tags")
+    cs.add_argument("--tag-remove", default=None,
+                    help="comma list — removed from existing tags")
+    cs.add_argument("--reason", required=True,
+                    help="why the routing changed (audited in comms)")
+    cs.add_argument("--from", dest="frm", default="devin")
+
     args = ap.parse_args()
     if args.api:
         global API
@@ -217,6 +238,29 @@ def main() -> int:
             out = call("POST", "/request",
                        {"id": args.id, "from": args.frm,
                         "ask": args.text, "options": options}, ssh)
+        elif args.cmd == "card-set":
+            s = {}
+            if args.lane is not None:
+                s["lane"] = args.lane
+            if args.executor is not None:
+                s["executor"] = args.executor
+            if args.tags is not None:
+                s["tags"] = [t.strip() for t in args.tags.split(",")
+                             if t.strip()]
+            if args.tag_add is not None or args.tag_remove is not None:
+                s["tags"] = {
+                    "add": [t.strip() for t in
+                            (args.tag_add or "").split(",") if t.strip()],
+                    "remove": [t.strip() for t in
+                               (args.tag_remove or "").split(",")
+                               if t.strip()]}
+            if not s:
+                raise ValueError(
+                    "nothing to set — pass --lane/--executor/--tags/"
+                    "--tag-add/--tag-remove")
+            out = call("POST", "/card-set",
+                       {"id": args.id, "from": args.frm,
+                        "set": s, "reason": args.reason}, ssh)
         else:
             out = call("POST", "/respond",
                        {"id": args.id, "request_id": args.request_id,
