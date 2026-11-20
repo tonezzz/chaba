@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
-column: backlog
-updated: 2026-11-20 19:58
+column: doing
+updated: 2026-11-20 20:00
 priority: high
 tags:
 - devnest
@@ -27,11 +27,13 @@ action:
   repo: chaba
   executor: devin
   lane: devin
-  status: queued
+  status: running
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
+  runner: tony-dell
+  attempts: 1
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -277,3 +279,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 20:00
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-20 20:00
