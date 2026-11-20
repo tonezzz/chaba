@@ -1,0 +1,70 @@
+---
+# audit-runner-tools.yml — fleet drift audit for ~/.local/bin runner tools.
+#
+# Read-only companion to scripts/devin/sync-runner-tools.sh (job
+# 2026-11-18-runner-tooling-selfheal-sync, OPS-1026). For each host it
+# compares sha256 of the installed snapshot against the canonical copy
+# in that host's chaba checkout (~/CascadeProjects/chaba, kept current
+# by chaba-repo-sync). Prints one line per tool:
+#   OK / DRIFT / MISSING-DEST / MISSING-SRC / NO-CHECKOUT
+#
+# Usage (from ansible/ on the controller):
+#   ansible-playbook playbooks/audit-runner-tools.yml
+#   ansible-playbook playbooks/audit-runner-tools.yml --limit tony-dell
+#
+# kk-mac is included (read-only; chaba-only lane per dispatch-repos.conf).
+# idc01 stays excluded via the disabled group.
+
+- name: Audit runner-tool snapshots vs chaba checkout
+  hosts: all:!disabled
+  gather_facts: false
+  become: false  # read-only audit of the login user's files — no sudo
+  vars:
+    runner_tools:
+      - src: scripts/board/runner-agent.py
+        dest: runner-agent
+      - src: scripts/devin/devin-dispatch.sh
+        dest: devin-dispatch
+      - src: scripts/devin/claude-dispatch.sh
+        dest: claude-dispatch
+      - src: scripts/devin/devin-dispatch-prune.sh
+        dest: devin-dispatch-prune
+      - src: scripts/devin/dispatch-queue.sh
+        dest: dispatch-queue
+      - src: scripts/board/dispatch_repos.py
+        dest: dispatch_repos.py
+
+  tasks:
+    - name: Compare installed tools against checkout sources
+      ansible.builtin.shell: |
+        set -u
+        co="$HOME/CascadeProjects/chaba"
+        if [ ! -d "$co/.git" ]; then echo "NO-CHECKOUT $co"; exit 0; fi
+        cd "$co" || exit 0
+        python3 - "$co" <<'PYEOF'
+        import hashlib, os, sys
+        co = sys.argv[1]
+        tools = {{ runner_tools | to_json }}
+        for t in tools:
+            src = os.path.join(co, t["src"])
+            dst = os.path.expanduser("~/.local/bin/" + t["dest"])
+            if not os.path.isfile(src):
+                print(f"MISSING-SRC {t['dest']} ({t['src']})")
+                continue
+            if not os.path.isfile(dst):
+                print(f"MISSING-DEST {t['dest']}")
+                continue
+            h = lambda p: hashlib.sha256(open(p, 'rb').read()).hexdigest()[:12]
+            s, d = h(src), h(dst)
+            print(("OK     " if s == d else "DRIFT  ") + f"{t['dest']} src={s} inst={d}")
+        PYEOF
+      args:
+        executable: /bin/bash
+      register: audit
+      changed_when: false
+      failed_when: false
+
+    - name: Show audit lines
+      ansible.builtin.debug:
+        msg: "{{ audit.stdout_lines | default(['(no output)']) }}"
+      when: audit.stdout_lines is defined
