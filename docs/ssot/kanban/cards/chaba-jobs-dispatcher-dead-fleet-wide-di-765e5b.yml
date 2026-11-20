@@ -8,76 +8,78 @@ ref: OPS-0790
 comms:
 - at: 2026-10-23 15:30
   from: devin
-  text: 'Found 2026-10-23 while arming nest-queue-watch: chaba-jobs.timer is inactive/disabled on idc03 and absent
-    on dell+mn01. Every job in ssot.jobs.yml with dispatch:dispatcher + every: has silently not run since the timer
-    died (when? check last journal). Options: (a) re-enable chaba-jobs.timer on the declared dispatcher host — which
-    host owns it? ssot.jobs.yml config does not say; (b) migrate remaining dispatcher jobs to dispatch:systemd rendered
-    timers like nest-queue-watch. Verify which dispatcher'
+  text: 'Found 2026-10-23 while arming nest-queue-watch: chaba-jobs.timer is inactive/disabled on idc03
+    and absent on dell+mn01. Every job in ssot.jobs.yml with dispatch:dispatcher + every: has silently
+    not run since the timer died (when? check last journal). Options: (a) re-enable chaba-jobs.timer on
+    the declared dispatcher host — which host owns it? ssot.jobs.yml config does not say; (b) migrate
+    remaining dispatcher jobs to dispatch:systemd rendered timers like nest-queue-watch. Verify which
+    dispatcher'
 - at: 2026-10-23 15:30
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
+    in queue'
 - at: 2026-10-29 19:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
 - at: 2026-10-29 20:07
   from: tony
-  text: 'answered the-chaba-jobs-timer-is-inacti-04f0e4: Migrate all remaining dispatcher jobs to use dispatch:systemd
-    rendered timers (like nest-queue-watch) and remove the legacy dispatcher'
+  text: 'answered the-chaba-jobs-timer-is-inacti-04f0e4: Migrate all remaining dispatcher jobs to use
+    dispatch:systemd rendered timers (like nest-queue-watch) and remove the legacy dispatcher'
 - at: 2026-10-29 20:07
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-29 20:45
   from: devin
-  text: 'Triage result: the migration decision was recorded, but this card''s `action.type=manual` is not claimable
-    by kanban-dispatch, so nothing would start automatically. Inventory found 8 `dispatch:dispatcher` entries in
-    `ssot.jobs.yml` across idc02/idc03/tony_dell. I created OPS-0983 (`dispatcher-jobs-systemd-migration-impl-ops0790`)
-    as a queued code/tests-only follow-up on idc02. It preserves each job''s host/schedule/env/timeout and explicitly
-    does NOT install timers or disable the legacy dispatcher'
+  text: 'Triage result: the migration decision was recorded, but this card''s `action.type=manual` is
+    not claimable by kanban-dispatch, so nothing would start automatically. Inventory found 8 `dispatch:dispatcher`
+    entries in `ssot.jobs.yml` across idc02/idc03/tony_dell. I created OPS-0983 (`dispatcher-jobs-systemd-migration-impl-ops0790`)
+    as a queued code/tests-only follow-up on idc02. It preserves each job''s host/schedule/env/timeout
+    and explicitly does NOT install timers or disable the legacy dispatcher'
 - at: 2026-10-29 20:54
   from: devin
   text: 'Follow-up state: OPS-0983 is now action.status=running, runner=idc02 (verified live task `devin-task-20261029-204303-follow-up-execution-for-the-ap`).
-    It is doing the code/render-test phase only. No timers have been installed/started and the legacy dispatcher
-    has not been removed.'
+    It is doing the code/render-test phase only. No timers have been installed/started and the legacy
+    dispatcher has not been removed.'
 - at: 2026-10-29 21:06
   from: devin
-  text: 'Code phase completed as OPS-0983 and verified in origin/master at 93c61b905: 8 dispatcher entries converted,
-    renderer tests pass, render-jobs --check reports 87 jobs/8 hosts/0 dispatcher entries, SSOT validation clean.
-    No live units were installed or enabled, and chaba-jobs.timer was not disabled. Before the separate deploy-lock
-    rollout, the migration report''s behavior deltas (notably no exponential backoff and changed result/alert surfaces)
-    need review.'
+  text: 'Code phase completed as OPS-0983 and verified in origin/master at 93c61b905: 8 dispatcher entries
+    converted, renderer tests pass, render-jobs --check reports 87 jobs/8 hosts/0 dispatcher entries,
+    SSOT validation clean. No live units were installed or enabled, and chaba-jobs.timer was not disabled.
+    Before the separate deploy-lock rollout, the migration report''s behavior deltas (notably no exponential
+    backoff and changed result/alert surfaces) need review.'
 - at: 2026-10-29 21:07
   from: devin
-  text: 'raised request systemd-rollout-behavior-review: The approved migration code is merged, but live timers
-    are not installed. Before rollout, please choose how to handle th'
+  text: 'raised request systemd-rollout-behavior-review: The approved migration code is merged, but live
+    timers are not installed. Before rollout, please choose how to handle th'
 - at: 2026-10-29 22:40
   from: tony
-  text: 'answered systemd-rollout-behavior-review: accept-systemd-contract — Recommended for momentum: accept these
-    documented systemd semantics and proceed with a locked, host-by-host rollout; leave legacy timer until all eight
-    replacement timers are'
+  text: 'answered systemd-rollout-behavior-review: accept-systemd-contract — Recommended for momentum:
+    accept these documented systemd semantics and proceed with a locked, host-by-host rollout; leave legacy
+    timer until all eight replacement timers are'
 - at: 2026-10-29 22:40
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-30 01:27
   from: devin
   text: 'Live rollout preflight (read-only): tony-dell currently has `chaba-jobs.timer` active plus `mcp-debug-h3-sync`,
-    `tony-dell-health-snapshot`, and `network-scan-tony` timers; idc03 has `yomi-update-active.timer`; idc02 has
-    no replacement timer listed. The current `render-jobs.py --host H --install` enables/starts every rendered timer
-    on that host, not just the migrated jobs, so I did not run it. OPS-0992 is queued to add/test per-job installation
-    before any locked rollout.'
+    `tony-dell-health-snapshot`, and `network-scan-tony` timers; idc03 has `yomi-update-active.timer`;
+    idc02 has no replacement timer listed. The current `render-jobs.py --host H --install` enables/starts
+    every rendered timer on that host, not just the migrated jobs, so I did not run it. OPS-0992 is queued
+    to add/test per-job installation before any locked rollout.'
 - at: 2026-10-30 01:37
   from: devin
-  text: 'After your `accept-systemd-contract` answer, the code phase (OPS-0983) is complete. The live rollout is
-    not started: preflight found `render-jobs.py --host <h> --install` enables every timer on a host, not just the
-    eight migrated jobs. OPS-0992 was held because idc02 cannot push; OPS-0993 is queued to tony-dell to add/test
-    a per-job selector before deployment. No live timer units were changed. OPS-0993 is still unclaimed during the
-    current quiet-hours window.'
+  text: 'After your `accept-systemd-contract` answer, the code phase (OPS-0983) is complete. The live
+    rollout is not started: preflight found `render-jobs.py --host <h> --install` enables every timer
+    on a host, not just the eight migrated jobs. OPS-0992 was held because idc02 cannot push; OPS-0993
+    is queued to tony-dell to add/test a per-job selector before deployment. No live timer units were
+    changed. OPS-0993 is still unclaimed during the current quiet-hours window.'
 - at: 2026-11-08 13:14
   from: devin
-  text: 'Rollout state check 2026-11-08 (from timer-alert-idc03-chaba-jobs work): idc03 = end-state reached — chaba-jobs.timer
-    disabled/inactive AND all 3 replacements armed+firing (embed-lane-news, embed-lane-lessons, yomi-update-active).
-    tony-dell = chaba-jobs.timer still enabled+active (no-op ticks) BUT lesson-drift-check.timer is installed yet
-    DISABLED — never armed, so that job has silently not run since 10-29. Remaining rollout step: enable --now lesson-drift-check.timer
-    on dell + census-declare it'
+  text: 'Rollout state check 2026-11-08 (from timer-alert-idc03-chaba-jobs work): idc03 = end-state reached
+    — chaba-jobs.timer disabled/inactive AND all 3 replacements armed+firing (embed-lane-news, embed-lane-lessons,
+    yomi-update-active). tony-dell = chaba-jobs.timer still enabled+active (no-op ticks) BUT lesson-drift-check.timer
+    is installed yet DISABLED — never armed, so that job has silently not run since 10-29. Remaining rollout
+    step: enable --now lesson-drift-check.timer on dell + census-declare it'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -150,41 +152,52 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
-  ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
-    dispatch:dispatcher to silently fail since the timer died. We need to decide how to handle the architecture
-    of these dispatcher jobs moving forward before we can fix or migrate them.
+  ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml
+    jobs with dispatch:dispatcher to silently fail since the timer died. We need to decide how to handle
+    the architecture of these dispatcher jobs moving forward before we can fix or migrate them.
   options:
-  - ★ Re-enable and configure chaba-jobs.timer on idc03 as the dedicated dispatcher host and verify it runs ssot.jobs.yml
-    jobs
-  - Migrate all remaining dispatcher jobs to use dispatch:systemd rendered timers (like nest-queue-watch) and remove
-    the legacy dispatcher
-  - Postpone fixing the fleet-wide dispatcher failure until a full infrastructure review of chaba-jobs can be performed
+  - ★ Re-enable and configure chaba-jobs.timer on idc03 as the dedicated dispatcher host and verify it
+    runs ssot.jobs.yml jobs
+  - Migrate all remaining dispatcher jobs to use dispatch:systemd rendered timers (like nest-queue-watch)
+    and remove the legacy dispatcher
+  - Postpone fixing the fleet-wide dispatcher failure until a full infrastructure review of chaba-jobs
+    can be performed
   status: answered
   at: 2026-10-29 19:20
   from: backlog-spec-enrich
   answer: Migrate all remaining dispatcher jobs to use dispatch:systemd rendered timers (like nest-queue-watch)
     and remove the legacy dispatcher
 - id: systemd-rollout-behavior-review
-  ask: 'The approved migration code is merged, but live timers are not installed. Before rollout, please choose
-    how to handle the behavior deltas documented in docs/reports/dispatcher-systemd-migration-2026-10-29.md: systemd
-    cadence replaces dispatcher exponential backoff; results move from timeline.jsonl to journald/timer-timeline;
-    critical:false alerting moves to timer-sentinel; boot catch-up is delayed to the 1-minute OnBootSec. First activation
-    may run the embed-lane jobs with the existing LiteLLM key (no caps changed).'
+  ask: 'The approved migration code is merged, but live timers are not installed. Before rollout, please
+    choose how to handle the behavior deltas documented in docs/reports/dispatcher-systemd-migration-2026-10-29.md:
+    systemd cadence replaces dispatcher exponential backoff; results move from timeline.jsonl to journald/timer-timeline;
+    critical:false alerting moves to timer-sentinel; boot catch-up is delayed to the 1-minute OnBootSec.
+    First activation may run the embed-lane jobs with the existing LiteLLM key (no caps changed).'
   status: answered
   at: 2026-10-29 21:07
   from: devin
   options:
   - id: accept-systemd-contract
-    label: 'Recommended for momentum: accept these documented systemd semantics and proceed with a locked, host-by-host
-      rollout; leave legacy timer until all eight replacement timers are verified.'
+    label: 'Recommended for momentum: accept these documented systemd semantics and proceed with a locked,
+      host-by-host rollout; leave legacy timer until all eight replacement timers are verified.'
   - id: preserve-dispatcher-behavior
-    label: Before rollout, add backoff/result-ledger/alert parity where needed; keep all timers untouched until
-      that code is reviewed.
+    label: Before rollout, add backoff/result-ledger/alert parity where needed; keep all timers untouched
+      until that code is reviewed.
   - id: hold-rollout
     label: Keep the code merged but do not install or enable any replacement timers yet.
   suggested: accept-systemd-contract
-  answer: 'accept-systemd-contract — Recommended for momentum: accept these documented systemd semantics and proceed
-    with a locked, host-by-host rollout; leave legacy timer until all eight replacement timers are verified.'
+  answer: 'accept-systemd-contract — Recommended for momentum: accept these documented systemd semantics
+    and proceed with a locked, host-by-host rollout; leave legacy timer until all eight replacement timers
+    are verified.'
 awaiting_action: true
+spec: The goal is to resolve fleet-wide dispatch failures by redeploying the drifted runner-agent script
+  to all affected hosts. The runner-agent.py script must be copied via scp from the local repository at
+  /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent on the hosts
+  tony-omen, idc02, idc03, and tony-macbook. Constraints require using the exact source path and target
+  path specified in the recent comms without inventing new paths. The testable done-condition is verified
+  when chaba jobs successfully fire and no longer defer due to runner-agent drift across the fleet.
