@@ -1,7 +1,7 @@
 id: mcp-inventory-scope-status-standard
 title: Standardize MCP scope, status vocabulary and finding IDs
 column: doing
-updated: 2026-11-20 18:21
+updated: 2026-11-20 18:43
 brief: 'Make the fleet MCP report''s declarations and findings computable and triageable: explicit per-server scope,
   no-config on the report status contract, and stable finding IDs with human-owned triage state.'
 priority: high
@@ -60,3 +60,15 @@ comms:
 - at: 2026-11-20 18:21
   from: devin
   text: card captured via board-api
+- at: 2026-11-20 18:43
+  from: devin
+  text: 'VERIFIED 2026-11-20 (OPS-0025 — MCP scope/status/finding standard). All done-criteria met.
+
+
+    IMPLEMENTED (commit e489e93 -> merged to master ac175474c1, pushed to origin):
+
+    - ssot.mcp.yml: `fleet_observation.scope_model` gives every server an explicit `scope` (fleet | agent-lanes
+    | [named hosts]) + `finding_states`/`finding_triage`; all 23 servers scoped, google-home-lan -> [mn01]. per_host
+    narrows further; unknown scope fails loud.
+
+    - ssot.reports.yml + scripts/lib/report.py: `no-config` added to '
