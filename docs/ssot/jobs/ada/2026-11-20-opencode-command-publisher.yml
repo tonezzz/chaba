@@ -7,8 +7,11 @@ job: "card ada-opencode-command-publisher-20261108 (ADA-1224); scope
   answer: narrow"
 host: idc02
 repo: chaba
-branch: dispatch/20261120-132007-canonicalize-the-opencode-ada- (committed,
-  NOT pushed — dispatcher merge path)
+branch: dispatch/20261120-132007-canonicalize-the-opencode-ada- (on origin;
+  merged onto master 2026-11-21 as bb97e0d6f2 inside
+  dispatch/20261121-062509-canonicalize-the-opencode-ada- after two
+  lost-merge retries — the tony-omen merge e86b46d6c9 was never pushed
+  before its worktree was GC'd)
 
 summary: >
   The /ada sweep native-menu block was added live 2026-11-08/09 and
@@ -24,8 +27,13 @@ summary: >
   tmp+mv atomicity and post-landing sha verify.
 
 live_state_verified:
+  workspace_20261121: "re-verified from tony-macbook: deployed ada.md is
+    now sha 077aaff3 = canonical — the menu-restored copy landed live
+    (manual fix post-ADA0186), ada-code.service active, /ada sweep +
+    Sweep Verdicts present; sync op is already a no-op"
   workspace: "~/.local/share/ada-code/workspace/.opencode/commands/ada.md
-    — deployed 10,007B sha 29c878cc = pre-menu content"
+    — deployed 10,007B sha 29c878cc = pre-menu content (as of
+    2026-11-20)"
   drift: "ada.md.bak-ADA0186-20261119-152809 carries the Sweep Verdicts
     native-question block (the only diff vs live) — canonical seeded
     from it, sha 077aaff3"
@@ -62,8 +70,9 @@ implemented:
 not_done_gates:
   - "board-api restart on idc03 after merge — endpoint inert until the
     service reloads (chaba-board-api.service)"
-  - "first real sync (deploy menu-restored ada.md to idc02 workspace) —
-    production surface change, run via the door post-merge"
+  - "first real sync via the door — OBSOLETE as of 2026-11-21: deployed
+    sha already equals canonical 077aaff3 (sync is a verified no-op);
+    the gate that remains is exercising the door post-activation"
   - "ada-voice MCP wrapper (ada_command_publish tool) — follow-up card
     filed; ada_mcp.py is canonical in tonezzz/ada-voice, not chaba"
   - "/ada publish-command section in canonical ada.md — add after the
