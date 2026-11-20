@@ -1,7 +1,7 @@
 id: jules-session-create-failed-precondition
 title: 'Jules executor: session creation returns FAILED_PRECONDITION on tony-omen'
 column: backlog
-updated: 2026-11-19 20:02
+updated: 2026-11-20 12:32
 brief: 'Two independent Jules dispatch attempts on tony-omen failed before agent work on 2026-11-17: ADA-1279 at
   09:01 and ADA-1084 at 09:14 ICT. Both journaled HTTP 400 POST /sessions with status FAILED_PRECONDITION. OPS-1049
   (executor wiring) is done; OPS-1295 covers a different case after a session exists (AWAITING_USER_FEEDBACK). Determine
@@ -98,3 +98,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 12:32
+  from: devin
+  text: 'Fresh evidence 2026-11-20: POST /sessions returns 400 FAILED_PRECONDITION ''Precondition check failed.''
+    for both tonezzz/chaba@master and tonezzz/ada-voice@main from tony-omen, with a valid key and both repos connected
+    (GET /sources ok). No session was created; quota use stayed at 0; no stuck sessions; last successful create
+    was 2026-11-11. This matches the Jules wind-down notice (read-only until 2026-12-31, creation disabled account-wide).
+    Root cause is the provider EOL, not request construction'
