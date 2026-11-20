@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
-column: review
-updated: 2026-11-20 18:54
+column: done
+updated: 2026-11-20 18:57
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -118,7 +118,7 @@ action:
   attempts: 1
   result: 'exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`. | devin-task-20261120-172937-goal-land-the-chaba-ansible-ho.service:
     Consumed 2min 5.732s CPU time over 5min 53.069s wall clock time, 678.1M memory peak.'
-  verified: false
+  verified: true
   sweep:
     shadow_blocked: 2c9b819ded2d
 comms:
@@ -200,7 +200,16 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:57
+  from: chaba
+  text: 'merge-sweep: merged b9596b03 (dispatch/20261120-172937-goal-land-the-chaba-ansible-ho from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261120-172937-goal-land-the-chaba-ansible-ho.md)
+    — auto-closed'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-20 18:57
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261120-172937-goal-land-the-chaba-ansible-ho.md
