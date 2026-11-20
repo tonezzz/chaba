@@ -2,7 +2,7 @@ id: jules-lane-feedback-state-handling
 title: 'jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail — map the state to card surface,
   not death'
 column: backlog
-updated: 2026-11-20 18:35
+updated: 2026-11-20 18:36
 priority: high
 tags:
 - devnest
@@ -351,5 +351,12 @@ comms:
 - at: 2026-11-20 18:35
   from: tony
   text: put on hold
+- at: 2026-11-20 18:36
+  from: ada
+  text: 'Retry loop diagnosed 2026-11-20: the work here fixes AWAITING_USER_FEEDBACK handling in the Jules lane,
+    but that lane is retired (OPS-0156 / ssot.devnest-lanes.yml: Jules read-only account-wide until 2026-12-31,
+    no new sessions). There will be no new Jules sessions to handle, so this card can never be validated and retry
+    just re-queues a guaranteed failure. Card held to stop churn. Recommend close as obsolete (or reopen only if
+    a Jules successor lane is approved).'
 claim:
   since: 2026-11-20 18:18
