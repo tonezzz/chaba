@@ -2,7 +2,7 @@ id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
 column: backlog
-updated: 2026-11-20 18:44
+updated: 2026-11-20 18:45
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -60,3 +60,7 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-20 18:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
