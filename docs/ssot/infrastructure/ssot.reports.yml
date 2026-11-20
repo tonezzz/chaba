@@ -416,6 +416,108 @@ nodes:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
       - docs/ssot/jobs/infrastructure/2026-10-05-disk-trend-watch.yml
     children: []
+  # --- MCP inventory domain (card KNB-0019) ---
+  # One L1 producer per declared MCP host. Each observes the Devin /
+  # Windsurf / Codeium / OpenCode config surfaces on that host and compares
+  # them with ssot.mcp.yml. L0 artifacts are append-only; meta carries the
+  # observed state. `observe: remote` because producers run at the host.
+  - id: mcp-inventory/tony_omen
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on tony-omen
+    generator: python3 scripts/mcp-inventory.py --host tony_omen
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "tony_omen-*.yml"
+    meta: reports/mcp-inventory/meta.tony_omen.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children: []
+  - id: mcp-inventory/tony_dell
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on tony-dell
+    generator: python3 scripts/mcp-inventory.py --host tony_dell
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "tony_dell-*.yml"
+    meta: reports/mcp-inventory/meta.tony_dell.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children: []
+  - id: mcp-inventory/mn01
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on mn01
+    generator: python3 scripts/mcp-inventory.py --host mn01
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "mn01-*.yml"
+    meta: reports/mcp-inventory/meta.mn01.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/idc02
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on idc02
+    generator: python3 scripts/mcp-inventory.py --host idc02
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "idc02-*.yml"
+    meta: reports/mcp-inventory/meta.idc02.yml
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/idc03
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on idc03 (MDDB primary)
+    generator: python3 scripts/mcp-inventory.py --host idc03
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "idc03-*.yml"
+    meta: reports/mcp-inventory/meta.idc03.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/michael-ha
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on michael-ha appliance
+    generator: python3 scripts/mcp-inventory.py --host michael-ha
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "michael-ha-*.yml"
+    meta: reports/mcp-inventory/meta.michael-ha.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-fleet
+    layer: L2-domain
+    purpose: Cross-host MCP inventory drift — configured vs declared, with unreachable hosts kept visible
+    generator: python3 scripts/mcp-inventory.py --consolidate
+    cadence: 24h
+    output: reports/mcp-fleet
+    artifact_pattern: "MCP-FLEET-REPORT.*"
+    meta: reports/mcp-fleet/meta.yml
+    publish:
+      sink: wiki-reports
+      wiki_title: Reports:Fleet-MCP-Inventory
+      event_kind: report
+      visibility: private
+      via: board-api /publish
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children:
+      - mcp-inventory/tony_omen
+      - mcp-inventory/tony_dell
+      - mcp-inventory/mn01
+      - mcp-inventory/idc02
+      - mcp-inventory/idc03
+      - mcp-inventory/michael-ha
   - id: fleet
     layer: L2-domain
     purpose: Cross-host rollup — delta trend + resource min/max over window
@@ -760,6 +862,7 @@ nodes:
     overflow_order: [recent-timeline, raw-data, host-loads, producers, domains]
     children:
       - fleet
+      - mcp-fleet
       - audit-suite
       - ada-memory-report
       - overnight-assessment

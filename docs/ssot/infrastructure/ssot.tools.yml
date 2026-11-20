@@ -16,6 +16,15 @@ overview:
     tools.d vocabulary; secondary mirrors manifest secondary_allowed. backend is the service the call reaches; transport is how the agent invokes
     it.
   inventoried: 2026-11-18 from ada-voice @ Nov 13-18 checkout (tony-omen) + devin mcp_config.json — re-run inventory before trusting counts.
+  observation:
+    live_inventory: reports/mcp-fleet/MCP-FLEET-REPORT.md
+    producer: scripts/mcp-inventory.py
+    report_node: mcp-fleet
+    note: >-
+      Declared rows below are the versioned catalog; the L2 report is the
+      observed per-host surface (configured vs declared, running hints).
+      Re-run the producer before trusting per-host state; do not copy live
+      counts into this registry. Card KNB-0019.
   related:
   - docs/kb/agent-tool-federation.md — registry->surface generator design + migration order
   - infrastructure/ssot.mcp.yml — MCP server infra definitions (endpoints, wrappers)
