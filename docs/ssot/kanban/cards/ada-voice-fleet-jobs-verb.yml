@@ -1,0 +1,32 @@
+id: ada-voice-fleet-jobs-verb
+title: 'ada-voice: wire fleet-jobs report verb — read rendered fleet-jobs-report CMS page (sub-second, never live-compute)'
+column: backlog
+updated: 2026-11-20 20:10
+priority: medium
+tags:
+- ada
+- ada-voice
+- report
+- follow-up
+spec: 'Follow-up to fleet-jobs-report-and-ada-verb. Contract: docs/kb/ada-report-verb-contract.md (chaba repo).
+
+
+  Implement a report-verb tool in ada-voice that answers "how are jobs" / "job status" / "what is the fleet doing"
+  by reading the rendered artifact only:
+
+  - primary: POST {MDDB}/get {collection:ada-cms-pages, key:fleet-jobs-report, lang:en} -> contentMd
+
+  - freshness gate: meta.updated vs fresh_for 4h; stale -> answer "as of <updated>"; missing -> say the report has
+  not been generated
+
+  - NEVER: run the aggregator, scan board-api /cards or /queue, psql, ssh, or systemctl on a voice turn
+
+  - producer: fleet-jobs-report job on idc03 every 4h (ssot.jobs.yml), page already live in ada-cms-pages'
+action:
+  type: manual
+  repo: ada-voice
+ref: ADA-0041
+comms:
+- at: 2026-11-20 20:10
+  from: devin
+  text: card captured via board-api
