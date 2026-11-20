@@ -63,6 +63,27 @@ fleet_observation:
     opencode: ~/.config/opencode/opencode.json
   expected_statuses:
     - operational
+  # Declared-vs-observed scope model (card OPS-0025). Every server in
+  # `servers` carries an explicit scope; absence of a `scope:` key is a
+  # declaration bug and the producer fails loudly. Host rows in `hosts`
+  # are observation targets, not scope — only `agent_lane_hosts` decides
+  # which hosts are expected to carry the global agent-lane servers.
+  scope_model:
+    default: agent-lanes
+    agent_lane_hosts: [tony_omen, tony_dell]
+    values:
+      fleet: expected on every observed host that has a config surface
+      agent-lanes: expected only on agent_lane_hosts
+      hosts: a YAML list of host keys — expected only on those hosts
+    rule: >-
+      Scope is evaluated first, then a server's per_host map narrows the
+      set further. Unknown scope values fail the producer instead of
+      silently widening what counts as missing.
+  finding_states: [open, carded, suppressed]
+  # Human-owned triage of stable finding IDs (open | carded | suppressed).
+  # Producers read this map and annotate findings; they never write it.
+  # `suppressed` requires a reason; `until` (YYYY-MM-DD) expires it.
+  finding_triage: {}
   note: >-
     L0 artifacts under reports/mcp-inventory/ are append-only; each host's
     meta.*.yml carries observed state. An unreachable host is reported as
@@ -95,6 +116,7 @@ servers:
     - get_file_contents
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -110,6 +132,7 @@ servers:
       LLAMA_URL: profile.service_urls.llama_server_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     per_host:
       tony_dell:
         implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-gpu-ssh.sh
@@ -128,6 +151,7 @@ servers:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     per_host:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
@@ -154,6 +178,7 @@ servers:
       POSTGRES_CONNECTION_STRING: profile.service_urls.postgres_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -169,6 +194,7 @@ servers:
     - get_insight
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -183,6 +209,7 @@ servers:
       PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     single_instance: true
     status: operational
+    scope: agent-lanes
     notes: 'Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
 
       The playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
@@ -208,6 +235,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -224,6 +252,7 @@ servers:
     url: https://mcp.alphavantage.co/mcp?apikey=<PRIVATE_API_KEY>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -239,6 +268,7 @@ servers:
     args: []
     single_instance: false
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -263,6 +293,7 @@ servers:
     - /home/tony/CascadeProjects/trade/.docs-mcp
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -278,6 +309,7 @@ servers:
       WEAVIATE_URL: profile.service_urls.weaviate_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     per_host:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
@@ -295,6 +327,7 @@ servers:
       WORKFLOWS_LOG_LEVEL: INFO
     single_instance: false
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -322,6 +355,7 @@ servers:
     url: http://100.102.134.91:9000/mcp
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -351,6 +385,7 @@ servers:
     filter: none
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -386,6 +421,7 @@ servers:
     filter: none
     single_instance: true
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -407,6 +443,7 @@ servers:
     url: http://tony-omen:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -425,6 +462,7 @@ servers:
     url: http://idc02:9585/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -443,6 +481,7 @@ servers:
     url: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -461,6 +500,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -489,6 +529,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -514,6 +555,7 @@ servers:
     - compare_gs_runs
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -528,6 +570,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: [mn01]
     config_files:
     - devin: true
     - windsurf: false
@@ -562,6 +605,7 @@ servers:
     filter: none
     single_instance: false
     status: blocked
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false

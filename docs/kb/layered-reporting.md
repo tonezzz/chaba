@@ -3,7 +3,7 @@ title: Layered Reporting Standard
 description: Memory-system report hierarchy — raw logs/data at L0 up through producer and domain rollups to the L3 system overview
 tags: [reports, memory, ssot, standard, operations]
 created: "2026-09-26"
-updated: "2026-09-26"
+updated: "2026-11-20"
 category: operations
 status: active
 related:
@@ -40,8 +40,16 @@ generated from the one below, never hand-written.
   of a run (`scripts/lib/report.py::write_meta`). Fields: `node`, `layer`,
   `purpose`, `generated_by`, `generated_at`, `status`, `summary`,
   `sources`, `children`, `extra`.
-- **Status enum**: `ok`, `delta`, `stale`, `error`, `missing`,
-  `untracked`, `remote`, `planned`.
+- **Status enum** (canonical in `ssot.reports.yml` `status_enum`): `ok`,
+  `delta`, `error`, `stale`, `missing`, `unreachable`, `no-config`, `planned`,
+  `remote`, `dormant`; `untracked` is a derived observed state emitted by
+  `resolve_node()` (artifacts without meta), not a producer-declared value.
+  Target-side states are informational, not producer failures: `unreachable`
+  means the generator ran but its audit target did not answer;
+  `no-config` means the target answered but carries no producer config
+  surfaces (e.g. an infrastructure host with no agent lane). Neither is a
+  declaration drift nor an alarm — both are distinct from `error`
+  (producer-side crash) and `missing` (declared node never produced meta).
 - **Timeline**: `~/var/chaba/reports/timeline.jsonl` — append-only, one
   JSON line per completed generation (`append_timeline`). Outside the repo
   because it grows forever (same as `~/var/chaba/health/`). Override with

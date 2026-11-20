@@ -12,9 +12,16 @@ Part of the layered reporting standard (docs/ssot/infrastructure/ssot.reports.ym
 * ``--consolidate``   L2 domain ``mcp-fleet``. Renders
   reports/mcp-fleet/MCP-FLEET-REPORT.md + meta.yml from the L1 metas/artifacts.
 
+Expected sets are computed from `fleet_observation.scope_model` in
+ssot.mcp.yml: a server's `scope` (fleet | agent-lanes | [named hosts]) plus
+its optional `per_host` narrowing. Findings carry stable IDs and human-owned
+triage state read from `fleet_observation.finding_triage` — this producer
+never writes triage state or card workflow fields.
+
 Never writes secrets: every string is redacted before it reaches an artifact.
 Declared truth stays in ssot.mcp.yml; this script only observes and reports.
-Card: KNB-0019 (fleet-mcp-inventory-report-wiki-edu).
+Cards: KNB-0019 (fleet-mcp-inventory-report-wiki-edu), OPS-0025
+(mcp-inventory-scope-status-standard — scope/status/finding standard).
 """
 from __future__ import annotations
 
@@ -164,23 +171,54 @@ def running_processes(host: str) -> list[str]:
     return lines[:200]
 
 
+def observation_config(ssot: dict) -> dict:
+    return ssot.get("fleet_observation") or {}
+
+
+def in_scope(fleet: dict, name: str, spec: dict, host: str) -> bool:
+    """Evaluate a server's declared scope, then its per_host narrowing.
+
+    Unknown or absent scope is a declaration bug: fail loudly so a bad
+    SSOT edit cannot silently widen the expected set into false deltas.
+    """
+    model = fleet.get("scope_model") or {}
+    if "scope" not in spec:
+        raise ValueError(
+            f"ssot.mcp.yml: server {name!r} has no scope "
+            "(fleet_observation.scope_model requires one)")
+    scope = spec["scope"]
+    if isinstance(scope, list):
+        applies = host in scope
+    elif scope == "fleet":
+        applies = True
+    elif scope == "agent-lanes":
+        applies = host in set(model.get("agent_lane_hosts") or [])
+    else:
+        raise ValueError(
+            f"ssot.mcp.yml: server {name!r} has unsupported scope {scope!r}")
+    if not applies:
+        return False
+    per = spec.get("per_host")
+    if isinstance(per, dict) and per and host not in per:
+        return False
+    return True
+
+
 def declared_for_host(ssot: dict, host: str) -> dict:
-    """Declared server rows applicable to a host, with per_host overrides."""
-    servers = ssot.get("servers") or {}
+    """Declared server rows in scope for a host, with per_host overrides."""
+    fleet = observation_config(ssot)
     rows = {}
-    for name, spec in servers.items():
+    for name, spec in (ssot.get("servers") or {}).items():
         if not isinstance(spec, dict):
             continue
+        if not in_scope(fleet, name, spec, host):
+            continue
         row = dict(spec)
-        override = (spec.get("per_host") or {}).get(host)
+        override = (row.get("per_host") or {}).get(host)
         if isinstance(override, dict):
             row.update(override)
         elif override is not None:
             row["implementation"] = override
-        # A server is in scope everywhere unless it pins per_host keys.
-        per = spec.get("per_host")
-        if isinstance(per, dict) and per and host not in per:
-            continue
         rows[name] = {
             "status": str(row.get("status") or "unknown"),
             "implementation": redact(str(row.get("implementation") or "")),
@@ -188,6 +226,43 @@ def declared_for_host(ssot: dict, host: str) -> dict:
                 "stdio" if row.get("implementation") else "unknown"),
         }
     return rows
+
+
+def finding_id(host: str, kind: str) -> str:
+    """Stable across daily runs: one finding per host+kind, not per name set."""
+    slug = re.sub(r"[^a-z0-9]+", "-", f"{host}-{kind}".lower()).strip("-")
+    return f"mcp-{slug}"
+
+
+def triage_for(fleet: dict, fid: str, today: str) -> dict:
+    """Annotate a finding with human-owned triage; never write it back."""
+    states = set(fleet.get("finding_states") or
+                 ["open", "carded", "suppressed"])
+    record = (fleet.get("finding_triage") or {}).get(fid) or {}
+    state = str(record.get("state") or "open")
+    if state not in states:
+        raise ValueError(
+            f"ssot.mcp.yml: finding {fid!r} has invalid triage state {state!r}")
+    result = {"state": state, "reason": str(record.get("reason") or ""),
+              "card": str(record.get("card") or ""),
+              "by": str(record.get("by") or ""),
+              "until": str(record.get("until") or "")}
+    if state == "suppressed":
+        if not result["reason"]:
+            raise ValueError(
+                f"ssot.mcp.yml: suppressed finding {fid!r} needs a reason")
+        if result["until"] and result["until"] < today:
+            result["state"] = "open"
+            result["expired"] = True
+    return result
+
+
+def make_finding(fleet: dict, host: str, kind: str, severity: str,
+                 detail: str, servers: list[str], today: str) -> dict:
+    fid = finding_id(host, kind)
+    return {"id": fid, "host": host, "kind": kind, "severity": severity,
+            "detail": detail, "servers": sorted(servers),
+            "triage": triage_for(fleet, fid, today)}
 
 
 # --- L1 producer ------------------------------------------------------------
@@ -205,6 +280,8 @@ def produce_host(ssot: dict, host: str, force_local: bool = False) -> dict:
 
 
 def _produce_host(ssot: dict, host: str) -> dict:
+    fleet = observation_config(ssot)
+    today = datetime.now().astimezone().date().isoformat()
     stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S")
     configs, reachable = read_configs(host)
     procs = running_processes(host) if reachable else []
@@ -213,39 +290,68 @@ def _produce_host(ssot: dict, host: str) -> dict:
 
     missing = sorted(set(declared) - set(configured))
     extra = sorted(set(configured) - set(declared))
-    # retired/blocked declarations are not expected to be configured.
+    # Only the statuses declared in SSOT are expected to be configured;
+    # retired-*/blocked declarations are not findings.
+    expected = set(fleet.get("expected_statuses") or ["operational"])
     active_declared = sorted(
-        n for n, s in declared.items()
-        if not str(s["status"]).startswith(("retired", "blocked"))
+        n for n, s in declared.items() if s["status"] in expected
     )
     missing_active = sorted(set(active_declared) - set(configured))
 
+    findings = []
     if not reachable:
         status = "unreachable"
         summary = f"{host}: no config surfaces answered (SSH/probe failed)"
         # An unprobed host has no observed configuration — reporting its
         # servers as "missing" would be a false finding.
         missing_active = []
+        findings.append(make_finding(
+            fleet, host, "host-unreachable", "warn",
+            "host did not answer its SSH/config probes; nothing observed",
+            [], today))
     elif not configured:
         status = "no-config"
         summary = f"{host}: reachable, no MCP client configs present (0 configured)"
         # An infra host without agent configs is not a declaration drift:
-        # global server entries apply to agent lanes, not to every host.
+        # global agent-lane entries are not expected there.
         missing_active = []
     elif missing_active:
         status = "delta"
         summary = (f"{host}: {len(configured)} configured, "
-                   f"{len(missing_active)} active declared servers absent")
+                   f"{len(missing_active)} in-scope active servers absent")
+        findings.append(make_finding(
+            fleet, host, "missing-active", "warn",
+            "active servers declared in scope but absent from config surfaces",
+            missing_active, today))
+    elif not active_declared:
+        status = "ok"
+        summary = (f"{host}: {len(configured)} configured, no servers in scope "
+                   "(informational — not an agent-lane host)")
     else:
         status = "ok"
         summary = (f"{host}: {len(configured)} configured, "
-                   f"{len(active_declared)} active declared present")
+                   f"{len(active_declared)} in-scope active present")
 
+    if reachable and extra:
+        findings.append(make_finding(
+            fleet, host, "undeclared-configured", "info",
+            "configured on a client surface but not declared for this host",
+            extra, today))
+
+    scope = {
+        "default": str((fleet.get("scope_model") or {}).get("default") or
+                       "agent-lanes"),
+        "agent_lane": host in set((fleet.get("scope_model") or {}).get(
+            "agent_lane_hosts") or []),
+        "declared_in_scope": len(declared),
+        "active_in_scope": len(active_declared),
+    }
     artifact = {
         "node": f"mcp-inventory/{host}",
         "host": host,
         "observed_at": now_iso(),
         "ssh_name": ssh_name(host),
+        "scope": scope,
         "declared_count": len(declared),
         "active_declared": active_declared,
         "configured_count": len(configured),
@@ -253,6 +359,7 @@ def _produce_host(ssot: dict, host: str) -> dict:
         "missing_declared": missing,
         "missing_active": missing_active,
         "undeclared_configured": extra,
+        "findings": findings,
         "declared": declared,
         "configs": configs,
         "running_process_hints": procs,
@@ -268,7 +375,7 @@ def _produce_host(ssot: dict, host: str) -> dict:
         meta_path,
         node=f"mcp-inventory/{host}",
         layer="L1-producer",
-        purpose="Observed MCP server inventory and declared-vs-configured drift",
+        purpose="Observed MCP inventory, scoped declaration drift and triaged findings",
         generated_by=f"scripts/mcp-inventory.py --host {host}",
         status=status,
         summary=summary,
@@ -277,8 +384,10 @@ def _produce_host(ssot: dict, host: str) -> dict:
         extra={
             "configured": len(configured),
             "declared": len(declared),
+            "scope": scope,
             "missing_active": missing_active,
             "undeclared_configured": extra,
+            "findings": findings,
         },
     )
     append_timeline(f"mcp-inventory/{host}", "L1", status, summary,
@@ -295,14 +404,17 @@ def consolidate(ssot: dict) -> dict:
         meta = load_yaml_safe(L1_DIR / f"meta.{host}.yml")
         if not meta:
             continue
+        extra = meta.get("extra") or {}
         rows.append({
             "host": host,
             "status": meta.get("status", "missing"),
             "summary": meta.get("summary", ""),
             "generated_at": meta.get("generated_at", ""),
-            "configured": (meta.get("extra") or {}).get("configured", 0),
-            "declared": (meta.get("extra") or {}).get("declared", 0),
-            "missing_active": (meta.get("extra") or {}).get("missing_active") or [],
+            "configured": extra.get("configured", 0),
+            "declared": extra.get("declared", 0),
+            "scope": extra.get("scope") or {},
+            "missing_active": extra.get("missing_active") or [],
+            "findings": extra.get("findings") or [],
         })
 
     registry = load_yaml_safe(REPO / "docs" / "ssot" / "infrastructure"
@@ -314,49 +426,96 @@ def consolidate(ssot: dict) -> dict:
     counts = {}
     for r in rows:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
+    findings = [f for r in rows for f in r["findings"]]
+    triage_counts = {}
+    for f in findings:
+        state = str((f.get("triage") or {}).get("state") or "open")
+        triage_counts[state] = triage_counts.get(state, 0) + 1
     drift = [r for r in rows if r["status"] in ("delta", "unreachable", "error")]
     # "no-config" is informational: the host answered but runs no agent lane.
     status = "delta" if drift else "ok"
     headline = (f"{len(rows)} hosts observed; "
                 f"{len(drift)} with findings "
-                f"({', '.join(f'{k}={v}' for k, v in sorted(counts.items()))})")
+                f"({', '.join(f'{k}={v}' for k, v in sorted(counts.items()))}); "
+                f"{len(findings)} findings "
+                f"({', '.join(f'{k}={v}' for k, v in sorted(triage_counts.items()))})")
+
+    fleet = observation_config(ssot)
+    model = fleet.get("scope_model") or {}
+    agent_lanes = ", ".join(model.get("agent_lane_hosts") or []) or "none"
+    named = ", ".join(
+        f"{name} -> {','.join(spec['scope'])}"
+        for name, spec in (ssot.get("servers") or {}).items()
+        if isinstance(spec, dict) and isinstance(spec.get("scope"), list)
+    ) or "none"
+    expected = ", ".join(fleet.get("expected_statuses") or []) or "none"
 
     generated_at = now_iso()
     md = ["# Fleet MCP Inventory Report", "",
           f"_Generated: {generated_at}_  ",
           "_Source: scripts/mcp-inventory.py --consolidate (SSOT: ssot.mcp.yml)_",
           "", "## Headline", "", headline, "",
+          "## Scope model", "",
+          f"- Default scope: `{model.get('default') or 'agent-lanes'}`; "
+          f"agent-lane hosts: `{agent_lanes}`.",
+          f"- Named-host exceptions: `{named}`.",
+          f"- Expected declaration statuses: `{expected}`; other statuses "
+          "(retired/blocked) are never counted as missing.",
+          "",
           "## Per-host state", "",
-          "| Host | Status | Configured | Declared | Summary |",
+          "| Host | Status | Configured | In scope | Summary |",
           "|---|---|---:|---:|---|"]
     wiki = ["= Fleet MCP Inventory Report =", "",
             f"_Generated: {generated_at}_", "",
             "Source: <code>scripts/mcp-inventory.py --consolidate</code> "
             "(SSOT: <code>ssot.mcp.yml</code>).", "",
             "== Headline ==", "", headline, "",
+            "== Scope model ==", "",
+            f"* Default scope: <code>{model.get('default') or 'agent-lanes'}</code>; "
+            f"agent-lane hosts: <code>{agent_lanes}</code>.",
+            f"* Named-host exceptions: <code>{named}</code>.",
+            f"* Expected declaration statuses: <code>{expected}</code>; other "
+            "statuses (retired/blocked) are never counted as missing.", "",
             "== Per-host state ==", "",
             '{| class="wikitable"',
-            "! Host !! Status !! Configured !! Declared !! Summary"]
+            "! Host !! Status !! Configured !! In scope !! Summary"]
     for r in rows:
+        in_scope_n = (r["scope"] or {}).get("active_in_scope", 0)
         md.append(f"| {r['host']} | {r['status']} | {r['configured']} | "
-                  f"{r['declared']} | {r['summary']} |")
+                  f"{in_scope_n} | {r['summary']} |")
         wiki.append("|-")
         wiki.append(f"| {r['host']} || {r['status']} || {r['configured']} "
-                    f"|| {r['declared']} || {r['summary']}")
+                    f"|| {in_scope_n} || {r['summary']}")
     wiki.append("|}")
-    md += ["", "## Findings", ""]
-    wiki += ["", "== Findings ==", ""]
-    if drift:
-        for r in drift:
-            md.append(f"- **{r['host']}** ({r['status']}): {r['summary']}")
-            wiki.append(f"* '''{r['host']}''' ({r['status']}): {r['summary']}")
-            if r["status"] not in ("unreachable", "no-config") and r["missing_active"]:
-                missing = ", ".join(r["missing_active"])
-                md.append(f"  - active declared but not configured: {missing}")
-                wiki.append(f"** Active declared but not configured: {missing}")
+    md += ["", "## Findings", "",
+           "Triage state is human-owned in ssot.mcp.yml "
+           "(open | carded | suppressed); producers only annotate it.", ""]
+    wiki += ["", "== Findings ==", "",
+             "Triage state is human-owned in <code>ssot.mcp.yml</code> "
+             "(open | carded | suppressed); producers only annotate it.", ""]
+    if findings:
+        for f in findings:
+            t = f.get("triage") or {}
+            state = str(t.get("state") or "open")
+            sev = str(f.get("severity") or "info")
+            servers = ", ".join(f.get("servers") or []) or "none"
+            tail = ""
+            if t.get("card"):
+                tail += f"; card: {t['card']}"
+            if t.get("reason"):
+                tail += f"; reason: {t['reason']}"
+            if t.get("until"):
+                tail += f"; until: {t['until']}"
+            if t.get("expired"):
+                tail += "; suppression expired -> open"
+            md.append(f"- `{f['id']}` — **{state}**/{sev} — {f['host']}: "
+                      f"{f['detail']} — servers: `{servers}`{tail}")
+            wiki.append(f"* <code>{f['id']}</code> — '''{state}'''/{sev} — "
+                        f"{f['host']}: {f['detail']} — servers: "
+                        f"<code>{servers}</code>{tail}")
     else:
-        md.append("_No drift — every observed host matched its declaration._")
-        wiki.append("_No drift — every observed host matched its declaration._")
+        md.append("_No findings in this run._")
+        wiki.append("_No findings in this run._")
 
     L2_DIR.mkdir(parents=True, exist_ok=True)
     art = L2_DIR / "MCP-FLEET-REPORT.md"
@@ -367,7 +526,7 @@ def consolidate(ssot: dict) -> dict:
         L2_DIR / "meta.yml",
         node="mcp-fleet",
         layer="L2-domain",
-        purpose="Cross-host MCP inventory drift and declared-vs-observed rollup",
+        purpose="Cross-host MCP inventory drift, scoped declarations and triaged findings",
         generated_by="scripts/mcp-inventory.py --consolidate",
         status=status,
         summary=headline,
@@ -375,7 +534,10 @@ def consolidate(ssot: dict) -> dict:
                  sorted(L1_DIR.glob("*.yml")) if a.name.startswith("meta.")],
         children=[f"mcp-inventory/{h}" for h in hosts],
         inputs_at=inputs,
-        extra={"hosts": len(rows), "counts": counts, "chars": len("\n".join(md))},
+        extra={"hosts": len(rows), "counts": counts,
+               "triage_counts": triage_counts,
+               "finding_ids": [f["id"] for f in findings],
+               "chars": len("\n".join(md))},
     )
     append_timeline("mcp-fleet", "L2", status, headline,
                     ref=str(art.relative_to(REPO)))
@@ -399,7 +561,8 @@ BOARD_API = os.environ.get(
     "BOARD_API_URL", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 WIKI_TITLE = os.environ.get(
     "MCP_FLEET_WIKI_TITLE", "Reports:Fleet-MCP-Inventory")
-CARD_ID = "fleet-mcp-inventory-report-wiki-edu"
+CARD_ID = os.environ.get(
+    "MCP_FLEET_CARD_ID", "fleet-mcp-inventory-report-wiki-edu")
 
 
 def publish_report() -> dict:

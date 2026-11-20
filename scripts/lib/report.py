@@ -27,11 +27,13 @@ REPORTS_ROOT = Path(
 TIMELINE_PATH = REPORTS_ROOT / "timeline.jsonl"
 
 # Contract vocab (ssot.reports.yml status_enum): ok, delta, error, stale,
-# missing, unreachable, planned, remote, dormant. `untracked` is a derived
-# observed state — resolve_node emits it for artifacts-without-meta; it is
-# not part of the producer contract vocabulary.
+# missing, unreachable, no-config, planned, remote, dormant. `untracked` is a
+# derived observed state — resolve_node emits it for artifacts-without-meta;
+# it is not part of the producer contract vocabulary. `no-config` is a
+# target-side informational state: the host answered but carries no producer
+# config surfaces (infra host, no agent lane) — never failure, never drift.
 STATUSES = (
-    "ok", "delta", "stale", "error", "unreachable",
+    "ok", "delta", "stale", "error", "unreachable", "no-config",
     "missing", "untracked", "remote", "planned", "dormant",
 )
 
