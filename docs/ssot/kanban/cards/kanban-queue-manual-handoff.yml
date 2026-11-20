@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
 column: backlog
-updated: 2026-11-20 10:58
+updated: 2026-11-20 11:45
 priority: high
 tags:
 - kanban
@@ -49,6 +49,13 @@ comms:
 - at: 2026-11-20 10:58
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-20 11:45
+  from: devin
+  text: 'Write-door-first implemented on branch fix/knb-0013-queue-truth @ 94805e79010 (local, not pushed/deployed).
+    board-api now refuses to arm manual executor/lane/type or unserved action types, parks legacy queued manual
+    cards as idle+awaiting_action, and GET /queue reports human_waiting (kind human|unserved, owner, next_action)
+    separately from claimable queued. answer-sweep and kanban-dispatch got the same manual executor/lane guard.
+    Tests: 151 focused board tests + board-api selftest passed; execut'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
