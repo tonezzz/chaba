@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-20 20:17
+updated: 2026-11-20 20:21
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -215,6 +215,11 @@ comms:
     8 lesson(s): [ada-expert-consult-tool] merge-s; [ada-expert-consult-tool] merge-sweep: no session/worktree found
     for devin-task-; [ada-ocb-bridge-version] merge-sweep: devin-task-20261117-221256-in-ada-voice-op; [ada-ocb-session-model-auth]
     finished (failed): exit=1 -task-'
+- at: 2026-11-20 20:21
+  from: devin
+  text: 'attempt3: feature was already merged (83c8098); found+fixed a gap — untracked copies inside a checkout
+    collided with canonical git-<sha>. Now append +copy-<hash> when file is untracked (porcelain ?? check). 8/8
+    bridge tests + 18/18 envelope tests pass; live probe: canonical=git-00090e9-dirty vs copy=git-00090e9-dirty+copy-880ff2.'
 review_kind: verify
 claim:
   since: 2026-11-20 20:16
