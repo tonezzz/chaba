@@ -2,7 +2,7 @@ id: idc02-mddb-follower-11023-replication-de-ee75be
 title: idc02 mddb follower (:11023) replication degraded — self-reports healthy:false ~93-238s lag while leader
   sees ~4.6s warning; LSN advances but health/lag metrics
 column: done
-updated: 2026-11-20 18:52
+updated: 2026-11-21 15:15
 priority: medium
 tags:
 - mddb
@@ -130,6 +130,11 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:15
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -145,3 +150,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-18 17:27
   note: verified — evidence checks green, closing itself
+awaiting_action: true
