@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: backlog
-updated: 2026-11-21 07:06
+updated: 2026-11-21 07:16
 priority: medium
 tags:
 - ssot
@@ -58,3 +58,10 @@ comms:
     warnings reported in summary — pre-existing). Ansible on tony-dell: not installed system-wide but runnable via
     pipx (ansible-core 2.22.0, config ~/CascadeProjects/chaba/ansible); tested successfully: playbook syntax-check
     OK, ping tony-dell OK, site.yml --check --diff --limit tony'
+- at: 2026-11-21 07:16
+  from: devin
+  text: '[2026-11-21 devin] Phase B+ draft: defined session-capture wiring targets and drafted ansible playbook
+    (local workspace). Targets: inventory group session_capture (initial tony-dell, tony-omen, idc03) with per-host
+    chaba_repo_path; primitives = ensure ~/.local/share/chaba dirs, deploy ~/.local/bin/chaba-session-capture helper
+    (recent-event/immediate-pin/render/session-end aids), install user chaba-render-memory.timer/service for periodic
+    render-memory --if-stale, report Devin hook integration po'
