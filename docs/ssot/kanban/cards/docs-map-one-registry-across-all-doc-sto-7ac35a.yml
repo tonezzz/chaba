@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
 column: backlog
-updated: 2026-11-21 13:33
+updated: 2026-11-21 16:22
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -93,6 +93,14 @@ comms:
 - at: 2026-11-21 13:33
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-11-21 16:22
+  from: ada
+  text: 'answered the-docs-map-one-registry-acro-3db200: ★ Redeploy runner-agent to idc02, idc03, and tony-macbook
+    from local repo and proceed with docs-map implementation on idc02. Verified 2026-11-21: runner-agent md5 05545e1c3065dab20cf3f920a941484e
+    matc'
+- at: 2026-11-21 16:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-docs-map-one-registry-acro-3db200
   ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation registry
@@ -107,7 +115,12 @@ requests:
     systematically resolved.
   - Isolate the docs-map task to run locally on the main development machine without using the distributed runners
     until they are updated.
-  status: open
+  status: answered
   at: 2026-11-21 01:20
   from: backlog-spec-enrich
   escalated_at: 2026-11-21 13:33
+  answer: '★ Redeploy runner-agent to idc02, idc03, and tony-macbook from local repo and proceed with docs-map implementation
+    on idc02. Verified 2026-11-21: runner-agent md5 05545e1c3065dab20cf3f920a941484e matches /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    on idc02,idc03,tony-macbook,tony-omen — drift blocker already cleared; proceed with docs-map implementation
+    (idc02 target as recommended), card still needs spec/triage/action.'
+awaiting_action: true
