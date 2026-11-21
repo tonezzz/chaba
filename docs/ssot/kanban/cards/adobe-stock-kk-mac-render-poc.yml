@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
 column: done
-updated: 2026-11-21 17:49
+updated: 2026-11-21 19:02
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -404,6 +404,10 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 19:02
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.executor=''jules'' names no known executor
+    — fix action.labels/host pins or teach a runner the capability'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
@@ -453,3 +457,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-14 11:37
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-105957-build-the-first-bounded-image-.md
+awaiting_action: true
