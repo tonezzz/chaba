@@ -1,7 +1,7 @@
 id: kk-mac-vision-lane-eval
 title: kk-mac vision lane eval — qwen2.5vl:7b screenshot/stock-image benchmark
 column: done
-updated: 2026-11-20 18:53
+updated: 2026-11-21 17:47
 spec: 'qwen2.5vl:7b is pulled on kk-mac but never evaluated. Build a small vision benchmark (~15-20 cases): stock-asset
   QA (does this image match description / detect defects) + UI screenshot triage. Reuse scripts/bench/card-judgment
   harness pattern; gate on kk-mac ssh+ollama+temp like kkmac_eval.sh. Run when kk-mac is awake. Verdict: usable
@@ -105,6 +105,10 @@ comms:
 - at: 2026-11-20 18:53
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
