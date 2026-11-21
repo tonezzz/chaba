@@ -56,8 +56,8 @@ class TestReportRendering(unittest.TestCase):
             "unevidenced_lane_uses": [],
         }
         text = report.render_report(
-            "20261117", [], {}, claims, [],
-            {"idc02": [], "tony-omen": []}, savings)
+            "20261117", {}, {}, claims, [],
+            {"idc02": [], "tony-omen": []}, savings, {})
 
         idc02 = text.split("## Host: idc02", 1)[1].split("## Host:", 1)[0]
         omen = text.split("## Host: tony-omen", 1)[1]
@@ -68,6 +68,63 @@ class TestReportRendering(unittest.TestCase):
         self.assertIn("| paid_frontier | 0 | 0 | 1 | 0 | 0 |", text)
         self.assertIn("| free-opencode | 1 | 1 | 30505 |", text)
         self.assertIn("not an avoided-cost estimate", text)
+
+
+class TestTimerRollup(unittest.TestCase):
+    ROLLUP_MD = """# Timer Timeline — fleet
+
+**4 timers** · 🟢 2 · 🟡 0 · 🔴 1 · ⬛ 1
+
+| timer | host | last run | result | state |
+|---|---|---|---|---|
+
+| `chaba-repo-sync` | tony-dell | 11-21 16:22 | success (exit 0) | 🟢 ok |
+| `cms-h3-publish` | tony-dell | 11-21 16:23 | exit-code (exit 1) | 🔴 FAILING |
+| `kanban-commit` | idc03 | 11-21 16:30 | success (exit 0) | 🟢 ok |
+| `ada-standby` | mn01 | - | success (exit 0) | ⬛ off |
+| `idc01` | — | — | — | — | ⚠️ unreachable (ssh timed out) | — |
+
+## ⚠️ Attention
+
+| `cms-h3-publish` | tony-dell | 11-21 16:23 | exit-code (exit 1) | 🔴 FAILING |
+| `idc01` | — | — | — | — | ⚠️ unreachable (ssh timed out) | — |
+"""
+
+    def _parse(self):
+        with patch.object(report, "_post_json",
+                          return_value={"contentMd": self.ROLLUP_MD,
+                                        "meta": {"updated": ["u1"]}}):
+            return report.read_timer_rollup()
+
+    def test_parses_states_per_host(self):
+        rollup = self._parse()
+        dell = rollup["hosts"]["tony-dell"]
+        self.assertEqual(dell["counts"]["ok"], 1)
+        self.assertEqual(dell["counts"]["failing"], 1)
+        self.assertEqual(
+            dell["timers"]["cms-h3-publish"]["state"], "failing")
+        self.assertEqual(rollup["hosts"]["mn01"]["counts"]["off"], 1)
+        self.assertEqual(rollup["counts"]["failing"], 1)
+        self.assertEqual(rollup["total"], 4)
+        self.assertEqual(rollup["updated"], "u1")
+
+    def test_unreachable_row_becomes_host_not_timer(self):
+        rollup = self._parse()
+        self.assertTrue(rollup["hosts"]["idc01"]["unreachable"])
+        self.assertNotIn("idc01", rollup["hosts"].get("—", {}))
+        self.assertNotIn("—", rollup["hosts"])
+
+    def test_attention_rows_not_double_counted(self):
+        rollup = self._parse()
+        # cms-h3-publish appears twice in the doc (table + Attention)
+        self.assertEqual(rollup["counts"]["failing"], 1)
+        self.assertEqual(rollup["total"], 4)
+
+
+class TestHostNorm(unittest.TestCase):
+    def test_generated_host_ids_normalize(self):
+        self.assertEqual(report.norm_host("tony_dell"), "tony-dell")
+        self.assertEqual(report.norm_host("idc03"), "idc03")
 
 
 class TestCmsPublication(unittest.TestCase):

@@ -1752,7 +1752,12 @@ jobs:
   dispatch: systemd
   every: 4h
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/fleet-jobs-report.py
-  note: 'deterministic — no LLM'
+  note: 'deterministic — no LLM. Reads timer-timeline CMS rollup (MDDB),
+    board-api /queue + /cards, LiteLLM ledger, lane-savings, generated
+    jobs.*.yml; writes reports/fleet-jobs-<date>.md + L2 meta and upserts
+    the fleet-jobs-report ada-cms-pages page via board-api /report (the
+    artifact Ada''s report verb reads — docs/kb/ada-report-verb-contract.md).
+    Declare only — install with render-jobs.py --host idc03 --install.'
 - id: mcp-fleet-report
   name: Fleet MCP inventory observation + L2 rollup
   host: idc03
