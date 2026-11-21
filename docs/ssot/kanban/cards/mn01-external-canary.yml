@@ -3,7 +3,7 @@ title: host-down alerting — ops-event on reachability flips
 column: done
 priority: medium
 created: 2026-10-10
-updated: 2026-11-20 18:52
+updated: 2026-11-21 17:46
 note: 'mn01 sat dark ~5 days (Oct 5-10) unnoticed — local mn01-canary can''t fire when the host is down. host-loads.py
   already detects unreachable every 5min; added transition detection: reachable->unreachable emits kind=ops-event
   type=host_down to ada-ha-events-tony (ops-digest picks it up), recovery emits host_up once. State sidecar at reports/host-loads/.prev-state.json.
@@ -94,4 +94,8 @@ comms:
 - at: 2026-11-20 18:52
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
