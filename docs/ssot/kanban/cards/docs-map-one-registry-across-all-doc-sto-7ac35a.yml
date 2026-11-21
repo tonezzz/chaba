@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
-column: doing
-updated: 2026-11-21 19:17
+column: done
+updated: 2026-11-21 19:18
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -145,6 +145,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261121-190814-produce-docs-ssot-infrastructu no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-21 19:18
+  from: chaba
+  text: 'merge-sweep: merged 2d3df7b7 (dispatch/20261121-190814-produce-docs-ssot-infrastructu from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261121-190814-produce-docs-ssot-infrastructu.md)
+    — auto-closed'
 requests:
 - id: the-docs-map-one-registry-acro-3db200
   ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation registry
@@ -200,7 +205,7 @@ spec: 'Produce docs/ssot/infrastructure/ssot.docs-map.yml as the single registry
   drift cleared).'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
@@ -211,5 +216,10 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-21 19:17
+  verified: true
 claim:
   since: 2026-11-21 19:06
+auto_close:
+  by: merge-sweep
+  at: 2026-11-21 19:18
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261121-190814-produce-docs-ssot-infrastructu.md
