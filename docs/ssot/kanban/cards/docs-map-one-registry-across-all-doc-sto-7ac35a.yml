@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
 column: backlog
-updated: 2026-11-21 17:49
+updated: 2026-11-21 19:04
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -105,6 +105,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 19:04
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-21 19:04
+  from: tony
+  text: queued for processing
 requests:
 - id: the-docs-map-one-registry-acro-3db200
   ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation registry
@@ -158,4 +164,10 @@ spec: 'Produce docs/ssot/infrastructure/ssot.docs-map.yml as the single registry
 
   Verify: registry exists, covers all named stores, and lookup recipes are concrete. Target host: idc02 (runner
   drift cleared).'
-awaiting_action: true
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
+claim: {}
