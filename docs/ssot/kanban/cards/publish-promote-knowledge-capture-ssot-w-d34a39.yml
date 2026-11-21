@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: backlog
-updated: 2026-11-21 17:02
+updated: 2026-11-21 17:36
 priority: medium
 tags:
 - ssot
@@ -78,3 +78,9 @@ comms:
     --check tony-dell/tony-omen/idc03 all ok=10 changed=4 failed=0 (Devin hooks missing on idc03 as expected). Cherry-picked
     5ac5800256 onto master (ansible.cfg fix already present, auto-dropped); YAML sanity OK; landed as cea237f72d.
     Opt-in draft, not applied; hook autopatch stays false.'
+- at: 2026-11-21 17:36
+  from: devin
+  text: '[2026-11-21 opencode] Hooks wired (dell first): ansible --tags helper deployed chaba-session-capture on
+    tony-dell + tony-omen; backed up + appended best-effort session-end capture call to both devin-session-end.sh
+    (60s timeout, autopatch still false). bash -n OK; helper test appended lifecycle events on both. idc03 has no
+    Devin hooks (expected). render-memory logs missing source files on dell (non-fatal).'
