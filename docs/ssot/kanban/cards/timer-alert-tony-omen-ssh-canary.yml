@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ssh-canary
 title: Timer ssh-canary on tony-omen failing
 column: backlog
-updated: 2026-11-21 17:44
+updated: 2026-11-22 00:31
 priority: high
 tags:
 - timer-alert
@@ -1084,6 +1084,10 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 00:31
+  from: devin
+  text: '[still suspicious] Last run (-) of `ssh-canary.service` on `tony-omen` result=success — investigate journal:
+    `journalctl --user -u ssh-canary.service` on the host. See CMS `timer-timeline-tony-omen`.'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the user-level systemd timer ssh-canary.service on the host
