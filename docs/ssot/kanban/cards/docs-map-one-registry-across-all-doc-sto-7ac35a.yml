@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
 column: backlog
-updated: 2026-11-21 16:22
+updated: 2026-11-21 17:38
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -123,4 +123,35 @@ requests:
     on idc02. Verified 2026-11-21: runner-agent md5 05545e1c3065dab20cf3f920a941484e matches /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     on idc02,idc03,tony-macbook,tony-omen — drift blocker already cleared; proceed with docs-map implementation
     (idc02 target as recommended), card still needs spec/triage/action.'
+brief: Single registry answering where each doc type lives across repo/gdrive/wiki/mddb/wp.
+spec: 'Produce docs/ssot/infrastructure/ssot.docs-map.yml as the single registry answering "where does each doc
+  type live?" across repo/gdrive/wiki/mddb/wp.
+
+
+  Scope/stores (minimum):
+
+  - docs/kb: procedures/runbooks (canonical repo KB)
+
+  - docs/ssot: machine state / SSOT YAML
+
+  - docs/reports: reports and assessments
+
+  - gdrive:ada-nest: packs/datasets/projects/reports/queue
+
+  - MDDB collections: semantic mirror/search surfaces
+
+  - MediaWiki namespaces: Education/Reports/News/Infrastructure/PrivateNews
+
+  - WP: member surface + frozen lesson archive + ledgers
+
+
+  For each store record: owner, canonical path/prefix/URI pattern, content type, write/update path, authority/volatility,
+  lookup recipe, and notes/gaps. Extend or cross-reference Wiki:Wiki-Hierarchy pattern; do not migrate content.
+
+
+  Deliverables: ssot.docs-map.yml + SSOT index/procedure cross-reference as appropriate + small validation/check
+  entrypoint (or documented check command).
+
+  Verify: registry exists, covers all named stores, and lookup recipes are concrete. Target host: idc02 (runner
+  drift cleared).'
 awaiting_action: true
