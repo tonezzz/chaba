@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
-column: backlog
-updated: 2026-11-21 19:04
+column: doing
+updated: 2026-11-21 19:06
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -111,6 +111,9 @@ comms:
 - at: 2026-11-21 19:04
   from: tony
   text: queued for processing
+- at: 2026-11-21 19:06
+  from: idc02
+  text: claimed
 requests:
 - id: the-docs-map-one-registry-acro-3db200
   ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation registry
@@ -166,8 +169,14 @@ spec: 'Produce docs/ssot/infrastructure/ssot.docs-map.yml as the single registry
   drift cleared).'
 action:
   type: dispatch
-  status: queued
-  lane: free_lane
+  status: running
+  lane: devin
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-claim: {}
+  repo: chaba
+  executor: devin
+  target_host: idc02
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-21 19:06
