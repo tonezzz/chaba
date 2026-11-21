@@ -1,0 +1,26 @@
+---
+# Phase B+ session-capture / chaba memory wiring defaults (opt-in group).
+# See: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/chaba/ssot.chaba.memory.yml
+#
+# Draft: safe, idempotent primitives. Hook-script integration into existing
+# Devin SessionEnd/PostCompaction wrappers is host-specific and must be reviewed
+# (playbook can deploy helper scripts and render timer; auto-edit of existing
+# hooks is guarded/off by default).
+
+session_capture_enabled: true
+
+# Repo checkout providing scripts/chaba/{immediate-pin,recent-event,render-memory}.py
+# and docs/ssot/chaba/ssot.chaba.memory.yml. Override per host as needed.
+chaba_repo_path: "{{ ansible_facts.env.HOME }}/CascadeProjects/chaba"
+
+# Render-memory user timer (periodic --if-stale render). Conservative default.
+chaba_render_timer_enabled: true
+chaba_render_timer_on_calendar: "*:0/15"  # every 15 minutes
+chaba_render_timer_randomized_delay_sec: 120
+
+# Helper script deployed for use by Devin hooks / manual capture.
+chaba_session_capture_helper_path: "{{ ansible_facts.env.HOME }}/.local/bin/chaba-session-capture"
+
+# Do NOT auto-edit existing ~/.config/devin/scripts/* hooks by default.
+# Set true only after reviewing host-local hook scripts.
+chaba_devin_hook_autopatch: false
