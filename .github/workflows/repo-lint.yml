@@ -5,12 +5,16 @@ on:
     branches: [master, main]
     paths:
       - "scripts/**"
+      - "tests/**"
+      - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
   pull_request:
     branches: [master, main]
     paths:
       - "scripts/**"
+      - "tests/**"
+      - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
 
@@ -39,3 +43,24 @@ jobs:
             node --check "$f" || { echo "SYNTAX FAIL: $f"; FAIL=1; }
           done < <(find scripts -name "*.mjs" -not -path "*/node_modules/*")
           exit $FAIL
+
+  # Drift guards from the 2026-11-20 Jules half-purge: a lane marked
+  # retired in the SSOT must not survive in an executor allowlist, and a
+  # deployed tool must be byte-identical to its committed sha256 pin.
+  # Keep this next to the cheap syntax gate so both run on the same
+  # scripts/ push, plus test/SSOT edits that can change the contracts.
+  tooling-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python3 -m pip install --quiet pytest pyyaml
+      - name: Runner tooling + lane retirement contracts
+        run: >-
+          python3 -m pytest -q
+          tests/board/test_runner_tooling_contract.py
+          tests/devin/test_unit_exit_status.py
