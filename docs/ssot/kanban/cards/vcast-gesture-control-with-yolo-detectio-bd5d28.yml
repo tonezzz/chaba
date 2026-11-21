@@ -8,7 +8,8 @@ ref: MED-1064
 comms:
 - at: 2026-11-07 06:00
   from: ada
-  text: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
+  text: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load
+    low
 - at: 2026-11-14 14:10
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -42,8 +43,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-17 20:04
   from: tony
-  text: 'answered the-vcast-gesture-control-task-e92e2b: Postpone the vcast gesture control task until the host
-    allocation is explicitly clarified.'
+  text: 'answered the-vcast-gesture-control-task-e92e2b: Postpone the vcast gesture control task until
+    the host allocation is explicitly clarified.'
 - at: 2026-11-17 20:04
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -84,7 +85,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-19 17:29
   from: chaba
-  text: 'answer-sweep: executed ''Postpone the vcast gesture control task until the host alloc'' -> put on hold'
+  text: 'answer-sweep: executed ''Postpone the vcast gesture control task until the host alloc'' -> put
+    on hold'
 - at: 2026-11-19 18:54
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -105,11 +107,15 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 19:21
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 requests:
 - id: the-vcast-gesture-control-task-e92e2b
-  ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking to
-    keep device load low, but the target host for vcast displays is not specified in the card or recent communications,
-    and potential target hosts (idc03 and mn01) are currently deferring execution due to drifted runner-agent scripts.
+  ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking
+    to keep device load low, but the target host for vcast displays is not specified in the card or recent
+    communications, and potential target hosts (idc03 and mn01) are currently deferring execution due
+    to drifted runner-agent scripts.
   options:
   - ★ Deploy the YOLO gesture control spec to idc03 after redeploying the runner-agent script.
   - Deploy the YOLO gesture control spec to mn01 after redeploying the runner-agent script.
@@ -119,5 +125,16 @@ requests:
   from: backlog-spec-enrich
   answer: Postpone the vcast gesture control task until the host allocation is explicitly clarified.
   executed: 2026-11-19 hold
+- id: the-vcast-gesture-control-card-88cdd1
+  ask: The vcast gesture control card proposes switching from MediaPipe to YOLO for hand-gesture tracking
+    to reduce device load, but does not specify which target host or repository this implementation belongs
+    to. We need to determine the correct codebase and deployment environment to proceed with the implementation.
+  options:
+  - ★ Use the ada-pi repository targeting the idc02 display node
+  - Use the ada-voice repository targeting the tony-dell workstation
+  - Postpone the YOLO gesture control implementation until a dedicated vcast repository is created
+  status: open
+  at: 2026-11-21 19:21
+  from: backlog-spec-enrich
 action:
   status: idle
