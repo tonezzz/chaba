@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: backlog
-updated: 2026-11-20 19:20
+updated: 2026-11-21 16:36
 priority: high
 tags:
 - board
@@ -245,6 +245,13 @@ comms:
 - at: 2026-11-20 19:20
   from: chaba
   text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-20 19:50'
+- at: 2026-11-21 16:36
+  from: devin
+  text: 'Implemented both approved parts of fix-approach (signature-dedupe + execute-answer) directly in master
+    commit 79a4a7aa09. (1) merge-sweep gates conflict re-raise on action.sweep.conflict_sig = head[:12]+''|''+paths
+    instead of on unanswered-request state — answering no longer re-arms it; ~50 duplicate asks stop. (2) merge-conflict
+    asks now carry {id,label,action} options: resolve->queue (devin merge-resolution), drop->retry (fresh re-dispatch),
+    hold->hold; answer-sweep executes explicit-action owne'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
