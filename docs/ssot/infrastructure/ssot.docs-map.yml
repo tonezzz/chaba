@@ -1,0 +1,320 @@
+# ssot.docs-map — the one registry answering "where does each doc type live?"
+# across repo / gdrive / wiki / mddb / wp.
+# Created 2026-11-21 (card docs-map-one-registry-across-all-doc-sto-7ac35a,
+# OPS-1184). Verdict layer only — this file owns the MAP, not the content;
+# per-store standards stay in their own SSOT/KB files (see related:).
+#
+# Pattern: extends Wiki:Wiki-Hierarchy (the live namespace map on the wiki,
+# https://wiki.h3.gizmo-thailand.com/index.php?title=Wiki:Wiki-Hierarchy) —
+# same idea one level up: every store gets a canonical prefix and a stated
+# boundary so doc types never sprawl into a second home.
+#
+# Check: python3 scripts/ssot-docs-map-check.py          # structure coverage
+#        python3 scripts/ssot-docs-map-check.py --live   # + endpoint probes
+title: Docs map — doc-store registry across all surfaces
+version: 1
+updated: 2026-11-21
+card: docs-map-one-registry-across-all-doc-sto-7ac35a
+
+principles:
+  - "One canonical home per doc type; every other surface is a declared
+    mirror or a pointer, never a second truth."
+  - "Authority words: canonical = edit it there; mirror = regenerated from
+    a canonical source; frozen = read-only archive; ledger = append-only
+    record, not knowledge."
+  - "Agents never hold store credentials — remote writes go through
+    board-api doors (docs/kb/board-api-write-door.md)."
+
+stores:
+
+  - id: repo-kb
+    owner: "chaba repo (writer: served checkout on idc03)"
+    canonical: "docs/kb/<slug>.md — ~440 files; procedures, runbooks, standards"
+    content_types: [procedures, runbooks, standards, kb-docs]
+    write_path: >
+      Edit in any worktree + commit + scripts/git-safe-push.sh. New KB docs
+      follow docs/kb/.template.md; register nothing — files self-index.
+    authority: canonical
+    volatility: living — updated in place; archive to docs/kb/archive/
+    lookup:
+      exact: "rg <term> docs/kb  |  ls docs/kb"
+      semantic: "MDDB kb-* collections on mddb-cms :11027 (kb-operations 279,
+        kb-features 70, kb-system 34, kb-development 19 — mirror coverage
+        partial, see gaps)"
+      index: "docs/INDEX.md + docs/SEARCH_INDEX.md (generated); human map:
+        docs/kb/where-things-go.md"
+    notes_gaps: >
+      kb-* MDDB mirror coverage is NOT verified complete
+      (card mddb-coverage-audit-verify-kb-reports-in-fdcc8b) — grep is the
+      trustworthy lookup until that audit lands.
+
+  - id: repo-ssot
+    owner: "chaba repo (writer: served checkout on idc03)"
+    canonical: "docs/ssot/**/*.yml — machine state, config, policy, kanban,
+      focus-inbox, jobs"
+    content_types: [ssot-yaml, machine-state, kanban-cards, focus-inbox,
+      job-records]
+    write_path: >
+      Direct YAML edit -> validate (ssot-validate skill /
+      node scripts/ssot-validate-all.mjs) -> register in
+      docs/ssot/ssot.index.yml -> CHANGELOG entry for structural changes ->
+      git-safe-push. Rules: docs/ssot/ssot.file-control.yml. Cards:
+      mutations go via board-api (never file-edit+push outside served).
+    authority: canonical
+    volatility: living; dated job records are append-only
+    lookup:
+      exact: "ssot-search skill, or rg <term> docs/ssot"
+      semantic: "infrastructure-ssot collection, mddb-cms :11027
+        (auto-synced by watch-ssot-sync / sync-ssot-to-mddb.py)"
+      index: "docs/ssot/ssot.index.yml — authoritative file list"
+    notes_gaps: >
+      docs/ssot/kanban/cards/*.yml is card-union merge-driver bound —
+      concurrent writes converge, but board-api remains the preferred
+      write path. Prose >40 lines is a lintable smell
+      (scripts/ssot-prose-smell.py): research depth belongs in
+      Education:/docs/kb, verdict rows here.
+
+  - id: repo-reports
+    owner: "chaba repo (writer: served checkout on idc03)"
+    canonical: "docs/reports/<date>-<slug>.md — ~34 entries; dated reports,
+      assessments, audits"
+    content_types: [reports, assessments, audits, dated-artifacts]
+    write_path: >
+      Session/dispatch artifact committed to repo (dated filename), then
+      git-safe-push. Report-worthy findings ALSO publish to ada-cms-pages
+      per procedure cms-report — repo copy is the durable file, CMS page
+      is the member/agent surface.
+    authority: canonical (for the dated point-in-time artifact)
+    volatility: frozen-once-written; superseded reports keep their file
+    lookup:
+      exact: "ls docs/reports | rg <date|slug>; rg <term> docs/reports"
+      surface: "matching ada-cms-pages page via reports-index when published"
+    notes_gaps: >
+      Name collision: top-level reports/ (repo root) holds machine
+      artifacts/bench JSON — different audience, not curated docs.
+      Job YAML records live in docs/ssot/jobs/<domain>/ instead.
+
+  - id: gdrive-ada-nest
+    owner: tony Drive / ada-nest job system
+    canonical: "gdrive:ada-nest/<sub>/ — rclone remote 'gdrive:'; FUSE
+      ~/GoogleDrive/ada-nest on tony-dell; MyDrive/ada-nest inside Colab"
+    subtrees:
+      queue:     "JOBS.py manifest + runner cells + heartbeat +
+                  runtime-sessions — the offload queue"
+      packs:     "packs/<name>/pack.yml self-contained job bundles (~69)"
+      projects:  "projects/<id>/ — per-project private stores (e.g.
+                  kk-video-c9f99fee6146)"
+      datasets:  "datasets/<family>/<name> — training/eval sets
+                  (e.g. datasets/gaussian/hibiscus-v1)"
+      reports:   "reports/ — job output reports + queue status JSON"
+      archive:   "archive/ — drained pilot dirs, superseded intermediates"
+      lanes:     "ada-documents, adobe-stock, devnest, kk-llm,
+                  kk-mac-video-pilot — folded sibling roots
+                  (ssot.gdrive-roots.yml)"
+    content_types: [packs, datasets, projects, job-reports, queue-state,
+      large-artifacts]
+    write_path: >
+      rclone copy/move to gdrive:ada-nest/<sub>/ from a fleet host with the
+      rclone remote configured. Queue/pack state mirrors to WP nest_job
+      via board-api POST /job (queue-mgr on tony-dell) — Drive is
+      canonical, the CPT is the member surface.
+    authority: canonical for job payloads and big/binary artifacts
+    volatility: high churn on queue/packs; datasets+archive stable
+    lookup:
+      list: "rclone lsf gdrive:ada-nest/<sub>/ [--max-depth 1]"
+      fuse: "ls ~/GoogleDrive/ada-nest/ (tony-dell FUSE mount)"
+      state: "WP nest_job via board-api door — job status, result_ref back
+        into Drive"
+    notes_gaps: >
+      Root renames are contract changes — colab notebooks and units
+      hardcode gdrive:ada-nest/…; registry of all Drive roots:
+      docs/ssot/infrastructure/ssot.gdrive-roots.yml; consumer map +
+      procedure: docs/kb/gdrive-root-consolidation.md.
+
+  - id: mddb
+    owner: mddb cluster (leader idc03; planes below)
+    canonical: "<collection>/<key> inside the right plane — REST /v1, MCP
+      server 'mddb', panel UI"
+    planes:
+      leader:
+        endpoint: "http://100.102.134.91:11023 (idc03, wr, embeddings ON)"
+        holds: "ada-ha-bank-* memory banks (~13k), ada-ha-* ops residue,
+          device-telemetry residue, yomi-digest, ops-digests"
+        role: "memory + semantic recall"
+      cms:
+        endpoint: "http://100.102.134.91:11027 (idc03, wr, embeddings ON)"
+        holds: "ada-cms-pages (1435) + -kk/-mn/-automation variants,
+          chaba-lessons (181), chaba-docs, chaba-archive,
+          chaba-architecture, chaba-glossary, infrastructure-ssot (7596),
+          kb-* (kb-operations 279, kb-features 70, kb-system 34,
+          kb-development 19), devin-kb, documents, ssot"
+        role: "content plane — CMS pages + repo-doc semantic mirror"
+      ops:
+        endpoint: "http://100.102.134.91:11026 (idc03, wr, no embeddings)"
+        holds: "host-logs (430k), device-telemetry (10k),
+          ada-nest-heartbeats, host-logs-state"
+        role: "append-only telemetry — expendable, rebuildable"
+      mddb-ops:
+        endpoint: "http://100.123.163.11:11025 (idc02, wr, no embeddings)"
+        holds: "ada-ha-events-*/actions/snapshots/recall-summary/
+          scenario-reports + yomi-digest — Ada ops telemetry"
+        role: "ada ops plane (split from leader 2026-10-23)"
+      follower:
+        endpoint: "http://100.123.163.11:11023 (idc02, read-only replica)"
+        holds: "read replica of leader — batch/remote readers offload"
+        role: "lag-gated failover reads (MDDB_READ_URL)"
+    content_types: [cms-pages, memory-banks, doc-mirrors, telemetry]
+    write_path: >
+      Producers only, REST POST <plane>/v1/add (or mddb client lib) —
+      writers pin the right plane via MDDB_BASE_URL / MDDB_OPS_URL /
+      MDDB_ADA_OPS_URL env; agents use the MCP 'mddb' server tools
+      (add_document / search_documents / semantic_search).
+    authority: "mixed — canonical for ada-cms-pages content + banks;
+      MIRROR for everything synced from repo/gdrive"
+    volatility: "banks/cms living; telemetry append-only; mirrors
+      regenerated"
+    lookup:
+      semantic: "mcp 'mddb' semantic_search {query, collection} — or
+        curl <plane>/v1/vector-search"
+      meta: "POST <plane>/v1/search {collection, filter_meta} — exact
+        key/meta filters"
+      doc: "POST <plane>/v1/get {collection, key, lang}"
+      stats: "curl <plane>/v1/stats — live collection census"
+    notes_gaps: >
+      Known drift: stray ada-cms-pages doc on :11025; device-telemetry
+      rows on both :11023 (residue) and :11026 (live). kb-* mirror
+      coverage unverified (mddb-coverage-audit card). Retention/compaction
+      program pending Tony approval — docs/ssot/jobs/cms/
+      2026-11-19-cms-to-wiki-storage-assessment.yml. Routing rules:
+      docs/kb/mddb-ops-split.md.
+
+  - id: wiki
+    owner: tony (MediaWiki 1.46.2 on the boards Plesk host)
+    canonical: "https://wiki.h3.gizmo-thailand.com/<ns>:<Title> —
+      api https://wiki.h3.gizmo-thailand.com/api.php"
+    namespaces:
+      "News/ (main ns)": "public — DevNest desk leaves + rollups;
+        standard: docs/ssot/apps/ssot.mediawiki-news.yml"
+      "PrivateNews: (3002)": "protected (Lockdown inhouse) — pre-publication
+        review lane"
+      "Infrastructure: (3000)": "protected — hosts tree (idc01/02/03, mn01,
+        tony-dell, tony-omen, michael-ha); Wiki:Wiki-Hierarchy is the
+        live counterpart of this map"
+      "Education: (3004)": "protected — CANONICAL lesson corpus since the
+        2026-11-07 write-cutover (~177 pages; template แม่แบบ:Education,
+        Education:Index + Education:Due generated)"
+      "Reports: (3006)": "protected — member report pages
+        (Reports:<type>/<period>, living pages API-overwritten)"
+    content_types: [lessons, member-reports, news-leaves, infra-pages,
+      review-drafts]
+    write_path: >
+      board-api doors only — no agent-held wiki creds: /publish sinks
+      (wiki, wiki-private, wiki-education, wiki-reports) via
+      scripts/board/publication.py MediaWikiSink; /wiki/page for
+      allowlisted support pages; /lesson writes wiki-primary
+      (WIKI_EDUCATION_WRITE=wiki). New namespaces/Lockdown rules =
+      LocalSettings.php via Plesk admin (not agent-automatable).
+    authority: canonical for Education:/Reports:/News surfaces; wiki
+      revision is authoritative for the rendered page
+    volatility: living pages + revisioned history
+    lookup:
+      api: "curl 'https://wiki.h3.gizmo-thailand.com/api.php?action=query
+        &list=allpages&apnamespace=3004&aplimit=500&format=json'"
+      lessons: "board-api POST /lesson {op:list|get, source:'wiki'} —
+        door walks Education: into lesson rows"
+      ui: "Special:Search / CategoryTree — SSO login, inhouse group for
+        protected namespaces"
+    notes_gaps: >
+      Protected namespaces enforce Lockdown (anon = accessdenied, titles
+      enumerable); plan + verification log:
+      docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml.
+
+  - id: wp
+    owner: tony (WordPress + chaba-boards plugin on boards Plesk host)
+    canonical: "public https://boards.surf-thailand.com/wp ; writer origin
+      https://boards.h3.gizmo-thailand.com/wp (REST:
+      index.php?rest_route=/wp/v2/<cpt>)"
+    families:
+      member_surface: "post/page/place/trip — member-facing content from
+        LINE asks (wp_post/wp_read/wp_update tools)"
+      frozen_lesson_archive: "lesson CPT ~137 posts — FROZEN since
+        2026-11-07 cutover to wiki Education:; /wp/lesson/<slug> 301s to
+        wiki via idc02 edge fragment (scripts/wiki-lesson-redirect-map.py)"
+      ledgers: "activity, ops_error, nest_job, cam, score, repeat_ask,
+        bench, report, xlate, ops-event — append records, private
+        (member-gated)"
+      news_feed: "news CPT ~3.9k — hourly ingest feed store; distillation
+        digests promote to wiki News/ desks"
+      household: "asset/expense/contact/reminder — member records via
+        cpt_post"
+    content_types: [member-posts, ledgers, feed-items, records]
+    write_path: >
+      board-api door endpoints (/lesson /job /report /inbox + publication
+      adapters) — agents never hold WP creds; fleet writers pin
+      ~/.config/secrets/wp-boards.env (WP_APP_PASSWORD) and ALWAYS use
+      origin_base — the public base is Cloudflare-fronted and 1010s
+      script UAs.
+    authority: canonical for ledgers/member posts/news feed; frozen for
+      lesson CPT
+    volatility: "ledgers append-only; member pages living; lesson archive
+      frozen"
+    lookup:
+      rest: "GET <origin>/wp/index.php?rest_route=/wp/v2/<cpt>&slug=<slug>
+        (app-password auth); anon reads only public CPTs"
+      door: "board-api /lesson|/job|/report read ops — no creds needed"
+      ui: "member UI at /wp/ — chaba-boards admin columns + shortcodes
+        ([chaba_balance], [chaba_activity])"
+    notes_gaps: >
+      Full CPT registry + title standard: docs/ssot/apps/
+      ssot.wp-boards.yml. WP holds RECORDS not knowledge — evergreen
+      content lives in wiki Education:/docs/kb.
+
+doc_types:
+  # "where does X live?" — type -> canonical store (+ prefix). Mirrors in
+  # parentheses are retrieval surfaces, not homes.
+  procedure_or_runbook:   "repo-kb docs/kb/<slug>.md (mirror: mddb kb-*)"
+  machine_state_or_config: "repo-ssot docs/ssot/**/*.yml (mirror: mddb
+    infrastructure-ssot)"
+  dated_report_or_audit:  "repo-reports docs/reports/<date>-<slug>.md
+    (+ ada-cms-pages when member/agent-facing)"
+  job_record:             "repo-ssot docs/ssot/jobs/<domain>/<date>-<slug>.yml"
+  kanban_card_or_decision: "repo-ssot docs/ssot/kanban/ (mutations via
+    board-api only)"
+  lesson_or_explainer:    "wiki Education:<Topic> (mirror: mddb
+    chaba-lessons; frozen: WP lesson CPT)"
+  member_report:          "wiki Reports:<type>/<period>"
+  internal_report_page:   "mddb cms plane ada-cms-pages[-kk] (standard:
+    ssot.cms.yml)"
+  news_item_or_digest:    "wp news CPT (feed); published leaves: wiki
+    News/Desks/<Desk>"
+  job_payload_or_pack:    "gdrive-ada-nest packs|queue|projects|datasets"
+  ops_ledger_record:      "wp CPTs activity|ops_error|nest_job|score|
+    repeat_ask|cam|bench|report|xlate|ops-event"
+  personal_memory:        "mddb leader ada-ha-bank-* (Ada's banks — do not
+    write from chaba sessions)"
+  telemetry_or_log:       "mddb ops planes :11026 host-logs/device-telemetry,
+    :11025 ada-ha-*"
+  capture_or_idea:        "repo-ssot docs/ssot/focus-inbox/*.yml → kanban card
+    (ritual: docs/kb/where-things-go.md)"
+
+cross_references:
+  - "Wiki:Wiki-Hierarchy — live namespace map this registry extends upward:
+    https://wiki.h3.gizmo-thailand.com/index.php?title=Wiki:Wiki-Hierarchy"
+  - "docs/kb/where-things-go.md — the human capture/recall map (pairs with
+    this file: that one answers 'where did MY thing go', this one answers
+    'where does the TYPE live')"
+  - "docs/ssot/apps/ssot.wp-boards.yml — WP CPT/ledger registry"
+  - "docs/ssot/apps/ssot.mediawiki-news.yml — wiki News standard + sinks"
+  - "docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml —
+    Education:/Reports: plan + verified state"
+  - "docs/ssot/infrastructure/ssot.gdrive-roots.yml — Drive root registry"
+  - "docs/ssot/infrastructure/ssot.cms.yml — ada-cms-pages IA standard"
+  - "docs/kb/mddb-ops-split.md — MDDB plane topology + routing"
+  - "docs/kb/board-api-write-door.md — the single remote-write door"
+
+check:
+  command: "python3 scripts/ssot-docs-map-check.py [--live]"
+  verifies: "registry parses; all 7 named stores present with
+    owner/canonical/write_path/authority/lookup; every doc_types value
+    resolves to a declared store id. --live adds TCP/HTTP probes of the
+    MDDB planes + wiki api + WP REST (read-only)."

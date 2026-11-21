@@ -13,6 +13,14 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-11-21
+
+- **File**: docs/ssot/infrastructure/ssot.docs-map.yml (+ scripts/ssot-docs-map-check.py, docs/ssot/ssot.index.yml)
+- **Change Type**: minor
+- **Description**: Added the docs-map registry — one file answering "where does each doc type live" across the 7 named stores (repo docs/kb, docs/ssot, docs/reports, gdrive:ada-nest, MDDB planes, MediaWiki namespaces, WP boards). Each store records owner, canonical path/prefix/URI, content types, write/update path, authority/volatility, concrete lookup recipe, and notes/gaps; a doc_types map resolves each type to its canonical store. Check entrypoint scripts/ssot-docs-map-check.py verifies structure (+ --live endpoint probes). Registered in ssot.index.yml.
+- **Impact**: Single pointer for doc-placement decisions; extends the Wiki:Wiki-Hierarchy pattern one level up. No content migrated — verdict layer only.
+- **Rollback**: Delete the new file and check script; revert the two ssot.index.yml entries.
+
 ### 2026-11-20
 
 - **File**: docs/ssot/ssot.procedures.yml (+ docs/kb/board-static-deploy.md, scripts/board/deploy-check.sh)
