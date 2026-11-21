@@ -2,18 +2,18 @@ id: runner-auto-tony-macbook
 title: Runner host `tony-macbook` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note,
   fix on the host, close the card.
-column: done
+column: review
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: high
-note: 'Auto-recovered 2026-11-20: all bootstrap checks pass.'
+priority: medium
+note: 'Failing: probe failed: ssh: connect to host tony-macbook port 22: Connection timed out.'
 help: 'Per-check fixes:
 
-  - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
-  scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-11-20'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
+  the key on the host.'
+updated: '2026-11-21'
 action:
   status: done
 claim: {}
