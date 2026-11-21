@@ -1,7 +1,7 @@
 id: ansible-host-baseline-scaffold
 title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
 column: done
-updated: 2026-11-20 18:57
+updated: 2026-11-21 15:16
 brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
   from spec, then ansible ping + site.yml --check --diff. Dry-run only.
 priority: medium
@@ -209,6 +209,11 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-172937-goal-land-the-chaba-ansible-ho,
     branch dispatch/20261120-172937-goal-land-the-chaba-ansible-ho on tony-macbook'
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 ref: SYS-0023
 claim:
   since: 2026-11-20 17:27
@@ -217,3 +222,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-20 18:57
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261120-172937-goal-land-the-chaba-ansible-ho.md
+awaiting_action: true
