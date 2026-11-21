@@ -1,7 +1,7 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
 column: backlog
-updated: 2026-11-20 18:52
+updated: 2026-11-21 15:15
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
   FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
@@ -136,6 +136,11 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:15
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -148,3 +153,4 @@ action:
     no_repo: 2026-11-04 07:45
 review_kind: verify
 claim: {}
+awaiting_action: true
