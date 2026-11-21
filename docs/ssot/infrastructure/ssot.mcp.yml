@@ -570,6 +570,24 @@ servers:
     - devin: true
     - windsurf: false
     notes: 'Declared 2026-11-20 from live config; omen only (dell/macbook use the separate chaba mcp-colab).'
+  context7:
+    name: Context7 Documentation
+    description: Up-to-date library/framework/SDK/API documentation (official remote MCP)
+    implementation: https://mcp.context7.com/mcp
+    wrapper: none
+    filter: none
+    url: https://mcp.context7.com/mcp
+    single_instance: false
+    status: operational
+    scope: agent-lanes
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Declared 2026-11-21 after Tony-approved install: official remote Streamable HTTP
+      endpoint, no secret needed for basic use. Configured on omen/dell devin (agent lanes) and
+      idc02 opencode as local-only tooling (covered by the suppressed idc02 undeclared finding).
+      github was also selected for idc02 but is NOT installed there: its wrapper needs Docker and
+      a GitHub token, neither present on idc02; github remains operational on omen/dell.'
   icloud:
     name: iCloud Bridge
     description: iCloud access via the SSH wrapper on tony-omen
