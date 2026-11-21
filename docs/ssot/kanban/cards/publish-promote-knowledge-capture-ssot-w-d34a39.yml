@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: backlog
-updated: 2026-11-21 17:49
+updated: 2026-11-21 18:39
 priority: medium
 tags:
 - ssot
@@ -88,3 +88,26 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:39
+  from: devin
+  text: 'raised request focus-parity-mcp-focus-logs-has-no-concr-9ade32: Focus parity (mcp_focus/logs) has no concrete
+    spec. Findings: (1) tony-dell/tony-omen rendered focus == canonical ssot.f'
+requests:
+- id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
+  ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
+    canonical ssot.focus.current.active.yml (OK); (2) idc03 SSOT matches but no rendered context.md or Devin hooks
+    (by design); (3) mcp_focus logs (focus.decisions/sessions.yml) last written 2026-09-30, no memory section reads
+    them. Which direction for Phase B+ focus parity?'
+  status: open
+  at: 2026-11-21 18:39
+  from: devin
+  options:
+  - id: card-only
+    label: Decide later (★ recommended)
+    action: none
+  - id: cross-host-render
+    label: Deploy helper+render on idc03
+    action: none
+  - id: surface-focus-logs
+    label: Add focus-logs memory section
+    action: none
