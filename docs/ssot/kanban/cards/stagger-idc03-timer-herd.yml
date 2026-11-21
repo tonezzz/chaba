@@ -1,17 +1,17 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: backlog
-updated: 2026-11-20 18:52
+updated: 2026-11-21 17:46
 priority: medium
 tags:
 - ops
 - timers
 - congestion
-note: '2026-11-12 sweep RCA: ~25 idc03 timers share on_calendar *:0/30 or :00 — they fire simultaneously,
-  hammer board-api serialized writes + CMS + MDDB -> RemoteDisconnected/timeout failures (kanban-brief,
-  starboard, standard-drift, scenario-smoke, sentinel SKIPs). Comment-throttle shipped (6fac535ac6) removes
-  ~200 writes/hr, but the request herd remains. Fix options: (a) jitter — change on_calendar to per-job
-  offsets (*:3/30, *:7/30, *:11/30...) in ssot.jobs.yml then render+install; (b) systemd Rand'
+note: '2026-11-12 sweep RCA: ~25 idc03 timers share on_calendar *:0/30 or :00 — they fire simultaneously, hammer
+  board-api serialized writes + CMS + MDDB -> RemoteDisconnected/timeout failures (kanban-brief, starboard, standard-drift,
+  scenario-smoke, sentinel SKIPs). Comment-throttle shipped (6fac535ac6) removes ~200 writes/hr, but the request
+  herd remains. Fix options: (a) jitter — change on_calendar to per-job offsets (*:3/30, *:7/30, *:11/30...) in
+  ssot.jobs.yml then render+install; (b) systemd Rand'
 ref: OPS-0038
 comms:
 - at: 2026-11-12 10:37
@@ -96,9 +96,12 @@ comms:
 - at: 2026-11-20 19:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying
-  the drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets
-  per job to avoid simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent
-  on idc03. Testable done-condition: ssot.jobs.yml rendered and installed with jittered offsets on idc03,
-  runner-agent successfully redeployed, and subsequent timer runs complete without board-api or CMS RemoteDisconnected/timeout
-  failures.'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
+  drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
+  simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
+  done-condition: ssot.jobs.yml rendered and installed with jittered offsets on idc03, runner-agent successfully
+  redeployed, and subsequent timer runs complete without board-api or CMS RemoteDisconnected/timeout failures.'
