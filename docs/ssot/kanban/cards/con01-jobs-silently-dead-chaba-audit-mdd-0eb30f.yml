@@ -1,7 +1,7 @@
 id: con01-jobs-silently-dead-chaba-audit-mdd-0eb30f
 title: con01 jobs silently dead — chaba-audit, mddb-vector-reindex, devin-bank-distill fail every run
 column: done
-updated: 2026-11-20 18:48
+updated: 2026-11-21 15:05
 priority: high
 tags:
 - ops
@@ -168,6 +168,11 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:05
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -179,3 +184,4 @@ action:
     no_repo: 2026-10-31 13:49
 review_kind: verify
 claim: {}
+awaiting_action: true
