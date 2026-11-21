@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
-column: doing
-updated: 2026-11-21 16:44
+column: review
+updated: 2026-11-21 16:46
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -100,6 +100,13 @@ comms:
   from: chaba
   text: started devin-task-llm-provider-verification-2026-11-1795254266 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-21 16:46
+  from: idc02
+  text: 'finished (ok): exit=0 Started devin-task-llm-provider-verification-2026-11-1795254266.service - runner
+    llm-provider-verification-2026-1'
+- at: 2026-11-21 16:46
+  from: chaba
+  text: 'staged profile closeout held: profile evidence differs from the frozen envelope'
 action:
   type: dispatch
   repo: chaba
@@ -163,8 +170,13 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  result: 'exit=0 Started devin-task-llm-provider-verification-2026-11-1795254266.service - runner llm-provider-verification-2026-11
+    staged read-only profile. | devin-task-llm-provider-verification-2026-11-1795254266.service: Consumed 23.568s
+    CPU time.'
+  verified: false
 claim:
   since: 2026-11-21 16:44
+review_kind: verify
