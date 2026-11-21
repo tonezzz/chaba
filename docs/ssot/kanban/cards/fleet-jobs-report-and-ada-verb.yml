@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: doing
-updated: 2026-11-21 16:45
+updated: 2026-11-21 16:52
 priority: high
 tags:
 - devnest
@@ -360,5 +360,12 @@ comms:
     [scheduler live] ada-jobs-verify.timer installed on; [fleet-jobs-report-and-ada-verb] Inspection: 2026-11-17
     Jules attempt never star; [fleet-jobs-report-and-ada-verb] finished (failed): journal=exit-code , code=exi;
     [fleet-jobs-report-and-ada-verb] idc02 defers: executor=jules'
+- at: 2026-11-21 16:52
+  from: devin
+  text: 'Done on dispatch/20261121-164519-two-part-deliverable-repo-work (2 commits). Cherry-picked Tony''s unmerged
+    fix branch 2c9fa451b5, then rewired the two dead sources per the lost 11-20 attempt: timer data now comes from
+    the MDDB ada-cms-pages timer-timeline rollup (was reading reports/timeline.jsonl — wrong schema), runner health
+    from board-api /queue heartbeats+verdicts (was globbing ~/var/chaba/health/*.json — invented bogus hosts), plus
+    tony_dell->tony-dell normalization. Live run verified: 11 '
 claim:
   since: 2026-11-21 16:43
