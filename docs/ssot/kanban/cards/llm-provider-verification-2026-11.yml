@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: backlog
-updated: 2026-11-21 16:39
+updated: 2026-11-21 16:40
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -86,3 +86,70 @@ comms:
     treat that bench credential as exposed and rotate it at the next safe window). Verified by budget-watch --dry-run
     at 09:36Z: bench $2.006/$4 (50%), reset 2026-12-01, accrued spend preserved, verdict back to ok. SSOT budgets
     block updated and the wiki key-management leaf reconciled. The '
+- at: 2026-11-21 16:40
+  from: tony
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  agent_profile: ops-readonly
+  profile: ops-readonly
+  target_host: idc02
+  artifact: reports/cf-agentic-retest-2026-11-21.md
+  task_class: read_only
+  prompt: 'Read-only OPS-0018 step 1. On idc02 run the frozen host-health shadow fixture via scripts/devnest/shadow_eval.py:
+    control --arm opencode --model litellm/gemini-3.5-flash-lite, then cf-llama-70b and cf-gpt-oss-120b with the
+    same fixture (--fixture host-health). Compare against the 2026-11-07 baseline (control PASS ~23s; cf-llama-70b
+    FAIL 163s bash-statelessness loop; cf-gpt-oss-120b FAIL ~100s no artifact). Current gateway route names: cf-llama4-scout,
+    cf-qwen38-27b, cf-gemma4-26b replace deprecated 8b/qwen3-30b/nemotron-120b legs. Do NOT promote, queue, deploy,
+    mint keys, or change caps/routes. Write a dated report with per-arm pass/fail, timings, tool-call counts and
+    artifact evidence. Shadow branches never merge.'
+  expect:
+    required_keys:
+    - control
+    - cf-llama-70b
+    - cf-gpt-oss-120b
+    - verdict
+    - last_verified
+    facts:
+    - control PASS/FAIL with seconds
+    - each CF arm PASS/FAIL with seconds, tool-call count and artifact evidence
+    - recommendation on CF fallback-chain position (no change made)
+  llm_key_alias: bench
+  lane_envelope:
+    id: s3-llm-provider-verification-2026-11-ops-readonly
+    card: llm-provider-verification-2026-11
+    task_class: read_only
+    stage: S3
+    target_host: idc02
+    executor: opencode
+    profile: ops-readonly
+    model: litellm/gemini-3.5-flash-lite
+    provider: litellm
+    unattended: true
+    mcp_allowlist: []
+    allowed_paths:
+    - reports/
+    artifact:
+      path: reports/cf-agentic-retest-2026-11-21.md
+      schema: 'evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ops-readonly/fixture/verify.py
+    escalation:
+      on_fail: manual
+      allowed_on_fail:
+      - manual
+      - devin
+      - retry_then_manual
+      - hold
+      max_retries: 1
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 420
+  status: queued
