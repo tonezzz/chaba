@@ -1,7 +1,7 @@
 id: line-voice-enroll-recognize
 title: LINE voice enrollment + recognition — send clips, know the boss's voice
 column: done
-updated: 2026-11-21 17:49
+updated: 2026-11-21 22:39
 priority: high
 tags:
 - ada-pi
@@ -385,6 +385,11 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 22:39
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -399,3 +404,4 @@ auto_close:
   by: merge-sweep
   at: 2026-10-13 20:13
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-195111-tony-2026-10-13-users-send-a-f.md
+awaiting_action: true
