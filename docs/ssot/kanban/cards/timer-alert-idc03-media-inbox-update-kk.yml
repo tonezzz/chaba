@@ -1,7 +1,7 @@
 id: timer-alert-idc03-media-inbox-update-kk
 title: Timer media-inbox-update-kk on idc03 failing
-column: done
-updated: 2026-11-21 17:44
+column: backlog
+updated: 2026-11-22 00:31
 priority: high
 tags:
 - timer-alert
@@ -672,6 +672,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 00:31
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-22 00:31
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-22 00:18) of `media-inbox-update-kk.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u media-inbox-update-kk.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done
 spec: Investigate the recurring failure of `media-inbox-update-kk.service` on host idc03 by examining the systemd
