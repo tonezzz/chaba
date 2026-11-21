@@ -1,0 +1,32 @@
+id: ada-capability-verb-wiring
+title: Ada what-can-you-do verb — vendor tools snapshot + capability-ask read path
+column: backlog
+updated: 2026-11-21 19:00
+priority: medium
+tags:
+- ada
+- voice
+spec: 'REPO work (ada-voice repo). Implement the consumer half of docs/kb/ada-tools-verb-contract.md (chaba):
+
+
+  1) Vendor the generated snapshot: copy chaba docs/kb/ada-tools-commands.json into ada-voice (suggest backend/generated/ada-tools-commands.json)
+  at deploy time or via a small sync — the file ships with the code it describes.
+
+  2) Capability-ask read path: load the JSON once per session (or first ask); answer "what can you do", "can you
+  X", "how does tool Y work" deterministically from it — group/domain summaries, name+trigger+alias matching, merged_into
+  honesty for retired names. Sub-second, never parses declarations live.
+
+  3) Optional: wire `python3 scripts/ada/tools-commands-catalog.py --check` (chaba repo) into deploy-ada.sh gates
+  alongside tool-lint so a declaration edit that forgets the regen fails loudly.
+
+
+  DONE-CONDITION: Ada answers a capability ask from the vendored snapshot in a live session; snapshot regenerates
+  on decl change without hand-editing.'
+action:
+  type: dispatch
+  repo: ada-voice
+ref: ADA-0012
+comms:
+- at: 2026-11-21 19:00
+  from: devin
+  text: card captured via board-api
