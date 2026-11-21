@@ -1,7 +1,7 @@
 id: trade-lesson-ui-integration
 title: 'Trade lesson draft: trade-ui (free-lane drafting)'
-column: review
-updated: 2026-11-21 17:49
+column: done
+updated: 2026-11-21 18:55
 brief: Distill trade docs (features/ui/* (TRADECANVAS_INTEGRATION, TRADECANVAS_QUICKSTART, WICK_INTEGRATION, UI_COMPARISON_EVALUATION,
   TRADING_TERMINAL_INTEGRATION, TRADING_TERMINAL_QUICKSTART)) into lesson trade-trade-ui; drafting on the $0 free
   lane via trade-lesson-migrate.py.
@@ -466,6 +466,22 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:55
+  from: devin
+  text: 'answered merge-conflict-18: resolved — lesson-72f75ef5c113 published live (trade-ui); drift-map entry already
+    on master; closing card'
+- at: 2026-11-21 18:55
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-21 18:55
+  from: devin
+  text: 'Resolution: both free-lane lessons are already live — lesson-72f75ef5c113 (trade-ui) and lesson-8460ed30db74
+    (trade-workflows) confirmed via /lesson op:list. The stranded drift-map delta for trade-workflows was salvaged
+    from f18a3cbf6f and pushed as 17974f660e. The dispatch branches (dispatch/20261116-202622..., dispatch/20261116-202630...)
+    survive on origin as evidence only. Closing the legacy string-option conflict request and the card.'
+- at: 2026-11-21 18:55
+  from: devin
+  text: closed by devin
 review_kind: verify
 claim: {}
 requests:
@@ -696,7 +712,7 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261116-202622-free-lane-draft-publish-for-tr: 2 commit(s) conflict with
     origin/master in chaba — conflicted paths: scripts/lesson-drift-map.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261116-202622-free-lane-draft-publish-for-tr
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-20 19:32
   from: chaba
   options:
@@ -705,3 +721,4 @@ requests:
   - hold the card
   suggested: let devin resolve the conflict and land it ★
   escalated_at: 2026-11-21 07:33
+  answer: resolved — lesson-72f75ef5c113 published live (trade-ui); drift-map entry already on master; closing card
