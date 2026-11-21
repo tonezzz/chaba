@@ -1,7 +1,7 @@
 id: household-kanban-appliance
 title: Household kanban — standalone podman appliance vs second lane on chaba stack
 column: done
-updated: 2026-11-20 18:52
+updated: 2026-11-21 17:45
 priority: medium
 note: 'Tony: "kanban in podman, would it simplify? I will need to provide household kanban anyway." Analysis 2026-10-22:
   podman does NOT simplify the chaba board (complexity is the git single-writer fleet, not serving). For household
@@ -124,6 +124,10 @@ comms:
 - at: 2026-11-20 18:52
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
