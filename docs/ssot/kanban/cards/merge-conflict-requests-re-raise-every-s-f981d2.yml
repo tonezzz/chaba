@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: backlog
-updated: 2026-11-21 16:36
+updated: 2026-11-21 16:40
 priority: high
 tags:
 - board
@@ -252,6 +252,12 @@ comms:
     instead of on unanswered-request state — answering no longer re-arms it; ~50 duplicate asks stop. (2) merge-conflict
     asks now carry {id,label,action} options: resolve->queue (devin merge-resolution), drop->retry (fresh re-dispatch),
     hold->hold; answer-sweep executes explicit-action owne'
+- at: 2026-11-21 16:40
+  from: devin
+  text: 'Deployment proof: idc03 exec checkout (~/CascadeProjects/chaba) synced to 79a4a7aa09 via chaba-repo-sync
+    — conflict_sig present in merge-sweep.py and explicit-action present in answer-sweep.py. Served checkout (~/CascadeProjects/chaba-tony-dell,
+    runs merge-sweep.service) picks it up on the next kanban-commit git-safe-pull; card stays open until that surface
+    is confirmed.'
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
