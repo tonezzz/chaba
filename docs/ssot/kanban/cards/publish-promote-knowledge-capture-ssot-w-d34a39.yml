@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: backlog
-updated: 2026-11-21 18:44
+updated: 2026-11-21 19:54
 priority: medium
 tags:
 - ssot
@@ -105,13 +105,19 @@ comms:
     --diff then apply per host. Results: tony-dell ok=11 changed=5 failed=0 (timer active), tony-omen ok=11 changed=5
     failed=0 (timer active), idc03 ok=11 changed=6 failed=0 (timer active, chaba_repo_path=/home/tony/CascadeProjects/chaba-tony-dell;
     Devin hook scripts missing as expect'
+- at: 2026-11-21 19:54
+  from: devin
+  text: 'answered focus-parity-mcp-focus-logs-has-no-concr-9ade32: card-only'
+- at: 2026-11-21 19:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
   ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
     canonical ssot.focus.current.active.yml (OK); (2) idc03 SSOT matches but no rendered context.md or Devin hooks
     (by design); (3) mcp_focus logs (focus.decisions/sessions.yml) last written 2026-09-30, no memory section reads
     them. Which direction for Phase B+ focus parity?'
-  status: open
+  status: answered
   at: 2026-11-21 18:39
   from: devin
   options:
@@ -124,3 +130,5 @@ requests:
   - id: surface-focus-logs
     label: Add focus-logs memory section
     action: none
+  answer: card-only
+awaiting_action: true
