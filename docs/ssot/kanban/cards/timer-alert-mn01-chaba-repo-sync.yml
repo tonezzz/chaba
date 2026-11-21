@@ -1,7 +1,7 @@
 id: timer-alert-mn01-chaba-repo-sync
 title: Timer chaba-repo-sync on mn01 failing
-column: backlog
-updated: 2026-11-21 22:21
+column: done
+updated: 2026-11-22 02:11
 priority: high
 tags:
 - timer-alert
@@ -175,6 +175,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-21 15:00) of `chaba-repo-sync.service` on `mn01` result=exit-code — investigate
     journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-22 02:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 19:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-22 02:11
+  from: tony
+  text: closed by tony
 action:
   status: done
 spec: Investigate the recurring failure of chaba-repo-sync.service on host mn01 by checking the systemd user journal
