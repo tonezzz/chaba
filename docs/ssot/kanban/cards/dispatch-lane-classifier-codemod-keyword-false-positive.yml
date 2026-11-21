@@ -2,7 +2,7 @@ id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
 column: backlog
-updated: 2026-11-21 17:49
+updated: 2026-11-21 18:53
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -181,5 +181,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:53
+  from: devin
+  text: 'DEPLOYED 2026-11-21 ~18:46: chaba-board-api.service restarted on idc03 (06:12 -> 18:46); served checkout
+    already had c7f0afe671. Queue-time classification now uses the word-boundary codemod gate (_codemod_hit/_kw_hit).
+    Verified: /health 200, /queue serving, /card-set still refuses bad input, and the ADA-1285 spec classifies as
+    devin on the live code (probe, no card touched). NOT yet live: installed runner-agent on each host comes from
+    that host''s exec checkout — idc02''s matches the new pin (1e8e'
 claim:
   since: 2026-11-20 19:42
