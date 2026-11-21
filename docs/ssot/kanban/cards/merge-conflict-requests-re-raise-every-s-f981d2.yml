@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
-column: backlog
-updated: 2026-11-21 16:40
+column: done
+updated: 2026-11-21 16:48
 priority: high
 tags:
 - board
@@ -39,7 +39,7 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: done
   lane: codemod
   lane_source: kw
   sweep:
@@ -258,6 +258,15 @@ comms:
     — conflict_sig present in merge-sweep.py and explicit-action present in answer-sweep.py. Served checkout (~/CascadeProjects/chaba-tony-dell,
     runs merge-sweep.service) picks it up on the next kanban-commit git-safe-pull; card stays open until that surface
     is confirmed.'
+- at: 2026-11-21 16:48
+  from: devin
+  text: 'VERIFIED 2026-11-21 16:48 +07 — served checkout ~/CascadeProjects/chaba-tony-dell (runs merge-sweep.service)
+    pulled 79a4a7aa09 via kanban-commit: conflict_sig present (5 refs) in merge-sweep.py, explicit-action in answer-sweep.py,
+    python3 -m py_compile OK on both, service last run 16:42 clean (33 cards in scope, 0 active units). Both approved
+    parts landed + tested (69 pass) + deployed on the actual consumer surface. Closing.'
+- at: 2026-11-21 16:48
+  from: tony
+  text: closed by tony
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
@@ -275,4 +284,3 @@ requests:
     queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
 claim:
   since: 2026-11-20 19:17
-awaiting_action: true
