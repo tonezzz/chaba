@@ -1,7 +1,7 @@
 id: board-api-card-lane-executor-edit
 title: 'board-api: door to edit action.lane/executor/tags on an existing card'
 column: done
-updated: 2026-11-20 19:57
+updated: 2026-11-21 15:16
 brief: 'No board-api endpoint can change action.lane, action.executor or tags on an existing card (POST /card only
   creates or re-arms; /action only changes state; lane/executor are settable only inside a claim). Hit 2026-11-20
   on ADA-1285 (ada-tools-command-reference): after the Jules lane retired, the stale lane=jules/tag could not be
@@ -181,6 +181,11 @@ comms:
 - at: 2026-11-20 19:57
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 claim:
   since: 2026-11-20 19:40
 review_kind: verify
@@ -188,3 +193,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-20 19:57
   note: verified — evidence checks green, closing itself
+awaiting_action: true
