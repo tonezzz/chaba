@@ -1,7 +1,7 @@
 id: board-api-commit-outside-lock
 title: 'board-api: move per-write git commit out of the card flock'
 column: done
-updated: 2026-11-21 17:44
+updated: 2026-11-21 21:49
 priority: high
 tags:
 - board-api
@@ -150,6 +150,11 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 21:49
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 ref: KNB-0224
 review_kind: verify
 claim: {}
@@ -157,3 +162,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-19 10:29
   note: verified — evidence checks green, closing itself
+awaiting_action: true
