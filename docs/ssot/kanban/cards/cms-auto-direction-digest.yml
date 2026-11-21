@@ -9,7 +9,7 @@ priority: medium
 note: 'Auto-recovered 2026-11-18: direction-digest healthy for 2 consecutive ticks (status=ok, state=ok).'
 help: 'Trigger a manual regen: cms_automation run_now for ''direction-digest'' (or POST /api/cms/pages/direction-digest/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-20 18:51
+updated: 2026-11-21 17:45
 comms:
 - at: 2026-11-07 16:50
   from: devin
@@ -90,6 +90,10 @@ comms:
 - at: 2026-11-20 18:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
