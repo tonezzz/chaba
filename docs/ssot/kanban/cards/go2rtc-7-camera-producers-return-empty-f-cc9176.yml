@@ -7,9 +7,9 @@ tags:
 - ops
 - cameras
 - go2rtc
-note: 'wp-cam-snapshot fixed 2026-11-10 (GO2RTC_URL now points at omen; omen_cam works, 1 ok). Remaining: ip_cam_65,
-  xiaomi_c100(+h264,+hd,+hd_h264), xiaomi_c201(+h264,+hd,+hd_h264) all return 200/0B from omen go2rtc frame.jpeg.
-  Check producers in ~/.config/go2rtc/*.sh on tony-omen and xiaomi-token-refresh.py.'
+note: 'wp-cam-snapshot fixed 2026-11-10 (GO2RTC_URL now points at omen; omen_cam works, 1 ok). Remaining:
+  ip_cam_65, xiaomi_c100(+h264,+hd,+hd_h264), xiaomi_c201(+h264,+hd,+hd_h264) all return 200/0B from omen
+  go2rtc frame.jpeg. Check producers in ~/.config/go2rtc/*.sh on tony-omen and xiaomi-token-refresh.py.'
 ref: OPS-1304
 comms:
 - at: 2026-11-10 06:50
@@ -91,3 +91,12 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65
+  and the xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh
+  on tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment
+  context involves the local go2rtc setup. The done-condition is verified when requesting frame.jpeg for
+  ip_cam_65, xiaomi_c100 (and its variants), and xiaomi_c201 (and its variants) from the omen go2rtc instance
+  successfully returns non-empty image payloads instead of 0B responses.
