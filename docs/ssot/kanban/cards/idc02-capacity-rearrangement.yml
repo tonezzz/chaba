@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-20 19:27
+updated: 2026-11-21 17:44
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -155,6 +155,10 @@ comms:
     4m19s, health=healthy, search returns results) BUT still burns ~120-150% CPU for 10+ min after healthy, with
     ''rebuilding freelist'' stuck at 98.9% (logged every minute) and the same ''vector refused by the HNSW index''
     warnings. Upgrade does NOT fix the spin; likely cause = freelist rebuil'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.

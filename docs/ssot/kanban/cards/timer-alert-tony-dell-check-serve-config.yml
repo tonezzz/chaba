@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-check-serve-config
 title: Timer check-serve-config on tony-dell failing
 column: done
-updated: 2026-11-20 18:50
+updated: 2026-11-21 17:42
 priority: high
 tags:
 - timer-alert
@@ -90,6 +90,10 @@ comms:
 - at: 2026-11-20 18:50
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of check-serve-config.service on tony-dell by inspecting the user journal via journalctl
   --user -u check-serve-config.service on the host, referencing the CMS timer-timeline-tony-dell. The target host
