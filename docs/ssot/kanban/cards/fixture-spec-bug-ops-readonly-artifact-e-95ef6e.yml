@@ -1,16 +1,16 @@
 id: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
 title: 'Fixture spec bug: ops-readonly artifact expect.required_keys mismatch'
 column: backlog
-updated: 2026-11-20 18:53
+updated: 2026-11-21 17:47
 ref: OPS-1176
 comms:
 - at: 2026-11-08 12:26
   from: devin
-  text: 'Found during ada-opencode-live-demo-opsread closeout (2026-11-07): run 1 failed ''required fields''
-    because the card''s expect.required_keys=[artifact,tests,verifier] doesn''t match the ops-readonly
-    artifact shape. verified:false was correct behavior, but the fixture spec itself is wrong — ops-readonly
-    jobs will keep failing verification until expect.required_keys matches the actual artifact contract.
-    Fix the fixture/card template so read_only runs verify cleanly.'
+  text: 'Found during ada-opencode-live-demo-opsread closeout (2026-11-07): run 1 failed ''required fields'' because
+    the card''s expect.required_keys=[artifact,tests,verifier] doesn''t match the ops-readonly artifact shape. verified:false
+    was correct behavior, but the fixture spec itself is wrong — ops-readonly jobs will keep failing verification
+    until expect.required_keys matches the actual artifact contract. Fix the fixture/card template so read_only
+    runs verify cleanly.'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -90,8 +90,11 @@ comms:
 - at: 2026-11-21 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the
-  chaba repository on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows
-  drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs redeployment via
-  scp. The done-condition is verified when the test suite passes without required_keys mismatches in the
-  ops-readonly artifact fixture and the runner-agent script is synchronized.
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the chaba repository
+  on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  and needs redeployment via scp. The done-condition is verified when the test suite passes without required_keys
+  mismatches in the ops-readonly artifact fixture and the runner-agent script is synchronized.
