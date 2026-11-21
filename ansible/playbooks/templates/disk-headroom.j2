@@ -1,0 +1,54 @@
+{# disk-headroom.j2 — per-host mount verdicts.
+   States: crit (any real mount >= crit_pct, disk-trend's flat rule),
+   warn (/ >= ssot max_root_disk_percent or / free < min_free_gib), ok.
+   Context: target, hostvars, audit_ssot, ssot_key_map, crit_pct,
+   min_free_gib. #}
+{%- set hk = ssot_key_map.get(target, target) -%}
+{%- set hs = (audit_ssot['hosts'] | default({})).get(hk) or {} -%}
+{%- set res = hs.get('expected_resources') or {} -%}
+{%- set root_max = (res.get('max_root_disk_percent') or 90) | int -%}
+{%- set ns = namespace(rows=[], unreachable=false) -%}
+{%- if hostvars[target].mounts is defined -%}
+{%-   for m in hostvars[target].mounts -%}
+{%-     set st = 'ok' -%}
+{%-     set why = [] -%}
+{%-     if m.pct | int >= crit_pct | int -%}
+{%-       set st = 'crit' -%}
+{%-       set _ = why.append('pct ' ~ m.pct ~ ' >= crit ' ~ crit_pct) -%}
+{%-     endif -%}
+{%-     if m.mount == '/' and m.pct | int >= root_max and st == 'ok' -%}
+{%-       set st = 'warn' -%}
+{%-       set _ = why.append('/ pct ' ~ m.pct ~ ' >= ssot max_root_disk_percent ' ~ root_max) -%}
+{%-     endif -%}
+{%-     if m.mount == '/' and (m.avail_kb | int) < min_free_gib * 1048576 -%}
+{%-       set st = 'crit' if st == 'crit' else 'warn' -%}
+{%-       set _ = why.append('/ avail ' ~ ((m.avail_kb | int) / 1048576) | round(1) ~ ' GiB < ' ~ min_free_gib ~ ' GiB guard floor') -%}
+{%-     endif -%}
+{%-     set _ = ns.rows.append({'mount': m.mount, 'fs': m.fs,
+        'size_gib': ((m.size_kb | int) / 1048576) | round(1),
+        'avail_gib': ((m.avail_kb | int) / 1048576) | round(1),
+        'pct': m.pct, 'state': st, 'why': why | join('; ')}) -%}
+{%-   endfor -%}
+{%- else -%}
+{%-   set ns.unreachable = true -%}
+{%- endif -%}
+{%- set worst = ns.rows | selectattr('state', 'eq', 'crit') | list -%}
+{%- set warns = ns.rows | selectattr('state', 'eq', 'warn') | list -%}
+{%- if ns.unreachable -%}
+{%-   set summary_text = 'unreachable ('
+        ~ ('offline_ok' if hs.get('offline_ok') else 'NOT offline_ok') ~ ')' -%}
+{%- elif worst -%}
+{%-   set summary_text = 'CRIT: ' ~ (worst | map(attribute='mount') | join(', '))
+        ~ ('; warn: ' ~ (warns | map(attribute='mount') | join(', ')) if warns else '') -%}
+{%- elif warns -%}
+{%-   set summary_text = 'warn: ' ~ (warns | map(attribute='mount') | join(', ')) -%}
+{%- else -%}
+{%-   set summary_text = 'ok (' ~ (ns.rows | length) ~ ' mounts)' -%}
+{%- endif -%}
+host: {{ hk }}
+inventory_host: {{ target }}
+unreachable: {{ ns.unreachable }}
+ssot_max_root_disk_percent: {{ root_max }}
+summary: {{ summary_text | to_json }}
+mounts:
+{{ ns.rows | to_nice_yaml | indent(2, true) }}

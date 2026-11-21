@@ -1,0 +1,119 @@
+---
+# audit-fleet-services.yml — fleet service-state audit vs ssot.audit.hosts.yml.
+#
+# Read-only Ansible port of `scripts/audit-hosts.py --all`: one JSON probe
+# per host (parallel over ssh), then the controller renders the same delta
+# list the Python script produces — expected_services / expected_absent /
+# allowed_running / known_failed / min_free_ram_mb / oom_kills_tolerance,
+# identical delta strings so results can be diffed 1:1 against
+# reports/audit-hosts/<host>-*.yml.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/audit-fleet-services.yml
+#   ansible-playbook playbooks/audit-fleet-services.yml --limit idc03
+#
+# Artifacts: reports/ansible-benchmark/services/<inventory_host>.yml
+# (controller-side, gitignored like reports/audit-hosts/).
+
+- name: Probe service + resource state on every Linux host
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/services"
+
+  tasks:
+    - name: Probe host state (single round-trip, JSON out)
+      ansible.builtin.shell: |
+        python3 - <<'PYEOF'
+        import json, subprocess
+        def sh(c):
+            try:
+                p = subprocess.run(["bash", "-c", c], capture_output=True,
+                                   text=True, timeout=60)
+                return p.stdout
+            except Exception:
+                return ""
+        def lines(t):
+            return [l.strip() for l in t.splitlines() if l.strip()]
+        def count(t):
+            ls = lines(t)
+            try:
+                return int(ls[-1])
+            except (ValueError, IndexError):
+                return 0
+        mem = sh("free -h | grep -E '^Mem:'").split()
+        dfr = sh("df -h / | tail -1").split()
+        out = {
+            "active_user": lines(sh(r"systemctl --user list-units --no-pager --plain 2>/dev/null | grep -E '\.(service|scope|timer)' | awk '{print $1, $3}'")),
+            "active_sys": lines(sh(r"systemctl list-units --state=active --no-pager --plain | grep -E '\.(service|scope|timer)' | awk '{print $1, $3}'")),
+            "failed_user": lines(sh(r"systemctl --user list-units --failed --no-pager --plain 2>/dev/null | grep -E '\.(service|scope)' | awk '{print $1}'")),
+            "failed_sys": lines(sh(r"systemctl list-units --failed --no-pager --plain | grep -E '\.(service|scope)' | awk '{print $1}'")),
+            "mem_available": mem[6] if len(mem) > 6 else (mem[3] if len(mem) > 3 else ""),
+            "disk_percent": dfr[4].rstrip("%") if len(dfr) >= 5 else "",
+            "oom_user": count(sh("journalctl --user --since '-24 hours ago' --no-pager -o cat 2>/dev/null | grep -ciF 'OOM killer'")),
+            "oom_sys": count(sh("journalctl --since '-24 hours ago' --no-pager -o cat 2>/dev/null | grep -ciE 'oom-kill|OOM killer|Out of memory'")),
+            "uptime": sh("uptime").strip(),
+        }
+        print(json.dumps(out))
+        PYEOF
+      register: probe
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+
+    - name: Store snapshot for the controller-side diff
+      ansible.builtin.set_fact:
+        snap: "{{ probe.stdout | from_json }}"
+      when: probe.stdout is defined and probe.stdout | length > 0
+      ignore_unreachable: true
+
+- name: Diff snapshots against ssot.audit.hosts.yml (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/services"
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    # inventory_hostname -> ssot.audit.hosts.yml key where they differ
+    ssot_key_map:
+      tony-macbook: macbook
+    # Noise tables copied verbatim from scripts/audit-hosts.py — keep in
+    # sync or parity checks will false-positive. Single lines on purpose:
+    # a folded '>-' scalar would inject spaces into the alternations.
+    noise_user_re: '^(init\.scope|session-.*|run-.*|app-.*|dbus\.service|at-spi-.*|gcr-ssh-agent.*|gnome-keyring.*|gpg-agent.*|gvfs-.*|mpris.*|pipewire.*|wireplumber.*|xdg-.*|filter-chain.*|plasma-.*|org\.gnome.*|org\.freedesktop.*|gsd-.*|evolution.*|tracker.*|ssh-agent.*|snap\..*|pk-.*|colord.*|obex.*|speech-dispatcher.*|kdeconnect.*|gnome-remote.*|rygel.*|systemd-.*|dconf\.service|localsearch.*|xfce4-notifyd.*|xfconfd.*|gnome-session-.*|chrome-remote-desktop-environment.*|podman-user-wait.*|screen-timeout-daemon.*|devin-task-.*|[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service)$'
+    hash_unit_re: '^[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service$'
+    fleet_sys_re: '(chaba|ada[-_.]|home-?assist|michael|ollama|mddb|vcast|go2rtc|nest|jev|kanban|cms|mcp[-_.]|cloudflared|cast-|camwall|sunsynk|devin|litellm|openjev|caddy|rclone|notebooklm|workflows|yomi|obsidian|input-bridge|barrier|gods-eye|gev[-_.]|playwright|yolo|xmeye|vms|raceman|helm|node-red|dnsmasq|gesture|plug-watch|secrets-console|status-data|trade-api|websockify|xvfb|bserver|redis|postgres|weaviate)'
+    failed_noise_re: '^(apport.*|NetworkManager-wait-online.*|xdg-desktop-portal.*|xfce4-notifyd.*|snapd\..*|grub-initrd-fallback.*)$'
+
+  tasks:
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+
+    - name: Load the audit SSOT
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../../docs/ssot/infrastructure/ssot.audit.hosts.yml"
+        name: audit_ssot
+
+    - name: Render per-host delta reports
+      ansible.builtin.template:
+        src: service-audit-deltas.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+
+    - name: Show deltas per host
+      ansible.builtin.debug:
+        msg: >-
+          {{ item }}: {{ (lookup('file', benchmark_out + '/' + item + '.yml')
+             | from_yaml).deltas | length }} delta(s)
+      loop: "{{ audited_hosts }}"

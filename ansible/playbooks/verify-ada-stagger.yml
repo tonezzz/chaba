@@ -1,0 +1,101 @@
+---
+# verify-ada-stagger.yml — checksum + drop-in audit for the idc03
+# ada-fleet-start-stagger (stacks/idc03/ada-start-stagger/, read-only).
+#
+# Ansible equivalent of the manual stack.yml verify: sha256 of the
+# installed ~/.local/bin/ada-start-stagger.sh vs the repo copy, plus each
+# declared unit's stagger.conf drop-in checked for the right offset and
+# TimeoutStartSec=180, plus the live ExecStartPre on one sample unit.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/verify-ada-stagger.yml
+#
+# Artifact: reports/ansible-benchmark/stagger/idc03.yml
+
+- name: Read installed stagger state on idc03
+  hosts: idc03
+  gather_facts: false
+  become: false
+  vars:
+    stagger_units: "{{ (lookup('file', playbook_dir ~ '/../../stacks/idc03/ada-start-stagger/stack.yml') | from_yaml).offsets }}"
+
+  tasks:
+    - name: Probe installed hook + drop-ins (single round-trip, JSON out)
+      ansible.builtin.shell: |
+        UNITS_JSON='{{ stagger_units | to_json }}' python3 - <<'PYEOF'
+        import hashlib, json, os, subprocess, sys
+        units = json.loads(os.environ["UNITS_JSON"])
+        def sh(c):
+            p = subprocess.run(["bash", "-c", c], capture_output=True,
+                               text=True, timeout=30)
+            return p.stdout
+        home = os.path.expanduser("~")
+        hook = os.path.join(home, ".local/bin/ada-start-stagger.sh")
+        out = {
+            "hook_present": os.path.isfile(hook),
+            "hook_sha256": hashlib.sha256(open(hook, "rb").read()).hexdigest()
+                           if os.path.isfile(hook) else None,
+            "hook_mode": oct(os.stat(hook).st_mode & 0o777)
+                           if os.path.isfile(hook) else None,
+            "dropins": {},
+            "ada_dev_execstartpre": sh(
+                "systemctl --user show ada-dev.service "
+                "-p ExecStartPre --value").strip(),
+        }
+        for u in units:
+            p_ = os.path.join(home, ".config/systemd/user",
+                              u + ".service.d", "stagger.conf")
+            out["dropins"][u] = (open(p_).read()
+                                 if os.path.isfile(p_) else None)
+        print(json.dumps(out))
+        PYEOF
+      args:
+        executable: /bin/bash
+      register: probe
+      changed_when: false
+      failed_when: false
+
+    - name: Store stagger snapshot
+      ansible.builtin.set_fact:
+        stagger: "{{ probe.stdout | from_json }}"
+      when: probe.stdout is defined and probe.stdout | length > 0
+
+- name: Compare against the declared stack (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/stagger"
+    stack: "{{ playbook_dir }}/../../stacks/idc03/ada-start-stagger"
+
+  tasks:
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+
+    - name: Expected sha256 of the repo hook
+      ansible.builtin.stat:
+        path: "{{ stack }}/ada-start-stagger.sh"
+        checksum_algorithm: sha256
+        get_checksum: true
+      register: hook_stat
+
+    - name: Expose it for the template
+      ansible.builtin.set_fact:
+        expected_hook_sha: "{{ hook_stat.stat.checksum }}"
+
+    - name: Render the verification report
+      ansible.builtin.template:
+        src: ada-stagger-verify.j2
+        dest: "{{ benchmark_out }}/idc03.yml"
+        mode: "0644"
+      vars:
+        observed: "{{ hostvars['idc03'].stagger }}"
+        stagger_offsets: >-
+          {{ (lookup('file', stack ~ '/stack.yml') | from_yaml).offsets }}
+
+    - name: Show verdict
+      ansible.builtin.debug:
+        msg: "{{ (lookup('file', benchmark_out + '/idc03.yml') | from_yaml).summary }}"

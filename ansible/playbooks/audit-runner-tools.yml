@@ -68,3 +68,40 @@
       ansible.builtin.debug:
         msg: "{{ audit.stdout_lines | default(['(no output)']) }}"
       when: audit.stdout_lines is defined
+
+# ---------------------------------------------------------------- sync mode
+# Opt-in enforcement: -e sync_mode=true. Converges ~/.local/bin/<tool>
+# onto the CONTROLLER's repo copy — a different convergence model than
+# sync-runner-tools.sh (which syncs against each host's own
+# ~/CascadeProjects/chaba checkout and carries pin/mtime never-downgrade
+# guards the copy module lacks). ALWAYS preview first:
+#   ansible-playbook playbooks/audit-runner-tools.yml --check --diff -e sync_mode=true
+# dispatch_repos.py is intentionally excluded below — per-host
+# repos.conf tables are legitimate drift (kk-mac ships chaba-only), the
+# shell script reports-but-never-overwrites it; keep the same rule here.
+
+- name: Converge runner tools onto the controller's repo copies
+  hosts: all:!disabled:!macos
+  gather_facts: false
+  become: false
+  vars:
+    sync_tools:
+      - src: scripts/board/runner-agent.py
+        dest: runner-agent
+      - src: scripts/devin/devin-dispatch.sh
+        dest: devin-dispatch
+      - src: scripts/devin/claude-dispatch.sh
+        dest: claude-dispatch
+      - src: scripts/devin/devin-dispatch-prune.sh
+        dest: devin-dispatch-prune
+      - src: scripts/devin/dispatch-queue.sh
+        dest: dispatch-queue
+
+  tasks:
+    - name: Install/update tool snapshot (no-op without -e sync_mode=true)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../..{{ '/' ~ item.src }}"
+        dest: "~/.local/bin/{{ item.dest }}"
+        mode: "0755"
+      loop: "{{ sync_tools }}"
+      when: sync_mode | default(false) | bool

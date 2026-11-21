@@ -1,0 +1,157 @@
+{# service-audit-deltas.j2 — per-host delta list vs ssot.audit.hosts.yml.
+   Mirrors scripts/audit-hosts.py diff_against_ssot() 1:1 (same order,
+   same delta strings) so reports/ansible-benchmark/services/<host>.yml
+   can be compared line-for-line with reports/audit-hosts/<host>-*.yml.
+   Context: target (inventory_hostname), hostvars, audit_ssot,
+   ssot_key_map, noise_user_re, hash_unit_re, fleet_sys_re,
+   failed_noise_re. #}
+{%- set hk = ssot_key_map.get(target, target) -%}
+{%- set hs = (audit_ssot['hosts'] | default({})).get(hk) or {} -%}
+{%- set ns = namespace(deltas=[], unreachable=false) -%}
+{%- if hs.get('retired') -%}
+{# retired hosts are outside the placement contract — no deltas #}
+{%- elif hostvars[target].snap is not defined -%}
+{%-   set ns.unreachable = true -%}
+{%-   if not hs.get('offline_ok') -%}
+{%-     set _ = ns.deltas.append(
+          "host unreachable via ssh — empty snapshot "
+          ~ "(mark offline_ok/retired in ssot.audit.hosts.yml if intended)") -%}
+{%-   endif -%}
+{%- else -%}
+{%-   set snap = hostvars[target].snap -%}
+{%-   set au_pairs = snap.active_user | map('split') | list -%}
+{%-   set as_pairs = snap.active_sys | map('split') | list -%}
+{%-   set au = au_pairs | map(attribute=0) | list -%}
+{%-   set asys = as_pairs | map(attribute=0) | list -%}
+{%-   set ru = au_pairs | selectattr(1, 'eq', 'active') | map(attribute=0) | list -%}
+{%-   set rsys = as_pairs | selectattr(1, 'eq', 'active') | map(attribute=0) | list -%}
+{%-   set fu = snap.failed_user -%}
+{%-   set fs = snap.failed_sys -%}
+{%-   set expected = hs.get('expected_services') or [] -%}
+{%-   set expected_names = expected | map(attribute='name') | list -%}
+{%-   set known_failed = (hs.get('known_failed') or []) | map(attribute='name') | list -%}
+{# --- expected_resources: min_free_ram_mb (audit-hosts.py does NOT
+       enforce max_root_disk_percent — parity means skipping it too) #}
+{%-   set res = hs.get('expected_resources') or {} -%}
+{%-   set avail = snap.mem_available | default('') -%}
+{# ansible's regex_search returns the whole match (no group list on this
+   version) — extract number/unit via regex_replace backrefs instead.
+   NOTE: inside a template '\1' is an octal escape (\x01) — write '\\1' #}
+{%-   set mnum = avail | regex_replace('^([0-9.]+)\s*(\w+).*', '\\1') -%}
+{%-   set munit = avail | regex_replace('^([0-9.]+)\s*(\w+).*', '\\2') | lower -%}
+{%-   if mnum != avail and res.get('min_free_ram_mb') -%}
+{%-     set mb = (mnum | float) * (1024 if munit == 'gi' else 1) -%}
+{%-     if mb < res['min_free_ram_mb'] | int -%}
+{%-       set _ = ns.deltas.append(
+            "free RAM " ~ avail ~ " below threshold "
+            ~ res['min_free_ram_mb'] ~ " MiB") -%}
+{%-     endif -%}
+{%-   endif -%}
+{# --- expected_services #}
+{%-   for exp in expected -%}
+{%-     set name = exp['name'] -%}
+{%-     set typ = exp.get('type', 'service') -%}
+{%-     set scope = exp.get('scope', 'user') -%}
+{%-     set present_in = asys if scope == 'system' else au -%}
+{%-     set running_in = rsys if scope == 'system' else ru -%}
+{%-     set want = exp.get('expected_state') or 'active' -%}
+{%-     set present = (name in present_in)
+          or (typ == 'scope' and (present_in | select('match', '^' ~ name ~ '-.*\.scope$') | list | length) > 0) -%}
+{%-     set running = (name in running_in)
+          or (typ == 'scope' and (running_in | select('match', '^' ~ name ~ '-.*\.scope$') | list | length) > 0) -%}
+{%-     if running and want in ['inactive', 'absent'] -%}
+{%-       set _ = ns.deltas.append("Declared-" ~ want ~ " service is running: " ~ name) -%}
+{%-     elif present
+          or want in ['inactive', 'absent']
+          or name in known_failed
+          or (exp.get('note') or '').startswith('Currently disabled')
+          or name in fu or name in fs -%}
+{%-     else -%}
+{%-       set _ = ns.deltas.append("Expected service missing: " ~ name) -%}
+{%-     endif -%}
+{%-   endfor -%}
+{# --- expected_absent #}
+{%-   set absent_names = [] -%}
+{%-   for a in hs.get('expected_absent') or [] -%}
+{%-     set an = a['name'] if a is mapping else a -%}
+{%-     set ascope = a.get('scope', 'user') if a is mapping else 'user' -%}
+{%-     set _ = absent_names.append(an) -%}
+{%-     if an not in expected_names -%}
+{%-       set running_in = rsys if ascope == 'system' else ru -%}
+{%-       set present_in = asys if ascope == 'system' else au -%}
+{%-       if an in running_in -%}
+{%-         set note = (a.get('note') or '') if a is mapping else '' -%}
+{%-         set _ = ns.deltas.append(
+              "Declared-absent service still running: " ~ an
+              ~ (" — " ~ note if note else "")) -%}
+{%-       elif an in present_in -%}
+{%-         set _ = ns.deltas.append(
+              "Declared-absent unit tried to start (failed): " ~ an) -%}
+{%-       endif -%}
+{%-     endif -%}
+{%-   endfor -%}
+{# --- allowed_running (fnmatch globs -> regex; covers * ? and literals,
+       enough for the current pattern set e.g. 'devin-task-*.service') #}
+{%-   set allow = [] -%}
+{%-   for a in hs.get('allowed_running') or [] -%}
+{%-     set p = a if a is string else (a.get('name') or '') -%}
+{%-     set _ = allow.append(
+          '^' ~ (p | regex_replace('\.', '\.') | regex_replace('\*', '.*')
+                  | regex_replace('\?', '.')) ~ '$') -%}
+{%-   endfor -%}
+{%-   for unit in ru -%}
+{%-     set allowed = false -%}
+{%-     for p in allow -%}
+{%-       if unit | regex_search(p) -%}{%- set allowed = true -%}{%- endif -%}
+{%-     endfor -%}
+{%-     if unit.endswith('.service') and not allowed
+          and unit not in expected_names and unit not in absent_names
+          and not (unit | regex_search(noise_user_re))
+          and not (unit | regex_search(hash_unit_re)) -%}
+{%-       set _ = ns.deltas.append(
+            "Unexpected running user service: " ~ unit ~ " "
+            ~ "(declare in expected_services, whitelist in "
+            ~ "allowed_running, or stop it)") -%}
+{%-     endif -%}
+{%-   endfor -%}
+{%-   for unit in rsys -%}
+{%-     set allowed = false -%}
+{%-     for p in allow -%}
+{%-       if unit | regex_search(p) -%}{%- set allowed = true -%}{%- endif -%}
+{%-     endfor -%}
+{%-     if unit.endswith('.service') and not allowed
+          and unit not in expected_names and unit not in absent_names
+          and not (unit | regex_search(hash_unit_re))
+          and (unit | regex_search(fleet_sys_re)) -%}
+{%-       set _ = ns.deltas.append(
+            "Unexpected fleet-looking system service: " ~ unit) -%}
+{%-     endif -%}
+{%-   endfor -%}
+{# --- failed units #}
+{%-   for f in fu -%}
+{%-     if f not in known_failed and not f.startswith('session-')
+          and not (f | regex_search(failed_noise_re)) -%}
+{%-       set _ = ns.deltas.append("Unexpected failed user service: " ~ f) -%}
+{%-     endif -%}
+{%-   endfor -%}
+{%-   for f in fs -%}
+{%-     if f not in known_failed and not (f | regex_search(failed_noise_re)) -%}
+{%-       set _ = ns.deltas.append("Unexpected failed system service: " ~ f) -%}
+{%-     endif -%}
+{%-   endfor -%}
+{# --- OOM kills #}
+{%-   set oom_u = snap.oom_user | int -%}
+{%-   set oom_s = snap.oom_sys | int -%}
+{%-   set tol = (hs.get('oom_kills_tolerance') or 0) | int -%}
+{%-   if oom_u + oom_s > tol -%}
+{%-     set _ = ns.deltas.append(
+          "OOM kills in last 24h: " ~ (oom_u + oom_s) ~ " "
+          ~ "(user=" ~ oom_u ~ ", system=" ~ oom_s
+          ~ ", tolerance=" ~ tol ~ ")") -%}
+{%-   endif -%}
+{%- endif -%}
+host: {{ hk }}
+inventory_host: {{ target }}
+unreachable: {{ ns.unreachable }}
+deltas:
+{{ ns.deltas | to_nice_yaml | indent(2, true) }}

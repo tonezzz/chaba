@@ -1,0 +1,107 @@
+---
+# disk-headroom.yml — fleet disk-headroom audit (read-only).
+#
+# Instantaneous counterpart to scripts/ada/disk-trend-watch.py and the
+# mddb-backup pre-flight guard (job 2026-11-19-backup-disk-headroom-guard):
+# one df probe per host (parallel), controller evaluates every real mount
+# against BOTH yardsticks:
+#   * disk-trend's flat CRIT_PCT=90 on any real mount
+#   * ssot.audit.hosts.yml expected_resources.max_root_disk_percent for /
+#     (85 on most hosts — audit-hosts.py declares it but never enforces)
+#   * the mddb guard's absolute floor: free >= 15 GiB on /
+# disk-trend still owns the *trend* (slope over jsonl history) — ansible
+# runs are stateless, this playbook only covers the instantaneous check.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/disk-headroom.yml
+#
+# Artifacts: reports/ansible-benchmark/disk/<inventory_host>.yml
+
+- name: Probe mount state on every Linux host
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: df probe (single round-trip, JSON out)
+      ansible.builtin.shell: |
+        python3 - <<'PYEOF'
+        import json, subprocess
+        SKIP_FS = {"tmpfs", "devtmpfs", "overlay", "squashfs", "ramfs",
+                   "efivarfs", "autofs", "binfmt_misc", "debugfs",
+                   "tracefs", "securityfs", "pstore", "bpf", "hugetlbfs",
+                   "mqueue", "devpts", "proc", "sysfs", "cgroup",
+                   "cgroup2", "nsfs", "fusectl", "configfs", "shm",
+                   "none", "selinuxfs", "fuse.gvfsd-fuse", "fuse.portal",
+                   "fuse.rclone", "fuse.sshfs"}
+        SKIP_MT = ("/snap", "/var/snap", "/run", "/dev")
+        out = []
+        p = subprocess.run(["df", "-PTk"], capture_output=True,
+                           text=True, timeout=30)
+        for l in p.stdout.splitlines()[1:]:
+            f = l.split()
+            if len(f) < 7:
+                continue
+            fs, typ, size, _used, avail, cap, mount = \
+                f[0], f[1], int(f[2]), f[3], int(f[4]), f[5], f[6]
+            if typ in SKIP_FS or mount.startswith(SKIP_MT):
+                continue
+            out.append({"fs": fs, "type": typ, "mount": mount,
+                        "size_kb": size, "avail_kb": avail,
+                        "pct": int(cap.rstrip("%"))})
+        print(json.dumps(out))
+        PYEOF
+      register: diskprobe
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+
+    - name: Store mount snapshot
+      ansible.builtin.set_fact:
+        mounts: "{{ diskprobe.stdout | from_json }}"
+      when: diskprobe.stdout is defined and diskprobe.stdout | length > 0
+      ignore_unreachable: true
+
+- name: Evaluate thresholds vs SSOT (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/disk"
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    ssot_key_map:
+      tony-macbook: macbook
+    crit_pct: 90          # disk-trend CRIT_PCT — flat fleet crit
+    min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
+
+  tasks:
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+
+    - name: Load the audit SSOT
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../../docs/ssot/infrastructure/ssot.audit.hosts.yml"
+        name: audit_ssot
+
+    - name: Render per-host disk verdicts
+      ansible.builtin.template:
+        src: disk-headroom.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+
+    - name: Show alerts
+      ansible.builtin.debug:
+        msg: >-
+          {{ item }}: {{ (lookup('file', benchmark_out + '/' + item + '.yml')
+             | from_yaml).summary }}
+      loop: "{{ audited_hosts }}"
