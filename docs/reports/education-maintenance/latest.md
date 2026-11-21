@@ -1,4 +1,4 @@
-# Education maintenance — 2026-11-20
+# Education maintenance — 2026-11-21
 
 **137 lessons** · 137 flagged · 0 clean · compliance **0.8029** · verify **pass**
 
@@ -30,22 +30,23 @@ Reused components: `lessons-audit.py` (R1–R5), `lessons-drift.py` (source refs
 
 ## Compliance trend
 
-0.8029 now vs 0.7700 on 2026-11-07 (Δ+0.0329, flagged Δ+43) · polish anchor 0.9307→0.9916 (2026-10-24)
+0.8029 now vs 0.8029 on 2026-11-20 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
 
 ## Source drift (lessons-drift)
 
-drifted **14** · source-gone **41** · no-repo-source 81
+drifted **14** · source-gone **42** · no-repo-source 81
 
 | slug | topic | flags |
 |---|---|---|
 | `lesson-227dddf98997` | phonon2-audiocpp-stt-deploy | `drift:scripts/ops/deploy-diff.sh(2026-11-17>2026-11-07)` |
+| `lesson-b9ece3f3e140` | devnest-jules-lane | `source-gone:scripts/jules/jules.py` |
 | `lesson-36d0ad2a2900` | Collection-scoped vector search — the 35x BGE shad | `drift:docs/ssot/jobs/ada/2026-11-05-bge-m3-space-eval.md(2026-11-08>2026-11-07)` |
 | `lesson-37b6ef0a2561` | Kornia for Gaussian splat capture evaluation | `drift:scripts/gs/image_set_eval.py(2026-11-07>2026-11-03)`<br>`drift:mcp-servers/mcp-kornia/server.py(2026-11-08>2026-11-03)` |
-| `lesson-e3ca7f942dc9` | jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-17>2026-10-31)` |
-| `lesson-ad209dd0ef19` | jevteam-jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-17>2026-10-30)` |
+| `lesson-e3ca7f942dc9` | jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-20>2026-10-31)` |
+| `lesson-ad209dd0ef19` | jevteam-jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-20>2026-10-30)` |
 | `lesson-2f962413593c` | NCM plus JEV plus Nest benchmark | `drift:docs/kb/ncm-jev-nest-exploration-procedure.md(2026-11-08>2026-10-28)` |
 | `lesson-549066365c71` | Telegram and LINE messenger control planes | `source-gone:docs/ssot/apps/ssot.messaging-lanes.yml` |
-| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-07>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-19>2026-10-27)` |
+| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-07>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-20>2026-10-27)` |
 | `lesson-bf6ce090216d` | Cline Kanban vs WordPress board apps | `source-gone:apps/board/index.html`<br>`drift:docs/ssot/apps/ssot.wp-boards.yml(2026-11-07>2026-10-28)` |
 | `lesson-cec1225f6869` | DevNest voice readiness and Telegram group policy | `drift:docs/kb/telegram-conversation-standard.md(2026-11-07>2026-10-31)`<br>`source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
 | `lesson-d5f4ea8e2f2d` | devnest-continuous-improvement-standard | `source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
@@ -344,7 +345,7 @@ due **137** · upcoming **0** · learned 0
 | `lesson-b6a057d429d5` | KK-Mac video rendering: one-cut proof to revi | spaced review due 2026-11-11 — Tony's review queue |
 | `lesson-b8e17de59152` | mcp-fleet-audit-procedure | referenced source doc gone — re-point the lesson or commit the doc [source-gone:docs/tools/mcp-fleet-audit.md]<br>spaced review due 2026-11-02 — Tony's review queue |
 | `lesson-b9ab7c03e1d3` | Ada Nest — gate cascades and adaptive depth | spaced review due 2026-10-27 — Tony's review queue |
-| `lesson-b9ece3f3e140` | devnest-jules-lane | spaced review due 2026-11-14 — Tony's review queue |
+| `lesson-b9ece3f3e140` | devnest-jules-lane | referenced source doc gone — re-point the lesson or commit the doc [source-gone:scripts/jules/jules.py]<br>spaced review due 2026-11-14 — Tony's review queue |
 | `lesson-ba44b7fd57e7` | Ada Nest — architecture map | referenced source doc gone — re-point the lesson or commit the doc [source-gone:docs/tools/ai-workforce-eval.md]<br>spaced review due 2026-10-27 — Tony's review queue |
 | `lesson-ba6019a60b96` | opencode-ada-command-manual | spaced review due 2026-11-14 — Tony's review queue |
 | `lesson-bab732f3fa0b` | vps-fleet-placement-and-providers | spaced review due 2026-10-28 — Tony's review queue |
@@ -392,7 +393,7 @@ due **137** · upcoming **0** · learned 0
 
 ## Verify
 
-status **pass** · digest `9e5cb1b1b271081b`
+status **pass** · digest `6418f0873e6bfb62`
 - ✓ total_matches_list rows=137 list=137 count=137
 - ✓ buckets_sum 137+0+0
 - ✓ due_rows_match 
@@ -406,4 +407,4 @@ status **pass** · digest `9e5cb1b1b271081b`
 - card: `education-maintenance-consolidated-report` · education-due page: private WP page slug education-due (post 354)
 - member index: https://boards.surf-thailand.com/wp/lesson/
 - runbook: `docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml` · exceptions: `scripts/lesson-thai-exceptions.yml`
-- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-20T00:52:00+00:00
+- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-21T00:51:54+00:00
