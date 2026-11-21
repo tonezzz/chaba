@@ -669,15 +669,24 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
     if dry:
         print(f"  [dry] request {cid}/{rid}: {ask[:120]}")
         return
-    # merge-conflict asks always carry the same decision shape — without
-    # options the board renders an open request with no buttons (the
-    # "cards without decision buttons" complaint 2026-10-15).
-    opts = ["let devin resolve the conflict and land it ★",
-            "drop this dispatch — re-dispatch fresh from current main",
-            "hold the card"]
+    # merge-conflict asks carry explicit option actions (KNB-0178,
+    # Tony-approved execute-answer): resolve re-arms a devin dispatch
+    # (the conflict comms on the card are its marching orders), drop
+    # retries from current main, hold parks it. answer-sweep executes
+    # dict options with an `action`; legacy string-option asks stay owned
+    # and are never retroactively executed. Without options the board
+    # renders a dead request (the 2026-10-15 no-buttons complaint).
+    opts = [
+        {"id": "resolve", "action": "queue",
+         "label": "let devin resolve the conflict and land it ★"},
+        {"id": "drop", "action": "retry",
+         "label": "drop this dispatch — re-dispatch fresh from current main"},
+        {"id": "hold", "action": "hold", "label": "hold the card"},
+    ]
+    suggested = "resolve — let devin resolve the conflict and land it ★"
     r = api_post("/request", {"id": cid, "from": "chaba",
                               "ask": ask, "request_id": rid,
-                              "options": opts, "suggested": opts[0]})
+                              "options": opts, "suggested": suggested})
     if not r.get("error"):
         return
     def add(c):
@@ -685,7 +694,7 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
         if any(x.get("id") == rid for x in reqs):
             return False
         reqs.append({"id": rid, "ask": ask, "status": "open",
-                     "options": opts, "suggested": opts[0],
+                     "options": opts, "suggested": suggested,
                      "at": now(), "from": "chaba"})
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba",
@@ -708,18 +717,20 @@ def stamp(cid: str, key: str, val, dry: bool) -> None:
     locked_edit(cid, add, touch=False)
 
 
-def open_conflict_req(card: dict) -> bool:
-    """An unanswered merge-conflict* request already sits on the card."""
-    for r in card.get("requests") or []:
-        if str(r.get("id", "")).startswith("merge-conflict") \
-                and r.get("status") != "answered":
-            return True
-    return False
+def conflict_sig(head: str, files: str) -> str:
+    """Stable identity of a conflict event: branch head + conflicted
+    paths. Answering a request is NOT a new event — only a changed head
+    (new commits) or changed conflict paths are. The 2026-11-21 flood
+    (~50 duplicate asks on three cards) came from gating on answer state
+    instead: a human answered, the next 15-min pass saw no open request
+    and minted merge-conflict-N+1 again. Truncated head is ample here."""
+    return f"{(head or '')[:12]}|{files}"
 
 
 def conflict_rid(card: dict) -> str:
     """merge-conflict, merge-conflict-2, ... — one request per distinct
-    conflict event; a re-conflict after a human answered gets a new id."""
+    conflict event; a genuinely new conflict (changed head/paths) gets a
+    new id. Answering alone never does (gated by the conflict_sig stamp)."""
     n = sum(1 for r in card.get("requests") or []
             if str(r.get("id", "")).startswith("merge-conflict"))
     return "merge-conflict" if n == 0 else f"merge-conflict-{n + 1}"
@@ -1566,9 +1577,15 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return True
     if res.get("conflicts"):
         files = ", ".join(str(f) for f in res["conflicts"][:10])
-        # comms rides the request — without it, every 15min pass would
-        # repost the same conflict line while it waits on a human
-        if not open_conflict_req(card):
+        # Gate on the conflict SIGNATURE (head + paths), not on whether a
+        # request is still unanswered. The old open_conflict_req() check
+        # treated "answered" as "new event", so every pass after a human
+        # answered minted another merge-conflict-N request (KNB-0178, the
+        # 2026-11-21 flood). A card with no stamp yet posts once and is
+        # stamped; answering never re-arms it, only a changed head/paths
+        # does. comms rides the same gate so the line isn't reposted either.
+        sig = conflict_sig(head, files)
+        if (a.get("sweep") or {}).get("conflict_sig") != sig:
             card_note(cid, f"merge-sweep: {probe.get('branch')} "
                            f"conflicts with {base_ref}: {files} — "
                            "merge aborted, card stays for human "
@@ -1580,6 +1597,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
                          f"conflicted paths: {files}. Merge "
                          f"{runner or 'local'}:{probe.get('worktree')} "
                          "by hand, or retry/abandon the card.", dry)
+            stamp(cid, "conflict_sig", sig, dry)
         return True
     flag_once(card, "merge_err",
               f"merge-sweep: landing devin-task-{tid} failed: "

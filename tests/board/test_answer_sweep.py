@@ -111,6 +111,29 @@ class Pending(unittest.TestCase):
                            req("merge-conflict-2", "dropped")])
         self.assertEqual(swe.pending(c), [])
 
+    def test_merge_conflict_explicit_action_executes(self):
+        # KNB-0178 execute-answer: new merge-conflict asks carry dict
+        # options with an explicit action — the answered choice must be
+        # executable despite the owned prefix (resolve->queue, drop->
+        # retry, hold->hold).
+        opts = [
+            {"id": "resolve", "action": "queue",
+             "label": "let devin resolve the conflict and land it ★"},
+            {"id": "drop", "action": "retry",
+             "label": "drop this dispatch — re-dispatch fresh from main"},
+            {"id": "hold", "action": "hold", "label": "hold the card"},
+        ]
+        for i, want in enumerate(("queue", "retry", "hold")):
+            ans = f"{opts[i]['id']} — {opts[i]['label']}"
+            r = req("merge-conflict", ans, options=opts)
+            self.assertEqual(swe.classify(r)[0], want, ans)
+            self.assertEqual(swe.pending(card(requests=[r])), [r], ans)
+        # legacy string-option merge-conflict asks stay owned — no
+        # retroactive execution of the ~50 historical answers
+        legacy = req("merge-conflict", "let devin resolve it",
+                     options=["let devin resolve it", "hold the card"])
+        self.assertEqual(swe.pending(card(requests=[legacy])), [])
+
     def test_skips_executed_and_open(self):
         c = card(requests=[
             req("a", "queue", executed="2026-10-14 queue"),
