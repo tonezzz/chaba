@@ -164,6 +164,10 @@ _devin_run() { # unit worktree prompt_file extra-args...
   # DISPATCH_UNIT_PROPS: extra systemd-run properties, e.g.
   #   "--property=CPUWeight=30 --property=IOWeight=30" to deprioritize
   #   sessions on an interactive host (keeps the desktop responsive).
+  # systemd expands ${VAR} in ExecStart itself — ${PIPESTATUS[0]} was
+  # swallowed here ("Invalid environment variable name ... PIPESTATUS[0]")
+  # so the real pipeline status was lost. Use pipefail + $? instead
+  # (probe-verified on idc02 2026-11-21: a failing pipeline yields rc=7).
   # shellcheck disable=SC2086
   systemd-run --user --unit="$unit" --working-directory="$wt" --collect \
     ${DISPATCH_UNIT_PROPS:-} \
@@ -173,14 +177,14 @@ _devin_run() { # unit worktree prompt_file extra-args...
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
     ${DISPATCH_RETRY_MAX:+--setenv=DISPATCH_RETRY_MAX="$DISPATCH_RETRY_MAX"} \
     ${DISPATCH_RETRY_SLEEP:+--setenv=DISPATCH_RETRY_SLEEP="$DISPATCH_RETRY_SLEEP"} \
-    /bin/bash -c 'attempt=1; max="${DISPATCH_RETRY_MAX:-3}"; \
+    /bin/bash -c 'set -o pipefail; attempt=1; max="${DISPATCH_RETRY_MAX:-3}"; \
       while :; do \
         rc=0; \
         "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
           ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
           --respect-workspace-trust false --prompt-file "$PROMPT" "$@" \
           2>&1 | tee "$TASK_DIR/run.$attempt.log"; \
-        rc=${PIPESTATUS[0]}; \
+        rc=$?; \
         [ "$rc" -eq 0 ] && break; \
         if [ "$attempt" -ge "$max" ] || \
            ! grep -qiE "rate.?limit|retryable\" *: *true|errorKind\" *: *\"unavailable\"" \
