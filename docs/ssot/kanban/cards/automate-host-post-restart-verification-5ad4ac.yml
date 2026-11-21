@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: backlog
-updated: 2026-11-21 17:47
+updated: 2026-11-21 19:09
 action:
   type: manual
   status: idle
@@ -175,3 +175,28 @@ requests:
     (ran post-restart claim passes; oneshot exits 0 on tony-omen/idc03, active on tony-macbook); idc02 binary updated
     (service was inactive). Dri'
 awaiting_action: true
+brief: Automate boot/post-restart verification via boot-id-change detection and check-only transition.post_restart
+  pass.
+spec: 'Extend the existing mcp-health-snapshot path to automate host post-restart verification (check-only).
+
+
+  Scope:
+
+  - Detect boot-id change (or reboot marker) and run one check-only post-restart verification pass per boot.
+
+  - Canonical checklist: docs/kb/host-reboot-verification.md and docs/ssot/infrastructure/ssot.operations.yml#transition.post_restart.
+
+  - Reuse/extend mcp-health-snapshot timer/script (already OnBootSec=5min/OnUnitActiveSec=15min); do not create
+  a parallel ad-hoc mechanism unless justified.
+
+  - Record structured result and open focus-inbox findings on failures; no auto-remediation.
+
+  - Update stale checklist refs: Omen CPU cap is 2.00GHz (not 2.20GHz); Barrier retired (no barriers.service/barrier-client/24800
+  expectation), keep only barrier-pin-vt where still present.
+
+  - First pass scoped to configured hosts with host-specific checks gated by SSOT; avoid duplicate spam on repeated
+  timer runs.
+
+
+  Verify: boot-id change triggers one pass, structured report/findings produced on failure, no duplicate spam, check-only
+  behavior. Convert action to dispatchable implementation spec before queueing (current manual action starves).'
