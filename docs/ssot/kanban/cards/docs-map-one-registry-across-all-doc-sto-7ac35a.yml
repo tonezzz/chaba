@@ -1,7 +1,7 @@
 id: docs-map-one-registry-across-all-doc-sto-7ac35a
 title: Docs map — one registry across all doc stores (repo/gdrive/wiki/mddb/wp)
 column: doing
-updated: 2026-11-21 19:15
+updated: 2026-11-21 19:17
 ref: OPS-1184
 comms:
 - at: 2026-11-08 12:56
@@ -141,6 +141,10 @@ comms:
     families incl frozen lesson archive) each with owner/canonical/write-path/authority/lookup-recipe/gaps + a 14-row
     doc_types map. Check: python3 scripts/ssot-docs-map-check.py [--live] — green, all endpoints probe 200. Index
     + CHANGELOG + job record docs/ssot/jobs/infrastructure/20'
+- at: 2026-11-21 19:17
+  from: chaba
+  text: 'merge-sweep: devin-task-20261121-190814-produce-docs-ssot-infrastructu no longer active on idc02 but card
+    still says running — sweeping its branch'
 requests:
 - id: the-docs-map-one-registry-acro-3db200
   ask: The 'docs-map-one-registry-across-all-doc-sto-7ac35a' card requires creating a unified documentation registry
@@ -205,5 +209,7 @@ action:
   target_host: idc02
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-21 19:17
 claim:
   since: 2026-11-21 19:06
