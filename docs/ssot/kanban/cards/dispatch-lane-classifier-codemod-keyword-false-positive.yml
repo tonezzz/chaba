@@ -2,7 +2,7 @@ id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
 column: backlog
-updated: 2026-11-21 15:18
+updated: 2026-11-21 16:54
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -163,5 +163,12 @@ comms:
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
     the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-21 16:54
+  from: devin
+  text: 'SALVAGED + READY FOR REVIEW 2026-11-21 (branch/unmerged, NOT on master): attempt 2 did the work on tony-macbook
+    then hit a provider rate limit before pushing. Recovered to origin: wip/dispatch/20261120-194516-repo-work-chaba-scripts-board-
+    (7bbb822478; raw checkpoint) and review branch fix/ops-0028-codemod-lane-gate (f9afef207a: cherry-picked onto
+    master 2106856593 + the missing runner-tooling.manifest.json pin bump for runner_agent AND dispatch_repos —
+    the pin guard 18597619d1 landed after the '
 claim:
   since: 2026-11-20 19:42

@@ -1,0 +1,30 @@
+id: test-runner-agent-lane-hangs-on-master
+title: 'tests/board/test_runner_agent_lane.py hangs: StartTaskLaneTest::test_devin_model_survives_on_devin_path
+  (also on plain master)'
+column: backlog
+updated: 2026-11-21 16:54
+brief: '2026-11-21: on idc02, pytest tests/board/test_runner_agent_lane.py passes the first test then blocks indefinitely
+  at test_devin_model_survives_on_devin_path (timeout 30/100/280s all hit). Same on plain origin/master 2106856593,
+  so not caused by OPS-0028. Other board tests (contract 7, classify 26, board-api 27+3) pass in ~1s each.'
+priority: low
+tags:
+- tests
+- runner-agent
+spec: 'REPO work (chaba, tests/board/test_runner_agent_lane.py + scripts/board/runner-agent.py start_task path).
+  WORKTREE ONLY; no deploy.
+
+
+  Find why test_devin_model_survives_on_devin_path blocks (likely start_task launching a real devin-dispatch/systemd-run
+  or waiting on a subprocess/network without a timeout or mock). Make the test hermetic (mock the launcher / assert
+  on the built command) and add a hard per-test timeout so a hang fails fast instead of stalling the merge gate.
+  Check whether the close-out merge gate runs this file and whether it has been silently timing out there. DONE-CONDITION:
+  the file passes in <10s on idc02 and on a host without devin; outcome note says whether any merge gate was affected.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+ref: OPS-0011
+comms:
+- at: 2026-11-21 16:54
+  from: devin
+  text: card captured via board-api
