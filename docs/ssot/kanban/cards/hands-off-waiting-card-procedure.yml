@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: done
-updated: 2026-11-20 18:48
+updated: 2026-11-21 15:05
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -274,9 +274,15 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:05
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 claim: {}
 review_kind: verify
 auto_close:
   by: merge-sweep
   at: 2026-11-08 08:48
   note: verified — evidence checks green, closing itself
+awaiting_action: true
