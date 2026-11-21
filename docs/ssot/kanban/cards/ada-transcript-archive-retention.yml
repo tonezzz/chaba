@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: done
-updated: 2026-11-22 04:48
+updated: 2026-11-22 05:24
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -357,6 +357,10 @@ comms:
   from: chaba
   text: 'weekly lane-retention michael: 28 transcript(s) -> NLM (389 skipped), 16 ops docs swept (30d), 1 extract
     group(s) -> canonical, 3 superseded'
+- at: 2026-11-22 05:24
+  from: chaba
+  text: 'transcript-archive run 2026-11-21T22:24:31.771451+00:00: uploaded 100, failed 0 (limit 100, min-age 48.0h).
+    lanes: dev=2, kk=5, unknown=93. notebook=Ada — Transcript Archive (c36cd0fc…). state=/home/tony/.local/share/ada/transcript-archive-state.json'
 action:
   type: dispatch
   repo: chaba
