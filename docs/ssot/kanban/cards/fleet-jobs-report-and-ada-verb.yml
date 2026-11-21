@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
-column: backlog
-updated: 2026-11-21 16:28
+column: doing
+updated: 2026-11-21 16:43
 priority: high
 tags:
 - devnest
@@ -27,11 +27,13 @@ action:
   repo: chaba
   executor: devin
   lane: devin
-  status: queued
+  status: running
   sweep:
     stale_running: 2026-11-09 19:19
     session_gone: 2026-11-09 19:19
     failed_noted: 2026-11-09 19:34
+  runner: tony-omen
+  attempts: 1
 ref: ADA-1279
 comms:
 - at: 2026-11-09 16:37
@@ -343,5 +345,10 @@ comms:
   text: 'Re-armed after the real cause of the 2026-11-20 INVALIDARGUMENT failure was fixed: the retry build put
     ${PIPESTATUS[0]} in devin-dispatch''s systemd ExecStart, which systemd expanded before bash saw it (237ec9b33a,
     regression test + pin bump; fixed build 156113c8 deployed fleet-wide). Cleared stale failure/result/attempt/runner
-    and the old claim; re-queued on executor=devin / lane=devin. Unmerged work still on
-    origin/fix/fleet-jobs-report-accuracy (2c9fa451b5fe) — build on it.'
+    and the old claim; re-queued on executor=devin / lane=devin. Unmerged work still on origin/fix/fleet-jobs-report-accuracy
+    (2c9fa451b5fe) — build on it.'
+- at: 2026-11-21 16:43
+  from: tony-omen
+  text: claimed
+claim:
+  since: 2026-11-21 16:43
