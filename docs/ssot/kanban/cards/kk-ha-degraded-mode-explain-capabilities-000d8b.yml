@@ -7,20 +7,21 @@ ref: HOM-0700
 comms:
 - at: 2026-10-15 12:30
   from: devin
-  text: 'KK hit the wall 2026-10-14: OR credit (ada-daily) ran out mid-day after $2.74 of kk-lane use; Devin removed
-    the image alias from her LiteLLM key (kk models now: lite,tool-call,chat,summary,voice-aux,classify,vision,embedding).
-    She is effectively on free tier — but her lane currently answers credit exhaustion the worst way: silence/error.
+  text: 'KK hit the wall 2026-10-14: OR credit (ada-daily) ran out mid-day after $2.74 of kk-lane use;
+    Devin removed the image alias from her LiteLLM key (kk models now: lite,tool-call,chat,summary,voice-aux,classify,vision,embedding).
+    She is effectively on free tier — but her lane currently answers credit exhaustion the worst way:
+    silence/error.
 
 
-    Spec: when an LLM call fails with insufficient-credits/model-unavailable, the member lane should reply with
-    a defined degraded-mode notice — what still works ('
+    Spec: when an LLM call fails with insufficient-credits/model-unavailable, the member lane should reply
+    with a defined degraded-mode notice — what still works ('
 - at: 2026-10-27 13:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
 - at: 2026-10-27 14:21
   from: tony
-  text: 'answered devin-noted-that-kk-hit-credit-3c0d1b: ★ Use repo chaba on host tony-dell to implement the degraded-mode
-    LLM failure notice'
+  text: 'answered devin-noted-that-kk-hit-credit-3c0d1b: ★ Use repo chaba on host tony-dell to implement
+    the degraded-mode LLM failure notice'
 - at: 2026-10-27 14:21
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -93,16 +94,16 @@ comms:
   text: started devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca on tony-omen (dispatch)
 - at: 2026-11-17 23:38
   from: tony-omen
-  text: 'finished (failed): exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with
-    result ''exit-code''. | devin-task-20'
+  text: 'finished (failed): exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed
+    with result ''exit-code''. | devin-task-20'
 - at: 2026-11-17 23:38
   from: chaba
   text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-18 00:08'
 - at: 2026-11-17 23:40
   from: chaba
-  text: 'merge-sweep: devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca failed — its branch isn''t auto-merged
-    (unverified partial work). Retry the card or merge dispatch/20261117-233721-kk-ha-degraded-mode-explain-ca by
-    hand.'
+  text: 'merge-sweep: devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca failed — its branch isn''t
+    auto-merged (unverified partial work). Retry the card or merge dispatch/20261117-233721-kk-ha-degraded-mode-explain-ca
+    by hand.'
 - at: 2026-11-18 17:30
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -129,8 +130,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-19 08:59
   from: chaba
-  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
-    it'
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry
+    re-arms it'
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -155,12 +156,15 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 01:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
-  ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
-    LLM calls fail due to insufficient credits, and needs a defined degraded-mode notice. However, the card note
-    and context do not specify which repository or host houses the member lane's error handling and LLM dispatch
-    logic.
+  ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or
+    errors when LLM calls fail due to insufficient credits, and needs a defined degraded-mode notice.
+    However, the card note and context do not specify which repository or host houses the member lane's
+    error handling and LLM dispatch logic.
   options:
   - ★ Use repo chaba on host tony-dell to implement the degraded-mode LLM failure notice
   - Use repo ada-voice on host tony-dell to implement the degraded-mode LLM failure notice
@@ -169,6 +173,18 @@ requests:
   at: 2026-10-27 13:20
   from: backlog-spec-enrich
   answer: ★ Use repo chaba on host tony-dell to implement the degraded-mode LLM failure notice
+- id: the-runner-agents-across-multi-755c9c
+  ask: The runner-agents across multiple hosts (idc03, tony-macbook, idc02, tony-dell) have drifted from
+    the repository version of runner-agent.py, blocking standard execution. Before we can implement the
+    degraded mode capability for KK using its live credit depletion, we need to decide how to handle this
+    runner drift and where this specific task should execute.
+  options:
+  - ★ Redeploy runner-agents to all drifting hosts via scp and execute the KK degraded mode task on idc02
+  - Postpone the KK degraded mode learning pilot until runner infrastructure is independently stabilized
+  - Execute the KK degraded mode task locally on tony-dell after updating its runner-agent
+  status: open
+  at: 2026-11-22 01:20
+  from: backlog-spec-enrich
 action:
   type: dispatch
   repo: chaba
@@ -176,9 +192,9 @@ action:
   lane: codemod
   lane_source: kw
   runner: tony-omen
-  result: 'exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Consumed 1.042s CPU time over 11.508s wall
-    clock time, 75.2M memory peak.'
+  result: 'exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with result
+    ''exit-code''. | devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Consumed 1.042s
+    CPU time over 11.508s wall clock time, 75.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
 awaiting_action: true

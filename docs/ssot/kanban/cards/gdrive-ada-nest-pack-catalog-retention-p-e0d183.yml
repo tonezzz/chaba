@@ -6,11 +6,11 @@ ref: ADA-1185
 comms:
 - at: 2026-11-08 12:56
   from: devin
-  text: ' spec: 69 pack dirs under gdrive:ada-nest/packs + 15 top-level dirs, only queue/packs-index.json exists
-    (partial). Build a generated top-level catalog: pack id -> purpose -> status (active/superseded/done) -> manifest
-    hash -> card ref. Data sources exist: pack.yml/manifest.json per pack + done markers (pack_manifest.py verify).
-    Then retention: mark superseded variants (e.g. bge-hybrid-shadow vs -idc03-v2), define keep rules. Pair with
-    ada-nest/README declaring top-level dir contract (cache/datas'
+  text: ' spec: 69 pack dirs under gdrive:ada-nest/packs + 15 top-level dirs, only queue/packs-index.json
+    exists (partial). Build a generated top-level catalog: pack id -> purpose -> status (active/superseded/done)
+    -> manifest hash -> card ref. Data sources exist: pack.yml/manifest.json per pack + done markers (pack_manifest.py
+    verify). Then retention: mark superseded variants (e.g. bge-hybrid-shadow vs -idc03-v2), define keep
+    rules. Pair with ada-nest/README declaring top-level dir contract (cache/datas'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -89,15 +89,23 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-21 07:20
   from: backlog-spec-enrich
-  text: skipped — The recent communications consistently show that runner-agents across multiple hosts have drifted
-    from the repository and deferred execution, indicating a prerequisite infrastructure sync failure that supersedes
-    the task.
+  text: skipped — The recent communications consistently show that runner-agents across multiple hosts
+    have drifted from the repository and deferred execution, indicating a prerequisite infrastructure
+    sync failure that supersedes the task.
 - at: 2026-11-21 13:20
   from: backlog-spec-enrich
-  text: skipped — The task is blocked because installed runner-agents across multiple hosts have drifted from the
-    repository and deferred execution, requiring a prerequisite infrastructure sync failure resolution before this
-    card can proceed.
+  text: skipped — The task is blocked because installed runner-agents across multiple hosts have drifted
+    from the repository and deferred execution, requiring a prerequisite infrastructure sync failure resolution
+    before this card can proceed.
 - at: 2026-11-21 17:47
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Redeploy the drifted runner-agent script from the chaba repository to the affected hosts (idc02
+  and tony-dell) by copying scripts/board/runner-agent.py to ~/.local/bin/runner-agent. Ensure that the
+  runner-agents on both idc02 and tony-dell successfully execute without drifting from the repository
+  version. The done-condition is met when both hosts run the updated runner-agent successfully and no
+  longer defer execution due to script drift.
