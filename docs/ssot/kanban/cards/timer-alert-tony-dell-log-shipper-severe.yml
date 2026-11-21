@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper-severe
 title: Timer log-shipper-severe on tony-dell failing
-column: backlog
-updated: 2026-11-21 06:10
+column: done
+updated: 2026-11-21 09:01
 priority: high
 tags:
 - timer-alert
@@ -139,6 +139,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-21 05:48) of `log-shipper-severe.service` on `tony-dell` result=timeout
     — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-21 09:01
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 08:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-21 09:01
+  from: tony
+  text: closed by tony
 spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-dell` by checking the systemd
   user journal via `journalctl --user -u log-shipper-severe.service` and reviewing the CMS entry `timer-timeline-tony-dell`.
   The target host is `tony-dell`. Constraints include using only factual data from the card and journal without
