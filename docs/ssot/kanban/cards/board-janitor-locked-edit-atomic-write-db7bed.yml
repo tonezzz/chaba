@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: review
-updated: 2026-11-20 20:12
+updated: 2026-11-21 08:17
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -207,6 +207,9 @@ comms:
   from: devin
   text: 'raised request cline-drafted-verdict-investigate-done-c-a696fe: Cline drafted verdict ''investigate'' (Done-condition
     requires atomic write fix; evidence is missing. The root cause of 20'
+- at: 2026-11-21 08:17
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 action:
   type: dispatch
   status: done
@@ -245,3 +248,4 @@ requests:
     label: requeue for another pass
     action: retry
   suggested: requeue
+  escalated_at: 2026-11-21 08:17
