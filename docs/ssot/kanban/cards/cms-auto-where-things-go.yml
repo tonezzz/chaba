@@ -6,7 +6,7 @@ column: review
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'last_run 60m overdue (interval 60m). last_run=2026-11-22T05:00:02+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/where-things-go'
+note: 'Recovering: where-things-go healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or POST /api/cms/pages/where-things-go/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
 updated: '2026-11-22'
@@ -92,3 +92,4 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
+ok_streak: 1
