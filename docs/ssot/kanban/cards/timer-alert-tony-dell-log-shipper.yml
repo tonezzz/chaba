@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper
 title: Timer log-shipper on tony-dell failing
 column: backlog
-updated: 2026-11-23 11:12
+updated: 2026-11-23 14:08
 priority: high
 tags:
 - timer-alert
@@ -1196,6 +1196,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-23 10:48) of `log-shipper.service` on `tony-dell` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 spec: Investigate the recurring timeout failures of log-shipper.service on tony-dell by inspecting the user journal

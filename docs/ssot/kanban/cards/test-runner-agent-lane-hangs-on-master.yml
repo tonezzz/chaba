@@ -2,7 +2,7 @@ id: test-runner-agent-lane-hangs-on-master
 title: 'tests/board/test_runner_agent_lane.py hangs: StartTaskLaneTest::test_devin_model_survives_on_devin_path
   (also on plain master)'
 column: done
-updated: 2026-11-23 10:55
+updated: 2026-11-23 14:09
 brief: '2026-11-21: on idc02, pytest tests/board/test_runner_agent_lane.py passes the first test then blocks indefinitely
   at test_devin_model_survives_on_devin_path (timeout 30/100/280s all hit). Same on plain origin/master 2106856593,
   so not caused by OPS-0028. Other board tests (contract 7, classify 26, board-api 27+3) pass in ~1s each.'
@@ -43,3 +43,7 @@ comms:
 - at: 2026-11-23 10:55
   from: devin
   text: closed by devin
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

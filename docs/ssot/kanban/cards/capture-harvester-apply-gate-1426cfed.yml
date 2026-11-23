@@ -1,7 +1,7 @@
 id: capture-harvester-apply-gate-1426cfed
 title: 'Capture harvester: decide --apply gate'
 column: doing
-updated: 2026-11-23 14:03
+updated: 2026-11-23 14:09
 brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
   ever enable --apply.
 priority: medium
@@ -58,6 +58,10 @@ comms:
 - at: 2026-11-23 14:03
   from: devin
   text: moved backlog -> doing
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
   ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
