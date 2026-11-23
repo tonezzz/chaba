@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: doing
-updated: 2026-11-23 17:07
+column: backlog
+updated: 2026-11-23 17:10
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -200,19 +200,26 @@ comms:
   from: devin
   text: 'attempt 2 on tony-omen: auditing overlapping CMS write surfaces (cms_* vs wp_post/cpt_post/place_report/wp_chat_page)
     per spec'
+- at: 2026-11-23 17:10
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
+    | devin-task-20261123-17054 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 17:10
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-170542-ada-tool-consolidation-merge-o (rate limit)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   attempts: 2
-  result: 'exit=1 sk-20261123-165251-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''. |
-    devin-task-20261123-165251-ada-tool-consolidation-merge-o.service: Consumed 10.109s CPU time over 1min 37.308s
-    wall clock time, 505.9M memory peak.'
-  last_failure: 'exit=1 sk-20261123-165251-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
-    | devin-task-20261123-165251-ada-tool-consolidation-merge-o.service: Consumed 10.109s CPU time over 1min 37.308s
-    wall clock time, 505.9M memory peak.'
+  result: 'exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-170542-ada-tool-consolidation-merge-o.service:
+    Consumed 1min 16.230s CPU time over 3min 39.147s wall clock time, 875.9M memory peak.'
+  last_failure: 'exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
+    | devin-task-20261123-170542-ada-tool-consolidation-merge-o.service: Consumed 1min 16.230s CPU time over 3min
+    39.147s wall clock time, 875.9M memory peak.'
   runner: tony-omen
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
