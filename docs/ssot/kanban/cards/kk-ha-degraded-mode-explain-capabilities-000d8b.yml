@@ -194,6 +194,9 @@ comms:
 - at: 2026-11-23 20:03
   from: tony
   text: queued for processing
+- at: 2026-11-23 20:03
+  from: tony
+  text: retry requested
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -228,9 +231,10 @@ action:
   status: queued
   lane: devin
   lane_source: fallback
-  result: 'exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Consumed 1.042s CPU time over 11.508s wall
-    clock time, 75.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
+  last_failure: 'exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Consumed 1.042s CPU time over 11.508s wall
+    clock time, 75.2M memory peak.'
+  attempts: 0
 claim: {}
