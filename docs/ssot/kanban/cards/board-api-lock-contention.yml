@@ -401,7 +401,28 @@ comms:
   text: 'cline review verdict (ollama/qwen2.5:7b, task bb711): INVESTIGATE — Evidence of sustained board use meeting
     the done-condition is missing.. Artifacts verdict.json+evidence.md verified in worktree patch (1633B; evidence.md,
     verdict.json). Weak-model draft — human gate stays; decision request posted with options.'
-requests: []
+- at: 2026-11-23 16:12
+  from: devin
+  text: 'raised request cline-drafted-verdict-investigate-eviden-73604d: Cline drafted verdict ''investigate'' (Evidence
+    of sustained board use meeting the done-condition is missing.). One-word d'
+requests:
+- id: cline-drafted-verdict-investigate-eviden-73604d
+  ask: 'Cline drafted verdict ''investigate'' (Evidence of sustained board use meeting the done-condition is missing.).
+    One-word decision:'
+  status: open
+  at: 2026-11-23 16:12
+  from: devin
+  options:
+  - id: close
+    label: close card
+    action: close
+  - id: keep
+    label: keep in review
+    action: none
+  - id: requeue
+    label: requeue for another pass
+    action: retry
+  suggested: requeue
 action:
   lane: paid_frontier
   type: dispatch
