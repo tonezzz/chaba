@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-23 23:55
+updated: 2026-11-23 23:58
 priority: low
 tags:
 - opencode
@@ -697,6 +697,29 @@ comms:
     (same collision). Live devin-task-<tid>/-fuN unit -> defer; provably-over previous run (taskdir exit_code/verdict.json,
     or dead lane-family meta for SIGKILL/RuntimeMaxSec/failed-launch residue) -> git worktree remove --force + prune,
     owning repo resolved via the tree''s --git-'
+- at: 2026-11-23 23:58
+  from: chaba
+  text: ran under executor=devin provider=devin profile=branch-code-supervised-pilot
+- at: 2026-11-23 23:58
+  from: chaba
+  text: banked 241 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 23:58
+  from: chaba
+  text: pushed dispatch/20261123-233259-ops-1021-proved-it-when-an-ope to origin
+- at: 2026-11-23 23:58
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 54.1s)
+- at: 2026-11-23 23:58
+  from: chaba
+  text: auto-merged 4b79513c (dispatch/20261123-233259-ops-1021-proved-it-when-an-ope) → origin/master
+- at: 2026-11-23 23:58
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-233259-ops-1021-proved-it-when-an-ope,
+    branch dispatch/20261123-233259-ops-1021-proved-it-when-an-ope'
 action:
   type: dispatch
   repo: chaba
