@@ -1,7 +1,7 @@
 id: rebuild-gesture-controls-using-yolo-190356
 title: Rebuild gesture controls using YOLO
-column: backlog
-updated: 2026-11-23 19:43
+column: doing
+updated: 2026-11-23 19:52
 note: Tony initiated idea to rebuild gesture controls using YOLO on the desk companion.
 ref: OPS-0683
 comms:
@@ -369,6 +369,21 @@ comms:
 - at: 2026-11-23 19:43
   from: chaba
   text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: idc03
+  text: claimed
 requests:
 - id: tony-initiated-an-idea-to-rebu-92b479
   ask: Tony initiated an idea to rebuild gesture controls using YOLO on the desk companion, but the target repository,
@@ -384,16 +399,17 @@ requests:
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:55
-  attempts: 0
+  attempts: 1
   last_failure: 'journal=exit-code sture-controls-using.service: Failed with result ''exit-code''. | devin-task-20261120-215246-rebuild-gesture-controls-using.service:
     Consumed 2min 49.104s CPU time over 16min 31.365s wall clock time, 1.3G memory peak, 574.4M memory swap peak.'
+  runner: idc03
 claim:
-  since: 2026-11-20 21:52
+  since: 2026-11-23 19:52
 spec: Deploy the updated runner-agent script from the chaba repository to tony-dell to resolve agent drift. Rebuild
   gesture controls on the desk companion using the shared YOLO pose stream so GestureService rides pose_service.results()
   without a second camera loop. Ensure gesture endpoints and tools are operational, including WebSocket support

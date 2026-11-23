@@ -1,7 +1,7 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
-column: doing
-updated: 2026-11-23 19:41
+column: review
+updated: 2026-11-23 19:52
 priority: medium
 tags:
 - cline
@@ -43,7 +43,7 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: ''
   executor: devin
   last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) ing the nested quoting.
@@ -54,10 +54,10 @@ action:
     stale_running: 2026-11-23 15:20
     session_gone: 2026-11-23 15:20
     dirty: 1
-  result: no exit record — unit not-found reports collected defaults (unproven, not ok) ing the nested quoting.
-    Let me debug the exact failing call.The remote shell re-parses the command line and expands `$O`/`$@` before
-    podman sees them. The shim needs to re-quote every arg single-quote-style.Shim fixed. Now
+  result: 'exit=0 view-column-s.md` updated; final comms posted to the card. | devin-task-20261123-185344-goal-drain-the-review-column-s.service:
+    Consumed 2min 51.186s CPU time over 48min 24.450s wall clock time, 1011.1M memory peak, 553.2M memory swap peak.'
   runner: tony-dell
+  verified: true
 ref: KNB-1009
 comms:
 - at: 2026-10-30 15:36
@@ -550,5 +550,28 @@ comms:
     fabd1 HOLD audit-only (card done), bb711 deduped+trashed (was holding cap slot), zero repeat comms via comms
     latch. Created 45847+43511 (qwen2.5:7b, in flight — con01 rebooted mid-run, sessions pending resume; next pass
     collects). 3 extra bugs fixed: stale-snapshot room=0, dedupe-skip n'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: auto-merged 2b510265 (dispatch/20261123-185344-goal-drain-the-review-column-s) → origin/master
+- at: 2026-11-23 19:48
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 19:52
+  from: tony-dell
+  text: 'finished (ok): exit=0 view-column-s.md` updated; final comms posted to the card. | devin-task-20261123-185344-goal-drain-the-review-col'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261123-185344-goal-drain-the-review-column-s'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: pushed dispatch/20261123-185344-goal-drain-the-review-column-s to origin
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 claim:
   since: 2026-11-23 18:53
+review_kind: verify

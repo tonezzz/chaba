@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: doing
-updated: 2026-11-23 19:18
+column: backlog
+updated: 2026-11-23 19:52
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -245,17 +245,51 @@ comms:
   from: devin
   text: 'attempt 3 on tony-dell: auditing CMS write tools (cms_publish_page/cms_edit vs wp_post/cpt_post/place_report)
     — prior failures were provider rate-limit exits, no code changes made'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-191536-ada-tool-consolidation-merge-o no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261123-191536-ada-tool-consolidation-merge-o on tony-dell still dirty
+    — 5 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-23 19:48
+  from: tony-dell
+  text: 'finished (failed): exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-191536-ada-tool-consolidatio
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-191536-ada-tool-consolidation-merge-o (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-23 20:19'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
   attempts: 1
-  last_failure: 'exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
-    | devin-task-20261123-170542-ada-tool-consolidation-merge-o.service: Consumed 1min 16.230s CPU time over 3min
-    39.147s wall clock time, 875.9M memory peak.'
-  runner: tony-dell
+  last_failure: 'exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-191536-ada-tool-consolidation-merge-o.service:
+    Consumed 1min 7.179s CPU time over 32min 42.893s wall clock time, 831.4M memory peak, 613M memory swap peak.'
+  sweep:
+    stale_running: 2026-11-23 19:48
+    dirty: 5
+  result: 'exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-191536-ada-tool-consolidation-merge-o.service:
+    Consumed 1min 7.179s CPU time over 32min 42.893s wall clock time, 831.4M memory peak, 613M memory swap peak.'
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
