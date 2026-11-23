@@ -1,0 +1,187 @@
+id: arbiter-label-pass-2026-11-23
+title: dispatch-triage arbiter label pass — strategy (b) executed, free-lane only
+date: 2026-11-23
+card: dispatch-triage-arbiter-label-pass
+host: tony-omen
+status: complete — labeled corpus + review queue landed; suite append HELD for Tony's spot-check
+ref: OPS-1290
+
+goal: >-
+  Label the inventoried dispatch-triage corpus (kanban card request
+  texts) into the ada-voice domains.yml `triage` Choice surface
+  {code, docs, ops, research, clarify} via an arbiter model on the
+  LiteLLM free lane — approved strategy (b) from
+  docs/ssot/jobs/nest/2026-11-09-dispatch-triage-corpus.yml.
+
+history: >-
+  Attempts on idc02 (2026-11-09, -17, -19, -20x2) all ended service
+  exit-code; the 2026-11-20 run DID complete all deliverables on
+  dispatch/20261120-194941 (d355325f47) but the branch never merged —
+  artifacts lost with the worktree. This run rebuilt everything on
+  tony-omen. Tony's spot-check answer (2026-11-21) stands and applies
+  to this queue: (a) check first, then append — append is held.
+
+corpus:
+  source: docs/ssot/kanban/cards/*.yml + archive/*.yml (1778 files)
+  text_rule: title (>=20 chars) else title+brief head; deduped by
+    normalized text; the 30 hand-labeled orch-triage-cases.jsonl rows
+    excluded as ground truth
+  unique_texts: 1758
+
+arbiter:
+  model: gemini-3.5-flash-lite-free   # LiteLLM deployment with NO paid
+                                    # fallback leg — $0 by construction
+  gateway: 'http://100.102.134.91:4000 — key = LITELLM chaba virtual key,
+    ~/.config/secrets/litellm-chaba.env on tony-omen'
+  calls: 174 batched calls (10 texts/call) + per-row fallback; several
+    transient 429 storms on the free tier rode out on capped backoff —
+    0 unverdicted rows
+  runtime: 18.9min
+  cost: $0 (free lane only; FREE_MODEL_RE hard-guards the model id)
+  judge_convention: mirrors bench-edu-manage — OpenAI-style
+    /v1/chat/completions to the gateway, strict JSON verdict array,
+    per-row re-ask on parse failure
+
+results:
+  labeled: 1758
+  unverdicted: 0
+  conf_mean: 0.895
+  by_label: {ops: 742, code: 614, research: 226, docs: 149, clarify: 27}
+  threshold: 0.7
+  review_queue: 100        # 12 low_confidence + 88 stratified spot-check
+                           # = the ~100-row human check that doubles as
+                           # the golden-seed sample
+  suite_append_rows: 1658  # above-threshold, NOT appended — held for
+                           # Tony's check (board answer 2026-11-21)
+
+artifacts:
+  script: scripts/bench/dispatch-triage/label.py
+  ledger: scripts/bench/dispatch-triage/ledger.jsonl  # idempotency store
+  corpus: scripts/bench/dispatch-triage/labeled-corpus-2026-11-23.jsonl
+    # {text, source, label, confidence, model, ts}
+  review: scripts/bench/dispatch-triage/review-queue-2026-11-23.jsonl
+    # {text, source, label, confidence, reason, ts}
+  suite_append: scripts/bench/dispatch-triage/suite-append-2026-11-23.jsonl
+    # suite schema {text, kind:triage, label, set:triage,
+    # slice:harvest-2026-11-23} — for ada-voice
+    # tests/bench/orch-triage-cases.jsonl (dispatch-triage hard tier,
+    # rotates corpus-harvest) — HELD
+  append_tool: scripts/bench/dispatch-triage/append-suite.py
+    # --append for suite rows; --review + --adjudications for
+    # spot-checked rows (slice harvest-<date>-checked)
+
+spot_check_list_for_tony:  # 100 rows — 12 low-conf adjudication + 88 sample
+  - {text: "Pilot OpenCode on bounded standard procedures", label: clarify, conf: 0.65, reason: low_confidence}
+  - {text: "Gesture control: iPhone camera -> gestures -> TV/screen (ada_v2 rebuild)", label: clarify, conf: 0.55, reason: low_confidence}
+  - {text: "stale vcast capture lease / camwall binding", label: clarify, conf: 0.4, reason: low_confidence}
+  - {text: "Log coverage gaps — The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the card.", label: code, conf: 0.65, reason: low_confidence}
+  - {text: "Try opencode CLI as edu-manage bench challenger + exec lane once re-graduated", label: clarify, conf: 0.6, reason: low_confidence}
+  - {text: "Ada CMS-first answers + save-back standard", label: clarify, conf: 0.5, reason: low_confidence}
+  - {text: "doc-pilot v3 — tourist-ship cut production (approved scope)", label: code, conf: 0.65, reason: low_confidence}
+  - {text: "doc-pilot — first AI short documentary end-to-end", label: research, conf: 0.6, reason: low_confidence}
+  - {text: "OpenChamber Adobe Stock image preview and asset picker", label: clarify, conf: 0.55, reason: low_confidence}
+  - {text: "sys-mon (system monitor)", label: clarify, conf: 0.65, reason: low_confidence}
+  - {text: "agent-tool-registry-federation", label: clarify, conf: 0.65, reason: low_confidence}
+  - {text: "input-bridge registry bugs — stale entries hold names, releases resurrect, real-6 ws drops", label: clarify, conf: 0.6, reason: low_confidence}
+  - {text: "Decide alphavantage allowlist and mcp-llama retirement on tony-dell", label: clarify, conf: 0.85}
+  - {text: "LINE-driven WordPress site maintenance (customer via LINE chat)", label: clarify, conf: 0.75}
+  - {text: "Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)", label: code, conf: 0.95}
+  - {text: "reconcile-local-conflicts: expire stale non-card .local-conflict files", label: code, conf: 0.85}
+  - {text: "Fix CMS publish restriction for non-EN/TH languages", label: code, conf: 0.95}
+  - {text: "Add Omen and OpenRouter lanes to JevTeam admission ladder", label: code, conf: 0.85}
+  - {text: "kanban-commit: reject files containing git conflict markers before committing", label: code, conf: 0.95}
+  - {text: "Complete OpenCode lane executor branch commit + auto-merge closeout", label: code, conf: 0.9}
+  - {text: "Board UI: card action buttons (Queue / Hold / Close) on card rows", label: code, conf: 0.9}
+  - {text: "Implement YOLO-driven pointer cursor for gesture rebuild", label: code, conf: 0.95}
+  - {text: "chaba-nest hosts view — replace tony-ha iframe with native/mobile-friendly cards", label: code, conf: 0.9}
+  - {text: "Rebuild hand gesture controls using YOLO", label: code, conf: 0.95}
+  - {text: "correction commands die at the confirm gate", label: code, conf: 0.9}
+  - {text: "ada-chat-card ignores instance config — dialed ada-tony ws from any lane", label: code, conf: 0.95}
+  - {text: "Fix cms_publish_page: slug argument missing error", label: code, conf: 0.95}
+  - {text: "ada render — veo video gen -> LINE/TG/screens", label: code, conf: 0.85}
+  - {text: "Make chaba-jobs isolate network-scan failures and back off", label: code, conf: 0.95}
+  - {text: "Rename Educations CPT label to Lessons (WP registration)", label: code, conf: 0.95}
+  - {text: "/cards read door: gzip + summary projection + discoverable filters", label: code, conf: 0.9}
+  - {text: "ada-chat-card cannot receive pushed media (no chat_id bind, no chat_push render)", label: code, conf: 0.95}
+  - {text: "Stop scenario smoke burning paid quota — provider-health gate + spend ledger", label: code, conf: 0.92}
+  - {text: "Enforce Nest job terminal-state evidence and stale-state reconciliation", label: code, conf: 0.9}
+  - {text: "control_entity returns ok:true for nonexistent entity (switch.coffee_plug) — phantom actuation", label: code, conf: 0.85}
+  - {text: "Implement YOLO bounding box control for vcast pointer", label: code, conf: 0.95}
+  - {text: "JevNest KK-Mac capacity-aware queue refill", label: code, conf: 0.76}
+  - {text: "chaba merge test gate (240s) can't fit the pytest suite — dispatch merges held on timeout", label: code, conf: 0.9}
+  - {text: "Command-polish layer — improve Tony's English commands before they reach Devin/Ada/OpenCode", label: code, conf: 0.85}
+  - {text: "Drive hand gesture pointer from YOLO bounding boxes", label: code, conf: 0.95}
+  - {text: "Make project-directory creation clear and safe in Jack OpenCode", label: code, conf: 0.9}
+  - {text: "kk_mac lane hardening — non-armed hosts can claim+fail; idc02 opencode --dir drift breaks the executor", label: code, conf: 0.8}
+  - {text: "Verify Education no_th metadata persists through board-api", label: code, conf: 0.9}
+  - {text: "BUG: queued cards missing from GET /cards — runner never claims them", label: code, conf: 0.95}
+  - {text: "mddb-cms /v1/add stalls 30s+ when embed providers quota-capped — fleet-wide write timeouts", label: code, conf: 0.9}
+  - {text: "Memory lane policy — household vs private banks, dev never writes prod memory", label: docs, conf: 0.9}
+  - {text: "Pilot OpenCode-to-Cline idea refinement workflow", label: docs, conf: 0.8}
+  - {text: "GEV program — lane map, drain order, dispatch plan", label: docs, conf: 0.95}
+  - {text: "cms-regen auto-fix playbook — close the detect→fix loop on CMS automations", label: docs, conf: 0.85}
+  - {text: "Retired-host residue: audit + classify all idc01 refs in SSOT", label: docs, conf: 0.9}
+  - {text: "Add KK PDF to DevNest video-project intake", label: docs, conf: 0.8}
+  - {text: "Improve standard of Ada-generated reports", label: docs, conf: 0.85}
+  - {text: "Registry SSOT files past 350-line review threshold — split or exempt deliberately", label: docs, conf: 0.92}
+  - {text: "Timer chaba-repo-sync on tony-macbook failing", label: ops, conf: 0.95}
+  - {text: "Timer usage-feed-push on idc03 failing", label: ops, conf: 0.95}
+  - {text: "Ada session audit: fail:cast_to_screen (1d seen)", label: ops, conf: 0.85}
+  - {text: "cast lands but TV stays on STB input — detect + remediate path", label: ops, conf: 0.88}
+  - {text: "STT endpoint on tony-omen GPU: whisper large-v3 for all msg lanes", label: ops, conf: 0.9}
+  - {text: "Scope systemd timer installation for OPS-0790 rollout", label: ops, conf: 0.88}
+  - {text: "Gemini Live refusing sessions — monthly spending cap hit (ada voice down)", label: ops, conf: 0.95}
+  - {text: "con01 warm standby for ada-line-relay + ada-ha-tony", label: ops, conf: 0.95}
+  - {text: "Timer qc-scoreboard on idc03 failing", label: ops, conf: 0.99}
+  - {text: "Timer board-statics-sync on tony-dell failing", label: ops, conf: 0.95}
+  - {text: "HA restructure — tony-ha=prod control, ada-ha/kk-ha=lab instances", label: ops, conf: 0.9}
+  - {text: "Reconcile macbook host-audit drift", label: ops, conf: 0.9}
+  - {text: "JEV model-chain probe #2: verify flash-lite reaches the session (post-fix)", label: ops, conf: 0.9}
+  - {text: "OpenCode audit: sequence_anomaly (mzwpaubp)", label: ops, conf: 0.9}
+  - {text: "Move timer/service offload to idc02", label: ops, conf: 0.9}
+  - {text: "Branch/worktree sprawl — 20 branches ahead, 51 worktrees", label: ops, conf: 0.9}
+  - {text: "Dedicated Gemini API key for persona image generation (free tier)", label: ops, conf: 0.9}
+  - {text: "Make Colab queue use verified latest DevNest release", label: ops, conf: 0.85}
+  - {text: "JEV model-chain probe #7: fleet-final (free_lane -> flash-lite in session)", label: ops, conf: 0.9}
+  - {text: "Timer jevnest-kk-mac-capacity-producer on tony-dell failing", label: ops, conf: 0.95}
+  - {text: "GEV ws /apps/gev-live/ws upgrade fails", label: ops, conf: 0.85}
+  - {text: "Timer chaba-repo-sync on tony-dell failing", label: ops, conf: 0.95}
+  - {text: "Timer cam-wall-cms-kk on tony-dell failing", label: ops, conf: 0.95}
+  - {text: "vcast-flap-check regression fails on deployed relay", label: ops, conf: 0.88}
+  - {text: "Ada session audit: no_result:ada_camera_snapshot (2d seen)", label: ops, conf: 0.9}
+  - {text: "CF Zero Trust Access in front of *.surf-thailand.com HA instances", label: ops, conf: 0.87}
+  - {text: "tony-dell collapse 2026-10-16: stale podman shm lock + unbounded docker-ps pile -> swap thrash", label: ops, conf: 0.95}
+  - {text: "CMS automation `research-digest` stale", label: ops, conf: 0.95}
+  - {text: "CMS automation `embed-healthcheck-devin` dead", label: ops, conf: 0.95}
+  - {text: "CMS automation `personal-digest` stale", label: ops, conf: 0.95}
+  - {text: "Test non-Lightning SDXL checkpoint on omen sd-server", label: ops, conf: 0.9}
+  - {text: "mddb binlog size canary", label: ops, conf: 0.9}
+  - {text: "Timer cam-wall-roster-audit on tony-omen failing", label: ops, conf: 0.95}
+  - {text: "Ada session audit: fail:tv_action (1d seen)", label: ops, conf: 0.9}
+  - {text: "idc03 served checkout convergence — unblock board-api wiki door, due page, repo-sync", label: ops, conf: 0.85}
+  - {text: "Timer overnight-assessment on idc03 failing", label: ops, conf: 0.95}
+  - {text: "OpenCode audit: lane_state_missing (lane)", label: ops, conf: 0.9}
+  - {text: "Timer chaba-repo-sync on idc03 failing", label: ops, conf: 0.95}
+  - {text: "kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)", label: research, conf: 0.9}
+  - {text: "[audit] mutating_command in opencode session Hdk31bBtYHA8", label: research, conf: 0.9}
+  - {text: "Tool surface census — 103 Ada tools + Devin MCP inventory & usage", label: research, conf: 0.92}
+  - {text: "[audit] denied_tool in opencode session rRAimUiJR5b4", label: research, conf: 0.9}
+  - {text: "runner-agent primer coverage — 96% of dispatches bypass the tuned path", label: research, conf: 0.85}
+  - {text: "Command-truth: 3 unattributed device state change(s)", label: research, conf: 0.85}
+  - {text: "Explore rebuilding gesture control with YOLO", label: research, conf: 0.9}
+  - {text: "MDDB embedding outage — OpenRouter key limit + Gemini quota both dead", label: research, conf: 0.9}
+  - {text: "Live session token diet — 134M text-in/day on ada-ha-tony", label: research, conf: 0.88}
+next_steps:
+  - Tony spot-checks the 100 review rows (~30-50min); corrections land
+    as adjudications jsonl {text, label} ("drop" discards a row)
+  - then append-suite.py applies suite-append + adjudicated rows to
+    ada-voice tests/bench/orch-triage-cases.jsonl on the tony-dell
+    checkout (held per the check-first answer — NOT run here)
+  - focus-inbox mining for clarify/long-tail remains a follow-up
+    (corpus doc followups_if_approved)
+
+verify:
+  - wc -l scripts/bench/dispatch-triage/labeled-corpus-2026-11-23.jsonl -> 1758
+  - wc -l scripts/bench/dispatch-triage/review-queue-2026-11-23.jsonl -> 100
+  - python3 scripts/bench/dispatch-triage/label.py --date 2026-11-23
+    -> pending=0, 0 model calls, identical derived stats (idempotent)
