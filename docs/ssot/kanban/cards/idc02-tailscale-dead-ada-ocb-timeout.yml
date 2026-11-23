@@ -1,7 +1,7 @@
 id: idc02-tailscale-dead-ada-ocb-timeout
 title: idc02 tailnet dead — ada-ocb.surf-thailand.com times out
 column: backlog
-updated: 2026-11-23 09:06
+updated: 2026-11-23 09:40
 brief: 'ada-ocb.surf-thailand.com times out for Tony (session ses_e08a0b27fffe4xjJl7ncdaky7r). Root cause: idc02
   tailnet is dead — no tailscale ping replies, ssh 100.123.163.11:22 times out from tony-dell AND idc03. Fleet monitor
   has flagged idc02 ssh unreachable since ~2026-11-21 (recurring monitor-stale-system-report-pipeline focus-inbox
@@ -22,3 +22,10 @@ comms:
 - at: 2026-11-23 09:06
   from: tony
   text: card captured via board-api
+- at: 2026-11-23 09:40
+  from: devin
+  text: 'RESOLVED 2026-11-23 ~09:40 +07 — self-recovered, no console needed. Root cause was NOT a tailscaled crash
+    alone: idc02 had a system-wide stall ~08:37-09:11 (load avg ~14, tailscaled deadlock watchdog fired 08:37, systemd-journald
+    watchdog SIGKILLs at 09:11). tailscaled auto-restarted 09:11 (NRestarts=2), tailnet re-established direct path
+    by ~09:38. Verified end-to-end: openchamber.service active since Nov 20, local :3000 200/11ms, caddy-edge direct-origin
+    probe --resolve ada-ocb.surf-thailand.c'
