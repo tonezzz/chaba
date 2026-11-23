@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
 column: doing
-updated: 2026-11-23 21:22
+updated: 2026-11-23 21:26
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -326,6 +326,12 @@ comms:
     kk-mac as a chaba dispatch runner (lau; [kk-mac-launchd-runner-followthrough] primer injected 8 lesson(s): [kk-mac-launc;
     [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; Deploy note: hosts need the
     new file via their chaba checkout'
+- at: 2026-11-23 21:26
+  from: devin
+  text: 'attempt 2 started on tony-omen. State so far: kk-mac-script-smoke proves real claim+execute (script executor,
+    exit=0, 2026-11-19); kk-mac runner-agent still live — deferred this card 20:04 with correct launchd boundary
+    reason. Found live gaps: ssot.kanban.yml runner_fleet still says STAGED, _FLEET_HOST_RE misses kk-*, fleet-health
+    same — host:kk-mac pins spam unclaimable defers fleet-wide. Verifying on-metal now.'
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
