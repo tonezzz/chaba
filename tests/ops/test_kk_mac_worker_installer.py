@@ -32,12 +32,30 @@ class KkMacWorkerInstallerTests(unittest.TestCase):
         plist = plistlib.loads(result.stdout.encode())
         self.assertEqual(plist["Label"], "net.adanest.kk-llm-worker")
         self.assertEqual(plist["StartInterval"], 60)
-        self.assertIn("--once", plist["ProgramArguments"])
+        args = plist["ProgramArguments"]
+        # the 2026-11-17 cutover target: the lane worker, not the
+        # generic nest-worker — re-rendering must never regress it
+        self.assertIn("kk_mac_lane_worker.py", args[1])
+        self.assertIn("gdrive:ada-nest/kk-llm", args)
+        self.assertIn("--host", args)
+        self.assertIn("local", args)
+        self.assertIn("--max-packs", args)
+        self.assertIn("1", args)
 
     def test_rejects_aggressive_interval(self):
         result = self.render("15")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(">= 30", result.stderr)
+
+    def test_rejects_over_capacity_max_packs(self):
+        env = os.environ.copy()
+        env.update({"KK_MAC_HOME": "/Users/tester",
+                    "KK_WORKER_MAX_PACKS": "4"})
+        result = subprocess.run(
+            ["bash", str(INSTALLER), "--print"], env=env,
+            capture_output=True, text=True, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("1 or 2", result.stderr)
 
     def test_print_does_not_write_a_file(self):
         with tempfile.TemporaryDirectory() as home:
