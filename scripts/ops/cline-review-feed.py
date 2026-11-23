@@ -326,7 +326,14 @@ def collect_task_artifacts(task, out_dir):
         raise RuntimeError("verdict.json missing or empty")
     if not evidence:
         raise RuntimeError("evidence.md missing or empty")
-    verdict = json.loads(verdict_raw)
+    try:
+        verdict = json.loads(verdict_raw)
+    except json.JSONDecodeError:
+        # weak models sometimes write escaped JSON ({\"verdict\": ...})
+        # instead of a raw object — unescape and retry once
+        verdict = json.loads(verdict_raw.replace('\\"', '"'))
+    if isinstance(verdict, str):
+        verdict = json.loads(verdict)
     if verdict.get("verdict") not in ("close", "hold", "investigate"):
         raise RuntimeError(f"bad verdict value: {verdict.get('verdict')!r}")
     return verdict, evidence, len(patch.encode()), changed
