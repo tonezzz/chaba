@@ -20,11 +20,17 @@ proven pattern: card `lane-cms-content-model` → task `8b60e`, 2026-10-29).
 3. **COLLECT** — when a task reaches `review`/`trash`, or its session
    ends (`agent_end` in hooks.jsonl — the runtime can lose the session
    record), pull the worktree diff via `bridge.collect_patch` and verify
-   `verdict.json` + `evidence.md` exist and are non-empty.
+   `verdict.json` + `evidence.md` exist and are non-empty. `verdict.json`
+   is parsed tolerantly — qwen2.5:7b sometimes writes escaped
+   (`{\"verdict\": ...}`) or double-encoded JSON (seen live on bb711).
+   After a successful report the settled task is moved to `trash`, which
+   cleans its worktree and frees the inflight cap.
 4. **REPORT** — card comms line with the verdict + artifact summary, and
    a `/request` with dict options `close`/`keep`/`requeue` (suggested =
    `close`→close, `hold`→keep, `investigate`→requeue) so Tony answers in
-   one word. **The script never moves or closes a card.**
+   one word. **The script never moves or closes a card.** If the card
+   already left `review` (a human gated it first), only an audit comms
+   line is posted — no decision request on a settled card.
 
 ## Dedupe rule (the 8b60e bug)
 
@@ -36,6 +42,14 @@ task_id|column|updatedAt`. A task whose (id, column, updatedAt) is
 unchanged since the last report produces no new comms, and the options
 request is raised at most once per card.
 
+The state file alone is not enough — it is per-host, and a rerun from a
+different host re-posted the e05b5/b699c verdicts on 2026-11-23. So the
+feed also keeps a **comms latch**: a card whose comms already carry a
+`cline review … task <id>` line for that task is treated as reported
+(latched + trashed, no new comms), and a card whose `requests:` already
+contain a `cline drafted verdict` ask is not re-asked. The card itself
+is the durable record.
+
 ## Marker caveat
 
 The marker is `[CARDREVIEW:<id>]`, deliberately NOT `[CARD:<id>]` —
@@ -46,12 +60,23 @@ delete a live review task.
 ## Usage
 
 ```bash
-# on con01 (needs podman exec into cline-kanban)
+# on con01 (podman exec into cline-kanban is local)
 python3 scripts/ops/cline-review-feed.py --dry-run          # show picks
 python3 scripts/ops/cline-review-feed.py                  # one pass
 python3 scripts/ops/cline-review-feed.py --wait-s 3600    # feed + collect
 python3 scripts/ops/cline-review-feed.py --card <id>      # one card only
+
+# from any other host — proxies podman to con01 over ssh
+python3 scripts/ops/cline-review-feed.py --podman-ssh con01 --dry-run
+# (or CLINE_REVIEW_SSH=con01)
 ```
+
+`--podman-ssh` writes a `podman` shim into a tempdir and prepends it to
+PATH, so `bridge.run_container`'s bare `podman exec` calls run on the
+remote host. The shim single-quote re-escapes every argv element —
+required because ssh's remote-shell reparse would otherwise expand the
+nested `sh -c '"$@" >"$O" …'` script's `$O`/`$@`/`$?` before podman sees
+them (this exact bug killed the 2026-11-23 tony-omen drain attempt).
 
 Env: `BOARD_API` (default `https://idc03.taila0626a.ts.net:10000`),
 `CLINE_REVIEW_STATE`, `CLINE_REVIEW_OUT`. Provider/model default
