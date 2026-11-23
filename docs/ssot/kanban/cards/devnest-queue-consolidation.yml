@@ -1,6 +1,6 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: backlog
+column: doing
 updated: 2026-11-23 15:10
 priority: high
 tags:
@@ -66,12 +66,14 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   result: 'exit=0  full detail in `dispatch-outcome-20261117-185221-assessment-2026-11-09-verified.md`. | devin-task-20261117-185221-assessment-2026-11-09-verified.service:
     Consumed 1min 11.026s CPU time over 6min 14.726s wall clock time, 900.2M memory peak.'
   sweep:
     session_gone: 2026-11-17 19:25
+  runner: tony-omen
+  attempts: 1
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -254,5 +256,13 @@ comms:
 - at: 2026-11-23 15:10
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 3.63 > 0.85)'
+- at: 2026-11-23 15:10
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-23 15:10
