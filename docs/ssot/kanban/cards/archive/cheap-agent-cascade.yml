@@ -1,95 +1,98 @@
-id: board-api-writes-eaten-by-autostash-pops-515009
-title: board-api writes eaten by autostash pops on tony-dell
+id: cheap-agent-cascade
+title: 'research: cheap-agent cascade — JEV router, lane taxonomy, 3-family bench (OPS-0810)'
 column: done
-updated: 2026-11-21 17:41
+updated: 2026-11-23 13:33
+brief: 'Extend pattern-match result (codemod 7/7) to a team: cheap specialized models do known work, JEV routes,
+  big model last resort. Dev + chores + edu-agent (hermesbot/clawbot) families.'
 priority: high
-ref: KNB-0717
+program: chaba-ci
+tags:
+- eval
+- cascade
+- jev
+- cheap-lanes
+- routing
+spec: 'Arch: task -> JEV router -> L0 codemod / L1 cheap local (hermes/qwen/jev-student) / L2 flash-lite / L3 frontier,
+  cascade on gate fail. Key metric = CASCADE COST (sum along escalation path) with pass-rate >= frontier baseline.
+  Families: dev (t1/t2/m1/m2), chores (o1-o4), edu (bench-edu-manage.py fixture, F1/dedupe/draft-Q). Arms: frontier-only
+  vs cascade w/o patterns vs cascade w/ patterns. Train per-task classifiers from mined patterns (P5 feedback loop).
+  Full design: lesson cheap-agent-cascade (post in Education).'
+note: 'Tony 2026-10-24: can we train cheap models for very specific tasks, JEV chooses which to process/cascade/group/team
+  nest style, big model last resort — also for dev + hermesbot/clawbot.'
+ref: BEN-0811
 comms:
-- at: 2026-10-16 06:05
+- at: 2026-10-24 12:39
   from: devin
-  text: 'Confirmed 2026-10-15: board-api card writes (comms + column moves) landed then were reverted when kanban-commit.timer
-    pull --rebase --autostash stashed uncommitted files and the pop failed — stash@{0} still holds orphaned comms
-    (incl. 22:37 merge-sweep auto-merge lines that never landed). Loss side of the column-resurrection bug card-column-guard
-    fixes. Options: board-api commits writes immediately (single-writer exemption exists), or committer pulls before
-    writes / honors a write lock. Also: 3+'
-- at: 2026-10-22 16:38
+  text: card captured via board-api
+- at: 2026-10-24 13:12
+  from: devin
+  text: 'Family-3 first data (edu bench on Colab T4, gpt-oss:20b, 2026-10-24): capture F1 0.889 (precision 1.0,
+    recall 0.8), dedupe 3/5, sched_ops 5/5, recall 3/3, loop 12/13 with 0 arg errors + 0 json retries, lat_p50 16.1s
+    (vs ~78s omen CPU — 4.8x faster), cost $0. NOTE: omen CPU 10-23 run scored capture F1 1.0 + dedupe 5/5 — same
+    fixture, WORSE score on T4. Conclusion: cheap-lane scores fluctuate run-to-run; single-run benches are noise
+    → cascade bench needs repeats (P4 requirement).'
+- at: 2026-10-24 16:51
   from: tony
   text: queued for processing
-- at: 2026-10-22 16:39
-  from: tony-omen
-  text: claimed
-- at: 2026-10-22 16:39
-  from: chaba
-  text: started devin-task-20261022-163912-board-api-writes-eaten-by-auto on tony-omen (dispatch)
-- at: 2026-10-22 16:45
-  from: devin
-  text: 'Picked up. Plan: (1) board-api commits each card write immediately under the write flock (scoped pathspec
-    commit, BOARD_API_COMMIT=0 off-switch); (2) git-safe-pull takes the same /tmp/board-api.lock across pull+pop
-    so a save() can never sit uncommitted when autostash fires; (3) kanban-commit alert_card commits immediately
-    too. Tests in selftest + test-kanban-commit.sh.'
-- at: 2026-10-22 16:50
-  from: tony-omen
-  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
-    tools. | devin-task-20261022-16'
-- at: 2026-10-22 16:50
-  from: chaba
-  text: pushed dispatch/20261022-163912-board-api-writes-eaten-by-auto to origin
-- at: 2026-10-22 16:50
-  from: chaba
-  text: 'test gate failed — merge held: tests/ada/test_tg_forward_provenance.py::TestPatchApplies::test_patch_applies_or_landed'
-- at: 2026-10-22 16:50
-  from: chaba
-  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
-- at: 2026-10-22 16:51
-  from: tony
-  text: queued for processing
-- at: 2026-10-22 16:52
+- at: 2026-10-24 16:52
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-- at: 2026-10-22 16:52
+- at: 2026-10-24 16:52
   from: tony-omen
   text: claimed
-- at: 2026-10-22 16:52
+- at: 2026-10-24 16:52
   from: chaba
-  text: started devin-task-20261022-165216-board-api-writes-eaten-by-auto on tony-omen (dispatch)
-- at: 2026-10-22 16:56
+  text: started devin-task-20261024-165204-arch-task-jev-router-l0-codemo on tony-omen (dispatch)
+- at: 2026-10-24 16:54
+  from: devin
+  text: 'ARCH-SESSION STARTED (dispatch on omen). Context pulled: pattern-lib codemod 7/7, workforce-eval lanes,
+    edu fixture, JEV composer probes, model-routing/tiers SSOT. Writing full cascade design -> docs/kb + Education
+    lesson cheap-agent-cascade.'
+- at: 2026-10-24 16:56
+  from: devin
+  text: 'DESIGN COMPLETE. Full arch: docs/kb/cheap-agent-cascade.md + jobs/bench/2026-10-24 record (dispatch branch).
+    Education lesson cheap-agent-cascade posted (post 2258, upserted). Core: entry-level-prediction router (NOT
+    a fixed bottom-up ladder — blind L0->L3 can cost more than frontier) + gate-verdict escalation. Metric = cascade
+    cost, constraint pass>=frontier arm. Arms A/B/C defined; build order P1 bench-cascade.py -> P2 outcome log+rules
+    router -> P3 patterns+v1 classifier -> P4 real-Jev Choice'
+- at: 2026-10-24 16:58
   from: tony-omen
-  text: 'finished (ok): exit=0 n. Running in non-interactive mode. Use --permission-mode dangerous to auto-approve
-    all tools. | devin-task-20261'
-- at: 2026-10-22 16:56
+  text: 'finished (ok): exit=0 has no verifier, and chores o2-o4 are unwritten, so verifier fixes are the first
+    build task. | devin-task-2026102'
+- at: 2026-10-24 16:58
   from: chaba
-  text: pushed dispatch/20261022-165216-board-api-writes-eaten-by-auto to origin
-- at: 2026-10-22 16:56
+  text: pushed dispatch/20261024-165204-arch-task-jev-router-l0-codemo to origin
+- at: 2026-10-24 16:58
   from: chaba
-  text: 'test gate failed — merge held: tests/ada/test_tg_forward_provenance.py::TestPatchApplies::test_patch_applies_or_landed'
-- at: 2026-10-22 16:56
+  text: 'test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed'
+- at: 2026-10-24 16:58
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
-- at: 2026-10-22 17:01
+- at: 2026-10-24 16:58
   from: chaba
-  text: 'merge-sweep: merged 2c6e1dba (dispatch/20261022-163912-board-api-writes-eaten-by-auto from tony-omen) ->
-    origin/master — marked verified (exit_code=0; 4 file(s) changed vs base) — auto-closed'
-- at: 2026-10-22 17:01
+  text: 'merge-sweep: devin-task-20261024-165204-arch-task-jev-router-l0-codemo no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-24 16:59
   from: chaba
-  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-163912-board-api-writes-eaten-by-auto,
-    branch dispatch/20261022-163912-board-api-writes-eaten-by-auto on tony-omen'
+  text: 'merge-sweep: merged 13bdaf68 (dispatch/20261024-165204-arch-task-jev-router-l0-codemo from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261024-165204-arch-task-jev-router-l0-codemo.md)
+    — auto-closed'
+- at: 2026-10-24 16:59
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261024-165204-arch-task-jev-router-l0-codemo,
+    branch dispatch/20261024-165204-arch-task-jev-router-l0-codemo on tony-omen'
 - at: 2026-11-08 10:53
   from: chaba
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
-- at: 2026-11-11 02:06
+- at: 2026-11-12 00:20
   from: chaba
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
-- at: 2026-11-12 00:24
-  from: chaba
-  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
-    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
-    pins or teach a runner the capability'
-- at: 2026-11-12 06:25
+- at: 2026-11-12 06:21
   from: chaba
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
@@ -162,21 +165,30 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-21 17:41
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
 action:
   type: dispatch
   status: done
-  result: 'exit=0 n. Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
-    | devin-task-20261022-165216-board-api-writes-eaten-by-auto.service: Consumed 47.223s CPU time over 2min 14.093s
-    wall clock time, 1G memory peak.'
   runner: tony-omen
+  result: 'exit=0 has no verifier, and chores o2-o4 are unwritten, so verifier fixes are the first build task. |
+    devin-task-20261024-165204-arch-task-jev-router-l0-codemo.service: Consumed 58.188s CPU time over 4min 22.736s
+    wall clock time, 1.5G memory peak.'
   verified: true
+  sweep:
+    stale_running: 2026-10-24 16:58
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
-  at: 2026-10-22 17:01
-  note: verified — exit_code=0; 4 file(s) changed vs base
+  at: 2026-10-24 16:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261024-165204-arch-task-jev-router-l0-codemo.md
