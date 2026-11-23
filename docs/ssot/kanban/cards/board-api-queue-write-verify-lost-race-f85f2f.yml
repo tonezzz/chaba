@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
-column: doing
-updated: 2026-11-23 19:18
+column: backlog
+updated: 2026-11-23 19:51
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -204,18 +204,25 @@ comms:
 - at: 2026-11-23 19:18
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261119-034906-two-dispatch-pipeline-robustne'
+- at: 2026-11-23 19:49
+  from: tony-omen
+  text: 'finished (failed): exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-ro
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 20:21'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: codemod
   lane_source: kw
   attempts: 1
-  last_failure: 'exit=1 evin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
-    | devin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Consumed 1.719s CPU time over 3.005s wall
-    clock time, 246.5M memory peak.'
-  runner: tony-omen
+  last_failure: 'exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-robustne.service:
+    Consumed 2min 44.647s CPU time over 31min 54.241s wall clock time, 885.2M memory peak, 126.6M memory swap peak.'
   sweep:
     stale_running: 2026-11-23 19:18
     no_repo: 2026-11-23 19:18
+  result: 'exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-robustne.service:
+    Consumed 2min 44.647s CPU time over 31min 54.241s wall clock time, 885.2M memory peak, 126.6M memory swap peak.'
 claim:
   since: 2026-11-23 19:16

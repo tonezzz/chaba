@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
-column: doing
-updated: 2026-11-23 19:33
+column: backlog
+updated: 2026-11-23 19:51
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -225,6 +225,17 @@ comms:
     tony-macbook defers: executor=jules declared but this ; [ada-prompt-slim] tony-macbook defers: executor=jules
     declared but this runner c; [ada-tools-command-reference] tony-macbook defers: executor=jules declared but t;
     [cline-nest-model-evaluation] [test-run canary 2026-10-29] On'
+- at: 2026-11-23 19:51
+  from: tony-omen
+  text: 'finished (failed): exit=1 0261123-192619-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''.
+    | devin-task-20261123-1926 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-192619-fix-the-executor-model-id-mism (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 19:51
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 20:21'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -246,16 +257,17 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
-  result: 'exit=1 evin-task-20261117-233742-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233742-fix-the-executor-model-id-mism.service: Consumed 39.301s CPU time over 15.147s
-    wall clock time, 1.3G memory peak.'
+  result: 'exit=1 0261123-192619-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''. | devin-task-20261123-192619-fix-the-executor-model-id-mism.service:
+    Consumed 2min 20.633s CPU time over 24min 12.209s wall clock time, 990M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
-  runner: tony-omen
   attempts: 1
+  last_failure: 'exit=1 0261123-192619-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''.
+    | devin-task-20261123-192619-fix-the-executor-model-id-mism.service: Consumed 2min 20.633s CPU time over 24min
+    12.209s wall clock time, 990M memory peak.'
 claim:
   since: 2026-11-23 19:24
 awaiting_action: true
