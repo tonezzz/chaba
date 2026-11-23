@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: doing
-updated: 2026-11-23 20:51
+updated: 2026-11-23 20:53
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -14,6 +14,7 @@ action:
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
+    stale_running: 2026-11-23 20:53
   attempts: 1
   last_failure: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''.
     | devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
@@ -326,6 +327,10 @@ comms:
     (51-case corpus: 15 structured_extract / 16 operator_brief / 15 safe_route + 5 summary controls; score.py on
     the PRODUCTION kk_mac_llm.call_remote + kk_mac_executor.verify path; kkmac_eval.sh with the card-judgment ssh/ollama/temp
     gates; 3 live model reports) + docs/s'
+- at: 2026-11-23 20:53
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-134412-the-kk-mac-local-lane-admits-4 no longer active on mn01 but card
+    still says running — sweeping its branch'
 review_kind: verify
 claim:
   since: 2026-11-23 20:43
