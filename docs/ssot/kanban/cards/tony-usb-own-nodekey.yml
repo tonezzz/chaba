@@ -1,9 +1,9 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: doing
+column: review
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:11
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -428,6 +428,17 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: idc02
+  text: 'finished (ok): exit=0  `tony-usb` node in the admin console — until then every stick boot re-triggers the
+    mn01 session fight. | devin-t'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-185116-the-goal-is-to-stop-the-tony-u — close will block
+    until merged'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -436,7 +447,7 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -447,6 +458,9 @@ action:
     34.394s CPU time.'
   attempts: 1
   runner: idc02
+  result: 'exit=0  `tony-usb` node in the admin console — until then every stick boot re-triggers the mn01 session
+    fight. | devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u.service: Consumed 42.822s CPU time, 342.4M
+    memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-23 18:50
 requests:
@@ -462,3 +476,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
