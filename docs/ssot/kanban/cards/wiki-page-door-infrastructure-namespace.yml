@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
-column: backlog
-updated: 2026-11-23 17:12
+column: doing
+updated: 2026-11-23 17:26
 priority: low
 tags:
 - wiki
@@ -352,12 +352,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-170441-investigate-and-resolve-the-fa)
     — claims held ~29m'
+- at: 2026-11-23 17:26
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
     | devin-task-20261123-170638-extend-wiki-page-door-to-allow.service: Consumed 2min 35.197s CPU time over 3min
     28.888s wall clock time, 919.5M memory peak.'
@@ -366,6 +369,7 @@ action:
     no_repo: 2026-11-20 19:03
   result: 'exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''. | devin-task-20261123-170638-extend-wiki-page-door-to-allow.service:
     Consumed 2min 35.197s CPU time over 3min 28.888s wall clock time, 919.5M memory peak.'
+  runner: idc02
 claim:
-  since: 2026-11-23 17:05
+  since: 2026-11-23 17:26
 review_kind: verify
