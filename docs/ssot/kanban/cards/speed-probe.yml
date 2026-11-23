@@ -13,18 +13,20 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-10-30 08:39
   from: tony
-  text: 'answered the-card-speed-probe-lacks-any-9a39e8: ★ use repo chaba on host tony-dell for the speed probe'
+  text: 'answered the-card-speed-probe-lacks-any-9a39e8: ★ use repo chaba on host tony-dell for the speed
+    probe'
 - at: 2026-10-30 08:39
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-31 10:09
   from: devin
-  text: 'raised request speed-probe-target-and-done-criteria-20261031: Thanks, repo=chaba and host=tony-dell are
-    recorded. I still need the speed-probe target and completion criterion before '
+  text: 'raised request speed-probe-target-and-done-criteria-20261031: Thanks, repo=chaba and host=tony-dell
+    are recorded. I still need the speed-probe target and completion criterion before '
 - at: 2026-11-02 09:31
   from: tony
-  text: 'answered speed-probe-target-and-done-criteria-20261031: repo-ssot-readonly — Recommended: time git status/log
-    plus SSOT validate and refs on the tony-dell chaba checkout; report raw timings only, no writes.'
+  text: 'answered speed-probe-target-and-done-criteria-20261031: repo-ssot-readonly — Recommended: time
+    git status/log plus SSOT validate and refs on the tony-dell chaba checkout; report raw timings only,
+    no writes.'
 - at: 2026-11-02 09:31
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -97,34 +99,34 @@ comms:
   text: started devin-task-20261117-233837-speed-probe-rails-you-are-proc on tony-omen (dispatch)
 - at: 2026-11-17 23:39
   from: tony-omen
-  text: 'finished (failed): exit=1 evin-task-20261117-233837-speed-probe-rails-you-are-proc.service: Failed with
-    result ''exit-code''. | devin-task-20'
+  text: 'finished (failed): exit=1 evin-task-20261117-233837-speed-probe-rails-you-are-proc.service: Failed
+    with result ''exit-code''. | devin-task-20'
 - at: 2026-11-17 23:40
   from: chaba
   text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-18 00:10'
 - at: 2026-11-17 23:41
   from: chaba
-  text: 'merge-sweep: devin-task-20261117-233837-speed-probe-rails-you-are-proc no longer active on tony-omen but
-    card still says running — sweeping its branch'
+  text: 'merge-sweep: devin-task-20261117-233837-speed-probe-rails-you-are-proc no longer active on tony-omen
+    but card still says running — sweeping its branch'
 - at: 2026-11-17 23:41
   from: chaba
-  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
-    exit_code=1; auto-retry queued (attempt 1/2)'
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
 - at: 2026-11-17 23:42
   from: tony-dell
   text: claimed
 - at: 2026-11-17 23:42
   from: tony-dell
-  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
-    dispatch is held'
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope;
+    unstaged dispatch is held'
 - at: 2026-11-17 23:42
   from: chaba
   text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-18 00:12'
 - at: 2026-11-17 23:55
   from: chaba
-  text: 'merge-sweep: devin-task-20261117-233837-speed-probe-rails-you-are-proc failed — its branch isn''t auto-merged
-    (unverified partial work). Retry the card or merge dispatch/20261117-233837-speed-probe-rails-you-are-proc by
-    hand.'
+  text: 'merge-sweep: devin-task-20261117-233837-speed-probe-rails-you-are-proc failed — its branch isn''t
+    auto-merged (unverified partial work). Retry the card or merge dispatch/20261117-233837-speed-probe-rails-you-are-proc
+    by hand.'
 - at: 2026-11-18 17:30
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -154,10 +156,10 @@ comms:
   text: put on hold
 - at: 2026-11-19 08:39
   from: devin
-  text: 'Overnight sweep 2026-11-19: parked in backlog. The latest attempt failed before task execution because
-    action.lane_envelope is incomplete; card comms also show runner-agent drift deferrals across hosts. The recorded
-    failure says zero delivered work and branch head == base. The task specification decisions are already answered;
-    do not retry until the runner admission/envelope blocker is fixed.'
+  text: 'Overnight sweep 2026-11-19: parked in backlog. The latest attempt failed before task execution
+    because action.lane_envelope is incomplete; card comms also show runner-agent drift deferrals across
+    hosts. The recorded failure says zero delivered work and branch head == base. The task specification
+    decisions are already answered; do not retry until the runner admission/envelope blocker is fixed.'
 - at: 2026-11-19 17:04
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -182,10 +184,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
-  ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
-    parameters, making it impossible to dispatch a concrete runner without owner input.
+  ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository,
+    or execution parameters, making it impossible to dispatch a concrete runner without owner input.
   options:
   - ★ use repo chaba on host tony-dell for the speed probe
   - use repo mddb-fork on host idc02 for the speed probe
@@ -195,25 +200,25 @@ requests:
   from: backlog-spec-enrich
   answer: ★ use repo chaba on host tony-dell for the speed probe
 - id: speed-probe-target-and-done-criteria-20261031
-  ask: Thanks, repo=chaba and host=tony-dell are recorded. I still need the speed-probe target and completion criterion
-    before arming it. Which read-only probe do you want?
+  ask: Thanks, repo=chaba and host=tony-dell are recorded. I still need the speed-probe target and completion
+    criterion before arming it. Which read-only probe do you want?
   status: answered
   at: 2026-10-31 10:09
   from: devin
   options:
   - id: repo-ssot-readonly
-    label: 'Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba checkout; report
-      raw timings only, no writes.'
+    label: 'Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba checkout;
+      report raw timings only, no writes.'
   - id: board-api-read
-    label: Measure board-api read latency; note AUD-1033 already added and benchmarked projected reads, so only
-      choose if you want a repeat on tony-dell.
+    label: Measure board-api read latency; note AUD-1033 already added and benchmarked projected reads,
+      so only choose if you want a repeat on tony-dell.
   - id: other-target
     label: Name a different command/path and what counts as fast enough.
   - id: hold
     label: Leave the card in backlog until the probe goal is clear.
   suggested: repo-ssot-readonly
-  answer: 'repo-ssot-readonly — Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba
-    checkout; report raw timings only, no writes.'
+  answer: 'repo-ssot-readonly — Recommended: time git status/log plus SSOT validate and refs on the tony-dell
+    chaba checkout; report raw timings only, no writes.'
 action:
   type: dispatch
   repo: chaba
@@ -221,7 +226,8 @@ action:
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch
+    is held'
   sweep:
     stale_running: 2026-11-17 23:41
     zero_commit: 2026-11-17 23:41
@@ -231,3 +237,7 @@ action:
   runner: tony-dell
 claim: {}
 awaiting_action: true
+spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and
+  tony-dell) by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  to ~/.local/bin/runner-agent on each respective host. Verify that each host successfully runs the updated
+  runner-agent without drift errors.
