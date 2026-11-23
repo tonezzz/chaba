@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: doing
-updated: 2026-11-23 22:06
+updated: 2026-11-23 22:07
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -322,6 +322,24 @@ comms:
 - at: 2026-11-23 22:06
   from: tony-dell
   text: claimed
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-142345-redeploy-the-drifted-runner-ag no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-142345-redeploy-the-drifted-runner-ag on
+    tony-dell — if the work was never pushed it may be gone'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: started devin-task-20261123-220709-goal-address-the-live-voice-to on tony-dell (dispatch)
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'primer injected 8 lesson(s): [live-voice-burn-context-replay] primer injected 8 lesson(s): runbook docs/kb/ch;
+    [live-voice-burn-context-replay] finished (failed): exit=1 rocess exited, code=e; runbook docs/kb/chaba-lab.md:
+    Chaba Lab — evaluation platform for Ada — Date: 20; [live-session-token-diet] test gate failed — merge held:
+    tests/ada/test_line_fil; [live-voice-burn-context-replay] finished (failed): exit=1 -task-20261117-233258; [live-voice-burn-context-replay]
+    merge-sweep: devin-task-2026'
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -343,6 +361,8 @@ action:
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:40
+    stale_running: 2026-11-23 22:07
+    session_gone: 2026-11-23 22:07
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
     Failed with result ''exit-code''. | devin-task-20261123-195521-goal-address-the-live-voice-to.service: Consumed
     3.959s CPU time.'
@@ -359,3 +379,4 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
   test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
 claim:
   since: 2026-11-23 22:06
+awaiting_action: true
