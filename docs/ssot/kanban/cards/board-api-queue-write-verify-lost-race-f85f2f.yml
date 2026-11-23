@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
 column: doing
-updated: 2026-11-23 19:17
+updated: 2026-11-23 19:18
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -192,6 +192,11 @@ comms:
 - at: 2026-11-23 19:17
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:18
+  from: devin
+  text: 'attempt 3 starting on tony-omen — prior run died on provider rate-limit before any commits (worktree clean).
+    Re-doing: (a) /action write verify-or-loud, (b) autostash pop preserves lost writes, (c) docs-only timeout-override
+    in merge-sweep.'
 action:
   type: dispatch
   status: running

@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:17
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -194,6 +194,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:17
+  from: devin
+  text: 'fixed live on omen: yt-live-api.service was inactive+disabled (never re-enabled after phase-5 migration;
+    omen rebooted 18:51). Enabled+started; added drop-in override.conf YT_LIVE_APP=~/CascadeProjects/chaba-raceman/public/apps/yt-live
+    + YT_LIVE_BASE=http://192.168.2.67:8083/apps/yt-live. Deeper drift found+fixed: installed yt-live*.sh/py were
+    the pre-dub Oct-5 snapshot — resynced repo file set to ~/.local/bin; yt-live-api.py merged upstream (fast_cast+/list
+    restored, env-driven). Verified: /sta'
 action:
   status: running
   attempts: 1
