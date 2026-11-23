@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-23 14:21
+updated: 2026-11-23 15:29
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -120,6 +120,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:29
+  from: ada
+  text: 'answered multiple-hosts-idc02-tony-dell-aa9a97: ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell,
+    and tony-macbook via scp and resume the task'
+- at: 2026-11-23 15:29
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: ada-voice
@@ -145,8 +152,10 @@ requests:
   - ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell, and tony-macbook via scp and resume the task
   - Postpone the tool consolidation card until infrastructure drift is resolved independently
   - Proceed with the consolidation spec on hosts with up-to-date runner-agents only and skip the drifted hosts
-  status: open
+  status: answered
   at: 2026-11-21 19:21
   from: backlog-spec-enrich
   escalated_at: 2026-11-22 07:33
+  answer: ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell, and tony-macbook via scp and resume the
+    task
 awaiting_action: true

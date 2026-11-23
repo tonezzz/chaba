@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
 column: backlog
-updated: 2026-11-23 14:21
+updated: 2026-11-23 15:29
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -169,6 +169,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:29
+  from: ada
+  text: 'answered the-runner-agents-across-multi-755c9c: ★ Redeploy runner-agents to all drifting hosts via scp
+    and execute the KK degraded mode task on idc02'
+- at: 2026-11-23 15:29
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -192,10 +199,11 @@ requests:
   - ★ Redeploy runner-agents to all drifting hosts via scp and execute the KK degraded mode task on idc02
   - Postpone the KK degraded mode learning pilot until runner infrastructure is independently stabilized
   - Execute the KK degraded mode task locally on tony-dell after updating its runner-agent
-  status: open
+  status: answered
   at: 2026-11-22 01:20
   from: backlog-spec-enrich
   escalated_at: 2026-11-22 13:33
+  answer: ★ Redeploy runner-agents to all drifting hosts via scp and execute the KK degraded mode task on idc02
 action:
   type: dispatch
   repo: chaba
