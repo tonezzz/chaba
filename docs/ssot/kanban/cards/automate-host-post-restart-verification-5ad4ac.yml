@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-11-23 14:19
+updated: 2026-11-23 14:21
 action:
   type: dispatch
   status: running
@@ -205,6 +205,10 @@ comms:
     gate = one pass per boot, no dup spam on the 15-min timer. Checks are SSOT-declarative (ssot.operations.yml
     automation.post_restart_verify + host_notes.tony_omen/tony_dell.post_restart_checks). Reports → ~/var/chaba/health/post-restart-verify-*.json
     + timeline.jsonl; must-fa'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: multiple-hosts-tony-omen-idc02-a913db
   ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed runner-agent
