@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
-column: backlog
-updated: 2026-11-23 22:36
+column: doing
+updated: 2026-11-23 23:03
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -23,12 +23,13 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
-  attempts: 1
+  status: running
+  attempts: 2
   result: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
     Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
   last_failure: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
     Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
+  runner: mn01
 ref: OPS-0048
 comms:
 - at: 2026-11-23 22:22
@@ -90,5 +91,8 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-220843-supersedes-manual-card-wiki-ta)
     — claims held ~29m'
+- at: 2026-11-23 23:03
+  from: mn01
+  text: claimed
 claim:
-  since: 2026-11-23 22:26
+  since: 2026-11-23 23:03
