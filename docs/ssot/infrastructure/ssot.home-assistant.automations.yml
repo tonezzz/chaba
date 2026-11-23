@@ -203,7 +203,8 @@ cast_entities:
     input_select.tv_camera: "MANAGED which camera the tv_display=camera timer
       casts (was hardcoded ip_cam_65)"
     input_select.tv_display: "what the 60s cast-ha-panel.timer keeps on screen
-      (smart-home/dossier/photos/map/panel/camera/help/vms/off)"
+      (smart-home/dossier/photos/map/panel/camera/help/off) — vms option retired
+      2026-11-23 OPS-1312 with the websockify bridges"
     input_select.tv_cast_target: "cast destination (options: TONY-TV Cast)"
     input_text.tv_command: "raw command injection path"
     counter.cast_starts: "MANAGED cast-session counter; reset on a 10-min
@@ -250,7 +251,6 @@ cast_entities:
       ~/.local/share/cast-audit.log"
     cast-desktop@1.service: "X desktop -> HLS (CPUQuota 60%)"
     ha-card-snapshot.timer: "pv1.png refresh while dashboard view casts"
-    websockify-vms-mn01.service: ":6082 -> mn01:5900 (vms cast path)"
 
 # ---------------------------------------------------------------------------
 # Failure scenarios — what actually happens (decision: cast-failure-scenarios)

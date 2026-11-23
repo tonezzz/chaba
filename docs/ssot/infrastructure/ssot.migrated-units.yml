@@ -139,15 +139,19 @@ hosts:
         secrets_env: null
         front_name: "100.123.163.11:8092/:8443 → CMS /, /new, /decisions, /infrastructure"
       websockify-macbook:
+        state: retired 2026-11-23 (OPS-1312) — stopped/disabled on idc02, route removed
         data_dirs: []
         unit_file: "%h/.config/systemd/user/websockify-macbook.service"
         secrets_env: null
-        front_name: "100.123.163.11:6080"
+        front_name: "100.123.163.11:6080 (was)"
+        restore_runbook: docs/kb/retired-apps/vnc-bridges.md
       websockify-vms-mn01:
+        state: retired 2026-11-23 (OPS-1312) — stopped/disabled on idc02, route removed
         data_dirs: []
         unit_file: "%h/.config/systemd/user/websockify-vms-mn01.service"
         secrets_env: null
-        front_name: "100.123.163.11:6082"
+        front_name: "100.123.163.11:6082 (was)"
+        restore_runbook: docs/kb/retired-apps/vnc-bridges.md
       notebooklm-rest + notebooklm-mcp:
         data_dirs: ["%h/.local/share/notebooklm"]
         unit_file: "%h/.config/containers/systemd/notebooklm-{rest,mcp}.container"

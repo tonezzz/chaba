@@ -136,8 +136,6 @@ services:
   yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
   camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
   camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
-  websockify-vms:   {host: idc02, listen: "100.123.163.11:6082", note: "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
-  websockify-macbook: {host: idc02, listen: "100.123.163.11:6080", note: "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
   yomi:           {host: idc03, listen: "100.102.134.91:3000", tailnet: "http://100.102.134.91:3000", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"}
   weaviate:       {host: idc02, listen: "100.123.163.11:8084", tailnet: "http://100.123.163.11:8084", note: "migrated 2026-10-19"}
   gpu-queue:      {host: idc02, listen: "100.123.163.11:3001", tailnet: "http://100.123.163.11:3001", note: "migrated 2026-10-19"}
@@ -192,10 +190,6 @@ routes:
   - {id: yolo-api,         kind: proxy,  path: /apps/yolo/api/*,       strip: /apps/yolo/api, upstream: "100.106.196.22:8780", owner: yolo}
   - {id: yolo,             kind: static, path: /apps/yolo/*,           owner: yolo}
   - {id: dance2energy,     kind: static, path: /apps/dance2energy/*,   owner: chaba}
-  - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "100.123.163.11:6082", owner: vms, note: "default target = mn01 vms; websockify units on idc02 host, tailnet-IP binds"}
-  - {id: vnc-ws-mn01,      kind: proxy,  path: /apps/vnc/ws-mn01,      ws: true, upstream: "100.123.163.11:6082", owner: vms}
-  - {id: vnc-ws-macbook,   kind: proxy,  path: /apps/vnc/ws-macbook,   ws: true, upstream: "100.123.163.11:6080", owner: vms}
-  - {id: vnc,              kind: static, path: /apps/vnc/*,            owner: vms}
   - {id: vms-snap,         kind: proxy,  path: /apps/vms-snap/*,       strip: /apps/vms-snap, upstream: "100.106.196.22:8377", owner: vms, note: "xmeye channel snapshots (vms-snap shim on mn01) — /apps/eye ?src=vms:<ch>"}
   - {id: eye-mddb,         kind: proxy,  path: /apps/eye-mddb/v1/add,  upstream: "100.102.134.91:11023", owner: chaba, custom: true, note: "MDDB write lane for /apps/eye bench+detections — only /v1/add proxied, tailnet-identity-write"}
   - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "100.75.102.88:9005", owner: chaba, note: "ha-live bridge on tony-omen since ph5"}

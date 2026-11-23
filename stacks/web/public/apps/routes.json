@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-23 15:22 +07",
+  "generated": "2026-11-23 15:35 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -170,16 +170,6 @@
       "host": "idc03",
       "listen": "0.0.0.0:8380",
       "tailnet": "http://100.102.134.91:8380"
-    },
-    "websockify-vms": {
-      "host": "idc02",
-      "listen": "100.123.163.11:6082",
-      "note": "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
-    },
-    "websockify-macbook": {
-      "host": "idc02",
-      "listen": "100.123.163.11:6080",
-      "note": "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
     },
     "yomi": {
       "host": "idc03",
@@ -431,32 +421,6 @@
       "kind": "static",
       "path": "/apps/dance2energy",
       "owner": "chaba"
-    },
-    "vnc-ws": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6082/apps/vnc/ws",
-      "ws": "ws://100.123.163.11:6082/apps/vnc/ws/ws"
-    },
-    "vnc-ws-mn01": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws-mn01",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6082/apps/vnc/ws-mn01",
-      "ws": "ws://100.123.163.11:6082/apps/vnc/ws-mn01/ws"
-    },
-    "vnc-ws-macbook": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws-macbook",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6080/apps/vnc/ws-macbook",
-      "ws": "ws://100.123.163.11:6080/apps/vnc/ws-macbook/ws"
-    },
-    "vnc": {
-      "kind": "static",
-      "path": "/apps/vnc",
-      "owner": "vms"
     },
     "vms-snap": {
       "kind": "proxy",

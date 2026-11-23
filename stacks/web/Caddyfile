@@ -308,27 +308,6 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
-	# noVNC websocket upstreams live on the idc02 host (websockify units,
-	# tailnet-IP binds): :6082 -> mn01:5900 (vms host, default), :6080 ->
-	# kk-macbook:5900. noVNC picks via ?path=apps/vnc/ws[-mn01|-macbook]
-	handle /apps/vnc/ws {
-		reverse_proxy 100.123.163.11:6082
-	}
-	handle /apps/vnc/ws-mn01 {
-		reverse_proxy 100.123.163.11:6082
-	}
-	handle /apps/vnc/ws-macbook {
-		reverse_proxy 100.123.163.11:6080
-	}
-
-	handle /apps/vnc {
-		redir * /apps/vnc/ 308
-	}
-	handle_path /apps/vnc/* {
-		root * /srv/public/apps/vnc
-		file_server
-	}
-
 	handle /apps/vms-snap {
 		redir * /apps/vms-snap/ 308
 	}
