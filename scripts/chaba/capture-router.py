@@ -111,6 +111,13 @@ def _native_key(sink: str, candidate: dict, norm: str) -> str:
     if m:
         ref = m.group(0)
     if sink == "kanban":
+        # A comm that already lives on card X is an upsert of X, never a fork.
+        # source_id shape from harvester: "<card-slug>#comms[<i>]" -- key on the
+        # parent card id so all comms from one card collapse to one proposal.
+        if candidate.get("source") == "card-comms":
+            card_id = str(candidate.get("source_id") or "").split("#", 1)[0].strip()
+            if card_id:
+                return card_id
         return ref or _hash(candidate.get("source"), candidate.get("source_id"), norm)
     if sink == "lesson":
         return _slug(text)
@@ -149,6 +156,15 @@ def route(candidate: dict, run_id: str = RUN_ID) -> dict:
     if candidate.get("already_filed"):
         action = "skip"
 
+    # Kanban candidate sourced from a card comm: the parent card already
+    # exists, so this is a link/upsert of that card, not a new-card create.
+    from_card = (sink == "kanban"
+                 and candidate.get("source") == "card-comms"
+                 and "#" in str(candidate.get("source_id") or ""))
+    if from_card:
+        action = "link"
+        already = True
+
     native = _native_key(sink, candidate, norm)
     return {
         "run_id": run_id,
@@ -183,8 +199,20 @@ def self_test() -> int:
         flag = "OK" if got == expected else "FAIL"
         print(f"[{flag}] {cand['text'][:38]!r} -> {got} (expected {expected})")
         ok += got == expected
-    print(f"self-test: {ok}/{len(cases)} passed")
-    return 0 if ok == len(cases) else 1
+    # Regression: a kanban-routed comm from an existing card must upsert that
+    # card (link + parent-card key), never propose a new card.
+    reg = route({"text": "Please wire the capture hooks on tony-dell next action",
+                 "source": "card-comms",
+                 "source_id": "ada-capture-hooks#comms[4]"}, "self-test")
+    good = (reg["proposed_sink"] == "kanban" and reg["action"] == "link"
+            and reg["dedupe_key"] == "kanban:ada-capture-hooks"
+            and reg["already_filed"] is True)
+    print(f"[{'OK' if good else 'FAIL'}] card-comm kanban regression -> "
+          f"{reg['action']} {reg['dedupe_key']}")
+    ok += good
+    total = len(cases) + 1
+    print(f"self-test: {ok}/{total} passed")
+    return 0 if ok == total else 1
 
 
 def main() -> int:
