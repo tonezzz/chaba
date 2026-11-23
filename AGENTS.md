@@ -127,9 +127,11 @@ retrieval surface: agents read lessons back via MDDB `search` on
 `chaba-lessons` or `POST /lesson {op:list|get, source:"mddb"}`
 (source `wiki`/`wp` read the other stores). Backfill:
 `scripts/board/lesson-mddb-backfill.py`. If the write fails, say so — a
-lesson that only lived in the reply is a miss, and misses are counted in
-`docs/ssot/ssot.repeat-asks.yml` (check + increment it when Tony flags a
-repeat).
+lesson that only lived in the reply is a miss: append it to the `misses:` block
+of `docs/ssot/ssot.repeat-asks.yml` via
+`python3 scripts/chaba/miss-add.py --topic <slug> --location <chat|voice> --should-have-been <sink-ref> --evidence <pointer>`
+(deduped; commit through the governed SSOT path). Re-asks still check +
+increment the `topics:` block of the same register when Tony flags a repeat.
 
 Split rule (added 2026-10-16 — Tony): SSOT keeps only the
 comparison/decision layer — verdict, table, pointer to the lesson post.

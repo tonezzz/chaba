@@ -25,6 +25,7 @@ import collections
 import datetime as dt
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,7 @@ PRODUCER_PATTERNS = (
 )
 
 POINTER_SINKS = {"ssot", "kb", "oc-note"}
+MISS_INSTRUMENTED_SINCE = "2026-11-23"
 
 
 def is_producer_artifact(source_id: str) -> bool:
@@ -98,20 +100,47 @@ def repeat_ask_signal(repo: Path = REPO) -> dict[str, Any]:
     }
 
 
-def miss_signal() -> dict[str, Any]:
-    """AGENTS.md declares misses are counted in the repeat-ask register, but
-    the register has no miss field -- it only logs explicit Tony re-asks."""
+def miss_signal(repo: Path = REPO) -> dict[str, Any]:
+    """Measured from the `misses:` block of the repeat-ask register.
+
+    The block was instrumented 2026-11-23. Older register revisions without
+    it fall back to `unmeasurable` rather than guessing a count.
+    """
+    source = "docs/ssot/ssot.repeat-asks.yml -> misses[]"
+    data = _load_yaml(repo / "docs/ssot/ssot.repeat-asks.yml")
+    if "misses" not in data:
+        return {
+            "status": "unmeasurable",
+            "source": "AGENTS.md lesson-capture duty -> ssot.repeat-asks.yml (no miss field)",
+            "as_of": AS_OF,
+            "proposal": (
+                "Add a `misses:` block to ssot.repeat-asks.yml; append via "
+                "scripts/chaba/miss-add.py on every reply-only lesson/answer."
+            ),
+            "owner": "session-capture duty",
+        }
+    misses = [m for m in (data.get("misses") or []) if isinstance(m, dict)]
+    dates = sorted({str(m.get("at") or "")[:10] for m in misses if m.get("at")})
+    span = 0
+    if len(dates) >= 2:
+        span = max(1, (dt.date.fromisoformat(dates[-1]) - dt.date.fromisoformat(dates[0])).days)
     return {
-        "status": "unmeasurable",
-        "source": "AGENTS.md lesson-capture duty -> ssot.repeat-asks.yml (no miss field)",
-        "as_of": AS_OF,
-        "proposal": (
-            "Add a `misses:` block to ssot.repeat-asks.yml keyed by topic slug "
-            "with {at, answer_location, should_have_been, evidence}. Session-capture "
-            "appends on every reply-only lesson/answer; the register stays the "
-            "single counter for both re-asks and misses."
+        "status": "measured",
+        "source": source,
+        "as_of": dates[-1] if dates else MISS_INSTRUMENTED_SINCE,
+        "count": len(misses),
+        "by_location": dict(collections.Counter(m.get("location") for m in misses)),
+        "by_topic": dict(collections.Counter(m.get("topic") for m in misses)),
+        "by_sink": dict(collections.Counter(m.get("should_have_been") for m in misses)),
+        "window_days": span,
+        "misses_per_week": round(len(misses) * 7 / span, 2) if span else None,
+        "first_miss": dates[0] if dates else None,
+        "instrumented_since": MISS_INSTRUMENTED_SINCE,
+        "note": (
+            "Counts begin at instrumentation 2026-11-23; an empty log is 0 "
+            "measured misses so far, not evidence that none occurred."
         ),
-        "owner": "session-capture duty",
+        "refresh": "append via scripts/chaba/miss-add.py, then re-run this report",
     }
 
 
@@ -219,7 +248,7 @@ def render(entries: list[dict[str, Any]], ledger: Path) -> str:
     ]
     for label, s in signals:
         value = ""
-        for key in ("total_asks", "count", "asks_per_week", "stale_days"):
+        for key in ("total_asks", "count", "asks_per_week", "misses_per_week", "stale_days"):
             if key in s and s[key] is not None:
                 value += f"{key}={s[key]} "
         value = value.strip() or s["status"]
@@ -276,7 +305,27 @@ def self_test() -> int:
     assert p["precision_pct"] == 33.3, p
     assert stale_pointer_signal(entries, max_age_days=0)["status"] == "proxy"
     assert time_to_find_signal()["status"] == "unmeasurable"
-    print("self-test: 9/9 passed")
+    with tempfile.TemporaryDirectory() as d:
+        ssot = Path(d) / "docs/ssot"
+        ssot.mkdir(parents=True)
+        reg = ssot / "ssot.repeat-asks.yml"
+        reg.write_text(
+            "topics: []\nmisses:\n"
+            "  - {topic: some-topic, at: '2026-11-23', location: chat, "
+            "should_have_been: 'lesson:some-slug', evidence: msg-ref-1}\n"
+            "  - {topic: some-topic, at: '2026-11-24', location: voice, "
+            "should_have_been: 'lesson:some-slug', evidence: msg-ref-2}\n",
+            encoding="utf-8",
+        )
+        ms = miss_signal(Path(d))
+        assert ms["status"] == "measured", ms
+        assert ms["count"] == 2, ms
+        assert ms["by_location"] == {"chat": 1, "voice": 1}, ms
+        assert ms["misses_per_week"] == 14.0, ms
+        assert ms["instrumented_since"] == MISS_INSTRUMENTED_SINCE
+        reg.write_text("topics: []\n", encoding="utf-8")
+        assert miss_signal(Path(d))["status"] == "unmeasurable"
+    print("self-test: 14/14 passed")
     return 0
 
 

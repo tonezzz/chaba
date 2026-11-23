@@ -8,6 +8,12 @@
 #
 # Entries: one per recurring topic. count = times Tony explicitly (re)asked.
 # Keep history: each recurrence gets a dated line so the trend is visible.
+#
+# `misses:` is the second counter in this register: retainable answers/lessons
+# that lived only in a chat reply and were never filed to a canonical sink.
+# Append via `python3 scripts/chaba/miss-add.py` (deduped by topic+at+location+
+# should-have-been); see AGENTS.md lesson-capture duty. capture-metrics.py
+# reads this block as the measured miss-rate signal.
 version: 1
 title: Repeat-ask register — counted recurrences of Tony's requests
 description: "Durable count of times Tony had to re-ask the same thing.
@@ -118,3 +124,9 @@ topics:
       Filed as Education lesson-48e4a2fba780 (post 1954)."
     history:
       - {at: "2026-10-22", ask: "rclone vs rest api — are we using the most efficient methods?", cards: []}
+
+# Miss log — reply-only lessons/answers never filed to a canonical sink.
+# Fields: topic, at, location (chat|voice|link), should_have_been (sink ref),
+# evidence (message/artifact pointer). Append with scripts/chaba/miss-add.py.
+# Empty at instrumentation (2026-11-23); counts start from that date.
+misses: []

@@ -269,13 +269,21 @@ sections:
           creates of which 382 came from focus-inbox producer artifacts (job-fail 315,
           kanban-cards 31, report-watch 20, handoff 16) - about 2% precision. Tightening FILED_RE
           also unmasked dispatch-outcome creates; outcomes are filed artifacts too.
+          Miss rate: measured from the `misses:` block of ssot.repeat-asks.yml (instrumented
+          2026-11-23; empty at instrumentation, so 0 so far is not evidence of no misses).
           Source: scripts/chaba/capture-metrics.py.
       - label: Unmeasurable signals (no durable source)
         text: >-
-          Miss rate: AGENTS.md points at ssot.repeat-asks.yml but the register has no miss field.
           Stale-pointer incidents: no incident log (only a proxy count of old-as_of pointer candidates).
           Time-to-find: no lookup telemetry. Report each as unmeasurable with a proposal; never
           present a proxy as a measured incident count.
+      - label: Miss log write path
+        text: >-
+          A reply-only lesson/answer is a miss. Append via
+          `python3 scripts/chaba/miss-add.py --topic <slug> --location <chat|voice|link>
+          --should-have-been <sink-ref> --evidence <pointer>` (deduped by topic+at+location+
+          should-have-been; textual, comment-preserving write to the `misses:` block only).
+          Commit through the governed SSOT path from a worktree, not the live checkout.
       - label: Promotion thresholds (proposed; --apply remains gated)
         text: >-
           Never auto-create a kanban card from a focus-inbox producer artifact or a dispatch outcome;
