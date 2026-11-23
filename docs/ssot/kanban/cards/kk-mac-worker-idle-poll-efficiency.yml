@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
 column: backlog
-updated: 2026-11-23 16:19
+updated: 2026-11-23 18:34
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -23,7 +23,7 @@ spec: 'Investigate the live KK-Mac worker: net.adanest.kk-llm-worker LaunchAgent
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-10-31 08:49
     session_gone: 2026-11-14 11:10
@@ -31,13 +31,9 @@ action:
   last_failure: 'exit=1 task-20261123-160801-investigate-the-live-kk-mac-wo.service: Failed with result ''exit-code''.
     | devin-task-20261123-160801-investigate-the-live-kk-mac-wo.service: Consumed 30.897s CPU time over 8min 378ms
     wall clock time, 348.5M memory peak.'
-  attempts: 2
+  attempts: 0
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
-  result: 'exit=1 task-20261123-160801-investigate-the-live-kk-mac-wo.service: Failed with result ''exit-code''.
-    | devin-task-20261123-160801-investigate-the-live-kk-mac-wo.service: Consumed 30.897s CPU time over 8min 378ms
-    wall clock time, 348.5M memory peak.'
-  runner: tony-macbook
 note: 'Observed 2026-10-31: worker runs every 15s; 55 runs reported, qwen3:8b resident, recent short verified jobs
   completed in ~0.9s, and worker.err contains rclone timeout plus independent-check failures from older packs. Current
   load spike is transient; sustained CPU was also mediaanalysisd, not Nest.'
@@ -303,6 +299,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 18:34
+  from: tony
+  text: retry requested
 review_kind: verify
 claim:
   since: 2026-11-23 16:07
