@@ -87,7 +87,7 @@ sections:
       - label: Country-level geocoding
         text: Thailand as a country fails; city-level queries like New York work. Likely needs a non-Google geocoder or country preset.
       - label: Minified bundle patches
-        text: Working version is patched directly on tony-dell, not yet reflected in a buildable source repo.
+        text: Post-build patches are codified by scripts/gev/patch-gev-dist.sh (api/models prefix, iPad msaaSamples:1, honest-fail.js inject) — run it on dist/ after every npm run build; --check verifies. The staged bundle under stacks/web/public/apps/gev/ carries them.
       - label: Safari verification pending
         text: Latest fixes have only been confirmed on Chrome/Windows so far.
 config:

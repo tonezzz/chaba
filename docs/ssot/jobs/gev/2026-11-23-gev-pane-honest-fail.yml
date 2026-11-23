@@ -1,0 +1,153 @@
+title: GEV/vcast panes — honest-fail on every pane type
+subtitle: >
+  Dispatch of kanban card gev-map (MED-0135): panes that cannot render
+  must surface a visible failure state instead of a black pane. Three
+  layers landed inside the chaba worktree (gods-eye-view source repo is
+  still HELD — no pushable remote): vcast per-pane .pfail overlay for
+  video/img/iframe, a vendored GEV honest-fail.js watchdog +
+  patch-gev-dist.sh codifying the post-build patches (iPad
+  msaaSamples:1 kept), and the ada-voice scenario gev_pane_honest_fail
+  extended to every pane type, staged as drop 20.
+icon: warning
+
+planning:
+  goal: >
+    A pane that cannot render must say so on-screen — a black rectangle
+    is indistinguishable from "loading" or a dark scene. Cover every
+    pane type (video, img, iframe incl. the Cesium GEV app), keep the
+    iPad msaaSamples:1 patch, and extend the gev_pane_honest_fail
+    scenario to every pane type.
+  scope: >
+    stacks/web/public/apps/vcast/index.html (display page — all pane
+    types), stacks/web/public/apps/gev/ (staged dist + new
+    honest-fail.js), scripts/gev/patch-gev-dist.sh (new), ada-voice
+    drop: tests/scenarios-live/gev_pane_honest_fail.yaml +
+    scripts/scenario-live.pane-pub.patch, AGENTS.md + ssot.apps.* docs,
+    stacks/web/input-bridge/gev-honest-fail-check.mjs (repo-side check).
+    Out of scope: ~/gods-eye-view source repo (HELD — no pushable
+    remote; the patch script is what a future build runs) and live
+    deploys (approval-gated).
+  success_criteria:
+    - 'each pane type fails visibly: video error/stall, img onerror,
+      iframe load-timeout, in-frame app render failure'
+    - 'failures also report state=pane-fail over the relay (observable
+      in /displays)'
+    - 'msaaSamples iPad ternary present in the staged bundle; no raw
+      msaaSamples:4'
+    - 'staged dist passes patch-gev-dist.sh --check; honest-fail-check
+      exits 0'
+  risks:
+    - 'sed patches on the minified bundle are quote-bounded so
+      absolute URLs like "https://x.com/api/" cannot match — verified by
+      --self-test fixture'
+    - 'iframe X-Frame-Options refusals still fire the load event, so the
+      25s frame watchdog only catches dead/unreachable targets; in-frame
+      failure is the probe/postMessage path — documented in code'
+    - 'cross-origin frames cannot be DOM-probed — postMessage is the
+      channel; both are implemented'
+  resources:
+    - vcast display page (input-bridge idc03), staged GEV dist
+  owner: devin (dispatch)
+  related_focus:
+    - label: gev-map
+      file: docs/ssot/kanban/cards/gev-map.yml
+
+processing:
+  status: done
+  started_at: "2026-11-23 15:55 +07"
+  steps:
+    - id: 1
+      label: Recon — what the 2026-10-06 attempt staged vs what landed
+      status: done
+      notes: >
+        The first dispatch (devin-task-20261006-171642) planned honest-fail
+        but never merged (merge-sweep: no served checkout). Card verify =
+        gev_pane_honest_fail scenario + iPad msaa no-crash. Found: staged
+        stacks/web/public/apps/gev/ bundle was RAW unpatched dist
+        (msaaSamples:4, bare /api/ — live bundle identical, so the
+        documented post-build patches were absent in both places);
+        vcast had partial honesty (img onerror state report, hls retry
+        states) but NO on-pane failure surface — a dead video/frame was
+        still a black pane; ada-voice's gev_pane_honest_fail.yaml covered
+        only the GEV-in-iframe headless case.
+    - id: 2
+      label: vcast — per-pane .pfail overlay for every pane type
+      status: done
+      notes: >
+        .pfail overlay element per pane (pane0 markup + makePane
+        template); paneFail(p,msg,quiet) draws the overlay + reports
+        state=pane-fail (deduped); paneOk clears on content/teardown.
+        Triggers: video element error on the non-recovering path maps
+        MEDIA_ERR_* to a reason; 20s no-frames stall watchdog (skipped
+        while an hls retry is armed); hls retry veil at attempt #5
+        (quiet — hls-retry state stays authoritative); img onerror
+        overlays + clears on onload; iframe 25s no-load watchdog.
+        In-frame app failure: armFrameProbe polls same-origin
+        contentWindow.__gevHonestFail/__gevRenderOk every 3s, and a
+        window 'message' listener accepts {type:gev-honest-fail|ok}
+        cross-origin — the GEV watchdog posts it.
+    - id: 3
+      label: GEV honest-fail.js + patch-gev-dist.sh
+      status: done
+      notes: >
+        honest-fail.js (vendored, no deps): boot watchdog — no
+        .cesium-widget canvas after 25s -> overlay naming the reason
+        (with WebGL/Cesium error hints captured from window
+        error/rejection listeners); webglcontextlost at runtime ->
+        overlay; restored -> clears. Surfaces: #gev-honest-fail DOM
+        overlay, window.__gevHonestFail/__gevRenderOk flags, and
+        parent.postMessage so a vcast host pane badges the frame.
+        patch-gev-dist.sh codifies the documented post-build patches —
+        quote-bounded "/api/ and "/models/ -> /apps/gev/* on
+        assets/*.js, msaaSamples:4 -> iPad/iPhone/iPod UA ternary (kept,
+        per card), honest-fail.js inject + stage. Idempotent; --check
+        verifies a dist; --self-test covers the fixture incl. absolute-
+        URL non-mangling. Ran it on the staged dist — the repo copy now
+        carries all patches.
+    - id: 4
+      label: ada-voice drop — extended scenario + typed-pub driver patch
+      status: done
+      notes: >
+        Drop 20 in integrations/ada-voice/: gev_pane_honest_fail.yaml
+        replaces the upstream scenario — layer 1 http_check guards
+        (served vcast page wiring for every pane type, GEV watchdog
+        served, bundle keeps msaaSamples:/iPad + no msaaSamples:4);
+        layer 2 vcast_display driver claims a screen, pubs play/image/
+        nav (typed pub) then emits pane-fail via a new report action,
+        with http_check on /displays asserting the relay surfaces it;
+        layer 3 keeps the original Ada-side honesty turns.
+        scenario-live.pane-pub.patch extends _VcastDisplay.pub with
+        type:+pane: and adds report — applies clean on upstream
+        scenario-live.py (verified with git apply).
+    - id: 5
+      label: Docs + repo-side check
+      status: done
+      notes: >
+        AGENTS.md GEV section now points at patch-gev-dist.sh and
+        documents the honest-fail contract; ssot.apps.vcast.yml receiver
+        text + ssot.apps.gev.yml known-issues updated.
+        gev-honest-fail-check.mjs (30 asserts, exits 0) is the repo-side
+        regression surface — static wiring checks for both pages, bundle
+        patch presence, drop files, and runs the patcher --self-test.
+
+verification:
+  - "node stacks/web/input-bridge/gev-honest-fail-check.mjs → all 30 checks passed"
+  - "scripts/gev/patch-gev-dist.sh --self-test → SELFTEST-OK"
+  - "scripts/gev/patch-gev-dist.sh --check stacks/web/public/apps/gev → dist is fully patched"
+  - "extracted vcast inline script → node --check OK; honest-fail.js compiles"
+  - "scenario YAML parses (18 turns); pane-pub patch git-apply --check clean on upstream scenario-live.py"
+  - "NOT verified live: DOM behavior on a real display (needs a browser
+    + deploy); the ada-voice scenario run itself (needs ada-voice
+    worktree + tailnet + ADA_ADMIN_KEY)"
+
+followups:
+  - "Deploy the web stack so vcast index.html + GEV staged dist go live
+    (approval-gated); then layer-1 scenario guards turn green."
+  - "Install drop 20 into ~/CascadeProjects/ada-voice (README §Drop 20)
+    and run the scenario — it's the card's verify gate."
+  - "gods-eye-view source repo still HELD: fork to tonezzz or pull into
+    chaba staging, then patch-gev-dist.sh runs on ~/gods-eye-view/dist
+    after every npm run build."
+  - "Live served bundle on tony-dell is the raw unpatched dist today —
+    deploying this staged copy also fixes the msaaSamples and /api
+    prefix patches that never reached prod."

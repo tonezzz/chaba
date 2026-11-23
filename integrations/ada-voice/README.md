@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Nineteen drops live here:
+chaba dispatches. Twenty drops live here:
 
 **Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
 card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
@@ -73,6 +73,9 @@ re-staging the diff, never by hand-merging hunks.
 19. `host_status` — live-first host answers (telemetry probe before
     board records, freshness tags, contradiction flags) — card
     `ada-status-live-state-preference` (OPS-1045, 2026-11-20)
+20. `gev_pane_honest_fail` extended to every pane type + typed
+    `vcast_display` pub/report driver actions — card `gev-map`
+    (MED-0135, 2026-11-23)
 
 ---
 
@@ -1612,3 +1615,45 @@ never from card comms parroted as current.
 - Requires the chaba side (`GET /host-status`) deployed on the
   board-api the lane calls — a 404 there means the chaba half isn't
   live yet.
+
+---
+
+## Drop 20 — gev_pane_honest_fail, every pane type
+
+**Status: PENDING** — staged for install into ada-voice. Companion chaba
+changes (the chaba half ships with the web stack):
+
+- `stacks/web/public/apps/vcast/index.html` — per-pane honest-fail
+  overlay (`.pfail`): video element errors + stall watchdog, img
+  onerror, iframe load watchdog, hls retry veil, same-origin
+  `__gevHonestFail` probe + cross-origin `gev-honest-fail` postMessage
+  channel; failures report `state=pane-fail` over the relay.
+- `stacks/web/public/apps/gev/honest-fail.js` — vendored watchdog
+  injected by `scripts/gev/patch-gev-dist.sh` (which also codifies the
+  iPad `msaaSamples:1` post-build patch).
+
+### Files
+
+- `tests/scenarios-live/gev_pane_honest_fail.yaml` — REPLACES the
+  upstream scenario of the same name. Adds served-code guards (vcast
+  page wiring for every pane type, GEV watchdog staged, iPad msaa patch
+  kept), a `vcast_display` driver block covering all three pane types,
+  and keeps the original Ada-side honesty turns.
+- `scripts/scenario-live.pane-pub.patch` — extends `_VcastDisplay.pub`
+  with `type:` (nav|play|image) + `pane:`, and adds a `report` action
+  that emits a display state like the real page's sendState (so a
+  scenario can prove the relay surfaces `pane-fail`).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/gev_pane_honest_fail.yaml
+   <ada-voice>/tests/scenarios-live/gev_pane_honest_fail.yaml`
+2. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/scripts/scenario-live.pane-pub.patch`
+   (applies clean on scenario-live.py @ the staged base; without it the
+   typed-pub spec fields are ignored — pub still navs — but the report
+   turns then fail loudly, so apply it).
+3. Run: `python3 scripts/scenario-live.py
+   tests/scenarios-live/gev_pane_honest_fail.yaml --url ... -v`
+   (needs tailnet + ADA_ADMIN_KEY for the vcast_display claim; the
+   layer-1 http_check guards fail until the chaba web stack carrying
+   the honest-fail changes is deployed).
