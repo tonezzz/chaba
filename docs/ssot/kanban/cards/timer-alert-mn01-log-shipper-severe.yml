@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper-severe
 title: Timer log-shipper-severe on mn01 failing
 column: backlog
-updated: 2026-11-23 18:13
+updated: 2026-11-23 18:22
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,7 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 18:22
+  from: devin
+  text: '[still suspicious] Last run (11-23 10:54) of `log-shipper-severe.service` on `mn01` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-mn01`.'
