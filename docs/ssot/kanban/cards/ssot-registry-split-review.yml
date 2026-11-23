@@ -3,13 +3,14 @@ title: Registry SSOT files past 350-line review threshold — split or exempt de
 brief: 'Two registry-style SSOT files crossed the bloat threshold: infrastructure/ssot.secrets.yml (465 lines) and
   kanban/ssot.kanban.yml (460). Registries grow linearly with services/cards — decide whether to split them by domain,
   raise the registry threshold, or accept + document as permanent baseline debt.'
-column: backlog
+column: doing
 priority: low
 created: 2026-10-09
 tags:
 - ssot
 - bloat
-claim: {}
+claim:
+  since: 2026-11-23 18:36
 ref: KNB-0002
 comms:
 - at: 2026-10-11 08:35
@@ -177,14 +178,18 @@ comms:
 - at: 2026-11-23 18:36
   from: tony
   text: retry requested
+- at: 2026-11-23 18:36
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   sweep:
     failed_noted: 2026-11-09 09:49
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-094006-registry-ssot-files-past-350-l.service:
     Failed with result ''exit-code''. | devin-task-20261117-094006-registry-ssot-files-past-350-l.service: Consumed
     3.281s CPU time.'
-  attempts: 0
+  attempts: 1
+  runner: tony-macbook
 updated: 2026-11-23 18:36
