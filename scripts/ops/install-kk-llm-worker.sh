@@ -3,6 +3,12 @@ set -euo pipefail
 
 # Render the user-level KK-Mac worker LaunchAgent. The default is a
 # non-mutating print so a rollout can be reviewed before launchd is touched.
+#
+# The rendered plist MUST match the lane worker that is actually live on
+# kk-mac (verified 2026-11-23): scripts/devnest/kk_mac_lane_worker.py on
+# the dedicated gdrive:ada-nest/kk-llm queue with --host local. The first
+# version of this installer rendered nest-worker.py --once against the
+# older ada-nest-kk-llm remote — a stale payload, never the live one.
 
 LABEL="net.adanest.kk-llm-worker"
 KK_MAC_HOME="${KK_MAC_HOME:-$HOME}"
@@ -49,10 +55,11 @@ render() {
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key><array>
     <string>$PYTHON</string>
-    <string>$CHABA_ROOT/scripts/ada/nest-worker.py</string>
-    <string>--once</string>
-    <string>--remote</string><string>gdrive:ada-nest-kk-llm</string>
+    <string>$CHABA_ROOT/scripts/devnest/kk_mac_lane_worker.py</string>
+    <string>--remote</string><string>gdrive:ada-nest/kk-llm</string>
+    <string>--host</string><string>local</string>
     <string>--workdir</string><string>$WORKDIR</string>
+    <string>--max-packs</string><string>1</string>
   </array>
   <key>StartInterval</key><integer>$START_INTERVAL</integer>
   <key>RunAtLoad</key><true/>

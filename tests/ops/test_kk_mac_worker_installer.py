@@ -32,7 +32,22 @@ class KkMacWorkerInstallerTests(unittest.TestCase):
         plist = plistlib.loads(result.stdout.encode())
         self.assertEqual(plist["Label"], "net.adanest.kk-llm-worker")
         self.assertEqual(plist["StartInterval"], 60)
-        self.assertIn("--once", plist["ProgramArguments"])
+
+    def test_payload_is_the_live_lane_worker(self):
+        # the rendered LaunchAgent must invoke kk_mac_lane_worker.py on
+        # the dedicated kk-llm queue — the payload that is actually live
+        # on kk-mac, not the generic nest-worker of the first installer
+        result = self.render()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        plist = plistlib.loads(result.stdout.encode())
+        args = plist["ProgramArguments"]
+        joined = " ".join(args)
+        self.assertIn("scripts/devnest/kk_mac_lane_worker.py", joined)
+        self.assertIn("--remote gdrive:ada-nest/kk-llm", joined)
+        self.assertIn("--host local", joined)
+        self.assertIn("--max-packs 1", joined)
+        self.assertNotIn("nest-worker.py", joined)
+        self.assertNotIn("--once", joined)
 
     def test_rejects_aggressive_interval(self):
         result = self.render("15")
