@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
-column: backlog
-updated: 2026-11-23 14:48
+column: doing
+updated: 2026-11-23 14:49
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -489,11 +489,24 @@ comms:
 - at: 2026-11-23 14:48
   from: tony
   text: queued for processing
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.64 > 0.85)'
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-23 14:49
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
   lane: devin
   result: 'exit=0 can be dropped — the merge-conflict requests on the card are resolved by this re-land. | devin-task-20261118-184235-card-judgment-eval-done-2026-1.service:
     Consumed 2min 8.879s CPU time over 5min 44.749s wall clock time, 915.9M memory peak.'
@@ -503,6 +516,8 @@ action:
     session_gone: 2026-11-13 22:55
     zero_commit: 2026-11-18 18:41
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
+  runner: tony-macbook
+  attempts: 1
 requests:
 - id: approve-gateway-leg-placement-proposal-i-9310b0
   ask: 'Approve gateway leg placement? Proposal in docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml.
@@ -730,4 +745,5 @@ requests:
   suggested: let devin resolve the conflict and land it ★
   answer: let devin resolve the conflict and land it ★
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-23 14:49

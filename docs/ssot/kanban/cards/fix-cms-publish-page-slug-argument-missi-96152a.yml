@@ -1,7 +1,7 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
 column: doing
-updated: 2026-11-23 14:43
+updated: 2026-11-23 14:49
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
 ref: KNB-0624
@@ -367,6 +367,12 @@ comms:
     finished (failed): journal=exi; [mcp-schema-allowlist-heavy-servers-7c22e9] Rerouted 2026-11-23: tony-macbook
     (s; [render-jobs-selective-install-ops0790-tonydell] Landed on origin/master as 7b5f; Check `sha256sum` of BOTH
     `~/.local/bin/runner-agent` and `<e'
+- at: 2026-11-23 14:49
+  from: devin
+  text: 'PROGRESS: applied staged drop cms-slug-derivation.patch to ada-voice worktree off origin/main @ b006cb6
+    (tony-dell). Verified: tests/test_cms_slug_derivation.py 7/7, full suite 1891 passed/4 skipped, tool-lint clean.
+    Committed 85faa77 on ada-voice branch dispatch/20261123-144258-fix-cms-publish-page-slug. No push/deploy per
+    dispatch rails.'
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -429,3 +435,4 @@ spec: Fix the cms_publish_page call error where the slug argument is missing, ta
   repository. The task runner must locate the definition of cms_publish_page, identify where the slug argument is
   expected but not provided, and update the function call or signature accordingly. The done-condition is verified
   when automated tests for cms_publish_page pass without raising missing argument errors for the slug.
+awaiting_action: true
