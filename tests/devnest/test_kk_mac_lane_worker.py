@@ -35,11 +35,43 @@ class GateTests(unittest.TestCase):
     def test_local_host_uses_local_snapshot(self):
         with patch.object(lw.kk_mac_admission, "local_snapshot",
                           return_value={"eligible": True}) as ls, \
-             patch.object(lw.kk_mac_admission, "snapshot") as snap:
+             patch.object(lw.kk_mac_admission, "snapshot") as snap, \
+             patch.object(lw.kk_mac_memory, "sample",
+                          return_value={"ok": True, "free_pct": 90.0}):
             g = lw.gate(host="local", drain_file="", environ={})
         self.assertTrue(g["eligible"])
         ls.assert_called_once()
         snap.assert_not_called()
+
+    def test_local_memory_pressure_denies(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot",
+                          return_value={"eligible": True}), \
+             patch.object(lw.kk_mac_memory, "sample",
+                          return_value={"ok": True, "free_pct": 13.0}):
+            g = lw.gate(host="local", drain_file="", environ={})
+        self.assertFalse(g["eligible"])
+        self.assertTrue(any(r.startswith("memory_")
+                            for r in g["reasons"]))
+        self.assertEqual(g["mem_free_pct"], 13.0)
+
+    def test_mem_sample_failure_stays_eligible(self):
+        # the contract's own pre-load guard still fails closed — the
+        # gate only adds certainty when a real low sample exists
+        with patch.object(lw.kk_mac_admission, "local_snapshot",
+                          return_value={"eligible": True}), \
+             patch.object(lw.kk_mac_memory, "sample",
+                          return_value={"ok": False}):
+            g = lw.gate(host="local", drain_file="", environ={})
+        self.assertTrue(g["eligible"])
+
+    def test_mem_gate_env_optout(self):
+        with patch.object(lw.kk_mac_admission, "local_snapshot",
+                          return_value={"eligible": True}), \
+             patch.object(lw.kk_mac_memory, "sample") as mem:
+            g = lw.gate(host="local", drain_file="",
+                        environ={"DEVNEST_KK_MAC_MEM_GATE": "false"})
+        self.assertTrue(g["eligible"])
+        mem.assert_not_called()
 
     def test_remote_host_uses_heartbeat_snapshot(self):
         with patch.object(lw.kk_mac_admission, "snapshot",
@@ -320,7 +352,9 @@ class QuietHoursGateTests(unittest.TestCase):
 
     def test_env_window_passes_outside(self):
         with patch.object(lw.kk_mac_admission, "local_snapshot",
-                          return_value={"eligible": True}):
+                          return_value={"eligible": True}), \
+             patch.object(lw.kk_mac_memory, "sample",
+                          return_value={"ok": True, "free_pct": 90.0}):
             g = lw.gate(host="local", drain_file="",
                         environ={"DEVNEST_KK_MAC_QUIET_HOURS":
                                  "23:00-07:00"},
@@ -339,7 +373,220 @@ class QuietHoursGateTests(unittest.TestCase):
 
     def test_no_window_configured_unchanged(self):
         with patch.object(lw.kk_mac_admission, "local_snapshot",
-                          return_value={"eligible": True}):
+                          return_value={"eligible": True}), \
+             patch.object(lw.kk_mac_memory, "sample",
+                          return_value={"ok": True, "free_pct": 90.0}):
             g = lw.gate(host="local", drain_file="", environ={},
                         now=self._ts("02:00"))
         self.assertTrue(g["eligible"])
+
+
+class RetryPolicyTests(unittest.TestCase):
+    NOW = 1_000_000.0
+
+    def test_retry_marker_counting(self):
+        n, f = lw._retry_counts({"retries/1-cond": 1.0,
+                                 "retries/2-fault": 2.0,
+                                 "retries/x": 3.0, "pack.yml": 1.0})
+        self.assertEqual((n, f), (2, 1))
+
+    def test_hold_escalation(self):
+        self.assertEqual(lw.effective_hold_min(30, 0), 30)
+        self.assertEqual(lw.effective_hold_min(30, 1), 30)
+        self.assertEqual(lw.effective_hold_min(30, 2), 60)
+        self.assertEqual(lw.effective_hold_min(30, 3), 120)
+        self.assertEqual(lw.effective_hold_min(30, 4), 240)
+        self.assertEqual(lw.effective_hold_min(30, 9), 240)  # capped
+
+    def test_quarantine_thresholds(self):
+        self.assertEqual(lw.quarantined(1, 1), "")
+        self.assertTrue(lw.quarantined(2, 2))      # faults hit first
+        self.assertTrue(lw.quarantined(6, 0))      # total cap
+        self.assertEqual(lw.quarantined(5, 1), "")
+
+    def test_escalated_hold_keeps_pack_held(self):
+        # 2 past retries -> 60min hold; a 40min-old marker is still held
+        # where the old flat 30min policy would retry now
+        inv = {"p": {"pack.yml": 1.0, "inputs/task.json": 2.0,
+                     "fallback": self.NOW - 2400,
+                     "retries/1-cond": 3.0, "retries/2-cond": 4.0}}
+        p = lw.plan("r", now=self.NOW, stale_claim_min=60,
+                    fallback_retry_min=30, inventory=inv)
+        self.assertEqual(p["candidates"], [])
+        self.assertEqual(len(p["held"]), 1)
+        self.assertAlmostEqual(
+            p["held"][0][1], self.NOW - 2400 + 60 * 60)
+
+    def test_over_budget_pack_quarantines_not_retries(self):
+        inv = {"p": {"pack.yml": 1.0, "inputs/task.json": 2.0,
+                     "fallback": self.NOW - 9000,
+                     **{f"retries/{i}-cond": float(i)
+                        for i in range(1, 7)}}}
+        p = lw.plan("r", now=self.NOW, stale_claim_min=60,
+                    fallback_retry_min=30, inventory=inv)
+        self.assertEqual(p["candidates"], [])
+        self.assertEqual(len(p["quarantine"]), 1)
+        self.assertIn("retries=6", p["quarantine"][0][1])
+
+    def test_fault_quarantine_at_two(self):
+        inv = {"p": {"pack.yml": 1.0, "inputs/task.json": 2.0,
+                     "fallback": self.NOW - 9000,
+                     "retries/1-fault": 1.0,
+                     "retries/2-fault": 2.0}}
+        p = lw.plan("r", now=self.NOW, stale_claim_min=60,
+                    fallback_retry_min=30, inventory=inv)
+        self.assertEqual(len(p["quarantine"]), 1)
+        self.assertIn("fault_retries=2", p["quarantine"][0][1])
+
+    def test_live_claim_wakes_at_stale_boundary(self):
+        inv = {"p": {"pack.yml": 1.0, "inputs/task.json": 2.0,
+                     "claim/w-other": self.NOW - 60}}
+        p = lw.plan("r", now=self.NOW, stale_claim_min=60,
+                    fallback_retry_min=30, inventory=inv)
+        self.assertEqual(p["live_claim_stale_at"],
+                         [self.NOW - 60 + 3600])
+
+
+class IdleScheduleTests(unittest.TestCase):
+    """pass_once scheduling decisions against the fake remote."""
+
+    def _run_pass(self, workdir, dirs=(), inv=None, now=1_000_000.0,
+                  idle_state=None, probe_error=False, **kw):
+        if idle_state is not None:
+            Path(workdir, "idle.json").write_text(json.dumps(idle_state))
+        calls = {"lsf_dirs": 0}
+
+        def rc(*args, check=True, timeout=900):
+            if args[:2] == ("lsf", "r/packs") and "--dirs-only" in args:
+                calls["lsf_dirs"] += 1
+                if probe_error:
+                    return _FakeCompleted(rc=1, err="store down")
+                return _FakeCompleted(
+                    out="".join(f"{d}/\n" for d in sorted(dirs)))
+            return _FakeCompleted()
+
+        from unittest.mock import Mock
+        inv_mock = Mock(return_value=inv if inv is not None else {})
+        with patch.object(lw.NW, "rc", side_effect=rc), \
+             patch.object(lw.NW, "pack_inventory", inv_mock), \
+             patch.object(lw, "gate",
+                          return_value={"eligible": True, "reasons": []}):
+            rep = lw.pass_once(
+                "r", host="local", worker="w1", workdir=workdir,
+                max_packs=1, stale_claim_min=60, fallback_retry_min=30,
+                drain_file="", now=now,
+                run_contract=lambda env, taskdir=None: {"verdict": "pass"},
+                **kw)
+        return rep, calls, inv_mock.call_count
+
+    def test_first_pass_always_plans(self):
+        rep, calls, scans = self._run_pass(tempfile.mkdtemp())
+        self.assertEqual(scans, 1)
+        self.assertFalse(rep["idle"])
+
+    def test_idle_tick_defers_to_next_probe(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        st = {"next_scan": now + 500, "next_probe": now + 120,
+              "dirs": ["a"], "unchanged": 0}
+        rep, calls, scans = self._run_pass(workdir, now=now,
+                                           idle_state=st)
+        self.assertTrue(rep["idle"])
+        self.assertEqual(calls["lsf_dirs"], 0)
+        self.assertEqual(scans, 0)
+
+    def test_probe_unchanged_stretches_next_probe(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        st = {"next_scan": now + 500, "next_probe": now - 1,
+              "dirs": ["a"], "unchanged": 0}
+        rep, calls, scans = self._run_pass(workdir, dirs={"a"}, now=now,
+                                           idle_state=st)
+        self.assertTrue(rep["idle"])
+        self.assertEqual(calls["lsf_dirs"], 1)
+        self.assertEqual(scans, 0)
+        st2 = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(st2["unchanged"], 1)
+        self.assertEqual(st2["next_probe"], now + 120)
+
+    def test_probe_change_triggers_full_plan(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        st = {"next_scan": now + 500, "next_probe": now - 1,
+              "dirs": ["a"], "unchanged": 3}
+        rep, calls, scans = self._run_pass(
+            workdir, dirs={"a", "b"}, now=now, idle_state=st,
+            inv={"b": {"pack.yml": 1.0, "inputs/task.json": 2.0}})
+        self.assertEqual(scans, 1)
+        st2 = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(st2["unchanged"], 0)
+        self.assertEqual(st2["dirs"], ["b"])
+
+    def test_due_scan_skips_probe(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        st = {"next_scan": now - 1, "next_probe": now + 9999,
+              "dirs": ["a"]}
+        rep, calls, scans = self._run_pass(workdir, now=now,
+                                           idle_state=st)
+        self.assertEqual(calls["lsf_dirs"], 0)
+        self.assertEqual(scans, 1)
+
+    def test_hold_expiry_becomes_next_scan(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        hold_until = now + 1700
+        inv = {"p": {"pack.yml": 1.0, "inputs/task.json": 2.0,
+                     "fallback": now - 100}}
+        rep, calls, scans = self._run_pass(
+            workdir, inv=inv, now=now, rescan_max_s=10000)
+        st = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(st["next_scan"], hold_until)
+
+    def test_rescan_bound_caps_next_scan(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        rep, calls, scans = self._run_pass(workdir, now=now)
+        st = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(st["next_scan"], now + 900)
+
+    def test_probe_error_backs_off(self):
+        workdir = tempfile.mkdtemp()
+        now = 1_000_000.0
+        st = {"next_scan": now + 500, "next_probe": now - 1,
+              "dirs": ["a"], "probe_err": 0}
+        rep, calls, scans = self._run_pass(
+            workdir, now=now, idle_state=st, probe_error=True)
+        self.assertIn("probe_error", rep)
+        st2 = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(st2["next_probe"], now + 120)
+
+    def test_busy_pass_rescans_immediately(self):
+        # a claimed pack leaves next_scan=0 so the next tick drains
+        # the rest of the queue — serial pacing is unchanged
+        workdir = tempfile.mkdtemp()
+        remote = {"r/packs/pack-a/pack.yml": "name: pack-a\n",
+                  "r/packs/pack-a/inputs/task.json":
+                      json.dumps(GOOD_TASK)}
+        state_store, ops = PassOnceTests()._nw(remote)
+        inv = {"pack-a": {"pack.yml": 1.0, "inputs/task.json": 2.0}}
+        with patch.object(lw.NW, "rc", side_effect=ops["rc"]), \
+             patch.object(lw.NW, "rcat", side_effect=ops["rcat"]), \
+             patch.object(lw.NW, "cat", side_effect=ops["cat"]), \
+             patch.object(lw.NW, "lsf", side_effect=ops["lsf"]), \
+             patch.object(lw.NW, "pack_inventory", return_value=inv), \
+             patch.object(lw.NW, "verify_artifacts",
+                          return_value=(True, "")), \
+             patch.object(lw.time, "sleep"), \
+             patch.object(lw, "gate",
+                          return_value={"eligible": True, "reasons": []}):
+            rep = lw.pass_once(
+                "r", host="local", worker="w1", workdir=workdir,
+                max_packs=1, stale_claim_min=60, fallback_retry_min=30,
+                drain_file="",
+                run_contract=lambda env, taskdir=None:
+                    {"verdict": "pass", "reasons": [],
+                     "checks": {}, "wall_seconds": 0.1})
+        st = json.loads(Path(workdir, "idle.json").read_text())
+        self.assertEqual(rep["claimed"], ["pack-a"])
+        self.assertEqual(st["next_scan"], 0)
