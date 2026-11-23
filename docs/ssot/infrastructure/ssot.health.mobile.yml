@@ -13,29 +13,6 @@ services:
     profiles:
       - home
       - mobile
-  - id: helm
-    name: Helm Dashboard
-    disabled: true
-    note: "Retired 2026-09-30 — superseded by project-health/focus/SSOT stack. Container removed."
-    type: http
-    url: http://100.68.142.13:3003/apps/helm
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles:
-      - home
-      - mobile
-    verification:
-      - "Check podman container: ssh tony-dell podman ps | grep helm"
-      - "Check podman logs: ssh tony-dell podman logs helm --tail 20"
-      - "Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/"
-      - "Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/"
-    recovery_actions:
-      - "Restart service: ssh tony-dell systemctl --user restart helm"
-      - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
-        && docker compose up -d --build helm"'
-      - Check Caddy proxy configuration in stacks/web/Caddyfile
-      - "Verify env: ssh tony-dell podman exec helm env | grep LLM"
   - id: status-data-api
     name: Status Data API
     type: http

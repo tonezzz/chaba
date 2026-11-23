@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-17 18:37 +07",
+  "generated": "2026-11-23 15:22 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -151,11 +151,6 @@
       "listen": "100.123.163.11:8092",
       "note": "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
     },
-    "helm": {
-      "host": "idc02",
-      "listen": "100.123.163.11:3003",
-      "note": "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
-    },
     "node-red": {
       "host": "tony-omen",
       "listen": "0.0.0.0:1880",
@@ -227,6 +222,14 @@
       "tailnet": "http://100.72.146.39:3484",
       "public": "https://cline.surf-thailand.com",
       "auth": "Cloudflare Access JWT verified by the Tailnet proxy"
+    },
+    "netdata": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:19999",
+      "tailnet": "http://100.75.102.88:19999",
+      "public": "https://netdata.surf-thailand.com",
+      "auth": "Cloudflare Access",
+      "note": "fleet parent — 8 hosts streaming (children -> :19999 over tailnet); docker netdata/netdata:stable in stacks/web, state persisted at ~/netdata/{etc,lib,cache}; edge block added idc02 caddy 2026-11-18"
     },
     "frigate": {
       "host": "tony-dell",
@@ -524,12 +527,6 @@
       "path": "/api",
       "owner": "chaba",
       "http": "https://idc02.taila0626a.ts.net:8000/api"
-    },
-    "helm": {
-      "kind": "proxy",
-      "path": "{/apps/helm,/apps/helm/*}",
-      "owner": "chaba",
-      "http": "https://idc02.taila0626a.ts.net:3003{/apps/helm,/apps/helm/*}"
     },
     "frigate": {
       "kind": "proxy",

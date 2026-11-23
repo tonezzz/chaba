@@ -463,13 +463,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy idc02.taila0626a.ts.net:8000
 	}
 
-	@apps_helm path /apps/helm /apps/helm/*
-	handle @apps_helm {
-		reverse_proxy idc02.taila0626a.ts.net:3003 {
-			header_up Host localhost
-		}
-	}
-
 	handle /frigate {
 		redir * /frigate/ 308
 	}

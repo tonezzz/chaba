@@ -127,10 +127,12 @@ hosts:
         secrets_env: "podman secret gemini-api-key"
         front_name: "ws :8789, cmd :8790 (netns sidecar), api 100.123.163.11:4173, relay :8794 → edge /apps/gev/*"
       helm:
+        state: retired 2026-11-23 (OPS-1310) — service stopped/disabled on idc02, edge route removed
         data_dirs: []
         unit_file: "%h/.config/containers/systemd/helm.container"
         secrets_env: null
-        front_name: "100.123.163.11:3003 → edge /apps/helm"
+        front_name: "100.123.163.11:3003 → edge /apps/helm (was)"
+        restore_runbook: docs/kb/retired-apps/helm.md
       bserver:
         data_dirs: ["static via chaba checkout mount"]
         unit_file: "%h/.config/containers/systemd/bserver.container"
