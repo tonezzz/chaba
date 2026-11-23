@@ -5685,10 +5685,24 @@ class H(BaseHTTPRequestHandler):
                 queue_request_notify(*notify_req)
             except Exception as e:
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
-        self._send(200, {"ok": True, "message": msg, "via": ident,
-                         **resp_extra})
         commit_async()   # flush queued write paths post-lock (worker commits)
         render_async()
+        # verify-or-loud (card board-api-queue-write-verify-lost-race):
+        # /action answers 200 only after the write is proven durable —
+        # the queued commit drained AND the comms fingerprint survived
+        # read-back. A git-safe-pull autostash that ate the dirty file
+        # answers 503 + retry_after instead of a false 'queued'.
+        if verify_write is not None:
+            ok_v, why_v = _verify_card_write(*verify_write)
+            if not ok_v:
+                sys.stderr.write(
+                    f"board-api /action write unverified "
+                    f"{verify_write[0].name}: {why_v}\n")
+                return self._send(503, {
+                    "error": f"write not verified durable — {why_v}",
+                    "retry_after_s": 5})
+        self._send(200, {"ok": True, "message": msg, "via": ident,
+                         **resp_extra})
 
 
 def _selftest() -> None:

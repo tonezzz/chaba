@@ -346,6 +346,23 @@ _resolve_autostash_pop() {
     [ -n "$p" ] || continue
     saw=1
     if [[ "$p" =~ $GENERATED_RE ]]; then
+      # Preserve the stash side (stage 3 = the dirty worktree content
+      # the pop could not merge) as a .local-conflict-* file BEFORE
+      # resolving to HEAD — the same pattern _resolve_generated_conflicts
+      # uses for replayed commits. Without it a write that was dirty
+      # when autostash ran was silently dropped: only the stash-archive
+      # patch survived and nothing folded it back (OPS-0200 answered
+      # 'queued' 3x while action.status never persisted — card
+      # board-api-queue-write-verify-lost-race-f85f2f). The EXIT-trap
+      # reconcile folds card conflicts back into the canonical card;
+      # non-card conflicts stay on disk flagged, not vanished.
+      local dest="$p.local-conflict-$TS" n=1
+      while [ -e "$dest" ]; do
+        n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+      done
+      if ! git show ":3:$p" > "$dest" 2>/dev/null; then
+        rm -f "$dest"   # stash side deleted/absent — nothing to keep
+      fi
       if git checkout HEAD -- "$p" 2>/dev/null; then
         git reset -q HEAD -- "$p" 2>/dev/null || true
       else

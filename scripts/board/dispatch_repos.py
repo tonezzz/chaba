@@ -1292,7 +1292,17 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # action.last_failure carrying the failing test names). Fail-open on
 # missing pytest (same convention as the merge guard); a suite timeout
 # counts as a failure — the alternative is merging a tree the suite can't
-# even finish on. KANBAN_TESTGATE=0 disables the gate entirely.
+# even finish on — BUT a timeout is infra flake, not a red suite: the
+# result carries timed_out=True so _merge_and_gate can tell it apart
+# from assertion failures (card board-api-queue-write-verify-lost-race:
+# OPS-0200/ADA-0201/KNB-0212 held on 'suite timeout (240s)' over
+# docs-only diffs and each needed a manual merge). Timeout resolution:
+# a diff confined to the docs allowlist (docs/, stacks/, *.md) cannot
+# have broken the suite — the gate stands down with an explicit
+# gate_override flag; anything else gets ONE retry before the hold
+# stands. KANBAN_TESTGATE=0 disables the gate entirely;
+# KANBAN_TESTGATE_DOCS_OVERRIDE=0 / KANBAN_TESTGATE_RETRY=0 opt the
+# timeout policies out individually.
 #
 # Interpreter resolution (card dispatch-test-gate-venv — the 2026-10-13
 # line-multihome incident: ada-voice's suite needs google.genai from its
@@ -1481,7 +1491,8 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
         r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
                            capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return {"ran": True, "ok": False, "command": cmd, "python": interp,
+        return {"ran": True, "ok": False, "timed_out": True,
+                "command": cmd, "python": interp,
                 "failed": [f"suite timeout ({timeout}s)"],
                 "error": f"test gate timed out after {timeout}s"}
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
@@ -1601,6 +1612,12 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    if branch.get("timed_out"):
+        # a suite timeout carries no failure set — re-running the
+        # failfast-stripped enumeration would just burn a second full
+        # timeout to prove nothing; timeout policy lives in
+        # _merge_and_gate (_timeout_gate_resolve)
         return branch
     enum, meta = _gate_failures(wt, repo_name)
     if not enum:
@@ -1756,6 +1773,61 @@ def _merge_in(wt: Path, ref: str) -> tuple:
     return False, [], "commit after conflict resolution failed"
 
 
+# Docs-only allowlist for the gate-timeout override (card
+# board-api-queue-write-verify-lost-race-f85f2f): a branch whose net
+# diff vs base touches ONLY these paths cannot have broken the suite —
+# docs/ and stacks/ trees plus any *.md anywhere. Anything else keeps
+# the normal gate.
+DOCS_ONLY_PATH_RE = re.compile(r"^(?:docs/|stacks/)|\.md$")
+
+
+def _docs_only_diff(wt: Path, base: str) -> bool:
+    """True when `base..HEAD` in wt touches only allowlisted paths.
+    Fail-closed: a git error or an empty diff answers False — an
+    unverifiable diff keeps the hold."""
+    r = sh(["git", "-C", str(wt), "diff", "--name-only", base, "HEAD"],
+           timeout=30)
+    if r.returncode != 0:
+        return False
+    paths = [ln.strip() for ln in (r.stdout or "").splitlines()
+             if ln.strip()]
+    if not paths:
+        return False
+    return all(DOCS_ONLY_PATH_RE.search(p) for p in paths)
+
+
+def _timeout_gate_resolve(mwt: Path, repo_name: str, base: str,
+                          tests: dict) -> dict:
+    """Resolve a timed-out test gate — infra flake, not a red suite.
+
+    Order: (1) docs-only diff -> stand the gate down with an explicit
+    gate_override flag (a docs/stacks/*.md change cannot fail pytest);
+    (2) anything else -> ONE retry, a loaded merge host often clears
+    (KANBAN_TESTGATE_RETRY=0 opts out; KANBAN_TESTGATE_DOCS_OVERRIDE=0
+    opts out the override). A second timeout or real failures come back
+    as-is and still hold the merge."""
+    def _override_on() -> bool:
+        return os.environ.get("KANBAN_TESTGATE_DOCS_OVERRIDE", "1") != "0"
+
+    if _override_on() and _docs_only_diff(mwt, base):
+        return {**tests, "ok": True,
+                "gate_override":
+                    "timeout-override: docs-only diff "
+                    "(docs/|stacks/|*.md)"}
+    if os.environ.get("KANBAN_TESTGATE_RETRY", "1") == "0":
+        return tests
+    retry = baseline_aware_test_gate(mwt, repo_name, base)
+    if not retry.get("ok") and retry.get("timed_out") \
+            and _override_on() and _docs_only_diff(mwt, base):
+        # first _docs_only_diff can flake on a transient git error —
+        # re-check once before letting a second timeout hold
+        retry = {**retry, "ok": True,
+                 "gate_override":
+                     "timeout-override: docs-only diff "
+                     "(docs/|stacks/|*.md)"}
+    return retry
+
+
 def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
                     base: str) -> tuple:
     """_merge_in + shadow guard + the post-merge test gate ->
@@ -1771,6 +1843,8 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     if shadows:
         return False, [], "", {}, shadows
     tests = baseline_aware_test_gate(mwt, repo_name, base)
+    if not tests.get("ok") and tests.get("timed_out"):
+        tests = _timeout_gate_resolve(mwt, repo_name, base, tests)
     if not tests.get("ok"):
         return False, [], "", tests, []
     return True, [], "", tests, []
@@ -2113,7 +2187,16 @@ def close_out_notes(res: dict) -> list:
     if tests.get("skipped"):
         notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
-        if tests.get("baseline_failed"):
+        if tests.get("gate_override"):
+            # suite timed out but the diff was docs-only — the merge
+            # landed anyway; the override rides the card trail so the
+            # bypass is auditable, never silent (card
+            # board-api-queue-write-verify-lost-race-f85f2f)
+            notes.append(
+                f"test gate: {tests['gate_override']} — "
+                f"{tests.get('error') or 'suite timeout'}; "
+                "merged anyway")
+        elif tests.get("baseline_failed"):
             notes.append("test gate: failure(s) identical to base "
                          "(pre-existing) — not blocking: "
                          + ", ".join(tests["baseline_failed"][:6]))

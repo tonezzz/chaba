@@ -59,7 +59,13 @@ import card_io
 
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR_REL = Path("docs/ssot/kanban/cards")
-GENERATED_REL = Path("docs/ssot")
+# Roots scanned for non-card .local-conflict-* files — must cover every
+# path family git-safe-pull's GENERATED_RE can preserve: the default
+# (docs/ssot + reports/SSOT_OPTIMIZATION_WARNINGS.json) and
+# kanban-commit's wider SAFE_PULL_GENERATED_RE (adds
+# stacks/web/public/apps/board + docs/reports/education-maintenance).
+# A preserved conflict outside these roots would sit forever unflagged.
+GENERATED_SCAN_ROOTS = (Path("docs"), Path("stacks"), Path("reports"))
 LOCK = Path("/tmp/board-api.lock")
 ALERT_CARD_ID = "ops-local-conflict-guard"
 SERVED = Path(os.environ.get(
@@ -474,11 +480,13 @@ def run(repo: Path, dry: bool) -> int:
                 leftovers += 1
     # non-card generated conflicts: never silently dropped either —
     # surfaced on the alert card, merged by hand.
-    ssot = repo / GENERATED_REL
-    if ssot.is_dir():
-        stray = [p for p in ssot.rglob("*.local-conflict-*")
-                 if card_dir not in p.parents and p.parent != card_dir]
-        for p in stray:
+    for root in GENERATED_SCAN_ROOTS:
+        base = repo / root
+        if not base.is_dir():
+            continue
+        for p in base.rglob("*.local-conflict-*"):
+            if card_dir in p.parents or p.parent == card_dir:
+                continue   # card conflicts are handled by the loop above
             if over_budget():
                 deferred += 1
                 continue
