@@ -1,8 +1,12 @@
 {# disk-headroom.j2 — per-host mount verdicts.
    States: crit (any real mount >= crit_pct, disk-trend's flat rule),
-   warn (/ >= ssot max_root_disk_percent or / free < min_free_gib), ok.
+   warn (/ >= ssot max_root_disk_percent or / free < min_free_gib),
+   underused (informational: pct < underused_pct or avail >=
+   underused_free_gib on a >= underused_min_size_gib mount — only when
+   the mount would otherwise be ok), ok.
    Context: target, hostvars, audit_ssot, ssot_key_map, crit_pct,
-   min_free_gib. #}
+   min_free_gib, underused_pct, underused_free_gib,
+   underused_min_size_gib. #}
 {%- set hk = ssot_key_map.get(target, target) -%}
 {%- set hs = (audit_ssot['hosts'] | default({})).get(hk) or {} -%}
 {%- set res = hs.get('expected_resources') or {} -%}
@@ -24,6 +28,19 @@
 {%-       set st = 'crit' if st == 'crit' else 'warn' -%}
 {%-       set _ = why.append('/ avail ' ~ ((m.avail_kb | int) / 1048576) | round(1) ~ ' GiB < ' ~ min_free_gib ~ ' GiB guard floor') -%}
 {%-     endif -%}
+{%-     if st == 'ok' and (m.size_kb | int) >= underused_min_size_gib * 1048576 -%}
+{%-       set under_why = [] -%}
+{%-       if m.pct | int < underused_pct | int -%}
+{%-         set _ = under_why.append('pct ' ~ m.pct ~ ' < underused ' ~ underused_pct) -%}
+{%-       endif -%}
+{%-       if (m.avail_kb | int) >= underused_free_gib * 1048576 -%}
+{%-         set _ = under_why.append('avail ' ~ ((m.avail_kb | int) / 1048576) | round(1) ~ ' GiB >= ' ~ underused_free_gib ~ ' GiB') -%}
+{%-       endif -%}
+{%-       if under_why -%}
+{%-         set st = 'underused' -%}
+{%-         set _ = why.append(under_why | join(' + ')) -%}
+{%-       endif -%}
+{%-     endif -%}
 {%-     set _ = ns.rows.append({'mount': m.mount, 'fs': m.fs,
         'size_gib': ((m.size_kb | int) / 1048576) | round(1),
         'avail_gib': ((m.avail_kb | int) / 1048576) | round(1),
@@ -34,14 +51,22 @@
 {%- endif -%}
 {%- set worst = ns.rows | selectattr('state', 'eq', 'crit') | list -%}
 {%- set warns = ns.rows | selectattr('state', 'eq', 'warn') | list -%}
+{%- set under = ns.rows | selectattr('state', 'eq', 'underused') | list -%}
+{%- set under_txt = ('; underused: '
+        ~ (under | map(attribute='mount') | join(', '))) if under else '' -%}
 {%- if ns.unreachable -%}
 {%-   set summary_text = 'unreachable ('
         ~ ('offline_ok' if hs.get('offline_ok') else 'NOT offline_ok') ~ ')' -%}
 {%- elif worst -%}
 {%-   set summary_text = 'CRIT: ' ~ (worst | map(attribute='mount') | join(', '))
-        ~ ('; warn: ' ~ (warns | map(attribute='mount') | join(', ')) if warns else '') -%}
+        ~ ('; warn: ' ~ (warns | map(attribute='mount') | join(', ')) if warns else '')
+        ~ under_txt -%}
 {%- elif warns -%}
-{%-   set summary_text = 'warn: ' ~ (warns | map(attribute='mount') | join(', ')) -%}
+{%-   set summary_text = 'warn: ' ~ (warns | map(attribute='mount') | join(', '))
+        ~ under_txt -%}
+{%- elif under -%}
+{%-   set summary_text = 'underused: ' ~ (under | map(attribute='mount') | join(', '))
+        ~ ' (' ~ (ns.rows | length) ~ ' mounts)' -%}
 {%- else -%}
 {%-   set summary_text = 'ok (' ~ (ns.rows | length) ~ ' mounts)' -%}
 {%- endif -%}

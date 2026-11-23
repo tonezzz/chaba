@@ -12,6 +12,11 @@ history, least-squares slope per host+mount over a rolling window:
 
   pct >= CRIT_PCT (90)            -> card (board) + push
   fills in <= FILL_D days (7)     -> card (board) + push
+  underused                       -> report-only signal (no card):
+    pct < UNDERUSED_PCT (50) or avail >= UNDERUSED_FREE_GIB (100) on a
+    mount >= UNDERUSED_MIN_SIZE_GIB (10) — surfaces over-provisioned
+    capacity so fleet rebalance targets are visible (card
+    storage-rebalance-underused, 2026-11-23)
   recovered                       -> card auto-closed (done)
 
 Push goes through board_notify (scripts/board/board_notify.py): default
@@ -41,7 +46,9 @@ Usage:
   disk-trend-watch.py --selftest         # synthetic >90% fixture end-to-end
 
 Env: DISK_TREND_HISTORY, DISK_TREND_WINDOW_D (7), DISK_TREND_FILL_D (7),
-     DISK_TREND_CRIT_PCT (90), DISK_TREND_MIN_SPAN_H (6),
+     DISK_TREND_CRIT_PCT (90), DISK_TREND_UNDERUSED_PCT (50),
+     DISK_TREND_UNDERUSED_FREE_GIB (100),
+     DISK_TREND_UNDERUSED_MIN_SIZE_GIB (10), DISK_TREND_MIN_SPAN_H (6),
      DISK_TREND_HOSTS (csv limit), DISK_TREND_DU_ROOTS (space-sep, remote
      shell-expanded), DISK_TREND_SSH_TIMEOUT (90), DISK_TREND_DU_EACH_S
      (45, per-dir du cap), DISK_TREND_NOTIFY_CHANNELS (default "ha,yomi"),
@@ -80,6 +87,15 @@ HISTORY = Path(os.environ.get(
 WINDOW_D = float(os.environ.get("DISK_TREND_WINDOW_D", "7"))
 FILL_D = float(os.environ.get("DISK_TREND_FILL_D", "7"))
 CRIT_PCT = float(os.environ.get("DISK_TREND_CRIT_PCT", "90"))
+# Underused signal (storage-rebalance-underused): a mount is underused
+# when pct < UNDERUSED_PCT OR avail >= UNDERUSED_FREE_GIB — reported
+# only, never a card. The size floor keeps /boot(efi)-scale utility
+# mounts out of the signal.
+UNDERUSED_PCT = float(os.environ.get("DISK_TREND_UNDERUSED_PCT", "50"))
+UNDERUSED_FREE_GIB = float(os.environ.get(
+    "DISK_TREND_UNDERUSED_FREE_GIB", "100"))
+UNDERUSED_MIN_SIZE_GIB = float(os.environ.get(
+    "DISK_TREND_UNDERUSED_MIN_SIZE_GIB", "10"))
 # a trend alert needs samples spanning this long — blocks single-blip
 # false positives from two points minutes apart.
 MIN_SPAN_H = float(os.environ.get("DISK_TREND_MIN_SPAN_H", "6"))
@@ -376,7 +392,7 @@ def load_card(path: Path) -> dict:
 
 
 def judge(mount: str, t: dict) -> tuple[str, str]:
-    """-> (state, reason): ok|fill|critical."""
+    """-> (state, reason): ok|fill|critical|underused."""
     m = t["latest"]
     if m["pct"] >= CRIT_PCT:
         return "critical", f"{m['pct']:.0f}% used ({m['avail_kb'] / 2**20:.1f} GiB free)"
@@ -385,6 +401,11 @@ def judge(mount: str, t: dict) -> tuple[str, str]:
         rate = t["slope_kb_day"] / 2**20
         return "fill", (f"{m['pct']:.0f}% used, growing {rate:.1f} GiB/day "
                         f"-> full in ~{days:.1f}d")
+    if (m["size_kb"] >= UNDERUSED_MIN_SIZE_GIB * 2**20
+            and (m["pct"] < UNDERUSED_PCT
+                 or m["avail_kb"] >= UNDERUSED_FREE_GIB * 2**20)):
+        return "underused", (f"{m['pct']:.0f}% used, "
+                             f"{m['avail_kb'] / 2**20:.0f} GiB free")
     return "ok", ""
 
 
@@ -520,7 +541,8 @@ def format_report(host_reports: list[dict]) -> str:
             fill = (f"full in {m['days_to_full']:.1f}d"
                     if m["days_to_full"] is not None else "          -")
             flag = {"ok": "", "fill": "  <== FILLS",
-                    "critical": "  <== CRITICAL"}[m["alert"]]
+                    "critical": "  <== CRITICAL",
+                    "underused": "  <== UNDERUSED"}[m["alert"]]
             lines.append(f"  {m['mount']:<28} {m['pct']:>5.0f}% "
                          f"{m['avail_gib']:>7.1f} GiB free  {rate}  {fill}"
                          f"{flag}")
@@ -551,7 +573,7 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
     hist = load_history(history, WINDOW_D * 86400)
     host_reports = []
     opened: list[str] = []
-    n_alert = n_close = 0
+    n_alert = n_close = n_under = 0
     for rec in recs:
         host = rec["host"]
         if rec["unreachable"]:
@@ -568,7 +590,9 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
             state, reason = judge(mount, t)
             states[mount] = state
             path = card_path(host, mount)
-            if state != "ok":
+            if state == "underused":
+                n_under += 1
+            if state in ("fill", "critical"):
                 n_alert += 1
                 rc = upsert_alert_card(path, host, mount, state, reason,
                                        grower_note, now, today)
@@ -609,7 +633,8 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
     n_hosts = sum(1 for r in recs if not r["unreachable"])
     n_mounts = sum(len(h["mounts"]) for h in host_reports)
     summary = (f"{n_hosts}/{len(recs)} hosts, {n_mounts} mounts trended, "
-               f"{n_alert} alerting, {n_close} auto-recovered")
+               f"{n_alert} alerting, {n_under} underused, "
+               f"{n_close} auto-recovered")
     status = "delta" if n_alert else "ok"
     write_meta(
         reports_root / "disk-trend" / "meta.disk-trend.yml",
@@ -619,7 +644,7 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
                 "dirs; disk-auto-* kanban cards + push on open",
         status=status, summary=summary,
         sources=[str(report_path), str(history)],
-        children=[], extra={"alerting": n_alert,
+        children=[], extra={"alerting": n_alert, "underused": n_under,
                             "history": str(history)})
     append_timeline("disk-trend", "L1", status, summary, ref=report_path)
     print(f"disk-trend-watch: {summary}"
@@ -691,6 +716,10 @@ def selftest() -> int:
         print(f"trend: pct={m0['pct']} growth={m0['growth_gib_day']} "
               f"GiB/d fill={m0['days_to_full']}d alert={m0['alert']}")
         ok &= m0["alert"] == "critical" and m0["growth_gib_day"] > 0
+        omen = next(h for h in rep["hosts"] if h["host"] == "synth-omen")
+        print(f"underused: synth-omen alert={omen['mounts'][0]['alert']}")
+        ok &= omen["mounts"][0]["alert"] == "underused"
+        ok &= not (cards / "disk-auto-synth-omen-root.yml").exists()
         grower = synth["top_growers_24h"]
         print(f"growers: {grower}")
         print(format_report(rep["hosts"]))
