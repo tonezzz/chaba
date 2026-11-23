@@ -1,8 +1,10 @@
 {# disk-headroom.j2 — per-host mount verdicts.
    States: crit (any real mount >= crit_pct, disk-trend's flat rule),
    warn (/ >= ssot max_root_disk_percent or / free < min_free_gib), ok.
+   Rows also carry `underused` (mount < underused_pct used or
+   > underused_free_gib free) — informational capacity signal.
    Context: target, hostvars, audit_ssot, ssot_key_map, crit_pct,
-   min_free_gib. #}
+   min_free_gib, underused_pct, underused_free_gib. #}
 {%- set hk = ssot_key_map.get(target, target) -%}
 {%- set hs = (audit_ssot['hosts'] | default({})).get(hk) or {} -%}
 {%- set res = hs.get('expected_resources') or {} -%}
@@ -24,10 +26,13 @@
 {%-       set st = 'crit' if st == 'crit' else 'warn' -%}
 {%-       set _ = why.append('/ avail ' ~ ((m.avail_kb | int) / 1048576) | round(1) ~ ' GiB < ' ~ min_free_gib ~ ' GiB guard floor') -%}
 {%-     endif -%}
+{%-     set under = (m.pct | int < underused_pct | int)
+          or ((m.avail_kb | int) > underused_free_gib * 1048576) -%}
 {%-     set _ = ns.rows.append({'mount': m.mount, 'fs': m.fs,
         'size_gib': ((m.size_kb | int) / 1048576) | round(1),
         'avail_gib': ((m.avail_kb | int) / 1048576) | round(1),
-        'pct': m.pct, 'state': st, 'why': why | join('; ')}) -%}
+        'pct': m.pct, 'state': st, 'why': why | join('; '),
+        'underused': under}) -%}
 {%-   endfor -%}
 {%- else -%}
 {%-   set ns.unreachable = true -%}
@@ -50,5 +55,6 @@ inventory_host: {{ target }}
 unreachable: {{ ns.unreachable }}
 ssot_max_root_disk_percent: {{ root_max }}
 summary: {{ summary_text | to_json }}
+underused_mounts: {{ ns.rows | selectattr('underused') | map(attribute='mount') | list | to_json }}
 mounts:
 {{ ns.rows | to_nice_yaml | indent(2, true) }}
