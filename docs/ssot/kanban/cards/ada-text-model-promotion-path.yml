@@ -1,16 +1,16 @@
 id: ada-text-model-promotion-path
 title: ADA_TEXT_MODEL promotion gate — bench-evidence path from flash-lite
-column: doing
-updated: 2026-11-24 00:32
+column: review
+updated: 2026-11-24 00:35
 priority: low
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   attempts: 2
-  result: 'exit=1 261123-222811-ada-text-model-promotion-gate-.service: Failed with result ''exit-code''. | devin-task-20261123-222811-ada-text-model-promotion-gate-.service:
-    Consumed 1min 27.627s CPU time over 3min 36.396s wall clock time, 896.8M memory peak.'
+  result: 'exit=0 s posted; no promotion attempted — that correctly stays gated on Tony''s approval. | devin-task-20261123-230449-ada-text-model-promotion-gate-.service:
+    Consumed 4min 16.859s CPU time over 1h 29min 11.262s wall clock time, 606.2M memory peak.'
   last_failure: 'exit=1 261123-222811-ada-text-model-promotion-gate-.service: Failed with result ''exit-code''.
     | devin-task-20261123-222811-ada-text-model-promotion-gate-.service: Consumed 1min 27.627s CPU time over 3min
     36.396s wall clock time, 896.8M memory peak.'
@@ -18,6 +18,7 @@ action:
   sweep:
     stale_running: 2026-11-23 23:07
     no_repo: 2026-11-23 23:07
+  verified: true
 note: 'Procedure card: a challenger lane may only take ADA_TEXT_MODEL (or side-tools) after clearing the education-manager
   bench gate (measured 2026-11-20, scripts/bench-edu-manage.py, edu-manager fixture): capture F1 = 1.0 (current
   lane), dedupe ≥ 4/5 (current lane 3/5), recall = 3/3, acceptable latency (p50 ≤ 15s; best measured clawbot: or-free-nemotron-35
@@ -778,5 +779,17 @@ comms:
     qwen2.5:7b on tony-omen ollama (chat-local leg-1, CPU-served) vs same-day current-lane re-run via litellm gateway.
     RESULT: qwen2.5:7b FAILS every gate axis — F1 0.75, dedupe 3/5, ops 2/5, recall 1/3, draft-Q 4.27, p50 61.7s
     (10/13 completed, 2 transcript timeouts + 1 HTTP400). Incum'
+- at: 2026-11-24 00:35
+  from: tony-macbook
+  text: 'finished (ok): exit=0 s posted; no promotion attempted — that correctly stays gated on Tony''s approval.
+    | devin-task-20261123-230449-ad'
+- at: 2026-11-24 00:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 00:35
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261123-230449-ada-text-model-promotion-gate-\
+    \ is 52 commits behind origin/master —\n   run 'git pull -"
 claim:
   since: 2026-11-23 23:04
+review_kind: verify
