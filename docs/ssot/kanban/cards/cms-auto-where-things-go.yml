@@ -9,7 +9,7 @@ priority: high
 note: 'last_run 30m overdue (interval 60m). last_run=2026-11-22T10:00:01+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/where-things-go'
 help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or POST /api/cms/pages/where-things-go/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 14:05
+updated: 2026-11-23 14:17
 comms:
 - at: 2026-11-07 16:49
   from: devin
@@ -93,6 +93,10 @@ comms:
 - at: 2026-11-23 14:05
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:17
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
