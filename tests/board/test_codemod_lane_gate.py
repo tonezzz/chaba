@@ -35,7 +35,13 @@ def _load(name):
 
 
 def _load_card(card_id):
-    return yaml.safe_load((CARDS / f"{card_id}.yml").read_text())
+    # regression fixtures name real cards — they must keep loading after
+    # the board archives them (live first, then archive)
+    for base in (CARDS, CARDS / "archive"):
+        p = base / f"{card_id}.yml"
+        if p.exists():
+            return yaml.safe_load(p.read_text())
+    raise FileNotFoundError(card_id)
 
 
 def _unpinned(card):

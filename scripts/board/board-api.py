@@ -244,6 +244,9 @@ import opencode_command as opc
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
+# DevNest lane catalog — retired/removed lanes drop out of valid_lanes();
+# the selftest redirects this to a tmp file for the mtime-cache test.
+LANES_FILE = REPO / "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
 # /attach store (board-attachments-photo-image-evidence): kept inside the
 # repo so uploads commit + propagate exactly like card YAML; the board
 # app can't see this tree directly (/srv/public is all the web container
@@ -2478,8 +2481,7 @@ def _retired_lanes() -> set:
     when the prose-heavy catalog doesn't yaml-load — the
     LANE_MODELS/LANE_EXECUTORS tables are the real gate either way."""
     try:
-        txt = (REPO / "docs/ssot/infrastructure/"
-               "ssot.devnest-lanes.yml").read_text()
+        txt = LANES_FILE.read_text()
     except OSError:
         return set()
     try:
@@ -2520,8 +2522,7 @@ def valid_lanes() -> set:
     DevNest lane catalog marks removed/retired. Cached on the catalog
     file's mtime so the prose-heavy YAML isn't re-parsed per request."""
     try:
-        mtime = (REPO / "docs/ssot/infrastructure/"
-                 "ssot.devnest-lanes.yml").stat().st_mtime
+        mtime = LANES_FILE.stat().st_mtime
     except OSError:
         mtime = 0.0
     if _VALID_LANES_CACHE["value"] is not None and \
@@ -5993,22 +5994,49 @@ def _selftest() -> None:
                 "reason": "x"}, "devin"), "<=20 entries")
     # non-dispatch cards (no action, or a non-dispatch type) are refused
     # — /card-set only edits routing fields on dispatch cards; arming
-    # happens via /card
+    # happens via /card — and the refusal leaves the card untouched: no
+    # fabricated action block, no audit comms
+    noact = {"id": "no-action", "comms": [], "tags": []}
     rejects(lambda: do_card_set(
-        {"id": "no-action", "comms": [], "tags": []},
-        {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
+        noact, {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
         "no dispatch action")
+    assert "action" not in noact and noact["comms"] == []
+    script_card = {"id": "script-card", "comms": [], "tags": [],
+                   "action": {"type": "script", "status": "queued"}}
     rejects(lambda: do_card_set(
-        {"id": "script-card", "comms": [], "tags": [],
-         "action": {"type": "script", "status": "queued"}},
-        {"set": {"lane": "codemod"}, "reason": "x"}, "devin"),
-        "no dispatch action")
+        script_card, {"set": {"lane": "codemod"}, "reason": "x"},
+        "devin"), "no dispatch action")
+    assert script_card["action"] == \
+        {"type": "script", "status": "queued"} \
+        and script_card["comms"] == []
     # the classifier still respects an author-set lane on next queue
     scard2 = {"id": "set-2", "comms": [],
               "action": {"type": "dispatch", "status": "queued"}}
     do_card_set(scard2, {"set": {"lane": "manual"},
                          "reason": "human owns it"}, "tony")
     assert "lane_source" not in scard2["action"]
+
+    # valid_lanes() is cached on the catalog file's mtime — a rewrite at
+    # the same mtime still serves the cached set, an mtime bump forces a
+    # re-parse (board-api-card-set-non-dispatch-guard §2)
+    cat = tmp / "ssot.devnest-lanes.yml"
+    cat.write_text("lanes: {}\n")
+    os.utime(cat, (1_700_000_000, 1_700_000_000))
+    globals()["LANES_FILE"] = cat
+    _VALID_LANES_CACHE["mtime"] = 0.0
+    _VALID_LANES_CACHE["value"] = None
+    base = valid_lanes()
+    assert "free_lane" in base
+    cat.write_text(
+        "lanes:\n  free_lane:\n    status: retired 2026-01-01\n")
+    os.utime(cat, (1_700_000_000, 1_700_000_000))   # same mtime
+    assert valid_lanes() == base                    # stale cache served
+    os.utime(cat, (1_700_000_100, 1_700_000_100))   # mtime bump
+    assert "free_lane" not in valid_lanes()         # re-parse happened
+    globals()["LANES_FILE"] = \
+        REPO / "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+    _VALID_LANES_CACHE["mtime"] = 0.0
+    _VALID_LANES_CACHE["value"] = None
 
     # /card spawn fields + on_exists (report-session-loop §1a). CARD_DIR
     # is redirected to a temp dir — do_create writes real card files.
