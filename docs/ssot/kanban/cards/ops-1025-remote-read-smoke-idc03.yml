@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: backlog
-updated: 2026-11-23 14:49
+column: doing
+updated: 2026-11-23 15:03
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,11 +69,12 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: queued
-  attempts: 0
+  status: running
+  attempts: 1
   last_failure: 'exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed with result
     ''exit-code''. | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Consumed 13.029s CPU time,
     521.9M memory peak, 0B memory swap peak.'
+  runner: idc02
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -119,5 +120,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 15:03
+  from: idc02
+  text: claimed
+- at: 2026-11-23 15:03
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795420994 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
 claim:
-  since: 2026-11-19 20:37
+  since: 2026-11-23 15:03
