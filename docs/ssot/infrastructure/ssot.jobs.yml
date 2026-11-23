@@ -1716,6 +1716,29 @@ jobs:
     all card mutations, board-api and file-write alike). First tick
     records position without replaying history. OFF SWITCH:
     `touch ~/.config/kanban-notify.off` (each tick exits silently).'
+- id: devin-dispatch-tg-watch
+  name: Devin dispatch watch — TG notify on job-ledger state changes
+  host: idc03
+  dispatch: systemd
+  every: 5m
+  timeout: 60s
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/devin-dispatch-tg-watch.py
+  note: 'Card implement-and-track-devin-telegram-repor-fc0dc7 (DEV-0368)
+    — Tony picked the chaba lane 2026-10-26: board_notify tg, nest-queue
+    pattern, group targeting. One-shot poller: reads the shared dispatch
+    job ledger (job/* + answer/* docs in MDDB ada-ha-bank-devin-handoff,
+    written by devin-dispatch/devin-dispatch-watch/job-run on every
+    runner host) and pushes one TG message per new state — started /
+    done / FAILED / needs input / answered — to the ada-ha group via the
+    relay /send on idc03 loopback :8911. Runs on idc03 because the relay
+    is loopback-only and the MDDB leader lives there; one watcher covers
+    the whole fleet. First tick primes silently (no history replay);
+    DEVIN_TG_WATCH_CATCHUP_MIN=<n> re-admits recent docs on that tick.
+    OFF SWITCH: `touch ~/.config/devin-dispatch-tg-watch.off` (each tick
+    exits silently), rm to resume — or pull this job entry.'
 - id: cline-intake
   name: Cline lane intake — backlog cards tagged cline -> kanban-nest-bridge
   host: con01
