@@ -1,7 +1,7 @@
 id: storage-rebalance-underused
 title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
 column: doing
-updated: 2026-11-23 11:03
+updated: 2026-11-23 11:04
 brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
   and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
   to free space.
@@ -44,6 +44,16 @@ comms:
 - at: 2026-11-23 11:03
   from: tony-omen
   text: claimed
+- at: 2026-11-23 11:04
+  from: chaba
+  text: started devin-task-20261123-110440-goal-rebalance-disk-usage-acro on tony-omen (dispatch)
+- at: 2026-11-23 11:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [kanban-card-torn-write-investigation-b4034e] ROOT CAUSE NAMED: idc03 disk
+    hit E; [report-graph-producer-metas-never-reach-7b0982] [devin] DONE — option (a) live ; runbook docs/kb/disk-space-management.md:
+    Disk Space Management — `/data` is the; [ada-job-brief-builder] v1 scaffold (precedents only) already landed
+    12:36-12:49; [cms-to-wiki-storage-assessment] primer injected 8 lesson(s): [assessments-to-ed; [docs-map-one-registry-across-all-doc-sto-7ac35a]
+    [dispatch 1'
 action:
   type: dispatch
   status: running
