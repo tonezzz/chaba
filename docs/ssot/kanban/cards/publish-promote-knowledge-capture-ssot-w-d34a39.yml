@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: done
-updated: 2026-11-23 07:00
+updated: 2026-11-23 07:19
 priority: medium
 tags:
 - ssot
@@ -125,6 +125,13 @@ comms:
 - at: 2026-11-23 07:00
   from: devin
   text: moved backlog -> done
+- at: 2026-11-23 07:19
+  from: devin
+  text: '[2026-11-23 devin] Manual Devin hook integration (tony-dell, tony-omen): verified session-end PYCAPTURE
+    already present on both; appended best-effort PostCompaction capture block (recent-event lifecycle Compaction
+    <sid> + render --if-stale, marker-guarded, no stdout pollution) to notebooklm-compaction.sh on both hosts; upgraded
+    tony-dell notebooklm-recall.sh to chaba-aware version (render-memory --if-stale + CHABA_CONTEXT head, parity
+    with tony-omen). bash -n syntax OK on all edited hooks. idc03'
 requests:
 - id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
   ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
