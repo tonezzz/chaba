@@ -1,6 +1,6 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
-column: review
+column: backlog
 updated: 2026-11-23 15:13
 priority: low
 tags:
@@ -243,22 +243,26 @@ comms:
   from: chaba
   text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-20 19:04 commit 3ac5d7f6f6 on dispatch branch, 72/72
     + 38/38 tests pass, but test gate failed (suite timeout) and commit not in origin/master — requeued for rework.'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-23 15:13
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: devin
   lane_source: fallback
   attempts: 1
   last_failure: 'exit=1 devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
     | devin-task-20261119-105301-extend-wiki-page-door-to-allow.service: Consumed 10.173s CPU time over 3.958s wall
     clock time, 264M memory peak.'
-  runner: idc02
   sweep:
     stale_running: 2026-11-20 19:03
     no_repo: 2026-11-20 19:03
   result: 'exit=0 mit crashes, not approach problems. Card comms updated; outcome written to `dispatch-outcome-20261120-190141-extend-wiki-page-door-to-allow.md`.
     | devin-task-20261120-190141-extend-wiki-page-door-to-allow.service: Consumed 38.071s CPU time.'
-  verified: false
 claim:
   since: 2026-11-20 18:59
 review_kind: verify

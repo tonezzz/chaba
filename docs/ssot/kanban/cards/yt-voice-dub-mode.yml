@@ -1,6 +1,6 @@
 id: yt-voice-dub-mode
 title: YT voice dub — voice-mode selector on the cast URL
-column: review
+column: backlog
 program: yt-voice-dub
 area: productization
 priority: high
@@ -28,7 +28,7 @@ spec: 'Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast: acc
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: idle
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
   task_id: 20261006-164900-wire-voice-dubbing-into-the-ca
@@ -37,7 +37,7 @@ action:
     Consumed 2min 4.136s CPU time over 21min 5.801s wall clock time, 1.3G memory peak, 548.6M memory swap peak.'
   sweep:
     session_gone: 2026-11-08 16:22
-updated: 2026-11-23 14:19
+updated: 2026-11-23 15:13
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -257,6 +257,14 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: '[verify-hold] Review pass 2026-11-23 (Tony): sandbox e2e only; 2026-11-08 16:04 lifecycle bounce: "declares
+    a verify: criterion but closed with no evidence comms" — real-TV cast not evidenced — held, not closed; needs
+    the noted decision/blocker cleared.'
+- at: 2026-11-23 15:13
+  from: tony
+  text: put on hold
 claim:
   since: 2026-10-06 16:49
 ref: ADA-0156
