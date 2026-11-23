@@ -9,7 +9,7 @@ priority: high
 note: 'Recovering: nest-tony-macbook healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-macbook'' (or POST /api/cms/pages/nest-tony-macbook/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 19:22
+updated: 2026-11-23 19:35
 comms:
 - at: 2026-11-18 17:20
   from: chaba
@@ -94,6 +94,21 @@ comms:
 - at: 2026-11-23 19:22
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 19:33
+  from: chaba
+  text: 'answer-sweep: executed ''requeue — requeue for another pass'' -> re-queued'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.89 > 0.85)'
 ok_streak: 1
 requests:
 - id: cline-drafted-verdict-investigate-redepl-5d52a2
@@ -114,4 +129,7 @@ requests:
     action: retry
   suggested: requeue
   answer: requeue — requeue for another pass
-awaiting_action: true
+  executed: 2026-11-23 retry
+action:
+  status: queued
+  attempts: 1
