@@ -1,7 +1,7 @@
 id: disk-guard-ssot-enforce
 title: Enforce SSOT disk thresholds in disk-trend-watch.py (max_root_disk_percent + 15 GiB floor)
-column: review
-updated: 2026-11-23 11:13
+column: done
+updated: 2026-11-23 11:33
 brief: disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01).
   tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
 priority: medium
@@ -88,6 +88,9 @@ comms:
 - at: 2026-11-23 11:13
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 11:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -101,3 +104,7 @@ action:
 claim:
   since: 2026-11-23 11:03
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 11:33
+  note: verified — evidence checks green, closing itself
