@@ -1,7 +1,7 @@
 id: openclaw-authprofile-or-key-stale
 title: '@myChabaBot silent — OpenClaw auth profile holds expired OR key'
 column: backlog
-updated: 2026-11-23 10:59
+updated: 2026-11-23 13:46
 brief: 'TG DM chat 8960073266 (@myChabaBot) has been failing every model turn since 2026-11-20: 401 API key expired
   → 401 User not found. Root cause: tony-omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
   profiles."openrouter:manual".key still holds sk-or-v1-e2c…f05528 (set 2026-10-12, expired 2026-11-11). The Nov-12/13
@@ -33,6 +33,13 @@ comms:
     64 errors total, hourly heartbeat polls only, no real user msgs. OpenRouter /api/v1/key: DB profile key sk-or-v1-e2c…f05528
     -> HTTP 401 User not found; env key sk-or-v1-a26…00735b -> HTTP 200 usage 8.776/10 exp 2026-12-12. authProfiles.store
     updated_at_ms 17'
+- at: 2026-11-23 13:46
+  from: devin
+  text: 'FIXED 2026-11-23 13:45 ICT. Tony placed fresh key in ~/.config/secrets/or-next-key on tony-omen (validated:
+    HTTP 200, $0/$1, exp 2026-12-23); streamed to tony-dell (mode 600) and ran ~/.local/bin/rotate-or-key on tony-dell.
+    All 4 stores now hold sk-or-v1-74d…180f6c: dell openrouter.env, omen openrouter.env, idc03 mddb-gemini.env,
+    omen openclaw sqlite authProfiles.store (updated 13:42:37). Restarted ghostroute-watcher (omen) + gemini-ollama-proxy
+    (idc03). Script e2e probe hit an upstream 429 on i'
 requests:
 - id: mint-a-fresh-openrouter-key-at-openroute-b13d22
   ask: Mint a fresh OpenRouter key at openrouter.ai/keys and drop it into ~/.config/secrets/or-next-key on tony-omen
