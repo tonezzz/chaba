@@ -1,7 +1,7 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
-column: doing
-updated: 2026-11-23 22:22
+column: backlog
+updated: 2026-11-23 22:31
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
   pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
@@ -324,6 +324,14 @@ comms:
   text: 'progress: --enrich now on all 3 unit invocations (was only tony_omen jobs.yml); new scripts/devin/session/session_recall.py
     implements hybrid T1(mddb vector-search)+T2(local sqlite FTS5 BM25 over ~/.local/share/devin .md archives, incremental
     index, fail-open); notebooklm-recall.sh wired to it. verifying next'
+- at: 2026-11-23 22:31
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-2205 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220531-productionize-the-enriched-t1- (rate limit)
+    — tony-macbook holds new claims ~30m
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
@@ -339,7 +347,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -347,12 +355,12 @@ action:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 21:22
     session_gone: 2026-11-23 21:22
-  last_failure: 'exit=1 0261123-211532-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
-    | devin-task-20261123-211532-productionize-the-enriched-t1-.service: Consumed 1min 30.532s CPU time over 16min
-    48.922s wall clock time, 2.7G memory peak.'
+  last_failure: 'exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-220531-productionize-the-enriched-t1-.service: Consumed 1min 29.487s CPU time over 25min
+    18.901s wall clock time, 1.7G memory peak.'
   attempts: 2
-  result: 'exit=1 0261123-211532-productionize-the-enriched-t1-.service: Failed with result ''exit-code''. | devin-task-20261123-211532-productionize-the-enriched-t1-.service:
-    Consumed 1min 30.532s CPU time over 16min 48.922s wall clock time, 2.7G memory peak.'
+  result: 'exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''. | devin-task-20261123-220531-productionize-the-enriched-t1-.service:
+    Consumed 1min 29.487s CPU time over 25min 18.901s wall clock time, 1.7G memory peak.'
   runner: tony-macbook
 spec: Productionize the enriched T1 distiller by enabling the --enrich hook and setting up the hybrid T1/T2 recall
   path in the chaba repository on idc02. The implementation must integrate the enrichment flag into the distiller
