@@ -1,0 +1,38 @@
+id: cms-auto-health-stop-carding-powered-off-e11c7a
+title: 'cms-auto-health: stop carding powered-off/sleeping hosts'
+column: backlog
+updated: 2026-11-23 20:33
+brief: cms-auto-* cards reopen every time a portable host (tony-macbook) is powered off > interval+grace. nest-tony-macbook
+  alone has auto-recovered 4x (11-18, 11-19, 11-21, 11-23) and each open card can burn a dispatch triage — dispatch
+  20261123-202118 was triggered by exactly this. Host-down alerting already exists separately (ops-event reachability
+  flips), so the cms-auto card is redundant noise for a host that is simply off.
+priority: medium
+tags:
+- cms-auto-health
+- noise
+spec: 'Recurring false-positive class in scripts/ada/cms-auto-health.py: judge() marks state=stale when last_run
+  is older than interval_min+GRACE_S, with no notion of whether the generator host is even reachable. For per-host
+  daemons (nest-mgr publishes nest-<host> pages+registry docs), a powered-off host is expected, not broken.
+
+
+  Evidence (card cms-auto-nest-tony-macbook): host off ~34.6h (boot gap 2026-11-21 20:07 -> 2026-11-23 06:45 ICT);
+  last_run froze at 2026-11-21T13:04:52Z = 3min before shutdown; card open since 11-18 with 4 auto-recoveries.
+
+
+  Fix directions (pick one):
+
+  A) nest-mgr writes host:<hostname> into the ada-cms-automation registry cfg (it already owns that doc — one-line
+  add in stacks/services/nest-mgr/nest-mgr.py save path); cms-auto-health probes reachability for cfgs carrying
+  host (tailscale ping <host> or tailscale status from idc03) and classifies state=host-down -> suppress card creation,
+  or downgrade to a note on an existing card.
+
+  B) cms-auto-health derives host from slug prefix (nest-<host>) — zero producer change but convention-fragile.
+
+  C) Per-automation grace/interval bump for portable hosts — delays the alert, does not fix nightly sleep flap.
+
+  Recommendation: A — explicit host field + reachability gate; keep real staleness alerting for reachable hosts.'
+ref: KNB-0046
+comms:
+- at: 2026-11-23 20:33
+  from: devin
+  text: card captured via board-api
