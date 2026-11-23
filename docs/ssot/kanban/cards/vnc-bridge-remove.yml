@@ -1,7 +1,7 @@
 id: vnc-bridge-remove
 title: Audit and remove VNC websockify bridges on idc02 (:6080/:6082) + /apps/vnc
 column: backlog
-updated: 2026-11-23 14:21
+updated: 2026-11-23 15:29
 brief: 'Tony 2026-11-09: dig the VNC bridge and card removal. Two websockify units on idc02 tailnet-IP binds: :6080
   -> kk-macbook:5900, :6082 -> mn01 vms:5900; routes /apps/vnc/ws* + static /apps/vnc/*; vnc app in apps.yml.'
 priority: low
@@ -109,3 +109,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:29
+  from: devin
+  text: 'OPS-1312 Phase 1 audit complete (2026-11-23): 0 real sessions in 30d; the 10,814 405s are check-routes.py
+    GETting websockify. NOT safe to just stop — /apps/vnc auto-connects to :6082, cast-browser-server.mjs maps vms/macbook
+    -> /apps/vnc/vnc.html on tony-dell + tony-omen, and HA cast automation names websockify-vms-mn01.service. Tony
+    chose full coordinated retirement including the cast path. Plan: /home/tony/tony-projects/infra/vnc-bridge-retirement-plan-ops1312.md
+    (decision gate on the vms cast'
