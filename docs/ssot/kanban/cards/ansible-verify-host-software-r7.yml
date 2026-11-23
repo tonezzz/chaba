@@ -1,7 +1,7 @@
 id: ansible-verify-host-software-r7
 title: Ansible read-only verify for R7 host-software capabilities
 column: done
-updated: 2026-11-23 17:02
+updated: 2026-11-23 17:08
 brief: Add a parallel read-only ansible playbook that probes ssot.host-software.yml capabilities and writes per-host
   benchmark reports.
 priority: medium
@@ -32,5 +32,12 @@ comms:
 - at: 2026-11-23 17:02
   from: devin
   text: closed by devin
+- at: 2026-11-23 17:08
+  from: devin
+  text: 'Full-fleet run 2026-11-23 (controller tony-omen, ANSIBLE_CONFIG=./ansible.cfg, all R7-declared hosts, reports
+    to /tmp/opencode/ansible-host-sw-reports): ok=tony-dell 4/4, tony-omen 5/5, idc03 4/4, idc02 3/3, mn01 2/2.
+    FAIL=con01 1/4 (python_ml timeout >20s) -> OPS-0039; tony-macbook/kk-macbook 1/2 (venv ensurepip/python3.14-venv
+    missing) -> SYS-0040. kk-mac unreachable (Host key verification failed) — treated as down in report; laptop/offline
+    class, not carded as defect. No host changes made.'
 action:
   status: done
