@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: done
-updated: 2026-11-23 14:20
+updated: 2026-11-23 14:52
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -382,6 +382,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:52
+  from: devin
+  text: 'worktree triage: ada-voice wt dispatch-wt-20261120-200415 dropped on tony-dell — 1 unpushed evidence-doc
+    commit kept on branch dispatch/20261120-200415-*; redundant since card closed via 113051 merge.'
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
