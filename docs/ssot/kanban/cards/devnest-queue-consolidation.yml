@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: doing
-updated: 2026-11-23 15:58
+updated: 2026-11-23 16:03
 priority: high
 tags:
 - devnest
@@ -74,6 +74,7 @@ action:
   sweep:
     session_gone: 2026-11-17 19:25
     stale_running: 2026-11-23 15:18
+    dirty: 1
   attempts: 2
   last_failure: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''.
     | devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min
@@ -352,6 +353,10 @@ comms:
     @15m, board-janitor live, 0 live dispatch timer-alerts, jev-lane armed on omen/idc02/mn01, classify live in
     /queue. KEY FINDING: ops-1244b archived via jules-lane purge — one-claimer refactor never landed and is now
     uncarded; request raised. focus-inbox 2174 unprocessed. Trail'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261123-155241-assessment-2026-11-09-verified on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 review_kind: verify
 claim:
   since: 2026-11-23 15:51

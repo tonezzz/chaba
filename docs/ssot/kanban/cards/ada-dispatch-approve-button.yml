@@ -1,7 +1,7 @@
 id: ada-dispatch-approve-button
 title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
 column: doing
-updated: 2026-11-23 15:59
+updated: 2026-11-23 16:03
 priority: medium
 tags:
 - ada
@@ -229,6 +229,30 @@ comms:
     menu — scripts/board/approve-ask.py emits {id,label,action} option dicts (do_request validates the enum); (3)
     close-the-loop — verified/unverified lifecycle events push via /publish->Telegram from kanban-dispatch + merge-sweep
     (auto-close announced, held verdicts alerted once). Ver'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: banked 184 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: pushed dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt to origin
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: auto-merged a82187de (dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt) → origin/master
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-155518-tony-s-flow-ada-shows-menu-opt,
+    branch dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt'
 review_kind: verify
 action:
   type: dispatch
@@ -243,5 +267,8 @@ action:
     | devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt.service: Consumed 1min 9.774s CPU time over 10min
     7.527s wall clock time, 458.5M memory peak.'
   runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-23 16:03
+    session_gone: 2026-11-23 16:03
 claim:
   since: 2026-11-23 15:54

@@ -1,7 +1,7 @@
 id: grand-rename
 title: Grand rename — compositional <x>-ha/-ha-dev/-ai/-ai-dev across units, ports, paths, env files
 column: doing
-updated: 2026-11-23 15:56
+updated: 2026-11-23 16:03
 brief: Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml
   rename_map. Subsumes OPS-0726 (mn-dev rename).
 priority: medium
@@ -229,6 +229,10 @@ comms:
   text: '[dispatch 20261123-155440] picked up on tony-omen. Phase-1 audit: card spec says persona-first (kraut-ai/member-ai/chaba-ai)
     but live kraut lane deployed as ada-ai-kraut (family-first, Tony-approved Oct-16). Reconciling + checking live
     idc03 state, then will raise request for scheme decision.'
+- at: 2026-11-23 16:03
+  from: devin
+  text: 'raised request phase-1-gate-card-spec-field-is-stale-pe-c97beb: Phase-1 gate — card spec: field is STALE
+    (persona-first text unchanged since card creation Oct-16; predates your family-'
 action:
   type: dispatch
   status: running
@@ -246,3 +250,18 @@ action:
 review_kind: verify
 claim:
   since: 2026-11-23 15:53
+requests:
+- id: phase-1-gate-card-spec-field-is-stale-pe-c97beb
+  ask: 'Phase-1 gate — card spec: field is STALE (persona-first text unchanged since card creation Oct-16; predates
+    your family-first switch aafeadfad + deployed ada-ai-kraut). Confirm direction so live renames can proceed:
+    (1) SCHEME ★family-first ada-ai-<role> (kraut already deployed this way) vs <role>-ai per stale spec — reply
+    family or persona; (2) ada-chaba :8008 (house ops-brain, not in map) ★keep as-is vs re-role — renaming it to
+    ada-ai-chaba collides with :8002 target; (3) ada-ha-ada :8006 (2nd lab, not in map) ★ada-ai-lab vs fold into
+    ada-ai-dev vs keep; (4) kaewta port renumber ★keep :8007 vs move obsidian vault server off :8004; (5) member-ai
+    — ★confirm no unit (member root stays on :8002 since PWA retired). Full audit + runbook: docs/ssot/jobs/ada/2026-11-23-grand-rename-execution-runbook.yml'
+  status: open
+  at: 2026-11-23 16:03
+  from: devin
+  options:
+  - proceed
+  - hold
