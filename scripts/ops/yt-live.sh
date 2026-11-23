@@ -351,8 +351,26 @@ dub_job() {  # $1 media input (src.mp4|m3u8), $2 karaoke vtt ("" ok),
     args+=(--sentences --en-vtt "$kar")
     echo "   dub: sentence mode (karaoke: $(basename "$kar"))"
   fi
-  if timeout 5400 "$YT_VTT_DUB" "${args[@]}" >"$APP_DIR/dub.log" 2>&1 \
-     && [ -s "$APP_DIR/dub.mp4" ] && [ -f "$gen" ]; then
+  # Gen-token watchdog: the render can run for ~90min, far past the
+  # orchestrator's life. Without a mid-render check a superseded dub keeps
+  # hammering flaky edge-tts alongside the NEW run's dub (parallel load is
+  # exactly what makes edge-tts fail). Poll the token; on loss, kill the
+  # timeout wrapper's child (the dub script) and bail before muxing.
+  timeout 5400 "$YT_VTT_DUB" "${args[@]}" >"$APP_DIR/dub.log" 2>&1 &
+  local dpid=$! wd
+  ( while kill -0 "$dpid" 2>/dev/null; do
+      # NOTE: this brace group follows the final ||, so set -e is ACTIVE
+      # inside it — every command must be failure-proof (pkill returns 1
+      # on no-match and would kill the watchdog itself).
+      [ -f "$gen" ] || { pkill -TERM -P "$dpid" 2>/dev/null || true
+                        kill "$dpid" 2>/dev/null || true; exit 0; }
+      sleep 30
+    done ) &
+  wd=$!
+  local drc=0
+  wait "$dpid" || drc=$?
+  kill "$wd" 2>/dev/null || true; wait "$wd" 2>/dev/null || true
+  if [ "$drc" -eq 0 ] && [ -s "$APP_DIR/dub.mp4" ] && [ -f "$gen" ]; then
     echo "$voice:muxing" >"$st"
     if ffmpeg -hide_banner -loglevel error -y -i "$APP_DIR/dub.mp4" -c copy \
         -f hls -hls_time 4 -hls_list_size 0 -hls_playlist_type vod \

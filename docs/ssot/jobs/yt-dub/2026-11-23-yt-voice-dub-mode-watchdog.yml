@@ -1,0 +1,97 @@
+title: YT voice dub — post-merge audit + superseded-render watchdog
+subtitle: kanban card yt-voice-dub-mode — dispatch re-run 2026-11-23 (attempt 2)
+icon: microphone
+
+planning:
+  goal: |
+    Re-dispatch of yt-voice-dub-mode after the 2026-11-23 19:15 run died on a
+    provider rate-limit (exit=1, infra — not a code failure). Audit the
+    merged voice wiring against the card spec after the post-merge
+    yt-vtt-dub.py changes (qc gate, fix-map, sentences, diarize), fix any
+    regression, and leave an honest verify trail.
+  out_of_scope: |
+    Real-TV cast verification and the yt-pipeline-install.sh refresh of
+    ~/.local/bin on tony-dell — deploy gate, needs explicit approval.
+    Full sandbox e2e (no ffmpeg/yt-dlp/edge-tts on this host).
+
+processing:
+  status: completed
+  last_updated: "2026-11-23"
+
+report:
+  summary: |
+    Audit result: the voice-mode selector merged 2026-10-07 (724240b884)
+    fully satisfies the card spec and survived every post-merge change.
+    Verified in-tree: POST /cast voice=off|th|en -> yt-live.sh arg3 (API
+    smoke: voice=fr -> HTTP 400, voice=TH -> normalized "th", omitted ->
+    "off"); detached __dub worker renders yt-vtt-dub.py against subs.vtt +
+    src.mp4, remuxes dub.mp4 (sidechain-ducked mix, produced inside
+    yt-vtt-dub.py) to dub.m3u8/dseg_*.ts and re-points the TV mid-play —
+    the documented latency choice (upgrade over gating); media cache
+    stores <base>.<voice> variants with meta voice match and replays the
+    right playlist; /status exposes dub {voice,phase} from dub.state;
+    voice=off path is byte-identical (diff-confirmed — only dub_job
+    internals changed this session).
+
+    Gap found and fixed: dub_job ran the edge-tts render under a single
+    `timeout 5400` with gen-token checks only AFTER the render. A cast
+    superseded mid-render left the stale dub synthesizing for up to ~90
+    min, competing with the new run's dub for the flaky edge-tts lane —
+    exactly the parallel-load failure mode the card warns about. Added a
+    watchdog subshell that polls the .gen token every 30s and kills the
+    render (timeout's child + the wrapper) on supersede; the worker then
+    exits silently without writing a bogus <voice>:failed into the new
+    run's dub.state.
+
+    Watchdog verification (isolated harness, set -euo pipefail):
+    gen alive -> child rc propagates; child failure -> failed-state path;
+    gen removed mid-render -> child killed in ~2s (rc=143), no orphans,
+    silent exit. Caught and fixed a real bug during testing: the kill
+    branch sits after the final || of `[ -f "$gen" ] || { ... }`, where
+    set -e is ACTIVE inside the braces — bare `pkill` returns 1 on
+    no-match and killed the watchdog itself. All kill-branch commands
+    are now || true guarded.
+  metrics:
+    - variant: API /cast voice validation (test port, sandbox dirs)
+      result: 400 on missing q and voice=fr; TH->th; omitted->off; /status dub field present
+    - variant: watchdog keep-alive
+      result: child completes, drc=0, mux path reached
+    - variant: watchdog child failure
+      result: drc=3 propagates -> failed-state (subs cast continues)
+    - variant: watchdog supersede
+      result: render killed ~2s after token loss (rc=143), no leftover procs
+    - variant: bash -n yt-live.sh + py_compile api/dub
+      result: clean
+  lessons_learned:
+    - "set -e applies INSIDE a { } group that follows the final || of an
+      AND-OR list — 'cmd || { pkill ...; }' dies silently when pkill
+      returns 1. Guard every command in such groups with || true."
+    - "A detached worker's lifetime gate must be checked DURING long
+      subprocess calls, not only after them — polling the gen token from
+      a sibling watchdog subshell is the cheap pattern."
+    - "procps pkill/pkill -P with no pattern returns 1 on no-match (not a
+      usage error) — safe to use, but only with || true under set -e."
+
+changes:
+  - file: scripts/ops/yt-live.sh
+    summary: 'dub_job render now runs under a gen-token watchdog: the
+      yt-vtt-dub.py call is backgrounded, a sibling subshell polls
+      .gen-<pid> every 30s and kills the render on supersede; exit status
+      captured via wait||drc so the failed-state path is unchanged.
+      voice=off untouched.'
+
+verification:
+  artifacts:
+    - scripts/ops/yt-live.sh (dub_job watchdog, lines ~354-372)
+    - /tmp/watchdog-test.sh (isolated harness, not committed)
+  checks:
+    - 'API smoke: voice field validation + /status dub field (sandbox)'
+    - 'watchdog harness: keep / failchild / supersede all correct'
+    - 'bash -n yt-live.sh clean; voice=off diff-empty'
+    - 'live TV + real edge-tts render not exercised on this host —
+      deploy gate unchanged (yt-pipeline-install.sh on tony-dell)'
+  followup: |
+    Real-TV verify still needs the tony-dell ~/.local/bin refresh
+    (yt-pipeline-install.sh) — deploy requires approval. Once deployed,
+    cast a cached video with voice=th and confirm the mid-play upgrade
+    lands on the TV (card verify: criterion).
