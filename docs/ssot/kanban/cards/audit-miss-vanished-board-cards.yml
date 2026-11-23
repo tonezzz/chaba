@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
 column: backlog
-updated: 2026-11-23 11:43
+updated: 2026-11-23 11:48
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -32,6 +32,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 11:48
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-113415-use-the-existing-ada-document-)
+    — claims held ~29m'
 action:
   type: dispatch
   repo: chaba
