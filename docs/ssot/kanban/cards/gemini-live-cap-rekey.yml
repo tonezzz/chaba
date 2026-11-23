@@ -1,7 +1,7 @@
 id: gemini-live-cap-rekey
 title: 'Un-latch lane tony: Gemini monthly cap + key rotation'
 column: backlog
-updated: 2026-11-23 19:11
+updated: 2026-11-23 19:43
 ref: ADA-0761
 comms:
 - at: 2026-10-20 20:08
@@ -135,6 +135,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:43
+  from: devin
+  text: 'STATE CHANGE 2026-11-23 ~19:30 (from card ada-scenario-casting-service-failed-on-i-340465): the lane-budget
+    latch on idc03 data/lane-budget.json was STALE — cleared it after verifying the same key fp 9c8a82ea4d now works:
+    generateContent HTTP 200 AND a real Gemini Live session connected on ada-ha-tony (gemini-3.1-flash-live-preview,
+    real turns). Tony lane voice is UN-LATCHED and serving again — no rekey/top-up spend was needed; whatever replenished
+    the project billing (top-up or cap semantics) a'
 spec: 'Goal: Un-latch the tony lane in ada-voice by putting a new paid-project Gemini key into idc03 at ~/.config/secrets/
   (following ~/.config/secrets/gemini-keys.template.env) and clearing the ProviderCapLatched state in ~/CascadeProjects/ada-voice/data/lane-budget.json.
   Host: idc03. Repo: ada-voice. Constraints: Keys are pending from Tony via the specified template path; do not
