@@ -1,9 +1,9 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 16:33
+updated: 2026-11-23 16:49
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -339,6 +339,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
     — claims held ~29m'
+- at: 2026-11-23 16:49
+  from: idc02
+  text: claimed
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -347,16 +350,17 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-23 16:32
     zero_commit: 2026-11-23 16:32
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  attempts: 1
+  attempts: 2
   result: 'exit=1 261123-162813-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''. | devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u.service:
     Consumed 1min 26.161s CPU time over 2min 11.818s wall clock time, 814.5M memory peak.'
   verified: false
+  runner: idc02
 claim:
-  since: 2026-11-23 16:27
+  since: 2026-11-23 16:49
