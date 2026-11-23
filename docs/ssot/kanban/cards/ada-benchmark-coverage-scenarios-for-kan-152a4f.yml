@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
-column: doing
-updated: 2026-11-23 15:12
+column: backlog
+updated: 2026-11-23 15:22
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -265,15 +265,23 @@ comms:
     merge-sweep: no session/worktr; [ada-benchmark-coverage-scenarios-for-kan-152a4f] test gate failed — merge held:;
     [ada-benchmark-coverage-scenarios-for-kan-152a4f] banked 38 outcome lesson(s) → ; [ada-benchmark-coverage-scenarios-for-kan-152a4f]
     finished (f'
+- at: 2026-11-23 15:22
+  from: idc02
+  text: 'finished (failed): exit=1 | devin-task-20261123-151149-ada-benchmark-coverage-scenari.service: Failed with
+    result ''exit-code''. | devin-task — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-151149-ada-benchmark-coverage-scenari (rate limit)
+    — idc02 holds new claims ~30m
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
-  result: 'exit=0 riteup in `dispatch-outcome-20261119-171510-ada-benchmark-coverage-scenari.md`; card comms posted.
-    | devin-task-20261119-171510-ada-benchmark-coverage-scenari.service: Consumed 2min 46.205s CPU time, 390.8M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=1 | devin-task-20261123-151149-ada-benchmark-coverage-scenari.service: Failed with result ''exit-code''.
+    | devin-task-20261123-151149-ada-benchmark-coverage-scenari.service: Consumed 3min 34.013s CPU time, 1.1G memory
+    peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-17 19:24
     stale_running: 2026-11-19 17:39
@@ -281,6 +289,9 @@ action:
     session_gone: 2026-11-20 20:26
   attempts: 2
   runner: idc02
+  last_failure: 'exit=1 | devin-task-20261123-151149-ada-benchmark-coverage-scenari.service: Failed with result
+    ''exit-code''. | devin-task-20261123-151149-ada-benchmark-coverage-scenari.service: Consumed 3min 34.013s CPU
+    time, 1.1G memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-23 15:10
 review_kind: verify
