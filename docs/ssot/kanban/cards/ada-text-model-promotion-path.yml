@@ -1,15 +1,19 @@
 id: ada-text-model-promotion-path
 title: ADA_TEXT_MODEL promotion gate — bench-evidence path from flash-lite
-column: doing
-updated: 2026-11-23 22:28
+column: backlog
+updated: 2026-11-23 22:31
 priority: low
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
-  runner: tony-omen
   attempts: 1
+  result: 'exit=1 261123-222811-ada-text-model-promotion-gate-.service: Failed with result ''exit-code''. | devin-task-20261123-222811-ada-text-model-promotion-gate-.service:
+    Consumed 1min 27.627s CPU time over 3min 36.396s wall clock time, 896.8M memory peak.'
+  last_failure: 'exit=1 261123-222811-ada-text-model-promotion-gate-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-222811-ada-text-model-promotion-gate-.service: Consumed 1min 27.627s CPU time over 3min
+    36.396s wall clock time, 896.8M memory peak.'
 note: 'Procedure card: a challenger lane may only take ADA_TEXT_MODEL (or side-tools) after clearing the education-manager
   bench gate (measured 2026-11-20, scripts/bench-edu-manage.py, edu-manager fixture): capture F1 = 1.0 (current
   lane), dedupe ≥ 4/5 (current lane 3/5), recall = 3/3, acceptable latency (p50 ≤ 15s; best measured clawbot: or-free-nemotron-35
@@ -690,5 +694,13 @@ comms:
     Queue diagnosis (2026-11-20 09:01): ADA-0783 is ; [devin-session-audit-2026-10-29] AUD-0973 reconciliation 2026-11-20:
     confirmed t; [dispatch-triage-arbiter-label-pass] session up on tony-omen — prior branch neve; [kk-mac-routing-proposal-fold-local-qwen2-4d513b]
     primer inje'
+- at: 2026-11-23 22:31
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-222811-ada-text-model-promotion-gate-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-22281 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-222811-ada-text-model-promotion-gate- (rate limit)
+    — tony-omen holds new claims ~30m
 claim:
   since: 2026-11-23 22:27
