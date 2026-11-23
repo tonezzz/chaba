@@ -376,8 +376,15 @@ def self_test() -> int:
     p = matrix_precision(entries)
     assert p["kanban_creates"] == 3 and p["filed_artifact_creates"] == 2, p
     assert p["precision_pct"] == 33.3, p
-    assert stale_pointer_signal(entries, max_age_days=0)["status"] == "proxy"
-    assert time_to_find_signal()["status"] == "unmeasurable"
+    # Explicit absent paths: the self-test must not depend on local telemetry
+    # files created by a real run on this host.
+    assert stale_pointer_signal(
+        entries, max_age_days=0,
+        log=Path(tempfile.gettempdir()) / "capture-metrics-no-such-pointer-log.yml"
+    )["status"] == "proxy"
+    assert time_to_find_signal(
+        Path(tempfile.gettempdir()) / "capture-metrics-no-such-audit-root"
+    )["status"] == "unmeasurable"
     with tempfile.TemporaryDirectory() as d:
         ssot = Path(d) / "docs/ssot"
         ssot.mkdir(parents=True)

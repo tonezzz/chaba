@@ -296,7 +296,19 @@ sections:
           pointer_ref+canonical_ref+found_at; --init creates the schema). Time-to-find is written by
           `python3 scripts/devnest/info_find.py run --query '...'` into its per-session audit.ndjson.
           Neither writes a canonical sink; both are local-only telemetry.
-      - label: Promotion thresholds (proposed; --apply remains gated)
+      - label: Gated apply write path (OPS-0024, approved 2026-11-23)
+        text: >-
+          `scripts/chaba/capture-apply.py` is the ONLY sink-write door for capture proposals;
+          harvester.py stays read-only. Deliberately no bulk mode: dry-run is the default,
+          --apply additionally requires --confirm with the exact dedupe_key retyped. First slice
+          allows only `kanban/create`, written through board-api via board-cli --ssh idc03 —
+          never a direct canonical file edit. Gates, in order: exact ledger key; allowlisted
+          sink/action; not already applied; source focus-inbox artifact still exists and is live;
+          no duplicate card id or title; bounded 3-attempt write; GET verification of the created
+          card; append to the ledger `applied:` audit block. The harvester preserves that block on
+          every proposal run. Rollback is a reason comm + `action <id> close` on the board.
+          ssot/kb/lesson/oc-note writes are NOT implemented and are refused, never improvised.
+      - label: Promotion thresholds (proposed; apply is gated per-write)
         text: >-
           Never auto-create a kanban card from a focus-inbox producer artifact or a dispatch outcome;
           route to an evidence pointer on the existing artifact. link/skip are safe; create requires

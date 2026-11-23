@@ -9,6 +9,9 @@ routes each through capture-router.py, and emits:
 It NEVER writes to a canonical sink: no SSOT edits, no board-api/board-cli
 mutations, no /lesson, no OC knowledge note, no docs/kb, no evidence surface.
 There is no --apply in this slice by design (OPS-0016 approved 2026-11-23).
+The separate, explicitly gated writer is scripts/chaba/capture-apply.py
+(OPS-0024): one key per run, board-api only, dry-run default. This harvester
+preserves that writer's `applied:` audit block when it rewrites the ledger.
 
 Approved sources (only these three):
   1. card comms from:tony  -- ops verbs filtered, substantive text kept
@@ -145,14 +148,20 @@ SCANNERS = {
 }
 
 
-def load_ledger(path: Path):
+def load_ledger_doc(path: Path) -> dict:
+    """Full ledger document — includes the gated writer's `applied:` block."""
     if not path.exists():
-        return []
+        return {}
     try:
         doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        return [e for e in doc.get("entries", []) if isinstance(e, dict)]
+        return doc if isinstance(doc, dict) else {}
     except Exception:
-        return []
+        return {}
+
+
+def load_ledger(path: Path):
+    doc = load_ledger_doc(path)
+    return [e for e in doc.get("entries", []) if isinstance(e, dict)]
 
 
 def dedupe_key_exists(entries, key):
@@ -193,7 +202,8 @@ def run(args):
     sources = args.source or list(SCANNERS)
     out_dir = Path(args.out_dir).expanduser()
     ledger_path = out_dir / LEDGER
-    ledger = load_ledger(ledger_path)
+    ledger_doc = load_ledger_doc(ledger_path)
+    ledger = [e for e in ledger_doc.get("entries", []) if isinstance(e, dict)]
     known = {e.get("dedupe_key") for e in ledger}
 
     candidates, counts = [], {}
@@ -228,9 +238,13 @@ def run(args):
     ]
     if new_entries:
         entries = ledger + new_entries
+        payload = {"matrix_version": MATRIX_VERSION, "entries": entries}
+        # capture-apply.py appends its audit here when --apply is used; a
+        # proposal run must never erase that history.
+        if ledger_doc.get("applied"):
+            payload["applied"] = ledger_doc["applied"]
         ledger_path.write_text(
-            yaml.safe_dump({"matrix_version": MATRIX_VERSION, "entries": entries},
-                           allow_unicode=True, sort_keys=False),
+            yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
             encoding="utf-8")
 
     print(f"run {RUN_ID}: {len(proposals)} proposals "
@@ -258,8 +272,19 @@ def self_test():
     good = p["proposed_sink"] == "lesson" and p["action"] in ("create", "link")
     print(f"[{'OK' if good else 'FAIL'}] route -> {p['proposed_sink']}/{p['action']}")
     ok += good
-    print(f"self-test: {ok}/{len(checks)+1} passed")
-    return 0 if ok == len(checks) + 1 else 1
+    # Integration: the gated writer's audit block survives a ledger reload.
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "capture-ledger.yml"
+        p.write_text("matrix_version: x\nentries: []\napplied:\n- dedupe_key: kanban:k\n",
+                     encoding="utf-8")
+        doc = load_ledger_doc(p)
+        good = doc.get("applied") == [{"dedupe_key": "kanban:k"}]
+    print(f"[{'OK' if good else 'FAIL'}] applied audit block preserved on reload")
+    ok += good
+    total = len(checks) + 2
+    print(f"self-test: {ok}/{total} passed")
+    return 0 if ok == total else 1
 
 
 def main():
