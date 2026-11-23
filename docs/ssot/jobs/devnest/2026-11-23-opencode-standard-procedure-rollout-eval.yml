@@ -1,0 +1,181 @@
+# Job: OpenCode as supervised executor for Chaba standard procedures — evaluation
+title: OpenCode supervised-executor rollout evaluation — verdict ADOPT-BOUNDED
+subtitle: >-
+  Card opencode-standard-procedure-rollout (OPS-0964). Re-derived eval after
+  the 2026-11-20 run's artifacts were lost uncommitted; same conclusion,
+  updated for the 2026-11-12 stor-01 S3->S0 rollback.
+icon: clipboard
+date: 2026-11-23
+card: opencode-standard-procedure-rollout
+session: "dispatch-wt-20261123-075055-evaluate-opencode-as-a-supervi (mn01)"
+status: "eval complete — verdict ADOPT-BOUNDED; rollout stays inside the
+  graduated lane, nothing new enabled"
+
+what:
+  question: >-
+    Should OpenCode become a supervised executor for Chaba standard
+    procedures beyond the completed 3-job free-lane pilot, and under what
+    bounds?
+  scope_in: >-
+    The 78-entry standard-procedure catalog (docs/ssot/ssot.procedures.yml),
+    the free-opencode lane pilot evidence, the graduated lane machinery
+    (lane_gate.py + opencode_profiles.py + evals/opencode-lane/PROCEDURE.md),
+    and the card's seven spec requirements.
+  scope_out: >-
+    No new enablement, no fleet-wide OPENCODE_LANES, no Colab execution,
+    no production/secret/publish/key/budget/restart delegation, no S3+
+    quota claims.
+
+spec_element_mapping:
+  # Every requirement in the card spec already has a shipped, enforced home.
+  keep_deterministic_as_scripts: >-
+    ssot.procedures.yml already separates script-bodied procedures
+    (render-board.py, git-safe-push.sh, board-api, key-watch.py,
+    deploy-diff.sh, audit-hosts.py, backlog-audit.py, command-truth.py,
+    display-scale-check.sh, incident-capture.sh, ssh-mesh-sync.sh,
+    render-memory-banks.py) from judgment procedures. Nothing changes —
+    deterministic stays deterministic; OpenCode is never the path to a
+    gate (free-opencode lane escalation rule).
+  fresh_task_scoped_session: >-
+    opencode_profiles.py render writes a run-local opencode.json per job:
+    custom profile agent only, builtin build/plan/general agents
+    hard-disabled, OPENCODE_CONFIG points at the rendered file so the
+    global config keeps zero MCP. Each run is a fresh session under
+    evals/opencode-lane/runs/<job>-<ts>/.
+  isolated_dispatch_worktree: >-
+    runner-agent start_opencode_lane creates dispatch/<tid> worktree +
+    taskdir meta.json matching devin-dispatch, so the normal
+    closeout/merge gate applies. S0 shadow arms additionally get
+    per-arm worktree+branch with fixtures sparse-checkout-excluded.
+  per_task_tool_path_allowlist: >-
+    Job envelope mcp_allowlist + allowed_paths must be a NARROWING of
+    the named profile (profile_denied_tool/denied_path deny classes);
+    profiles declare bash allowlist, builtin tool toggles, MCP ceiling,
+    write roots. Stage-scoped: S0 permits no MCP; S1-S5 only the 8
+    read-only mcp-debug tools.
+  free_lane_default: >-
+    free-opencode lane -> litellm/gemini-3.5-flash-lite (~$0; Zen free
+    alternates benched 4/4). Escalation on failure: paid_frontier then
+    devin; a cheap lane is never the only path to a gate.
+  declared_artifact_plus_independent_verifier: >-
+    Envelope requires artifact{path,schema} + verifier{type:
+    held_out_py|command|independent_devin, ref}; lane_gate lint fails
+    closed on any missing field. independent_devin runs go through
+    pending-review.json + finalize-review attestation ingestion —
+    pending is never counted as success.
+  token_time_intervention_record: >-
+    Per-job metrics.jsonl: input/cache/output tokens, provider cost,
+    wall/queue time, retries, tool denials, human_minutes, verifier
+    pass, failure reason, devin-equiv tokens. lane_gate metrics
+    aggregates verified rate, cost per verified job, intervention
+    minutes, escalations.
+  stage_bound_s0_s2_only: >-
+    Envelope stage must equal the live lane stage (wrong_stage denies);
+    quota per stage; weekly review emits promote|hold|rollback with
+    automatic rollback on any safety-critical failure.
+  human_gated_classes: >-
+    PROCEDURE.md hard-deny row: production, destructive, deploy,
+    secret, payment, credential classes are never admitted — human or
+    devin gate, always.
+  no_fleet_wide_no_colab: >-
+    OPENCODE_LANES stays a per-host env opt-in (runner-agent defers
+    executor=opencode cards when 0). Colab remains the compute-pack
+    plane; no OpenCode inside Colab.
+
+pilot_evidence:
+  free_lane_pilot_2026_10_26:
+    jobs: "3/3 passed — doc (36s vs devin 57.9s, -38%), small-code fix
+      (46s vs devin 66.1s, -30%, pytest 3/3), report (38s). 0
+      intervention, 0 escalation, all merged via normal closeout.
+      Combined list-price delta ~$0.07 ($0.0447 + $0.0253 measured
+      SpendLogs windows — list-price equivalent, not billed)."
+    refs: "docs/ssot/jobs/devnest/pilot-runs/2026-10-26-devnest-fl-pilot-*.yml,
+      docs/reports/devnest-free-lane-pilot-a.md"
+  graduated_lane_history: >-
+    S0 shadow 2026-10-27 (l0 5/5, opencode 3/5, zero safety flags) ->
+    S1 canaries on idc02 (3 profiles verified) -> 2026-10-29 rollback to
+    S0 (mutating_command + tool_denials) -> OPS-1255 requalify
+    2026-11-09 -> climbed to S3 -> 2026-11-12 stor-01 rollback to S0
+    (3 refused bash probes trip S3 max_tool_denials:0). Lane sits at S0
+    today; re-graduation is card opencode-lane-regraduation (backlog).
+  honesty_note: >-
+    The lane has rolled back twice on real safety failures. That is the
+    gate working, not an argument against bounded use — but it means
+    "adopt" here means adopt the CONTRACT, not expand enablement. The
+    3/3 pilot numbers came from single-step chores; nothing yet
+    validates multi-step production-adjacent work.
+
+procedure_triage:
+  # 78 procedures in ssot.procedures.yml, bucketed for the rollout.
+  stays_script_deterministic: >-
+    Procedures whose body is a script/timer/API call — OpenCode adds
+    nothing: board-report, git-push, board-write, ssh-mesh, key-watch,
+    deploy-diff, timer-expectations, drift-reconcile, display-scale,
+    incident-capture, bank-assign, command-truth, mddb-backup,
+    deploy-board-static, backlog-audit(core run), colab-serve,
+    colab-gdrive-cache, colab-mcp, colab-batch-queue.
+  opencode_eligible_s0_s2_slice: >-
+    ~15 procedures carry a read-only / report / doc judgment slice a
+    task-scoped profile could serve once the lane re-qualifies (S1-S3):
+    cms-report + cms-page-standard (draft slice; publish stays human),
+    place-report, feature-explore (info-find profile exists), vocab,
+    media-inbox (classification proposal), kanban-throughput
+    (read-only diagnostics), host-hardening (audit-vs-SSOT slice; fixes
+    human), deploy-diff (triage report), model-eval + idea-bench +
+    persona-eval (bench analysis/report; runs stay scripted),
+    lane-cms-coverage (coverage audit), devnest-performance-research +
+    ncm-jev-nest-explore (research slices), session-audit (read-only QC;
+    card filing via board-api), card-ops-sweep (read-only snapshot),
+    knowledge-capture/session-capture/pointer-note (capture proposals
+    as doc artifacts; writes via the governed door).
+  human_gated_always: >-
+    Production change (deploy-ada, ha-node-migrate, new-host,
+    edge-add-host, persona-lane-ci, member-*, chaba-guest-service,
+    ha-ada-isolate, ha-20268-http, serve-restore, msg-lane wiring,
+    tg-lane-setup apply, net-tune, cam-onboard, dashboard-mutate,
+    member-device-heavy-job GPU), secrets/keys/budget (key-watch
+    rotations, llm-credit-outage restore ladder, paid-lane routing),
+    external publication (cms publish step, telegram-conversation
+    enable), service restarts (host-restart), destructive
+    (mddb-prune-compact mutating steps — executor=human precedent from
+    MEM-0871), payments, and everything Colab.
+  doctrine_not_executor_tasks: >-
+    frustration-procedure, idea-intake, ai-lane-delegate, ada-next-card,
+    devin-error-standard, session-blocked-protocol, subtract-first,
+    websearch-failfast, relay-latency-stack, lane-bringup-verify,
+    artifact-landing, session-close, where-things-go, github-process —
+    behavioral contracts agents follow, not delegable jobs.
+
+verdict: >-
+  ADOPT-BOUNDED. The graduated machinery already implements every spec
+  element; the correct rollout is not new code but routing eligible
+  S0-S2 procedure slices through the existing envelope/profile contract
+  once the lane re-graduates (currently S0 after stor-01). Deterministic
+  procedures stay scripts. Production changes, secrets, external
+  publication, key/budget changes, and service restarts remain
+  human-gated by hard-deny class. OPENCODE_LANES stays a per-host
+  opt-in; OpenCode never runs inside Colab. branch-code stays disabled
+  (S5, separately gated). S3 expansion needs 10-20 genuine read-only
+  production samples at >=80% verified with zero denials — via the
+  regraduation card, not this one.
+
+next_steps:
+  - "No code change required — evaluation only; lane stage unchanged."
+  - "opencode-lane-regraduation owns the S0->S3 climb; this eval is its
+    procedure-slice demand map."
+  - "When S3 re-opens: seed eligible procedure slices via
+    action.lane_envelope cards under S3_STAGED_PROFILES only
+    (ops-readonly, ssot-research, storage-dryrun, ops-remote-read)."
+  - "Keep merge-sweep closeout: report-only opencode cards verify the
+    artifact + ledger row; they never claim code merges."
+
+evidence_files:
+  - evals/opencode-lane/PROCEDURE.md
+  - scripts/devnest/lane_gate.py
+  - scripts/devnest/opencode_profiles.py
+  - scripts/board/runner-agent.py (start_opencode_lane, S3_STAGED_PROFILES)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml (free-opencode lane)
+  - docs/ssot/jobs/devnest/pilot-runs/2026-10-26-devnest-fl-pilot-*.yml
+  - evals/opencode-lane/reports/2026-11-09-promotion-review.json
+  - evals/opencode-lane/reports/2026-11-12-stor01-rollback-review.json
+  - docs/ssot/ssot.procedures.yml
