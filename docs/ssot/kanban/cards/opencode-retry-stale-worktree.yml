@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: review
-updated: 2026-11-23 23:59
+updated: 2026-11-24 00:07
 priority: low
 tags:
 - opencode
@@ -728,6 +728,10 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261123-233259-ops-1021-proved-it-when-an-ope — close will block
     until merged'
+- at: 2026-11-24 00:07
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-233259-ops-1021-proved-it-when-an-ope on
+    idc02 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   repo: chaba
@@ -750,6 +754,7 @@ action:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-06 20:32
     failed_noted: 2026-11-06 20:47
+    session_gone: 2026-11-24 00:07
   last_failure: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is
     held'
   llm_key_alias: ada
