@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-23 20:24
+updated: 2026-11-23 20:28
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -351,6 +351,12 @@ comms:
   from: devin
   text: 'attempt on tony-omen: prior run root-caused ProviderCapLatched on ada-ha-tony :8002 (lane-budget.json Gemini
     latch). Redeploying runner-agent to idc03, then checking whether latch was cleared + service state.'
+- at: 2026-11-23 20:28
+  from: devin
+  text: 'runner-agent on idc03 already at repo sha d9af2b9c (re-copied + verified). Root cause confirmed: ProviderCapLatched
+    latch file data/lane-budget.json is gone (cleared by prior attempt); provider gate now healthy (0 quota lines,
+    9 healthy markers). Recreated prod-allow-casting sentinel and started ada-scenario-casting.service at 20:27
+    — suite running, monitoring to completion.'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
