@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
 column: backlog
-updated: 2026-11-21 17:42
+updated: 2026-11-23 11:41
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -25,3 +25,84 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 11:41
+  from: tony
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  agent_profile: ssot-research
+  target_host: idc02
+  artifact: evals/opencode-lane/out/aud-0034-vanished-cards.json
+  task_class: read_only
+  prompt: Read-only investigation of AUD-0034. Determine why board-api returned ok:true for card creations AUD-0734
+    (dispatch-worktree-debt-audit) and KNB-0733 (session-report-jsondecodeerror-in-daily-d0662a) but neither card
+    exists on the live board, in docs/ssot/kanban/cards, in the archive, or in git history. Inspect board-api create/write
+    handling, kanban-commit pull/clobber behavior, card-file persistence, MDDB revisions, and the cited session
+    transcripts (history_764432035aa041d6.md, history_d3c8499f85ca4e6c.md). Compare with the closed card AUD-0021
+    (same failure class). Record exact evidence with paths, refs, and timestamps. Recommend whether to recreate
+    each card, but do not mutate the board, card files, or live services.
+  expect:
+    required_keys:
+    - verdicts.AUD-0734
+    - verdicts.KNB-0733
+    - root_cause
+    - evidence
+    - comparison_to_AUD-0021
+    - recreation_recommendation
+    facts:
+    - board-api returned ok:true for AUD-0734 and KNB-0733
+    - neither card exists on the live board, card files, archive, or git history
+    - AUD-0021 is a closed card with the same failure class
+    enums:
+      verdicts.AUD-0734:
+      - vanished_confirmed
+      - not_found_in_audit
+      - needs_more_evidence
+      verdicts.KNB-0733:
+      - vanished_confirmed
+      - not_found_in_audit
+      - needs_more_evidence
+      recreation_recommendation:
+      - recreate_both
+      - recreate_one
+      - recreate_neither
+  lane: codemod
+  llm_key_alias: chaba
+  lane_envelope:
+    id: s3-audit-miss-vanished-board-cards-ssot-research
+    card: audit-miss-vanished-board-cards
+    task_class: read_only
+    stage: S3
+    target_host: idc02
+    executor: opencode
+    profile: ssot-research
+    model: litellm/gemini-3.5-flash-lite
+    provider: litellm
+    unattended: true
+    mcp_allowlist: []
+    allowed_paths:
+    - evals/opencode-lane/out/
+    artifact:
+      path: evals/opencode-lane/out/aud-0034-vanished-cards.json
+      schema: 'evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ssot-research/fixture/verify.py
+    escalation:
+      on_fail: manual
+      allowed_on_fail:
+      - manual
+      - devin
+      - retry_then_manual
+      - hold
+      max_retries: 1
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 420
+  status: queued
