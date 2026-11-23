@@ -1,6 +1,6 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
-column: backlog
+column: doing
 updated: 2026-11-23 09:44
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
@@ -168,9 +168,12 @@ comms:
 - at: 2026-11-23 09:44
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.88 > 1.5)'
+- at: 2026-11-23 09:44
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
     | devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph.service: Consumed 38.582s CPU time over 3min 4.580s
     wall clock time, 1.1G memory peak.'
@@ -179,5 +182,8 @@ action:
     no_repo: 2026-11-04 07:45
   lane: devin
   lane_source: fallback
+  runner: tony-omen
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-23 09:44
