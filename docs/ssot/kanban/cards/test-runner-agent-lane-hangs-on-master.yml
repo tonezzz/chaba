@@ -1,8 +1,8 @@
 id: test-runner-agent-lane-hangs-on-master
 title: 'tests/board/test_runner_agent_lane.py hangs: StartTaskLaneTest::test_devin_model_survives_on_devin_path
   (also on plain master)'
-column: backlog
-updated: 2026-11-21 17:50
+column: done
+updated: 2026-11-23 10:55
 brief: '2026-11-21: on idc02, pytest tests/board/test_runner_agent_lane.py passes the first test then blocks indefinitely
   at test_devin_model_survives_on_devin_path (timeout 30/100/280s all hit). Same on plain origin/master 2106856593,
   so not caused by OPS-0028. Other board tests (contract 7, classify 26, board-api 27+3) pass in ~1s each.'
@@ -23,6 +23,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
+  status: done
 ref: OPS-0011
 comms:
 - at: 2026-11-21 16:54
@@ -32,3 +33,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 10:55
+  from: devin
+  text: 'FIXED + MERGED 2026-11-23 as a84dab8234 on origin/master. Root cause: test_devin_model_survives_on_devin_path
+    was the first test to reach dt.build_task_text(), which calls lesson_primer._bank_candidates() -> urllib.urlopen(MDDB/search,
+    timeout=10). On idc02 (MDDB reachable but slow/unreachable) this blocked indefinitely past the 10s timeout.
+    Fix: (1) mock dt_module() to None in StartTaskLaneTest.setUp so start_task falls back to spec+RAILS without
+    network I/O; (2) mock OPENCODE_LANES=False in Cl'
+- at: 2026-11-23 10:55
+  from: devin
+  text: closed by devin
