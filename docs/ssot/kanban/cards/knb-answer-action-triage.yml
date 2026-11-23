@@ -1,7 +1,7 @@
 id: knb-answer-action-triage
 title: Answered board asks need action-triage — answers record but nothing executes
 column: done
-updated: 2026-11-23 16:48
+updated: 2026-11-23 19:06
 priority: high
 ref: OPS-0688
 comms:
@@ -265,6 +265,14 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: answer-triage-policy
   ask: Your button taps record answers but nothing acts on them — 40+ answered asks sit untriaged (sweep just logs

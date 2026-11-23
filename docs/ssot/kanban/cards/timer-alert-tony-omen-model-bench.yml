@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-model-bench
 title: Timer model-bench on tony-omen failing
-column: backlog
-updated: 2026-11-23 16:13
+column: done
+updated: 2026-11-23 19:05
 priority: high
 tags:
 - timer-alert
@@ -33,7 +33,23 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:04
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 19:04
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the timeout failure of `model-bench.service` on the host `tony-omen` by inspecting the systemd
   user journal using `journalctl --user -u model-bench.service`. Cross-reference findings with the CMS entry `timer-timeline-tony-omen`.
   The target host is `tony-omen`. The done-condition is a documented diagnosis of the root cause of the 11-22 05:45
   timeout posted to the card or CMS timeline.
+action:
+  status: done

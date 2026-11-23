@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:03
+updated: 2026-11-23 19:04
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -393,6 +393,13 @@ comms:
   from: devin
   text: 'raised request physical-step-remains-the-tony-usb-stick-41f071: Physical step remains — the tony-usb stick
     is not booted or attached to any reachable host (verified from idc02: tailnet'
+- at: 2026-11-23 19:04
+  from: devin
+  text: 'final: committed fac2c766d3 on dispatch/20261123-185116-the-goal-is-to-stop-the-tony-u (5 files). Deliverables:
+    scripts/ops/stick-own-nodekey.sh, docs/kb/mn01-stick-standard.md (per-stick identity + registry), docs/kb/hardware-mn01-tony-usb.md,
+    docs/ssot/jobs/infrastructure/2026-11-23-tony-usb-own-nodekey.yml, dispatch-outcome md. Board request raised
+    for the physical step. Done-condition half-met: docs+procedure ready; stick auth awaits next stick session (needs
+    Tony to boot stick + approve ton'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
