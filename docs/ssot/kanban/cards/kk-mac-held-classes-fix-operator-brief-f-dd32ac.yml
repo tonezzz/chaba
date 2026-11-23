@@ -1,0 +1,31 @@
+id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
+title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
+column: backlog
+updated: 2026-11-23 22:22
+priority: medium
+spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
+  Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
+  (1) operator_brief scored 0.31-0.56 on all 3 models — JSON schema was perfect; EVERY miss was an expect.facts
+  substring miss because corpus facts were written for gold phrasing, not tokens the model literally echoes (lesson:
+  declare facts sparingly, required_keys/enums carry the structural load). Fix scripts/bench/kkmac-classes/build_corpus.py
+  expect.facts into literal-echo tokens, add producer guidance so real inbox specs declare echo-able facts, then
+  re-bench via scripts/bench/kkmac-classes/kkmac_eval.sh on live kk-mac. (2) safe_route scored 0.33-0.60 on all
+  3 models with DIFFERENT failure modes (qwen3:8b over-defers; llama3.2:3b over-acts incl. act on priority:high
+  prod cards; qwen2.5:32b over-observes + still act on the decide card). Re-bench with a safer model before readmitting
+  — respect the lane memory floor (docs/reports/kk-mac-llm-bench-2026-11-20.md: 20B+ footprints breach it); if no
+  pulled model passes, evaluate the job doc''s alternatives (code-side route whitelist constraining act targets,
+  or a class rethink). Readmit a class ONLY after a passing re-eval by re-adding it to every mirror: kk_mac_llm.ALLOWED_TASKS
+  (root), dispatch_repos.KK_MAC_TASK_CLASSES + KK_MAC_ROUTE_KW, runner-agent.KK_MAC_TASK_CLASSES, kk_mac_capacity_producer.TASK_CLASSES,
+  kk_mac_plan_validator.ALLOWED, devnest_capacity_broker.KK_CLASSES, docs/ssot/infrastructure/ssot.devnest-lanes.yml
+  task_classes, ssot.procedures.yml, and the two kb procedure docs — same checklist kk-mac-admitted-classes-narrow
+  used. Evidence: card kk-mac-extract-brief-class-eval comms, scripts/bench/kkmac-classes/ run-*.md/json, docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-0048
+comms:
+- at: 2026-11-23 22:22
+  from: devin
+  text: card captured via board-api
