@@ -1,7 +1,7 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
-column: backlog
-updated: 2026-11-23 14:20
+column: doing
+updated: 2026-11-23 14:49
 priority: medium
 tags:
 - cline
@@ -43,14 +43,12 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: running
   lane: ''
   executor: devin
   last_failure: 'journal=exit-code rain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261120-205952-goal-drain-the-review-column-s.service:
     Consumed 59.373s CPU time over 2min 44.666s wall clock time, 991.6M memory peak, 376.2M memory swap peak.'
-  attempts: 2
-  result: 'journal=exit-code rain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261120-205952-goal-drain-the-review-column-s.service:
-    Consumed 59.373s CPU time over 2min 44.666s wall clock time, 991.6M memory peak, 376.2M memory swap peak.'
+  attempts: 1
   runner: tony-dell
 ref: KNB-1009
 comms:
@@ -306,5 +304,21 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:48
+  from: tony
+  text: retry requested
+- at: 2026-11-23 14:48
+  from: tony-dell
+  text: claimed
+- at: 2026-11-23 14:49
+  from: chaba
+  text: started devin-task-20261123-144943-goal-drain-the-review-column-s on tony-dell (dispatch executor=devin)
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'primer injected 8 lesson(s): [lane-cms-content-model] [KNB-1098] patch exists (cline task 8b60e, lane-cms-cov;
+    [cline-card-review-lane] primer injected 8 lesson(s): [lane-cms-content-model] [; [cline-card-review-lane] primer
+    injected 8 lesson(s): [lane-cms-content-model] [; [dispatch-worktree-merged-triage] TRIAGE-RUN 2026-11-17 on
+    tony-dell fleet (11 w; [lane-cms-content-model] raised request lane-cms-coverage-procedure-md-patch-exi; [report-graph-producer-metas-never-reach-7b0982]
+    [devin] DONE'
 claim:
-  since: 2026-11-20 20:59
+  since: 2026-11-23 14:48

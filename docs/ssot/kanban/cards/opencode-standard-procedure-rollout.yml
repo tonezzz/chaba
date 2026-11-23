@@ -1,7 +1,7 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
-column: backlog
-updated: 2026-11-23 14:20
+column: doing
+updated: 2026-11-23 14:50
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
 priority: medium
@@ -346,6 +346,22 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:48
+  from: tony
+  text: retry requested
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.64 > 0.85)'
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 14:50
+  from: mn01
+  text: claimed
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
@@ -366,19 +382,15 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: running
   lane: devin
   lane_source: fallback
-  result: 'journal=exit-code 0261120-213459-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
-    | devin-task-20261120-213459-evaluate-opencode-as-a-supervi.service: Consumed 2min 36.588s CPU time over 7min
-    4.501s wall clock time, 929.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:41
-  attempts: 2
+  attempts: 1
   last_failure: 'journal=exit-code 0261120-213459-evaluate-opencode-as-a-supervi.service: Failed with result ''exit-code''.
     | devin-task-20261120-213459-evaluate-opencode-as-a-supervi.service: Consumed 2min 36.588s CPU time over 7min
     4.501s wall clock time, 929.2M memory peak.'
-  runner: tony-omen
+  runner: mn01
 claim:
-  since: 2026-11-20 21:33
-awaiting_action: true
+  since: 2026-11-23 14:50

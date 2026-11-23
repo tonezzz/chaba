@@ -1,0 +1,68 @@
+title: embed-lane banks — pagination regression test + delta backfill verify
+subtitle: follow-up pass on the 11-17 fix — unit coverage for _docs
+  paging, live re-verified key-set diff = 0 on all 24 BANK_COLLS
+icon: layers
+version: 1
+
+card: embed-lane-banks-search-pagination
+ref: MEM-0152
+date: 2026-11-23
+dispatch: 20261123-144230-scripts-embed-embed-lane-py-do (tony-macbook)
+
+state_on_pickup: |
+  The 11-17 dispatch (idc02) had already landed the _docs offset
+  pagination (salvage-merged as d317c76fec) and run the big backfill
+  (3115+198 docs). Its unit exited 1 at close-out — idc02 had no push
+  creds — so the card kept re-dispatching. Two 11-20 retries died in
+  ~2min on provider rate limits before doing work. What was still
+  missing: the unit test covering the multi-page path, and a fresh
+  live verify + delta backfill (the spec's second half).
+
+changes: |
+  tests/embed/test_embed_lane.py — new TestDocsPagination class (5
+  tests): multi-page offset walk until short page, short-first-page
+  stops after one request, exact-page-boundary stops on empty page,
+  offset-ignored server breaks via the all-keys-seen guard (no spin),
+  dict-wrapped {"results": [...]} page shape. Fakes _post; no network.
+  12/12 tests pass.
+
+backfill: |
+  `python3 scripts/embed/embed-lane.py banks` from the worktree on
+  tony-macbook (tailnet path macbook -> idc03 mddb :11023/:11027,
+  -> idc02 mddb-embed :11028):
+    delta since 11-17: 370 docs in ada-ha-bank-devin-handoff
+    (live-written collection; 11254 -> 11624 keys), 0 failed.
+    All other 23 collections: todo=0.
+  No queue throttle pauses (depth stayed 0); no drops during run.
+
+verify: |
+  Key-set diff source -> mddb-embed over docs WITH contentMd = 0
+  missing on all 24 BANK_COLLS (fetched both sides with the paginated
+  _docs — the fix is what makes "have" honest).
+  Residual 267 src docs have no contentMd (uncopyable by design; was
+  142 on 11-17 — the surface grows): ada-cms-pages 120, github 15,
+  chaba-docs 15, chaba-archive 12, purchase 13, personal-tony 13,
+  kb-* 45, others small. devin-kb is 9/9 nocontent — the whole
+  collection is content-free on the source, have=0 is correct.
+  Queue: depth=0, dropped=2 cumulative since the idc02 service start
+  (~11-18 relocate), retried=328. dropped was 2 before the run and 2
+  after — zero drops attributable to this backfill; the two drops
+  happened inside some earlier upstream-504 window (embed pool
+  exhausts maxAttempts=50). Spec's "dropped=0" is unachievable as a
+  cumulative counter without a service restart; delta=0 is the
+  honest reading.
+  Caveat: /v1/vector-stats is a cached snapshot (statsAgeSeconds ~
+  289s when read) — embedded_documents lags /v1/search keys during
+  drain. Use the search key-set for coverage, stats for queue health.
+
+verify_cmds: |
+  python3 scripts/embed/embed-lane.py banks --dry-run   # todo=0 all colls
+  python3 -m unittest tests.embed.test_embed_lane       # 12 tests
+  curl -s -X POST http://100.123.163.11:11028/v1/vector-stats -d '{}' \
+    | python3 -m json.tool                              # queue block
+
+files:
+  - tests/embed/test_embed_lane.py — TestDocsPagination (new)
+  - scripts/embed/embed-lane.py — pagination fix (d317c76fec, 11-17)
+  - docs/ssot/jobs/mddb/2026-11-17-embed-lane-banks-search-pagination.yml
+    — original fix+backfill trail
