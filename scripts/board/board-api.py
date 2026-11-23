@@ -769,6 +769,23 @@ COMMIT_RETRY_S = float(
 # kanban-commit sweep — a persistently-broken path must not retry+log
 # forever (the sweep sees the same dirty tree).
 COMMIT_MAX_TRIES = int(os.environ.get("BOARD_API_COMMIT_MAX_TRIES", "60"))
+# Verify-or-loud for /action (card
+# board-api-queue-write-verify-lost-race-f85f2f): save() makes the card
+# file durable on disk, but only a COMMITTED write survives a
+# git-safe-pull autostash window — OPS-0200 answered 'queued' three
+# times while action.status=queued never persisted (the dirty file was
+# stashed, the pop resolved to HEAD, only the stash-archive patch
+# survived). /action now waits for the queued commit to drain, then
+# re-reads the card under the flock and confirms the comms entries this
+# request appended are still there; unverifiable -> 503 + retry_after
+# instead of a false 'queued'. BOARD_API_WRITE_VERIFY=0 disables,
+# BOARD_API_WRITE_VERIFY_S tunes the flush wait (default 15s — a pull
+# phase deferring the commit worker answers 503 honestly rather than
+# hanging the request).
+WRITE_VERIFY_S = float(
+    os.environ.get("BOARD_API_WRITE_VERIFY_S", "15"))
+VERIFY_LOCK_WAIT_S = float(
+    os.environ.get("BOARD_API_VERIFY_LOCK_WAIT_S", "10"))
 _pending_commits: dict = {}      # rel path -> label (insertion ordered)
 _commit_tries: dict = {}         # rel path -> consecutive failed drains
 _commit_mu = threading.Lock()
@@ -1006,6 +1023,56 @@ def commit_pending_flush(timeout_s: float = 15.0) -> bool:
             return True
         time.sleep(0.05)
     return False
+
+
+def _comms_same(a, b) -> bool:
+    """Subset match for a comms fingerprint entry — dicts compare on the
+    keys the writer set (at/from/text/req); scalars compare directly."""
+    if not isinstance(a, dict) or not isinstance(b, dict):
+        return a == b
+    return all(b.get(k) == v for k, v in a.items())
+
+
+def _verify_card_write(p: Path, added: list,
+                       timeout_s: float | None = None) -> tuple:
+    """Post-write durability check for /action — (ok, detail).
+
+    Two proofs, in order: (1) the queued commit drained — a still-dirty
+    card is autostash bait no matter what the file currently says;
+    (2) read-back under the card flock — git-safe-pull holds the same
+    flock across autostash+pop+reconcile, so acquiring it means the
+    tree is settled and .local-conflict folds already ran. The
+    fingerprint is the comms entries THIS request appended: a dropped
+    write cannot contain them, while union-merge/reconcile preserves
+    them. Requests that appended nothing (pure `updated` bumps on
+    no-op paths like 'already queued') carry no fingerprint and pass —
+    there is nothing meaningful to lose."""
+    if os.environ.get("BOARD_API_WRITE_VERIFY", "1") == "0" or not added:
+        return True, ""
+    wait = WRITE_VERIFY_S if timeout_s is None else timeout_s
+    if not commit_pending_flush(wait):
+        return False, (f"queued commit did not land within {wait:.0f}s "
+                       "(pull phase or commit-worker backlog)")
+    got = acquire_lock(LOCK, VERIFY_LOCK_WAIT_S)
+    if got is None:
+        return False, ("card lock saturated at read-back — "
+                       "write unverified, retry")
+    lf, _w = got
+    try:
+        cur = load(p)
+    except Exception as e:
+        return False, f"read-back failed: {e}"
+    finally:
+        lf.close()
+    comms = cur.get("comms")
+    comms = comms if isinstance(comms, list) else []
+    missing = [e for e in added
+               if not any(_comms_same(e, h) for h in comms)]
+    if missing:
+        return False, (f"{len(missing)} comms entrie(s) from this write "
+                       "missing on read-back — a pull/autostash window "
+                       "may have dropped it")
+    return True, ""
 
 
 def comms_add(card: dict, frm: str, text: str, req: str = "") -> None:
@@ -5430,6 +5497,8 @@ class H(BaseHTTPRequestHandler):
 
         notify_req = None
         resp_extra = {}
+        verify_write = None   # /action: (card path, appended comms) for
+        # the post-lock durability check — see _verify_card_write
         global _pending_label
         t_lock = time.monotonic()
         got = acquire_lock(LOCK, LOCK_WAIT_S)
@@ -5456,6 +5525,9 @@ class H(BaseHTTPRequestHandler):
                         raise ValueError(f"do must be one of {sorted(TRANSITIONS)}")
                     p = card_path(body.get("id", ""))
                     card = load(p)
+                    _comms0 = card.get("comms")
+                    _comms0 = len(_comms0) \
+                        if isinstance(_comms0, list) else 0
                     if verb in ("claim", "move", "finish"):
                         if verb == "claim":
                             msg = do_claim(card, body)
@@ -5482,6 +5554,14 @@ class H(BaseHTTPRequestHandler):
                         msg = do_action(card, verb, actor(body))
                         card["updated"] = now()
                         save(p, card)
+                    if verb not in ("archive", "unarchive"):
+                        # verify-or-loud fingerprint: the comms entries
+                        # this request appended — archive/unarchive move
+                        # the file itself, a different durability shape
+                        _comms = card.get("comms")
+                        verify_write = (
+                            p, list(_comms[_comms0:])
+                            if isinstance(_comms, list) else [])
                 elif path == "/respond":
                     frm = actor(body)
                     p = card_path(body.get("id") or body.get("card") or "")
