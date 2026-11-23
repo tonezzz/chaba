@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
-column: done
-updated: 2026-11-23 14:19
+column: backlog
+updated: 2026-11-23 14:58
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -77,6 +77,9 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:58
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
@@ -154,13 +157,11 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: done
-  runner: idc02
+  status: queued
   attempts: 1
   result: 'exit=0 Started devin-task-audit-miss-vanished-board-cards-1795411168.service - runner audit-miss-vanished-board-cards
     staged read-only profile. | devin-task-audit-miss-vanished-board-cards-1795411168.service: Consumed 39.064s
     CPU time.'
-  verified: true
   sweep:
     dirty: 2
 claim:
