@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 11:50
+updated: 2026-11-23 13:25
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -72,4 +72,11 @@ comms:
     incidents and time-to-find as unmeasurable where no durable source exists, each with a proposal for where to
     add one; a proxy may be reported only as a proxy, never as measured incidents. Tune the matrix from measured
     precision evidence; --apply stays a separate gated decision. RE'
+- at: 2026-11-23 13:25
+  from: devin
+  text: '[2026-11-23 opencode] Miss-rate signal instrumented (2fc668b306). Chosen as the smallest reversible of
+    the three missing signals. New durable source: `misses:` block in docs/ssot/ssot.repeat-asks.yml (instrumented
+    2026-11-23, empty at instrumentation so 0 so far is not evidence of no misses). New read-only-preserving writer
+    scripts/chaba/miss-add.py: textual comment-preserving append, dedupe by (topic, at, location, should-have-been),
+    atomic replace, newest-first; self-test 7/7. capture-metrics.'
 action: {}
