@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-host-ready-check
 title: Timer chaba-host-ready-check on idc03 failing
-column: backlog
-updated: 2026-11-23 19:05
+column: done
+updated: 2026-11-23 20:03
 priority: high
 tags:
 - timer-alert
@@ -109,8 +109,16 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 20:03
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 20:03
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of the `chaba-host-ready-check.service` timer on host idc03, which exited with a non-zero
   exit code during the 11-15 06:02 run. The target host is idc03 and the relevant repository is chaba. Inspect the
   systemd user journal using `journalctl --user -u chaba-host-ready-check.service` on idc03 and cross-reference
   the CMS `timer-timeline-idc03` to identify the root cause of the failure. The done-condition is verified when
   the failure cause is identified and documented or resolved on idc03.
+action:
+  status: done
