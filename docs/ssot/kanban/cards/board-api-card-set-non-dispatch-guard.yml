@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
-column: backlog
-updated: 2026-11-23 14:57
+column: doing
+updated: 2026-11-23 14:59
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -74,9 +74,15 @@ comms:
 - at: 2026-11-23 14:57
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.63 > 1.5)'
+- at: 2026-11-23 14:59
+  from: tony-dell
+  text: claimed
 action:
-  status: queued
+  status: running
   type: dispatch
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-23 14:59
