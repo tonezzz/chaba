@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
-column: review
-updated: 2026-11-23 14:20
+column: backlog
+updated: 2026-11-23 15:12
 priority: medium
 tags:
 - merge-sweep
@@ -260,6 +260,14 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:12
+  from: chaba
+  text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-19 17:15 devin says fail-closed fix re-landed, but
+    gate_unrunnable not in origin/master and final test gate failed (suite timeout) — no landed evidence; request
+    answered, so rework is unblocked — requeued for rework.'
+- at: 2026-11-23 15:12
+  from: tony
+  text: queued for processing
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -276,7 +284,7 @@ requests:
   executed: 2026-11-19 queue
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: codemod
   attempts: 2
   sweep:
@@ -286,9 +294,7 @@ action:
     no_repo: 2026-11-19 16:59
   result: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
     Consumed 12min 53.877s CPU time over 17min 33.927s wall clock time, 938.1M memory peak.'
-  verified: false
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  runner: tony-omen
 claim:
   since: 2026-11-19 16:56
 review_kind: verify
