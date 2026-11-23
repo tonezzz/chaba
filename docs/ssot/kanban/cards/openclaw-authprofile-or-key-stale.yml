@@ -1,6 +1,6 @@
 id: openclaw-authprofile-or-key-stale
 title: '@myChabaBot silent — OpenClaw auth profile holds expired OR key'
-column: backlog
+column: done
 updated: 2026-11-23 13:46
 brief: 'TG DM chat 8960073266 (@myChabaBot) has been failing every model turn since 2026-11-20: 401 API key expired
   → 401 User not found. Root cause: tony-omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
@@ -40,15 +40,28 @@ comms:
     All 4 stores now hold sk-or-v1-74d…180f6c: dell openrouter.env, omen openrouter.env, idc03 mddb-gemini.env,
     omen openclaw sqlite authProfiles.store (updated 13:42:37). Restarted ghostroute-watcher (omen) + gemini-ollama-proxy
     (idc03). Script e2e probe hit an upstream 429 on i'
+- at: 2026-11-23 13:46
+  from: tony
+  text: 'answered mint-a-fresh-openrouter-key-at-openroute-b13d22: DONE — fresh key file placed on tony-omen; rotation
+    completed and verified 2026-11-23 13:45 ICT'
+- at: 2026-11-23 13:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 13:46
+  from: tony
+  text: closed by tony
 requests:
 - id: mint-a-fresh-openrouter-key-at-openroute-b13d22
   ask: Mint a fresh OpenRouter key at openrouter.ai/keys and drop it into ~/.config/secrets/or-next-key on tony-omen
     (do not paste in chat). The current valid key is down to ~$1.22 of its $10 cap. Reply DONE once the file is
     in place; then rotate-or-key fixes all 4 stores including the missed authProfiles.store slot.
-  status: open
+  status: answered
   at: 2026-11-23 10:59
   from: devin
   options:
   - ★ DONE — fresh key file placed on tony-omen
   - Use management key to mint a new $10 key automatically
   - Hold — investigate a free-only fallback first
+  answer: DONE — fresh key file placed on tony-omen; rotation completed and verified 2026-11-23 13:45 ICT
+action:
+  status: done
