@@ -1,0 +1,51 @@
+title: "Memory-inspect pages — per-lane bank snapshots into CMS"
+subtitle: "read-only subject->attr->kind/value digest of each lane's ada-ha-bank-* collections"
+icon: 🧠
+context:
+  card: memory-inspect-pages        # MEM-0745
+  trigger: "no inspection surface existed for what each Ada lane actually
+    holds in its memory banks — snapshots land in the lane's own CMS
+    collection so the surface is scope-respecting by construction."
+  worktree: dispatch-wt-20261123-145030-implement-memory-inspection-pa
+
+design:
+  producer: "scripts/ada/bank-inspect.py — per persona lane
+    (ssot.apps.ada-persona-lanes.yml instances -> cms_collection), lists
+    every ada-ha-bank-* visible to that lane's instance from the memory
+    plane (:11023 /search): assigned banks via `instances` (rw/ro by
+    `writable`), read-only mounts via `instances_readonly` resolved to
+    the mapped prod collection, flagged ro. Non-bank registry entries
+    (kb-*, ada-cms-*) are skipped — they live on the CMS plane."
+  pages: "<cms_collection>/memory-inspect (index, bank roster + counts)
+    + memory-inspect-<bank> leaves — subject|attribute|kind|value|modified
+    tables, meta kind=report / report_role index|leaf / domain=memory /
+    lane=<instance>."
+  lanes: "tony -> ada-cms-pages, kk -> ada-cms-pages-kk,
+    michael -> ada-cms-pages-mn, kk-dev -> ada-cms-pages-kk-dev."
+  render: "chaba-cms-render (apps/cms-render) — detect_kind
+    key.startswith('memory-inspect') -> memory-inspect.html (extends
+    report.html); ada-cms-pages-mn + ada-cms-pages-kk-dev added to
+    COLLECTIONS so per-lane pages resolve."
+  redaction: "entries whose attribute/subject match credential words
+    (key|token|secret|passw|credential|api_key|auth) or whose value
+    matches live-secret shapes (same family as backup-mddb-banks.py)
+    render as *(redacted)* — the row stays, the payload never lands."
+  one_way: "snapshots are read-only — memory->CMS direction stays
+    one-way; pages are idempotent upserts keyed memory-inspect*."
+
+schedule:
+  job: "bank-inspect in ssot.jobs.yml — tony_dell, daily 05:40,
+    persistent, 15m timeout, condition_path on the script. Units
+    rendered to systemd/generated/tony_dell/."
+
+verification:
+  suite: "tests/ada/test_bank_inspect.py (12 tests: lane map, bank
+    visibility incl. ro mounts, row extraction, redaction, page shape,
+    CMS write routing over fake transport) + memory-inspect cases in
+    tests/ada/test_cms_render.py. tests/ada 313 passed; merge-gate set
+    231 passed."
+  live: "first run 2026-11-23 wrote 15 pages to ada-cms-pages, 8 to
+    -kk, 5 to -mn, 9 to -kk-dev; secret scan of all published pages
+    clean (2 entries redacted in ada-ha-bank-devin-tony). Single-bank
+    run verified FROM tony-dell host (memory-inspect-github upsert).
+    /p/memory-inspect renders 200 on cms.surf-thailand.com."
