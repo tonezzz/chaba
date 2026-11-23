@@ -328,7 +328,14 @@ writers:
                   POST /wp/v2/media then store the returned source_url (or
                   chaba/v1/media/<id> for member-gated); never a filesystem
                   path (id 117 stored /local/local-gen/... which 404s in the
-                  browser; file also no longer exists on tony-omen)"
+                  browser; file also no longer exists on tony-omen).
+                  Canonical writer (2026-11-23, card
+                  render-job-writer-must-upload-output-to-78229c):
+                  scripts/lib/wp_boards.py (upload_media + write_render_job,
+                  path-shaped output_url rejected) via CLI
+                  scripts/ada/render-job-record.py — ada-voice render tools
+                  adopt it by subprocess (CHABA_REPO) or port. Trail:
+                  docs/ssot/jobs/ada/2026-11-23-render-job-media-upload.yml"
   news_fetch:     "scripts/ada/news-fetch.py + news-feeds.json on idc03 —
                   wp-news-fetch.timer hourly; RSS/Atom -> news CPT, dedup by
                   slug n-<md5(link)> via ?slug= lookup (no local ledger).
