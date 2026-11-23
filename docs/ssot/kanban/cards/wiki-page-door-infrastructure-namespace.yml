@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
-column: doing
-updated: 2026-11-23 17:29
+column: done
+updated: 2026-11-23 17:31
 priority: low
 tags:
 - wiki
@@ -377,9 +377,14 @@ comms:
     test_wiki_page_infrastructure_ns, runbook documents /wiki/page. 99/99 publication+mutation tests pass (8s),
     selftest ok. Prior merge hold was the 240s full-suite gate timeout, not this diff. After merge+pull+board-api
     restart on idc03, Infrastructure:Hosts/tony-dell/Backup-and-Recovery '
+- at: 2026-11-23 17:31
+  from: chaba
+  text: 'merge-sweep: merged dc71e07f (dispatch/20261123-172715-extend-wiki-page-door-to-allow from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261123-172715-extend-wiki-page-door-to-allow.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
@@ -392,6 +397,11 @@ action:
   result: 'exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''. | devin-task-20261123-170638-extend-wiki-page-door-to-allow.service:
     Consumed 2min 35.197s CPU time over 3min 28.888s wall clock time, 919.5M memory peak.'
   runner: idc02
+  verified: true
 claim:
   since: 2026-11-23 17:26
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 17:31
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261123-172715-extend-wiki-page-door-to-allow.md
