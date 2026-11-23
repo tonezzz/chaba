@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: backlog
-updated: 2026-11-23 16:33
+column: doing
+updated: 2026-11-23 16:52
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -148,12 +148,17 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 16:52
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-macbook
+  attempts: 1
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
@@ -182,5 +187,5 @@ requests:
   escalated_at: 2026-11-22 07:33
   answer: ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell, and tony-macbook via scp and resume the
     task
-claim: {}
-awaiting_action: true
+claim:
+  since: 2026-11-23 16:52
