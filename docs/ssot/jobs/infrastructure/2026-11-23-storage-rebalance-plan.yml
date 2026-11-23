@@ -1,0 +1,144 @@
+title: Fleet storage rebalance — survey, underused signal, move plan
+card: storage-rebalance-underused
+date: 2026-11-23
+dispatch: 20261123-110440 + 20261123-113021-goal-rebalance-disk-usage-acro
+  (tony-omen, attempt 2 merged onto the parallel disk-guard-ssot-enforce
+  checkpoint that pre-landed the base underused flag)
+status: signal landed (worktree) + plan awaiting approval — no prod
+  deletes/moves executed this session
+
+# ------------------------------------------------------------- live survey (2026-11-23 ~11:10 ICT)
+survey:
+  tight:
+    idc03:
+      root: "91% used, 28.8 GiB free, +6.18 GiB/day -> full in ~4.7d
+        (disk-trend alert: critical)"
+      heavy:
+        - "~/.config/containers/mddb-ops/data/mddb.db = 63G (live ops bank)"
+        - "~/.config/containers/mddb-ops/data/mddb.db.precompact-20261111
+           = 31G STALE pre-compact safety copy (12d old, debris)"
+        - "~/mddb-backups = 59G (KEEP_COPIES=3 x ~19G mddb-ops dumps)"
+        - "~/var/cache/devnest/models = 33G TH-side MIRROR — declared
+           cache tier, re-derivable; con01 primary holds 37G superset"
+        - "~/.local/share/containers = 18G podman images"
+        - "~/CascadeProjects = 11G, ~/.cache = 5G"
+        - "~/.config/containers/mddb-embed = 2.8G LEFTOVER — service
+           inactive, moved to idc02 2026-11-12"
+        - "journald 1.5G; /var/log top grower +0.47 GiB/24h"
+    tony-dell:
+      root: "89% used, 24.1 GiB free, +8.29 GiB/day -> full in ~2.9d
+        (disk-trend alert: fill — MORE urgent than idc03)"
+      heavy:
+        - "~/.config/google-chrome/Default/Service Worker/CacheStorage
+           = 41G; ONE origin 'file-cache' under
+           https://tony-ha.surf-thailand.com/ = 40G — unbounded PWA
+           file cache, regrows until the app's cache is capped"
+        - "~/model-bench-dl = 17G (one 17.7G Qwen3-Coder-30B GGUF + log)"
+        - "~/model-archive = 17G (ollama/ + packed/)"
+        - "~/CascadeProjects = 28G (tony-chaba-dell 6G, ada-voice 5.9G,
+           open-swe 2.9G + ~15 dispatch-wt dirs ~250M each)"
+        - "~/.local = 20G, ~/.config/containers = 8.3G, /var/log 3G"
+      local_headroom:
+        - "/dell-backup (/dev/sdb1) = 916G disk, 8% used, 851 GiB free
+           (restic target already)"
+        - "/timeshift (/dev/sda3) = 379G, 9% used, 329 GiB free"
+        - "/mnt/sda5 old SSHD root 100% (117G) — rollback, leave"
+  underused:
+    - "idc02 / 46%, 159 GiB free (slope -5.15 GiB/d) — mddb follower +
+       embed + own backup tier; VPS same 290G size as idc03"
+    - "con01 / 52%, 140 GiB free (+0.66 GiB/d) — mddb-follower 13G,
+       devnest cache PRIMARY 37G; same 290G VPS"
+    - "mn01 / 32%, 150 GiB free (+0.5 GiB/d) — home node, dispatch lane"
+    - "tony-omen / 47% + /data — underused by pct rule but only ~52 GiB
+       free on / (small disk; flag honest, weak absorb target)"
+    - "tony-dell /dell-backup 851 GiB + /timeshift 329 GiB — the dell
+       fix is LOCAL placement, not cross-host"
+  unreachable: "idc01 (warm DR, offline_ok), michael-ha eMMC 60% (30G,
+    not a rebalance player)"
+
+# ------------------------------------------------------------- what landed (worktree, unmerged)
+code:
+  - "ansible/playbooks/disk-headroom.yml + templates/disk-headroom.j2 —
+     underused flag: pct<50 OR avail>100 GiB on >=10 GiB mounts, only
+     when not already warn/crit; surfaced in the per-host summary line
+     + underused_mounts list. Mock-render verified: `idc02: underused:
+     / (2 mounts)`, `tony-dell: warn: /; underused: /dell-backup,
+     /timeshift`, `/boot/efi`-scale mounts excluded."
+  - "scripts/ada/disk-trend-watch.py — same signal as a report-only
+     per-mount 'underused' flag (env DISK_TREND_UNDERUSED_{PCT=50,
+     FREE_GIB=100,MIN_SIZE_GIB=10}); never opens cards, gated on alert
+     == ok so warn/crit/fill mounts never double-flag; counted in run
+     summary + meta extra. --selftest PASS incl. underused fixture
+     asserts (flag on 40%/300 GiB, floor exclusion on 1 GiB /boot/efi)."
+  - "note: the base underused flag pre-landed on master via the
+     disk-guard-ssot-enforce checkpoint (c9de6447b4); attempt-2 ported
+     the refinements on top — 10 GiB size floor, ok-gate, summary
+     surfacing — instead of the conflicting first-pass state model."
+  - "stacks/idc03/mddb/mddb-backup-offload.sh (NEW) — ships
+     ~/mddb-backups/*-2*.db.gz beyond newest KEEP_LOCAL=1 per instance
+     to idc02:~/mddb-backups-idc03 via rsync; remote df guard
+     (>=bytes+20G), prunes local only after remote size match; flock;
+     board-api alert on failure. Tested end-to-end on tony-omen
+     fixture: 6/6 moved+pruned, newest kept, idempotent rerun."
+
+# ------------------------------------------------------------- move plan (approval-gated)
+plan:
+  immediate_deletes_idc03:
+    - target: "~/.config/containers/mddb-ops/data/mddb.db.precompact-20261111"
+      size: "31G"
+      why_safe: "explicitly a pre-compaction safety copy from 2026-11-11;
+        compacted live db healthy 12d; nightly .db.gz backups continue"
+    - target: "~/var/cache/devnest/models"
+      size: "33G"
+      why_safe: "KB docs/kb/devnest-model-cache.md declares this dir
+        cache tier / disposable / re-derivable; con01 PRIMARY verified
+        37G superset live"
+    - target: "~/.config/containers/mddb-embed"
+      size: "2.8G"
+      why_safe: "service inactive; data migrated to idc02 2026-11-12"
+    - target: "podman image prune (unused layers)"
+      size: "part of 18G"
+      why_safe: "standard housekeeping"
+  move_idc03:
+    - "~/mddb-backups archive -> idc02:~/mddb-backups-idc03 via
+       mddb-backup-offload.sh (deploy: scp script + ExecStartPost or
+       15-min-offset timer). Frees ~40G keeping newest-1 local."
+    - "STRATEGIC (separate card): migrate mddb-ops instance 63G db to
+       idc02 — biggest single lever, follows mddb-embed 2026-11-12
+       precedent; needs cutover window + consumer repoint"
+  move_tony_dell:
+    - "~/model-bench-dl + ~/model-archive (34G) -> /dell-backup/models/
+       LOCAL move (no network, 851G free there) + symlink back; alt:
+       idc02 if a central model store is preferred"
+    - "chrome file-cache 40G: clear via chrome (needs chrome stopped or
+       SW unregister) — AND file a card: ada-ha/tony-ha PWA
+       'file-cache' is unbounded, cap it or it regrows"
+    - "~/CascadeProjects GC: stale dispatch-wt dirs + tony-chaba-dell
+       (6G, likely-orphaned checkout) — reclaim ~10-15G"
+    - "journalctl --vacuum-size=512M + /var/log audit (~4G combined)"
+  not_moving:
+    - "mddb leader (3.3G) + mddb-cms (8.7G) stay on idc03 — topology"
+    - "yt-live-media cache already at 3.2G on dell / 5G on idc03 —
+       below the LRU cap, not a current driver"
+    - "logs are small (<4G/host) — log-shipper exists; vacuum only"
+
+# ------------------------------------------------------------- capacity planning
+capacity:
+  verdict: "rebalance, don't resize. All three VPS carry identical
+    290G disks — idc03 is not under-provisioned, it is over-loaded
+    (~200G of movable/dead data vs 90G of irreducible working set).
+    con01/idc02 are NOT over-provisioned on disk either — their
+    headroom is exactly what absorbs the migration. Their binding
+    constraint is CPU (load 9-19), not storage."
+  watch: "if mddb-ops stays on idc03 AND keeps growing ~6 GiB/d, the
+    offload+deletes buy ~2-3 weeks; the mddb-ops migration (or an
+    idc03 disk resize) becomes mandatory, not optional"
+  note: "dell's fix is intra-host (NVMe -> sdb1); mn01's 150G is spare
+    capacity for cold/dispatch overflow, not a VPS-tier target"
+
+# ------------------------------------------------------------- execution gate
+gate: |
+  All deletes and cross-host moves are production-destructive ops —
+  bundled as ONE board request on storage-rebalance-underused for
+  Tony's one-word approval. Nothing on prod was deleted, moved, or
+  deployed this session.

@@ -9,7 +9,8 @@
 #   * ssot.audit.hosts.yml expected_resources.max_root_disk_percent for /
 #     (85 on most hosts — audit-hosts.py declares it but never enforces)
 #   * the mddb guard's absolute floor: free >= 15 GiB on /
-#   * underused signal (informational): mount <50% used or >100 GiB free —
+#   * underused signal (informational): mount <50% used or >100 GiB free
+#     on a >=10 GiB filesystem, only when not already warn/crit —
 #     surfaces over-provisioned capacity for storage-rebalance-underused.
 # disk-trend still owns the *trend* (slope over jsonl history) — ansible
 # runs are stateless, this playbook only covers the instantaneous check.
@@ -81,6 +82,7 @@
     min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
     underused_pct: 50     # informational: mount <50% used is underused
     underused_free_gib: 100  # ...or >100 GiB free
+    underused_min_size_gib: 10  # floor — /boot(efi)-scale mounts never qualify
 
   tasks:
     - name: Ensure the report dir exists

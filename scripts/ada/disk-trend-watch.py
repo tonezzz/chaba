@@ -20,7 +20,8 @@ history, least-squares slope per host+mount over a rolling window:
 Parity with ansible/playbooks/disk-headroom.yml: the flat 90 crit plus
 the SSOT-declared per-host / ceiling (85 on dell/omen/mn01, 90 macbook)
 and the mddb-backup guard's absolute 15 GiB free floor on /. Underused
-mounts (<50% used or >100 GiB free) are flagged in the report so
+mounts (<50% used or >100 GiB free on a >=10 GiB filesystem, and only
+when not already alerting) are flagged in the report so
 over-provisioned capacity surfaces for the storage-rebalance card —
 they are informational, never cards.
 
@@ -54,6 +55,7 @@ Env: DISK_TREND_HISTORY, DISK_TREND_WINDOW_D (7), DISK_TREND_FILL_D (7),
      DISK_TREND_CRIT_PCT (90), DISK_TREND_MIN_SPAN_H (6),
      DISK_TREND_MIN_FREE_GIB (15, / guard floor),
      DISK_TREND_UNDERUSED_PCT (50), DISK_TREND_UNDERUSED_FREE_GIB (100),
+     DISK_TREND_UNDERUSED_MIN_SIZE_GIB (10),
      DISK_TREND_HOSTS (csv limit), DISK_TREND_DU_ROOTS (space-sep, remote
      shell-expanded), DISK_TREND_SSH_TIMEOUT (90), DISK_TREND_DU_EACH_S
      (45, per-dir du cap), DISK_TREND_NOTIFY_CHANNELS (default "ha,yomi"),
@@ -96,10 +98,15 @@ CRIT_PCT = float(os.environ.get("DISK_TREND_CRIT_PCT", "90"))
 # pre-flight guard (MDDB_BACKUP_MIN_FREE_GB) and disk-headroom.yml.
 MIN_FREE_GIB = float(os.environ.get("DISK_TREND_MIN_FREE_GIB", "15"))
 # underused = capacity report signal (storage-rebalance-underused):
-# mount <50% used OR >100 GiB free. Informational, never a card.
+# mount <50% used OR >100 GiB free on a >=10 GiB filesystem, and only
+# when the mount is not already alerting. Informational, never a card.
+# The size floor keeps /boot(efi)-scale utility mounts out of the
+# signal.
 UNDERUSED_PCT = float(os.environ.get("DISK_TREND_UNDERUSED_PCT", "50"))
 UNDERUSED_FREE_GIB = float(
     os.environ.get("DISK_TREND_UNDERUSED_FREE_GIB", "100"))
+UNDERUSED_MIN_SIZE_GIB = float(os.environ.get(
+    "DISK_TREND_UNDERUSED_MIN_SIZE_GIB", "10"))
 # a trend alert needs samples spanning this long — blocks single-blip
 # false positives from two points minutes apart.
 MIN_SPAN_H = float(os.environ.get("DISK_TREND_MIN_SPAN_H", "6"))
@@ -449,9 +456,11 @@ def judge(host: str, mount: str, t: dict) -> tuple[str, str]:
 
 def is_underused(m: dict) -> bool:
     """Capacity signal for the storage-rebalance card: mount <50% used
-    or >UNDERUSED_FREE_GIB free. Report-only, never opens a card."""
-    return (m["pct"] < UNDERUSED_PCT
-            or m["avail_kb"] > UNDERUSED_FREE_GIB * 2**20)
+    or >UNDERUSED_FREE_GIB free on a >=UNDERUSED_MIN_SIZE_GIB
+    filesystem. Report-only, never opens a card."""
+    return (m["size_kb"] >= UNDERUSED_MIN_SIZE_GIB * 2**20
+            and (m["pct"] < UNDERUSED_PCT
+                 or m["avail_kb"] > UNDERUSED_FREE_GIB * 2**20))
 
 
 def is_fresh_open(path: Path, card: dict) -> bool:
@@ -564,7 +573,10 @@ def build_host_report(rec: dict, trends: dict, growers: list[dict],
             "days_to_full": (round(t["days_to_full"], 1)
                              if t["days_to_full"] is not None else None),
             "alert": states.get(mount, "ok"),
-            "underused": is_underused(m),
+            # underused only when the mount isn't already alerting —
+            # a warn/crit/fill mount must not carry both flags.
+            "underused": (is_underused(m)
+                          and states.get(mount, "ok") == "ok"),
             "samples": t["samples"],
         })
     return {
@@ -741,7 +753,10 @@ def selftest() -> int:
             "synth-omen": {"mounts": [
                 {"mount": "/", "fs": "/dev/sda1", "size_kb": size,
                  "used_kb": int(0.4 * size), "avail_kb": int(0.6 * size),
-                 "pct": 40.0}]},
+                 "pct": 40.0},
+                {"mount": "/boot/efi", "fs": "/dev/sda15",
+                 "size_kb": 1 * 2**20, "used_kb": int(0.3 * 2**20),
+                 "avail_kb": int(0.7 * 2**20), "pct": 30.0}]},
         }
         # tony-dell is a real ssot host (max_root_disk_percent 85): / at
         # 87% must warn below the flat 90 crit. idc03 declares no
@@ -812,6 +827,9 @@ def selftest() -> int:
         omen = next(h for h in rep["hosts"] if h["host"] == "synth-omen")
         ok &= (omen["mounts"][0]["alert"] == "ok"
                and omen["mounts"][0]["underused"] is True)
+        # 1 GiB /boot/efi at 30% — under the MIN_SIZE floor, never flags
+        ok &= (omen["mounts"][1]["mount"] == "/boot/efi"
+               and omen["mounts"][1]["underused"] is False)
         grower = synth["top_growers_24h"]
         print(f"growers: {grower}")
         print(format_report(rep["hosts"]))

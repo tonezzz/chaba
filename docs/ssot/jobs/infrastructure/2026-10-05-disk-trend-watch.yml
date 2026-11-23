@@ -66,7 +66,9 @@ design:
     crit) or / avail < DISK_TREND_MIN_FREE_GIB (15, the mddb-backup
     guard floor) -> warn card (priority medium, escalates like others).
     Underused mounts (DISK_TREND_UNDERUSED_PCT 50% or
-    DISK_TREND_UNDERUSED_FREE_GIB 100 GiB free) are flagged per-mount in
+    DISK_TREND_UNDERUSED_FREE_GIB 100 GiB free on a
+    DISK_TREND_UNDERUSED_MIN_SIZE_GIB 10+ GiB filesystem, only when the
+    mount is not already alerting) are flagged per-mount in
     the report + summary — informational only, never cards.
   top_growers: >
     Per-host du watchlist trended like mounts; dirs with 24h delta >=
