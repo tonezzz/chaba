@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: backlog
-updated: 2026-11-23 20:46
+column: doing
+updated: 2026-11-23 21:14
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -370,13 +370,16 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
     — claims held ~28m'
+- at: 2026-11-23 21:14
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-202451-ada-tool-consolidation-merge-o.service:
     Consumed 1min 1.221s CPU time over 18min 30.218s wall clock time, 863M memory peak, 458.3M memory swap peak.'
   sweep:
@@ -384,6 +387,7 @@ action:
     dirty: 5
   result: 'exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-202451-ada-tool-consolidation-merge-o.service:
     Consumed 1min 1.221s CPU time over 18min 30.218s wall clock time, 863M memory peak, 458.3M memory swap peak.'
+  runner: tony-macbook
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
@@ -413,5 +417,4 @@ requests:
   answer: ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell, and tony-macbook via scp and resume the
     task
 claim:
-  since: 2026-11-23 20:24
-awaiting_action: true
+  since: 2026-11-23 21:14
