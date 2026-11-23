@@ -1,7 +1,7 @@
 id: render-job-writer-must-upload-output-to-78229c
 title: render_job writer must upload output to /wp/v2/media (output_url convention)
 column: doing
-updated: 2026-11-23 19:25
+updated: 2026-11-23 19:36
 note: follow-up to render-job display work 2026-10-15
 ref: OPS-0701
 comms:
@@ -216,6 +216,12 @@ comms:
     stalled-claim reaper: moved doi; Check `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip;
     [audit-miss-unlanded-oct06-dispatch-artifacts] PR #196 CI update 2026-11-20: req; [mcp-schema-allowlist-heavy-servers-7c22e9]
     Rerouted 2026-11-'
+- at: 2026-11-23 19:36
+  from: devin
+  text: 'progress: render_job writers live in ada-voice (ada_render_image/ada_render_video), not chaba — landed
+    the canonical chaba-side implementation instead: scripts/lib/wp_boards.py (upload_media + write_render_job,
+    output_url=source_url enforced, path values rejected) + scripts/ada/render-job-record.py CLI. 11 offline unit
+    tests green. Live /wp/v2/media verify needs a writer host (no wp-boards.env on tony-macbook). Trail: docs/ssot/jobs/ada/2026-11-23-render-job-media-upload.yml'
 requests:
 - id: the-render-job-writer-needs-to-d0fd99
   ask: The render_job writer needs to upload output binaries to WordPress media endpoints rather than saving local
@@ -253,3 +259,4 @@ spec: Update the render_job writer implementation within the chaba repository to
   output_url without errors.
 claim:
   since: 2026-11-23 19:24
+awaiting_action: true
