@@ -1,7 +1,7 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
-column: backlog
-updated: 2026-11-23 21:37
+column: doing
+updated: 2026-11-23 22:05
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
   exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
@@ -12,13 +12,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
-  attempts: 1
+  status: running
+  attempts: 2
   last_failure: 'exit=1 261123-211800-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''.
     | devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19.service: Consumed 3min 4.807s CPU time over 15min
     10.510s wall clock time, 980.2M memory peak.'
   result: 'exit=1 261123-211800-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''. | devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19.service:
     Consumed 3min 4.807s CPU time over 15min 10.510s wall clock time, 980.2M memory peak.'
+  runner: tony-omen
 ref: OPS-0237
 comms:
 - at: 2026-11-19 13:38
@@ -261,5 +262,8 @@ comms:
   from: chaba
   text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
     — claims held ~29m'
+- at: 2026-11-23 22:05
+  from: tony-omen
+  text: claimed
 claim:
-  since: 2026-11-23 21:17
+  since: 2026-11-23 22:05
