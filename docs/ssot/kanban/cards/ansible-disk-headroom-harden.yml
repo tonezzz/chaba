@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: doing
-updated: 2026-11-23 11:05
+updated: 2026-11-23 11:08
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -51,6 +51,10 @@ comms:
     IP means each controller needs the IP itself in ~/.ssh; attempt-1 failure was a provider rate-limit mid-run,
     not a code bug — check card; command/shell tasks skip under --check, so `failed_when`/`when: x.rc` gates can'';
     Required guardrail: jail.local ignoreip must cover loopback +'
+- at: 2026-11-23 11:08
+  from: devin
+  text: 'in progress: adding controller self-detect (ansible_connection=local), real --check --diff support (probe
+    check_mode:no + in-memory verdicts), DISK_TREND_HISTORY jsonl append, and host_key_checking docs'
 action:
   type: dispatch
   status: running
