@@ -23,3 +23,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 17:08
+  from: devin
+  text: 'Quick follow-up probe 2026-11-23: ssh con01 ''timeout 60 /home/tony/.local/share/chaba-ml-venv/bin/python
+    -c "import torch, transformers; print(ML-OK)"'' returned ML-OK (within 60s). The 20s probe timeout in verify-host-software
+    is likely too tight for cold torch+transformers import on con01, not a broken venv. Consider raising host_sw_probe_timeout
+    for that cap or special-casing python_ml; do not bootstrap blindly.'
