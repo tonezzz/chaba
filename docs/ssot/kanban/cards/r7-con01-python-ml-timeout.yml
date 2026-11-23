@@ -1,7 +1,7 @@
 id: r7-con01-python-ml-timeout
 title: 'R7: con01 python_ml probe times out (>20s) in verify-host-software'
 column: done
-updated: 2026-11-23 19:10
+updated: 2026-11-24 00:13
 brief: 'Full-fleet verify-host-software.yml run: con01 python_ml probe timed out at 20s; may be slow import or broken
   ML venv.'
 priority: medium
@@ -44,6 +44,10 @@ comms:
 - at: 2026-11-23 19:10
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
