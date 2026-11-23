@@ -364,13 +364,19 @@ def publish(api_base: str, card_id: str, kind: str, title: str,
 
 def notify_lifecycle(api_base: str, card_id: str, event: str,
                      detail: str = "", host: str = "") -> bool:
-    """start/finish/fail/stalled -> Telegram via /publish.
+    """start/finish/fail/stalled/verified/unverified -> /publish.
 
-    event: start|finish|fail|stalled. finish->milestone, fail/stalled->
-    alert (telegram-routed kinds), start->progress (audited on the card
-    + ledger but NOT telegram — a claim is a heartbeat, not news)."""
+    event -> kind: start->progress, finish|verified->milestone,
+    fail|stalled|unverified->alert (telegram-routed kinds); progress is
+    audited on the card + ledger but NOT telegram (a claim is a
+    heartbeat, not news). verified/unverified are the close-the-loop
+    verdict events (card ada-dispatch-approve-button): after the
+    dispatch run finishes, the merge gate's verdict is what Tony
+    approved — it must reach him, not just the card's comms."""
     kind = {"start": "progress", "finish": "milestone",
-            "fail": "alert", "stalled": "alert"}.get(event)
+            "verified": "milestone",
+            "fail": "alert", "stalled": "alert",
+            "unverified": "alert"}.get(event)
     if not kind:
         return False
     where = f" on {host}" if host else ""
