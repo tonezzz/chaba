@@ -1,0 +1,21 @@
+id: ansible-verify-host-software-r7
+title: Ansible read-only verify for R7 host-software capabilities
+column: doing
+updated: 2026-11-23 16:58
+brief: Add a parallel read-only ansible playbook that probes ssot.host-software.yml capabilities and writes per-host
+  benchmark reports.
+priority: medium
+tags:
+- ansible
+- r7
+- audit
+spec: 'Goal: fleet fan-out verification of declared R7 capabilities (ssot.host-software.yml) with --check --diff-safe
+  read-only probes and reports/ansible-benchmark/host-software/<host>.yml artifacts. Reuse manifest probes; do not
+  install/change host state. Compare/align with scripts/host-ready-check.py semantics (pass/fail/down/timeout, expect_re).
+  Controller self-detect for local connection. Carded per kanban-first; candidate picked from 2026-11-23 ansible
+  exploration.'
+ref: AUD-0038
+comms:
+- at: 2026-11-23 16:58
+  from: tony
+  text: card captured via board-api
