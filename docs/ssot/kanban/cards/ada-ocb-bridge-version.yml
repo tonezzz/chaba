@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
-column: review
-updated: 2026-11-23 11:39
+column: done
+updated: 2026-11-23 11:46
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -371,6 +371,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-113051-in-ada-voice-opencode-ada-mcp-,
     branch dispatch/20261123-113051-in-ada-voice-opencode-ada-mcp-'
+- at: 2026-11-23 11:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 11:46
+  note: verified — evidence checks green, closing itself
