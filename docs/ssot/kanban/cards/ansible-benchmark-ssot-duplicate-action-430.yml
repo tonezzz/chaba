@@ -1,0 +1,19 @@
+id: ansible-benchmark-ssot-duplicate-action-430
+title: 'SSOT hygiene: duplicate action key in ssot.audit.hosts.yml (~:430)'
+column: backlog
+updated: 2026-11-23 15:32
+brief: 'Benchmark finding still live: focus-dispatcher-overnight.service has two action: keys (verify-next-run,
+  investigate) in the same list item; YAML keeps the last.'
+priority: medium
+tags:
+- ansible
+- ssot
+spec: 'Source: docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md. Verified 2026-11-23: docs/ssot/infrastructure/ssot.audit.hosts.yml
+  lines 430-431 carry both ''action: verify-next-run'' and ''action: investigate'' on the same list item, so the
+  first is silently discarded. Fix: decide the intended action, remove the duplicate, validate SSOT. Low risk, no
+  host changes.'
+ref: KNB-0034
+comms:
+- at: 2026-11-23 15:32
+  from: tony
+  text: card captured via board-api
