@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: doing
-updated: 2026-11-23 15:56
+updated: 2026-11-23 16:07
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -310,6 +310,13 @@ comms:
     DONE (attempt 3, tony-macbook). Fix was alr; [kk-mac-usage-to-lane-savings] [verify-fail] Review pass 2026-11-23
     (Tony): 2026; [merge-sweep-test-gate-fail-open] [verify-fail] Review pass 2026-11-23 (Tony): 2; [trade-lesson-ui-integration]
     DONE: trade-ui lesson published'
+- at: 2026-11-23 16:07
+  from: devin
+  text: 'DONE on dispatch/20261123-155646 (b12887a4b5b + 1f496e22609). Cherry-picked the live-verified 145030 impl
+    + salvaged the good bits of the dead 145907 rerun: bank-inspect.py snapshots 4 lanes (tony 15p, kk 8p, kk-dev
+    9p, michael 5p — run live FROM tony-dell, exit 0), kind=memory-inspect + Memory index section + read-only banner,
+    cms-render serves mn/kk-dev collections, daily 05:40 job on tony_dell rendered. Tests: tests/ada 311, cms_render
+    23 (venv), merge-gate 231. Live: /p/memory-inspect 200. S'
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -345,3 +352,4 @@ action:
   runner: tony-dell
 claim:
   since: 2026-11-23 15:56
+awaiting_action: true
