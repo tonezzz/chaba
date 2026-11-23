@@ -1,6 +1,6 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
-column: backlog
+column: doing
 updated: 2026-11-23 18:36
 priority: low
 tags:
@@ -331,18 +331,22 @@ comms:
 - at: 2026-11-23 18:36
   from: tony
   text: retry requested
+- at: 2026-11-23 18:36
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
   sweep:
     dirty: 1
     session_gone: 2026-11-16 15:26
     stale_running: 2026-11-23 16:18
-  attempts: 0
+  attempts: 1
   last_failure: 'exit=1 ngs-py-now-attributes.service: Failed with result ''exit-code''. | devin-task-20261123-155847-lane-savings-py-now-attributes.service:
     Consumed 10min 22.101s CPU time over 17min 46.973s wall clock time, 1G memory peak, 509.3M memory swap peak.'
+  runner: tony-omen
 review_kind: verify
 claim:
-  since: 2026-11-23 15:58
+  since: 2026-11-23 18:36
