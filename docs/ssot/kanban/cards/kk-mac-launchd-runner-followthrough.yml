@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
-column: backlog
-updated: 2026-11-23 21:37
+column: doing
+updated: 2026-11-23 22:05
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -9,17 +9,18 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
   sweep:
     stale_running: 2026-11-19 09:59
     dirty: 1
     session_gone: 2026-11-19 10:51
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 -20261123-211859-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''.
     | devin-task-20261123-211859-kk-mac-launchd-runner-port-shi.service: Consumed 3min 17.878s CPU time over 15min
     48.124s wall clock time, 1G memory peak.'
   result: 'exit=1 -20261123-211859-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261123-211859-kk-mac-launchd-runner-port-shi.service:
     Consumed 3min 17.878s CPU time over 15min 48.124s wall clock time, 1G memory peak.'
+  runner: tony-dell
 ref: OPS-0220
 comms:
 - at: 2026-11-19 08:58
@@ -360,6 +361,9 @@ comms:
   from: chaba
   text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
     — claims held ~29m'
+- at: 2026-11-23 22:05
+  from: tony-dell
+  text: claimed
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
@@ -389,5 +393,4 @@ requests:
   answer: enrolled
 review_kind: verify
 claim:
-  since: 2026-11-23 21:18
-awaiting_action: true
+  since: 2026-11-23 22:05
