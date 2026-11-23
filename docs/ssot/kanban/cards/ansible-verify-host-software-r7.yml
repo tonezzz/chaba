@@ -1,7 +1,7 @@
 id: ansible-verify-host-software-r7
 title: Ansible read-only verify for R7 host-software capabilities
-column: doing
-updated: 2026-11-23 16:58
+column: done
+updated: 2026-11-23 17:02
 brief: Add a parallel read-only ansible playbook that probes ssot.host-software.yml capabilities and writes per-host
   benchmark reports.
 priority: medium
@@ -23,3 +23,14 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 17:02
+  from: devin
+  text: 'Picked and implemented 2026-11-23. Added read-only ansible/playbooks/verify-host-software.yml + templates/host-software-verify.j2
+    on chaba origin/master c5866024fb (AUD-0038). Probes ssot.host-software.yml declared capabilities per host (one
+    ssh round-trip, parallel), check_mode:no probes, controller self-detect/local pattern, per-host reports in reports/ansible-benchmark/host-software/<host>.yml.
+    No host installs/changes. Syntax check passed. Sample run (--limit tony-dell,tony-omen,idc03): ok=4'
+- at: 2026-11-23 17:02
+  from: devin
+  text: closed by devin
+action:
+  status: done
