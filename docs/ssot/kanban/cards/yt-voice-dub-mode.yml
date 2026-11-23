@@ -1,6 +1,6 @@
 id: yt-voice-dub-mode
 title: YT voice dub — voice-mode selector on the cast URL
-column: doing
+column: review
 program: yt-voice-dub
 area: productization
 priority: high
@@ -28,7 +28,7 @@ spec: 'Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast: acc
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: idle
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
   sweep:
@@ -46,7 +46,7 @@ action:
     devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
     wall clock time, 358.3M memory peak.'
   runner: mn01
-updated: 2026-11-23 20:56
+updated: 2026-11-23 20:57
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -442,6 +442,19 @@ comms:
 - at: 2026-11-23 20:56
   from: mn01
   text: claimed
+- at: 2026-11-23 20:57
+  from: tony
+  text: '[verify] Verification from merged evidence (Tony 2026-11-23): (1) Merge 724240b884 (2026-10-07) reviewed
+    against spec: POST /cast voice=off|th|en with 400 validation; /status exposes dub {voice,phase}; detached __dub
+    worker renders dub.mp4 via yt-vtt-dub.py, muxes dub.m3u8 and re-points TV mid-play (documented upgrade-over-gating
+    choice); TTS/mux failure leaves subs cast untouched; cache key <base>.<voice> variants with replay serving the
+    right playlist. (2) 2026-10-06 sandbox e2e: fresh th dub '
+- at: 2026-11-23 20:57
+  from: tony
+  text: put on hold
+- at: 2026-11-23 20:57
+  from: tony
+  text: moved backlog -> review
 claim:
   since: 2026-11-23 20:56
 ref: ADA-0156
