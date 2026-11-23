@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: done
-updated: 2026-11-23 07:19
+updated: 2026-11-23 10:02
 priority: medium
 tags:
 - ssot
@@ -132,6 +132,13 @@ comms:
     <sid> + render --if-stale, marker-guarded, no stdout pollution) to notebooklm-compaction.sh on both hosts; upgraded
     tony-dell notebooklm-recall.sh to chaba-aware version (render-memory --if-stale + CHABA_CONTEXT head, parity
     with tony-omen). bash -n syntax OK on all edited hooks. idc03'
+- at: 2026-11-23 10:02
+  from: devin
+  text: '[2026-11-23 devin] idc03 hook integration path decided: N/A for now (host-appropriate). Evidence: idc03
+    has Devin CLI/config but no ~/.config/devin/scripts, no hook config in config.json, no devin processes; it is
+    the served/writer host. Phase B+ helper+timer already deployed/active (chaba-render-memory.timer active, /home/tony/.local/bin/chaba-session-capture
+    present). Decision: do not fabricate hook scripts; keep timer+helper as the Phase B+ aid. If Devin SessionEnd/PostCompaction
+    hooks are la'
 requests:
 - id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
   ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
