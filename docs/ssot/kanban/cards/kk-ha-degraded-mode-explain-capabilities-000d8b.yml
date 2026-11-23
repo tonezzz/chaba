@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
-column: doing
-updated: 2026-11-23 22:07
+column: backlog
+updated: 2026-11-23 22:33
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -320,6 +320,14 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-23 22:33
+  from: tony-macbook
+  text: 'finished (failed): exit=1 61123-220607-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''.
+    | devin-task-20261123-220607 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:33
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca (rate limit)
+    — tony-macbook holds new claims ~30m
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -351,19 +359,19 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   sweep:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 22:07
     session_gone: 2026-11-23 22:07
-  last_failure: 'exit=1 61123-211657-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. |
-    devin-task-20261123-211657-kk-ha-degraded-mode-explain-ca.service: Consumed 1min 48.073s CPU time over 16min
-    26.225s wall clock time, 934.7M memory peak.'
+  last_failure: 'exit=1 61123-220607-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. |
+    devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca.service: Consumed 1min 29.696s CPU time over 26min
+    54.424s wall clock time, 504.4M memory peak.'
   attempts: 2
-  result: 'exit=1 61123-211657-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. | devin-task-20261123-211657-kk-ha-degraded-mode-explain-ca.service:
-    Consumed 1min 48.073s CPU time over 16min 26.225s wall clock time, 934.7M memory peak.'
+  result: 'exit=1 61123-220607-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. | devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca.service:
+    Consumed 1min 29.696s CPU time over 26min 54.424s wall clock time, 504.4M memory peak.'
   runner: tony-macbook
 claim:
   since: 2026-11-23 22:05
