@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
-column: review
-updated: 2026-11-23 11:33
+column: backlog
+updated: 2026-11-23 13:59
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -389,6 +389,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-105630-redeploy-the-runner-agent-scri on
     tony-omen — if the work was never pushed it may be gone'
+- at: 2026-11-23 13:59
+  from: chaba
+  text: classified as devin (fallback conf 0.07)
+- at: 2026-11-23 13:59
+  from: tony
+  text: queued for processing
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -443,11 +449,10 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repo to tony-dell and queue the monitoring task there
 action:
-  status: done
+  status: queued
   type: dispatch
   lane: devin
   lane_source: fallback
-  runner: tony-omen
   attempts: 1
   result: 'exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd. | devin-task-20261123-105630-redeploy-the-runner-agent-scri.service:
     Consumed 48.157s CPU time over 8min 30.995s wall clock time, 878.8M memory peak.'
@@ -459,5 +464,4 @@ spec: Redeploy the runner-agent script from the local chaba repository to tony-d
   on tony-dell and the continuous water situation monitoring task runs without deployment drift errors.
 claim:
   since: 2026-11-23 10:55
-awaiting_action: true
 review_kind: verify
