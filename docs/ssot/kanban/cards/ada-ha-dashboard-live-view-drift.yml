@@ -1,7 +1,7 @@
 id: ada-ha-dashboard-live-view-drift
 title: Reconcile Ada HA chaba-admin live-view drift
 column: backlog
-updated: 2026-11-23 14:20
+updated: 2026-11-23 16:16
 brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
   verify whether this drift is intentional before restoring anything.
 priority: medium
@@ -50,6 +50,10 @@ comms:
 - at: 2026-11-23 14:20
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-live-ada-ha-chaba-admin-dashboard-co-8567e7

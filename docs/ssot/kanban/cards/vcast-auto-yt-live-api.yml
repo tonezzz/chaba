@@ -2,7 +2,7 @@ id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
 brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the
   card.'
-column: doing
+column: backlog
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 16:13
+updated: 2026-11-23 16:17
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -151,11 +151,29 @@ comms:
     Tabs — - Overall system status summary - I; runbook docs/kb/health-check-troubleshooting.md: Troubleshooting
     — - Check statu; runbook docs/kb/performance-baselines-troubleshooting.md: Troubleshooting — **Is; runbook docs/kb/trade-api-integration-health.md:
     Health Check'
+- at: 2026-11-23 16:17
+  from: idc02
+  text: 'finished (failed): exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed
+    with result ''exit-code''. | devin-t — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-161256-yt-live-api-8791-status-not-20 (rate limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 16:47'
 action:
-  status: running
+  status: failed
   attempts: 2
   lane: devin
   runner: idc02
+  result: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result ''exit-code''.
+    | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time, 405.7M memory
+    peak, 0B memory swap peak.'
+  last_failure: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result
+    ''exit-code''. | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time,
+    405.7M memory peak, 0B memory swap peak.'
 requests:
 - id: cline-drafted-verdict-investigate-connec-96bd80
   ask: 'Cline drafted verdict ''investigate'' (Connection refused issue unresolved after redeployments). One-word

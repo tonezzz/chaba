@@ -13,7 +13,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (no pushable remot
   gev-program-design. Work: in the Cesium pane code, panes that cannot render must surface a visible failure state
   instead of a black pane; keep the msaaSamples:1 iPad post-build patch; extend gev_pane_honest_fail coverage to
   every pane type.'
-updated: 2026-11-23 16:11
+updated: 2026-11-23 16:16
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -257,6 +257,14 @@ comms:
     honest-fail.js watchdog + patch-gev-dist.sh (iPad msaaSamples:1 kept, applied to staged dist — live bundle was
     unpatched raw dist, deploy lands the missing patches); ada-voice drop 20 = extended gev_pane_honest_fail.yaml
     covering every pane type + scenario-live.pane-pub.patch. Repo-side v'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-155342-gods-eye-view-app-work-held-re no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261123-155342-gods-eye-view-app-work-held-re on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -264,6 +272,8 @@ action:
     Consumed 1min 25.120s CPU time over 12min 57.602s wall clock time, 998.1M memory peak.'
   sweep:
     no_repo: 2026-11-08 16:18
+    stale_running: 2026-11-23 16:16
+    dirty: 1
   lane: devin
   lane_source: fallback
   runner: tony-omen

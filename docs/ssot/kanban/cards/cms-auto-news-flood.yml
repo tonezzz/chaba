@@ -8,7 +8,7 @@ priority: medium
 note: 'enabled every 60m but never ran. last_run=None interval=60m status=None. Page: https://idc03.taila0626a.ts.net/cms/#/news-flood'
 help: 'Trigger a manual regen: cms_automation run_now for ''news-flood'' (or POST /api/cms/pages/news-flood/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 14:20
+updated: 2026-11-23 16:16
 comms:
 - at: 2026-11-07 16:49
   from: devin
@@ -106,6 +106,10 @@ comms:
 - at: 2026-11-23 14:20
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
