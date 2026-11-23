@@ -94,15 +94,30 @@ boots (verified 2026-10-25 on Omen hardware: `hostnamectl=tony-usb`).
 
 ### Fix procedure — next tony-usb stick session
 
-Run as the FIRST thing after boot, before any other work:
+Run as the FIRST thing after boot, before any other work. The script is
+not on the stick (no chaba checkout) — either pipe it over ssh or run
+the equivalent commands by hand.
+
+Remote (from any fleet host, fleet keys are baked). `-t` is REQUIRED —
+sudo reads the stick password from the tty, not stdin; without `-t`
+sudo fails "a terminal is required" while stdin still carries the script:
 
 ```bash
-# on the stick itself:
-sudo bash scripts/ops/stick-own-nodekey.sh
-
-# or remotely over LAN ssh (fleet keys are baked):
-ssh tony@<stick-lan-ip> 'sudo bash -s' \
+ssh -t tony@<stick-lan-ip> 'sudo bash -s' \
     < scripts/ops/stick-own-nodekey.sh
+# sudo prompts for the stick password once on the tty — or set the
+# session NOPASSWD sudoers first (playbook step 2) for unattended use.
+```
+
+On the stick console, the manual equivalent (what the script does):
+
+```bash
+sudo systemctl stop tailscaled
+sudo mv /var/lib/tailscale/tailscaled.state \
+    /var/lib/tailscale/tailscaled.state.cloned-$(date +%Y%m%d-%H%M%S).bak
+sudo systemctl start tailscaled
+sudo tailscale up --hostname=tony-usb
+# approve the printed login URL / new node in the admin console
 ```
 
 The script (`scripts/ops/stick-own-nodekey.sh`, self-contained — the stick
