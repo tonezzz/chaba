@@ -1,7 +1,7 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
 column: doing
-updated: 2026-11-23 15:58
+updated: 2026-11-23 16:12
 priority: low
 tags:
 - kk-mac
@@ -303,6 +303,12 @@ comms:
     primer injected 8 lesson(s): [kk-mac-usage-to-lan; `~/var/chaba/reports/timeline.jsonl` is the report-event
     timeline (node/layer/st; [kk-mac-launchd-runner-followthrough] primer injected 8 lesson(s): [kk-mac-launc; [video-render-dispatcher]
     OPS-1042 v1 implemented and verifie'
+- at: 2026-11-23 16:12
+  from: devin
+  text: 'attempt 2 in progress: option (a) re-implemented — kk_mac_llm now captures prompt_eval_count, finish_kk_mac_lane
+    sets ent[result_extra] as a TOKENS_RE fragment, finish_pass prepends it (survives board-api result[:300]) and
+    pops it on fallback handoff. Fixture check: closed kk_mac_local card reports 1500 in / 200 out under kk_mac_local
+    lane. Contract tests running.'
 action:
   type: dispatch
   repo: chaba
