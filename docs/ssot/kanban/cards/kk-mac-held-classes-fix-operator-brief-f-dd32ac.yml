@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
 column: doing
-updated: 2026-11-23 23:12
+updated: 2026-11-23 23:53
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -110,5 +110,12 @@ comms:
     is OFFLINE on tailnet (last heartbeat ~2.3h ago) so the live re-bench is gated; doing the deterministic half
     now — corpus expect.facts -> literal-echo tokens (per-case miss analysis from run-kkmac-*.json) + producer guidance
     in jevnest-kk-mac-capacity-procedure.md. Will poll kk-mac and run kkmac_eval.sh the moment it wakes.'
+- at: 2026-11-23 23:53
+  from: devin
+  text: 'progress: corpus fix DONE — 10 operator_brief cases re-factored to literal-echo tokens (echo-intersection
+    across the 3 recorded 11-19 runs), 4 golds tightened, 51/51 mock-oracle pass; producer guidance added to jevnest-kk-mac-capacity-procedure.md.
+    Same-weights sanity on tony-omen ollama qwen3:8b (NOT kk-mac, de-risk only): operator_brief 0.9375 READY (was
+    0.56), safe_route 0.53 unchanged. BLOCKER: kk-mac offline ~3h (heartbeat stale, tailscale last-seen 2h+) — live
+    re-eval + readmission gated o'
 claim:
   since: 2026-11-23 23:03
