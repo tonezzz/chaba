@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
-column: backlog
-updated: 2026-11-23 14:56
+column: doing
+updated: 2026-11-23 14:58
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -209,6 +209,16 @@ comms:
 - at: 2026-11-23 14:56
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.09 > 1.0)'
+- at: 2026-11-23 14:58
+  from: devin
+  text: 'DONE on dispatch/20261123-145030 (df2f40c5c0). scripts/ada/bank-inspect.py snapshots per-lane ada-ha-bank-*
+    (:11023) into memory-inspect index+leaf pages in each lane cms_collection (:11027): tony 15p, kk 8p, mn 5p,
+    kk-dev 9p — live-verified incl. a run FROM tony-dell. Secret-keyed entries redacted (2 hits, devin bank). cms-render
+    gains kind=memory-inspect + ada-cms-pages-mn/-kk-dev; /p/memory-inspect renders 200. Daily bank-inspect job
+    registered on tony_dell 05:40 (units rendered). Tests: test'
+- at: 2026-11-23 14:58
+  from: tony-dell
+  text: claimed
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -230,15 +240,16 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   sweep:
     failed_noted: 2026-11-17 23:41
-  attempts: 0
+  attempts: 1
   last_failure: 'exit=1 evin-task-20261117-233430-implement-memory-inspection-pa.service: Failed with result ''exit-code''.
     | devin-task-20261117-233430-implement-memory-inspection-pa.service: Consumed 9.695s CPU time over 5.315s wall
     clock time, 249.3M memory peak.'
+  runner: tony-dell
 claim:
-  since: 2026-11-23 14:49
+  since: 2026-11-23 14:58
