@@ -1,0 +1,20 @@
+id: ansible-benchmark-stagger-hook-mode-0775
+title: 'Host hygiene: ada-start-stagger.sh mode 0775 vs declared 0755 on idc03'
+column: backlog
+updated: 2026-11-23 15:32
+brief: 'Benchmark finding still live: installed stagger hook is group-writable (0775) while install.sh declares
+  0755; content matches.'
+priority: medium
+tags:
+- ansible
+- idc03
+spec: 'Source: docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md (candidate 3). Verified 2026-11-23 via stat
+  on idc03: /home/tony/.local/bin/ada-start-stagger.sh and repo copies are 0775; declared install.sh mode is 0755.
+  Content is identical, so this is a mode-only drift. Fix via governed host path (chmod 755 on the installed hook
+  + verify stack.yml declaration), then re-run ansible/playbooks/verify-ada-stagger.yml to confirm 11/11. Host change
+  — needs the usual declared-path discipline.'
+ref: BEN-0033
+comms:
+- at: 2026-11-23 15:32
+  from: tony
+  text: card captured via board-api
