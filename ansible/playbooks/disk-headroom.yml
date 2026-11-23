@@ -11,21 +11,114 @@
 #   * the mddb guard's absolute floor: free >= 15 GiB on /
 #   * underused signal (informational): mount <50% used or >100 GiB free —
 #     surfaces over-provisioned capacity for storage-rebalance-underused.
-# disk-trend still owns the *trend* (slope over jsonl history) — ansible
-# runs are stateless, this playbook only covers the instantaneous check.
+#
+# This playbook ALSO feeds the trend: every probed host's mounts are
+# appended to the shared DISK_TREND_HISTORY jsonl (same record shape
+# disk-trend-watch.py writes: ts/epoch/host/unreachable/mounts/dirs),
+# keyed by the ssot.audit.hosts.yml host name so the slope lifecycle sees
+# one continuous series per host. Hosts excluded by --limit write no
+# sample at all — a skipped laptop must not record a false 'unreachable'.
+# Disable the feed with -e disk_trend_feed=false.
+#
+# Controller self-detect: the playbook matches the machine it runs on
+# against the inventory (ansible_host IP in the controller's own
+# addresses, or inventory name == hostname/fqdn) and gives that host
+# ansible_connection=local — ssh-to-self over the tailnet IP has no key
+# path and always failed (OPS-0019). Override with -e self_host=<name>
+# when detection picks wrong.
+#
+# Dry-run: `ansible-playbook playbooks/disk-headroom.yml --check --diff`
+# is a real dry-run — the df probe still runs (it is read-only;
+# check_mode:no) so verdicts and diffs are genuine, while file writes
+# (verdict reports + history append) are skipped.
+#
+# host_key_checking: stays True (ansible.cfg). ansible_host is a
+# Tailscale IP, so each controller needs the *IP* in ~/.ssh/known_hosts —
+# hashed hostname entries do not match. Seed per host:
+#   ssh-keyscan -H <tailscale-ip> >> ~/.ssh/known_hosts
+# or inventory-wide via ansible/README.md "SSH known_hosts".
 #
 # Usage (from ansible/):
 #   ansible-playbook playbooks/disk-headroom.yml
+#   ansible-playbook playbooks/disk-headroom.yml --check --diff   # dry-run
+#   ansible-playbook playbooks/disk-headroom.yml --limit tony-dell
 #
 # Artifacts: reports/ansible-benchmark/disk/<inventory_host>.yml
+#            + ~/var/chaba/health/disk-trend.jsonl (or $DISK_TREND_HISTORY)
+#
+# Layout note: everything lives in ONE play on purpose — a dedicated
+# `hosts: localhost` eval play is filtered out by --limit ("no hosts
+# matched"), so controller-side steps are delegate_to:localhost +
+# run_once tasks at the end of the probe play instead.
 
-- name: Probe mount state on every Linux host
+- name: Fleet disk-headroom audit
   hosts: all:!macos:!disabled
   gather_facts: false
   become: false
 
+  vars:
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    # Controller identity candidates: all local IPs + host names. Lookups
+    # run on the controller (not the target), need no facts, and survive
+    # missing commands on non-Linux controllers.
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/disk"
+    audit_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                playbook_dir ~ '/../../docs/ssot/infrastructure/ssot.audit.hosts.yml')
+         | from_yaml }}
+    ssot_key_map:
+      tony-macbook: macbook
+    crit_pct: 90          # disk-trend CRIT_PCT — flat fleet crit
+    min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
+    underused_pct: 50     # informational: mount <50% used is underused
+    underused_free_gib: 100  # ...or >100 GiB free
+    disk_trend_feed: true
+    # Shared with scripts/ada/disk-trend-watch.py — same env override.
+    disk_trend_history: >-
+      {{ lookup('ansible.builtin.env', 'DISK_TREND_HISTORY')
+         | default(lookup('ansible.builtin.env', 'HOME')
+                   ~ '/var/chaba/health/disk-trend.jsonl', true) }}
+    probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
+    probe_epoch: "{{ now().timestamp() | int }}"
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP has no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
   tasks:
-    - name: df probe (single round-trip, JSON out)
+    - name: df probe (single round-trip, JSON out; read-only so it also runs under --check)
       ansible.builtin.shell: |
         python3 - <<'PYEOF'
         import json, subprocess
@@ -44,19 +137,20 @@
             f = l.split()
             if len(f) < 7:
                 continue
-            fs, typ, size, _used, avail, cap, mount = \
-                f[0], f[1], int(f[2]), f[3], int(f[4]), f[5], f[6]
+            fs, typ, size, used, avail, cap, mount = \
+                f[0], f[1], int(f[2]), int(f[3]), int(f[4]), f[5], f[6]
             if typ in SKIP_FS or mount.startswith(SKIP_MT):
                 continue
-            out.append({"fs": fs, "type": typ, "mount": mount,
-                        "size_kb": size, "avail_kb": avail,
-                        "pct": int(cap.rstrip("%"))})
+            out.append({"mount": mount, "fs": fs,
+                        "size_kb": size, "used_kb": used,
+                        "avail_kb": avail, "pct": int(cap.rstrip("%"))})
         print(json.dumps(out))
         PYEOF
       register: diskprobe
       changed_when: false
       failed_when: false
       ignore_unreachable: true
+      check_mode: no
 
     - name: Store mount snapshot
       ansible.builtin.set_fact:
@@ -64,35 +158,16 @@
       when: diskprobe.stdout is defined and diskprobe.stdout | length > 0
       ignore_unreachable: true
 
-- name: Evaluate thresholds vs SSOT (controller-side)
-  hosts: localhost
-  gather_facts: false
-  become: false
-  vars:
-    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/disk"
-    audited_hosts: >-
-      {{ groups['all']
-         | difference(groups['macos'] | default([]))
-         | difference(groups['disabled'] | default([]))
-         | sort }}
-    ssot_key_map:
-      tony-macbook: macbook
-    crit_pct: 90          # disk-trend CRIT_PCT — flat fleet crit
-    min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
-    underused_pct: 50     # informational: mount <50% used is underused
-    underused_free_gib: 100  # ...or >100 GiB free
+    # --- controller-side evaluation: runs once on the first host,
+    # delegated to localhost so --limit can't filter it out ---
 
-  tasks:
     - name: Ensure the report dir exists
       ansible.builtin.file:
         path: "{{ benchmark_out }}"
         state: directory
         mode: "0755"
-
-    - name: Load the audit SSOT
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../../docs/ssot/infrastructure/ssot.audit.hosts.yml"
-        name: audit_ssot
+      delegate_to: localhost
+      run_once: true
 
     - name: Render per-host disk verdicts
       ansible.builtin.template:
@@ -102,10 +177,55 @@
       loop: "{{ audited_hosts }}"
       loop_control:
         loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
 
-    - name: Show alerts
+    - name: Show alerts (re-rendered in memory — correct under --check too)
       ansible.builtin.debug:
         msg: >-
-          {{ item }}: {{ (lookup('file', benchmark_out + '/' + item + '.yml')
-             | from_yaml).summary }}
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'disk-headroom.j2')
+              | from_yaml).summary }}
       loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Ensure the trend-history parent dir exists (fresh controllers)
+      ansible.builtin.file:
+        path: "{{ disk_trend_history | dirname }}"
+        state: directory
+        # no mode: — must not chmod an existing dir (e.g. /tmp override)
+      when: disk_trend_feed | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Append probe sample to DISK_TREND_HISTORY (skipped under --check)
+      ansible.builtin.lineinfile:
+        path: "{{ disk_trend_history }}"
+        line: >-
+          {{ {'ts': probe_ts,
+              'epoch': probe_epoch,
+              'host': ssot_key_map.get(item, item),
+              'unreachable': hostvars[item].mounts is not defined,
+              'mounts': hostvars[item].mounts | default([]),
+              'dirs': []} | to_json }}
+        insertafter: EOF
+        create: true
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when:
+        - disk_trend_feed | bool
+        # actually probed this run — --limit-skipped hosts have no
+        # diskprobe result and must not record a false 'unreachable'
+        - hostvars[item].diskprobe is defined
+        # only hosts disk-trend-watch.py also samples (keyed by the
+        # ssot.audit.hosts.yml name) — keeps one series per host
+        - ssot_key_map.get(item, item) in (audit_ssot['hosts'] | default({}))
+      delegate_to: localhost
+      run_once: true
