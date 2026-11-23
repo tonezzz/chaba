@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: backlog
-updated: 2026-11-23 11:51
+updated: 2026-11-23 13:59
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -391,6 +391,12 @@ comms:
 - at: 2026-11-23 11:51
   from: chaba
   text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 12:21'
+- at: 2026-11-23 13:59
+  from: tony
+  text: 'answered ipp-identity-verified-2026-11-23-via-ton-f51f78: proceed'
+- at: 2026-11-23 13:59
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
@@ -415,12 +421,13 @@ requests:
     queue still points at .75 (repeater). Per your queue-reconfiguration-needs-separate-approval rule: OK to lpadmin
     -p HP_DeskJet_2700 -v ipp://192.168.2.92/ipp/print (or the dnssd URI) on tony-dell once the helper is installed,
     or leave the retarget as a documented operator step?'
-  status: open
+  status: answered
   at: 2026-11-23 11:01
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   repo: ada-voice
