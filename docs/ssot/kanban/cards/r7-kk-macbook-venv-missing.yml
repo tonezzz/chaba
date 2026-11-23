@@ -1,0 +1,21 @@
+id: r7-kk-macbook-venv-missing
+title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
+column: backlog
+updated: 2026-11-23 17:07
+brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
+  package missing.'
+priority: medium
+tags:
+- r7
+- ansible
+- kk-macbook
+spec: 'Source: ansible verify-host-software.yml full-fleet run 2026-11-23 (controller tony-omen). kk-macbook (inventory
+  tony-macbook) fails venv: python3 -m venv /tmp/.r7-venv-check reports ensurepip failure and suggests installing
+  python3.14-venv via apt (needs sudo). python3 3.14.4 passes. Fix: on tony-macbook install python3.14-venv (sudo)
+  or per host-capability-bootstrap.sh/manual path, then rerun verify-host-software --limit tony-macbook. Laptop
+  - fix when on-tailnet/available.'
+ref: SYS-0040
+comms:
+- at: 2026-11-23 17:07
+  from: tony
+  text: card captured via board-api

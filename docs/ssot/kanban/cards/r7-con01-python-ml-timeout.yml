@@ -1,0 +1,21 @@
+id: r7-con01-python-ml-timeout
+title: 'R7: con01 python_ml probe times out (>20s) in verify-host-software'
+column: backlog
+updated: 2026-11-23 17:07
+brief: 'Full-fleet verify-host-software.yml run: con01 python_ml probe timed out at 20s; may be slow import or broken
+  ML venv.'
+priority: medium
+tags:
+- r7
+- ansible
+- con01
+spec: 'Source: ansible verify-host-software.yml full-fleet run 2026-11-23. con01 passes python3/venv/ollama_bge_m3
+  but python_ml probe ''/home/tony/.local/share/chaba-ml-venv/bin/python -c "import torch, transformers"'' timed
+  out (>20s). Investigate: is the venv healthy but slow on first/cold import, or actually broken? Check manually
+  over ssh; if slow, consider raising probe timeout or warming; if broken, rerun host-capability-bootstrap.sh con01
+  python_ml. Do not auto-install without confirming.'
+ref: OPS-0039
+comms:
+- at: 2026-11-23 17:07
+  from: tony
+  text: card captured via board-api
