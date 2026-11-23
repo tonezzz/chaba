@@ -26,15 +26,16 @@ action:
   status: queued
   task: 'Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix
     scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).'
-  result: 'exit=0 ted ada-pi''s `yt` tool lacks a `voice=` param so conversational dub-cast isn''t possible yet.
-    | devin-task-20261007-133317-ada-pi-add-to-tests-scenarios-.service: Consumed 42.003s CPU time over 26min 2.278s
-    wall clock time, 554M memory peak.'
   sweep:
     dirty: 1
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-updated: 2026-11-23 18:39
+  last_failure: 'exit=0 ted ada-pi''s `yt` tool lacks a `voice=` param so conversational dub-cast isn''t possible
+    yet. | devin-task-20261007-133317-ada-pi-add-to-tests-scenarios-.service: Consumed 42.003s CPU time over 26min
+    2.278s wall clock time, 554M memory peak.'
+  attempts: 0
+updated: 2026-11-23 18:59
 comms:
 - at: 2026-10-06 07:18
   from: devin
@@ -581,6 +582,9 @@ comms:
 - at: 2026-11-23 18:39
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 18:59
+  from: tony
+  text: retry requested
 claim: {}
 ref: ADA-0191
 review_kind: verify
