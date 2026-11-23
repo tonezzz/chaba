@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
-column: doing
-updated: 2026-11-23 15:05
+column: review
+updated: 2026-11-23 15:10
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -190,6 +190,32 @@ comms:
     land mid-pipeline, byte-identical (verified by measure() spy run). Persist failure warns but never crashes intake;
     retention prunes past ADA_DOC_INTAKE_KEEP=200. Changed: backend/document_check.py, pwa/app.js, tests (+4). Gates:
     pytest 1885p/7s, tool-lint clean. Trail: docs/ssot/jobs/ada'
+- at: 2026-11-23 15:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 , so this was a fresh implementation, not a fix of prior code. | devin-task-20261123-145126-goal-fix-pwa-document'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'session-end checkpoint 86d80659: 5 leftover file(s) committed'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: banked 56 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 15:10
+  from: chaba
+  text: pushed dispatch/20261123-145126-goal-fix-pwa-document-intake-d to origin
+- at: 2026-11-23 15:10
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 218.9s)
+- at: 2026-11-23 15:10
+  from: chaba
+  text: auto-merged a97f205d (dispatch/20261123-145126-goal-fix-pwa-document-intake-d) → origin/main
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-145126-goal-fix-pwa-document-intake-d,
+    branch dispatch/20261123-145126-goal-fix-pwa-document-intake-d'
 requests:
 - id: the-pwa-document-intake-featur-096c1f
   ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
@@ -209,7 +235,7 @@ spec: 'Goal: fix PWA document intake data loss by persisting original uploads be
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   sweep:
@@ -221,6 +247,10 @@ action:
     53.920s wall clock time, 1.6G memory peak.'
   attempts: 1
   runner: tony-omen
+  result: 'exit=0 , so this was a fresh implementation, not a fix of prior code. | devin-task-20261123-145126-goal-fix-pwa-document-intake-d.service:
+    Consumed 7min 33.725s CPU time over 13min 48.495s wall clock time, 2.3G memory peak, 27.8M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-23 14:50
 awaiting_action: true
+review_kind: verify

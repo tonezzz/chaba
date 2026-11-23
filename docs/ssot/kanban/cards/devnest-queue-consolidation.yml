@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: review
-updated: 2026-11-23 14:17
+column: backlog
+updated: 2026-11-23 15:10
 priority: high
 tags:
 - devnest
@@ -66,12 +66,10 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: queued
   lane: codemod
-  runner: tony-omen
   result: 'exit=0  full detail in `dispatch-outcome-20261117-185221-assessment-2026-11-09-verified.md`. | devin-task-20261117-185221-assessment-2026-11-09-verified.service:
     Consumed 1min 11.026s CPU time over 6min 14.726s wall clock time, 900.2M memory peak.'
-  verified: false
   sweep:
     session_gone: 2026-11-17 19:25
 ref: OPS-1244
@@ -246,5 +244,12 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-17 19:07 test gate failed (suite timeout 240s), merge
+    held, worktree dirty; no verified final comms — requeued for rework.'
+- at: 2026-11-23 15:10
+  from: tony
+  text: queued for processing
 review_kind: verify
 claim: {}
