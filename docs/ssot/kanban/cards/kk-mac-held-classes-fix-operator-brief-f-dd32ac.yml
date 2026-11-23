@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
-column: doing
-updated: 2026-11-24 00:43
+column: review
+updated: 2026-11-24 00:44
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -23,13 +23,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   attempts: 2
-  result: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
-    Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
+  result: 'exit=0 te — then flip the mirror checklist in the job doc for any class that passes ≥0.80. | devin-task-20261123-160417-follow-up-to-kk-mac-admitted-c.service:
+    Consumed 1min 44.800s CPU time over 1h 39min 44.932s wall clock time, 458M memory peak.'
   last_failure: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
     Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
   runner: mn01
+  verified: true
 ref: OPS-0048
 comms:
 - at: 2026-11-23 22:22
@@ -132,5 +133,29 @@ comms:
     in jevnest-kk-mac-capacity-procedure.md, convention in build_corpus.py docstring, prior runs archived as run-kkmac-*-20261119.*,
     job doc docs/ssot/jobs/devnest/2026-11-23-kkmac-held-classes-reeval.yml. Evidence: mock-oracle 51/51; recorded-response
     rescore predicts ob pass o'
+- at: 2026-11-24 00:44
+  from: mn01
+  text: 'finished (ok): exit=0 te — then flip the mirror checklist in the job doc for any class that passes ≥0.80.
+    | devin-task-20261123-160417-'
+- at: 2026-11-24 00:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 00:44
+  from: chaba
+  text: banked 240 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 00:44
+  from: chaba
+  text: pushed dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c to origin
+- at: 2026-11-24 00:44
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-24 00:44
+  from: chaba
+  text: auto-merged 5945c106 (dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c) → origin/master
+- at: 2026-11-24 00:44
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-160417-follow-up-to-kk-mac-admitted-c,
+    branch dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c'
 claim:
   since: 2026-11-23 23:03
+review_kind: verify
