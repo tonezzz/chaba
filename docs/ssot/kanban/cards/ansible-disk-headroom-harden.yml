@@ -74,6 +74,12 @@ comms:
   text: 'attempt-2: recovered attempt-1 diff (commit 6ffb910078), merged with newer underused additions, verified
     fleet --check (7/7 hosts probed, controller self-detect OK, zero writes). Fixed 2 gaps: missing parent-dir for
     trend history, duplicate action key in ssot.audit.hosts.yml. Writing outcome doc now.'
+- at: 2026-11-23 11:33
+  from: devin
+  text: 'done: all 4 spec items landed+verified in worktree dispatch-wt-20261123-112950 (ansible/playbooks/disk-headroom.yml
+    single-play rewrite + .j2 + ansible/README.md; +1 dup-key fix in ssot.audit.hosts.yml). Verified: syntax-check,
+    --limit --check --diff, real append to temp DISK_TREND_HISTORY (watcher-compatible record), full-fleet --check
+    7/7 ok zero writes. Outcome doc: dispatch-outcome-20261123-112950-goal-make-ansible-disk-headroo.md'
 action:
   type: dispatch
   status: done
