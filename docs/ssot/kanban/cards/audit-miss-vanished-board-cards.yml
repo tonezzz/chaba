@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
-column: doing
-updated: 2026-11-23 12:19
+column: review
+updated: 2026-11-23 12:21
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -43,6 +43,13 @@ comms:
   from: chaba
   text: started devin-task-audit-miss-vanished-board-cards-1795411168 on idc02 (dispatch executor=opencode profile=ssot-research
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-23 12:21
+  from: idc02
+  text: 'finished (ok): exit=0 Started devin-task-audit-miss-vanished-board-cards-1795411168.service - runner audit-miss-vanished-board-cards
+    st'
+- at: 2026-11-23 12:21
+  from: chaba
+  text: 'staged profile closeout held: profile evidence differs from the frozen envelope'
 action:
   type: dispatch
   repo: chaba
@@ -120,8 +127,13 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  result: 'exit=0 Started devin-task-audit-miss-vanished-board-cards-1795411168.service - runner audit-miss-vanished-board-cards
+    staged read-only profile. | devin-task-audit-miss-vanished-board-cards-1795411168.service: Consumed 39.064s
+    CPU time.'
+  verified: false
 claim:
   since: 2026-11-23 12:19
+review_kind: verify
