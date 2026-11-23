@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
-column: doing
-updated: 2026-11-23 20:24
+column: backlog
+updated: 2026-11-23 20:43
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -258,19 +258,28 @@ comms:
     finished (failed): exit=1 -pipel; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1
     RE | d; [devnest-queue-consolidation] [verify-fail] Review pass 2026-11-23 (Tony): 2026-; [dispatch-zero-commit-sessions-epidemic]
     merge-sweep: verifie'
+- at: 2026-11-23 20:43
+  from: tony-omen
+  text: 'finished (failed): exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
+    | devin-task-20261123-202449 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 20:43
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-202449-two-dispatch-pipeline-robustne (rate limit)
+    — tony-omen holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: codemod
   lane_source: kw
   attempts: 2
-  last_failure: 'exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-robustne.service:
-    Consumed 2min 44.647s CPU time over 31min 54.241s wall clock time, 885.2M memory peak, 126.6M memory swap peak.'
+  last_failure: 'exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''. |
+    devin-task-20261123-202449-two-dispatch-pipeline-robustne.service: Consumed 2min 15.433s CPU time over 18min
+    32.614s wall clock time, 901.3M memory peak.'
   sweep:
     stale_running: 2026-11-23 19:18
     no_repo: 2026-11-23 19:18
-  result: 'exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-robustne.service:
-    Consumed 2min 44.647s CPU time over 31min 54.241s wall clock time, 885.2M memory peak, 126.6M memory swap peak.'
+  result: 'exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-202449-two-dispatch-pipeline-robustne.service:
+    Consumed 2min 15.433s CPU time over 18min 32.614s wall clock time, 901.3M memory peak.'
   runner: tony-omen
 claim:
   since: 2026-11-23 20:23
