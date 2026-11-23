@@ -1,0 +1,51 @@
+id: capture-harvester-apply-gate-1426cfed
+title: 'Capture harvester: decide --apply gate'
+column: backlog
+updated: 2026-11-23 13:42
+brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
+  ever enable --apply.
+priority: medium
+tags:
+- ops
+- knowledge-capture
+spec: 'Goal: resolve the one remaining gated decision from OPS-0016 Phase C/D.
+
+  Context: read-only router + harvester landed (424e97f5c6, 778903e435, 92fc6f92ae); matrix tuned to 100% actionable
+  kanban creates; all four Phase D signals measured (2fc668b306, 1426cfed36). --apply has been deliberately unexercised
+  throughout.
+
+  If approved: define exact sink scope, verify board-api mutation door / single-writer / checkout-role constraints,
+  idempotent dedupe + audit metadata, bounded retries and rollback; run a dry-run diff first, then one gated apply
+  with producer/consumer surface verification.
+
+  If declined: keep the pipeline permanently read-only and record that decision in SSOT.
+
+  Done-condition: Tony''s explicit decision recorded, with an audited apply run OR a documented permanent read-only
+  posture. Never enable --apply by inference or momentum.
+
+  Refs: OPS-0016; docs/ssot/ssot.knowledge-capture.yml (Phase D Baseline); scripts/chaba/capture-router.py, harvester.py,
+  capture-metrics.py.'
+ref: OPS-0024
+comms:
+- at: 2026-11-23 13:42
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 13:42
+  from: devin
+  text: 'raised request apply-is-the-only-unresolved-gate-from-o-bd7d0c: --apply is the only unresolved gate from
+    OPS-0016. The read-only proposal path is verified (100% actionable kanban creat'
+requests:
+- id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
+  ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
+    kanban creates, all four Phase D signals measured). Enable sink writes, or keep the harvester permanently read-only?
+    (★ = recommended: keep read-only until a concrete sink-write consumer exists.)'
+  status: open
+  at: 2026-11-23 13:42
+  from: devin
+  options:
+  - id: a
+    label: Keep read-only (★ recommended)
+    action: none
+  - id: b
+    label: Approve a gated --apply run
+    action: none

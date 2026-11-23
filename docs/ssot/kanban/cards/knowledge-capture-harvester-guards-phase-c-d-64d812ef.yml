@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
-column: backlog
-updated: 2026-11-23 13:25
+column: done
+updated: 2026-11-23 13:42
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -79,4 +79,15 @@ comms:
     2026-11-23, empty at instrumentation so 0 so far is not evidence of no misses). New read-only-preserving writer
     scripts/chaba/miss-add.py: textual comment-preserving append, dedupe by (topic, at, location, should-have-been),
     atomic replace, newest-first; self-test 7/7. capture-metrics.'
-action: {}
+- at: 2026-11-23 13:42
+  from: devin
+  text: '[2026-11-23 opencode] Phase D COMPLETE — all four signals measured. Final commit 1426cfed36 (rebased from
+    62e207abf8). Time-to-find: info_find.py already carried per-source elapsed_ms in its session cache; added total_elapsed_ms,
+    elapsed_by_source, source_sequence and resolved_ref to the run audit, plus a read-only aggregator in capture-metrics.py.
+    Stale-pointer incidents: new local pointer-stale-add.py (dedupe by pointer_ref+canonical_ref+found_at, --init
+    schema, 7/7 self-test) writing pointer-'
+- at: 2026-11-23 13:42
+  from: devin
+  text: closed by devin
+action:
+  status: done
