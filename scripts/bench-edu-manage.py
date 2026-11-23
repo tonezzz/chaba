@@ -70,6 +70,7 @@ CURRENT_MODEL = "gemini-3.5-flash-lite"
 JUDGE_MODEL = "gemini-3.5-flash-lite"
 OR_BASE = "https://openrouter.ai/api/v1"
 OR_MODEL = "openrouter/free"  # OpenClaw's stated primary
+LITELLM_FREE_MODEL = "gemini-3.5-flash-lite-free"  # gateway free twin
 HERMES_MODEL = "hermes3:8b"
 MAX_ROUNDS = 10
 
@@ -374,10 +375,11 @@ class AgentLane:
     """
 
     def __init__(self, name, base, key, model, timeout, retries=2,
-                 json_mode=True):
+                 json_mode=True, extra_system=""):
         self.name, self.base, self.key = name, base.rstrip("/"), key
         self.model, self.timeout, self.retries = model, timeout, retries
         self.json_mode_ok = json_mode
+        self.extra_system = extra_system
 
     def _chat(self, messages, tools, response_format=None):
         body = {"model": self.model, "messages": messages,
@@ -507,16 +509,20 @@ class AgentLane:
                 args = {}
         return {"name": obj["name"], "arguments": args}
 
-    def run_task(self, task_user_msg, store, store_aware=False):
+    def run_task(self, task_user_msg, store, store_aware=False,
+                 skill_text=None):
         existing = ""
         if store_aware:
             topics = ", ".join(sorted(
                 r["topic"] for r in store.list_all()))
             existing = EXISTING_TOPICS_BLOCK.format(
                 topics=topics or "(none)")
-        messages = [{"role": "system",
-                     "content": AGENT_SYS.format(
-                         today=date.today(), existing=existing)},
+        sys_prompt = AGENT_SYS.format(
+            today=date.today(), existing=existing)
+        extra = skill_text or self.extra_system
+        if extra:
+            sys_prompt += "\n\n" + extra
+        messages = [{"role": "system", "content": sys_prompt},
                     {"role": "user", "content": task_user_msg}]
         calls, tok_in, tok_out, llm_calls = [], 0, 0, 0
         models_seen, final_text, err = set(), "", None
@@ -721,6 +727,20 @@ def stats_drafts(rec, task, store):
     rec["filings"] = filings
 
 
+def _load_skill(name):
+    p = SKILL_DIR / name
+    try:
+        return p.read_text()
+    except OSError:
+        return ""
+
+
+SKILL_DIR = Path("/home/tony/reports/skills")
+_SKILL_FILES = {"transcript": "filing.md", "ops": "ops.md",
+                "recall": "recall.md"}
+TASK_SKILLS = {t: _load_skill(n) for t, n in _SKILL_FILES.items()}
+
+
 def run_agent_task(lane, task, store, store_aware=False):
     if task["type"] == "transcript":
         msg = TRANSCRIPT_INSTR % task["transcript"]
@@ -732,7 +752,8 @@ def run_agent_task(lane, task, store, store_aware=False):
         msg = ("Tony asks: %s\n\nPoint to the lesson that answers this — "
                "use the tools to find it and reply with its slug, or "
                "reply \"none\" if no lesson covers it." % task["query"])
-    rec = lane.run_task(msg, store, store_aware=store_aware)
+    rec = lane.run_task(msg, store, store_aware=store_aware,
+                        skill_text=TASK_SKILLS.get(task["type"]))
     stats_drafts(rec, task, store)
     return rec
 
@@ -948,8 +969,17 @@ def main():
                     help="OpenRouter model for the clawbot lane "
                          f"(default {OR_MODEL}; pin a named model to "
                          "reduce free-router model-mix confounding)")
+    ap.add_argument("--clawbot-ollama", action="store_true",
+                    help="run the clawbot lane against the local ollama")
+    ap.add_argument("--hermes-gateway", action="store_true",
+                    help="route the hermes lane through the LiteLLM gateway")
     ap.add_argument("--tasks", nargs="+", default=None,
                     help="task ids to run (default: all)")
+    ap.add_argument("--progress-log", default=None,
+                    help="append one JSON progress line per task to this file")
+    ap.add_argument("--agent-prompt", default=None,
+                    help="file whose text is appended to the agent system "
+                         "prompt (the bench's skill text)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--no-judge", action="store_true")
@@ -963,6 +993,9 @@ def main():
     ap.add_argument("--out", default=None,
                     help="output prefix (default reports/bench-edu-manage-<date>)")
     args = ap.parse_args()
+
+    agent_prompt = (Path(args.agent_prompt).read_text()
+                    if args.agent_prompt else "")
 
     corpus = json.loads(CORPUS.read_text())
     if args.rescore:
@@ -978,6 +1011,14 @@ def main():
                         "GOOGLE_API_KEY"))
     orkey = load_secret(("OPENROUTER_API_KEY",),
                         env_files=("~/.config/secrets/openrouter.env",))
+    litellm_url = load_secret(
+        ("LITELLM_URL",),
+        env_files=("~/.config/secrets/litellm-keys.env",
+                   "~/.config/secrets/litellm-ada.env"))
+    litellm_key = load_secret(
+        ("LITELLM_KEY_BENCH", "LITELLM_KEY"),
+        env_files=("~/.config/secrets/litellm-keys.env",
+                   "~/.config/secrets/litellm-ada.env"))
     ollama = os.environ.get("OLLAMA_URL",
                             "http://100.75.102.88:11434").rstrip("/")
 
@@ -985,21 +1026,41 @@ def main():
     if "current" in args.lanes:
         lanes["current"] = {"kind": "scripted", "model": CURRENT_MODEL}
     if "clawbot" in args.lanes:
-        lanes["clawbot"] = AgentLane("clawbot", OR_BASE, orkey,
-                                     args.or_model, 90)
+        base, key, model = OR_BASE, orkey, args.or_model
+        if args.clawbot_ollama:
+            base, key = ollama + "/v1", "ollama"
+        elif litellm_url and litellm_key:
+            base = litellm_url.rstrip("/")
+            if not base.endswith("/v1"):
+                base += "/v1"
+            key = litellm_key
+            if model == OR_MODEL:
+                model = LITELLM_FREE_MODEL
+        lanes["clawbot"] = AgentLane("clawbot", base, key, model, 90,
+                                     extra_system=agent_prompt)
     if "hermes" in args.lanes:
         lname = ("hermes" if args.ollama_model == HERMES_MODEL
                  else "local-" + re.sub(r"[^a-z0-9]+", "-",
                                         args.ollama_model.lower()))
-        lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
-                                 args.ollama_model, args.ollama_timeout)
+        if args.hermes_gateway and litellm_url and litellm_key:
+            hbase = litellm_url.rstrip("/")
+            if not hbase.endswith("/v1"):
+                hbase += "/v1"
+            lanes[lname] = AgentLane(lname, hbase, litellm_key,
+                                     args.ollama_model,
+                                     args.ollama_timeout,
+                                     extra_system=agent_prompt)
+        else:
+            lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
+                                     args.ollama_model, args.ollama_timeout,
+                                     extra_system=agent_prompt)
 
     out_prefix = args.out or str(
         REPO / "reports" / f"bench-edu-manage-{date.today().isoformat()}")
     all_scores, all_recs, drafts = {}, {}, []
     for rep in range(args.reps):
         for name, lane in lanes.items():
-            print(f"[{name}] rep {rep + 1}")
+            print(f"[{name}] rep {rep + 1}", flush=True)
             t_scores, t_recs = [], []
             for task in tasks:
                 store = MockStore(corpus["seeds"][task["seed"]])
@@ -1025,7 +1086,15 @@ def main():
                                        f["topic"])})
                 print(f"  {task['id']:28s} ok={sc['completed']} "
                       f"{sc.get('notes', [])} lat={rec['latency']:.0f}s"
-                      + (f" err={rec['err']}" if rec.get("err") else ""))
+                      + (f" err={rec['err']}" if rec.get("err") else ""),
+                      flush=True)
+                if args.progress_log:
+                    with open(args.progress_log, "a") as fh:
+                        fh.write(json.dumps({
+                            "rep": rep + 1, "lane": name,
+                            "task": task["id"], "ok": sc["completed"],
+                            "err": rec.get("err"),
+                            "latency": rec["latency"]}) + "\n")
             agg = aggregate(name, t_scores, t_recs)
             all_scores.setdefault(name, []).append(agg)
             all_recs.setdefault(name, []).extend(

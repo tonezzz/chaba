@@ -774,6 +774,8 @@ function cpPane(c) {
     {k: 'executor', v: a.executor || '—', muted: !a.executor, src: a.executor ? SRC_LIVE : SRC_CARD},
     {k: 'lane', v: a.lane || '—', muted: !a.lane, src: a.lane ? SRC_LIVE : SRC_CARD},
     {k: 'model', v: a.model || '—', muted: !a.model, src: a.model ? SRC_LIVE : SRC_CARD},
+    {k: 'provider', v: ev.provider || '—', muted: !ev.provider,
+     src: ev.provider ? SRC_METRIC : undefined},
     {k: 'profile', v: a.agent_profile || a.profile || '—',
      muted: !(a.agent_profile || a.profile),
      src: (a.agent_profile || a.profile) ? SRC_LIVE : SRC_CARD},

@@ -1,24 +1,23 @@
 {
   "schema": 1,
-  "_comment": "DISABLED TEMPLATE — this request cannot render: status is not 'approved' and owner_approved is false, so the pack fails closed at preflight. To arm one render: copy this file, set status='approved', owner_approved=true, approved_by=<who approved>, approved_at=<iso-utc>, fill the final prompt, and set render_window to the approved window. Stage to gdrive:ada-nest/kk-llm only during an owner-idle window on KK-Mac. Never set adobe_upload to anything but false.",
-  "status": "template_disabled",
-  "request_id": "template-disabled-do-not-run",
+  "_comment": "ARMED — one bounded SDXL comparison render for the Adobe Stock Nest pipeline (card adobe-stock-kk-mac-render-poc). From the template: status approved, owner approved, prompt set to the mangrove hut + fishing boat at sunset (prompt selected by Tony, 2026-11-20). Approved_by/approved_at/render_window set by Tony on 2026-11-20T05:23:51Z — adjust as needed. adobe_upload must stay false.",
+  "status": "approved",
+  "request_id": "render-2026-11-20-mangrove-hut-b",
   "campaign": "AS-2026-11-05-REMOTE-WORK-001",
   "purpose": "One bounded SDXL comparison render for the remote-work campaign (comparison-b style baseline exists in gdrive:ada-nest/adobe-stock).",
-  "owner_approved": false,
-  "approved_by": null,
-  "approved_at": null,
+  "owner_approved": true,
+  "approved_by": "Tony",
+  "approved_at": "2026-11-20T05:23:51Z",
   "adobe_upload": false,
   "render_window": {
-    "not_before_utc": "2026-01-01T00:00:00Z",
-    "not_after_utc": "2026-01-01T00:00:00Z"
+    "not_before_utc": "2026-11-20T05:23:51Z",
+    "not_after_utc": "2026-11-21T05:23:51Z"
   },
-  "prompt": "Photorealistic modern home office workspace, laptop on a wooden desk near a bright window, warm morning light, coffee cup and notebook, shallow depth of field, natural colors, commercial stock photo",
+  "prompt": "A hut in the middle of a mangrove forest cluster, half buried in the tree lines. Evening light scene with a fishing boat passing by at sunset, clear summer sky with white clouds — full HD.",
   "negative_prompt": "cartoon, illustration, painting, cgi, text, watermark, logo, signature, people, hands, deformed, blurry, oversaturated",
   "model": {
     "id": "stabilityai/stable-diffusion-xl-base-1.0",
-    "revision": "462165984030d82259a11f4367a4eed129e94a7b",
-    "_manifest_contract": "request.model must equal $VENV/model-manifest.json {model_id, revision}; the pinned snapshot must already exist on disk (snapshot_dir in the manifest, else ~/.cache/huggingface/hub/models--<id>/snapshots/<revision>). No downloads — mismatch fails closed."
+    "revision": "462165984030d82259a11f4367a4eed129e94a7"
   },
   "render": {
     "width": 1024,

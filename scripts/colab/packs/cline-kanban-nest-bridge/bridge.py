@@ -43,7 +43,7 @@ def validate_spec(spec):
         ("ollama", "qwen3:4b"),
         ("ollama", "qwen2.5:7b"),
         ("openrouter", "or-free-nemotron-nano"),
-        ("openrouter", "or-free-gemma31b"),
+        ("openrouter", "or-free-nemotron-35"),
     }
     if (spec.get("provider_id"), spec.get("model_id")) not in allowed:
         raise ValueError(

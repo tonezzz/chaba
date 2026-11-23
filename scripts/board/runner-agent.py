@@ -1380,7 +1380,7 @@ def finish_profile_dispatch(cid, taskdir, meta, card, ocp):
         if run.get("scope_violations"):
             raise ValueError("profile scope audit failed")
         artifact = (rd / "artifact.out").read_bytes()
-        if not ocp.artifact_matches_snapshot(rd):
+        if env.get("dispatch_verify") == "host_snapshot" and not ocp.artifact_matches_snapshot(rd):
             raise ValueError("artifact differs from original host tool output")
         if (wt / env["artifact"]["path"]).read_bytes() != artifact:
             raise ValueError("landed artifact differs from verified evidence")

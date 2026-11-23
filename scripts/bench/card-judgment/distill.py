@@ -19,7 +19,7 @@ Lane chain (same fallback pattern as verify_worker):
   cf-70b        Cloudflare Workers AI llama-3.3-70b
                 (CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN|CF_API_TOKEN)
   local-ollama  127.0.0.1:11434 llama3.2:3b
-  or-free       OpenRouter :free via litellm gateway (or-free-gemma31b)
+  or-free       OpenRouter :free via litellm gateway (or-free-nemotron-nano)
   flash-lite-free gemini free tier via litellm gateway
   gemini-direct  tail lane: direct Gemini API w/ GEMINI_API_KEY (free key)
 
@@ -83,7 +83,7 @@ def default_lanes():
     gw_base = os.environ.get("LITELLM_URL", GW_BASE).rstrip("/")
     if gw_key:
         lanes.append(("or-free", gw_base, os.environ.get(
-            "DISTILL_OR_MODEL", "or-free-gemma31b"), gw_key))
+            "DISTILL_OR_MODEL", "or-free-nemotron-nano"), gw_key))
         lanes.append(("flash-lite-free", gw_base, os.environ.get(
             "DISTILL_FREE_MODEL", "gemini-3.5-flash-lite-free"), gw_key))
     gem_key = os.environ.get("GEMINI_API_KEY", "")
