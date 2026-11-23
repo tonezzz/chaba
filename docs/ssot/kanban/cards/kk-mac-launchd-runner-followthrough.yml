@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
-column: doing
-updated: 2026-11-23 22:07
+column: backlog
+updated: 2026-11-23 22:32
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -9,17 +9,16 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: failed
   sweep:
     stale_running: 2026-11-19 09:59
     dirty: 1
     session_gone: 2026-11-19 10:51
   attempts: 2
-  last_failure: 'exit=1 -20261123-211859-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''.
-    | devin-task-20261123-211859-kk-mac-launchd-runner-port-shi.service: Consumed 3min 17.878s CPU time over 15min
-    48.124s wall clock time, 1G memory peak.'
-  result: 'exit=1 -20261123-211859-kk-mac-launchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261123-211859-kk-mac-launchd-runner-port-shi.service:
-    Consumed 3min 17.878s CPU time over 15min 48.124s wall clock time, 1G memory peak.'
+  last_failure: 'exit=1 aunchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261123-220626-kk-mac-launchd-runner-port-shi.service:
+    Consumed 4min 12.527s CPU time over 25min 26.256s wall clock time, 1G memory peak, 591.7M memory swap peak.'
+  result: 'exit=1 aunchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261123-220626-kk-mac-launchd-runner-port-shi.service:
+    Consumed 4min 12.527s CPU time over 25min 26.256s wall clock time, 1G memory peak, 591.7M memory swap peak.'
   runner: tony-dell
 ref: OPS-0220
 comms:
@@ -374,6 +373,14 @@ comms:
     VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [kk-mac-launchd-runner-followthrough] primer injected 8
     lesson(s): [kk-mac-launc; [kk-mac-launchd-runner-followthrough] primer injected 8 lesson(s): [kk-mac-launc;
     [speed-probe] primer injected 8 lesson(s): Check `sha256sum` '
+- at: 2026-11-23 22:32
+  from: tony-dell
+  text: 'finished (failed): exit=1 aunchd-runner-port-shi.service: Failed with result ''exit-code''. | devin-task-20261123-220626-kk-mac-launchd-runne
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:32
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220626-kk-mac-launchd-runner-port-shi (rate limit)
+    — tony-dell holds new claims ~30m
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
