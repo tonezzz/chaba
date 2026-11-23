@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
-column: backlog
-updated: 2026-11-23 16:33
+column: doing
+updated: 2026-11-23 16:48
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -286,6 +286,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
     — claims held ~29m'
+- at: 2026-11-23 16:48
+  from: idc02
+  text: claimed
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -323,11 +326,11 @@ requests:
   answer: '2'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-23 16:32
     zero_commit: 2026-11-23 16:32
@@ -335,6 +338,6 @@ action:
     Consumed 1min 25.660s CPU time over 2min 12.618s wall clock time, 957.9M memory peak.'
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   verified: false
+  runner: idc02
 claim:
-  since: 2026-11-23 16:26
-awaiting_action: true
+  since: 2026-11-23 16:48
