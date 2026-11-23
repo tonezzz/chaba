@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-omen
 title: OpenCode closeout probe pinned to tony-omen
 column: doing
-updated: 2026-11-23 18:41
+updated: 2026-11-23 18:45
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-omen.
 priority: low
 program: chaba-ci
@@ -224,5 +224,12 @@ comms:
   text: 'attempt 2 in worktree dispatch-wt-20261123-183844: push dry-run OK on tony-omen (ssh deploy key works from
     worktree), opencode 1.19.4 present, litellm proxy reachable + gemini-3.5-flash-lite listed. Plan: opencode free_lane
     appends README marker, verify, commit+push branch, close-out auto-merge.'
+- at: 2026-11-23 18:45
+  from: devin
+  text: 'probe PASSED on tony-omen: opencode run --auto (agent build) appended the README marker itself via free_lane.
+    Deviation: chaba LITELLM_KEY is ACL-denied gemini-3.5-flash-lite on the idc03 proxy (key_model_access_denied)
+    — ran the free-route alias gemini-3.5-flash-lite-free instead via run-local OPENCODE_CONFIG (same model, free
+    alias). Diff = exactly +1 line; rc=0. Committed 72dee7bc9d + pushed dispatch/20261123-183844-append-one-marker-line-to-read
+    to origin (push works from worktree — the old '
 claim:
   since: 2026-11-23 18:37
