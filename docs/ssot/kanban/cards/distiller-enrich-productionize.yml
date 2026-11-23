@@ -186,6 +186,9 @@ comms:
 - at: 2026-11-23 20:15
   from: tony
   text: queued for processing
+- at: 2026-11-23 20:15
+  from: tony
+  text: retry requested
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
@@ -205,11 +208,12 @@ action:
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  result: 'exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233752-productionize-enriched-t1-dist.service: Consumed 9.439s CPU time over 4.680s wall
-    clock time, 233.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
+  last_failure: 'exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233752-productionize-enriched-t1-dist.service: Consumed 9.439s CPU time over 4.680s wall
+    clock time, 233.2M memory peak.'
+  attempts: 0
 spec: Productionize the enriched T1 distiller by enabling the --enrich hook and setting up the hybrid T1/T2 recall
   path in the chaba repository on idc02. The implementation must integrate the enrichment flag into the distiller
   pipeline and verify hybrid recall operations. The done-condition is verified when running the distiller with --enrich
