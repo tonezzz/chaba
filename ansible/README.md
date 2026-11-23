@@ -118,6 +118,11 @@ ansible kk-mac -m ping
 ansible-playbook playbooks/disk-headroom.yml --check --diff   # real dry-run
 ansible-playbook playbooks/disk-headroom.yml                  # probe + write
 ansible-playbook playbooks/disk-headroom.yml --limit tony-dell
+
+# Fleet MCP verification audit (read-only; tailnet/MCP config required on host)
+ansible-playbook playbooks/audit-mcp-verify.yml --check --diff
+ansible-playbook playbooks/audit-mcp-verify.yml
+ansible-playbook playbooks/audit-mcp-verify.yml --limit tony-dell
 ```
 
 `disk-headroom.yml` specifics:
@@ -138,6 +143,19 @@ ansible-playbook playbooks/disk-headroom.yml --limit tony-dell
   skipped by `--limit` write nothing — a skipped laptop must not record
   a false `unreachable` sample. Disable with `-e disk_trend_feed=false`.
 - Verdict reports land in `reports/ansible-benchmark/disk/<host>.yml`.
+
+`audit-mcp-verify.yml` specifics:
+
+- **Read-only probe** — runs `scripts/verify-all-mcp-servers.py --json` from
+  each host's `~/CascadeProjects/chaba` checkout (override with
+  `-e chaba_repo_path=...`). Hosts without a checkout or MCP config are
+  reported as `skipped`, not failed.
+- **Controller self-detect** — same as `disk-headroom.yml`: the controller
+  probes itself via `ansible_connection=local` to avoid ssh-to-self key
+  issues. Override with `-e self_host=<name>`.
+- **`--check --diff` is a real dry-run** — the probe is read-only and runs
+  anyway (`check_mode: no`); report writes are skipped.
+- Verdict reports land in `reports/ansible-benchmark/mcp/<host>.yml`.
 
 ## SSH known_hosts (host_key_checking)
 
