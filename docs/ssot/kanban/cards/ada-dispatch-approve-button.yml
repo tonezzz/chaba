@@ -222,6 +222,13 @@ comms:
     action exec + verified/unverified lifecycle pushes), selftest green. Added scripts/board/approve-ask.py (canonical
     approve-menu emitter) + tests/board/test_approve_ask.py + docs/kb/ada-approve-dispatch-loop.md runbook. 113
     board tests + 8 new tests pass.'
+- at: 2026-11-23 15:59
+  from: devin
+  text: 'DONE (attempt 2). All 3 spec gaps now have landed code on this branch: (1) click-level approval — board-api
+    _exec_option_action runs the selected option''s declared action in the /respond write; (2) dispatch-triggering
+    menu — scripts/board/approve-ask.py emits {id,label,action} option dicts (do_request validates the enum); (3)
+    close-the-loop — verified/unverified lifecycle events push via /publish->Telegram from kanban-dispatch + merge-sweep
+    (auto-close announced, held verdicts alerted once). Ver'
 review_kind: verify
 action:
   type: dispatch
