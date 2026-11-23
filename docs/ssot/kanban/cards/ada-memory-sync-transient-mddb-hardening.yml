@@ -1,7 +1,7 @@
 id: ada-memory-sync-transient-mddb-hardening
 title: 'ada-memory-sync: tolerate transient MDDB blips (retry/backoff or timeout bump)'
 column: done
-updated: 2026-11-23 15:09
+updated: 2026-11-23 16:18
 priority: medium
 tags:
 - hardening
@@ -179,6 +179,10 @@ comms:
   from: chaba
   text: '[verify] Review pass 2026-11-23 (Tony): 2026-11-18 17:46 devin: merged to master 7d3196d24d0, 26/26 tests,
     retries + timer :17 applied; timeout was suite-budget flake'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
