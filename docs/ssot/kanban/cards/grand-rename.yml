@@ -1,7 +1,7 @@
 id: grand-rename
 title: Grand rename — compositional <x>-ha/-ha-dev/-ai/-ai-dev across units, ports, paths, env files
-column: doing
-updated: 2026-11-23 16:19
+column: review
+updated: 2026-11-23 16:25
 brief: Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml
   rename_map. Subsumes OPS-0726 (mn-dev rename).
 priority: medium
@@ -274,12 +274,40 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:25
+  from: tony-omen
+  text: 'finished (ok): exit=0  they rename production voice lanes and a wrong scheme choice would double the work.
+    | devin-task-20261123-155440'
+- at: 2026-11-23 16:25
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 16:25
+  from: chaba
+  text: 'session-end checkpoint 3ef8810d: 1 leftover file(s) committed'
+- at: 2026-11-23 16:25
+  from: chaba
+  text: banked 184 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 16:25
+  from: chaba
+  text: pushed dispatch/20261123-155440-target-ada-pi-pwa-member-ai-80 to origin
+- at: 2026-11-23 16:25
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 79.9s)
+- at: 2026-11-23 16:25
+  from: chaba
+  text: auto-merged db309dd7 (dispatch/20261123-155440-target-ada-pi-pwa-member-ai-80) → origin/master
+- at: 2026-11-23 16:25
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0  devin-task-20261027-065557-target-ada-pi-pwa-member-ai-80.service: Failed with result ''exit-code''.
-    | devin-task-20261027-065557-target-ada-pi-pwa-member-ai-80.service: Consumed 1.224s CPU time over 687ms wall
-    clock time, 29.7M memory peak.'
+  status: done
+  result: 'exit=0  they rename production voice lanes and a wrong scheme choice would double the work. | devin-task-20261123-155440-target-ada-pi-pwa-member-ai-80.service:
+    Consumed 3min 46.168s CPU time over 11min 39.847s wall clock time, 960.2M memory peak.'
   sweep:
     session_gone: 2026-10-27 07:01
     no_repo: 2026-10-31 13:50
@@ -290,6 +318,7 @@ action:
   model: litellm/gemini-2.5-flash
   runner: tony-omen
   attempts: 1
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-23 15:53
