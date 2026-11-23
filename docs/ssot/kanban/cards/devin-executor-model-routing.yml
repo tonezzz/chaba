@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: backlog
-updated: 2026-11-23 19:11
+updated: 2026-11-23 19:22
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -194,6 +194,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:22
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-23 19:22
+  from: tony
+  text: queued for processing
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -215,13 +221,12 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-dell
   result: 'exit=1 evin-task-20261117-233742-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''.
     | devin-task-20261117-233742-fix-the-executor-model-id-mism.service: Consumed 39.301s CPU time over 15.147s
     wall clock time, 1.3G memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
-awaiting_action: true
+claim: {}

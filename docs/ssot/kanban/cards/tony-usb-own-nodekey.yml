@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: review
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:17
+updated: 2026-11-23 19:22
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -443,6 +443,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-23 19:22
+  from: tony
+  text: 'answered physical-step-remains-the-tony-usb-stick-41f071: proceed'
+- at: 2026-11-23 19:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -475,10 +481,12 @@ requests:
     the stick, run FIRST: sudo bash scripts/ops/stick-own-nodekey.sh (or ssh tony@<lan-ip> ''sudo bash -s'' < scripts/ops/stick-own-nodekey.sh
     from any fleet host), then approve the new tony-usb node in the Tailscale admin console. Everything else is
     committed on this dispatch branch — docs updated, script ready.'
-  status: open
+  status: answered
   at: 2026-11-23 19:03
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
