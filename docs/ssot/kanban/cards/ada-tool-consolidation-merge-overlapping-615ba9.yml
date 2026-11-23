@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: doing
-updated: 2026-11-23 21:17
+updated: 2026-11-23 21:22
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -387,6 +387,10 @@ comms:
   from: devin
   text: 'attempt on tony-macbook: prior exits were provider rate-limits (no code). Auditing CMS write surfaces now
     — cms_publish_page/cms_edit/wp_post/cpt_post/place_report.'
+- at: 2026-11-23 21:22
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-211458-ada-tool-consolidation-merge-o on
+    tony-macbook — if the work was never pushed it may be gone'
 action:
   type: dispatch
   repo: ada-voice
@@ -399,6 +403,7 @@ action:
   sweep:
     stale_running: 2026-11-23 19:48
     dirty: 5
+    session_gone: 2026-11-23 21:22
   result: 'exit=1 consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-202451-ada-tool-consolidation-merge-o.service:
     Consumed 1min 1.221s CPU time over 18min 30.218s wall clock time, 863M memory peak, 458.3M memory swap peak.'
   runner: tony-macbook
@@ -432,3 +437,4 @@ requests:
     task
 claim:
   since: 2026-11-23 21:14
+awaiting_action: true
