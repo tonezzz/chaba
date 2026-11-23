@@ -1,0 +1,14 @@
+id: investigate-devin-handoff-job-ledger-ter-408e7a
+title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
+column: backlog
+updated: 2026-11-23 21:29
+note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
+  shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
+  — 268 of the 323 docs touched in the last 7d never got a terminal write (done 186 / failed 119 / superseded 72
+  / answered 2). Either devin-dispatch-watch''s mddb_job writes are not landing on all hosts (WATCH_JOB_DOC=1 default;
+  deployed ~/.local/bin copies can lag the repo — chec'
+ref: DEV-0047
+comms:
+- at: 2026-11-23 21:29
+  from: devin
+  text: card captured via board-api
