@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
-column: review
-updated: 2026-11-23 14:20
+column: backlog
+updated: 2026-11-23 15:09
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -21,6 +21,7 @@ spec: 'Reconcile these three Oct 6 outputs found only as untracked files on tony
   origin/master. The archived ada-dead-turn-guard card is tracked and is not a miss.'
 action:
   type: manual
+  status: idle
 ref: AUD-0020
 comms:
 - at: 2026-11-20 16:38
@@ -59,4 +60,16 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:09
+  from: chaba
+  text: '[verify-hold] Review pass 2026-11-23 (Tony): 2026-11-20 17:34 devin: PR #196 reconcile done but required
+    CI validate failed on 4 unrelated files; PR still open, no bypass attempted — held, not closed; needs the noted
+    decision/blocker cleared.'
+- at: 2026-11-23 15:09
+  from: tony
+  text: put on hold
+- at: 2026-11-23 15:09
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
 review_kind: verify
+awaiting_action: true
