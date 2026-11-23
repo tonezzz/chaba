@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
-column: done
-updated: 2026-11-23 16:19
+column: backlog
+updated: 2026-11-23 16:29
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -353,6 +353,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:29
+  from: chaba
+  text: classified as paid_frontier (kw:construct conf 1.00)
+- at: 2026-11-23 16:29
+  from: tony
+  text: queued for processing
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -374,7 +380,7 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: queued
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -385,8 +391,6 @@ action:
     Consumed 14min 45.197s CPU time over 22min 51.242s wall clock time, 1.6G memory peak, 750.6M memory swap peak.'
   result: 'exit=0 -memory-inspection-pa.md` and final comms posted to the card. | devin-task-20261123-155646-implement-memory-inspection-pa.service:
     Consumed 3min 46.473s CPU time over 10min 47.240s wall clock time, 1.1G memory peak, 785.6M memory swap peak.'
-  runner: tony-dell
-  verified: true
 claim:
   since: 2026-11-23 15:56
 review_kind: verify
