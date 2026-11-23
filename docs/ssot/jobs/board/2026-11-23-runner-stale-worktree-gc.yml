@@ -1,0 +1,99 @@
+id: runner-stale-worktree-gc
+title: runner-agent stale dispatch-worktree GC at lane start
+date: 2026-11-23
+card: opencode-retry-stale-worktree
+ref: OPS-1039
+host: fleet (runner-agent.py — idc02/idc03/dell/omen/mn01/macbook snapshots self-update)
+status: implemented
+
+goal: >
+  OPS-1021 proved the failure: when an opencode run is held (verifier
+  fail / merge held) the dispatch worktree dispatch-wt-<task-id>
+  stays behind. The task-id is effectively stable per card —
+  start_task builds runner-<cid>-<epoch> truncated to 60 chars, so
+  long card ids lose epoch digits and EVERY retry computes the same
+  tid — and each retry died on "start failed: worktree already
+  exists" until a human removed the dir (4 manual removals in one
+  session, plus the archived diagnose-con01 card shows the same
+  loop).
+
+root_cause: >
+  _start_opencode_lane / start_kk_mac_lane created
+  ~/CascadeProjects/dispatch-wt-<tid> + ~/.local/share/devin-dispatch/
+  tasks/<tid> and hard-failed when the worktree path already
+  existed — no distinction between a live run, a finished run whose
+  evidence is durable, and dead residue.
+
+fix:
+  file: scripts/board/runner-agent.py
+  helpers:
+    - _task_units_active(tid): >
+        True while devin-task-<tid> or a -fuN followup (shares the
+        taskdir/worktree) is active/activating — systemd
+        list-units + is-active, launchd plist glob + launchctl
+        print via the existing unit_active/task_runtime seams.
+    - _stale_worktree_reapable(taskdir): >
+        meta.json executor in the lane family (opencode* /
+        kk_mac_local) proves this machinery launched the dead run;
+        otherwise taskdir exit_code or verdict.json is the durable
+        finish evidence. Foreign executor / missing meta falls back
+        to finish evidence only — never reap unattributed trees.
+    - _remove_dispatch_worktree(root, worktree): >
+        resolves the OWNING repo from the tree's own
+        --git-common-dir (action.repo can change between retries),
+        git worktree remove --force + prune; a still-registered
+        (locked/unremovable) tree returns the error so the caller
+        defers; unregistered residue is rmtree'd.
+    - _stale_worktree_gate(root, worktree, taskdir, tid): >
+        "" when the path is free; defer reason when a live unit
+        exists (checked FIRST — a stale exit_code from a prior
+        attempt must not trick the GC) or the tree isn't reapable.
+  call_sites: >
+    _start_opencode_lane and start_kk_mac_lane (identical worktree
+    lifecycle — the kk_mac lane had the same collision; its
+    fallback verdict already GC'd its own tree, held/fail verdicts
+    did not). nlm_batch creates no worktree — untouched.
+  ordering: >
+    live unit -> defer; reapable -> remove --force + proceed to
+    worktree add -B (branch resets to base, same as the manual
+    removal procedure); otherwise -> defer with a reason that lands
+    in the "start failed:" comms line.
+
+evidence_preserved: >
+  taskdir (meta.json, usage.json, events.jsonl, exit_code,
+  verdict.json, artifact.out, manifest.json) is never touched; only
+  the worktree directory is reaped. Uncommitted files of a dead run
+  are lost — the run is provably over, so they were abandoned
+  scratch; committed work stays reachable via the dispatch/<tid>
+  branch until -B resets it (identical to today's manual flow).
+
+coverage_notes:
+  - >-
+    dead-without-evidence (SIGKILL, RuntimeMaxSec, failed rt_launch,
+    host reboot) is reapable via lane-family meta — without this the
+    card would still wedge on timeout-killed runs.
+  - >-
+    defer is not silent — the reason string rides the existing
+    "start failed:" finish -> card comms, and retry backoff prevents
+    hot-looping.
+  - >-
+    unit-name truncation itself is unchanged (out of scope) — the GC
+    makes the collision self-healing instead of fatal.
+
+tests: >-
+  tests/board/test_runner_stale_worktree.py — 12 cases (real git
+  worktrees in tmpdirs; unit/systemctl stubbed): absent->proceed,
+  exit_code->reap, verdict->reap, dead lane meta->reap, active
+  unit->defer, active -fuN->defer, unattributed->defer, foreign
+  executor->defer, locked->defer, unregistered dir->rmtree, plus two
+  _start_opencode_lane end-to-end cases (recycle+launch,
+  defer+no launch). Related suites: test_worktree_gc +
+  test_runner_agent_{lane,launchd,retry,reconcile} +
+  test_executor_contract — 206 passed.
+
+deploy: >
+  No push/merge from this worktree (dispatch rails). On merge to
+  master, hosts pick it up via chaba-repo-sync; runner-agent's
+  _self_update installs the differing repo copy on next pass
+  (mtime guard) — no manual scp needed on hosts whose checkout is
+  current.

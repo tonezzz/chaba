@@ -177,7 +177,13 @@ leaves a session worktree whose head is provably on origin, the
 worktree+branch are removed locally (dr.gc_session — never dirty trees,
 never unmerged branches; KANBAN_WTGC=0 disables). Merge-sweep runs the
 same cleanup on this host over ssh when it salvaged the merge from
-dell's side.
+dell's side. The lane START side has the mirror problem
+(opencode-retry-stale-worktree): a held/failed lane run leaves
+dispatch-wt-<tid> behind and the tid is stable across retries, so
+_stale_worktree_gate reaps the tree when the previous attempt is
+provably over (taskdir exit_code/verdict.json, or a dead lane-family
+run) and defers while a devin-task-<tid> unit is live or the tree
+can't be attributed — the prior run's evidence stays in the taskdir.
 """
 
 import hashlib
@@ -2687,8 +2693,9 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         taskdir.mkdir(parents=True, exist_ok=True)
-        if worktree.exists():
-            return "", "", f"worktree already exists: {worktree}"
+        wterr = _stale_worktree_gate(root, worktree, taskdir, tid)
+        if wterr:
+            return "", "", wterr
         base = f"origin/{ent.get('default_branch') or 'master'}"
         sh(["git", "-C", str(root), "fetch", "-q", "origin",
             ent.get('default_branch') or 'master'], timeout=60)
@@ -2965,6 +2972,116 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
     return ("", "", err) if err else (f"devin-task-{tid}", tid, "")
 
 
+def _task_units_active(tid: str) -> bool:
+    """True while a devin-task-<tid> unit — the base unit or a -fuN
+    followup, which shares the taskdir/worktree — is still running.
+    The stale-worktree gate must never pull a live tree."""
+    base = f"devin-task-{tid}"
+    if unit_active(base):
+        return True
+    fu = re.compile(re.escape(base) + r"-fu\d+$")
+    if task_runtime() == "launchd":
+        try:
+            cands = [p.name[:-len(".plist")]
+                     for p in _launchd_dir().glob(f"{base}-fu*.plist")]
+        except OSError:
+            cands = []
+    else:
+        r = sh(["systemctl", "--user", "list-units", "--all",
+                "--no-legend", "--plain", f"{base}*"], timeout=15)
+        cands = []
+        for ln in (r.stdout or "").splitlines():
+            parts = ln.split()
+            if parts:
+                u = parts[0].removesuffix(".service")
+                if fu.fullmatch(u):
+                    cands.append(u)
+    return any(unit_active(u) for u in cands)
+
+
+def _stale_worktree_reapable(taskdir: Path) -> bool:
+    """Whether the previous attempt behind a leftover dispatch-wt-<tid>
+    is provably over. The payload shell writes taskdir/exit_code at
+    exit and the lane closeout writes verdict.json — either is durable
+    finish evidence (OPS-1039). A meta.json naming a lane-family
+    executor (opencode*/kk_mac_local) proves this machinery launched
+    the dead run — the caller already proved no devin-task-<tid> unit
+    is live, so SIGKILL/RuntimeMaxSec/failed-launch residue is safe to
+    reap. A foreign executor, a meta with no executor, or no meta at
+    all defers unless finish evidence exists — never reap what we
+    can't attribute."""
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+        ex = meta.get("executor")
+        if ex is not None:
+            ex = str(ex)
+            return ex.startswith("opencode") or ex == "kk_mac_local"
+    except Exception:
+        pass
+    return (taskdir / "exit_code").is_file() or \
+        (taskdir / "verdict.json").is_file()
+
+
+def _remove_dispatch_worktree(root: Path, worktree: Path) -> str:
+    """"" when the stale dispatch worktree is gone, else the reason it
+    had to stay. The tree's own git context names the repo that owns
+    it — action.repo can change between retries, so the caller's
+    checkout isn't guaranteed to be the owner. A tree git still
+    registers (locked or otherwise unremovable) stays and the caller
+    defers; an unregistered leftover is plain directory residue."""
+    repo = root
+    r = sh(["git", "-C", str(worktree), "rev-parse",
+            "--git-common-dir"], timeout=15)
+    if r.returncode == 0:
+        common = Path(r.stdout.strip())
+        if not common.is_absolute():
+            common = (worktree / common).resolve()
+        repo = common.parent
+    r = sh(["git", "-C", str(repo), "worktree", "remove",
+            "--force", str(worktree)], timeout=60)
+    if r.returncode == 0:
+        sh(["git", "-C", str(repo), "worktree", "prune"], timeout=30)
+        return ""
+    chk = sh(["git", "-C", str(repo), "worktree", "list",
+              "--porcelain"], timeout=15)
+    registered = any(ln.strip() == f"worktree {worktree}"
+                     for ln in (chk.stdout or "").splitlines())
+    if registered:
+        return (r.stderr or r.stdout).strip()[:200]
+    try:
+        shutil.rmtree(worktree)
+    except OSError as e:
+        return f"{(r.stderr or r.stdout).strip()[:160]}; rmtree: {e}"
+    sh(["git", "-C", str(repo), "worktree", "prune"], timeout=30)
+    return ""
+
+
+def _stale_worktree_gate(root: Path, worktree: Path,
+                         taskdir: Path, tid: str) -> str:
+    """"" when the dispatch worktree path is free for a fresh
+    `git worktree add`, else the reason this start must defer
+    (opencode-retry-stale-worktree / OPS-1039). A held or failed lane
+    run leaves dispatch-wt-<tid> behind; the tid is stable across
+    retries — runner-* unit names truncate the epoch for long card
+    ids — so every retry used to die on "worktree already exists"
+    until a human removed the dir. Order matters: a live
+    devin-task-<tid> unit defers even when a stale exit_code from a
+    prior attempt is present; only a provably-over previous run is
+    reaped."""
+    if not worktree.exists():
+        return ""
+    if _task_units_active(tid):
+        return ("worktree already exists and the previous run is "
+                f"still active: {worktree}")
+    if not _stale_worktree_reapable(taskdir):
+        return ("worktree already exists and the previous run left "
+                f"no usable finish evidence: {worktree}")
+    err = _remove_dispatch_worktree(root, worktree)
+    if err:
+        return f"stale worktree kept — removal failed: {err}"
+    return ""
+
+
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     if not isinstance((_act(card)).get("lane_envelope"), dict):
         return "", "", "OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held"
@@ -3042,8 +3159,9 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         taskdir.mkdir(parents=True, exist_ok=True)
-        if worktree.exists():
-            return "", "", f"worktree already exists: {worktree}"
+        wterr = _stale_worktree_gate(root, worktree, taskdir, tid)
+        if wterr:
+            return "", "", wterr
         base = f"origin/{ent.get('default_branch') or 'master'}"
         sh(["git", "-C", str(root), "fetch", "-q", "origin",
             ent.get('default_branch') or 'master'], timeout=60)
