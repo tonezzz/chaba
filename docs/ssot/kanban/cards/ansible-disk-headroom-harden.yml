@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
-column: backlog
-updated: 2026-11-23 10:59
+column: doing
+updated: 2026-11-23 11:14
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -38,9 +38,36 @@ comms:
 - at: 2026-11-23 10:59
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-23 11:04
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 11:05
+  from: chaba
+  text: started devin-task-20261123-110521-goal-make-ansible-disk-headroo on tony-macbook (dispatch)
+- at: 2026-11-23 11:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ansible-vs-legacy-fleet-benchmark] MANUAL LANDING (devin session, tony-dell
+    con; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-21 devin] Phase B+ dr; ansible_host as Tailscale
+    IP means each controller needs the IP itself in ~/.ssh; attempt-1 failure was a provider rate-limit mid-run,
+    not a code bug — check card; command/shell tasks skip under --check, so `failed_when`/`when: x.rc` gates can'';
+    Required guardrail: jail.local ignoreip must cover loopback +'
+- at: 2026-11-23 11:08
+  from: devin
+  text: 'in progress: adding controller self-detect (ansible_connection=local), real --check --diff support (probe
+    check_mode:no + in-memory verdicts), DISK_TREND_HISTORY jsonl append, and host_key_checking docs'
+- at: 2026-11-23 11:14
+  from: devin
+  text: 'done in worktree: disk-headroom.yml rewritten as single play — controller self-detect (ansible_connection=local
+    via pre_tasks set_fact, -e self_host override), real --check --diff (probe check_mode:no + in-memory alert render),
+    DISK_TREND_HISTORY jsonl append gated on actually-probed + ssot-known hosts (macbook key mapping, used_kb added),
+    host_key_checking documented in ansible/README.md known_hosts section. Fixed latent bug: dedicated localhost
+    eval play was stripped by --limit. Verified on to'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-23 11:04

@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-23 11:01
+updated: 2026-11-23 11:06
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -311,6 +311,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-105125-in-ada-voice-opencode-ada-mcp-,
     branch dispatch/20261123-105125-in-ada-voice-opencode-ada-mcp-'
+- at: 2026-11-23 11:06
+  from: devin
+  text: 'DONE attempt5 (c573eb9 on dispatch/20261123-105754): this run was a duplicate of attempt4 — cherry-picked
+    its 361723f as b1059fc so the +copy-<hash> fix lands whichever sibling merge-sweep picks. Verified on idc02:
+    9/9 version tests x3, 81/81 ada_mcp tests, tool-lint clean, 3-copy probe all distinct (git-b1059fc / git-06d1566+copy-3cd10becaa
+    / dev-aeb2ce12b6). Live calls.jsonl here shows 8 bridge versions serving real sessions incl. MCP children spawned
+    from dispatch-worktree cwds — attribution '
 review_kind: verify
 claim:
   since: 2026-11-23 10:56

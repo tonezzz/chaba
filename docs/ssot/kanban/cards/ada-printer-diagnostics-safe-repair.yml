@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: doing
-updated: 2026-11-23 11:01
+updated: 2026-11-23 11:16
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -337,6 +337,13 @@ comms:
   from: devin
   text: 'raised request ipp-identity-verified-2026-11-23-via-ton-f51f78: IPP identity verified 2026-11-23 via tony-dell:
     the DeskJet is at 192.168.2.92 (mDNS HPE073E705C516.local resolves .92; '
+- at: 2026-11-23 11:16
+  from: devin
+  text: 'done on idc02 (attempt 3): canonical printer tool (status|jobs|verify reads + confirmed single-job release|retry|cancel
+    via narrow helper scripts/ada-cups-helper.py, now installed at tony-dell:~/bin). Identity verified live: printer
+    at .92 (card .78 stale), uuid ...b906fe (card ...b90fe6 transposed); HP_DeskJet_2700 still stale->.75 repeater,
+    NOT retargeted — needs separate approval (request raised). Helper verified live incl. held-job release/cancel
+    on the dead queue + all negative paths. 25 fo'
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
@@ -384,3 +391,4 @@ action:
   runner: idc02
 claim:
   since: 2026-11-23 10:53
+awaiting_action: true

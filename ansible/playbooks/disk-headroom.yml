@@ -36,6 +36,11 @@
 #   ssh-keyscan -H <tailscale-ip> >> ~/.ssh/known_hosts
 # or inventory-wide via ansible/README.md "SSH known_hosts".
 #
+#   * underused signal (informational): mount <50% used or >100 GiB free —
+#     surfaces over-provisioned capacity for storage-rebalance-underused.
+# disk-trend still owns the *trend* (slope over jsonl history) — ansible
+# runs are stateless, this playbook only covers the instantaneous check.
+#
 # Usage (from ansible/):
 #   ansible-playbook playbooks/disk-headroom.yml
 #   ansible-playbook playbooks/disk-headroom.yml --check --diff   # dry-run
@@ -89,6 +94,8 @@
       tony-macbook: macbook
     crit_pct: 90          # disk-trend CRIT_PCT — flat fleet crit
     min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
+    underused_pct: 50     # informational: mount <50% used is underused
+    underused_free_gib: 100  # ...or >100 GiB free
     disk_trend_feed: true
     # Shared with scripts/ada/disk-trend-watch.py — same env override.
     disk_trend_history: >-

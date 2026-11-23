@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
-column: doing
-updated: 2026-11-23 10:56
+column: review
+updated: 2026-11-23 11:10
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -339,6 +339,52 @@ comms:
     DONE (option a) on dispatch br; [timer-alert-idc03-chaba-jobs] [re-verified — FALSE ALARM, do NOT re-enable]
     Dis; [timer-alert-idc03-chaba-jobs] [re-verified — FALSE ALARM, do NOT re-enable] Liv; [timer-alert-idc03-kanban-sync]
     RCA: 29 failed runs, 2 causes'
+- at: 2026-11-23 11:03
+  from: devin
+  text: 'progress: scp redeploy done — tony-dell ~/.local/bin/runner-agent sha 1e8ea0d8 == repo ref; runner claiming
+    clean (ada-prompt-slim claimed 10:53, no drift defers). flood-alert.service executed 11:02 Result=success (5
+    items scanned, quiet x64). Monitoring task verified running without drift errors.'
+- at: 2026-11-23 11:04
+  from: devin
+  text: 'DONE: runner-agent redeployed to tony-dell via scp — ~/.local/bin/runner-agent sha256 1e8ea0d8 == repo
+    ref (drift was already healed pre-session; scp landed byte-identical). Continuous monitoring task = flood-alert.timer
+    on tony-dell — executed fresh run 11:02, Result=success, 5 items scanned quiet x64, no deployment drift errors.
+    Post-scp runner claim pass 11:04 Result=success, zero drift lines in 24h journal. Card was running under this
+    dispatch claim so no separate re-queue needed/possible. O'
+- at: 2026-11-23 11:08
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:08
+  from: chaba
+  text: 'session-end checkpoint ae1b3fb4: 1 leftover file(s) committed'
+- at: 2026-11-23 11:08
+  from: chaba
+  text: banked 134 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:08
+  from: chaba
+  text: pushed dispatch/20261123-105630-redeploy-the-runner-agent-scri to origin
+- at: 2026-11-23 11:08
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 81.0s)
+- at: 2026-11-23 11:08
+  from: chaba
+  text: auto-merged 6225b2b9 (dispatch/20261123-105630-redeploy-the-runner-agent-scri) → origin/master
+- at: 2026-11-23 11:08
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-105630-redeploy-the-runner-agent-scri,
+    branch dispatch/20261123-105630-redeploy-the-runner-agent-scri'
+- at: 2026-11-23 11:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd.
+    | devin-task-20261123-'
+- at: 2026-11-23 11:10
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-105630-redeploy-the-runner-agent-scri — close will block
+    until merged'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -393,15 +439,19 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repo to tony-dell and queue the monitoring task there
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   lane_source: fallback
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd. | devin-task-20261123-105630-redeploy-the-runner-agent-scri.service:
+    Consumed 48.157s CPU time over 8min 30.995s wall clock time, 878.8M memory peak.'
 spec: Redeploy the runner-agent script from the local chaba repository to tony-dell using scp to ~/.local/bin/runner-agent,
   resolving the drift issue noted by idc03. Once redeployed, queue and execute the Bangkok flood monitoring and
   traffic alert task on tony-dell. The done-condition is verified when the runner-agent is successfully updated
   on tony-dell and the continuous water situation monitoring task runs without deployment drift errors.
 claim:
   since: 2026-11-23 10:55
+awaiting_action: true
+review_kind: verify
