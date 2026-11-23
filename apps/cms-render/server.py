@@ -11,6 +11,8 @@ static mirror, no drift):
 
   ada-cms-pages        main lane   (EN default UI + content)
   ada-cms-pages-kk     kk lane     (Thai default UI + content)
+  ada-cms-pages-mn     mn lane     (Michael — carved 2026-10-17)
+  ada-cms-pages-kk-dev kk dev lane (dev writes stay off prod pages)
   chaba-docs           repo docs mirror (kind-less, path-shaped keys)
   ada-cms-automation   automation registry (JSON configs -> code view)
 
@@ -87,6 +89,8 @@ VERSION = "0.1.0 2026-10-15"
 COLLECTIONS = OrderedDict([
     ("ada-cms-pages", {"ui": "en", "lang": "en", "label": "main"}),
     ("ada-cms-pages-kk", {"ui": "th", "lang": "th", "label": "kk"}),
+    ("ada-cms-pages-mn", {"ui": "en", "lang": "en", "label": "mn"}),
+    ("ada-cms-pages-kk-dev", {"ui": "th", "lang": "th", "label": "kk-dev"}),
     ("chaba-docs", {"ui": "en", "lang": "en", "label": "docs"}),
     ("ada-cms-automation", {"ui": "en", "lang": "en", "label": "auto"}),
 ])
@@ -202,6 +206,8 @@ def detect_kind(doc: dict, collection: str = "") -> str:
         return "media-inbox"
     if "timeline" in key:
         return "timeline"
+    if key.startswith("memory-inspect"):
+        return "memory-inspect"
     if role == "digest" or key.endswith("-digest"):
         return "digest"
     if kind == "report":
