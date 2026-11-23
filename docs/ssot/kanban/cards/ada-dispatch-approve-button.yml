@@ -1,7 +1,7 @@
 id: ada-dispatch-approve-button
 title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
 column: doing
-updated: 2026-11-23 15:10
+updated: 2026-11-23 15:14
 priority: medium
 tags:
 - ada
@@ -151,6 +151,12 @@ comms:
     SHIPPED on dispatch branch: scripts/; [keywatch-absolute-spend-floor] DONE (aa8399e4ef9) — implemented directly.
     Corre; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] To; [report-graph-producer-metas-never-reach-7b0982]
     [devin] DONE'
+- at: 2026-11-23 15:14
+  from: devin
+  text: 'dispatch picked up — mapping the click-approve path. Found: /request already accepts dict options {id,label,action:queue|retry|close|hold|none}
+    and board buttons POST /respond {option:N}, but execution waits for answer-sweep (~15min tick). Plan: execute
+    declared option actions at respond time (the click IS the approval), plus verified-verdict lifecycle notify
+    + canonical approve-ask emitter.'
 review_kind: verify
 action:
   type: dispatch
