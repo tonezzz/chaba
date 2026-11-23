@@ -235,18 +235,19 @@ blocks:
 
   - id: check_system_services
     type: Shell
-    description: "Check system services (Barrier client, screen timeout cron) for workstation health"
+    description: "Check system services (physical-seat VT pin, screen timeout cron) for workstation health"
     inputs:
       command: |
         #!/bin/bash
         echo "Checking System Services..."
 
-        # Check Barrier client
-        echo -n "Barrier Client: "
-        if ps -ef | grep barrierc | grep -v grep | grep -q "tony-dell"; then
-          echo "✅ Running"
+        # Barrier KVM retired 2026-10-25 — barrier-pin-vt.timer remains only as
+        # a physical-seat VT pin helper on tony-dell.
+        echo -n "barrier-pin-vt.timer (seat pin): "
+        if systemctl --user is-active barrier-pin-vt.timer 2>/dev/null | grep -q "^active"; then
+          echo "✅ Active"
         else
-          echo "❌ Not running - Start with: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &"
+          echo "⚠️ Not active (physical-seat helper only; not required for headless)"
         fi
 
         # Check screen timeout cron jobs
@@ -258,7 +259,7 @@ blocks:
         fi
       timeout: 15
     depends_on:
-      - check_system_services
+      - check_optional_services
 
   - id: generate_summary
     type: Shell
