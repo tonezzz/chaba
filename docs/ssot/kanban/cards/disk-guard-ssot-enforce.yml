@@ -1,7 +1,7 @@
 id: disk-guard-ssot-enforce
 title: Enforce SSOT disk thresholds in disk-trend-watch.py (max_root_disk_percent + 15 GiB floor)
-column: doing
-updated: 2026-11-23 11:11
+column: review
+updated: 2026-11-23 11:13
 brief: disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01).
   tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
 priority: medium
@@ -63,12 +63,41 @@ comms:
     90 crit + fill unchanged. Underused mounts (<50% or >100 GiB free) flagged in report only, same signal added
     to disk-headroom.j2 for parity. selftest PASS + fixture verifies tony-dell@88% now cards. Deliverables in worktree:
     scripts/ada/disk-trend-watch.py, ansible/playbooks/{disk-headr'
+- at: 2026-11-23 11:12
+  from: tony-macbook
+  text: 'finished (ok): exit=0 n `dispatch-outcome-20261123-110432-goal-close-the-enforcement-gap.md`; card comms
+    posted. | devin-task-20261123-'
+- at: 2026-11-23 11:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:13
+  from: chaba
+  text: 'session-end checkpoint bcf80fcc: 2 leftover file(s) committed'
+- at: 2026-11-23 11:13
+  from: chaba
+  text: banked 131 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:13
+  from: chaba
+  text: pushed dispatch/20261123-110432-goal-close-the-enforcement-gap to origin
+- at: 2026-11-23 11:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 11:13
+  from: chaba
+  text: auto-merged ef7d8033 (dispatch/20261123-110432-goal-close-the-enforcement-gap) → origin/master
+- at: 2026-11-23 11:13
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 n `dispatch-outcome-20261123-110432-goal-close-the-enforcement-gap.md`; card comms posted. | devin-task-20261123-110432-goal-close-the-enforcement-gap.service:
+    Consumed 33.127s CPU time over 6min 48.882s wall clock time, 607.6M memory peak.'
+  verified: true
 claim:
   since: 2026-11-23 11:03
+review_kind: verify

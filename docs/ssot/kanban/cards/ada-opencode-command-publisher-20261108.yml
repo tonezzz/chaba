@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-23 11:05
+updated: 2026-11-23 11:12
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -637,6 +637,26 @@ comms:
     24/24 feature tests green, compile clean; live on idc02 verify=in_sync:true (deployed==canonical 077aaff3, menu
     live), validate=0 errors, sync --confirm correctly no-ops (resolves first-real-sync gate), ada-code.service
     active. Wider suite: 4 timeout-only failures (save_ms 5-22s at load'
+- at: 2026-11-23 11:12
+  from: chaba
+  text: banked 135 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:12
+  from: chaba
+  text: pushed dispatch/20261123-105931-canonicalize-the-opencode-ada- to origin
+- at: 2026-11-23 11:12
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 115.3s)
+- at: 2026-11-23 11:12
+  from: chaba
+  text: auto-merged 68e53950 (dispatch/20261123-105931-canonicalize-the-opencode-ada-) → origin/master
+- at: 2026-11-23 11:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-105931-canonicalize-the-opencode-ada-,
+    branch dispatch/20261123-105931-canonicalize-the-opencode-ada-'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
