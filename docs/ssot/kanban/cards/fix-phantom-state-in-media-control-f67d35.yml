@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
-column: doing
-updated: 2026-11-23 21:22
+column: backlog
+updated: 2026-11-23 21:34
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -285,6 +285,14 @@ comms:
     merge-sweep: devin-task-20261117-233; [fix-phantom-state-in-media-control-f67d35] merge-sweep: no session/worktree
     fou; [fix-phantom-state-in-media-control-f67d35] primer injected 8 lesson(s): [fix-ph; [fix-phantom-state-in-media-control-f67d35]
     stalled-claim rea'
+- at: 2026-11-23 21:34
+  from: tony-dell
+  text: 'finished (failed): exit=1 -phantom-state-issue-in.service: Failed with result ''exit-code''. | devin-task-20261123-211558-fix-the-phantom-sta
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-211558-fix-the-phantom-state-issue-in (rate limit)
+    — tony-dell holds new claims ~30m
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -314,20 +322,18 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: devin
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 20:37
     session_gone: 2026-11-23 20:37
-  last_failure: 'exit=1 sk-20261123-203733-fix-the-phantom-state-issue-in.service: Failed with result ''exit-code''.
-    | devin-task-20261123-203733-fix-the-phantom-state-issue-in.service: Consumed 19.704s CPU time over 5min 40.902s
-    wall clock time, 338.5M memory peak.'
+  last_failure: 'exit=1 -phantom-state-issue-in.service: Failed with result ''exit-code''. | devin-task-20261123-211558-fix-the-phantom-state-issue-in.service:
+    Consumed 53.600s CPU time over 18min 6.376s wall clock time, 1008.9M memory peak, 463.3M memory swap peak.'
   attempts: 2
-  result: 'exit=1 sk-20261123-203733-fix-the-phantom-state-issue-in.service: Failed with result ''exit-code''. |
-    devin-task-20261123-203733-fix-the-phantom-state-issue-in.service: Consumed 19.704s CPU time over 5min 40.902s
-    wall clock time, 338.5M memory peak.'
+  result: 'exit=1 -phantom-state-issue-in.service: Failed with result ''exit-code''. | devin-task-20261123-211558-fix-the-phantom-state-issue-in.service:
+    Consumed 53.600s CPU time over 18min 6.376s wall clock time, 1008.9M memory peak, 463.3M memory swap peak.'
   runner: tony-dell
 spec: Fix the phantom state issue in the media_player verification protocol within the chaba repository on tony-dell.
   Ensure the fix properly handles protocol verification without phantom states. Verify the fix runs successfully
