@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: done
-updated: 2026-11-23 11:33
+updated: 2026-11-23 11:37
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -80,6 +80,24 @@ comms:
     single-play rewrite + .j2 + ansible/README.md; +1 dup-key fix in ssot.audit.hosts.yml). Verified: syntax-check,
     --limit --check --diff, real append to temp DISK_TREND_HISTORY (watcher-compatible record), full-fleet --check
     7/7 ok zero writes. Outcome doc: dispatch-outcome-20261123-112950-goal-make-ansible-disk-headroo.md'
+- at: 2026-11-23 11:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'session-end checkpoint b9eef50c: 1 leftover file(s) committed'
+- at: 2026-11-23 11:37
+  from: chaba
+  text: banked 148 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:37
+  from: chaba
+  text: pushed dispatch/20261123-112950-goal-make-ansible-disk-headroo to origin
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'auto-merge conflicts: ansible/playbooks/disk-headroom.yml — card stays in review for manual resolution'
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
   status: done
