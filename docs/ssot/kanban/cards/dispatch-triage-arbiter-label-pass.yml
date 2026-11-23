@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
 column: backlog
-updated: 2026-11-23 14:20
+updated: 2026-11-23 14:41
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -435,9 +435,12 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:41
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
@@ -447,11 +450,7 @@ action:
   last_failure: 'journal=exit-code NT | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Failed
     with result ''exit-code''. | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Consumed 31.686s
     CPU time, 345.6M memory peak, 0B memory swap peak.'
-  attempts: 2
-  result: 'journal=exit-code NT | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Failed with
-    result ''exit-code''. | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Consumed 31.686s
-    CPU time, 345.6M memory peak, 0B memory swap peak.'
-  runner: idc02
+  attempts: 0
 claim:
   since: 2026-11-20 21:09
 requests:
@@ -473,4 +472,3 @@ requests:
     adjudication + 98 high-confidence golden-seed sample) before appending. After spot-check, run the one-command
     suite append to orch-triage-cases.jsonl on the tony-dell ada-voice checkout. Hold append until spot-check is
     done (proceed with check-first).'
-awaiting_action: true
