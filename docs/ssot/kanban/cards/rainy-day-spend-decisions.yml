@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
-column: doing
-updated: 2026-11-23 19:19
+column: review
+updated: 2026-11-23 19:24
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -356,6 +356,33 @@ comms:
     allowlist + probed. Code-corpus bench (config.ds-v4-code*.yaml, tony-dell): dsv4-flash 2/2 pass @ $0.0196 avg
     vs flash-lite baseline 2/2 @ $0.675 avg — same score, ~1/34th cost, ~2.2x faster; zen-free twin timed out on
     m1 again. (b) agent.model=swe-2-flash-high set on all 6 hosts +'
+- at: 2026-11-23 19:24
+  from: idc02
+  text: 'finished (ok): exit=0 t/jobs/devnest/2026-11-23-rainy-day-spend-decisions.yml`, outcome doc, and full comms
+    on the card. | devin-task-2'
+- at: 2026-11-23 19:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:24
+  from: chaba
+  text: banked 198 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 19:24
+  from: chaba
+  text: pushed dispatch/20261123-183713-a-if-approved-top-up-or-key-ad to origin
+- at: 2026-11-23 19:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 147.8s)
+- at: 2026-11-23 19:24
+  from: chaba
+  text: auto-merged 51ae21db (dispatch/20261123-183713-a-if-approved-top-up-or-key-ad) → origin/master
+- at: 2026-11-23 19:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-183713-a-if-approved-top-up-or-key-ad,
+    branch dispatch/20261123-183713-a-if-approved-top-up-or-key-ad'
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -393,7 +420,7 @@ requests:
   answer: '2'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -405,6 +432,11 @@ action:
     Failed with result ''exit-code''. | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service: Consumed
     29.654s CPU time.'
   runner: idc02
+  result: 'exit=0 t/jobs/devnest/2026-11-23-rainy-day-spend-decisions.yml`, outcome doc, and full comms on the card.
+    | devin-task-20261123-183713-a-if-approved-top-up-or-key-ad.service: Consumed 2min 21.807s CPU time, 719.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-23 18:36
 awaiting_action: true
+review_kind: verify
