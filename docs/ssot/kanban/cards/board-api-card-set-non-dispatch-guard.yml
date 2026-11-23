@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
 column: doing
-updated: 2026-11-23 15:00
+updated: 2026-11-23 15:07
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -87,6 +87,11 @@ comms:
     POST /card on board-api — never edit card YAML directl; [ada-prompt-slim] primer injected 8 lesson(s): [ada-prompt-slim]
     Additional Jule; [ada-text-model-promotion-path] Queue diagnosis (2026-11-20 09:01): ADA-0783 is ; [board-janitor-locked-edit-atomic-write-db7bed]
     primer inject'
+- at: 2026-11-23 15:07
+  from: devin
+  text: 're-dispatch: guard+cache code verified present (132c1119af). Filled selftest gap vs spec item 3 — mtime-cache
+    invalidation test + untouched-card asserts; LANES_FILE extracted for redirect. Also fixed codemod-gate test
+    rotting on archived fixture card. selftest ok; 95 board tests pass.'
 action:
   status: running
   type: dispatch
