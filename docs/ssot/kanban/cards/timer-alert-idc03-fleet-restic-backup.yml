@@ -1,7 +1,7 @@
 id: timer-alert-idc03-fleet-restic-backup
 title: Timer fleet-restic-backup on idc03 failing
 column: done
-updated: 2026-11-23 19:05
+updated: 2026-11-24 00:12
 priority: high
 tags:
 - timer-alert
@@ -50,6 +50,10 @@ comms:
 - at: 2026-11-23 19:05
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the user systemd timer fleet-restic-backup.service on host idc03, which exited
   with a non-zero exit code during its 11-21 04:30 run. Review the journal logs using journalctl --user -u fleet-restic-backup.service
