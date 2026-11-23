@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-11-23 14:10
+updated: 2026-11-23 14:14
 action:
   type: dispatch
   status: running
@@ -192,6 +192,12 @@ comms:
     Inspection: 2026-11-17 Jules attempt never star; [timer-alert-tony-omen-chaba-audit] 2026-11-13: exit 1 after
     50s real run (158M ; runbook docs/kb/timer-expectations.md: Timer expectation sweep — detection over ; Wiki
     API canonical path is root `/api.php` per ssot.mediawiki'
+- at: 2026-11-23 14:14
+  from: devin
+  text: 'dispatch started — design: extend mcp-health-snapshot.service with a chained check-only ExecStart running
+    new scripts/post-restart-verify.py; boot-id gate gives one pass per boot; machine-readable checks live in ssot.operations.yml
+    host_notes.*.post_restart_checks; findings via board-api /inbox (host-ready-check pattern); stale refs (2.20GHz,
+    Barrier) being fixed in the same pass'
 requests:
 - id: multiple-hosts-tony-omen-idc02-a913db
   ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed runner-agent
