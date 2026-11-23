@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: backlog
-updated: 2026-11-23 15:59
+updated: 2026-11-23 16:08
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -242,19 +242,22 @@ comms:
     fix; evidence is missing. The root cause of 2026-11-19 card torn writes is not mitigated in the provided communications
     or card spec, and the card mutators need t…. Artifacts verdict.json+evidence.md verified in worktree patch (1852B;
     evidence.md, verdict.json). Weak-model draft — human gate stays; decision request posted with options.'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'answer-sweep: executed ''requeue for another pass'' -> re-queued'
+- at: 2026-11-23 16:08
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: codemod
   lane_source: kw
-  result: 'exit=0 itten to `dispatch-outcome-20261119-111845-make-the-locked-edit-fallback-.md`; card comms posted.
-    | devin-task-20261119-111845-make-the-locked-edit-fallback-.service: Consumed 11min 49.722s CPU time, 473.9M
-    memory peak, 0B memory swap peak.'
-  last_failure: 'exit=1  devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Failed with result ''exit-code''.
-    | devin-task-20261119-110544-make-the-locked-edit-fallback-.service: Consumed 20.358s CPU time over 15.776s
-    wall clock time, 1G memory peak.'
-  attempts: 2
-  runner: idc02
+  last_failure: 'exit=0 itten to `dispatch-outcome-20261119-111845-make-the-locked-edit-fallback-.md`; card comms
+    posted. | devin-task-20261119-111845-make-the-locked-edit-fallback-.service: Consumed 11min 49.722s CPU time,
+    473.9M memory peak, 0B memory swap peak.'
+  attempts: 3
   sweep:
     stale_running: 2026-11-19 11:20
     no_repo: 2026-11-19 11:21
@@ -282,4 +285,4 @@ requests:
   suggested: requeue
   escalated_at: 2026-11-21 08:17
   answer: requeue for another pass
-awaiting_action: true
+  executed: 2026-11-23 retry
