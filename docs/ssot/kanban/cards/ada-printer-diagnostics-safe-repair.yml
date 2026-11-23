@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: backlog
-updated: 2026-11-21 17:46
+updated: 2026-11-23 10:49
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -300,6 +300,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 10:49
+  from: chaba
+  text: classified as devin (kw:diagnos conf 1.00)
+- at: 2026-11-23 10:49
+  from: tony
+  text: queued for processing
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
@@ -320,7 +326,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: kw
   sweep:
@@ -334,7 +340,5 @@ action:
   result: 'journal=exit-code 261120-205713-use-the-existing-ada-document-.service: Failed with result ''exit-code''.
     | devin-task-20261120-205713-use-the-existing-ada-document-.service: Consumed 1min 11.030s CPU time over 3min
     32.365s wall clock time, 878.6M memory peak.'
-  runner: tony-omen
 claim:
   since: 2026-11-20 20:55
-awaiting_action: true
