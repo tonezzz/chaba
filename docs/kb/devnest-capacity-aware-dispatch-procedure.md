@@ -91,9 +91,11 @@ normal concurrency: 1
 concurrency 2: only after a realistic two-request test
 ```
 
-Allowed classes are `summary`, `operator_brief`, `structured_extract`, and
-`safe_route`. Repository mutation, credentials, destructive actions, coding,
-video, and long agent loops go to another lane.
+Allowed classes are `summary` and `structured_extract`
+(`operator_brief`/`safe_route` held pending re-eval — card
+`kk-mac-admitted-classes-narrow`). Repository mutation, credentials,
+destructive actions, coding, video, and long agent loops go to another
+lane.
 
 If any gate fails, do not wait for KK-Mac. Mark the attempt fallback and route
 to the next eligible lane.

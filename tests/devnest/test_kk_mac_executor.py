@@ -173,7 +173,7 @@ class RunContractTests(unittest.TestCase):
 
     def test_invalid_output_falls_back(self):
         r = self.run_c(task=_task(
-            task_class="safe_route",
+            task_class="structured_extract",
             expect={"required_keys": ["route"]}),
             run_task=_ok_run("not json"))
         self.assertEqual(r["verdict"], "fallback")
@@ -183,6 +183,12 @@ class RunContractTests(unittest.TestCase):
         r = self.run_c(task=_task(task_class="code_mutation"))
         self.assertEqual(r["verdict"], "fail")
         self.assertIn("class_not_admitted", r["reasons"][0])
+        # held classes (kk-mac-admitted-classes-narrow) are contract
+        # violations at run time even though verify() still scores them
+        for held in ("operator_brief", "safe_route"):
+            r = self.run_c(task=_task(task_class=held))
+            self.assertEqual(r["verdict"], "fail")
+            self.assertIn(f"class_not_admitted:{held}", r["reasons"])
         r = self.run_c(task=_task(artifact="scripts/x.py"))
         self.assertEqual(r["verdict"], "fail")
         self.assertIn("artifact_outside_roots", r["reasons"][0])
@@ -237,14 +243,14 @@ class RunContractTests(unittest.TestCase):
 
     def test_facts_verified_independently(self):
         r = self.run_c(task=_task(
-            task_class="operator_brief",
+            task_class="structured_extract",
             expect={"required_keys": ["brief"],
                     "facts": ["six hosts", "zero errors"]}),
             run_task=_ok_run(
                 '{"brief": "six hosts, zero errors"}'))
         self.assertEqual(r["verdict"], "pass")
         r = self.run_c(task=_task(
-            task_class="operator_brief",
+            task_class="structured_extract",
             expect={"facts": ["never said"]}),
             run_task=_ok_run('{"brief": "something else"}'))
         self.assertEqual(r["verdict"], "fallback")

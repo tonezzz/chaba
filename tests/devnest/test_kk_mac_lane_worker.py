@@ -147,11 +147,18 @@ class LoadTaskTests(unittest.TestCase):
             {**GOOD_TASK, "prompt": "x" * 6001}), "p"))
 
     def test_accepts_bounded(self):
-        for tc in ("summary", "operator_brief", "structured_extract",
-                   "safe_route"):
+        # admitted set narrowed 2026-11-23 (kk-mac-admitted-classes-narrow)
+        for tc in ("summary", "structured_extract"):
             t = lw._load_task(json.dumps({**GOOD_TASK,
                                           "task_class": tc}), "p")
             self.assertEqual(t["task_class"], tc)
+
+    def test_held_classes_never_claimed(self):
+        # operator_brief/safe_route stay verifier-supported for re-bench
+        # but are unadmitted until re-eval passes
+        for tc in ("operator_brief", "safe_route"):
+            self.assertIsNone(lw._load_task(json.dumps(
+                {**GOOD_TASK, "task_class": tc}), "p"))
 
 
 class _FakeCompleted:

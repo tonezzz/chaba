@@ -390,8 +390,11 @@ lanes:
       breach the memory floor under owner workloads — not lane-safe,
       docs/reports/kk-mac-llm-bench-2026-11-20.md.
     task_classes:
-      - "summary | operator_brief | structured_extract | safe_route
-        (mirrors kk_mac_llm.ALLOWED_TASKS / dr.KK_MAC_TASK_CLASSES)"
+      - "summary | structured_extract (mirrors kk_mac_llm.ALLOWED_TASKS
+        / dr.KK_MAC_TASK_CLASSES; operator_brief + safe_route HELD
+        unadmitted pending re-eval — card kk-mac-admitted-classes-narrow,
+        2026-11-19 class eval docs/ssot/jobs/devnest/
+        2026-11-19-kkmac-class-eval.yml)"
       - "NOT repo writes beyond the bounded artifact, NOT infra
         mutation — the class bound is the safety surface"
     verifier: >-
