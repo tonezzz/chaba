@@ -1,7 +1,7 @@
 id: grand-rename
 title: Grand rename — compositional <x>-ha/-ha-dev/-ai/-ai-dev across units, ports, paths, env files
-column: backlog
-updated: 2026-11-23 15:52
+column: doing
+updated: 2026-11-23 15:53
 brief: Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml
   rename_map. Subsumes OPS-0726 (mn-dev rename).
 priority: medium
@@ -211,9 +211,12 @@ comms:
 - at: 2026-11-23 15:52
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.86 > 1.5)'
+- at: 2026-11-23 15:53
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0  devin-task-20261027-065557-target-ada-pi-pwa-member-ai-80.service: Failed with result ''exit-code''.
     | devin-task-20261027-065557-target-ada-pi-pwa-member-ai-80.service: Consumed 1.224s CPU time over 687ms wall
     clock time, 29.7M memory peak.'
@@ -223,5 +226,8 @@ action:
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
+  runner: tony-omen
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-23 15:53
