@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
-column: doing
-updated: 2026-11-23 19:31
+column: backlog
+updated: 2026-11-23 19:51
 tags:
 - wiki
 - dispatch
@@ -27,18 +27,17 @@ spec: "Supersedes manual card wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 (p
   \ Education_talk:Ada-Ocb-Card-Runner as precedent (rev 243)."
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
     failed_noted: 2026-11-12 17:52
     stale_running: 2026-11-17 09:41
     session_gone: 2026-11-17 09:41
-  last_failure: 'exit=1 in-task-20261117-093818-supersedes-manual-card-wiki-ta.service: Failed with result ''exit-code''.
-    | devin-task-20261117-093818-supersedes-manual-card-wiki-ta.service: Consumed 23.983s CPU time over 16.194s
-    wall clock time, 741.2M memory peak.'
+    zero_commit: 2026-11-23 19:49
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
-  runner: mn01
+  verified: false
 ref: OPS-0074
 comms:
 - at: 2026-11-12 17:34
@@ -274,5 +273,17 @@ comms:
     [KNB-1098] not landed — wp-comment-sync.py exists bu; [trade-lesson-ui-integration] DONE: trade-ui lesson published
     as lesson-72f75ef5; [wiki-talk-watch-auto-reply-to-wiki-talk-a9f107] merge-sweep: no session/worktre; Check
     `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<e'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-123122-supersedes-manual-card-wiki-ta (rate limit)
+    — mn01 holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-123122-supersedes-manual-card-wiki-ta (rate limit)
+    — mn01 holds new claims ~30m
 claim:
   since: 2026-11-23 19:30
