@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
 column: doing
-updated: 2026-11-23 14:58
+updated: 2026-11-23 15:11
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -465,6 +465,13 @@ comms:
   from: ada
   text: 'Tony confirmed: OPS-1290 spot-check done (option a). Proceed with the one-command suite append to orch-triage-cases.jsonl
     on the tony-dell ada-voice checkout when artifacts are ready; keep other check-first constraints satisfied.'
+- at: 2026-11-23 15:11
+  from: devin
+  text: arbiter label pass COMPLETE on tony-omen (strategy b, $0). 1758 unique kanban texts verdicted via gemini-3.5-flash-lite-free
+    in 174 batched calls, 18.9min — ops 742 / code 614 / research 226 / docs 149 / clarify 27 (conf_mean 0.895),
+    0 unverdicted. Review queue = 100 rows (12 low-confidence + 88 stratified spot-check) — NOT silently labeled;
+    suite-append rows (1658) held per your check-first answer. Artifacts in scripts/bench/dispatch-triage/ (label.py,
+    ledger.jsonl, corpus, review-queue-2026-11
 action:
   type: dispatch
   status: running
