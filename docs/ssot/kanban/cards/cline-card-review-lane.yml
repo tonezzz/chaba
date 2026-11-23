@@ -1,7 +1,7 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
 column: backlog
-updated: 2026-11-23 16:19
+updated: 2026-11-23 18:34
 priority: medium
 tags:
 - cline
@@ -43,21 +43,17 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: ''
   executor: devin
   last_failure: 'exit=1 sk-20261123-155555-goal-drain-the-review-column-s.service: Failed with result ''exit-code''.
     | devin-task-20261123-155555-goal-drain-the-review-column-s.service: Consumed 51.880s CPU time over 21min 4.106s
     wall clock time, 378.6M memory peak.'
-  attempts: 2
+  attempts: 0
   sweep:
     stale_running: 2026-11-23 15:20
     session_gone: 2026-11-23 15:20
     dirty: 1
-  result: 'exit=1 sk-20261123-155555-goal-drain-the-review-column-s.service: Failed with result ''exit-code''. |
-    devin-task-20261123-155555-goal-drain-the-review-column-s.service: Consumed 51.880s CPU time over 21min 4.106s
-    wall clock time, 378.6M memory peak.'
-  runner: tony-macbook
 ref: KNB-1009
 comms:
 - at: 2026-10-30 15:36
@@ -492,5 +488,8 @@ comms:
 - at: 2026-11-23 16:19
   from: chaba
   text: 'tony-macbook retry backoff: fail 2/3 — next claim not before 11-23 17:19'
+- at: 2026-11-23 18:34
+  from: tony
+  text: retry requested
 claim:
   since: 2026-11-23 15:55
