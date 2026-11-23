@@ -1,0 +1,177 @@
+id: lab-ada-session-boundaries
+title: 'Lab: Ada session boundaries — does forced context reset improve memory recall?'
+brief: Ada's messaging chats run as one long continuous session, so her memory snapshot never refreshes and compaction
+  keeps re-processing an ever-longer history (Hermes calls this out explicitly — memory only pays off at session
+  end). This experiment tests whether periodic boundaries improve recall quality and cut token spend.
+column: done
+priority: medium
+created: 2026-10-08
+updated: 2026-11-23 13:35
+autonomy: t2
+lab:
+  hypothesis: Introducing a session boundary (context reset + memory re-snapshot) at natural break points improves
+    recall accuracy on past-session facts AND reduces compaction cost, vs. today's never-ending sessions.
+  metric: Scenario suite recall-lane score before/after; compaction tokens per 24h from journal metrics; count of
+    "forgot something it was told" failures in transcript audit during the window.
+  review_by: '2026-10-25'
+note: 'Experiment, not a commitment. First deliverable is a measurement: how long are Ada''s live sessions actually
+  running and what does compaction cost today? Design options on the card before touching runtime.'
+spec: "Spike questions (answer these first, in comms):\n  1. What IS a session boundary for ada-pi today — per message?\
+  \ per\n     websocket connect? Does conversation_memory already re-snapshot\n     between turns, or does context\
+  \ grow unbounded within a chat?\n  2. What does compaction cost now — tokens/day from journal-report?\n  3. Where\
+  \ would a boundary even be inserted (relay layer? provider\n     session TTL? a daily \"new day\" reset at quiet-hours\
+  \ edge)?\n\nIf measurement shows sessions already reset per connect and memory\nre-injects — the hypothesis is\
+  \ dead, retire the card with the finding.\n\nIf genuinely continuous: prototype a boundary on ada-dev ONLY\n(quiet-hours\
+  \ daily reset, or topic-change detection) — measure recall\nscenario pass rate and compaction tokens for the soak\
+  \ window vs the\nprior week. Promote only if both improve.\n"
+links:
+- ada-context-budget
+- ada-memory-hit-shape-guard
+blocked_by: []
+ref: ADA-0177
+comms:
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0177'
+- at: 2026-10-20 15:36
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 15:37
+  from: tony-omen
+  text: claimed
+- at: 2026-10-20 15:37
+  from: chaba
+  text: started devin-task-20261020-153716-spike-questions-answer-these-f on tony-omen (dispatch)
+- at: 2026-10-20 15:39
+  from: devin
+  text: 'Spike started. Code read: pwa_server /ws = per-connect session; session prime injects memory snapshot on
+    every connect; relays idle-close WS at 600s (LINE_IDLE_SESSION_S/TELEGRAM_IDLE_SESSION_S). Live context bounded
+    by sliding-window 32k->24k. Now measuring real session lifetimes + token cost on idc03.'
+- at: 2026-10-20 15:44
+  from: devin
+  text: 'SPIKE ANSWERS (measured on idc03 + code read of ada-voice@a67bea0):
+
+
+    Q1 — session boundary TODAY: one /ws connect on pwa_server = one session (fresh session_id, provider, ConversationMemory).
+    Messaging chats already DO reset: relays hold a WS per (chat,sender,persona) and close it after 600s idle (LINE_IDLE_SESSION_S
+    / TELEGRAM_IDLE_SESSION_S) — 34 idle closes on LINE in 7d. Memory DOES re-snapshot every connect: _prime_session
+    injects recent-sessions summary + top memories + shared channel tail'
+- at: 2026-10-20 15:44
+  from: devin
+  text: moved lab -> done
+- at: 2026-10-20 15:46
+  from: chaba
+  text: 'session-end checkpoint acbc0ac6: 2 leftover file(s) committed'
+- at: 2026-10-20 15:46
+  from: chaba
+  text: pushed dispatch/20261020-153716-spike-questions-answer-these-f to origin
+- at: 2026-10-20 15:47
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_tg_forward_provenance.py::TestPatchApplies::test_patch_applies_or_landed'
+- at: 2026-10-20 15:47
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-08 10:54
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:25
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:25
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:23
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:10
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:22
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:20
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+claim: {}

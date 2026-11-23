@@ -1,0 +1,78 @@
+id: ada-ocb-ssot-search-query
+title: 'Ada-OCB: expose read-only SSOT search/query'
+column: done
+updated: 2026-11-23 13:35
+brief: Add bounded exact SSOT search to OpenChamber and update the canonical tool registry; reuse existing SSOT
+  sources instead of creating a duplicate.
+priority: medium
+program: ai-workforce
+tags:
+- ada
+- opencode
+- ssot
+- ada-ocb
+- read-only
+spec: Ada-voice currently exposes ada_context_pack's internal semantic _ssot_search and ada_ssot_get for exact document
+  retrieval, but no public exact SSOT search comparable to the ssot-search skill. Add a bounded read-only Ada-Control
+  search/query surface that follows the canonical ssot.mcp-tools policy (mcp_search_ssot), returns matched SSOT
+  paths, concise context, provenance/freshness, and cross-reference pointers, and reports mutations_performed=[].
+  Keep ada_context_pack for semantic discovery and ada_ssot_get for exact hydration; do not duplicate SSOT content
+  or create a second SSOT file. Update OpenChamber/Ada guidance and tests. Update the existing Chaba docs/ssot/infrastructure/ssot.tools.yml
+  registry and relevant SSOT index/procedure pointers after the Ada-voice API shape is settled; keep Ada-voice and
+  Chaba changes as separate repo commits. Tests must cover bounded results, path/query matching, provenance, and
+  read-only behavior. No dispatch or deploy in this card until the cross-repo plan is staged.
+action:
+  type: manual
+  status: done
+ref: ADA-0240
+comms:
+- at: 2026-11-19 14:47
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 14:47
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-19 16:15
+  from: devin
+  text: 'Implemented directly (manual card, no dispatch). Design: ada_ssot_search(query, collection, limit) uses
+    MDDB /v1/fts lexical search on the allowlisted collections — no embedding/provider calls, $0. Returns docs/ssot
+    paths, excerpts, matched terms, provenance/freshness, cross-refs; mutations_performed=[]. Separation kept: context_pack=semantic,
+    ssot_get=hydrate, ssot_search=exact. PR tonezzz/ada-voice#19 opened; 7 new tests + live FTS smoke pass; CI pending.
+    Chaba registry updates (ssot.tools.yml'
+- at: 2026-11-19 16:29
+  from: devin
+  text: 'Shipped end-to-end. PR #19 merged as e5d5e8b, deployed to idc03 (1838 tests pass, all services active).
+    ada_ssot_search + /ada ssot live. Chaba registries updated on served checkout: ssot.tools.yml ssot.search entry
+    + ssot.mcp-tools.yml ssot_editing note (commit 596773288f2). Wiki Education:Opencode-Ada-Command-Manual updated
+    — /ada ssot moved to Commands, missing commands consolidated (plan/status/handoff/preflight/debug/adobe_stock),
+    Planned section cleared. Also fixed angle-bracket args strip'
+- at: 2026-11-19 16:29
+  from: devin
+  text: closed by devin
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)

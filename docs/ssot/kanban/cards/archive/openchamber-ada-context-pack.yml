@@ -1,0 +1,162 @@
+id: openchamber-ada-context-pack
+title: Add bounded Ada/SSOT context pack for OpenChamber OpenCode
+column: done
+updated: 2026-11-23 13:34
+brief: 'Give OpenChamber/OpenCode a Devin-like bounded context load: profile + SSOT/education/Devin/card excerpts
+  with provenance, read-only, before the agent loop instead of relying on ad-hoc tool discovery.'
+priority: high
+program: devnest
+tags:
+- openchamber
+- opencode
+- ada
+- ssot
+- memory
+- mcp
+spec: 'Implement ada_context_pack(query, card_reference?, profile?) in the DevNest ada-control bridge. It must return
+  a compact JSON context pack: profile, allowed_sources, SSOT hits from MDDB infrastructure-ssot/chaba-glossary,
+  Education lessons, Devin session summaries, optional safe card fields, budgets, provenance, and mutations_performed=[].
+  No personal/household banks, no writes, no arbitrary filesystem/MDDB collection access. Wire OpenChamber/OpenCode
+  to inject the pack as a session instruction entry or prepend a compact context header for /ada commands. Acceptance:
+  smoke test returns cited SSOT+lesson+devin hits; read-only profile cannot mutate; stale OpenChamber project path
+  fixed so sessions resolve /home/tony/DevNest.'
+action:
+  type: manual
+  host: tony_dell
+  status: done
+ref: ADA-0141
+comms:
+- at: 2026-11-16 18:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-16 18:36
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-16 18:43
+  from: devin
+  text: 'Implemented ada_context_pack in DevNest .opencode/ada_mcp.py: bounded read-only SSOT (MDDB infrastructure-ssot
+    + chaba-glossary) + Education + Devin summaries + optional safe card, with provenance/budgets and mutations_performed=[].
+    Smoke ok: ssot=3, devin=3, card=ADA-0141; only error was education read timeout. Updated .opencode/agents/ada.md
+    + commands/ada.md (/ada context). Education lesson filed: openchamber-opencode-prompt-memory-flow. Remaining:
+    wire OpenChamber instruction-entry injection'
+- at: 2026-11-16 18:44
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-16 18:47
+  from: devin
+  text: 'Implemented ada_context_pack in DevNest .opencode/ada_mcp.py: bounded read-only SSOT (MDDB infrastructure-ssot
+    + chaba-glossary) + Education + Devin summaries + optional safe card, with provenance/budgets and mutations_performed=[].
+    Smoke ok: ssot=3, devin=3, card=ADA-0141; only error was education read timeout. Updated .opencode/agents/ada.md
+    + commands/ada.md (/ada context). Education lesson filed: openchamber-opencode-prompt-memory-flow. Remaining:
+    wire OpenChamber instruction-entry injection'
+- at: 2026-11-16 20:41
+  from: devin
+  text: 'ada-voice parity: commit 6932d60 adds ada_context_pack/_context_card/_ssot_search/shared-deadline to canonical
+    opencode/ada_mcp.py. Verified: py_compile, tool-lint clean, 9 targeted tests pass, direct smoke card-ref 5.5s
+    ok card ADA-0141 mut[], global OpenChamber smoke /home/tony/ada-ocb-smoke returned ok card ADA-0141 mut[] (education/infrastructure/devin-mddb
+    timeouts remain). Not pushed/deployed.'
+- at: 2026-11-16 20:41
+  from: devin
+  text: 'ada-voice parity: commit 6932d60 adds ada_context_pack/_context_card/_ssot_search/shared-deadline to canonical
+    opencode/ada_mcp.py. Verified py_compile/tool-lint/9 tests; direct smoke card-ref 5.5s ok card ADA-0141 mut[];
+    global OpenChamber smoke /home/tony/ada-ocb-smoke ok card ADA-0141 mut[] (education/infrastructure/devin-mddb
+    timeouts remain). Not pushed/deployed.'
+- at: 2026-11-16 21:18
+  from: devin
+  text: 'Final: ada-voice 6932d60+7b4e2be pushed; idc03 deploy complete at 7b4e2be (tool-lint clean, 1751 passed,
+    services active). Timeout fix: card lookup stays sequential, SSOT+memory now run in parallel; direct timings
+    card-ref 3.31s / card-id 4.59s / nocard 1.76s, DevNest 6.48s / 1.82s; remaining error is usually only education:/lesson
+    timeout. DevNest agents/commands committed f25bb11; local .opencode/ada_mcp.py left uncommitted because it carries
+    unrelated pre-existing changes; canonical ada-voice'
+- at: 2026-11-17 08:20
+  from: tony
+  text: moved doing -> review
+- at: 2026-11-17 13:40
+  from: devin
+  text: closed by devin
+- at: 2026-11-17 15:42
+  from: devin
+  text: 'education:/lesson timeout FIXED (ada-voice 50b74be, deployed idc03): board-api /lesson is WP-backed ~6-8s
+    vs ~1.5s bridge budget — structural timeout. _lesson_memory now reads MDDB chaba-lessons mirror (CMS /search,
+    ~0.3s for 168 lessons) with local ranking; board-api kept as fallback. Verified: recall_memory ~0.8s/3 hits/0
+    errors; ada_context_pack 3.84s ok=true errors=[] mutations_performed=[]. DevNest bridge synced+committed dd96ad0.
+    Lesson updated: lesson-eba4063e6a98.'
+- at: 2026-11-17 15:57
+  from: devin
+  text: 'education:/lesson timeout FIXED (ada-voice 50b74be, deployed idc03): board-api /lesson is WP-backed ~6-8s
+    vs ~1.5s bridge budget — structural timeout. _lesson_memory now reads MDDB chaba-lessons mirror (CMS /search,
+    ~0.3s for 168 lessons) with local ranking; board-api kept as fallback. Verified: recall_memory ~0.8s/3 MDDB
+    hits/0 errors; ada_context_pack 3.84s ok=true errors=[] mutations_performed=[]. DevNest bridge synced byte-identical
+    dd96ad0. Lesson lesson-eba4063e6a98 updated.'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:20
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, board over card cap)
+review_kind: verify

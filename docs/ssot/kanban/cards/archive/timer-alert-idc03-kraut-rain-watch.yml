@@ -1,0 +1,355 @@
+id: timer-alert-idc03-kraut-rain-watch
+title: Timer kraut-rain-watch on idc03 failing
+column: done
+updated: 2026-11-23 13:35
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-08 10:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+ref: OPS-1152
+comms:
+- at: 2026-11-08 10:29
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-08 10:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 10:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:49
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:59
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:19
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:50
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:00
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:06
+  from: devin
+  text: 'Root cause found 2026-11-08: NOT load — missing secret file. weather-bakeoff.py --rain-check requires ~/.config/secrets/ada-ai-kraut.env
+    (HOME_ASSISTANT_URL + HOME_ASSISTANT_TOKEN for mn-ha + ADA_TG_SEND_URL) on idc03; file does not exist on idc03/mn01/tony-omen/idc02.
+    NEEDS: provision ada-ai-kraut.env on idc03 (mn-ha HA credentials + TG send :8917). Until provisioned every run
+    fails FileNotFoundError.'
+- at: 2026-11-08 13:10
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:03) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:20
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:03) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:33
+  from: devin
+  text: 'Update 2026-11-08: ada-ai-kraut.env now EXISTS on idc03 (reconstructed from michael-ha/backend.env: HOME_ASSISTANT_URL/TOKEN
+    + ADA_TG_SEND_URL). Remaining blocker: idc03 cannot TCP-connect to michael-ha:8123 (tailscale ping works; tony-dell/mn01
+    reach it). Same root cause as weather-bakeoff-daily — see that card.'
+- at: 2026-11-08 13:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:51
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:59
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 14:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 14:20
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 14:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 14:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 14:50
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:01
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:20
+  from: devin
+  text: '[still suspicious] Last run (11-08 14:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 15:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 15:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:46
+  from: devin
+  text: 'Connection fixed 2026-11-08 via idc03 -> tony-omen SSH relay -> michael-ha. kraut-rain-watch ExecMainStatus=0;
+    live TG send returned {''ok'':True,''chat_id'':8960073266}. Persistent tunnel unit is active and restart-on-failure.
+    Rain report now shows sane units: RK600 34.3°C, 55.1% RH, wind 1.8m/s, today precip HA-FC 1.2mm; model values
+    explicitly rain%.'
+- at: 2026-11-08 15:46
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 15:50
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 15:52
+  from: chaba
+  text: started devin-task-20261108-155227-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-08 15:54
+  from: chaba
+  text: started devin-task-20261108-155401-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-08 15:56
+  from: chaba
+  text: started devin-task-20261108-155606-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-08 15:57
+  from: chaba
+  text: started devin-task-20261108-155730-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-08 15:58
+  from: chaba
+  text: started devin-task-20261108-155853-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-08 15:59
+  from: chaba
+  text: started devin-task-20261108-155947-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-09 09:07
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.08 > 0.85)'
+- at: 2026-11-09 09:07
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.00 > 1.0)'
+- at: 2026-11-09 09:07
+  from: idc02
+  text: claimed
+- at: 2026-11-09 09:07
+  from: chaba
+  text: started devin-task-20261109-090753-timer-kraut-rain-watch-on-idc0 on idc02 (dispatch)
+- at: 2026-11-09 09:08
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:08
+  from: devin
+  text: dispatch picked up on idc02 — investigating journal + relay tunnel state on idc03
+- at: 2026-11-09 09:09
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:11
+  from: devin
+  text: 2026-11-09 VERIFY — same root cause as weather-bakeoff-daily (shared ada-ai-kraut.env lost ~Oct 23 + idc03->michael-ha:8123
+    unreachable). Fixed 11-08 15:45 via tunnel env (127.0.0.1:18123 through tony-omen). Runs every 30min green since
+    — last 08:41 today clean (cond=partlycloudy, no event). Closing.
+- at: 2026-11-09 09:11
+  from: devin
+  text: closed by devin
+- at: 2026-11-09 09:11
+  from: devin
+  text: 'VERIFIED HEALTHY — stale re-spawn. Journal on idc03: last real failure was Nov 08 15:44 (urlopen timeout,
+    seconds before relay fix landed); every 30-min run since 15:45 exits status=0 incl. 09:11 today. michael-ha-via-omen-tunnel.service
+    active/running, ada-ai-kraut.env present, TG sends {ok:true}. ~44 consecutive greens. The 15:50 re-spawn came
+    off a stale report page, not a new failure — flagging timer-sentinel/report staleness as the residual issue.'
+- at: 2026-11-09 09:12
+  from: devin
+  text: closed by devin
+- at: 2026-11-09 09:13
+  from: chaba
+  text: 'session-end checkpoint 50386ecd: 1 leftover file(s) committed'
+- at: 2026-11-09 09:13
+  from: chaba
+  text: pushed dispatch/20261109-090753-timer-kraut-rain-watch-on-idc0 to origin
+- at: 2026-11-09 09:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 09:13
+  from: chaba
+  text: auto-merged b160d3ec (dispatch/20261109-090753-timer-kraut-rain-watch-on-idc0) → origin/master
+- at: 2026-11-09 09:13
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-090753-timer-kraut-rain-watch-on-idc0,
+    branch dispatch/20261109-090753-timer-kraut-rain-watch-on-idc0'
+- at: 2026-11-10 09:01
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-10 09:01
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-10 08:41) of `kraut-rain-watch.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 09:10
+  from: devin
+  text: '[still suspicious] Last run (11-10 08:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 09:20
+  from: devin
+  text: '[still suspicious] Last run (11-10 08:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 09:31
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-10 09:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-10 09:31
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 09:54
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-12 09:54
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-12 09:41) of `kraut-rain-watch.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 10:43
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 10:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 10:43
+  from: tony
+  text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:16
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 03:51
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-20 03:51
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-20 03:11) of `kraut-rain-watch.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-20 04:01
+  from: devin
+  text: '[still suspicious] Last run (11-20 03:41) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-20 04:30
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-20 04:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-20 04:30
+  from: tony
+  text: closed by tony
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)
+action:
+  status: done
+  type: dispatch
+  lane: devin
+  runner: idc02
