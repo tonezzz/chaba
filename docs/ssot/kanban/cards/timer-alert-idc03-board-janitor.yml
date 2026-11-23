@@ -1,7 +1,7 @@
 id: timer-alert-idc03-board-janitor
 title: Timer board-janitor on idc03 failing
-column: backlog
-updated: 2026-11-23 07:52
+column: done
+updated: 2026-11-23 08:02
 priority: high
 tags:
 - timer-alert
@@ -143,6 +143,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-23 07:36) of `board-janitor.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u board-janitor.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 08:02
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-23 07:49 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 08:02
+  from: tony
+  text: closed by tony
 spec: 'Goal: investigate the failing board-janitor.service timer-alert on idc03 by inspecting the systemd journal
   via journalctl --user -u board-janitor.service on idc03, and redeploy the drifted runner-agent script from the
   chaba repository via scp scripts/board/runner-agent.py idc03:~/.local/bin/runner-agent. Constraints: rely strictly
