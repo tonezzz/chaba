@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
-column: backlog
-updated: 2026-11-23 21:37
+column: doing
+updated: 2026-11-23 22:06
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -319,6 +319,9 @@ comms:
   from: chaba
   text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
     — claims held ~29m'
+- at: 2026-11-23 22:06
+  from: tony-dell
+  text: claimed
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -335,7 +338,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
   sweep:
@@ -343,10 +346,11 @@ action:
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
     Failed with result ''exit-code''. | devin-task-20261123-195521-goal-address-the-live-voice-to.service: Consumed
     3.959s CPU time.'
-  attempts: 1
+  attempts: 2
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
     Failed with result ''exit-code''. | devin-task-20261123-195521-goal-address-the-live-voice-to.service: Consumed
     3.959s CPU time.'
+  runner: tony-dell
 spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
   for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
   (noting recent runner-agent drift across idc03, tony-macbook, idc02, and tony-dell). Constraints: Rely strictly
@@ -354,5 +358,4 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
   ~16K text each connect. Testable done-condition: A documented analysis or fix addressing the ada-dev whale and
   test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
 claim:
-  since: 2026-11-23 19:54
-awaiting_action: true
+  since: 2026-11-23 22:06
