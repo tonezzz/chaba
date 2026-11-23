@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
 column: done
-updated: 2026-11-23 15:23
+updated: 2026-11-23 16:22
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -142,6 +142,10 @@ comms:
     item-3 selftest gap (no-action/script cards refused AND untouched, valid_lanes cache mtime re-parse) committed
     4600a0e9aa5; 15:12 test gate passed + auto-merged e6710917 -> origin/master; 15:14 finished ok — done-condition
     met'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
   type: dispatch
