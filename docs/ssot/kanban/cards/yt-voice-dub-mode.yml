@@ -28,16 +28,17 @@ spec: 'Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast: acc
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
-  task_id: 20261006-164900-wire-voice-dubbing-into-the-ca
-  runner: tony-omen
   result: 'exit=0 ode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-221236-wire-voice-dubbing-into-the-ca.service:
     Consumed 2min 4.136s CPU time over 21min 5.801s wall clock time, 1.3G memory peak, 548.6M memory swap peak.'
   sweep:
     session_gone: 2026-11-08 16:22
-updated: 2026-11-23 19:00
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
+updated: 2026-11-23 19:13
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -273,6 +274,18 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-23 19:13
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.19 > 0.85)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
 claim:
   since: 2026-10-06 16:49
 ref: ADA-0156

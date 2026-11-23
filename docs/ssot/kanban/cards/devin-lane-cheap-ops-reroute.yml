@@ -1,0 +1,32 @@
+id: devin-lane-cheap-ops-reroute
+title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
+column: backlog
+updated: 2026-11-23 19:12
+brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
+  devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
+  and kw:diagnos (ada-printer-diagnostics).'
+priority: medium
+program: devnest
+tags:
+- devin
+- lane-routing
+- usage
+spec: 'FINDINGS (2026-11-23, from board cards fetch + dispatch_repos.classify_lane over devin-lane set): of the
+  devin-lane cards observed, final lane devin dominated by (a) explicit action.lane pins — timer-alert-*/card-runner/tony-usb/vcast/ada-*
+  ops lifecycle shapes; (b) keyword hits — kw:host (disk/storage/ansible/report-graph/render-job-writer/ansible-disk-headroom),
+  kw:diagnos (ada-printer-diagnostics-safe-repair), kw:protocol, kw:drift, kw:script (2), kw:lock (1). Only 9 cards
+  fell to devin via classifier fallback (conf 0.00) — genuinely ambiguous.
+
+
+  REDUCTION LEVERS ON THIS: (1) shift ops/infra monitoring+triage shapes that have deterministic/script surfaces
+  off devin (disk-guard/storage-rebalance -> script; report-graph -> script); (2) keep devin fallback only for ambiguous/multi-step;
+  (3) prefer explicit free_lane/opencode for bounded read-only ops (lane contract OPS-0869/kanban-free-lane-routing-contract).
+
+
+  NEXT: pick which shapes to re-route first (Tony decision per lane contract), implement keyword/guard changes with
+  tests green, re-measure burn.'
+ref: DEV-0045
+comms:
+- at: 2026-11-23 19:12
+  from: tony
+  text: card captured via board-api

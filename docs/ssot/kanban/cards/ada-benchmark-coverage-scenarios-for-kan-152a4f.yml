@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
-column: backlog
-updated: 2026-11-23 19:12
+column: doing
+updated: 2026-11-23 19:13
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -351,10 +351,23 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: retry requested
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.83 > 1.5)'
+- at: 2026-11-23 19:13
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -362,14 +375,11 @@ action:
     stale_running: 2026-11-19 17:39
     merge_err: 2026-11-19 17:40
     session_gone: 2026-11-20 20:26
-  attempts: 2
+  attempts: 1
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) /share/devin-dispatch/tasks/20261123-165345-ada-benchmark-coverage-scenari/transcript.json.
-    | devin-task-20261123-165345-ada-benchmark-coverage-scenari.service: Consumed 6.758s CPU time over 1min 29.353'
-  verified: false
-  runner: tony-macbook
-  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) /share/devin-dispatch/tasks/20261123-165345-ada-benchmark-coverage-scenari/transcript.json.
     | devin-task-20261123-165345-ada-benchmark-coverage-scenari.service: Consumed 6.758s CPU time over 1min 29.353s
     wall clock time, 2'
+  runner: tony-macbook
 claim:
-  since: 2026-11-23 16:49
+  since: 2026-11-23 19:13
 review_kind: verify

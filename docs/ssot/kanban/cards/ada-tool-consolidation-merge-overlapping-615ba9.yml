@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-23 19:12
+updated: 2026-11-23 19:13
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -215,19 +215,26 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: retry requested
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  attempts: 2
-  result: 'exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-170542-ada-tool-consolidation-merge-o.service:
-    Consumed 1min 16.230s CPU time over 3min 39.147s wall clock time, 875.9M memory peak.'
+  attempts: 0
   last_failure: 'exit=1 261123-170542-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
     | devin-task-20261123-170542-ada-tool-consolidation-merge-o.service: Consumed 1min 16.230s CPU time over 3min
     39.147s wall clock time, 875.9M memory peak.'
-  runner: tony-omen
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
@@ -258,4 +265,3 @@ requests:
     task
 claim:
   since: 2026-11-23 17:04
-awaiting_action: true

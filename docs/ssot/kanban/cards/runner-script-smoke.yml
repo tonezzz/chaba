@@ -3,7 +3,7 @@ title: runner script-type smoke (idc01)
 column: done
 priority: low
 created: '2026-10-07'
-updated: 2026-11-23 17:03
+updated: 2026-11-23 19:13
 brief: 'E2E: script executor syncs chaba and runs a repo command on idc01.'
 action:
   type: script
@@ -548,5 +548,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=idc01 names no declared runner
     — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 ref: OPS-0173

@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:12
 action:
   type: manual
 ref: OPS-0790
@@ -181,6 +181,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-23 19:12
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
@@ -218,10 +224,10 @@ requests:
   suggested: accept-systemd-contract
   answer: 'accept-systemd-contract — Recommended for momentum: accept these documented systemd semantics and proceed
     with a locked, host-by-host rollout; leave legacy timer until all eight replacement timers are verified.'
-awaiting_action: true
 spec: The goal is to resolve fleet-wide dispatch failures by redeploying the drifted runner-agent script to all
   affected hosts. The runner-agent.py script must be copied via scp from the local repository at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
   to ~/.local/bin/runner-agent on the hosts tony-omen, idc02, idc03, and tony-macbook. Constraints require using
   the exact source path and target path specified in the recent comms without inventing new paths. The testable
   done-condition is verified when chaba jobs successfully fire and no longer defer due to runner-agent drift across
   the fleet.
+awaiting_action: true
