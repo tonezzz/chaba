@@ -1,7 +1,7 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
 column: doing
-updated: 2026-11-23 19:15
+updated: 2026-11-23 19:39
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
@@ -379,6 +379,13 @@ comms:
   text: 'attempt 3: prior work found intact on origin/dispatch/20261119-171510 (a77e51e+b25eaa0, 11 scenarios +
     engine fixtures). Cherry-picking onto fresh branch, then fixing the test gate failure (test_cms_write_flow /
     mddb_client) that held the last merge.'
+- at: 2026-11-23 19:39
+  from: devin
+  text: 'DONE (attempt 3). Recovered the stranded 2026-11-19 work: cherry-picked a77e51e+b25eaa0 from origin/dispatch/20261119-171510
+    onto fresh branch — 11 offline scenarios (kanban board ops/move gates, devin dispatch board/down/playbook, opencode
+    flow, sweep, wiki_extension, lane_budget cap/latch, CMS write) + FakeBoard/dispatch_ssh engine fixtures + the
+    tool_runner confirm hand-back fix for dynamic tools. Fixed the merge-gate failure (test_cms_write_flow): scenario
+    args were only valid with schema va'
 action:
   type: dispatch
   repo: ada-voice
