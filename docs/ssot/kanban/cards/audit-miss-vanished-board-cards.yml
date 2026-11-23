@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
 column: review
-updated: 2026-11-23 12:32
+updated: 2026-11-23 13:37
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -54,6 +54,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-audit-miss-vanished-board-cards-1795411168 on idc02 still dirty — 2 uncommitted
     file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-23 13:37
+  from: chaba
+  text: 'Manual closeout rerun on idc02: reconciled ssot-research profile drift (restored litellm/or-free-north-code)
+    and gated host-snapshot check to dispatch_verify==host_snapshot. finish_profile_dispatch now passes: S3 read-only
+    report verified, artifact sha256=c9a4034e6154b148916716f93147e7909858f03f6219299692d9e11070b2a9dc. Worktree
+    dispatch-wt-audit-miss-vanished-board-cards-1795411168 still has untracked artifact/run dir; checkpoint/merge-sweep
+    needed.'
 action:
   type: dispatch
   repo: chaba
