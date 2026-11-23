@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-23 16:21
+updated: 2026-11-23 16:30
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -131,9 +131,18 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:30
+  from: chaba
+  text: classified as devin (fallback conf 0.08)
+- at: 2026-11-23 16:30
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: ada-voice
+  status: queued
+  lane: devin
+  lane_source: fallback
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
@@ -162,4 +171,4 @@ requests:
   escalated_at: 2026-11-22 07:33
   answer: ★ Redeploy runner-agent to tony-omen, idc02, idc03, tony-dell, and tony-macbook via scp and resume the
     task
-awaiting_action: true
+claim: {}
