@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: doing
-updated: 2026-11-23 10:54
+updated: 2026-11-23 10:59
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -328,6 +328,11 @@ comms:
     finished (failed): journal=exit-code 26112; [kk-mac-local-llm-lane] Additional 5-case read-only DevNest batch
     on KK-Mac qwen; [llm-provider-verification-2026-11] 2026-11-23 — processing the queued dispatch ; [ocb-models-status-patch-durability]
     primer injected 8 lesson'
+- at: 2026-11-23 10:59
+  from: devin
+  text: 'attempt 3 (idc02): prior failures were provider rate-limits, no partial work survived. Plan: narrow ada-cups-helper
+    on print host + printer tool (status/jobs/verify read-only, repair release|retry|cancel one confirmed job) +
+    registry. Probing printer identity now.'
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
