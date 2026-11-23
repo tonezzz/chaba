@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-23 19:18
+updated: 2026-11-23 19:30
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -281,6 +281,13 @@ comms:
   from: devin
   text: 'attempt 3 on tony-dell: checking runner-agent drift on idc03 (installed vs exec checkout), then redeploy
     + inspect ada-scenario-casting.service'
+- at: 2026-11-23 19:30
+  from: devin
+  text: 'ROOT CAUSE: not the service — every scenario session on ada-ha-tony (:8002) fails at provider connect with
+    ProviderCapLatched: Gemini lane tony key hit prepayment-credit cap 2026-11-02, latched in data/lane-budget.json.
+    Benchmark scored 0.0 (42 fail, 0 turns). Verified the SAME key now works (generateContent HTTP 200) — credits
+    were replenished but the latch never cleared (only clears Dec-1 rollover/rekey/state removal). Clearing the
+    stale latch, then re-running the suite to verify.'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
