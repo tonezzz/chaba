@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
-column: doing
-updated: 2026-11-23 11:33
+column: review
+updated: 2026-11-23 11:39
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -19,7 +19,7 @@ spec: 'In ada-voice opencode/ada_mcp.py: define BRIDGE_VERSION (git sha or semve
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   lane_source: jevos
   sweep:
@@ -31,6 +31,10 @@ action:
     11.419s wall clock time, 927.1M memory peak.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 on-copy-tag.md`. Final status posted to the card — the feature is verified done, nothing left
+    to merge. | devin-task-20261123-113051-in-ada-voice-opencode-ada-mcp-.service: Consumed 40.023s CPU time, 471.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: ADA-0177
 comms:
 - at: 2026-11-17 22:11
@@ -343,6 +347,30 @@ comms:
     clean. Real child probes: canonical=git-05ba2b3 vs untracked-in-worktree=git-05ba2b3+copy-3cd10becaa vs foreign-repo=git-a735b90+copy-106e3e3eb0
     vs env=2.1.0-deploy-test — all distinct. calls.jsonl: startup event per child pid + bridge_version per call.
     No code changes needed; card is '
+- at: 2026-11-23 11:39
+  from: idc02
+  text: 'finished (ok): exit=0 on-copy-tag.md`. Final status posted to the card — the feature is verified done,
+    nothing left to merge. | devin-t'
+- at: 2026-11-23 11:39
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:39
+  from: chaba
+  text: banked 54 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:39
+  from: chaba
+  text: pushed dispatch/20261123-113051-in-ada-voice-opencode-ada-mcp- to origin
+- at: 2026-11-23 11:39
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 270.1s)
+- at: 2026-11-23 11:39
+  from: chaba
+  text: auto-merged 79ef0012 (dispatch/20261123-113051-in-ada-voice-opencode-ada-mcp-) → origin/main
+- at: 2026-11-23 11:39
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-113051-in-ada-voice-opencode-ada-mcp-,
+    branch dispatch/20261123-113051-in-ada-voice-opencode-ada-mcp-'
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
