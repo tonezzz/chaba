@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
-column: review
-updated: 2026-11-23 15:10
+column: backlog
+updated: 2026-11-23 15:20
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -216,6 +216,21 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-145126-goal-fix-pwa-document-intake-d,
     branch dispatch/20261123-145126-goal-fix-pwa-document-intake-d'
+- at: 2026-11-23 15:20
+  from: chaba
+  text: '[verify-hold] Review pass 2026-11-23 (Tony): 2026-11-23 15:05 devin DONE: intake() persists raw upload
+    to $ADA_DOC_INTAKE_DIR + LINE_MEDIA manifest BEFORE RAM processing, byte-identical verified by measure() spy,
+    persist failure warns never crashes, retention prunes; pytest 1885 passed, tool-lint clean; 15:10 test gate
+    passed + auto-merged a97f205d to ada-voice main, verified=True, finished ok | close blocked by merge guard:
+    ssh/curl rc=28: curl: (6) Could not resolve host: application
+
+    curl: (28'
+- at: 2026-11-23 15:20
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-23 15:20
+  from: tony
+  text: put on hold
 requests:
 - id: the-pwa-document-intake-featur-096c1f
   ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
@@ -235,7 +250,7 @@ spec: 'Goal: fix PWA document intake data loss by persisting original uploads be
 action:
   type: dispatch
   repo: ada-voice
-  status: done
+  status: idle
   lane: codemod
   lane_source: kw
   sweep:
@@ -252,5 +267,8 @@ action:
   verified: true
 claim:
   since: 2026-11-23 14:50
-awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 15:20
+  note: verified — evidence checks green, closing itself

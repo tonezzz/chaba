@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: doing
-updated: 2026-11-23 15:12
+column: backlog
+updated: 2026-11-23 15:20
 priority: high
 tags:
 - devnest
@@ -66,14 +66,18 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: codemod
-  result: 'exit=0  full detail in `dispatch-outcome-20261117-185221-assessment-2026-11-09-verified.md`. | devin-task-20261117-185221-assessment-2026-11-09-verified.service:
-    Consumed 1min 11.026s CPU time over 6min 14.726s wall clock time, 900.2M memory peak.'
+  result: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''. |
+    devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min 33.542s
+    wall clock time, 1G memory peak.'
   sweep:
     session_gone: 2026-11-17 19:25
-  runner: tony-omen
+    stale_running: 2026-11-23 15:18
   attempts: 1
+  last_failure: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''.
+    | devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min
+    33.542s wall clock time, 1G memory peak.'
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -270,6 +274,21 @@ comms:
     Decomposed per Tony decision 2026-11-09 (process w; [devnest-queue-consolidation] merge-sweep: no session/worktree
     found for devin-t; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] Rollout state check 2026-11-08; [ops-1244d-janitor-merge]
     [sweep 2026-11-12] board-janitor is'
+- at: 2026-11-23 15:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-091336-assessment-2026-11-09-verified no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 15:20
+  from: tony-omen
+  text: 'finished (failed): exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result
+    ''exit-code''. | devin-task-20261123- — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 15:20
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-151207-assessment-2026-11-09-verified (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 15:20
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 15:50'
 review_kind: verify
 claim:
   since: 2026-11-23 15:10

@@ -1,7 +1,7 @@
 id: ada-dispatch-approve-button
 title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
 column: doing
-updated: 2026-11-23 15:14
+updated: 2026-11-23 15:20
 priority: medium
 tags:
 - ada
@@ -157,6 +157,10 @@ comms:
     and board buttons POST /respond {option:N}, but execution waits for answer-sweep (~15min tick). Plan: execute
     declared option actions at respond time (the click IS the approval), plus verified-verdict lifecycle notify
     + canonical approve-ask emitter.'
+- at: 2026-11-23 15:20
+  from: devin
+  text: '[dispatch] resumed worktree — core code already landed in 4df0e492 (respond-time option action exec, verified/unverified
+    lifecycle pushes). Verifying tests + finishing approve-ask.py + runbook doc now.'
 review_kind: verify
 action:
   type: dispatch
