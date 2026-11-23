@@ -1,6 +1,6 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
-column: backlog
+column: doing
 updated: 2026-11-23 14:42
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
@@ -354,6 +354,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 14:42
+  from: tony-dell
+  text: claimed
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -393,20 +396,21 @@ requests:
     runner agents
 action:
   type: dispatch
-  status: queued
+  status: running
   sweep:
     dirty: 1
     stale_running: 2026-11-20 21:02
     no_repo: 2026-11-20 21:02
   lane: devin
   lane_source: fallback
-  attempts: 0
+  attempts: 1
   last_failure: 'journal=exit-code ited, code=exited, status=2/INVALIDARGUMENT | devin-task-20261120-211214-fix-the-cms-publish-page-call-.service:
     Failed with result ''exit-code''. | devin-task-20261120-211214-fix-the-cms-publish-page-call-.service: Consumed
     29.029s CPU time.'
+  runner: tony-dell
 review_kind: verify
 claim:
-  since: 2026-11-20 21:11
+  since: 2026-11-23 14:42
 auto_close:
   by: merge-sweep
   at: 2026-10-27 07:01
