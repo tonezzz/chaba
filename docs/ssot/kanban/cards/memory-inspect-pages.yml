@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
-column: doing
-updated: 2026-11-23 16:07
+column: review
+updated: 2026-11-23 16:11
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -317,6 +317,35 @@ comms:
     9p, michael 5p — run live FROM tony-dell, exit 0), kind=memory-inspect + Memory index section + read-only banner,
     cms-render serves mn/kk-dev collections, daily 05:40 job on tony_dell rendered. Tests: tests/ada 311, cms_render
     23 (venv), merge-gate 231. Live: /p/memory-inspect 200. S'
+- at: 2026-11-23 16:11
+  from: tony-dell
+  text: 'finished (ok): exit=0 -memory-inspection-pa.md` and final comms posted to the card. | devin-task-20261123-155646-implement-memory-inspe'
+- at: 2026-11-23 16:11
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 16:11
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261123-155646-implement-memory-inspection-pa'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-23 16:11
+  from: chaba
+  text: banked 181 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 16:11
+  from: chaba
+  text: pushed dispatch/20261123-155646-implement-memory-inspection-pa to origin
+- at: 2026-11-23 16:11
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 88.1s)
+- at: 2026-11-23 16:11
+  from: chaba
+  text: auto-merged b70550b9 (dispatch/20261123-155646-implement-memory-inspection-pa) → origin/master
+- at: 2026-11-23 16:11
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -338,7 +367,7 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -347,9 +376,11 @@ action:
   attempts: 2
   last_failure: 'exit=1 emory-inspection-pa.service: Failed with result ''exit-code''. | devin-task-20261123-145907-implement-memory-inspection-pa.service:
     Consumed 14min 45.197s CPU time over 22min 51.242s wall clock time, 1.6G memory peak, 750.6M memory swap peak.'
-  result: 'exit=1 emory-inspection-pa.service: Failed with result ''exit-code''. | devin-task-20261123-145907-implement-memory-inspection-pa.service:
-    Consumed 14min 45.197s CPU time over 22min 51.242s wall clock time, 1.6G memory peak, 750.6M memory swap peak.'
+  result: 'exit=0 -memory-inspection-pa.md` and final comms posted to the card. | devin-task-20261123-155646-implement-memory-inspection-pa.service:
+    Consumed 3min 46.473s CPU time over 10min 47.240s wall clock time, 1.1G memory peak, 785.6M memory swap peak.'
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-23 15:56
 awaiting_action: true
+review_kind: verify

@@ -2,7 +2,7 @@ id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
 brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the
   card.'
-column: review
+column: doing
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 15:59
+updated: 2026-11-23 16:11
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -135,8 +135,17 @@ comms:
 - at: 2026-11-23 15:59
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'answer-sweep: executed ''requeue — requeue for another pass'' -> re-queued'
+- at: 2026-11-23 16:11
+  from: idc02
+  text: claimed
 action:
-  status: done
+  status: running
+  attempts: 2
+  lane: devin
+  runner: idc02
 requests:
 - id: cline-drafted-verdict-investigate-connec-96bd80
   ask: 'Cline drafted verdict ''investigate'' (Connection refused issue unresolved after redeployments). One-word
@@ -157,4 +166,6 @@ requests:
   suggested: requeue
   escalated_at: 2026-11-21 08:17
   answer: requeue — requeue for another pass
-awaiting_action: true
+  executed: 2026-11-23 retry
+claim:
+  since: 2026-11-23 16:11
