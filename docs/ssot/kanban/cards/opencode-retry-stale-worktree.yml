@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: backlog
-updated: 2026-11-23 19:52
+column: doing
+updated: 2026-11-23 23:32
 priority: low
 tags:
 - opencode
@@ -671,6 +671,9 @@ comms:
 - at: 2026-11-23 19:51
   from: tony
   text: retry requested
+- at: 2026-11-23 23:32
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -686,7 +689,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: queued
+  status: running
   labels:
   - push:chaba
   sweep:
@@ -697,7 +700,8 @@ action:
     held'
   llm_key_alias: ada
   button: test-key-alias
-  attempts: 0
+  attempts: 1
+  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
@@ -738,5 +742,5 @@ requests:
   suggested: benchmark-both
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
-claim: {}
-awaiting_action: true
+claim:
+  since: 2026-11-23 23:32
