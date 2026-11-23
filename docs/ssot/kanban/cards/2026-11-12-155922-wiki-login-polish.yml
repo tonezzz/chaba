@@ -39,6 +39,13 @@ comms:
   from: devin
   text: 'raised request ops-0029-item-2-decision-needed-google-s-3917cf: OPS-0029 item (2) — decision needed: Google
     sign-in cannot complete inside the ada-ha chaba-admin/wiki HA iframe because'
+- at: 2026-11-23 14:55
+  from: devin
+  text: 'OPS-0029 item (1) FIXED + surface-verified. Root cause: PluggableAuth 7.5.0 PluggableAuthFactory.php:107-110
+    falls back to RawMessage(strval(configId)) when buttonLabelMessage is unset -> literal 0. On wiki.h3.gizmo-thailand.com:
+    (a) created MediaWiki:pluggableauth-google-label = ''Sign in with Google'' via bot API (rev 444); (b) FTP origin
+    103.99.11.249 added buttonLabelMessage => pluggableauth-google-label to wgPluggableAuth_Config[0] in LocalSettings.php;
+    backup LocalSettings.php.devin-backup-b'
 requests:
 - id: ops-0029-item-2-decision-needed-google-s-3917cf
   ask: 'OPS-0029 item (2) — decision needed: Google sign-in cannot complete inside the ada-ha chaba-admin/wiki HA

@@ -1,6 +1,6 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
-column: backlog
+column: doing
 updated: 2026-11-23 14:55
 priority: medium
 tags:
@@ -43,12 +43,13 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: ''
   executor: devin
   last_failure: 'journal=exit-code rain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261120-205952-goal-drain-the-review-column-s.service:
     Consumed 59.373s CPU time over 2min 44.666s wall clock time, 991.6M memory peak, 376.2M memory swap peak.'
-  attempts: 0
+  attempts: 1
+  runner: tony-macbook
 ref: KNB-1009
 comms:
 - at: 2026-10-30 15:36
@@ -350,5 +351,8 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-23 14:55
+  from: tony-macbook
+  text: claimed
 claim:
-  since: 2026-11-23 14:48
+  since: 2026-11-23 14:55
