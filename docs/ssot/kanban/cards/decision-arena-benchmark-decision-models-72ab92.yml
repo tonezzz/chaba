@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: doing
-updated: 2026-11-23 20:25
+updated: 2026-11-23 20:38
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -261,6 +261,13 @@ comms:
     merge-sweep: devin-task-202611; [kk-mac-extract-brief-class-eval] Restarted on tony-dell. Recovered the lost
     202; [voice-combo-hf-s2s] picked up on tony-omen. harness merge never landed scripts/; `~/var/chaba/reports/timeline.jsonl`
     is the report-event time'
+- at: 2026-11-23 20:38
+  from: devin
+  text: 'attempt 3 (tony-dell dispatch): state verified — spec backend addrs are stale: jev-student migrated idc03->omen
+    2026-11-18 (live at 100.75.102.88:8780, distilmulti, /v1/systemone 200); idc03:8778/8779 dead post-reboot. jevos-v5
+    binary+model absent fleet-wide -> re-downloading feder-cr/jev release on idc03 (:8017). Laya: no declared venv
+    exists -> creating ~/.venvs/laya-bench (CPU torch) per job doc rule. Harness = corpus v2 (50 labeled cases).
+    Report -> gdrive:ada-nest/reports/.'
 action:
   type: dispatch
   status: running
