@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-23 23:44
+updated: 2026-11-24 00:12
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -650,6 +650,10 @@ comms:
 - at: 2026-11-23 23:44
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: cline-drafted-verdict-investigate-eviden-73604d
   ask: 'Cline drafted verdict ''investigate'' (Evidence of sustained board use meeting the done-condition is missing.).
