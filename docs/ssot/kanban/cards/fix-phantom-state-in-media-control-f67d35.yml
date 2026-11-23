@@ -179,6 +179,9 @@ comms:
 - at: 2026-11-23 20:15
   from: tony
   text: queued for processing
+- at: 2026-11-23 20:15
+  from: tony
+  text: retry requested
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -211,11 +214,12 @@ action:
   status: queued
   lane: devin
   lane_source: kw
-  result: 'exit=1 task-20261117-233229-fix-phantom-state-in-media-con.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233229-fix-phantom-state-in-media-con.service: Consumed 1.316s CPU time over 1min 39.236s
-    wall clock time, 72.5M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
+  last_failure: 'exit=1 task-20261117-233229-fix-phantom-state-in-media-con.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233229-fix-phantom-state-in-media-con.service: Consumed 1.316s CPU time over 1min 39.236s
+    wall clock time, 72.5M memory peak.'
+  attempts: 0
 spec: Fix the phantom state issue in the media_player verification protocol within the chaba repository on tony-dell.
   Ensure the fix properly handles protocol verification without phantom states. Verify the fix runs successfully
   with all existing test suites.
