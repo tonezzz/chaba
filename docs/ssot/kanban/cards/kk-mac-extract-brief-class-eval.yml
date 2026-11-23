@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: backlog
-updated: 2026-11-23 19:12
+updated: 2026-11-23 20:03
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -10,18 +10,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: failed
-  result: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''. |
-    devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
-    wall clock time, 566.7M memory peak.'
+  status: queued
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
-  attempts: 2
+  attempts: 0
   last_failure: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''.
     | devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
     wall clock time, 566.7M memory peak.'
-  runner: tony-macbook
 ref: OPS-0219
 comms:
 - at: 2026-11-19 08:58
@@ -268,6 +264,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 20:03
+  from: tony
+  text: retry requested
 review_kind: verify
 claim:
   since: 2026-11-23 16:50
