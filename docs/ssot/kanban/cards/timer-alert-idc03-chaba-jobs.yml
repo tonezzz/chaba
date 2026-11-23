@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-23 13:52
   from: devin
-  text: '[still suspicious] `chaba-jobs.timer` on `idc03` is disabled but expected active (audit census / critical
-    list). Deliberate? If not: `systemctl --user enable --now chaba-jobs.timer`. See CMS `timer-timeline`.'
+  text: '[still suspicious] `chaba-jobs.timer` on `idc03` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now chaba-jobs.timer`. See CMS `timer-timeline`.'
 - at: 2026-11-23 14:08
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -38,3 +38,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Ensure the `chaba-jobs.timer` is enabled and active on `idc03` per the audit census critical list,
+  or confirm if its disabled state is deliberate. If not deliberate, run `systemctl --user enable --now
+  chaba-jobs.timer` on `idc03`. Additionally, redeploy the drifted runner-agent by copying the repository
+  script via `scp /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py idc03:~/.local/bin/runner-agent`.
+  The done-condition is verified when `chaba-jobs.timer` is active and the runner-agent is successfully
+  updated on `idc03`.
