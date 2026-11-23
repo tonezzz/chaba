@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: backlog
-updated: 2026-11-23 22:08
+updated: 2026-11-23 22:23
 brief: probe
 ref: OPS-0812
 comms:
@@ -372,6 +372,13 @@ comms:
   from: chaba
   text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
     unit: exit_code=1; attempt limit reached, needs a human (column -> backlog)'
+- at: 2026-11-23 22:23
+  from: devin
+  text: 'redeploy verified fleet-wide: installed+checkout runner-agent.py == origin/master d9af2b9c on idc03, idc02,
+    tony-dell, tony-omen, mn01 (self-update had already converged them; re-installed -m0755 anyway). runner-agent.service
+    Result=success, 0 drift/traceback in journals. tony-macbook: SSH Permission denied from mn01/omen/dell (all
+    keys) — but its runner is provably NOT drifted (claimed distiller-enrich-productionize 22:04 + kk-ha-degraded
+    22:05; _claimable gates on self_stale_reason). Root caus'
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -427,3 +434,4 @@ claim:
 spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and tony-dell)
   by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent
   on each respective host. Verify that each host successfully runs the updated runner-agent without drift errors.
+awaiting_action: true

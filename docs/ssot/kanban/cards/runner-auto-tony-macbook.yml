@@ -13,7 +13,7 @@ help: 'Per-check fixes:
 
   - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
   the key on the host.'
-updated: '2026-11-23'
+updated: 2026-11-23 22:23
 action:
   status: done
 claim: {}
@@ -121,3 +121,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 22:23
+  from: devin
+  text: '2026-11-23 ~22:25 +07 audit (speed-probe dispatch, host=mn01): SSH still Permission denied (publickey,password)
+    — tried mn01 keys id_cascade/id_ed25519_tonydell/id_ed25519_idc01/github_deploy direct to 100.77.76.112, plus
+    hops via tony-omen (id_ed25519_macbook) and tony-dell (id_cascade); tailscale ssh not enabled on the node (no
+    advertised host key). NOTE: the runner itself is healthy — it claimed distiller-enrich-productionize 22:04 and
+    kk-ha-degraded-mode-explain-capabilities-000d8b 22:05 ton'
