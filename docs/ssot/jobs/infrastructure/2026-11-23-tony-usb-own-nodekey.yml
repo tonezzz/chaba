@@ -4,6 +4,8 @@ date: 2026-11-23
 card: tony-usb-own-nodekey
 ref: SEC-0303
 dispatch: dispatch-wt-20261123-185116-the-goal-is-to-stop-the-tony-u
+dispatch_2: dispatch-wt-20261123-132246-the-goal-is-to-stop-the-tony-u
+  (ran ON mn01 itself — the contested node, same home LAN as the stick)
 
 summary: >
   The tony-usb stick's /var/lib/tailscale/tailscaled.state is a clone of
@@ -57,6 +59,36 @@ reachability_check_2026-11-23:
   - "lsblk on mn01, tony-dell, tony-omen, tony-macbook, con01, idc03:
     no ~117G USB stick attached"
 
+reachability_check_2026-11-23-mn01:
+  - "Second dispatch ran on mn01 itself (the node whose session the
+    stick steals) after Tony answered 'proceed' on the board request.
+    Re-verified the stick is still not booted/attached:"
+  - "tailnet: no tony-usb/rescue node in `tailscale status`; mn01
+    tailscaled up 12d with ZERO login/logout/auth journal events in 7d —
+    no session fight occurring"
+  - "home LAN 192.168.2.0/24 port-22 sweep from mn01 (both NICs):
+    only .67 tony-dell, .79/.81 mn01 itself, .90/.98 key-denied
+    (phones); stick's last IP .86 dead, no ping"
+  - "mn01 local: lsblk/lsusb show no USB mass storage — stick not
+    plugged into mn01 either"
+  - "ops feed ada-ha-events-tony (mddb-ops :11025): no stick_online/
+    host_online docs — stick-announce has not fired"
+  - "Conclusion unchanged: physical step still requires Tony to boot
+    the stick. What this dispatch added: script hardening (wait for
+    tailscaled localapi socket + `tailscale up` retry loop for slow USB
+    media) and the runbook ssh fix (`-t` required or sudo can't prompt)."
+
+script_hardening_2026-11-23:
+  - "stick-own-nodekey.sh: wait up to 30s for /run/tailscale/
+    tailscaled.sock after `systemctl start` (start returns before the
+    daemon is reachable on slow USB sticks)"
+  - "stick-own-nodekey.sh: `tailscale up` now retries 5x/5s — fails fast
+    if the daemon socket isn't ready; still idempotent"
+  - "mn01-stick-standard.md: ssh pipe example now uses `ssh -t` (sudo
+    password is read from the tty, not stdin — without -t sudo fails
+    'a terminal is required'); added the manual 4-command equivalent
+    for running at the stick console (script isn't on the stick)"
+
 verified:
   - "bash -n scripts/ops/stick-own-nodekey.sh — syntax OK"
   - "script is root-guarded, idempotent (missing state file is fine),
@@ -64,10 +96,11 @@ verified:
   - "mn01-stick-standard.md reads coherently end-to-end after edits"
 
 pending:
-  - "PHYSICAL: next time the tony-usb stick boots, run
-    scripts/ops/stick-own-nodekey.sh (on-stick or `ssh tony@<lan-ip>
-    'sudo bash -s' < script`), approve the tony-usb node in the admin
-    console, then fill the identity registry row in
+  - "PHYSICAL: next time the tony-usb stick boots, run FIRST:
+    `ssh -t tony@<stick-lan-ip> 'sudo bash -s' < scripts/ops/stick-own-nodekey.sh`
+    from any fleet host (or the 4 manual commands in
+    mn01-stick-standard.md at the stick console), approve the tony-usb
+    node in the admin console, then fill the identity registry row in
     mn01-stick-standard.md."
   - "Until then every stick boot re-triggers the mn01 session fight —
     run the script FIRST at boot."

@@ -3,8 +3,9 @@
 #
 # Card: tony-usb-own-nodekey (SEC-0303). Runbook: docs/kb/mn01-stick-standard.md
 #
-# Run ON the stick at the start of a stick session, or pipe it over ssh:
-#   ssh tony@<stick-lan-ip> 'sudo bash -s' < scripts/ops/stick-own-nodekey.sh
+# Run ON the stick at the start of a stick session, or pipe it over ssh
+# (-t required so sudo can prompt for the stick password on the tty):
+#   ssh -t tony@<stick-lan-ip> 'sudo bash -s' < scripts/ops/stick-own-nodekey.sh
 #
 # WHY NO `tailscale logout`: the stick's /var/lib/tailscale/tailscaled.state
 # is a CLONE of real mn01's node key — stick and mn01 present the same
@@ -58,20 +59,33 @@ else
     say "no $STATE_FILE — already clean"
 fi
 
-# 3. Fresh daemon, empty state.
+# 3. Fresh daemon, empty state. systemctl start returns before tailscaled
+# is reachable on slow USB media — wait for the localapi socket.
 systemctl start tailscaled
-sleep 2
+for _ in $(seq 1 30); do
+    [ -S /run/tailscale/tailscaled.sock ] && break
+    sleep 1
+done
+sleep 1
 
-# 4. Register as our own node.
+# 4. Register as our own node. Retry: `tailscale up` fails fast if the
+# daemon socket isn't up yet; it is idempotent once prefs are written.
 UP_ARGS=(--hostname="$NODE_NAME")
 if [ -n "${TS_AUTHKEY:-}" ]; then
     UP_ARGS+=(--auth-key="$TS_AUTHKEY")
     say "using TS_AUTHKEY (zero-touch join)"
 fi
 say "tailscale up ${UP_ARGS[*]}"
-tailscale up "${UP_ARGS[@]}" || {
-    say "tailscale up failed — if it printed a login URL, approve it in the"
-    say "admin console and re-run this script (it is idempotent)."
+up_ok=0
+for _ in 1 2 3 4 5; do
+    if tailscale up "${UP_ARGS[@]}"; then up_ok=1; break; fi
+    say "tailscale up failed — retrying in 5s (if it printed a login URL,"
+    say "approve the node in the admin console, then re-run this script)"
+    sleep 5
+done
+[ "$up_ok" = 1 ] || {
+    say "tailscale up failed after 5 attempts — if it printed a login URL,"
+    say "approve it in the admin console and re-run this script (idempotent)."
     exit 1
 }
 
