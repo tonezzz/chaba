@@ -13,6 +13,7 @@ import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -103,6 +104,81 @@ class TestStoreCacheContract(unittest.TestCase):
                                     "v": el.b64e(vec(3))}])
             self.assertEqual(el.load_hashes(store)["k1"], el.sha("v1"))
             self.assertNotEqual(el.load_hashes(store)["k1"], el.sha("v2"))
+
+
+class TestDocsPagination(unittest.TestCase):
+    """_docs must page /v1/search by offset until a short page — the
+    server caps a page at PAGE docs regardless of the requested limit,
+    so a single big-limit call silently truncated collections >1000
+    (card embed-lane-banks-search-pagination)."""
+
+    def _fake_search(self, pages, wrap=None):
+        """pages: {offset: [docs]} — returns a _post stand-in that
+        serves {offset} slices and records every request payload."""
+        calls = []
+
+        def fake_post(url, payload, timeout=60, headers=None):
+            calls.append(payload)
+            self.assertEqual(payload["limit"], el.PAGE)
+            page = pages(payload["offset"])
+            return wrap(page) if wrap else page
+        return calls, fake_post
+
+    def _docs_page(self, start, n):
+        return [{"key": f"k-{i}"} for i in range(start, start + n)]
+
+    def test_paginates_until_short_page(self):
+        sizes = {0: 1000, 1000: 1000, 2000: 137}
+        calls, fake = self._fake_search(
+            lambda off: self._docs_page(off, sizes.get(off, 0)))
+        with mock.patch.object(el, "_post", fake), \
+                mock.patch.object(el.time, "sleep"):
+            docs = el._docs("http://x", "coll", True)
+        self.assertEqual([c["offset"] for c in calls], [0, 1000, 2000])
+        self.assertTrue(all(c["include_content"] for c in calls))
+        self.assertEqual(len(docs), 2137)
+        self.assertEqual({d["key"] for d in docs},
+                         {f"k-{i}" for i in range(2137)})
+
+    def test_short_first_page_no_second_request(self):
+        calls, fake = self._fake_search(
+            lambda off: self._docs_page(off, 300 if off == 0 else 0))
+        with mock.patch.object(el, "_post", fake), \
+                mock.patch.object(el.time, "sleep"):
+            docs = el._docs("http://x", "coll", False)
+        self.assertEqual([c["offset"] for c in calls], [0])
+        self.assertEqual(len(docs), 300)
+
+    def test_exact_page_boundary_stops_on_empty(self):
+        calls, fake = self._fake_search(
+            lambda off: self._docs_page(off, el.PAGE)
+            if off < 2 * el.PAGE else [])
+        with mock.patch.object(el, "_post", fake), \
+                mock.patch.object(el.time, "sleep"):
+            docs = el._docs("http://x", "coll", False)
+        self.assertEqual([c["offset"] for c in calls],
+                         [0, el.PAGE, 2 * el.PAGE])
+        self.assertEqual(len(docs), 2 * el.PAGE)
+
+    def test_offset_ignored_server_does_not_spin(self):
+        """A server that ignores offset returns the same full page
+        forever — the all-keys-seen guard must break the loop."""
+        calls, fake = self._fake_search(
+            lambda off: self._docs_page(0, el.PAGE))
+        with mock.patch.object(el, "_post", fake), \
+                mock.patch.object(el.time, "sleep"):
+            docs = el._docs("http://x", "coll", False)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(docs), el.PAGE)
+
+    def test_dict_wrapped_results_page(self):
+        calls, fake = self._fake_search(
+            lambda off: self._docs_page(off, 40 if off == 0 else 0),
+            wrap=lambda page: {"results": page})
+        with mock.patch.object(el, "_post", fake), \
+                mock.patch.object(el.time, "sleep"):
+            docs = el._docs("http://x", "coll", False)
+        self.assertEqual(len(docs), 40)
 
 
 if __name__ == "__main__":
