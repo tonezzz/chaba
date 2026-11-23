@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
-column: backlog
-updated: 2026-11-23 10:50
+column: doing
+updated: 2026-11-23 10:51
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -589,6 +589,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 10:51
+  from: tony-omen
+  text: claimed
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -622,7 +625,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -630,10 +633,11 @@ action:
     stale_running: 2026-11-20 13:41
     session_gone: 2026-11-20 13:56
     dirty: 1
-  attempts: 0
+  attempts: 1
   last_failure: 'journal=exit-code 1121-062509-canonicalize-the-opencode-ada-.service: Failed with result ''exit-code''.
     | devin-task-20261121-062509-canonicalize-the-opencode-ada-.service: Consumed 21min 21.542s CPU time over 22min
     23.510s wall clock time, 516.9M memory peak.'
+  runner: tony-omen
 claim:
-  since: 2026-11-21 06:22
+  since: 2026-11-23 10:51
 review_kind: verify
