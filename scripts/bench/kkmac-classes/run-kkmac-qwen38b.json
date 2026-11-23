@@ -1,0 +1,1528 @@
+{
+  "metrics": {
+    "n_cases": 51,
+    "overall_pass_rate": 0.6667,
+    "per_class": {
+      "operator_brief": {
+        "n": 16,
+        "pass_rate": 0.5625,
+        "json_parse_rate": 1.0
+      },
+      "safe_route": {
+        "n": 15,
+        "pass_rate": 0.5333,
+        "json_parse_rate": 1.0
+      },
+      "structured_extract": {
+        "n": 15,
+        "pass_rate": 0.9333,
+        "json_parse_rate": 1.0
+      },
+      "summary": {
+        "n": 5,
+        "pass_rate": 0.6,
+        "json_parse_rate": null
+      }
+    },
+    "transport_failures": 0,
+    "check_failure_histogram": {
+      "fact:claim": 2,
+      "fact:correct": 2,
+      "fact:task_class": 1,
+      "fact:tony-dell": 1,
+      "fact:84": 1,
+      "fact:6": 1,
+      "fact:shim": 1,
+      "fact:idc01": 1,
+      "fact:693": 1,
+      "fact:tailnet": 1,
+      "fact:defer": 1,
+      "fact:clarify": 1,
+      "fact:close": 1,
+      "fact:ollama": 1,
+      "fact:61": 1,
+      "fact:launchd": 1
+    },
+    "latency_s": {
+      "mean": 1.9,
+      "max": 4.7,
+      "total": 96.5
+    },
+    "entity": "kkmac",
+    "model": "qwen3:8b"
+  },
+  "cases": [
+    {
+      "case_id": "se-host-digest",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.1
+    },
+    {
+      "case_id": "se-systemd-unit",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.2
+    },
+    {
+      "case_id": "se-kanban-card",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.2
+    },
+    {
+      "case_id": "se-heartbeat",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "se-log-errors",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.4
+    },
+    {
+      "case_id": "se-invoice",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.4
+    },
+    {
+      "case_id": "se-ha-entities",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 0.9
+    },
+    {
+      "case_id": "se-bench-result",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.4
+    },
+    {
+      "case_id": "se-pr-status",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.1
+    },
+    {
+      "case_id": "se-git-log",
+      "task_class": "structured_extract",
+      "verdict": "fail",
+      "failed": [
+        "fact:task_class"
+      ],
+      "latency_s": 1.0
+    },
+    {
+      "case_id": "se-probe-results",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.6
+    },
+    {
+      "case_id": "se-host-inventory",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.5
+    },
+    {
+      "case_id": "se-missing-fields",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.1
+    },
+    {
+      "case_id": "se-audit-severity",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 0.9
+    },
+    {
+      "case_id": "se-dispatch-outcome",
+      "task_class": "structured_extract",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.7
+    },
+    {
+      "case_id": "ob-infra-digest",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 4.7
+    },
+    {
+      "case_id": "ob-failed-units",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:tony-dell"
+      ],
+      "latency_s": 2.6
+    },
+    {
+      "case_id": "ob-spend",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.6
+    },
+    {
+      "case_id": "ob-queue",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.3
+    },
+    {
+      "case_id": "ob-disk-pressure",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:84"
+      ],
+      "latency_s": 1.3
+    },
+    {
+      "case_id": "ob-overnight-sessions",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:6"
+      ],
+      "latency_s": 2.1
+    },
+    {
+      "case_id": "ob-board-hygiene",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.8
+    },
+    {
+      "case_id": "ob-tunnel-health",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:shim"
+      ],
+      "latency_s": 3.0
+    },
+    {
+      "case_id": "ob-cert-renewal",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:idc01"
+      ],
+      "latency_s": 2.1
+    },
+    {
+      "case_id": "ob-backup",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.8
+    },
+    {
+      "case_id": "ob-event-flood",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:693"
+      ],
+      "latency_s": 1.6
+    },
+    {
+      "case_id": "ob-memory-pressure",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.2
+    },
+    {
+      "case_id": "ob-stale-heartbeat",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 3.8
+    },
+    {
+      "case_id": "ob-ratelimit",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 3.4
+    },
+    {
+      "case_id": "ob-all-clear",
+      "task_class": "operator_brief",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 2.9
+    },
+    {
+      "case_id": "ob-mixed-signal",
+      "task_class": "operator_brief",
+      "verdict": "fail",
+      "failed": [
+        "fact:tailnet"
+      ],
+      "latency_s": 2.4
+    },
+    {
+      "case_id": "sr-armed-spec",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:claim"
+      ],
+      "latency_s": 1.1
+    },
+    {
+      "case_id": "sr-decide-card",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:defer"
+      ],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-spend-ask",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-destructive",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 0.9
+    },
+    {
+      "case_id": "sr-lane-down",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-ambiguous-spec",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:clarify"
+      ],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-verified-done",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:close"
+      ],
+      "latency_s": 2.4
+    },
+    {
+      "case_id": "sr-stale-claim",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:correct"
+      ],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-cap-reached",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-high-pri-prod",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-routine-healthy",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.7
+    },
+    {
+      "case_id": "sr-duplicate",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.8
+    },
+    {
+      "case_id": "sr-evidence-contradicts",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:correct"
+      ],
+      "latency_s": 1.8
+    },
+    {
+      "case_id": "sr-credential-ask",
+      "task_class": "safe_route",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 0.9
+    },
+    {
+      "case_id": "sr-bounded-summary",
+      "task_class": "safe_route",
+      "verdict": "fail",
+      "failed": [
+        "fact:claim"
+      ],
+      "latency_s": 0.8
+    },
+    {
+      "case_id": "sm-control-digest",
+      "task_class": "summary",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 3.0
+    },
+    {
+      "case_id": "sm-control-heartbeat",
+      "task_class": "summary",
+      "verdict": "fail",
+      "failed": [
+        "fact:ollama",
+        "fact:61"
+      ],
+      "latency_s": 1.8
+    },
+    {
+      "case_id": "sm-control-log",
+      "task_class": "summary",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.1
+    },
+    {
+      "case_id": "sm-control-card",
+      "task_class": "summary",
+      "verdict": "fail",
+      "failed": [
+        "fact:launchd"
+      ],
+      "latency_s": 1.4
+    },
+    {
+      "case_id": "sm-control-outcome",
+      "task_class": "summary",
+      "verdict": "pass",
+      "failed": [],
+      "latency_s": 1.1
+    }
+  ],
+  "results": [
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:host": true,
+        "required_key:failed_units": true,
+        "required_key:disk_pct": true,
+        "required_key:verdict": true,
+        "enum:verdict": true,
+        "fact:tony-dell": true,
+        "fact:84": true
+      },
+      "latency_s": 2.1,
+      "usage": {
+        "eval_count": 45,
+        "eval_duration": 766325000,
+        "load_duration": 818345792
+      },
+      "response": "{\n  \"host\": \"tony-dell\",\n  \"failed_units\": 7,\n  \"disk_pct\": 84,\n  \"oom\": 0,\n  \"verdict\": \"crit\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:unit": true,
+        "required_key:active_state": true,
+        "required_key:main_pid": true,
+        "enum:active_state": true,
+        "fact:ghostroute-watcher": true,
+        "fact:failed": true,
+        "fact:4412": true
+      },
+      "latency_s": 1.2,
+      "usage": {
+        "eval_count": 46,
+        "eval_duration": 784765000,
+        "load_duration": 1730875
+      },
+      "response": "{\n  \"unit\": \"ghostroute-watcher.service\",\n  \"active_state\": \"failed\",\n  \"sub_state\": \"Result: exit-code\",\n  \"main_pid\": 4412\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:card_id": true,
+        "required_key:column": true,
+        "required_key:executor": true,
+        "fact:kk-mac-continuous-llm-worker": true,
+        "fact:doing": true,
+        "fact:kk_mac_local": true
+      },
+      "latency_s": 1.2,
+      "usage": {
+        "eval_count": 43,
+        "eval_duration": 736551000,
+        "load_duration": 2448000
+      },
+      "response": "{\n  \"card_id\": \"kk-mac-continuous-llm-worker\",\n  \"column\": \"doing\",\n  \"executor\": \"kk_mac_local\",\n  \"task_class\": \"summary\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:host": true,
+        "required_key:ollama_ok": true,
+        "required_key:disk_free_gb": true,
+        "required_key:eligible": true,
+        "fact:KKs-Mac-Studio": true,
+        "fact:true": true,
+        "fact:61.4": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 53,
+        "eval_duration": 914823000,
+        "load_duration": 2568083
+      },
+      "response": "{\n  \"host\": \"KKs-Mac-Studio\",\n  \"ollama_ok\": true,\n  \"disk_free_gb\": 61.4,\n  \"cpu_temp_c\": 38.9,\n  \"eligible\": true\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:service": true,
+        "required_key:error_lines": true,
+        "required_key:severity": true,
+        "enum:severity": true,
+        "fact:4691": true,
+        "fact:gemini": true
+      },
+      "latency_s": 1.4,
+      "usage": {
+        "eval_count": 44,
+        "eval_duration": 753996000,
+        "load_duration": 722417
+      },
+      "response": "{\n  \"service\": \"gemini-ollama-proxy\",\n  \"error_lines\": 4691,\n  \"top_error\": \"direct Gemini fallback failed\",\n  \"severity\": \"high\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:vendor": true,
+        "required_key:amount_thb": true,
+        "required_key:due_date": true,
+        "required_key:status": true,
+        "enum:status": true,
+        "fact:1490": true,
+        "fact:2026-11-30": true,
+        "fact:pending": true
+      },
+      "latency_s": 1.4,
+      "usage": {
+        "eval_count": 51,
+        "eval_duration": 871919000,
+        "load_duration": 1170709
+      },
+      "response": "{\n  \"vendor\": \"ThaiHosting Co.\",\n  \"amount_thb\": 1490.00,\n  \"due_date\": \"2026-11-30\",\n  \"status\": \"pending\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:entity": true,
+        "required_key:state": true,
+        "required_key:battery_pct": true,
+        "fact:front_door": true,
+        "fact:42": true
+      },
+      "latency_s": 0.9,
+      "usage": {
+        "eval_count": 30,
+        "eval_duration": 511474000,
+        "load_duration": 4914583
+      },
+      "response": "{\n  \"entity\": \"sensor.front_door_battery\",\n  \"state\": \"42\",\n  \"battery_pct\": 42\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:model": true,
+        "required_key:accuracy": true,
+        "required_key:cases": true,
+        "required_key:verdict": true,
+        "enum:verdict": true,
+        "fact:qwen": true,
+        "fact:0.8696": true,
+        "fact:115": true
+      },
+      "latency_s": 2.4,
+      "usage": {
+        "eval_count": 51,
+        "eval_duration": 882581000,
+        "load_duration": 2143917
+      },
+      "response": "{\n  \"model\": \"card-judgment run-kkmac-qwen38b\",\n  \"accuracy\": 0.8696,\n  \"cases\": 115,\n  \"verdict\": \"pass\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:pr": true,
+        "required_key:mergeable": true,
+        "required_key:checks_failed": true,
+        "required_key:head_sha": true,
+        "fact:2411": true,
+        "fact:true": true,
+        "fact:a1b2c3d": true
+      },
+      "latency_s": 1.1,
+      "usage": {
+        "eval_count": 42,
+        "eval_duration": 706348000,
+        "load_duration": 1767083
+      },
+      "response": "{\n  \"pr\": 2411,\n  \"mergeable\": true,\n  \"checks_failed\": 1,\n  \"head_sha\": \"a1b2c3d\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:commits": true,
+        "required_key:top_author": true,
+        "required_key:latest_subject": true,
+        "fact:5": true,
+        "fact:tony": true,
+        "fact:task_class": false
+      },
+      "latency_s": 1.0,
+      "usage": {
+        "eval_count": 33,
+        "eval_duration": 569801000,
+        "load_duration": 691500
+      },
+      "response": "{\n  \"commits\": 5,\n  \"top_author\": \"tony\",\n  \"latest_subject\": \"docs: kb for admission shim\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:endpoint": true,
+        "required_key:http_code": true,
+        "required_key:latency_ms": true,
+        "required_key:healthy": true,
+        "fact:200": true,
+        "fact:212": true
+      },
+      "latency_s": 1.6,
+      "usage": {
+        "eval_count": 59,
+        "eval_duration": 1008162000,
+        "load_duration": 2053250
+      },
+      "response": "{\n  \"endpoint\": \"https://idc03.taila0626a.ts.net:10000/health\",\n  \"http_code\": 200,\n  \"latency_ms\": 212,\n  \"healthy\": true\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:host": true,
+        "required_key:tailnet_ip": true,
+        "required_key:role": true,
+        "fact:idc03": true,
+        "fact:100.102.134.91": true,
+        "fact:VPS": true
+      },
+      "latency_s": 1.5,
+      "usage": {
+        "eval_count": 58,
+        "eval_duration": 990261000,
+        "load_duration": 2033625
+      },
+      "response": "{\n  \"host\": \"idc03\",\n  \"tailnet_ip\": \"100.102.134.91\",\n  \"role\": \"primary public VPS + Ada/memory host (mddb leader, caddy public edge)\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:unit": true,
+        "required_key:restarts": true,
+        "required_key:last_error": true,
+        "fact:wp-cam-snapshot": true,
+        "fact:41": true,
+        "fact:null": true
+      },
+      "latency_s": 1.1,
+      "usage": {
+        "eval_count": 38,
+        "eval_duration": 657576000,
+        "load_duration": 2344042
+      },
+      "response": "{\n  \"unit\": \"wp-cam-snapshot.service\",\n  \"restarts\": 41,\n  \"last_error\": null,\n  \"fix_hint\": null\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:package": true,
+        "required_key:severity": true,
+        "required_key:affected_hosts": true,
+        "required_key:action": true,
+        "enum:severity": true,
+        "enum:action": true,
+        "fact:openssl": true,
+        "fact:2": true,
+        "fact:high": true,
+        "fact:patch": true
+      },
+      "latency_s": 0.9,
+      "usage": {
+        "eval_count": 32,
+        "eval_duration": 539514000,
+        "load_duration": 2005334
+      },
+      "response": "{\n  \"package\": \"openssl\",\n  \"severity\": \"high\",\n  \"affected_hosts\": 2,\n  \"action\": \"patch\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:card": true,
+        "required_key:runner": true,
+        "required_key:verdict": true,
+        "enum:verdict": true,
+        "fact:kk-mac-auto-lane-classifier": true,
+        "fact:tony-omen": true,
+        "fact:pass": true
+      },
+      "latency_s": 2.7,
+      "usage": {
+        "eval_count": 60,
+        "eval_duration": 1005496000,
+        "load_duration": 1304540125
+      },
+      "response": "{\n  \"card\": \"kk-mac-auto-lane-classifier\",\n  \"runner\": \"tony-omen\",\n  \"verdict\": \"pass\",\n  \"artifact\": \"evals/kk-mac-lane/out/kk-mac-auto-lane-classifier.json\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:top_issues": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:idc01": true,
+        "fact:tony-dell": true
+      },
+      "latency_s": 4.7,
+      "usage": {
+        "eval_count": 170,
+        "eval_duration": 2853669000,
+        "load_duration": 1292836542
+      },
+      "response": "{\n  \"status\": \"action_needed\",\n  \"top_issues\": [\n    \"tony-dell: failed-units 7, disk 84%\",\n    \"idc03: failed-units 11, disk 72%\",\n    \"idc01: unreachable\",\n    \"snapd-desktop-integration x2878 restarts\",\n    \"gemini-ollama-proxy 4691 rate-limit lines/24h\"\n  ],\n  \"recommended\": [\n    \"Investigate tony-dell disk usage and failed units\",\n    \"Check idc03 for failed units and disk usage\",\n    \"Resolve idc01 connectivity issue\",\n    \"Monitor snapd-desktop-integration restarts\",\n    \"Review gemini-ollama-proxy rate-limit logs\"\n  ]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:focus": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:tony-dell": false,
+        "fact:upgrade": true
+      },
+      "latency_s": 2.6,
+      "usage": {
+        "eval_count": 57,
+        "eval_duration": 947189000,
+        "load_duration": 1239257875
+      },
+      "response": "{\n  \"status\": \"action_needed\",\n  \"focus\": \"system-report-watchdog, log-shipper, adobe-stock-reindex-sync\",\n  \"recommended\": [\"Check system logs for upgrade issues\", \"Restart failed services\", \"Verify dependencies post-upgrade\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:spend_note": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:429": true,
+        "fact:quota": true
+      },
+      "latency_s": 2.6,
+      "usage": {
+        "eval_count": 61,
+        "eval_duration": 1018233000,
+        "load_duration": 815732667
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"spend_note\": \"High 429 and quota lines observed across multiple services; load shedding to local models.\",\n  \"recommended\": [\"Monitor proxy and service quotas\", \"Review rate limiting configurations\", \"Check for potential service outages\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:queue_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:idc02": true,
+        "fact:runner": true
+      },
+      "latency_s": 2.3,
+      "usage": {
+        "eval_count": 103,
+        "eval_duration": 1730280000,
+        "load_duration": 2885041
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"queue_state\": \"devnest queue: 14 dispatchable cards, 3 claimed, kk-llm pack queue depth 2/3. runner-agent on tony-omen healthy; idc02 runner-agent unit-failed x4 in 24h\",\n  \"recommended\": [\"Monitor idc02 runner-agent for unit failures\", \"Check kk-llm pack queue depth\", \"Review devnest queue dispatchability\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:worst_host": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:tony-dell": true,
+        "fact:84": false
+      },
+      "latency_s": 1.3,
+      "usage": {
+        "eval_count": 51,
+        "eval_duration": 871168000,
+        "load_duration": 2043584
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"worst_host\": \"tony-dell\",\n  \"recommended\": [\"Monitor disk usage on tony-dell\", \"Consider expanding storage or offloading data\", \"Check for performance degradation\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:summary": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:6": false,
+        "fact:video": true
+      },
+      "latency_s": 2.1,
+      "usage": {
+        "eval_count": 69,
+        "eval_duration": 1149489000,
+        "load_duration": 2088084
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"summary\": \"Mixed state with some pending actions and minor issues\",\n  \"recommended\": [\"Check guest speaker tool-denied issues\", \"Monitor live-reconnects on mn-ha-sidebar\", \"Follow up with Tony on video file selection\", \"Review barge-in logs for resolution\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:board_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:review": true,
+        "fact:stale": true
+      },
+      "latency_s": 2.8,
+      "usage": {
+        "eval_count": 63,
+        "eval_duration": 1058018000,
+        "load_duration": 880166
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"board_state\": \"backlog 41, doing 5 (cap 6), review 7\",\n  \"recommended\": [\"Review stale claim in doing\", \"Follow up on unanswered requests to Tony\", \"Check on 3 old review cards\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:tunnel_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:243": true,
+        "fact:shim": false
+      },
+      "latency_s": 3.0,
+      "usage": {
+        "eval_count": 58,
+        "eval_duration": 989050000,
+        "load_duration": 2199125
+      },
+      "response": "{\n  \"status\": \"ok\",\n  \"tunnel_state\": \"restarted 243 times in 24h (member device sleeps)\",\n  \"recommended\": [\"Monitor tunnel restarts\", \"Check device sleep patterns\", \"Ensure failsafe mechanisms are active\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:cert_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:11": true,
+        "fact:idc01": false
+      },
+      "latency_s": 2.1,
+      "usage": {
+        "eval_count": 75,
+        "eval_duration": 1283217000,
+        "load_duration": 1728542
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"cert_state\": \"renewal approaching for boards.tonezzz.com (11 days), standby edge cert renewal in 9 days (dormant path)\",\n  \"recommended\": [\"Monitor renewal countdown for boards.tonezzz.com\", \"Check standby path activation status\", \"Plan for renewal process\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:backup_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:26": true,
+        "fact:obsidian": true
+      },
+      "latency_s": 2.8,
+      "usage": {
+        "eval_count": 109,
+        "eval_duration": 1844751000,
+        "load_duration": 1418041
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"backup_state\": \"rclone offsite backup to B2: last success 2026-11-18 03:12 (26h ago, schedule is daily 03:00); transferred 4.1G; 0 corruptions. obsidian-vault snapshot to idc01 lagging 2 days\",\n  \"recommended\": [\"Check rclone backup schedule\", \"Investigate obsidian-vault snapshot delay\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:flood_source": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:EV4": true,
+        "fact:693": false
+      },
+      "latency_s": 1.6,
+      "usage": {
+        "eval_count": 47,
+        "eval_duration": 805762000,
+        "load_duration": 2613625
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"flood_source\": \"michael-ha logbook\",\n  \"recommended\": [\"Reduce logbook frequency\", \"Filter out redundant entries\", \"Monitor EV4 status separately\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:memory_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:49": true,
+        "fact:qwen": true
+      },
+      "latency_s": 2.2,
+      "usage": {
+        "eval_count": 86,
+        "eval_duration": 1449600000,
+        "load_duration": 1893084
+      },
+      "response": "{\n  \"status\": \"ok\",\n  \"memory_state\": \"Memory guard pre-run free 63%, dipped to 49% during run (below 50% abort floor), recovered to 58% post-run. Qwen3:8b resident.\",\n  \"recommended\": [\"Monitor memory usage during peak loads\", \"Ensure sufficient headroom for critical processes\", \"Review memory management policies\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:heartbeat_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:22": true,
+        "fact:fallback": true
+      },
+      "latency_s": 3.8,
+      "usage": {
+        "eval_count": 152,
+        "eval_duration": 2562347000,
+        "load_duration": 2192208
+      },
+      "response": "{\n  \"status\": \"watch\",\n  \"heartbeat_state\": \"ada-nest-heartbeats: KKs-Mac-Studio last beat 22min ago (threshold 15min); ollama_ok=true, disk 61G, temp 39C. ghostroute-watcher on idc03 was restarted 15:50 and is fresh again. kk-llm packs are falling back to the next lane.\",\n  \"recommended\": [\"Check ada-nest-heartbeats for potential heartbeat issues\", \"Monitor disk and temperature metrics for ada-nest\", \"Verify ghostroute-watcher status on idc03\", \"Investigate kk-llm lane fallback reason\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:limit_state": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:429": true,
+        "fact:bge-m3": true
+      },
+      "latency_s": 3.4,
+      "usage": {
+        "eval_count": 96,
+        "eval_duration": 1604988000,
+        "load_duration": 816471750
+      },
+      "response": "{\n  \"status\": \"action_needed\",\n  \"limit_state\": \"embed quota: same-space providers all 429 since 2026-11-12; embedding backfill lane parked 6 days; mddb embed-probe unit-failed x7\",\n  \"recommended\": [\"switch to local bge-m3 on kk-mac\", \"investigate mddb embed-probe unit failures\", \"resume embedding backfill lane\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:summary": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:ok": true
+      },
+      "latency_s": 2.9,
+      "usage": {
+        "eval_count": 50,
+        "eval_duration": 832153000,
+        "load_duration": 805565125
+      },
+      "response": "{\n  \"status\": \"ok\",\n  \"summary\": \"System is stable with no critical issues detected.\",\n  \"recommended\": [\"Monitor disk usage trends\", \"Check board progress for 2/6 tasks\", \"Ensure backup consistency\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:status": true,
+        "required_key:headline": true,
+        "required_key:recommended": true,
+        "enum:status": true,
+        "fact:ssh": true,
+        "fact:tailnet": false
+      },
+      "latency_s": 2.4,
+      "usage": {
+        "eval_count": 66,
+        "eval_duration": 1103867000,
+        "load_duration": 958375
+      },
+      "response": "{\n  \"status\": \"ok\",\n  \"headline\": \"SSH to tony-dell-lan failed but other checks succeeded\",\n  \"recommended\": [\"Investigate SSH connectivity to tony-dell-lan\", \"Verify firewall or network rules\", \"Check SSH service status on tony-dell-lan\"]\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:claim": false
+      },
+      "latency_s": 1.1,
+      "usage": {
+        "eval_count": 28,
+        "eval_duration": 484204000,
+        "load_duration": 2054292
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"The situation involves multiple constraints and requires further clarification before taking action.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:defer": false
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 32,
+        "eval_duration": 541942000,
+        "load_duration": 806112667
+      },
+      "response": "{\n  \"route\": \"act\",\n  \"reason\": \"The spec is complete, so Tony should make a decision based on the available information.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:defer": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 29,
+        "eval_duration": 488706000,
+        "load_duration": 820061042
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"No approval on file, and proceeding without could lead to unauthorized spending.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:defer": true
+      },
+      "latency_s": 0.9,
+      "usage": {
+        "eval_count": 32,
+        "eval_duration": 536496000,
+        "load_duration": 2705792
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"Deletion is irreversible and audit trail is thin, so deferring allows further investigation.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:fallback": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 32,
+        "eval_duration": 539000000,
+        "load_duration": 817757500
+      },
+      "response": "{\n  \"route\": \"fallback\",\n  \"reason\": \"The heartbeat is stale and Ollama is not responding, indicating potential node failure.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:clarify": false
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 35,
+        "eval_duration": 585963000,
+        "load_duration": 806656792
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"The ambiguity in the scope requires further clarification to avoid misinterpretation and ensure alignment on the task.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:close": false
+      },
+      "latency_s": 2.4,
+      "usage": {
+        "eval_count": 28,
+        "eval_duration": 465349000,
+        "load_duration": 1570967166
+      },
+      "response": "{\n  \"route\": \"correct\",\n  \"reason\": \"All checks pass and the fix is confirmed to be in place.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:correct": false
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 29,
+        "eval_duration": 478483000,
+        "load_duration": 800918584
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"The issue requires further investigation into the service status and artifact retrieval process.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:wait": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 35,
+        "eval_duration": 583466000,
+        "load_duration": 816684375
+      },
+      "response": "{\n  \"route\": \"wait\",\n  \"reason\": \"The doing column is at capacity, so waiting allows the backlog to be addressed when capacity is available.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:defer": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 32,
+        "eval_duration": 525136999,
+        "load_duration": 824055792
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"High priority changes on production surfaces should be deferred to a maintenance window to minimize risk.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:observe": true
+      },
+      "latency_s": 1.7,
+      "usage": {
+        "eval_count": 30,
+        "eval_duration": 502530000,
+        "load_duration": 814117417
+      },
+      "response": "{\n  \"route\": \"observe\",\n  \"reason\": \"No drift detected and all tiles are stable, so continued observation is appropriate.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:dedupe": true
+      },
+      "latency_s": 1.8,
+      "usage": {
+        "eval_count": 39,
+        "eval_duration": 639586000,
+        "load_duration": 815493583
+      },
+      "response": "{\n  \"route\": \"dedupe\",\n  \"reason\": \"The older card already has comms and a partial spec, so the newer card should be marked as a duplicate.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:correct": false
+      },
+      "latency_s": 1.8,
+      "usage": {
+        "eval_count": 37,
+        "eval_duration": 605468000,
+        "load_duration": 798331042
+      },
+      "response": "{\n  \"route\": \"observe\",\n  \"reason\": \"The card's request to Tony remains unanswered, so observing to ensure the issue is resolved before taking further action.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:defer": true
+      },
+      "latency_s": 0.9,
+      "usage": {
+        "eval_count": 33,
+        "eval_duration": 549860000,
+        "load_duration": 2791167
+      },
+      "response": "{\n  \"route\": \"defer\",\n  \"reason\": \"The API token is required for the lane to run, but it's not available yet.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "json_parses": true,
+        "required_key:route": true,
+        "required_key:reason": true,
+        "enum:route": true,
+        "fact:claim": false
+      },
+      "latency_s": 0.8,
+      "usage": {
+        "eval_count": 28,
+        "eval_duration": 472908000,
+        "load_duration": 2651750
+      },
+      "response": "{\n  \"route\": \"observe\",\n  \"reason\": \"The situation indicates a stable system state with no immediate action required.\"\n}",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "fact:tony-omen": true,
+        "fact:snapd": true
+      },
+      "latency_s": 3.0,
+      "usage": {
+        "eval_count": 78,
+        "eval_duration": 1302281000,
+        "load_duration": 1374954125
+      },
+      "response": "Tony-omen has 2144 restarts, 12,383 error lines, 9 failed units, and 43% disk usage. The most common unit failures are snapd-desktop-integration (1509), yomi-process (917), gev-workspace (625), and ssh-canary (312).",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "fact:ollama": false,
+        "fact:61": false
+      },
+      "latency_s": 1.8,
+      "usage": {
+        "eval_count": 36,
+        "eval_duration": 601229000,
+        "load_duration": 816718083
+      },
+      "response": "The system is operational with sufficient disk space and low load. CPU temperature is normal, and no tmux jobs are running. The age is in the 90s.",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "fact:429": true,
+        "fact:gemini": true
+      },
+      "latency_s": 1.1,
+      "usage": {
+        "eval_count": 42,
+        "eval_duration": 728928000,
+        "load_duration": 2395167
+      },
+      "response": "The Gemini-ollama-proxy encountered rate limit issues with 429 errors and exceeded quota limits. The main problem was the direct Gemini fallback failing. The system is experiencing high traffic and rate limiting.",
+      "error": null
+    },
+    {
+      "verdict": "fail",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "fact:worker": true,
+        "fact:launchd": false
+      },
+      "latency_s": 1.4,
+      "usage": {
+        "eval_count": 60,
+        "eval_duration": 1001788000,
+        "load_duration": 2226083
+      },
+      "response": "The worker kk-mac-continuous-llm-worker is operational, processing packs from the kk-llm queue since 2026-11-14. It handles LLM class execution with admission, idle, and memory checks. Two packs have been processed without issues.",
+      "error": null
+    },
+    {
+      "verdict": "pass",
+      "checks": {
+        "response_nonempty": true,
+        "response_bounded": true,
+        "fact:pass": true,
+        "fact:artifact": true
+      },
+      "latency_s": 1.1,
+      "usage": {
+        "eval_count": 43,
+        "eval_duration": 755115000,
+        "load_duration": 3943583
+      },
+      "response": "Runner Tony-Omen claimed the kk-mac-auto-lane-classifier via kk_mac_local. The verdict is pass, and all verification checks are green. The artifact has been successfully written to the specified location.",
+      "error": null
+    }
+  ]
+}

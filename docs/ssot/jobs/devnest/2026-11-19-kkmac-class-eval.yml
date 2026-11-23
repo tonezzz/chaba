@@ -1,0 +1,92 @@
+id: 2026-11-19-kkmac-class-eval
+title: kk-mac task-class eval — structured_extract / operator_brief / safe_route
+  vs production lane verifier
+date: 2026-11-19
+domain: devnest
+card: kk-mac-extract-brief-class-eval
+status: done
+what: >
+  Task-class eval for the kk_mac_local lane, answering "can the three
+  admitted-but-never-exercised classes (structured_extract,
+  operator_brief, safe_route) take real inbox work". Lives in
+  scripts/bench/kkmac-classes/ following the card-judgment + vision-qa
+  pattern: build_corpus.py (51 hand-authored producer-style cases —
+  15 structured_extract, 16 operator_brief, 15 safe_route + 5 summary
+  controls, each with prompt/format/expect/gold), corpus.jsonl,
+  score.py, kkmac_eval.sh (gates: ssh + ollama tags + corpus, fails
+  closed; per-case smctemp thermal gate identical to the other two
+  benches).
+method: >
+  Unlike card-judgment (chat endpoint + accuracy labels) this bench runs
+  the PRODUCTION call path — kk_mac_llm.call_remote (ssh -> loopback
+  /api/generate, think=false, temperature 0, format=json) — and scores
+  every response with the PRODUCTION verifier kk_mac_executor.verify
+  (json_parses + expect.required_keys/enums/facts). A case passes
+  exactly when the lane would return verdict=pass, so pass_rate is the
+  real readiness number. mock-oracle entity replays golds as a harness
+  selftest (all 51 pass).
+run:
+  cmd: scripts/bench/kkmac-classes/kkmac_eval.sh [models...]
+  verify: |
+    1. python3 scripts/bench/kkmac-classes/build_corpus.py
+    2. python3 scripts/bench/kkmac-classes/score.py --entity mock-oracle
+       # corpus selftest — all cases must pass verify()
+    3. scripts/bench/kkmac-classes/kkmac_eval.sh qwen3:8b llama3.2:3b
+  outputs: scripts/bench/kkmac-classes/run-kkmac-<model>.{md,json}
+results:
+  "qwen3:8b (lane default)":
+    - "structured_extract: 0.93 (14/15) — READY; 1 miss picked the wrong
+      'latest' commit subject"
+    - "operator_brief: 0.56 (9/16) — not ready; all misses are
+      expect.facts substring misses (host names/numbers not echoed),
+      plus wrong status verdicts on some cases"
+    - "safe_route: 0.53 (8/15) — not ready; fails CLOSED (over-defers —
+      armed spec -> defer, verified done -> correct), but one UNSAFE
+      pick (act on review_kind=decide)"
+    - "summary control: 0.60 (3/5) — fact-echo misses even on the class
+      already in production"
+  "llama3.2:3b":
+    - "structured_extract: 1.00 (15/15) — READY"
+    - "operator_brief: 0.31 (5/16)"
+    - "safe_route: 0.60 (9/15) — fails OPEN and unsafely — act on
+      priority:high prod change, claim on ambiguous spec"
+    - "summary control: 0.60"
+  "qwen2.5:32b":
+    - "structured_extract: 1.00 (15/15) — READY"
+    - "operator_brief: 0.44 (7/16)"
+    - "safe_route: 0.33 (5/15) — fails OPEN a different way: default
+      route is 'observe' for nearly everything, and still picked 'act'
+      on the decide card. ~6.3s/case mean (4x qwen3:8b) + repeated
+      thermal-gate pauses at 60-62C — the size tax is real too"
+    - "summary control: 0.40"
+findings:
+  - "JSON compliance is not the bottleneck — json_parses=1.0,
+    required_keys + enums ~100% on every model/class. ALL failures are
+    expect.facts substring misses or wrong-route picks."
+  - "structured_extract is ready for real inbox work now (93-100%)."
+  - "safe_route is NOT ready at any pulled size — each model has its own
+    wrong default: qwen3:8b over-defers, llama3.2:3b over-acts (unsafe:
+    act on priority:high prod, claim on ambiguous), qwen2.5:32b
+    over-observes. All three picked 'act' on the decide card or
+    otherwise missed the declared gate."
+  - "operator_brief is marginal — schema is perfect but the briefs are
+    vaguer than producer-declared facts expect (drops host names,
+    numbers). With loosely-declared facts it would pass more, but the
+    misses are real fidelity gaps, not just strictness artifacts."
+  - "Spec-authoring lesson — expect.facts must be tokens the model will
+    literally output; facts written for gold phrasing bounce ~40% of
+    otherwise-usable responses to fallback. Producers should declare
+    facts sparingly (enum + required_keys carry the structural load)."
+decision: >
+  Admit structured_extract for real inbox specs (93-100% at every model
+  size tried). Hold safe_route — model size does not rescue it
+  (8b->32b got WORSE); it needs a code-side route whitelist or a
+  rethink of the class. operator_brief can pilot only with minimal
+  facts + review of the first real packs — or accept ~50% fallback.
+verdict: done — eval built, run against 3 models on live kk-mac,
+  findings above; per-model reports in scripts/bench/kkmac-classes/.
+  Re-verified 2026-11-23 (run from tony-omen at temperature 0) —
+  identical pass rates on qwen3:8b and llama3.2:3b; class verdicts stable.
+  First two dispatch attempts lost the work (uncommitted worktree on
+  tony-omen, session died mid-commit on tony-dell); landed in this
+  commit on the third.
