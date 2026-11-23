@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: doing
-updated: 2026-11-23 14:00
+updated: 2026-11-23 14:03
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -403,6 +403,11 @@ comms:
 - at: 2026-11-23 14:00
   from: idc02
   text: claimed
+- at: 2026-11-23 14:03
+  from: devin
+  text: 'attempt 4 (idc02, 140159): prior work is merged in this worktree; Tony answered proceed on the retarget
+    request. Plan: re-verify IPP identity live, retarget HP_DeskJet_2700 .75->.92 via helper set-queue-uri, update
+    registry+SSOT, re-run gates.'
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?

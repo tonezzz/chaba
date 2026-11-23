@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
 column: doing
-updated: 2026-11-23 14:00
+updated: 2026-11-23 14:03
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -408,6 +408,15 @@ comms:
     merge-sweep: no session/worktree found for; [runner-tooling-drift-recurs-installed-ru-3aad1e] DONE (option a)
     on dispatch br; [trade-lesson-migrate-script] pub alert: card stalled: trade-lesson-migrate-scri; A card `running`
     under a dispatch claim cannot be re-queued ('
+- at: 2026-11-23 14:01
+  from: devin
+  text: 'attempt 2 on tony-dell: re-verifying drift state, then scp redeploy + flood-alert run per spec'
+- at: 2026-11-23 14:03
+  from: devin
+  text: 'DONE (attempt 2, on tony-dell): scp scripts/board/runner-agent.py -> tony-dell:~/.local/bin/runner-agent
+    — sha256 1e8ea0d8 == repo ref, exec bit ok, mtime 14:01. flood-alert.timer armed (15m, enabled+active); manual
+    flood-alert.service run 14:01:37 Result=success, 3 items scanned quiet x10 (2 feeds 429, benign). Zero drift
+    lines in runner-agent 24h journal; runner claimed this card at 14:01:35. Outcome doc in worktree.'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents

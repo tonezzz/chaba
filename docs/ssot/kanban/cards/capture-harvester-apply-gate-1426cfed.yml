@@ -1,7 +1,7 @@
 id: capture-harvester-apply-gate-1426cfed
 title: 'Capture harvester: decide --apply gate'
 column: backlog
-updated: 2026-11-23 13:49
+updated: 2026-11-23 14:03
 brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
   ever enable --apply.
 priority: medium
@@ -41,12 +41,26 @@ comms:
     in this slice by design (OPS-0016 approved 2026-11-23)'' (introduced 424e97f5c6). OPS-0016 approved the read-only
     propose slice with sink writes explicitly deferred as a separate gated decision. Therefore option (b) means
     DESIGN AND BUILD a new sink-write feature — define sink s'
+- at: 2026-11-23 14:03
+  from: tony
+  text: 'answered apply-is-the-only-unresolved-gate-from-o-bd7d0c: b - Build gated sink writes. Explicit chat approval
+    2026-11-23 (decision page).'
+- at: 2026-11-23 14:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 14:03
+  from: devin
+  text: '[2026-11-23 opencode] DECISION: Tony approved option (b) — build gated sink writes. Moving to doing. Build
+    plan: (1) fix exact sink scope from the live proposal report — restrict first apply to the most reversible sink
+    with a working write door; (2) implement an explicit --apply path in harvester.py with a mandatory dry-run diff,
+    idempotent dedupe via the append-only ledger, audit metadata (run_id, dedupe_key, source_id, timestamp), bounded
+    retries and a documented rollback; (3) respect the boar'
 requests:
 - id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
   ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
     kanban creates, all four Phase D signals measured). Enable sink writes, or keep the harvester permanently read-only?
     (★ = recommended: keep read-only until a concrete sink-write consumer exists.)'
-  status: open
+  status: answered
   at: 2026-11-23 13:42
   from: devin
   options:
@@ -56,3 +70,5 @@ requests:
   - id: b
     label: Approve a gated --apply run
     action: none
+  answer: b - Build gated sink writes. Explicit chat approval 2026-11-23 (decision page).
+awaiting_action: true
