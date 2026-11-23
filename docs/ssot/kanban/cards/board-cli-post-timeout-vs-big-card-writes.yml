@@ -1,7 +1,7 @@
 id: board-cli-post-timeout-vs-big-card-writes
 title: board-cli 60s client timeout precedes board-api write completion on large cards
 column: done
-updated: 2026-11-23 09:42
+updated: 2026-11-23 09:49
 brief: 'board-cli POSTs time out at 60s while board-api comment writes on large cards (e.g. opencode-lane-regraduation,
   rainy-day-spend-decisions) take longer; the server-side write still lands and returns ok. Retrying produces silent
   duplicate comments (happened twice 2026-11-11/12). Fix: raise client timeout, or make /comment idempotent by text-hash.'
@@ -337,4 +337,3 @@ action:
   runner: tony
 claim:
   since: 2026-11-19 20:10
-awaiting_action: true
