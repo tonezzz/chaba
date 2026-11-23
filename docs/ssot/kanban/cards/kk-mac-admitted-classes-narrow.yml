@@ -1,7 +1,7 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
 column: doing
-updated: 2026-11-23 22:07
+updated: 2026-11-23 22:15
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
   exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
@@ -286,5 +286,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-142345-redeploy-the-drifted-runner-ag on
     tony-omen — if the work was never pushed it may be gone'
+- at: 2026-11-23 22:15
+  from: devin
+  text: 'attempt 2: recovered attempt-1''s completed-but-unmerged work from dispatch/20261123-211800 branch (auto-committed
+    checkpoints — the exit=1 was a rate-limit kill after the work landed). Applied the 17-file narrowing to {summary,
+    structured_extract} across kk_mac_llm.ALLOWED_TASKS, capacity_producer, plan_validator, capacity_broker, dispatch_repos+runner-agent
+    KK_MAC_TASK_CLASSES, route keywords, lane contract + KB docs, with held-class tests; score.py keeps benching
+    held classes (now flagged HELD'
 claim:
   since: 2026-11-23 22:05
