@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
-column: review
-updated: 2026-11-23 15:26
+column: done
+updated: 2026-11-23 15:33
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -512,6 +512,9 @@ comms:
 - at: 2026-11-23 15:26
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 15:32
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -550,5 +553,8 @@ requests:
     adjudication + 98 high-confidence golden-seed sample) before appending. After spot-check, run the one-command
     suite append to orch-triage-cases.jsonl on the tony-dell ada-voice checkout. Hold append until spot-check is
     done (proceed with check-first).'
-awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 15:32
+  note: verified — evidence checks green, closing itself
