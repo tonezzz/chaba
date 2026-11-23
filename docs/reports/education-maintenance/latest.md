@@ -1,4 +1,4 @@
-# Education maintenance — 2026-11-22
+# Education maintenance — 2026-11-23
 
 **137 lessons** · 137 flagged · 0 clean · compliance **0.8029** · verify **pass**
 
@@ -30,7 +30,7 @@ Reused components: `lessons-audit.py` (R1–R5), `lessons-drift.py` (source refs
 
 ## Compliance trend
 
-0.8029 now vs 0.8029 on 2026-11-21 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
+0.8029 now vs 0.8029 on 2026-11-22 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
 
 ## Source drift (lessons-drift)
 
@@ -407,4 +407,4 @@ status **pass** · digest `6418f0873e6bfb62`
 - card: `education-maintenance-consolidated-report` · education-due page: private WP page slug education-due (post 354)
 - member index: https://boards.surf-thailand.com/wp/lesson/
 - runbook: `docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml` · exceptions: `scripts/lesson-thai-exceptions.yml`
-- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-22T00:51:19+00:00
+- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-23T00:51:29+00:00
