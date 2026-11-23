@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
 column: doing
-updated: 2026-11-23 23:04
+updated: 2026-11-23 23:12
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -104,5 +104,11 @@ comms:
     Restarted on tony-dell. Recovered the lost 202; [kk-mac-held-classes-fix-operator-brief-f-dd32ac] primer injected
     8 lesson(s): [; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Read-only inventory update: KK; runbook docs/kb/devnest-model-cache.md:
     DevNest model cache —'
+- at: 2026-11-23 23:12
+  from: devin
+  text: 'attempt 2 on mn01: attempt-1 failure was provider rate-limit kill (comms 22:35), not a task defect. kk-mac
+    is OFFLINE on tailnet (last heartbeat ~2.3h ago) so the live re-bench is gated; doing the deterministic half
+    now — corpus expect.facts -> literal-echo tokens (per-case miss analysis from run-kkmac-*.json) + producer guidance
+    in jevnest-kk-mac-capacity-procedure.md. Will poll kk-mac and run kkmac_eval.sh the moment it wakes.'
 claim:
   since: 2026-11-23 23:03
