@@ -1,0 +1,103 @@
+id: devin-dispatch-tg-reporting
+title: Devin dispatch TG reporting — job-ledger watcher on idc03
+date: 2026-11-23
+card: implement-and-track-devin-telegram-repor-fc0dc7
+ref: DEV-0368
+host: idc03
+status: implemented
+
+goal: >
+  Push Devin dispatch lifecycle events to Telegram. Card
+  implement-and-track-devin-telegram-repor-fc0dc7 (DEV-0368): Tony
+  picked the chaba lane on 2026-10-26 — "extend
+  scripts/board/board_notify.py TG lane (nest-queue pattern, group
+  targeting already works) on idc03".
+
+channel_decision:
+  chosen: board_notify tg -> ada-tg-relay /send (loopback idc03 :8911)
+  target: ada-ha TG group -5410424865 (BOARD_NOTIFY_TG_CHAT_ID)
+  why: >
+    The relay /send is loopback-only, so the reader must live on idc03.
+    The dispatch job ledger (job/<id> + answer/<id> docs in MDDB
+    ada-ha-bank-devin-handoff) is the one channel every runner host
+    already writes — devin-dispatch, devin-dispatch-watch and job-run
+    all upsert job/<task-id> on state changes — so a single idc03
+    poller covers the whole fleet without touching per-host watchers.
+  rejected:
+    hook-in-devin-dispatch-watch: >
+      The watch runs on every runner host; only idc03 can reach the
+      loopback relay, so a per-host hook would silently no-op
+      elsewhere (or need a new remote path — the ledger already is
+      that path).
+    board-api /publish: >
+      The publication layer fans out to Telegram through the server-side
+      noise policy, but Tony's picked lane was the board_notify tg
+      channel; /publish remains the right door for curated milestones,
+      not per-dispatch chatter.
+
+components:
+  - scripts/ops/devin-dispatch-tg-watch.py: >
+      One-shot poller (nest-queue-watch/kanban-notify pattern). Pages
+      MDDB /v1/search over ada-ha-bank-devin-handoff
+      (filterMeta kind=job|answer — paginated because /search caps at
+      1000 unordered rows and the ledger is ~1.5k), diffs each doc's
+      content signature against ~/.local/state/devin-dispatch-tg-watch.json,
+      and sends one board_notify tg message per new state: started /
+      done / FAILED / needs input (awaiting-user) / answered. First
+      tick primes silently; DEVIN_TG_WATCH_CATCHUP_MIN=<n> re-admits
+      recent docs on that tick. Kill switch
+      ~/.config/devin-dispatch-tg-watch.off or
+      DEVIN_DISPATCH_TG_WATCH=off. DEVIN_TG_WATCH_STATUSES filters
+      reported statuses. Max 5 sends/tick; failed sends retain their
+      signature slot so the next tick retries.
+  - docs/ssot/infrastructure/ssot.jobs.yml: >
+      job devin-dispatch-tg-watch on idc03, every 5m, env
+      BOARD_NOTIFY_CHANNEL=tg + BOARD_NOTIFY_TG_CHAT_ID=-5410424865.
+  - systemd/generated/idc03/devin-dispatch-tg-watch.{service,timer}: >
+      rendered units (render-jobs.py --host idc03 --ids ...).
+  - tests/ops/test_devin_dispatch_tg_watch.py: >
+      9 unittest cases — prime-silent first tick, new-state + new-job
+      notify, awaiting-user question body, answer-doc label, failed-send
+      retry retention, catch-up window, status filter, kill switch,
+      MDDB-failure state safety.
+
+ledger_contract:
+  source: MDDB ada-ha-bank-devin-handoff on the idc03 leader
+    (http://100.102.134.91:11023/v1), keys job/<task-id> and
+    answer/<job-id>
+  writers: devin-dispatch.sh, devin-dispatch-watch.sh, job-run.sh
+    (status running|done|failed|awaiting-user; meta.ts is the event
+    clock, meta.host the runner, meta.question the needs-input text)
+  dedupe: sha1(key + status + contentMd) — an identical rewrite (watch
+    retry after a partial channel failure) stays silent; a follow-up
+    completion with new outcome text re-reports, matching the watch's
+    notified_fu semantics.
+
+verification:
+  - "python3 -m pytest tests/ops/test_devin_dispatch_tg_watch.py — 9 passed."
+  - "python3 -m pytest tests/ops tests/test_render_jobs_catalog.py — 110 passed."
+  - "Live read-only smoke on tony-dell: fresh state + file sink primed
+    1555 ledger docs silently; second tick silent; CATCHUP_MIN=1440
+    emitted 5 real '[devin] <job> started' messages from today's
+    ledger into the sink, rc=0."
+  - "python3 scripts/render-jobs.py --check — OK 118 jobs."
+
+deploy:
+  - "Merge to master, then on idc03: python3 scripts/render-jobs.py
+    --host idc03 --ids devin-dispatch-tg-watch --install (writes the
+    user units + enables the timer). First tick primes silently — set
+    DEVIN_TG_WATCH_CATCHUP_MIN in the unit env first if you want the
+    install tick to prove itself with recent events."
+  - "Off switch any time: touch ~/.config/devin-dispatch-tg-watch.off
+    on idc03."
+
+followups:
+  - "The ledger itself looks stale-ish: 1176/1555 job docs still say
+    'running' — 268 of the 323 docs touched in the last 7 days never
+    got a terminal write (done 186 / failed 119 / superseded 72 /
+    answered 2 overall). Worth a separate look at whether
+    devin-dispatch-watch's mddb_job writes are landing on all hosts
+    (WATCH_JOB_DOC=1 default, deployed copies can lag the repo) or
+    whether those are genuinely dead tasks. The TG lane reports
+    whatever the ledger says; it does not paper over ledger gaps —
+    expect mostly 'started' pings until terminal writes recover."
