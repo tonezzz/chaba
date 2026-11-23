@@ -2,7 +2,7 @@ id: yt-voice-dub-scenarios
 title: YT voice dub — scenario + benchmark coverage
 brief: Adds automated checks so dubbing quality is measured every run instead of by ear. It can't start until related
   dub work lands — the blocker is named on the card.
-column: review
+column: backlog
 program: yt-voice-dub
 area: testing
 priority: medium
@@ -23,15 +23,17 @@ spec: 'ada-pi: add to tests/scenarios-live/ — dub_cue_timing (TTS segment fits
 action:
   type: dispatch
   repo: ada-pi
-  status: done
+  status: queued
   task: 'Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix
     scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).'
-  runner: mn01
   result: 'exit=0 ted ada-pi''s `yt` tool lacks a `voice=` param so conversational dub-cast isn''t possible yet.
     | devin-task-20261007-133317-ada-pi-add-to-tests-scenarios-.service: Consumed 42.003s CPU time over 26min 2.278s
     wall clock time, 554M memory peak.'
   sweep:
     dirty: 1
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
 updated: 2026-11-23 15:13
 comms:
 - at: 2026-10-06 07:18
@@ -445,7 +447,12 @@ comms:
   text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-10-07 20:58 scenarios authored on dispatch branch but
     verify criterion (scenarios green, benchmark entries run) not evidenced; worktree dirty/unmerged — requeued
     for rework.'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-23 15:13
+  from: tony
+  text: queued for processing
 claim: {}
 ref: ADA-0191
 review_kind: verify
-awaiting_action: true
