@@ -1,9 +1,9 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:36
+updated: 2026-11-23 19:42
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -467,6 +467,9 @@ comms:
 - at: 2026-11-23 19:36
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 19:42
+  from: tony-macbook
+  text: claimed
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -475,7 +478,7 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -485,12 +488,13 @@ action:
   last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:
     Failed with result ''exit-code''. | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service: Consumed
     34.394s CPU time.'
-  attempts: 1
+  attempts: 2
   result: 'exit=0  `tony-usb` node in the admin console — until then every stick boot re-triggers the mn01 session
     fight. | devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u.service: Consumed 42.822s CPU time, 342.4M
     memory peak, 0B memory swap peak.'
+  runner: tony-macbook
 claim:
-  since: 2026-11-23 18:50
+  since: 2026-11-23 19:42
 requests:
 - id: physical-step-remains-the-tony-usb-stick-41f071
   ask: 'Physical step remains — the tony-usb stick is not booted or attached to any reachable host (verified from
