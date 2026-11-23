@@ -54,6 +54,7 @@
     sw_key_map:
       tony-macbook: kk-macbook
     probe_timeout: "{{ host_sw_probe_timeout | default(20) }}"
+    probe_timeout_python_ml: "{{ host_sw_probe_timeout_python_ml | default(90) }}"
 
   pre_tasks:
     - name: Report controller detection
@@ -93,16 +94,21 @@
 
     - name: Probe declared R7 capabilities (read-only, one round-trip)
       ansible.builtin.shell: |
-        PROBES_JSON='{{ sw_probe_payload | to_json }}' TIMEOUT_S='{{ probe_timeout }}' python3 - <<'PYEOF'
+        PROBES_JSON='{{ sw_probe_payload | to_json }}' TIMEOUT_S='{{ probe_timeout }}' PYML_TIMEOUT_S='{{ probe_timeout_python_ml }}' python3 - <<'PYEOF'
         import json, os, re, subprocess, sys
         probes = json.loads(os.environ["PROBES_JSON"])
-        timeout = int(os.environ.get("TIMEOUT_S", "20"))
+        timeout_default = int(os.environ.get("TIMEOUT_S", "20"))
+        timeout_by_cap = {
+            "python_ml": int(os.environ.get("PYML_TIMEOUT_S", "90")),
+            "python_ml_gpu": int(os.environ.get("PYML_TIMEOUT_S", "90")),
+        }
         out = {}
         for cap, spec in probes.items():
             cmd = spec.get("probe")
             if not cmd:
                 out[cap] = {"status": "undef", "detail": "no probe in manifest"}
                 continue
+            timeout = timeout_by_cap.get(cap, timeout_default)
             try:
                 p = subprocess.run(["bash", "-c", cmd], capture_output=True,
                                    text=True, timeout=timeout)
