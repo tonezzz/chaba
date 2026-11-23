@@ -31,17 +31,15 @@ action:
   status: queued
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
-  result: 'exit=1 dubbing-into-the-ca.service: Failed with result ''exit-code''. | devin-task-20261123-191551-wire-voice-dubbing-into-the-ca.service:
-    Consumed 12min 54.720s CPU time over 32min 43.613s wall clock time, 1.2G memory peak, 114.6M memory swap peak.'
   sweep:
     session_gone: 2026-11-08 16:22
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  attempts: 1
+  attempts: 0
   last_failure: 'exit=1 dubbing-into-the-ca.service: Failed with result ''exit-code''. | devin-task-20261123-191551-wire-voice-dubbing-into-the-ca.service:
     Consumed 12min 54.720s CPU time over 32min 43.613s wall clock time, 1.2G memory peak, 114.6M memory swap peak.'
-updated: 2026-11-23 19:57
+updated: 2026-11-23 20:14
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -364,6 +362,9 @@ comms:
   from: chaba
   text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
     — claims held ~29m'
+- at: 2026-11-23 20:14
+  from: tony
+  text: retry requested
 claim:
   since: 2026-11-23 19:14
 ref: ADA-0156
