@@ -17,9 +17,13 @@ Phases per run:
   3. COLLECT  settled tasks -> worktree diff (bridge.collect_patch) ->
               artifact check (verdict.json + evidence.md exist, non-empty).
   4. REPORT   card comms + options request — deduped per
-              (task_id, column, updatedAt): the 2026-10-29 lane-cms run
-              re-posted "task 8b60e review-ready" 5x because the poll loop
-              re-reported unchanged state; the state file fixes that.
+              (task_id, column, updatedAt) AND by a comms latch (a card
+              whose comms already carry a "cline review ... task <id>"
+              line is never re-reported): the 2026-10-29 lane-cms run
+              re-posted "task 8b60e review-ready" 5x on a poll loop, and
+              the 2026-11-23 rerun re-posted e05b5/b699c because the state
+              file lived on a different host. Reported tasks are trashed
+              to free the inflight cap.
 
 Marker note: the marker is [CARDREVIEW:<id>], deliberately NOT the spec'd
 [CARD:<id>] — scripts/ops/cline-board-mirror.py claims every task whose
@@ -37,6 +41,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 from pathlib import Path
@@ -61,6 +66,39 @@ AUTO_INCIDENT_PREFIXES = (
     "logs-auto", "runner-auto", "cms-auto", "disk-auto", "vcast-auto")
 PROMPT_MAX = 3800
 TITLE_MAX = 110
+
+# podman-via-ssh shim: bridge.run_container calls bare `podman exec ...`
+# with a nested `sh -c '"$@" >"$O" ...'` script. ssh joins argv into one
+# remote-shell command string, which re-parses and expands $O/$@/$? before
+# podman sees them — every arg must be single-quote re-escaped so the
+# remote parse is lossless (the bug that killed the 2026-11-23 tony-omen
+# run mid-drain). Generated to a tempdir by --podman-ssh.
+PODMAN_SSH_SHIM = r'''#!/bin/sh
+# podman-via-ssh to {host}: re-quote each argv so ssh's remote-shell
+# reparse is lossless (nested sh -c scripts survive). ControlMaster
+# multiplexes the ~5 ssh calls per podman exec — without it each call
+# pays a full handshake and a pass takes tens of minutes.
+cmd="podman"
+for a in "$@"; do
+  q=$(printf '%s' "$a" | sed "s/'/'\\\\''/g")
+  cmd="$cmd '$q'"
+done
+exec ssh -o BatchMode=yes -o ConnectTimeout=10 \
+  -o ControlMaster=auto -o ControlPersist=300 \
+  -o "ControlPath=$HOME/.ssh/cm-crf-%C" \
+  {host} "$cmd"
+'''
+
+
+def install_podman_ssh_shim(host):
+    """Prepend a `podman` ssh-proxy shim to PATH so bridge's bare
+    `podman exec` calls run on <host> (con01). Returns the shim dir."""
+    d = Path(tempfile.mkdtemp(prefix="cline-feed-podman-"))
+    shim = d / "podman"
+    shim.write_text(PODMAN_SSH_SHIM.format(host=host))
+    shim.chmod(0o755)
+    os.environ["PATH"] = f"{d}{os.pathsep}{os.environ.get('PATH', '')}"
+    return d
 
 # A card is unsuitable when its review question needs anything Cline's
 # disposable workspace cannot see or touch. These patterns match on the
@@ -258,8 +296,18 @@ def card_of_task(task):
 
 
 def feed_tasks(tasks):
-    """card_id -> task for tasks owned by this lane."""
-    return {card_of_task(t): t for t in tasks if card_of_task(t)}
+    """card_id -> task for tasks owned by this lane. A trashed/done
+    predecessor must not shadow a fresh task for the same card."""
+    out = {}
+    for t in tasks:
+        cid = card_of_task(t)
+        if not cid:
+            continue
+        cur = out.get(cid)
+        if cur is None or (cur.get("column") in ("trash", "done")
+                           and t.get("column") not in ("trash", "done")):
+            out[cid] = t
+    return out
 
 
 def inflight(tasks):
@@ -312,6 +360,27 @@ def settled(task):
     return None
 
 
+def parse_verdict(verdict_raw):
+    """Tolerate weak-model quirks: qwen2.5:7b sometimes writes the JSON
+    escaped (`{\\"verdict\\": ...}` — seen live on task bb711) or
+    double-encoded."""
+    candidates = [verdict_raw, verdict_raw.replace('\\"', '"'),
+                  verdict_raw.strip('"')]
+    for candidate in candidates:
+        try:
+            v = json.loads(candidate)
+        except Exception:
+            continue
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except Exception:
+                continue
+        if isinstance(v, dict):
+            return v
+    raise RuntimeError("verdict.json is not parseable JSON")
+
+
 def collect_task_artifacts(task, out_dir):
     """Return (verdict_dict, evidence_text, patch_bytes, changed_files)."""
     before = []  # worktree set isn't tracked across runs; match by task id
@@ -326,7 +395,7 @@ def collect_task_artifacts(task, out_dir):
         raise RuntimeError("verdict.json missing or empty")
     if not evidence:
         raise RuntimeError("evidence.md missing or empty")
-    verdict = json.loads(verdict_raw)
+    verdict = parse_verdict(verdict_raw)
     if verdict.get("verdict") not in ("close", "hold", "investigate"):
         raise RuntimeError(f"bad verdict value: {verdict.get('verdict')!r}")
     return verdict, evidence, len(patch.encode()), changed
@@ -337,11 +406,41 @@ def collect_task_artifacts(task, out_dir):
 SUGGEST = {"close": "close", "hold": "keep", "investigate": "requeue"}
 
 
+def already_reported(card, task_id):
+    """Comms latch — durable dedupe across state-file loss. The 2026-11-23
+    rerun re-posted the e05b5/b699c verdict lines because the state file
+    lived on a different host; the card's own comms are the real record."""
+    needle = f"task {task_id}"
+    return any(
+        (m.get("text") or "").startswith("cline review")
+        and needle in (m.get("text") or "")
+        for m in (card.get("comms") or []))
+
+
+def already_requested(card):
+    return any(
+        isinstance(r, dict)
+        and "cline drafted verdict" in (r.get("ask") or "").lower()
+        for r in (card.get("requests") or []))
+
+
 def post_verdict(card, task, verdict, patch_bytes, changed,
                  provider, model, st, dry_run):
     cid = card["id"]
     v = verdict.get("verdict")
     reason = clip(verdict.get("reason") or "", 200)
+    if card.get("column") != "review":
+        # human already gated the card — record the verdict for audit,
+        # but raising a decision request on a closed card is noise
+        text = (
+            f"cline review task {task['id']} verdict {v} — {reason}. "
+            f"Card left review (now {card.get('column')}) before the "
+            f"verdict was collected; no decision needed.")
+        if dry_run:
+            return {"comment": "dry-run"}
+        res_c = api_post("/comment",
+                         {"id": cid, "from": ACTOR, "text": text})
+        return {"comment": res_c, "ok": not res_c.get("error")}
     text = (
         f"cline review verdict ({provider}/{model}, task {task['id']}): "
         f"{v.upper()} — {reason}. Artifacts verdict.json+evidence.md "
@@ -362,11 +461,30 @@ def post_verdict(card, task, verdict, patch_bytes, changed,
     if dry_run:
         return {"comment": "dry-run", "request": req}
     res_c = api_post("/comment", {"id": cid, "from": ACTOR, "text": text})
-    res_r = api_post("/request", req) if not st.get("request_raised") \
-        else {"skipped": "request already raised"}
+    res_r = ({"skipped": "request already raised"}
+             if st.get("request_raised") or already_requested(card)
+             else api_post("/request", req))
     return {"comment": res_c, "request": res_r,
             "ok": not res_c.get("error")
             and not res_r.get("error")}
+
+
+def trash_collected(task, dry_run):
+    """Move a settled task to trash — cleans up the worktree and frees
+    the inflight cap. Settled tasks otherwise sit in_progress forever
+    when the runtime loses the session record (seen on 43d16/fabd1/bb711).
+    Only called AFTER the patch is collected."""
+    if task.get("column") not in ("backlog", "in_progress"):
+        return None
+    if dry_run:
+        return "dry-run"
+    try:
+        bridge.run_kanban([
+            "task", "trash", "--task-id", task["id"],
+            "--project-path", "/workspace"], timeout=90)
+    except Exception as exc:
+        return f"trash failed: {exc}"
+    return "trashed"
 
 
 def run_collect(tasks, state, args, dry_run):
@@ -378,7 +496,15 @@ def run_collect(tasks, state, args, dry_run):
             continue
         if st.get("reported_key") == report_key(task) and \
                 st.get("request_raised"):
-            continue  # unchanged since last report — the dedupe fix
+            # unchanged since last report — dedupe; but a settled task in
+            # a cap-counting column still gets trashed or it holds an
+            # inflight slot forever (bb711 sat in_progress on 2026-11-23)
+            trashed = trash_collected(task, dry_run) \
+                if settled(task) else None
+            if trashed is not None:
+                results.append({"card": cid, "status": "deduped",
+                                "trash": trashed})
+            continue
         why = settled(task)
         if not why:
             results.append({"card": cid, "status": "waiting",
@@ -386,6 +512,14 @@ def run_collect(tasks, state, args, dry_run):
             continue
         if why == "failed":
             results.append({"card": cid, "status": "task-failed"})
+            continue
+        card = get_card(cid) or {"id": cid}
+        if already_reported(card, task["id"]):
+            st["reported_key"] = report_key(task)
+            st["request_raised"] = True
+            trashed = trash_collected(task, dry_run)
+            results.append({"card": cid, "status": "already-reported",
+                            "trash": trashed})
             continue
         out_dir = args.out / cid
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -407,15 +541,18 @@ def run_collect(tasks, state, args, dry_run):
                             "error": str(exc)})
             continue
         st["verdict"] = verdict.get("verdict")
-        rep = post_verdict(get_card(cid) or card, task, verdict, nbytes,
+        rep = post_verdict(card, task, verdict, nbytes,
                            changed, args.provider, args.model, st, dry_run)
+        trashed = None
         if not dry_run and rep.get("ok"):
             # only latch after the comms actually landed — a failed post
             # must retry next pass, not be deduped away
             st["reported_key"] = report_key(task)
             st["request_raised"] = True
+            trashed = trash_collected(task, dry_run)
         results.append({"card": cid, "status": "reported",
-                        "verdict": verdict.get("verdict"), "report": rep})
+                        "verdict": verdict.get("verdict"), "report": rep,
+                        "trash": trashed})
     return results
 
 
@@ -440,12 +577,22 @@ def main():
     ap.add_argument("--poll-s", type=int, default=60)
     ap.add_argument("--wait-s", type=int, default=0,
                     help="keep collecting until this deadline (0 = one pass)")
+    ap.add_argument("--podman-ssh", default=None,
+                    help="proxy podman exec calls to this host over ssh "
+                         "(e.g. con01) — for running off-con01; env "
+                         "CLINE_REVIEW_SSH also works")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     API = args.api.rstrip("/")
     if (args.provider, args.model) not in ALLOWED_MODELS:
         ap.error(f"{args.provider}/{args.model} not in free-lane allowlist")
+
+    podman_ssh = args.podman_ssh or os.environ.get("CLINE_REVIEW_SSH")
+    if podman_ssh:
+        install_podman_ssh_shim(podman_ssh)
+        print(f"podman exec proxied to {podman_ssh} via ssh shim",
+              flush=True)
 
     state = load_state(args.state)
     state.setdefault("cards", {})
@@ -454,6 +601,10 @@ def main():
     while True:
         tasks = bridge.list_tasks("/workspace")
         results = run_collect(tasks, state, args, args.dry_run)
+
+        # collect may have trashed tasks — refresh before computing room,
+        # else a pass that frees the cap exits without ever creating
+        tasks = bridge.list_tasks("/workspace")
 
         # fill up to the inflight cap
         room = args.max_inflight - len(inflight(tasks))
@@ -466,6 +617,8 @@ def main():
                 cid = card["id"]
                 st = state["cards"].setdefault(cid, {})
                 existing = feed_tasks(tasks).get(cid)
+                if existing and existing.get("column") in ("trash", "done"):
+                    existing = None  # terminal — allow a fresh task
                 if existing:  # idempotent — marker already on the board
                     st["task_id"] = existing["id"]
                     ensure_started(existing)

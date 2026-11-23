@@ -44,6 +44,14 @@ fixes:
      cline-board-mirror.py claims every [CARD: task as its own projection
      and would rewrite/delete live review tasks"
   - "ACTOR must be devin|chaba|ada|tony — board-api 400s other from values"
+  - "2026-11-23 follow-ups (attempt 6, recovered from tony-omen worktree):
+     comms latch already_reported()/already_requested() — the state file is
+     per-host and a rerun re-posted e05b5/b699c verdicts; card-left-review
+     posts audit comment only; parse_verdict() tolerates weak-model escaped
+     JSON (bb711); trash_collected() frees the inflight cap"
+  - "--podman-ssh HOST runs the feed off-con01: generates a quoting-safe
+     podman ssh shim (single-quote re-escape + ControlMaster) — the nested
+     sh -c '$O'/'$@' script dies to remote-shell reparse without it"
 runbook: docs/kb/cline-review-feed.md
 artifacts:
   - scripts/ops/cline-review-feed.py
@@ -51,6 +59,6 @@ artifacts:
 next:
   - "declared timer on con01 (e.g. hourly cline-review-feed.service) if the
      lane proves useful — host mutation, not done in this dispatch"
-  - "tasks stay in_progress on the cline board after collection when the
-     runtime loses the session record; consider a cleanup move to trash
-     after report once the pattern settles"
+  - "orphan adoption: feed tasks whose card left review are only collected
+     when seeded into the state file — a sweep that maps [CARDREVIEW:<id>]
+     markers back to cards would make the lane fully self-healing"
