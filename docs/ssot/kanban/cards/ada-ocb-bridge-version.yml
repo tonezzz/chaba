@@ -25,6 +25,7 @@ action:
   sweep:
     failed_noted: 2026-11-17 22:24
     stale_running: 2026-11-23 11:32
+    session_gone: 2026-11-23 11:32
   last_failure: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
     | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
     11.419s wall clock time, 927.1M memory peak.'
@@ -331,6 +332,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261123-105754-in-ada-voice-opencode-ada-mcp- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-23 11:32
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-105754-in-ada-voice-opencode-ada-mcp- on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
