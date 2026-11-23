@@ -1,9 +1,9 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: doing
+column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:42
+updated: 2026-11-23 19:49
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -480,6 +480,21 @@ comms:
     AUD-0973 independent re-check (dispatch 201613 ; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook
     docs/kb/hardware-mn0; runbook docs/kb/mn01-stick-standard.md: USB stick standard — mn01 rescue stick &; runbook
     docs/kb/new-host-onboarding.md: New Host Onboarding —'
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u'
+- at: 2026-11-23 19:49
+  from: tony-macbook
+  text: 'finished (failed): exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result
+    ''exit-code''. | devin-task-20261123 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-23 19:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 20:19'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -488,20 +503,21 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-23 16:32
     zero_commit: 2026-11-23 16:32
     session_gone: 2026-11-23 19:17
-  last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:
-    Failed with result ''exit-code''. | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service: Consumed
-    34.394s CPU time.'
+    no_repo: 2026-11-23 19:49
+  last_failure: 'exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
+    | devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Consumed 18.832s CPU time over 5min 5.940s
+    wall clock time, 327.3M memory peak.'
   attempts: 2
-  result: 'exit=0  `tony-usb` node in the admin console — until then every stick boot re-triggers the mn01 session
-    fight. | devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u.service: Consumed 42.822s CPU time, 342.4M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
+    | devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Consumed 18.832s CPU time over 5min 5.940s
+    wall clock time, 327.3M memory peak.'
   runner: tony-macbook
 claim:
   since: 2026-11-23 19:42

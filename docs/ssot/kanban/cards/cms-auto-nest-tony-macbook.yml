@@ -2,14 +2,14 @@ id: cms-auto-nest-tony-macbook
 title: CMS automation `nest-tony-macbook` stale
 brief: A scheduled report-page job ('nest-tony-macbook') is stale. Re-run it or check the generator — details in
   the note.
-column: doing
+column: backlog
 review_kind: triage
 generated: cms-auto-health
 priority: high
 note: 'Recovering: nest-tony-macbook healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-macbook'' (or POST /api/cms/pages/nest-tony-macbook/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 19:40
+updated: 2026-11-23 19:49
 comms:
 - at: 2026-11-18 17:20
   from: chaba
@@ -132,6 +132,18 @@ comms:
     the new file via their chaba checkout sync (chaba-repo-s; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b]
     Rollout state check 2026-11-08; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613
     ; [devin-session-audit-2026-10-29] Resume 2026-11-20 18:2x ICT '
+- at: 2026-11-23 19:48
+  from: tony-macbook
+  text: 'finished (failed): exit=1 sk-20261123-194012-cms-automation-nest-tony-macbo.service: Failed with result
+    ''exit-code''. | devin-task-20261123- — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-23 19:48
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-194012-cms-automation-nest-tony-macbo (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 20:19'
 ok_streak: 1
 requests:
 - id: cline-drafted-verdict-investigate-redepl-5d52a2
@@ -154,9 +166,15 @@ requests:
   answer: requeue — requeue for another pass
   executed: 2026-11-23 retry
 action:
-  status: running
+  status: failed
   attempts: 2
   lane: devin
   runner: tony-macbook
+  result: 'exit=1 sk-20261123-194012-cms-automation-nest-tony-macbo.service: Failed with result ''exit-code''. |
+    devin-task-20261123-194012-cms-automation-nest-tony-macbo.service: Consumed 34.114s CPU time over 7min 33.486s
+    wall clock time, 433.9M memory peak.'
+  last_failure: 'exit=1 sk-20261123-194012-cms-automation-nest-tony-macbo.service: Failed with result ''exit-code''.
+    | devin-task-20261123-194012-cms-automation-nest-tony-macbo.service: Consumed 34.114s CPU time over 7min 33.486s
+    wall clock time, 433.9M memory peak.'
 claim:
   since: 2026-11-23 19:39
