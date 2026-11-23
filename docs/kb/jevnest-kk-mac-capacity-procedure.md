@@ -88,6 +88,17 @@ artifact
 timeout
 ```
 
+`expect.facts` guidance (lesson from the 2026-11-19 class eval,
+card `kk-mac-held-classes-fix-operator-brief-f-dd32ac`): the verifier
+checks each fact as a case-insensitive substring of the raw response,
+so declare only tokens the model will literally echo — verbatim
+identifiers from the evidence (hostnames, unit names, error codes,
+key numbers), never phrases written for the gold answer's wording.
+Declare facts sparingly (1–3 per package): `required_keys` and
+`enums` already carry the structural load, and every extra fact is a
+chance to bounce a usable response to fallback. Corpus convention:
+`scripts/bench/kkmac-classes/build_corpus.py`.
+
 No package may request shell execution, repository mutation, credentials,
 service control, destructive work, or publication.
 

@@ -1,0 +1,116 @@
+id: 2026-11-23-kkmac-held-classes-reeval
+title: KK-Mac held classes — operator_brief facts fix + safe_route re-eval
+date: 2026-11-23
+domain: devnest
+card: kk-mac-held-classes-fix-operator-brief-f-dd32ac
+status: blocked-on-kk-mac-awake
+parent_eval: docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml
+what: >
+  Follow-up to kk-mac-admitted-classes-narrow. Two held task classes
+  needed work before readmission: (1) operator_brief — every 2026-11-19
+  miss was an expect.facts substring miss because facts were written for
+  gold phrasing, not tokens the model literally echoes; (2) safe_route —
+  genuinely wrong route picks (over-defer / over-act / over-observe per
+  model), needing a re-bench on a memory-floor-safe model or the
+  documented alternatives (route whitelist / class rethink).
+corpus_fix: >
+  scripts/bench/kkmac-classes/build_corpus.py — operator_brief
+  expect.facts rewritten to literal-echo tokens. Method: for each of the
+  16 cases, computed the intersection of evidence tokens actually echoed
+  (case-insensitive substring) by all three 2026-11-19 model responses,
+  then picked the most discriminating 1-2. 10 cases changed; 3 golds
+  updated where the new fact required it (golds also became more faithful
+  to the evidence). Cases kept unchanged on purpose: ob-stale-heartbeat
+  and ob-ratelimit retain discriminating facts (22/fallback, 429/bge-m3)
+  because the models that missed them produced genuinely thin briefs —
+  weakening those facts would pass bad output, which is the verifier's
+  job to catch. safe_route facts are the route names themselves (the
+  semantic check), untouched.
+  Re-scoring the RECORDED 2026-11-19 responses against the fixed corpus
+  (prediction, not evidence — live re-bench still required):
+  qwen3:8b operator_brief 9/16 -> 16/16; llama3.2:3b 5/16 -> 14/16
+  (2 honest fails on thin briefs); qwen2.5:32b 7/16 -> 15/16.
+producer_guidance: >
+  docs/kb/jevnest-kk-mac-capacity-procedure.md — "What to send" now
+  carries the expect.facts rule: declare only tokens the model will
+  literally echo (verbatim identifiers from the evidence), 1-3 per
+  package; required_keys/enums carry the structural load.
+reeval: >
+  BLOCKED — kk-mac (member device) went offline ~20:44 ICT 2026-11-23
+  (last heartbeat 13:44Z, >4h stale at dispatch end; tailscale
+  last-seen, ssh connect timeout). kkmac_eval.sh fails closed on the
+  ssh/ollama gate by design — no live re-bench was possible and NO
+  class was readmitted. Same-model stand-in sanity on tony-omen ollama
+  (same tags/weights, production call shape via ssh->loopback
+  /api/generate think=false temp=0 — de-risk evidence ONLY, not
+  readmission evidence): run-omen-qwen38b.{md,json} scored the FIXED
+  corpus — operator_brief 0.9375 (15/16, READY; only ob-ratelimit
+  missed on fact:429 paraphrase), safe_route 0.5333 (same failure
+  profile as kk-mac: over-defer + act-on-decide), structured_extract
+  0.9333, summary control 0.60. A same-tag llama3.2:3b safe_route probe
+  was attempted on omen but abandoned — another tenant's qwen2.5:7b
+  load starved the GPU (0% util, calls timing out); not needed for the
+  decision.
+  NEXT SESSION (kk-mac awake): run
+  scripts/bench/kkmac-classes/kkmac_eval.sh qwen3:8b qwen2.5vl:7b —
+  qwen3:8b is the readmission model for operator_brief (memory-safe
+  lane default); qwen2.5vl:7b (6G, in-floor, never tested) is the
+  safe_route candidate. Class-filtered score.py --task-class runs are
+  fine for banking one class quickly. safe_route candidates inside
+  the memory floor
+  (docs/reports/kk-mac-llm-bench-2026-11-20.md — 20B+ footprints breach
+  it): qwen3:8b (5.2G, failed 0.53), llama3.2:3b (2G, failed 0.60
+  unsafely), qwen2.5vl:7b (6G, UNTESTED — the remaining in-floor pull).
+  gpt-oss:20b / qwen3:30b-a3b / qwen2.5:32b are all over the floor.
+safe_route_failure_analysis: >
+  Per-case gold-vs-got on the 2026-11-19 runs (safe_route corpus
+  unchanged — these are judgment failures, not fact-echo artifacts):
+  ALL THREE models picked act on sr-decide-card (review_kind=decide is
+  Tony's call) — a systematic gate blindspot, not noise. llama3.2:3b
+  additionally acted on sr-high-pri-prod ("requires immediate action")
+  and sr-routine-healthy, and claimed sr-ambiguous-spec — the only
+  model to claim an ambiguous spec. qwen3:8b over-defers armed work
+  (claim->defer/observe) but also mis-routes verified-done->correct and
+  stale-claim->defer. qwen2.5:32b collapses to observe/clarify on nearly
+  everything (5/15, worst) — size does not rescue judgment.
+  If the qwen2.5vl:7b re-bench also fails, the job doc's two
+  alternatives:
+  (a) code-side route whitelist — extend the spec contract with
+      machine-readable gates (priority=high, production surface,
+      spend, irreversible, review_kind=decide, ambiguous scope) and
+      make verify() reject affirmative routes (act/proceed/run/claim)
+      when a declared gate forbids them; the model still picks, but an
+      unsafe pick can never verify-pass — fail-closed to fallback.
+      Cost: producers must declare gates; new spec surface.
+  (b) class rethink — drop the affirmative routes entirely and keep
+      only hold-side routes (defer/observe/wait/clarify/proceed-when-
+      armed): the class becomes "is this safe to auto-proceed", making
+      act-on-gated structurally impossible. Routing advice for the
+      corrective routes (close/correct/dedupe) is already covered
+      deterministically by dr.kk_mac_route + board-api requests —
+      retirement is a legitimate outcome if no in-floor model passes.
+  Intermediate cheap try before redesign: worked examples in ROUTE_HDR
+  (changes the production prompt contract for every spec — treat as a
+  class revision, bench it the same way).
+readmission: >
+  NOT DONE — a class rejoins the mirrors (kk_mac_llm.ALLOWED_TASKS,
+  dispatch_repos.KK_MAC_TASK_CLASSES + KK_MAC_ROUTE_KW,
+  runner-agent.KK_MAC_TASK_CLASSES, kk_mac_capacity_producer.TASK_CLASSES,
+  kk_mac_plan_validator.ALLOWED, devnest_capacity_broker.KK_CLASSES,
+  ssot.devnest-lanes.yml task_classes, ssot.procedures.yml, both kb
+  procedure docs) ONLY after a passing live re-eval on kk-mac.
+verify: |
+  python3 scripts/bench/kkmac-classes/build_corpus.py
+  python3 scripts/bench/kkmac-classes/score.py --entity mock-oracle
+  # 51/51 pass
+  # live (when kk-mac is awake):
+  scripts/bench/kkmac-classes/kkmac_eval.sh qwen3:8b qwen2.5vl:7b
+lessons:
+  - "expect.facts is a substring check on the raw response — facts must
+    be verbatim evidence tokens the model echoes, not gold phrasing;
+    compute the echo intersection across model responses before picking"
+  - "member-device lanes (kk-mac) go offline without warning — bench
+    gates fail closed; schedule re-evals for awake windows"
+  - "same-tag ollama on another tailnet host is a cheap same-weights
+    sanity check when the member device is asleep (not readmission
+    evidence, but predicts pass/fail direction)"
