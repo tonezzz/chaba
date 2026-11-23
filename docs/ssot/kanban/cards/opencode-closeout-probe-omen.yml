@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-omen
 title: OpenCode closeout probe pinned to tony-omen
 column: doing
-updated: 2026-11-23 18:45
+updated: 2026-11-23 18:46
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-omen.
 priority: low
 program: chaba-ci
@@ -20,6 +20,7 @@ action:
   model: litellm/gemini-3.5-flash-lite
   sweep:
     failed_noted: 2026-11-17 19:40
+    stale_running: 2026-11-23 18:46
   last_failure: 'exit=1 task-20261117-192751-append-one-marker-line-to-read.service: Failed with result ''exit-code''.
     | devin-task-20261117-192751-append-one-marker-line-to-read.service: Consumed 33.894s CPU time over 1min 40.884s
     wall clock time, 1.1G memory peak.'
@@ -231,5 +232,9 @@ comms:
     — ran the free-route alias gemini-3.5-flash-lite-free instead via run-local OPENCODE_CONFIG (same model, free
     alias). Diff = exactly +1 line; rc=0. Committed 72dee7bc9d + pushed dispatch/20261123-183844-append-one-marker-line-to-read
     to origin (push works from worktree — the old '
+- at: 2026-11-23 18:46
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-192751-append-on no longer active on tony-omen but card still says running
+    — sweeping its branch'
 claim:
   since: 2026-11-23 18:37
