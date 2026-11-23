@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe3
 title: KK-Mac supervised JEV executor probe (tony-dell)
-column: doing
-updated: 2026-11-23 18:48
+column: review
+updated: 2026-11-23 18:52
 brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
 priority: high
 program: devnest
@@ -20,7 +20,7 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-10-29 23:18
     dirty: 1
@@ -33,6 +33,9 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
+  result: 'exit=0 ntainers.image.version=1.11.0, org.opencontainers.image.licenses=MIT) | devin-task-20261123-184048-read-only-summary-probe-no-mut.service:
+    Consumed 25.006s CPU time over 8min 18.687s wall clock time, 1G memory peak, 112.3M memory swap peak.'
+  verified: true
 ref: OPS-0988
 comms:
 - at: 2026-10-29 23:16
@@ -269,6 +272,35 @@ comms:
   text: 'DONE verdict=pass: kk_mac_executor run on tony-dell, qwen3:8b via kk-mac ollama; artifact evals/kk-mac-lane/out/kk-mac-live-jev-probe3.json
     + taskdir verdict.json. First attempt on default qwen2.5:32b hit MEM-1043 guard (free 82%->11%); qwen3:8b retry
     clean. Outcome doc in worktree.'
+- at: 2026-11-23 18:52
+  from: tony-dell
+  text: 'finished (ok): exit=0 ntainers.image.version=1.11.0, org.opencontainers.image.licenses=MIT) | devin-task-20261123-184048-read-only-summ'
+- at: 2026-11-23 18:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 18:52
+  from: chaba
+  text: 'session-end checkpoint 998e279e: 1 leftover file(s) committed'
+- at: 2026-11-23 18:52
+  from: chaba
+  text: banked 201 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 18:52
+  from: chaba
+  text: pushed dispatch/20261123-184048-read-only-summary-probe-no-mut to origin
+- at: 2026-11-23 18:52
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 58.2s)
+- at: 2026-11-23 18:52
+  from: chaba
+  text: auto-merged 1996fb75 (dispatch/20261123-184048-read-only-summary-probe-no-mut) → origin/master
+- at: 2026-11-23 18:52
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-184048-read-only-summary-probe-no-mut,
+    branch dispatch/20261123-184048-read-only-summary-probe-no-mut'
 review_kind: verify
 claim:
   since: 2026-11-23 18:40
