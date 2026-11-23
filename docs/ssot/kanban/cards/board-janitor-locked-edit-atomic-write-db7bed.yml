@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: backlog
-updated: 2026-11-24 02:27
+updated: 2026-11-24 03:26
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -495,6 +495,9 @@ comms:
 - at: 2026-11-24 02:27
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.57 > 0.85)'
+- at: 2026-11-24 03:26
+  from: chaba
+  text: 'idc03 defers: disk headroom 70MB < 2048MB floor'
 action:
   type: dispatch
   status: queued
