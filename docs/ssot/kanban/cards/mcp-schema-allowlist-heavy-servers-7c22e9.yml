@@ -1,7 +1,7 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
 column: doing
-updated: 2026-11-23 09:47
+updated: 2026-11-23 09:49
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
   FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
@@ -189,6 +189,13 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-23 09:49
+  from: devin
+  text: 'started on tony-omen. Found: allowlist infra lives only on dell+idc03 (omen has none); alphavantage is
+    a url: remote server so it needs a stdio->HTTP bridge under mcp-allowlist.py; playlive gets dell''s proven 14-tool
+    list; alphavantage gets ~6 (TIME_SERIES_DAILY, FX_DAILY, GLOBAL_QUOTE, CURRENCY_EXCHANGE_RATE, GOLD_SILVER_SPOT,
+    GOLD_SILVER_HISTORY). Will also teach generate-mcp-config.py about filter:allowlist so regen cannot silently
+    revert.'
 action:
   type: dispatch
   status: running
