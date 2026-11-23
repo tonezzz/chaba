@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-device-telemetry
 title: Timer device-telemetry on tony-omen failing
-column: done
-updated: 2026-11-23 14:19
+column: backlog
+updated: 2026-11-23 16:12
 priority: high
 tags:
 - timer-alert
@@ -159,6 +159,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:12
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-23 16:12
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-23 16:05) of `device-telemetry.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-omen`.'
 spec: Investigate the failure of device-telemetry.service on tony-omen by checking the systemd journal via `journalctl
   --user -u device-telemetry.service`. Identify the root cause of the exit-code failure from the last run on 11-08
   18:00, referencing CMS timer-timeline-tony-omen as needed. The host is tony-omen. The done-condition is a documented
