@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
-column: doing
-updated: 2026-11-23 16:27
+column: backlog
+updated: 2026-11-23 16:32
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -263,6 +263,18 @@ comms:
     Decomposed per Tony decision 2026-11-09 (process w; [openclaw-bench-per-model-scorecard-acros-3df00d] merge-sweep:
     no session/worktr; GOTCHA: the OpenRouter account key is valid but has ZERO credit balance — paid m; [ada-consultant-bench-harness]
     merge-sweep: no session/worktr'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-162716-a-if-approved-top-up-or-key-ad no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 16:32
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-162716-a-if-approved-top-up-or-key-ad.service: Failed with result ''exit-code''.
+    | devin-task-20261123-16271 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-162716-a-if-approved-top-up-or-key-ad (rate limit)
+    — tony-omen holds new claims ~30m
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -300,11 +312,17 @@ requests:
   answer: '2'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
-  runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-23 16:32
+  result: 'exit=1 261123-162716-a-if-approved-top-up-or-key-ad.service: Failed with result ''exit-code''. | devin-task-20261123-162716-a-if-approved-top-up-or-key-ad.service:
+    Consumed 1min 25.660s CPU time over 2min 12.618s wall clock time, 957.9M memory peak.'
+  last_failure: 'exit=1 261123-162716-a-if-approved-top-up-or-key-ad.service: Failed with result ''exit-code''.
+    | devin-task-20261123-162716-a-if-approved-top-up-or-key-ad.service: Consumed 1min 25.660s CPU time over 2min
+    12.618s wall clock time, 957.9M memory peak.'
 claim:
   since: 2026-11-23 16:26
