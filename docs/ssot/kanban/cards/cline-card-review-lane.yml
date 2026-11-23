@@ -1,7 +1,7 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
-column: doing
-updated: 2026-11-23 15:20
+column: backlog
+updated: 2026-11-23 15:24
 priority: medium
 tags:
 - cline
@@ -43,16 +43,18 @@ spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: ''
   executor: devin
-  last_failure: 'journal=exit-code rain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261120-205952-goal-drain-the-review-column-s.service:
-    Consumed 59.373s CPU time over 2min 44.666s wall clock time, 991.6M memory peak, 376.2M memory swap peak.'
+  last_failure: 'exit=1 0261123-145629-goal-drain-the-review-column-s.service: Failed with result ''exit-code''.
+    | devin-task-20261123-145629-goal-drain-the-review-column-s.service: Consumed 2min 7.639s CPU time over 27min
+    5.995s wall clock time, 445.4M memory peak.'
   attempts: 1
-  runner: tony-macbook
   sweep:
     stale_running: 2026-11-23 15:20
     session_gone: 2026-11-23 15:20
+  result: 'exit=1 0261123-145629-goal-drain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261123-145629-goal-drain-the-review-column-s.service:
+    Consumed 2min 7.639s CPU time over 27min 5.995s wall clock time, 445.4M memory peak.'
 ref: KNB-1009
 comms:
 - at: 2026-10-30 15:36
@@ -403,5 +405,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-144943-goal-drain-the-review-column-s on
     tony-dell — if the work was never pushed it may be gone'
+- at: 2026-11-23 15:24
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-145629-goal-drain-the-review-column-s.service: Failed with result ''exit-code''.
+    | devin-task-20261123-1456 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-145629-goal-drain-the-review-column-s (rate limit)
+    — tony-macbook holds new claims ~30m
 claim:
   since: 2026-11-23 14:55
