@@ -1,7 +1,7 @@
 id: helm-retire-leftovers
 title: Finish helm retirement — remove idc02:3003 service, /apps/helm static+route, stale SSOT
-column: backlog
-updated: 2026-11-23 14:21
+column: done
+updated: 2026-11-23 15:29
 brief: 'helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml,
   static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed
   retire.'
@@ -110,3 +110,15 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:29
+  from: devin
+  text: 'OPS-1310 completed 2026-11-23. Consumer audit found no real users (only the 5-min route-health probe).
+    Removed @apps_helm from Caddyfile + render-routes.py + ssot.routes.yml; deleted static /apps/helm bundle in
+    both chaba and served chaba-tony-dell checkouts; stopped and disabled helm.service on idc02 (quadlet renamed
+    helm.container.disabled-ops1310); cleaned stale health/mcp/audit-hosts/migrated-units/failover/standard-ports
+    SSOT refs. Verified: edge /apps/helm=404, /apps/=200, no :3003 listene'
+- at: 2026-11-23 15:29
+  from: devin
+  text: closed by devin
+action:
+  status: done
