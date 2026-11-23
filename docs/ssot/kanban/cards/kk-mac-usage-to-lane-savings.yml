@@ -1,6 +1,6 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
-column: review
+column: backlog
 updated: 2026-11-23 15:11
 priority: low
 tags:
@@ -211,15 +211,16 @@ comms:
   from: chaba
   text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-14 12:33 devin DONE in worktree but "no push, no deploy
     — changes remain in worktree"; test gate failed on disk quota then suite timeout — requeued for rework.'
+- at: 2026-11-23 15:11
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: done
-  runner: tony-omen
+  status: queued
   result: 'exit=0 gs.yml`, board comment posted; no push, no deploy — changes remain in the worktree. | devin-task-20261114-110041-lane-savings-py-now-attributes.service:
     Consumed 9min 39.459s CPU time over 13min 55.873s wall clock time, 1023.7M memory peak.'
-  verified: false
   sweep:
     dirty: 1
     session_gone: 2026-11-16 15:26
