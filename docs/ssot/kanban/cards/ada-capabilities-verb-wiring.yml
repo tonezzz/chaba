@@ -1,0 +1,41 @@
+id: ada-capabilities-verb-wiring
+title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
+column: backlog
+updated: 2026-11-23 07:40
+priority: medium
+tags:
+- ada
+- tools
+spec: 'REPO work (ada-voice). Wire the Ada ''what can you do'' read path per the contract in chaba docs/kb/ada-tools-verb-contract.md
+  (from card ada-tools-command-reference).
+
+
+  1) backend/tools.d/ada_capabilities.py + manifest row — policy=read, secondary_allowed=true, timeout_s=5. Loads
+  a cached snapshot JSON (mtime-keyed loader, same pattern as tool_runner/common.py::_tool_guide) and answers ''what
+  can you do / list your tools / capabilities / what commands / help'' from a deterministic template: one-line count
+  summary + grouped headline list + ''ask about a specific tool'' offer; detail mode per tool/family from the snapshot
+  fields. Canonical names only — absorbed _ALIASES names are never presented as surface.
+
+
+  2) Snapshot file backend/data/ada-tools-snapshot.json — populated at deploy: deploy-ada.sh copies chaba''s generated
+  docs/kb/ada-tools-commands.json (single transport, one direction; never recompute live — producer/consumer split).
+
+
+  3) DECLARATION routing blurb <=300 chars per ssot.tool-surface desc contract (''what Ada can do — capability list,
+  tools and triggers'').
+
+
+  4) tests: unit test on a fixture snapshot (grouped answer, missing file -> ok:false, never fabricate) + tests/scenarios-live/capabilities.yaml
+  so the tool does not enter coverage_debt.
+
+
+  DONE-CONDITION: ''Ada, what can you do'' answers from the snapshot (<50ms, deterministic); tool-lint + pytest
+  green; deploy step ships the snapshot.'
+action:
+  type: dispatch
+  repo: ada-voice
+ref: ADA-0020
+comms:
+- at: 2026-11-23 07:40
+  from: tony
+  text: card captured via board-api
