@@ -132,7 +132,6 @@ services:
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
   snapshot:       {host: tony-omen, listen: "127.0.0.1:9005", note: "ha-live bridge inside tony-ha — evacuated dell 2026-10-19/20"}
   chaba-docs:     {host: idc02, listen: "100.123.163.11:8092", note: "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
-  helm:           {host: idc02, listen: "100.123.163.11:3003", note: "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
   node-red:       {host: tony-omen, listen: "0.0.0.0:1880", note: "evacuated dell 2026-10-19/20 (ph5)"}
   yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
   camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
@@ -209,7 +208,6 @@ routes:
   - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.123.163.11:3001", owner: gpu}
   - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
   - {id: api-status-data,  kind: proxy,  path: /api/*,                 upstream: "idc02.taila0626a.ts.net:8000", owner: chaba, custom: true, note: "catch-all → status-data-api on idc02 (migrated 10-18); must stay last of /api group; Caddy sort puts /api/* BEFORE deeper handles — matcher must exclude /api/yomi/* and /api/ws/* (fixed 10-19, was shadowing both since 10-17)"}
-  - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "idc02.taila0626a.ts.net:3003", upstream_host: localhost, owner: chaba, custom: true, note: "basePath-preserved multi-path matcher; upstream idc02 since 2026-10-18"}
   - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate, expect_down: true, note: "on-demand NVR stack (frigate/) — stopped by design"}
   # imagen routes archived 2026-10-07 — omen-layout cargo cult, dead on
   # dell. Worker topology lives in gpu-queue; knowledge preserved in
