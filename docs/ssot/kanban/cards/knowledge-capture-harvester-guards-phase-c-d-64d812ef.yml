@@ -1,13 +1,17 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 07:01
+updated: 2026-11-23 07:02
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
 priority: medium
 tags:
-- ssot,knowledge-capture,automation,phase-
+- ssot
+- knowledge-capture
+- automation
+- phase-c
+- phase-d
 spec: 'Goal: implement remaining automation phases from docs/ssot/ssot.knowledge-capture.yml (~lines 256-259). Phase
   C - idempotent capture-router and harvester/index-refresh jobs writing ONLY to approved sinks (SSOT, board-api,
   /lesson, docs/kb, evidence surfaces, OpenChamber notes) with audit metadata and stable dedupe keys; no Ada personal-memory
@@ -24,3 +28,7 @@ comms:
 - at: 2026-11-23 07:01
   from: tony
   text: card captured via board-api
+- at: 2026-11-23 07:02
+  from: devin
+  text: 'routing edited: tags by devin: normalize tags created via card --tag (raw string) into proper list'
+action: {}
