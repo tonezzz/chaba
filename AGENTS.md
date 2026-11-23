@@ -338,11 +338,19 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
 Source and build: `/home/tony/gods-eye-view`
 
 - Build: `npm run build` (requires Vite base `/apps/gev/`).
-- After every build, patch `dist/assets/index-*.js`:
-  - `/api/*` -> `/apps/gev/api/*`
+- After every build, run `scripts/gev/patch-gev-dist.sh` (in chaba) on
+  `dist/` — it codifies the post-build patches:
+  - `/api/*` -> `/apps/gev/api/*` (quote-bounded, `assets/*.js`)
   - `/models/*` -> `/apps/gev/models/*`
   - `msaaSamples:4` -> `/iPad|iPhone|iPod/.test(navigator.userAgent)?1:4`
-- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`.
+    (the iPad crash patch — do not drop it)
+  - injects `honest-fail.js` into `index.html` + stages it — the
+    watchdog that turns a can't-render pane into a visible failure
+    instead of a black pane.
+  - `--check` verifies a dist is fully patched; `--self-test` runs a
+    fixture test.
+- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`,
+  `assets/`, `models/`, `cesium/`, `honest-fail.js`.
 
 Infrastructure:
 
@@ -372,7 +380,13 @@ Test commands:
 Caveats:
 
 - iOS microphone works in Safari, not in standalone home-screen PWA mode.
-- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
+- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash (the
+  patch-gev-dist.sh ternary).
+- Panes that cannot render must say so: `honest-fail.js` overlays
+  #gev-honest-fail + posts `gev-honest-fail`/`gev-honest-ok` to the
+  host frame; the vcast display covers the pane with `.pfail` and
+  reports `state=pane-fail` (per-pane: video/img/iframe). Repo-side
+  check: `node stacks/web/input-bridge/gev-honest-fail-check.mjs`.
 - Current implementation uses Gemini output transcription text only; no audio playback.
 
 # Devin on tony-dell — crash/runbook (2026-09-12)
