@@ -197,6 +197,13 @@ comms:
     cap. Consumers confirmed single-file loaders (secrets-console SECRETS_SSOT, render-board manifest, dispatch_repos/runner-fleet-health
     recursive runner_fleet find) — a split needs consumer+service changes; evaluating deliberate review-threshold
     exemption + headroom trims + documented hard-cap split plan.'
+- at: 2026-11-23 18:41
+  from: devin
+  text: 'DONE — decision: reviewed exemption, not a split. Both files added to bloat_exemptions.review_threshold
+    in ssot.file-optimization.yml (750 hard cap stays armed as the declared split trigger; per-file split plans
+    recorded). secrets.yml trimmed 703->671 by moving the ops header to docs/kb/secrets-backup-topology.md. Why
+    not split: every consumer loads a single manifest path (secrets-console SECRETS_SSOT, render-board MANIFEST,
+    dispatch_repos/runner-fleet-health recursive runner_fleet find) — a spl'
 action:
   type: dispatch
   status: running
@@ -208,4 +215,4 @@ action:
     3.281s CPU time.'
   attempts: 1
   runner: tony-macbook
-updated: 2026-11-23 18:39
+updated: 2026-11-23 18:41
