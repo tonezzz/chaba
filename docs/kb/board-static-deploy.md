@@ -18,6 +18,35 @@ write looks correct until the next sync, then silently disappears
   idc02's public edge proxies to a local `:8099` mirror fed by
   `web-srv-sync.timer` rsyncing from idc03.
 
+## idc02 `web-srv-sync.service`: cards-only `--delete`
+
+The two broad rsyncs in this host-local unit deliberately have no `--delete`:
+they preserve local-only artifacts (`.local-conflict-*`, `.tmp`, HA/report
+files) that do not exist on idc03. One subtree is the exception —
+`docs/ssot/kanban/cards/` legitimately **shrinks** at the source, since
+`archive-done.py` moves cards into `cards/archive/` on the daily sweep. Without
+a scoped prune the mirror keeps a duplicate active copy of every archived card
+(1,355 stale files after the 2026-11-23 retention pass). The unit therefore has
+a third `ExecStart` after the broad rsyncs:
+
+```sh
+rsync -az --delete --timeout=120 \
+  idc03:~/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/ \
+  %h/web-srv/docs/ssot/kanban/cards/
+```
+
+If `web-srv-sync.service` is regenerated from a template or idc02 is rebuilt,
+**re-apply this line** — it is host-local config, not in the repo. Do not add
+`--delete` to the broad `public/` or `docs/` rsyncs. Verify after a sync with
+`find ~/web-srv/docs/ssot/kanban/cards -maxdepth 1 -name '*.yml' | wc -l`
+(should match the active count on idc03) and a dry-run residual check:
+
+```sh
+rsync -az --dry-run --delete --itemize-changes \
+  idc03:~/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/ \
+  ~/web-srv/docs/ssot/kanban/cards/ | grep -c '^\*deleting'   # expect 0
+```
+
 ## Steps
 
 1. Change source only: `scripts/render-board2.py`, `scripts/board/board-api.py`,
