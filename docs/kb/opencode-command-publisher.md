@@ -1,11 +1,11 @@
 # /opencode-command — the narrow OpenCode command publisher
 
-**Status:** implemented (card `ada-opencode-command-publisher-20261108`,
+**Status:** live (card `ada-opencode-command-publisher-20261108`,
 ADA-1224; scope answer `narrow` on request
-`which-publisher-scope-should-i-implement-d42d5b`). Code + tests on the
-dispatch branch; activation needs the board-api service restart on idc03
-after merge — the endpoint is inert until the service reloads
-`board-api.py`.
+`which-publisher-scope-should-i-implement-d42d5b`). Merged to master
+2026-11-23; the board-api service on idc03 serves the endpoint —
+verified 2026-11-23 with a real `verify` op returning `match:true`
+(canonical == deployed, sha `077aaff3…`, 10,790B).
 
 ## What it is
 

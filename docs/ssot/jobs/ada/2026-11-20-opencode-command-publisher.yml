@@ -60,14 +60,23 @@ implemented:
   - "docs/kb/board-api-write-door.md — endpoint table row"
 
 not_done_gates:
-  - "board-api restart on idc03 after merge — endpoint inert until the
-    service reloads (chaba-board-api.service)"
-  - "first real sync (deploy menu-restored ada.md to idc02 workspace) —
-    production surface change, run via the door post-merge"
   - "ada-voice MCP wrapper (ada_command_publish tool) — follow-up card
-    filed; ada_mcp.py is canonical in tonezzz/ada-voice, not chaba"
+    ada-voice-ada-command-publish-mcp-tool-f-949f50 (backlog);
+    ada_mcp.py is canonical in tonezzz/ada-voice, not chaba"
   - "/ada publish-command section in canonical ada.md — add after the
     MCP wrapper lands (first real use of the door)"
+
+post_merge_verification:
+  date: 2026-11-23
+  merged: "auto-merged to origin/master 2026-11-23 11:12 (68e53950,
+    via dispatch/20261123-105931)"
+  endpoint_live: "POST /opencode-command on idc03 board-api answered a
+    real verify op — the service reload gate is cleared"
+  sync_gate: "verify via the live door AND direct sha256 on idc02:
+    deployed == canonical 077aaff3 (10,790B), menu block present —
+    the first-real-sync gate resolved as a verified no-op"
+  tests: "pytest tests/board/test_opencode_command.py — 24 passed
+    (re-run on merged master, idc02)"
 
 measurement:
   bench: docs/reports/opencode-command-bench-2026-11-20.md
