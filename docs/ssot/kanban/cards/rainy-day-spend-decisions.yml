@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
 column: doing
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:19
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -349,6 +349,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:19
+  from: devin
+  text: 'DONE (a)+(b). (a) OR top-up already happened (1000/day free tier live); key still $1/wk-capped ($0.94 left
+    — Tony: raise at openrouter.ai/keys if bigger OR spend wanted). or-deepseek-v4-flash deployed on idc03 + chaba
+    allowlist + probed. Code-corpus bench (config.ds-v4-code*.yaml, tony-dell): dsv4-flash 2/2 pass @ $0.0196 avg
+    vs flash-lite baseline 2/2 @ $0.675 avg — same score, ~1/34th cost, ~2.2x faster; zen-free twin timed out on
+    m1 again. (b) agent.model=swe-2-flash-high set on all 6 hosts +'
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
