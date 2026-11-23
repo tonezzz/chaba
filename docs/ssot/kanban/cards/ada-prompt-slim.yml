@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
-column: doing
-updated: 2026-11-23 11:08
+column: review
+updated: 2026-11-23 11:14
 priority: medium
 tags:
 - ada
@@ -20,7 +20,7 @@ spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries f
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
@@ -31,6 +31,9 @@ action:
   attempts: 1
   lane: codemod
   runner: tony-dell
+  result: 'exit=0 a-voice-backend-realtime-pro.md` and the board card updated. | devin-task-20261123-105302-ada-voice-backend-realtime-pro.service:
+    Consumed 5min 38.567s CPU time over 15min 55.112s wall clock time, 1.3G memory peak, 1011.1M memory swap peak.'
+  verified: true
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -411,5 +414,29 @@ comms:
     from the prompt; DONE MEANS DONE dup merged. ada-voice AGENTS.md has a pointer section (no duty copy — avoids
     the Jules 3x-duplication bug). tool-lint clean, pytest 1854p/7s (baseline identical). chaba AGENTS.md needs
     no edit — names/semantics now match it verbatim. Trail: docs/ssot/jo'
+- at: 2026-11-23 11:14
+  from: tony-dell
+  text: 'finished (ok): exit=0 a-voice-backend-realtime-pro.md` and the board card updated. | devin-task-20261123-105302-ada-voice-backend-realt'
+- at: 2026-11-23 11:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:14
+  from: chaba
+  text: banked 44 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:14
+  from: chaba
+  text: pushed dispatch/20261123-105302-ada-voice-backend-realtime-pro to origin
+- at: 2026-11-23 11:14
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 165.3s)
+- at: 2026-11-23 11:14
+  from: chaba
+  text: auto-merged 1ab56f0f (dispatch/20261123-105302-ada-voice-backend-realtime-pro) → origin/main
+- at: 2026-11-23 11:14
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-105302-ada-voice-backend-realtime-pro,
+    branch dispatch/20261123-105302-ada-voice-backend-realtime-pro'
 claim:
   since: 2026-11-23 10:51
+review_kind: verify
