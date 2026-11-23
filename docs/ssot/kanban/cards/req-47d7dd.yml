@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
-column: doing
-updated: 2026-11-23 11:08
+column: review
+updated: 2026-11-23 11:10
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -377,6 +377,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-105630-redeploy-the-runner-agent-scri,
     branch dispatch/20261123-105630-redeploy-the-runner-agent-scri'
+- at: 2026-11-23 11:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd.
+    | devin-task-20261123-'
+- at: 2026-11-23 11:10
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-105630-redeploy-the-runner-agent-scri — close will block
+    until merged'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -431,12 +439,14 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repo to tony-dell and queue the monitoring task there
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   lane_source: fallback
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd. | devin-task-20261123-105630-redeploy-the-runner-agent-scri.service:
+    Consumed 48.157s CPU time over 8min 30.995s wall clock time, 878.8M memory peak.'
 spec: Redeploy the runner-agent script from the local chaba repository to tony-dell using scp to ~/.local/bin/runner-agent,
   resolving the drift issue noted by idc03. Once redeployed, queue and execute the Bangkok flood monitoring and
   traffic alert task on tony-dell. The done-condition is verified when the runner-agent is successfully updated
@@ -444,3 +454,4 @@ spec: Redeploy the runner-agent script from the local chaba repository to tony-d
 claim:
   since: 2026-11-23 10:55
 awaiting_action: true
+review_kind: verify
