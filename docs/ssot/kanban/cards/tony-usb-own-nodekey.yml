@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 20:40
+updated: 2026-11-23 20:42
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -554,6 +554,27 @@ comms:
     on mn01, no stick-announce ops-event. Physical step still needs a real stick boot. Hardened the prepared fix
     instead: stick-own-nodekey.sh now waits for the tailscaled socket + retries tailscale up; runbook ssh example
     fixed (ssh -t required — sudo reads password from tty not stdin'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'session-end checkpoint 9e135cd7: 1 leftover file(s) committed'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: banked 224 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 20:42
+  from: chaba
+  text: pushed dispatch/20261123-132246-the-goal-is-to-stop-the-tony-u to origin
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: auto-merged 39c38f7b (dispatch/20261123-132246-the-goal-is-to-stop-the-tony-u) → origin/master
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
