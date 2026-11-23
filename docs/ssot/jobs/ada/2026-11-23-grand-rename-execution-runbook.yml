@@ -1,0 +1,117 @@
+id: 2026-11-23-grand-rename-execution-runbook
+title: Grand rename — live-state audit + per-lane execution runbook (phase-1 deliverable)
+card: grand-rename
+date: '2026-11-23'
+runner: tony-omen
+dispatch: dispatch-wt-20261123-155440-target-ada-pi-pwa-member-ai-80
+kind: infra-change-runbook
+summary: >-
+  Phase-1 audit for the grand-rename card. Found the card spec: field is
+  STALE (pre-decision persona-first text, byte-identical to the 2026-10-16
+  card creation — the family-first switch in aafeadfad never updated it),
+  the rename_map missed two live lanes (ada-chaba :8008, ada-ha-ada :8006),
+  the env/keypool description predates the per-instance-secret-stores
+  migration, and the kaewta :8004 target port is occupied by the obsidian
+  vault server. rename_map reconciled to reality; live renames gated on a
+  scheme reconfirm request posted to the card.
+
+# ---------------------------------------------------------------------------
+# Live lane inventory — verified over SSH on idc03 2026-11-23 ~16:10 +07
+# ---------------------------------------------------------------------------
+live_lanes:
+  - unit: ada-ha-tony.service
+    port: 8002
+    env: "EnvironmentFile=~/.config/secrets/tony-ha/backend.env (+notebooklm-rest-api.env)"
+    keys: "~/.config/secrets/tony-ha/keys.json via ADA_KEYS_FILE; ADA_INSTANCE_ID=tony"
+    serves: "member/guest root via tailscale-serve / -> :8002 (since ada-pi-pwa retired 2026-11-17); /apps/ha/ada-tony; idc02 /ada-ws/tony + /chatui; public app.surf-thailand.com /apps/ha/ada-tony"
+    persona: chaba (Tony's voice lane; PWA name 'Chaba AI')
+    rename_to: ada-ai-chaba.service (family-first) | chaba-ai.service (persona-first)
+  - unit: ada-ai-kraut.service
+    port: 8003
+    env: "EnvironmentFile=~/.config/secrets/michael-ha/backend.env"
+    keys: "~/.config/secrets/michael-ha/keys.json; ADA_INSTANCE_ID=michael (pins banks)"
+    serves: "/ai/kraut (live) + legacy /apps/ha/ada-michael; idc02 /ada-ws/michael"
+    persona: kraut (Michael)
+    status: DONE — first lane migrated 2026-10-16
+  - unit: ada-dev.service
+    port: 8005
+    env: "EnvironmentFile=~/.config/secrets/ada-dev.env (flat); ADA_INSTANCE_ID=dev; inline ADA_API_KEYS"
+    serves: "/apps/ha/ada-dev; idc02 /ada-ws/dev"
+    persona: shared lab (tony lane dev twin)
+    rename_to: ada-ai-dev.service | ada-ai.service
+  - unit: ada-ha-ada.service
+    port: 8006
+    env: "EnvironmentFile=~/.config/secrets/ada-ha/backend.env; ADA_INSTANCE_ID=ada"
+    keys: "~/.config/secrets/ada-ha/keys.json"
+    serves: "/apps/ha/ada-ha"
+    persona: second lab instance, HA-enabled (cloned from ada-dev + ada-ha token 2026-10-23)
+    rename_to: TBD — not in original map (ada-ai-lab? fold into ada-ai-dev?)
+  - unit: ada-kk.service
+    port: 8007
+    env: "EnvironmentFile=~/.config/secrets/kk-ha/backend.env; ADA_INSTANCE_ID=kk"
+    keys: "~/.config/secrets/kk-ha/keys.json"
+    serves: "/apps/ha/ada-kk; idc02 /ada-ws/kk + /chatui; kk member node idc03:8126"
+    persona: kaewta (KK)
+    rename_to: ada-ai-kaewta.service | kaewta-ai.service
+    port_blocker: "target :8004 occupied by chaba-vault obsidian server (python ~/CascadeProjects/chaba-vault/apps/obsidian/server.py, tailscale-serve :8443)"
+  - unit: ada-kk-dev.service
+    port: 8009
+    env: "EnvironmentFile=~/.config/secrets/ada-kk-dev.env (flat); ADA_INSTANCE_ID=kk-dev; inline ADA_API_KEYS"
+    persona: kaewta dev twin
+    rename_to: ada-ai-kaewta-dev.service | kaewta-ai-dev.service; port target :8014 (free)
+  - unit: ada-chaba.service
+    port: 8008
+    env: "EnvironmentFile=~/.config/secrets/ada-chaba.env (flat); ADA_INSTANCE_ID=chaba; inline ADA_API_KEYS"
+    persona: house/ops-brain for LINE group (card ada-chaba-instance) — NOT a member voice lane
+    rename_to: "(keep) — already persona-named; renaming to ada-ai-chaba collides with :8002 target"
+  - unit: ada-pi-pwa.service
+    status: RETIRED 2026-11-17 (commit 0048562f) — no live unit; secrets env ada-pi-pwa.env remains on disk
+
+# ---------------------------------------------------------------------------
+# Port map — idc03 127.0.0.1 listeners (2026-11-23 audit)
+# ---------------------------------------------------------------------------
+ports:
+  8002: ada-ha-tony
+  8003: ada-ai-kraut
+  8004: "chaba-vault obsidian server (tailscale-serve :8443) — COLLIDES with kaewta target"
+  8005: ada-dev
+  8006: ada-ha-ada
+  8007: ada-kk
+  8008: ada-chaba
+  8009: ada-kk-dev
+  8010: "cms-render server (100.102.134.91)"
+  8017: jev
+  8014: free — kaewta-ai-dev target OK
+  8001: free since PWA retirement — member slot reserved by convention
+
+# ---------------------------------------------------------------------------
+# Path layer — verified 2026-11-23
+# ---------------------------------------------------------------------------
+paths:
+  mounts: "tailscale serve on idc03: /=>:8002, /ai/kraut=>:8003, /apps/ha/ada-tony=>:8002, /apps/ha/ada-michael=>:8003, /apps/ha/ada-ha=>:8006, /apps/ha/ada-kk=>:8007, /apps/ha/ada-dev=>:8005"
+  idc02_caddy: "~/.config/caddy/Caddyfile rewrites /chatui* + /ada-ws/{tony,michael,dev,kk} -> /apps/ha/ada-* on idc03 — consumer side, change WITH mounts"
+  idc03_caddy: "app.surf-thailand.com handle_path /apps/ha/ada-tony/* -> :8002 (public)"
+  health: "GET /api/health (NOT /health — 404s); all 7 lanes 200 as of audit"
+
+# ---------------------------------------------------------------------------
+# Per-lane execution procedure (once scheme confirmed)
+# ---------------------------------------------------------------------------
+procedure_per_lane:
+  - "stop+disable old unit; write new unit file under ~/.config/systemd/user/<new>.service (copy old, fix Description + unit name in drop-ins if referenced)"
+  - "rename flat env if applicable (~/.config/secrets/ada-<x>.env -> ada-ai-<role>.env) and repoint EnvironmentFile; HA-lane per-home dirs (<home>/backend.env) are home-scoped — do NOT rename unless retargeting ADA_KEYS_FILE + telegram-*-bot.env + consumers"
+  - "key pools already per-home (<home>/keys.json) — no rename needed; leftover flat ada-ha-*-keys.json are unreferenced cleanup candidates"
+  - "tailscale serve: add /ai/<role> proxy to new port; keep old /apps/ha/<name> mount during alias grace"
+  - "idc02 Caddyfile: repoint /ada-ws/<x> + /chatui rewrites; reload caddy"
+  - "verify: curl :PORT/api/health 200; PWA path 200 via tailscale URL; ws connect check; grep journal for startup errors"
+  - "only then drop old unit file + old serve mount (phase 7)"
+
+open_requests:
+  - "scheme: family-first ada-ai-<role> (deployed, recommended) vs persona-first <role>-ai (stale spec text)"
+  - "ada-chaba :8008 + ada-ha-ada :8006 dispositions (not in original map)"
+  - "kaewta :8004 occupied by obsidian — move obsidian or keep :8007"
+  - "member-ai :8001 — confirm no unit needed (root served by :8002)"
+
+notes:
+  - "card spec: field is byte-identical to 2026-10-16 creation — predates the family-first decision; treat as stale, do not follow literally"
+  - "michael-dev -> mn-ha-dev twin: live unit on idc02 still michael-dev.service + mha-state-push.service; repo refs ~1258 total but ~780 in kanban/cards+archive (history — do NOT sweep); live-state files ~80"
+  - "runbook verified state, not memory: unit cats, ss listeners, secrets dirs, tailscale serve status, caddyfiles on both edges"
