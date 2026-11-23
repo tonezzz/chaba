@@ -19,11 +19,15 @@ try:
 except ImportError:  # direct script execution
     from kk_mac_admission import snapshot
 
+# Admitted task classes — narrowed 2026-11-23 (card
+# kk-mac-admitted-classes-narrow) after the 2026-11-19 class eval
+# (docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml): only
+# structured_extract proved READY (0.93-1.00 pass under the production
+# verifier); operator_brief and safe_route stay verifier-supported for
+# re-bench but are unadmitted until a re-eval passes.
 ALLOWED_TASKS = {
-    "operator_brief",
     "summary",
     "structured_extract",
-    "safe_route",
 }
 MAX_PROMPT_CHARS = 6000
 LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})

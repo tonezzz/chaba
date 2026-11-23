@@ -8,8 +8,11 @@ This is the bounded, read-only executor for opportunistic work on KK-Mac
   admission   fresh Ada Nest heartbeat (kk_mac_admission.snapshot —
               heartbeat age <= max_age_s, ollama_ok=true, disk over the
               threshold, node not busy/overloaded) AND a bounded task
-              class: summary, operator_brief, structured_extract,
-              safe_route. Anything else is a contract violation.
+              class: summary, structured_extract (operator_brief and
+              safe_route are held unadmitted pending re-eval — card
+              kk-mac-admitted-classes-narrow; the verifier still
+              scores them so the bench can re-prove them). Anything
+              else is a contract violation.
   execute     through scripts/devnest/kk_mac_llm.py — the fixed
               ssh+ollama /api/generate call. There is no shell, no code
               mutation, no credential path, no destructive action and no

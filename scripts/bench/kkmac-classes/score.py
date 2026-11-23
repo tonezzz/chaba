@@ -42,7 +42,15 @@ import kk_mac_executor  # noqa: E402
 import kk_mac_llm  # noqa: E402
 
 JSON_CLASSES = kk_mac_executor.JSON_CLASSES
-TASK_CLASSES = kk_mac_executor.TASK_CLASSES
+# The bench scores classes whether or not they're currently admitted —
+# re-eval is the readmission gate (card kk-mac-admitted-classes-narrow
+# holds operator_brief/safe_route while kk_mac_llm.ALLOWED_TASKS is
+# narrowed). Gate corpus sanity on verifier-supported classes, not the
+# live admission set.
+TASK_CLASSES = JSON_CLASSES | {"summary"}
+# Classes the lane currently admits — bench rows outside this set are
+# HELD (scored for re-eval, never runnable through the lane contract).
+ADMITTED_CLASSES = frozenset(kk_mac_llm.ALLOWED_TASKS)
 
 
 def load_corpus(path):
@@ -165,7 +173,8 @@ def report_md(metrics, entity_name, model, per_case):
             or d["json_parse_rate"] >= th["json_parse_rate"])
         jp = "-" if d["json_parse_rate"] is None \
             else d["json_parse_rate"]
-        lines.append(f"| {tc} | {d['n']} | {d['pass_rate']} | {jp} | "
+        held = " (HELD — not admitted)" if tc not in ADMITTED_CLASSES else ""
+        lines.append(f"| {tc}{held} | {d['n']} | {d['pass_rate']} | {jp} | "
                      f"{'READY' if ok else 'not ready'} |")
     lines += [
         f"| **overall** | {metrics['n_cases']} | "

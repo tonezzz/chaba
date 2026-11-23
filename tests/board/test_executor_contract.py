@@ -1587,6 +1587,21 @@ class KkMacBoardApiTest(unittest.TestCase):
                                  "task_class": "code_mutation"}},
                      "requires action.task_class")
 
+    def test_kk_mac_rejects_held_classes(self):
+        # operator_brief/safe_route held unadmitted pending re-eval
+        # (kk-mac-admitted-classes-narrow)
+        for slug, tc in (("opbrief", "operator_brief"),
+                         ("saferoute", "safe_route")):
+            self.rejects({"id": f"c-bad-{slug}", "title": "t",
+                          "action": {"type": "dispatch",
+                                     "executor": "kk_mac_local",
+                                     "task_class": tc}},
+                         "requires action.task_class")
+            self.rejects({"id": f"c-bad-hint-{slug}", "title": "t",
+                          "action": {"type": "dispatch",
+                                     "task_class": tc}},
+                         "only valid with")
+
     def test_task_class_needs_kk_mac_executor(self):
         self.rejects({"id": "c-bad", "title": "t",
                       "action": {"type": "dispatch",

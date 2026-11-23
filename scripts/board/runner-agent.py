@@ -295,8 +295,10 @@ EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
 # KK_MAC_LANES=1 marks this host as able to serve it — off by default
 # until the supervised live dispatch passes.
 KK_MAC_LANES = os.environ.get("KK_MAC_LANES", "0") == "1"
+# mirrors kk_mac_llm.ALLOWED_TASKS — operator_brief/safe_route held
+# unadmitted pending re-eval (card kk-mac-admitted-classes-narrow)
 KK_MAC_TASK_CLASSES = {
-    "summary", "operator_brief", "structured_extract", "safe_route"}
+    "summary", "structured_extract"}
 KK_MAC_FALLBACK = "__kk_mac_fallback__"
 # nlm_batch executor (OPS-1048 finding #3): NotebookLM batch lane on
 # Google AI Pro quota (500 notebooks / 500 chats-day / 20 audio-day).

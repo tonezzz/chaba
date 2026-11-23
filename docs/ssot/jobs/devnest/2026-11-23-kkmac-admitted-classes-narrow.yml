@@ -1,0 +1,79 @@
+id: 2026-11-23-kkmac-admitted-classes-narrow
+title: KK-Mac lane — narrow admitted task classes to the proven set
+date: 2026-11-23
+domain: devnest
+card: kk-mac-admitted-classes-narrow
+status: done
+what: >
+  The 2026-11-19 class eval (docs/ssot/jobs/devnest/
+  2026-11-19-kkmac-class-eval.yml) proved structured_extract READY
+  (0.93-1.00 under the production verifier on all 3 models tried) but
+  operator_brief (0.31-0.56) and safe_route (0.33-0.60) NOT ready —
+  safe_route's failures include acting on priority:high prod cards,
+  the exact failure the bounded lane exists to prevent. This change
+  narrows kk_mac_local admission to {summary, structured_extract}
+  everywhere the class set is declared.
+mirrors_narrowed:
+  - scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (root — executor
+    TASK_CLASSES, lane_worker claim check, and CLI choices derive)
+  - scripts/devnest/kk_mac_capacity_producer.py TASK_CLASSES
+    (inbox spec validation; held-class specs now quarantine)
+  - scripts/devnest/kk_mac_plan_validator.py ALLOWED (planner
+    candidate classes)
+  - scripts/devnest/devnest_capacity_broker.py KK_CLASSES (devnest
+    inbox -> kk-llm routing)
+  - scripts/board/dispatch_repos.py KK_MAC_TASK_CLASSES (board-api
+    write-door validation + claim-time class check) and
+    KK_MAC_ROUTE_KW (held-class keywords removed; inferred classes
+    re-checked against the admitted set so keyword drift can never
+    route a held class)
+  - scripts/board/runner-agent.py KK_MAC_TASK_CLASSES (single-file
+    deploy mirror)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml kk_mac_local
+    task_classes (lane contract)
+  - docs/ssot/ssot.procedures.yml + docs/kb/
+    devnest-capacity-aware-dispatch-procedure.md + docs/kb/
+    jevnest-kk-mac-capacity-procedure.md (operator docs)
+kept_for_reeval: >
+  operator_brief/safe_route remain verifier-supported —
+  kk_mac_executor.JSON_CLASSES and verify() are unchanged, and
+  scripts/bench/kkmac-classes/score.py gates corpus sanity on
+  verifier-supported classes (JSON_CLASSES | summary), not the live
+  admission set, so the bench keeps scoring held classes. Report rows
+  for non-admitted classes are labelled "(HELD — not admitted)".
+tests: >
+  Held classes now fail closed at every layer: board-api rejects
+  executor=kk_mac_local + held task_class (pinned AND bare-hint
+  forms), runner-agent contract check, lane_worker _load_task never
+  claims them, producer quarantines held-class inbox specs, executor
+  run_contract returns verdict=fail class_not_admitted. Admitted set
+  assertions updated; new held-class cases in
+  test_executor_contract.py, test_queue_time_classify.py,
+  test_kk_mac_executor.py, test_kk_mac_lane_worker.py,
+  test_kk_mac_producer.py.
+followup: >
+  Card kk-mac-held-classes-fix-operator-brief-f-dd32ac (OPS-0048,
+  queued): fix operator_brief expect.facts echo format in the bench
+  corpus + producer guidance, re-bench safe_route with a safer model
+  (or route whitelist / class rethink if none passes the memory
+  floor), then readmit passing classes through the same mirror list.
+dispatch_note: >
+  Attempt 1 (2026-11-23 21:18, tony-omen) completed this exact change
+  set but the service was killed by a provider rate-limit before
+  merge; its auto-committed checkpoints on
+  dispatch/20261123-211800-kk-mac-classes-eval-2026-11-19 were
+  recovered and applied here (one unrelated swept-in file,
+  ssot.dev-system.assessment.yml, was excluded; one new test's card
+  ids used underscores and were fixed to the [a-z0-9-] slug rule).
+verify: |
+  python3 -m pytest tests/devnest/test_kk_mac_executor.py \
+    tests/devnest/test_kk_mac_lane_worker.py \
+    tests/devnest/test_kk_mac_producer.py \
+    tests/devnest/test_kk_mac_llm.py \
+    tests/board/test_queue_time_classify.py \
+    tests/board/test_executor_contract.py -x -q
+  python3 scripts/bench/kkmac-classes/score.py --entity mock-oracle
+  # 51/51 pass; held classes flagged HELD
+verdict: done — admission narrowed fleet-wide; held classes fail
+  closed at write door, claim, producer, broker, validator, and
+  executor; re-eval path preserved and follow-up card queued.
