@@ -1,0 +1,67 @@
+date: 2026-11-09
+title: ada-scenario-smoke result=timeout — TimeoutStartSec undersized for 44-scenario tier
+domain: ada
+job: timer-alert-idc03-ada-scenario-smoke
+cards: [timer-alert-idc03-ada-scenario-smoke, ada-scenario-quadlets-exit-contract]
+refs: [OPS-0581, ADA-1172]
+host: idc03
+summary: >
+  After the 2026-11-08 deploy-drift repair (unit files + wrapper
+  refreshed, provider gate live), the alert mode changed from
+  result=exit-code to result=timeout: every run that passes the
+  provider gate dies at exactly TimeoutStartSec=2700 mid-suite. The
+  smoke tier is now 44 scenarios at ~2.5min each (a fail reruns
+  once), so a full pass needs ~90-120min — the unit could never
+  succeed. TimeoutStartSec raised to 7200 (smoke) and 43200 (full,
+  203 scenarios, manual only). Deploy still pending: install.sh on
+  idc03 also rebuilds the image, which lands the OPS-0581
+  container-suite-run entrypoint shim (commit 1f3b48b22) the current
+  image predates.
+
+root_cause:
+  - 'TimeoutStartSec=2700 (45min) predates the tier growth. A pass
+    covers ~26 scenarios per 45min window (observed 2026-11-09 07:00
+    and 08:00 runs); 44 scenarios need ~90-120min. Every gate-passing
+    run since 2026-11-08 12:00 ended: start operation timed out ->
+    SIGTERM -> SIGKILL -> result=timeout.'
+  - 'Hourly cadence alternates: quota-dead windows skip via
+    ExecCondition (result=exec-condition, not alertable); healthy
+    windows start the suite and timeout at :45. Sentinel re-fires
+    "still suspicious" on the latest result each cycle.'
+  - 'Latency second bug: the ada-scenario-runner image on idc03 was
+    built 2026-11-08 10:34 +07 — before the OPS-0581 shim commit
+    (1f3b48b22, 11:02 +07). Even a completed run would exit 1 on
+    findings -> result=exit-code. Same fix vehicle: install.sh.'
+
+fix:
+  - 'ada-scenario-smoke.container: TimeoutStartSec 2700 -> 7200.
+    Overlapping hourly fires drop while a run is active, so effective
+    cadence self-throttles to ~2h — hourly fire kept so a faster tier
+    recovers hourly coverage automatically.'
+  - 'ada-scenario-full.container: TimeoutStartSec 3600 -> 43200.
+    Manual-only unit, but 203 scenarios at the same pace is ~8.5h —
+    1h guaranteed a kill mid-run for whoever authorized it.'
+  - 'install.sh schedule comment updated to document the effective
+    ~2h cadence.'
+  - 'DEPLOY (not done — dispatch boundary): re-run
+    stacks/services/ada-scenario-runner/install.sh on idc03 from the
+    exec checkout once this branch lands. One run both installs the
+    new TimeoutStartSec and rebuilds the image with the
+    container-suite-run shim (card ada-scenario-quadlets-exit-contract).'
+
+open_questions:
+  - 'Smoke tier is 44 scenarios — no longer a "smoke". If the hourly
+    fast-signal intent matters, split a smoke-fast subset (~15 core
+    scenarios) and move the rest to full. Deferred: semantic decision
+    about ada-voice tier membership, not a config bug.'
+  - 'High scenario fail rate on the ada-dev free lane is a findings
+    issue (suite reports), not timer health — exits 0 under the
+    OPS-0581 contract once the shim image is live.'
+
+verify:
+  - 'ssh idc03 journalctl --user -u ada-scenario-smoke.service --since
+    today — next gate-passing run must reach the "N scenarios:" marker
+    and Result=success, not timeout at :45.'
+  - 'systemctl --user show ada-scenario-smoke.service -p Result
+    --value => success after a full pass.'
+  - 'CMS timer-timeline-idc03 clears the smoke row on next refresh.'

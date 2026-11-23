@@ -1,0 +1,83 @@
+id: dispatch-triage-arbiter-label-pass
+title: dispatch-triage corpus — arbiter label pass (strategy b)
+date: 2026-11-19
+card: dispatch-triage-arbiter-label-pass
+host: idc02
+status: LABEL_STATUS_PLACEHOLDER
+ref: OPS-1290
+prior: docs/ssot/jobs/nest/2026-11-09-dispatch-triage-corpus.yml
+
+goal: >-
+  Execute the Tony-approved labeling strategy (b) — arbiter adjudication —
+  for the dispatch-triage suite (ada-voice tests/bench/suites.yml
+  `dispatch-triage`, domains.yml kind `triage`, Choice over
+  {code,docs,ops,research,clarify}).
+
+method:
+  script: scripts/bench/dispatch-triage/label.py
+  model: gemini-3.5-flash-lite-free   # LiteLLM idc03 deployment pinning
+                                      # GEMINI_API_KEY_FREE — no paid leg,
+                                      # so 429s stall the run, never spend
+  prompt_surface: >-
+    Lane criteria verbatim from ada-voice tests/bench/domains.yml `triage`
+    Choice — labels mean the same thing the bench asks.
+  corpus: >-
+    kanban dispatch cards (title+brief, action.type=dispatch) +
+    focus-inbox entries (newest 400) — the two inventoried labelable
+    sources. Ground truth excluded: texts already hand-labeled in
+    ada-voice tests/bench/orch-triage-cases.jsonl are never relabeled.
+  idempotency: >-
+    corpus-arbiter-labeled.jsonl is the append-only ledger; re-runs skip
+    keys already present (normalized-text match). review-queue and the
+    suite append file are derived views rebuilt from the full ledger
+    every run — a crash mid-run loses nothing but unattempted calls.
+  confidence_policy:
+    threshold: 0.75
+    below: review-queue.jsonl (reason=low-confidence) — never silently
+           labeled
+    above: orch-triage-cases.append.jsonl, suite schema
+           {text, kind:triage, label, set:triage, slice:arbiter-<date>}
+    spot_check: >-
+      stratified-by-label random sample (seed 20261117) fills the review
+      queue up to ~100 rows — the human spot-check that doubles as the
+      golden seed per the priced plan.
+
+outputs: OUTPUTS_PLACEHOLDER
+
+counts: COUNTS_PLACEHOLDER
+
+notes:
+  - >-
+    Prior two dispatch sessions (20261109-182323, 20261117-092646) each
+    died on the same bug: the spot-check sampler's while-loop condition
+    (`any(by_label.values())` on lists that never shrink) spins forever
+    when the confident pool is smaller than the sample target — process
+    burned CPU until the unit killed it. Fixed by bounding the loop on
+    the deepest per-label bucket. This run resumes their ledger rows.
+  - >-
+    Free-key quota is shared fleet-wide; observed sustained rate
+    ~8-14 labeled/min with 2 workers at 2s interval. Retry-exhausted
+    rows (429 cooldown) are not appended — they stay pending and are
+    mopped up by re-invoking the script.
+  - >-
+    Answers ssot.nest-training.yml open_question "who labels the
+    diverged queue": this pass is the arbiter-label mechanism —
+    reusable for the other specialists' corpus-harvest queues.
+
+verify:
+  - 'python3 scripts/bench/dispatch-triage/label.py --dry-run'
+  - 'wc -l scripts/bench/dispatch-triage/corpus-arbiter-labeled.jsonl'
+  - 'wc -l scripts/bench/dispatch-triage/review-queue.jsonl'
+  - 'wc -l scripts/bench/dispatch-triage/orch-triage-cases.append.jsonl'
+  - 'cat scripts/bench/dispatch-triage/summary.json'
+  - 'board comment on dispatch-triage-arbiter-label-pass (comms)'
+
+followups:
+  - >-
+    Tony spot-checks review-queue.jsonl (~100 rows) — corrected labels
+    become the golden tier seed (suites.yml golden is still spec-empty)
+  - >-
+    Append orch-triage-cases.append.jsonl into ada-voice
+    tests/bench/orch-triage-cases.jsonl on the next corpus-harvest
+    rotate (staging checkout keeps clean; do it in the ada-voice edit
+    flow, not from this worktree)

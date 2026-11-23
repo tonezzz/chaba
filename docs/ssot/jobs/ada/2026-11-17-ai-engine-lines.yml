@@ -1,0 +1,62 @@
+id: 2026-11-17-ai-engine-lines
+title: Engine=lane contract formalized — AI engine lines design SSOT
+card: ai-engine-lines
+date: '2026-11-17'
+runner: idc02
+kind: design-formalization
+summary: >-
+  Vision card (OPS-0466, Tony 2026-10-11) unblocked by line-multihome-group
+  (done): formalized "personas as versioned, swappable engines" into
+  docs/ssot/apps/ssot.apps.ada-engines.yml — terms, contract v1, engine
+  registry, release model, versioning, gaps.
+
+precondition_check:
+  line-multihome-group: done (archived) — mention router proves per-lane
+    isolated WS backends; caller-key mirroring via auth.import_key works;
+    ada-chaba :8008 is live as a differently-shaped persona on ada-1.
+
+design_grounding:
+  verified_from:
+    - docs/ssot/apps/ssot.apps.ada-persona-lanes.yml — lane registry + CI
+    - docs/ssot/apps/ssot.apps.ada-persons.yml — person registry, tier policy
+    - docs/kb/persona-eval-ab.md — variant/A-B/adopt loop (release model)
+    - docs/kb/msg-lane-standard.md — lane relay contract
+    - docs/kb/ha-ada-isolation.md — slot shape + caps + shared-checkout limit
+    - docs/ssot/jobs/ada/2026-10-23-per-instance-secret-stores.yml —
+      per-lane secret stores, pointer-flip precedent (ada-pi-pwa retirement)
+    - ada-chaba-instance card — seed lane for a chaba-ops line
+
+contract_v1_fixed_surface:
+  - "/ws session endpoint + /api/health + /api/auth/* (mint/import)"
+  - "caller keys per-backend (ADA_INSTANCE_ID-resolved), key->person binding"
+  - "tier owner|member|guest enforced server-side by the engine"
+  - "per-(channel,room,sender,persona) sessions, [persona->sender] reply tags"
+  - "proactive only via lane relay send URL; lane-lock honored"
+  - "loud failure for undeclared capabilities — never silent no-op"
+
+key_findings:
+  - "The swap mechanics already exist: LINE_NAME_BACKENDS / TG relay env /
+    tailnet-serve mounts are config pointers — engine release is genuinely
+    a config swap TODAY at whole-lane granularity."
+  - "The one real limit: all instances share the idc03 ada-voice checkout —
+    fleet-wide engine version is single. Parallel engine lines need
+    per-engine runtimes (own checkout+venv or quadlet image). Carded."
+  - "Engines can't be audited: nothing reports line/version/contract.
+    Required before Ada2 is measurable. Carded."
+  - "No named contract conformance suite exists; scenario-live subset is
+    the natural gate. Carded."
+
+artifacts:
+  - docs/ssot/apps/ssot.apps.ada-engines.yml — the formalization
+  - docs/ssot/jobs/ada/2026-11-17-ai-engine-lines.yml — this record
+
+followups_filed:
+  new_cards:
+    - ada-engine-self-report — engine identity in /api/health + session hello
+    - ada-engine-contract-suite — tagged contract conformance scenario pack
+    - ada-engine-runtimes — per-engine runtime dirs/quadlets for parallel versions
+  related_existing: [persona-ab-split-routing-relay,
+                     ada-text-model-promotion-path]
+
+open_request: engine-line naming (codename-per-line ★ vs functional ids)
+  raised on ai-engine-lines for Tony.
