@@ -1462,6 +1462,80 @@ class KkMacExecutorContractTest(unittest.TestCase):
                 else:
                     os.environ["HOME"] = home
 
+    # --- token-usage evidence (kk-mac-usage-to-lane-savings) ----------
+
+    def test_finish_usage_sets_result_extra_fragment(self):
+        """A landed kk_mac run's Ollama usage becomes a TOKENS_RE
+        fragment on the state entry — finish_pass prepends it so it
+        survives board-api's result[:300] -> action.result cap."""
+        savings = _load("lane-savings.py")
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t4"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                (wt / "evals/kk-mac-lane/out").mkdir(parents=True)
+                (wt / "evals/kk-mac-lane/out/c.json").write_text("{}")
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "pass", "checks": {"json": True},
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text(json.dumps({
+                    "usage": {"prompt_eval_count": 1500,
+                              "eval_count": 200,
+                              "eval_duration": 99}}))
+                ent = {"tid": tid}
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", ent, self._kk_card())
+                self.assertTrue(may)
+                frag = ent.get("result_extra") or ""
+                tm = savings.TOKENS_RE.search(frag)
+                self.assertIsNotNone(tm)
+                self.assertEqual(
+                    (int(tm.group(1)), int(tm.group(2)),
+                     int(tm.group(3))), (1700, 1500, 200))
+                # the prepend survives board-api's result[:300] cap
+                stored = (frag + "exit=0 " + "x" * 500)[:300]
+                self.assertIsNotNone(savings.TOKENS_RE.search(stored))
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+    def test_finish_no_usage_no_fragment(self):
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t5"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                (wt / "evals/kk-mac-lane/out").mkdir(parents=True)
+                (wt / "evals/kk-mac-lane/out/c.json").write_text("{}")
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "pass", "checks": {"json": True},
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text(json.dumps({
+                    "usage": {"eval_duration": 99}}))
+                ent = {"tid": tid}
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", ent, self._kk_card())
+                self.assertTrue(may)
+                self.assertNotIn("result_extra", ent)
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
 
 class KkMacBoardApiTest(unittest.TestCase):
     """board-api validates the kk_mac_local contract at the door."""
