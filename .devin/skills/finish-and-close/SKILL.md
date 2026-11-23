@@ -41,6 +41,7 @@ Standard workflow for ending a session when the user asks to finish/close.
    - **Session-capture sweep (mandatory, per `ssot.knowledge-capture.yml` / `session-capture` procedure):**
      route every unmet/unfinished request or follow-up to a durable sink (card/request/comment via board-api, focus-inbox, lesson, KB/SSOT promotion, or pointer note) and record where filed;
      save/update deduped pointer notes for non-obvious discoveries; file retainable/educate-me answers as lessons (`scripts/lesson-add.py` or `/lesson`, state if write fails);
+     log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history);
      attach outcomes/evidence to cards/reports (reusable deltas only). Where available, `scripts/chaba/immediate-pin.py` and `scripts/chaba/recent-event.py` may record resume/events, but they do not replace durable sinks or the handoff packet.
 
 3. Summarize and review

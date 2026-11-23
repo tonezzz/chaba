@@ -49,9 +49,10 @@ Procedures: `knowledge-capture`, `pointer-note`, `session-capture` in `docs/ssot
 1. **Open-ask sweep:** every unmet/unfinished request or discovered follow-up → card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note. Record where filed.
 2. **Discovery:** create/update a deduped pointer note with `scope, as_of, canonical_refs, retrieval_recipe, volatility, summary` (+ owner/promote_to/related/refresh/gaps).
 3. **Lessons:** file retainable answers (lesson-capture duty); state failure explicitly.
-4. **Outcomes/evidence:** attach to card/report/artifacts; capture only reusable deltas.
-5. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
-6. **Report (mandatory):** always list `where_filed` (`item -> sink/ID/path`) — never end with chat-only outcomes.
+4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history).
+5. **Outcomes/evidence:** attach to card/report/artifacts; capture only reusable deltas.
+6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
+7. **Report (mandatory):** always list `where_filed` (`item -> sink/ID/path`) — never end with chat-only outcomes.
 
 ## Session Handoff Packet (required)
 - `objective` — what this session/task was doing

@@ -31,8 +31,9 @@ Apply this skill when ending a session/handoff, after meaningful discovery, when
 1. **Open-ask:** route every unmet request/follow-up to a durable sink and record where filed
 2. **Discovery:** save/update a deduped pointer note (`scope, as_of, canonical_refs, retrieval_recipe, volatility, summary` + owner/promote_to/related/refresh/gaps)
 3. **Lessons:** file retainable answers (lesson-capture; state if write fails)
-4. **Evidence:** attach outcomes/evidence; capture only reusable deltas
-5. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and report `where_filed` in the response
+4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history)
+5. **Evidence:** attach outcomes/evidence; capture only reusable deltas
+6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and report `where_filed` in the response
 
 ## Session Handoff Packet (required)
 - `objective`, `as_of`

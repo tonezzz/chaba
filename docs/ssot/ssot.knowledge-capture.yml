@@ -180,9 +180,11 @@ sections:
       - label: Session boundary / handoff (mandatory)
         text: >-
           Before ending, run the session-capture sweep: route every unmet/unfinished request or discovered follow-up to a
-          durable sink (card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note); save/update a
-          deduped pointer or handoff note; and produce a Session Handoff Packet. Always report "where filed" (item -> sink/ID/path)
-          in the response and in the packet — no chat-only outcomes.
+          durable sink (card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note); log focus decisions/
+          session summaries append-only to docs/ssot/ssot.focus.decisions.yml / docs/ssot/ssot.focus.sessions.yml (prefer
+          mcp-debug mcp_focus session_summary/technical_decision modes where available, else consistent append-only edit);
+          save/update a deduped pointer or handoff note; and produce a Session Handoff Packet. Always report "where filed"
+          (item -> sink/ID/path) in the response and in the packet — no chat-only outcomes.
       - label: Discovery
         text: >-
           When a non-obvious entry point, procedure location, or domain map is resolved, create/update a pointer note with
@@ -240,6 +242,11 @@ sections:
         text: >-
           Do not write Ada personal memory banks (ada-*) from Chaba contexts; follow field-ownership rules; promotion to normative SSOT/AGENTS behavior
           requires the appropriate governed change path.
+      - label: Focus parity
+        text: >-
+          Log focus decisions and session summaries append-only to docs/ssot/ssot.focus.decisions.yml and docs/ssot/ssot.focus.sessions.yml.
+          Prefer mcp-debug mcp_focus (session_summary / technical_decision modes; recommend/status also log decisions) where available;
+          in runtimes lacking mcp_focus, use consistent append-only edits that preserve required fields and never rewrite history.
       - label: Promotion
         text: >-
           When captured knowledge becomes reusable, normative, or cross-cutting, promote it to the correct canonical home (SSOT/KB/procedure/lesson)
