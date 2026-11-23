@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import signal
 import tempfile
 import types
 import unittest
@@ -49,15 +50,22 @@ class StartTaskLaneTest(unittest.TestCase):
                        ("OPENCODE_LANES", "DISPATCH", "HOST")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("sh", "classify_lane", "start_opencode_lane",
-                           "dr_module", "enforce_task_limits")}
+                           "dr_module", "dt_module", "enforce_task_limits")}
         m.DISPATCH = str(SCRIPT)          # exists -> dispatch executor present
         m.dr_module = lambda: None        # no host checkout resolution
         m.enforce_task_limits = lambda *a, **k: None
         self.calls = []
         m.sh = lambda argv, **kw: self.calls.append(argv) or _proc(
             0, "fake-tid-123\n")
+        # Hermetic: dt_module() imports dispatch_task, whose primer
+        # (lesson_primer._bank_candidates) makes live HTTP calls to MDDB
+        # and can hang past the urlopen timeout. Mock it to None so
+        # start_task falls back to spec + RAILS without network I/O.
+        m.dt_module = lambda: None
+        signal.alarm(10)  # hard per-test timeout so a hang fails fast
 
     def tearDown(self):
+        signal.alarm(0)
         m = self.mod
         for k, v in self._saved.items():
             setattr(m, k, v)
@@ -172,6 +180,7 @@ class CollectTest(unittest.TestCase):
     def setUp(self):
         m = self.mod
         self._sh = m.sh
+        signal.alarm(10)
         self.td = tempfile.TemporaryDirectory()
         self.addCleanup(self.td.cleanup)
         self._home_old = os.environ.get("HOME")
@@ -189,6 +198,7 @@ class CollectTest(unittest.TestCase):
             os.environ["HOME"] = self._home_old
 
     def tearDown(self):
+        signal.alarm(0)
         self.mod.sh = self._sh
 
     def _stub(self, loadstate="not-found", result="success",
@@ -307,7 +317,7 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._saved_env = os.environ.get("JEV_LANE")
         os.environ["JEV_LANE"] = "1"
         self._saved = {k: getattr(m, k) for k in
-                       ("DISPATCH", "RETRY_FILE")}
+                       ("DISPATCH", "RETRY_FILE", "OPENCODE_LANES")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("api", "start_task", "push_capable",
                            "gpu_preflight", "classify_lane", "dr_module",
@@ -316,7 +326,10 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
         m.dr_module = lambda: None
+        m.OPENCODE_LANES = False  # hermetic: unstaged-opencode hold is
+        # env-dependent; this test is about lane classification, not the hold
         m.push_capable = lambda repo: True
+        signal.alarm(10)
         m.gpu_preflight = lambda card: ""
         m.overloaded = lambda: False
         m.note_defer = lambda *a, **k: None
@@ -340,6 +353,7 @@ class ClaimPassLaneTest(unittest.TestCase):
             os.environ.pop("JEV_LANE", None)
         else:
             os.environ["JEV_LANE"] = self._saved_env
+        signal.alarm(0)
         for k, v in self._saved.items():
             setattr(m, k, v)
         for k, v in self._saved_fn.items():
