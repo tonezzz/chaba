@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
-column: backlog
-updated: 2026-11-23 22:23
+column: doing
+updated: 2026-11-23 22:26
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -23,7 +23,9 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
 ref: OPS-0048
 comms:
 - at: 2026-11-23 22:22
@@ -45,3 +47,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 22:26
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-23 22:26
