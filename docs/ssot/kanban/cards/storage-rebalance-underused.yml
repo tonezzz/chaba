@@ -1,7 +1,7 @@
 id: storage-rebalance-underused
 title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
 column: backlog
-updated: 2026-11-23 07:13
+updated: 2026-11-23 10:52
 brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
   and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
   to free space.
@@ -19,3 +19,15 @@ comms:
 - at: 2026-11-23 07:13
   from: tony
   text: card captured via board-api
+- at: 2026-11-23 10:52
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 10:52
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: kw
+claim: {}
