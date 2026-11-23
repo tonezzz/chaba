@@ -84,10 +84,26 @@ RULES = [
 # References that mean a candidate already has an artifact somewhere.
 FILED_RE = re.compile(
     r"(?:docs/ssot/[\w./-]+|docs/kb/[\w./-]+|dispatch-outcome-[\w-]+\.md|"
-    r"https?://\S+|[0-9a-f]{8,40}|\bcard\s+[a-z0-9-]{4,}|"
-    r"\blesson\s+[a-z0-9-]{3,})",
+    r"https?://\S+|(?<![0-9a-f])(?![0-9]{8}(?![0-9]))[0-9a-f]{8,40}(?![0-9a-f])|"
+    r"\bcard\s+[a-z0-9]+(?:-[a-z0-9]+)+\b|"
+    r"\blesson\s+[a-z0-9]+(?:-[a-z0-9]+)+\b)",
     re.IGNORECASE,
 )
+
+# Focus-inbox entries emitted by scheduled producers already have a durable
+# home (focus-inbox). Phase D baseline showed 382 of 383 focus-inbox kanban
+# creates came from these shapes -- re-cardfing them floods the board.
+PRODUCER_FOCUS_PATTERNS = (
+    re.compile(r"job-fail-"),
+    re.compile(r"-report-watch-"),
+    re.compile(r"kanban-cards-"),
+    re.compile(r"^handoff-"),
+    re.compile(r"-audit-"),
+)
+
+
+def _is_producer_focus(sid: str) -> bool:
+    return any(p.search(str(sid or "")) for p in PRODUCER_FOCUS_PATTERNS)
 
 
 def _norm(text: str) -> str:
@@ -165,6 +181,21 @@ def route(candidate: dict, run_id: str = RUN_ID) -> dict:
         action = "link"
         already = True
 
+    # Phase D baseline guard: scheduled-producer focus-inbox artifacts and
+    # dispatch outcomes are already durable in their own surface. Keep the
+    # pointer as evidence on the existing artifact instead of creating a
+    # duplicate card. Genuinely uncaptured focus-inbox items (e.g.
+    # "wiki-login-polish") are still eligible for a card.
+    filed_artifact = (
+        (candidate.get("source") == "focus-inbox"
+         and _is_producer_focus(candidate.get("source_id")))
+        or candidate.get("source") == "dispatch-outcome"
+    )
+    if sink == "kanban" and action == "create" and filed_artifact:
+        name = name + "+filed-artifact"
+        sink, action = "evidence", "link"
+        already = True
+
     native = _native_key(sink, candidate, norm)
     return {
         "run_id": run_id,
@@ -210,7 +241,34 @@ def self_test() -> int:
     print(f"[{'OK' if good else 'FAIL'}] card-comm kanban regression -> "
           f"{reg['action']} {reg['dedupe_key']}")
     ok += good
-    total = len(cases) + 1
+    # Phase D guards: producer artifacts are pointers, not new cards; FILED_RE
+    # must not treat "card spec" or an 8-digit date as an existing reference.
+    extra = [
+        ({"text": "job-fail: bad on testbox - please fix next action",
+          "source": "focus-inbox", "source_id": "2026-10-27-143740-job-fail-bad-on-testbox"},
+         "evidence", "link", True),
+        ({"text": "Please fix the wiki login next action",
+          "source": "focus-inbox", "source_id": "wiki-login-polish"},
+         "kanban", "create", False),
+        ({"text": "Please fix card spec next action",
+          "source": "focus-inbox", "source_id": "f4"},
+         "kanban", "create", False),
+        ({"text": "Please fix 20261119 next action",
+          "source": "focus-inbox", "source_id": "f5"},
+         "kanban", "create", False),
+        ({"text": "# Dispatch outcome — follow-up, please wire next action",
+          "source": "dispatch-outcome", "source_id": "dispatch-outcome-20261120-172937-goal"},
+         "evidence", "link", True),
+    ]
+    for cand, exp_sink, exp_action, exp_filed in extra:
+        r = route(cand, "self-test")
+        good = (r["proposed_sink"] == exp_sink and r["action"] == exp_action
+                and r["already_filed"] == exp_filed)
+        flag = "OK" if good else "FAIL"
+        print(f"[{flag}] {cand['source_id'][:34]!r} -> "
+              f"{r['proposed_sink']}/{r['action']} filed={r['already_filed']}")
+        ok += good
+    total = len(cases) + 1 + len(extra)
     print(f"self-test: {ok}/{total} passed")
     return 0 if ok == total else 1
 

@@ -257,3 +257,32 @@ sections:
         text: Add idempotent capture-router and harvester/index-refresh jobs that write only to approved sinks with audit metadata and dedupe keys.
       - label: Phase D
         text: Measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; tune the matrix and promotion thresholds in SSOT.
+
+  - title: Phase D Baseline (2026-11-23)
+    icon: "📊"
+    layout: list
+    items:
+      - label: Measured signals
+        text: >-
+          Repeat-ask register: 9 topics / 15 asks / 3 open, window 2026-10-14..2026-10-22,
+          last entry 2026-10-22 (32d stale at baseline). Pre-fix matrix precision: 390 kanban
+          creates of which 382 came from focus-inbox producer artifacts (job-fail 315,
+          kanban-cards 31, report-watch 20, handoff 16) - about 2% precision. Tightening FILED_RE
+          also unmasked dispatch-outcome creates; outcomes are filed artifacts too.
+          Source: scripts/chaba/capture-metrics.py.
+      - label: Unmeasurable signals (no durable source)
+        text: >-
+          Miss rate: AGENTS.md points at ssot.repeat-asks.yml but the register has no miss field.
+          Stale-pointer incidents: no incident log (only a proxy count of old-as_of pointer candidates).
+          Time-to-find: no lookup telemetry. Report each as unmeasurable with a proposal; never
+          present a proxy as a measured incident count.
+      - label: Promotion thresholds (proposed; --apply remains gated)
+        text: >-
+          Never auto-create a kanban card from a focus-inbox producer artifact or a dispatch outcome;
+          route to an evidence pointer on the existing artifact. link/skip are safe; create requires
+          an uncaptured source or explicit approval. FILED_RE requires hyphenated card/lesson slugs
+          and excludes 8-digit dates, so "card spec" and "20261119" cannot collapse proposals.
+      - label: Refresh
+        text: >-
+          Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
+          ledger. Update this section only from a fresh report; state the report path and date.
