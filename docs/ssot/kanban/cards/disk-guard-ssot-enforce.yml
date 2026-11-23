@@ -1,7 +1,7 @@
 id: disk-guard-ssot-enforce
 title: Enforce SSOT disk thresholds in disk-trend-watch.py (max_root_disk_percent + 15 GiB floor)
-column: backlog
-updated: 2026-11-23 10:59
+column: doing
+updated: 2026-11-23 11:03
 brief: disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01).
   tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
 priority: medium
@@ -39,9 +39,15 @@ comms:
 - at: 2026-11-23 10:59
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-23 11:03
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-23 11:03
