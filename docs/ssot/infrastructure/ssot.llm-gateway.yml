@@ -64,7 +64,7 @@ budgets:
     LITELLM_KEY_MICHAEL: "live $5 / 30d (matches) — michael lane REST"
     LITELLM_KEY_MDDB: "live $10 / 30d (matches) — gemini-ollama-proxy,
       ada-embed-bench, board-api /lesson translation"
-    LITELLM_KEY_BENCH: "live $2 / 30d (matches) — benchmark runs + dev lanes"
+    LITELLM_KEY_BENCH: "live $4 / 30d (raised 2026-11-21, Tony approved — was $2/30d at 100% with 422s; spend carried, reset 2026-12-01) — benchmark runs + dev lanes"
     LITELLM_KEY_KK: "live $5 / 30d (matches) — kk lane side-tools"
   live_audit: >-
     2026-10-28 (card model-key-usage-control): LiteLLM_AuditLog is EMPTY
@@ -249,24 +249,30 @@ free_lane_aliases:
   # whitelists updated same day.
   openrouter_free:  # verified through opencode host-health shadow fixture
     - or-free-nemotron-ultra   # nvidia/nemotron-3-ultra-550b-a55b:free, 1M ctx — PASS 26s
-    - or-free-north-code       # cohere/north-mini-code:free — PASS 36s
     - or-free-nemotron-35      # nvidia/nemotron-3.5-lightning:free — PASS 82s
     - or-free-nemotron-nano    # pre-existing: nemotron-3-nano-omni-30b reasoning:free
-    - or-free-gemma31b         # pre-existing: google/gemma-4-31b-it:free
-  cloudflare_workers_ai:       # deployed, NOT yet opencode-verified
+    - or-free-gemma31b         # pre-existing: google/gemma-4-31b-it:free (400 invalid-key on paid OR key 2026-11-20)
+  removed_2026_11_20:
+    - or-free-north-code       # cohere/north-mini-code:free — 404 "no provider serves this model anymore" on OpenRouter
+    - gemini-2.5-flash-free    # free Gemini key: 404 "no longer available to new users" for 2.5 family
+    - gemini-2.5-flash-lite-free # free Gemini key: 404 "no longer available to new users" for 2.5 family
+  cloudflare_workers_ai:       # deployed, opencode-verified in part
     note: >-
       OpenAI-compatible api_base .../accounts/<acct>/ai/v1, CF_API_WORKER_TOKEN.
-      Free tier = 10k neurons/day (exhausted 2026-11-13 during eval).
-      model_info context caps set from CF catalog. Known limits:
-      llama-3.3-70b ctx=24k (too small for opencode), gpt-oss-120b rejects
-      array content parts opencode sends. Retest after daily neuron reset.
+      Free tier = 10k neurons/day. model_info context caps set from the CF
+      catalog. Known limits: llama-3.3-70b ctx=24k (too small for opencode),
+      gpt-oss-120b rejects array content parts opencode sends.
+      2026-11-20: llama-3.1-8b-instruct-fp8, qwen3-30b-a3b-fp8 and
+      nemotron-3-120b-a12b deprecated upstream (410) — routes repointed and
+      renamed to llama-4-scout-17b-16e-instruct, qwen3.8-27b and
+      gemma-4-26b-a4b-it (each probed live through the gateway).
     models:
       - cf-llama-70b            # @cf/meta/llama-3.3-70b-instruct-fp8-fast (24k ctx)
-      - cf-llama-8b             # @cf/meta/llama-3.1-8b-instruct-fp8 (32k)
-      - cf-qwen3-30b            # @cf/qwen/qwen3-30b-a3b-fp8 (32k, reasoning)
+      - cf-llama4-scout         # @cf/meta/llama-4-scout-17b-16e-instruct (131k ctx)
+      - cf-qwen38-27b           # @cf/qwen/qwen3.8-27b (262k, reasoning)
       - cf-gpt-oss-120b         # @cf/openai/gpt-oss-120b (128k, reasoning)
       - cf-mistral-small        # @cf/mistralai/mistral-small-3.1-24b-instruct (128k)
-      - cf-nemotron-120b        # @cf/nvidia/nemotron-3-120b-a12b (256k, reasoning)
+      - cf-gemma4-26b           # @cf/google/gemma-4-26b-a4b-it (256k, reasoning)
       - cf-embed-m3             # @cf/baai/bge-m3 embeddings (1024d)
   not_added:
     opencode_zen: >-
@@ -281,3 +287,15 @@ verification:
   - curl -sf http://100.102.134.91:4000/health/liveliness
   - "POST /v1/chat/completions model=tool-call returns text; x-litellm-model-id header shows which upstream won"
   - "admin UI /ui shows spend per key+model; daily-ledger.py --publish refreshes the CMS page"
+
+knowledge_surface:
+  rollup: Education:LLM Providers
+  url: https://wiki.h3.gizmo-thailand.com/index.php?title=Education%3ALLM_Providers
+  leaves:
+    - Education:LLM Providers/Cloudflare Workers AI
+    - Education:LLM Providers/Gemini API
+    - Education:LLM Providers/Openrouter
+    - Education:LLM Providers/Groq
+    - Education:LLM Providers/Ollama
+  tracking_card: OPS-0018
+  note: "Filed 2026-11-20. Wiki leaves reconciled with this file's 2026-11-20 CF route renames and or-free-north-code removal; re-verify before any route promotion."
