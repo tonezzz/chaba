@@ -1481,7 +1481,14 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
         r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
                            capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return {"ran": True, "ok": False, "command": cmd, "python": interp,
+        # timeout=True distinguishes infra flake (loaded host, suite
+        # can't finish) from a red suite — the merge lane retries once
+        # and lets docs-only diffs through under an override
+        # (board-api-queue-write-verify-lost-race-f85f2f: OPS-0200 /
+        # ADA-0201 / KNB-0212 merges held on 'suite timeout (240s)' for
+        # docs-only diffs and needed manual merges).
+        return {"ran": True, "ok": False, "timeout": True,
+                "command": cmd, "python": interp,
                 "failed": [f"suite timeout ({timeout}s)"],
                 "error": f"test gate timed out after {timeout}s"}
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
@@ -1601,6 +1608,13 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    if branch.get("timeout"):
+        # a timed-out -x run can't be improved by enumerating without
+        # failfast — that runs strictly MORE tests under the same
+        # timeout and would just burn another full gate period before
+        # returning this same result. The retry/override decision
+        # belongs to the caller (_merge_and_gate).
         return branch
     enum, meta = _gate_failures(wt, repo_name)
     if not enum:

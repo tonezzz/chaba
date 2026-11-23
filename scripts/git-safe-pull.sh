@@ -338,14 +338,38 @@ _gc_autostash() {
   done
 }
 
+# Live card files only: these are the paths reconcile-local-conflicts.py
+# can fold back into the canonical card. Other generated paths stay
+# silent HEAD-resolution — their content is reproducible, and a
+# .local-conflict sidecar there would just be flagged for manual merge.
+CARD_YML_POP_RE='^docs/ssot/kanban/cards/[^/]+\.yml$'
+
 _resolve_autostash_pop() {
   # A failed autostash pop leaves unmerged entries + a retained stash.
   # Generated paths resolve to HEAD; anything else stays for a human.
-  local p bad=0 saw=0
+  # For live card YAMLs the stash side (stage 3 = the autostashed local
+  # write — a board-api save() that was still dirty when the pull
+  # stashed it) is preserved as <path>.local-conflict-<ts> FIRST, so the
+  # EXIT-trap reconcile folds the write back instead of losing it to
+  # the stash-archive patch only
+  # (board-api-queue-write-verify-lost-race-f85f2f: /action do=queue
+  # answered 'queued' 3x while action.status never landed).
+  local p bad=0 saw=0 dest n
   while IFS= read -r p; do
     [ -n "$p" ] || continue
     saw=1
     if [[ "$p" =~ $GENERATED_RE ]]; then
+      if [[ "$p" =~ $CARD_YML_POP_RE ]] \
+         && git cat-file -e ":3:$p" 2>/dev/null; then
+        dest="$p.local-conflict-$TS"; n=1
+        while [ -e "$dest" ]; do
+          n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+        done
+        git show ":3:$p" > "$dest" 2>/dev/null \
+          || { rm -f "$dest"; dest=""; }
+        [ -n "$dest" ] \
+          && echo "git-safe-pull: autostash pop kept local side of $p -> $dest" >&2
+      fi
       if git checkout HEAD -- "$p" 2>/dev/null; then
         git reset -q HEAD -- "$p" 2>/dev/null || true
       else

@@ -670,6 +670,16 @@ def load(p: Path) -> dict:
 # filename.
 _pending_label = ""
 
+# Per-request write registry for the post-lock verify-or-loud step
+# (board-api-queue-write-verify-lost-race-f85f2f): do_POST sets
+# _tls.writes = {} before taking the flock; every save() on that thread
+# records {path: card-dict-written}. After the flock is released the
+# handler flushes the commit worker and re-reads each path — a write a
+# git-safe-pull autostash ate in the dirty window answers 500 instead of
+# a phantom 200. Thread-local because the server is threaded and only
+# the request thread's own writes may be verified.
+_tls = threading.local()
+
 
 def save(p: Path, card: dict, extra: list | None = None) -> None:
     """Serialize, verify the dump re-parses as a mapping, then land it
@@ -694,6 +704,9 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
         # disk-full)
         card_io.atomic_write_text(p, text)
         _queue_commit(p, _pending_label or f"write {p.stem}", extra=extra)
+        writes = getattr(_tls, "writes", None)
+        if writes is not None:
+            writes[p] = card
     finally:
         _phase_add("save_ms", t0)
 
@@ -1006,6 +1019,48 @@ def commit_pending_flush(timeout_s: float = 15.0) -> bool:
             return True
         time.sleep(0.05)
     return False
+
+
+# Post-lock verify budget (board-api-queue-write-verify-lost-race):
+# the commit worker normally lands a write ~debounce+git seconds after
+# the flock releases; a git-safe-pull holding the flock defers it for
+# the whole pull phase. The response waits this long for the commit,
+# then read-backs the card regardless — content on disk is the verdict,
+# the flush only shrinks the remaining autostash window to ~zero.
+VERIFY_FLUSH_S = float(
+    os.environ.get("BOARD_API_VERIFY_FLUSH_S", "10"))
+
+
+def _verify_card_writes(writes: dict) -> str:
+    """Read-back verification for a request's save() writes.
+
+    `writes` maps Path -> the card dict the request serialized. Each
+    file is re-loaded and compared: equal means the write is on disk
+    (committed, or dirty-but-present with the commit worker/sweep as
+    backstop). A mismatch means the write was lost — the 2026-11-18/19
+    /action do=queue incident where the response said 'queued' but
+    action.status never landed (autostash pop resolved the dirty card
+    to HEAD; only the stash-archive patch survived). One settle re-read
+    absorbs an in-flight concurrent writer; still-mismatched answers an
+    error string so do_POST can fail loudly (500) — the caller retries
+    instead of trusting a phantom write."""
+    for p, card in writes.items():
+        cur, err = None, ""
+        for _ in range(2):
+            try:
+                cur = load(p)
+                err = ""
+            except Exception as e:
+                cur, err = None, str(e)[:120]
+            if cur == card:
+                break
+            time.sleep(0.4)
+        if cur != card:
+            return (f"write verify: {p.name} does not match the write "
+                    f"just made ({err or 'content diverged'}) — the "
+                    "change was lost to a pull/autostash race; retry "
+                    "the call")
+    return ""
 
 
 def comms_add(card: dict, frm: str, text: str, req: str = "") -> None:
@@ -5431,6 +5486,7 @@ class H(BaseHTTPRequestHandler):
         notify_req = None
         resp_extra = {}
         global _pending_label
+        _tls.writes = {}
         t_lock = time.monotonic()
         got = acquire_lock(LOCK, LOCK_WAIT_S)
         if got is None:
@@ -5598,13 +5654,25 @@ class H(BaseHTTPRequestHandler):
                     f"held={hold_s:.1f}s path={path} "
                     f"load_ms={load_ms:.0f} mutate_ms={mutate_ms:.0f} "
                     f"save_ms={save_ms:.0f} card_path_ms={cp_ms:.0f}\n")
-        # card lock released — queue the push (debounced, best-effort) and
-        # render under its own lock so neither stalls other writers
+        # card lock released — verify-or-loud before answering: flush
+        # the queued commits (the worker defers while the flock is
+        # held, so it can only run now) then re-read each written card.
+        # A write a git-safe-pull autostash ate in the dirty window gets
+        # a 500 here, not a phantom 200
+        # (board-api-queue-write-verify-lost-race-f85f2f).
+        writes = _tls.writes
+        _tls.writes = None
         if notify_req:
             try:
                 queue_request_notify(*notify_req)
             except Exception as e:
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
+        if writes:
+            commit_pending_flush(VERIFY_FLUSH_S)
+            verr = _verify_card_writes(writes)
+            if verr:
+                sys.stderr.write(f"board-api {verr}\n")
+                return self._send(500, {"error": verr})
         self._send(200, {"ok": True, "message": msg, "via": ident,
                          **resp_extra})
         commit_async()   # flush queued write paths post-lock (worker commits)
