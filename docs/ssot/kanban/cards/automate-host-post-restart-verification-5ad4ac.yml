@@ -1,15 +1,15 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
-column: backlog
-updated: 2026-11-23 14:08
+column: doing
+updated: 2026-11-23 14:09
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   lane: devin
   executor: devin
   target_host: idc02
-  attempts: 0
+  attempts: 1
   prompt: 'Implement SYS-0863 (Automate host post-restart verification). Extend existing mcp-health-snapshot flow
     (OnBootSec=5min/OnUnitActiveSec=15min) to detect boot-id change/reboot marker and run one check-only transition.post_restart
     pass per boot. Canonical checklist: docs/kb/host-reboot-verification.md and docs/ssot/infrastructure/ssot.operations.yml#transition.post_restart.
@@ -17,6 +17,7 @@ action:
     Omen CPU cap 2.00GHz (not 2.20GHz); Barrier retired (no barriers.service/barrier-client/24800), keep only barrier-pin-vt
     where present. Scope first pass to configured hosts with host-specific checks gated by SSOT; avoid duplicate
     spam. Verify: boot-id change triggers one pass, structured report/findings on failure, no duplicate spam, check-only.'
+  runner: idc02
 ref: SYS-0863
 comms:
 - at: 2026-10-25 15:49
@@ -174,6 +175,9 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:09
+  from: idc02
+  text: claimed
 requests:
 - id: multiple-hosts-tony-omen-idc02-a913db
   ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed runner-agent
@@ -218,3 +222,5 @@ spec: 'Extend the existing mcp-health-snapshot path to automate host post-restar
 
   Verify: boot-id change triggers one pass, structured report/findings produced on failure, no duplicate spam, check-only
   behavior. Convert action to dispatchable implementation spec before queueing (current manual action starves).'
+claim:
+  since: 2026-11-23 14:09
