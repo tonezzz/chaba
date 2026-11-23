@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: doing
-updated: 2026-11-23 11:08
+updated: 2026-11-23 11:14
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -55,6 +55,13 @@ comms:
   from: devin
   text: 'in progress: adding controller self-detect (ansible_connection=local), real --check --diff support (probe
     check_mode:no + in-memory verdicts), DISK_TREND_HISTORY jsonl append, and host_key_checking docs'
+- at: 2026-11-23 11:14
+  from: devin
+  text: 'done in worktree: disk-headroom.yml rewritten as single play — controller self-detect (ansible_connection=local
+    via pre_tasks set_fact, -e self_host override), real --check --diff (probe check_mode:no + in-memory alert render),
+    DISK_TREND_HISTORY jsonl append gated on actually-probed + ssot-known hosts (macbook key mapping, used_kb added),
+    host_key_checking documented in ansible/README.md known_hosts section. Fixed latent bug: dedicated localhost
+    eval play was stripped by --limit. Verified on to'
 action:
   type: dispatch
   status: running
