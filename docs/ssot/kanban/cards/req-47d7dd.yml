@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
 column: doing
-updated: 2026-11-23 11:03
+updated: 2026-11-23 11:04
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -344,6 +344,13 @@ comms:
   text: 'progress: scp redeploy done — tony-dell ~/.local/bin/runner-agent sha 1e8ea0d8 == repo ref; runner claiming
     clean (ada-prompt-slim claimed 10:53, no drift defers). flood-alert.service executed 11:02 Result=success (5
     items scanned, quiet x64). Monitoring task verified running without drift errors.'
+- at: 2026-11-23 11:04
+  from: devin
+  text: 'DONE: runner-agent redeployed to tony-dell via scp — ~/.local/bin/runner-agent sha256 1e8ea0d8 == repo
+    ref (drift was already healed pre-session; scp landed byte-identical). Continuous monitoring task = flood-alert.timer
+    on tony-dell — executed fresh run 11:02, Result=success, 5 items scanned quiet x64, no deployment drift errors.
+    Post-scp runner claim pass 11:04 Result=success, zero drift lines in 24h journal. Card was running under this
+    dispatch claim so no separate re-queue needed/possible. O'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
