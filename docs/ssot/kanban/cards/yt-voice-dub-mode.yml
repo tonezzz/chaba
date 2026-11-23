@@ -51,7 +51,7 @@ action:
     devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
     wall clock time, 358.3M memory peak.'
   runner: mn01
-updated: 2026-11-23 21:01
+updated: 2026-11-23 21:18
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -483,6 +483,13 @@ comms:
 - at: 2026-11-23 21:01
   from: tony
   text: closed by tony
+- at: 2026-11-23 21:18
+  from: devin
+  text: 'attempt-2 done. Feature was already merged (724240b884) + Tony-verified; this run landed the one real gap
+    the lost tony-macbook session found: superseded dub renders burned edge-tts up to 90min. yt-live.sh dub_job
+    now runs the render under a gen-token watchdog — on supersede it resolves the render''s live pgid (GNU timeout
+    leads its OWN process group — verified empirically) and SIGKILLs render tree + __dub worker. Sandbox-verified:
+    normal path th:done+remux+upgrade intact; supersede kills render '
 claim:
   since: 2026-11-23 20:56
 ref: ADA-0156
