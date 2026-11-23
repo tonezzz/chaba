@@ -1,7 +1,7 @@
 id: storage-rebalance-underused
 title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
 column: doing
-updated: 2026-11-23 11:30
+updated: 2026-11-23 11:32
 brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
   and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
   to free space.
@@ -71,6 +71,15 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-20261123-113021-goal-rebalance-disk-usage-acro on tony-omen — claim
     committed but the response was lost (OPS-1071)
+- at: 2026-11-23 11:32
+  from: tony
+  text: 'Approved prod batch executed: idc03 precompact(31G)+devnest models(33G)+mddb-embed(2.8G) deleted; podman
+    pruned; / now 68% (96G free). Dell model-bench-dl+model-archive (34G) moved to /dell-backup/models with symlinks;
+    / now ~??. Offload script deployed to idc03. Remaining: chrome file-cache 40G clear (needs chrome stop), CascadeProjects
+    GC, journal vacuum, wire offload timer, and separate mddb-ops migration card.'
+- at: 2026-11-23 11:32
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
