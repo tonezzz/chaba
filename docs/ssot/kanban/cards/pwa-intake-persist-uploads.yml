@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
 column: doing
-updated: 2026-11-23 14:50
+updated: 2026-11-23 14:51
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -160,6 +160,16 @@ comms:
 - at: 2026-11-23 14:50
   from: tony-omen
   text: claimed
+- at: 2026-11-23 14:51
+  from: chaba
+  text: started devin-task-20261123-145126-goal-fix-pwa-document-intake-d on tony-omen (dispatch)
+- at: 2026-11-23 14:51
+  from: chaba
+  text: 'primer injected 8 lesson(s): [pwa-intake-persist-uploads] finished (failed): exit=1 20261117-233214-goal-fix-;
+    [pwa-intake-persist-uploads] merge-sweep: devin-task-20261117-233214-goal-fix-pw; "test_merge_sweep fixture
+    relied on global git identity — tony-dell has none (re; Check `sha256sum` of BOTH `~/.local/bin/runner-agent`
+    and `<exec checkout>/scrip; [ada-expert-consult-tool] Inspection: retry did not start code; tony-omen got HT;
+    [ansible-disk-headroom-harden] primer injected 8 lesson(s): ['
 requests:
 - id: the-pwa-document-intake-featur-096c1f
   ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
