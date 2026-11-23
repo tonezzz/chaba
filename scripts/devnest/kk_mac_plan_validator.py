@@ -11,7 +11,9 @@ import json
 import re
 import subprocess
 
-ALLOWED = {"summary", "operator_brief", "structured_extract", "safe_route"}
+# Mirrors kk_mac_llm.ALLOWED_TASKS — operator_brief/safe_route held
+# pending re-eval (card kk-mac-admitted-classes-narrow).
+ALLOWED = {"summary", "structured_extract"}
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
 FORBIDDEN = re.compile(r"\b(package_plan|planner|credential|secret|publish|delete|shell)\b", re.I)
 DEFAULT_REMOTE = "gdrive:ada-nest/devnest"

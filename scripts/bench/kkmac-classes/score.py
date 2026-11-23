@@ -42,7 +42,12 @@ import kk_mac_executor  # noqa: E402
 import kk_mac_llm  # noqa: E402
 
 JSON_CLASSES = kk_mac_executor.JSON_CLASSES
-TASK_CLASSES = kk_mac_executor.TASK_CLASSES
+# The bench scores classes whether or not they're currently admitted —
+# re-eval is the readmission gate (card kk-mac-admitted-classes-narrow
+# holds operator_brief/safe_route while kk_mac_llm.ALLOWED_TASKS is
+# narrowed). Gate corpus sanity on verifier-supported classes, not the
+# live admission set.
+TASK_CLASSES = JSON_CLASSES | {"summary"}
 
 
 def load_corpus(path):

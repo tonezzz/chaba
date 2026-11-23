@@ -212,8 +212,10 @@ EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
 # Bounded task classes the kk_mac_local executor may ever run — mirrors
 # scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
 # validates the contract without importing the devnest package).
+# operator_brief/safe_route held unadmitted pending re-eval — card
+# kk-mac-admitted-classes-narrow (2026-11-19 class eval).
 KK_MAC_TASK_CLASSES = {
-    "summary", "operator_brief", "structured_extract", "safe_route"}
+    "summary", "structured_extract"}
 # roots the kk_mac_local persisted artifact may land under — mirrors
 # kk_mac_executor.ARTIFACT_ROOTS
 KK_MAC_ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/",
@@ -438,13 +440,11 @@ def classify_lane(card: dict, with_detail: bool = False):
 KK_MAC_MAX_PROMPT_CHARS = 6000  # mirrors kk_mac_llm.MAX_PROMPT_CHARS
 KK_MAC_ROUTE_KW = {
     "summary": ("summar", "recap", "tl;dr", "tl dr"),
-    "operator_brief": ("operator_brief", "operator brief",
-                       "ops brief", "status brief"),
+    # held classes (operator_brief, safe_route) carry no keywords while
+    # unadmitted — an inferred class must stay inside
+    # KK_MAC_TASK_CLASSES or queue-time validation would refuse it
     "structured_extract": ("structured_extract", "extract the",
                            "extract a ", "extract key", "pull out"),
-    "safe_route": ("safe_route", "which lane", "route this",
-                   "triage this", "classify this", "categorize this",
-                   "categorise this"),
 }
 # mutation/side-effect intent — any hit keeps the card off the
 # read-only lane no matter which class matched. Deliberately not in
@@ -506,8 +506,8 @@ def kk_mac_route(card: dict) -> str:
             if any(k in text for k in kws):
                 tc = cls
                 break
-        if not tc:
-            return ""
+        if not tc or tc not in KK_MAC_TASK_CLASSES:
+            return ""  # keyword drift must never route a held class
     prompt = kk_mac_prompt(card)
     if not prompt or len(prompt) > KK_MAC_MAX_PROMPT_CHARS:
         return ""

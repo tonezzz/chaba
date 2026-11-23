@@ -64,10 +64,15 @@ Only bounded, read-only packages:
 
 ```text
 summary
-operator_brief
 structured_extract
-safe_route
 ```
+
+`operator_brief` and `safe_route` are held unadmitted pending re-eval
+(card `kk-mac-admitted-classes-narrow`; 2026-11-19 class eval scored
+them 0.31-0.60 under the production verifier — see
+`docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml`). They remain
+verifier-supported so `scripts/bench/kkmac-classes/` can re-prove them;
+they rejoin this list only after a passing re-bench.
 
 Every package carries:
 

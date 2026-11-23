@@ -170,8 +170,17 @@ class KkMacRouteUnitTest(unittest.TestCase):
     def test_keyword_infers_task_class(self):
         c = self._card(title="Summarize the overnight host report")
         self.assertEqual(self.dr.kk_mac_route(c), "summary")
-        c = self._card(title="Triage this alert into a lane")
-        self.assertEqual(self.dr.kk_mac_route(c), "safe_route")
+        c = self._card(title="Extract the host list from this digest")
+        self.assertEqual(self.dr.kk_mac_route(c), "structured_extract")
+
+    def test_held_class_keywords_not_routed(self):
+        # safe_route/operator_brief keywords were removed while the
+        # classes are unadmitted (kk-mac-admitted-classes-narrow) — a
+        # held-class inference must never reach queue validation
+        for title in ("Triage this alert into a lane",
+                      "Write an operator brief for last night"):
+            c = self._card(title=title)
+            self.assertEqual(self.dr.kk_mac_route(c), "", title)
 
     def test_executor_pin_wins(self):
         c = self._card(action={"executor": "devin",

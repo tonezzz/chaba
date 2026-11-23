@@ -23,7 +23,11 @@ if __package__:
 else:
     from kk_mac_admission import snapshot
 
-TASK_CLASSES = {"summary", "operator_brief", "structured_extract", "safe_route"}
+# Admitted task classes — mirrors kk_mac_llm.ALLOWED_TASKS; the
+# operator_brief/safe_route hold is card kk-mac-admitted-classes-narrow
+# (2026-11-19 eval: not ready — see docs/ssot/jobs/devnest/
+# 2026-11-19-kkmac-class-eval.yml).
+TASK_CLASSES = {"summary", "structured_extract"}
 TASK_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
 DEFAULT_REMOTE = "gdrive:ada-nest/kk-llm"
 
