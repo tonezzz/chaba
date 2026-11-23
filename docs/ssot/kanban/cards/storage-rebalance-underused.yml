@@ -1,0 +1,21 @@
+id: storage-rebalance-underused
+title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
+column: backlog
+updated: 2026-11-23 07:13
+brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
+  and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
+  to free space.
+priority: medium
+tags:
+- ansible
+- storage
+- infrastructure
+spec: 'GOAL: rebalance disk usage across the fleet. Move heavy consumers (yt-live-media cache, backups, mddb data,
+  large logs) from idc03 and tony-dell onto con01/idc02. Add an underused signal (mount < 50% used or > 100 GiB
+  free) to disk-headroom.yml and disk-trend-watch.py so over-provisioned hosts surface. Consider capacity planning:
+  downsize con01/idc02 or expand idc03/tony-dell.'
+ref: OPS-0017
+comms:
+- at: 2026-11-23 07:13
+  from: tony
+  text: card captured via board-api
