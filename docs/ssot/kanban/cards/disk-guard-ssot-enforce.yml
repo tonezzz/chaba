@@ -1,7 +1,7 @@
 id: disk-guard-ssot-enforce
 title: Enforce SSOT disk thresholds in disk-trend-watch.py (max_root_disk_percent + 15 GiB floor)
 column: doing
-updated: 2026-11-23 11:04
+updated: 2026-11-23 11:07
 brief: disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01).
   tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
 priority: medium
@@ -52,6 +52,10 @@ comms:
     Host Hygiene Rules — how machines stay cl; runbook docs/kb/host-reboot-verification.md: Host Reboot Verification
     Runbook — ; Generated `jobs.tony_dell.yml` uses ssot host ids with underscores — normalize `; [ansible-host-baseline-scaffold]
     primer injected 8 lesson(s):'
+- at: 2026-11-23 11:07
+  from: devin
+  text: 'picked up: adding per-host max_root_disk_percent + 15GiB floor + underused signal to disk-trend-watch.py,
+    parity with disk-headroom.yml'
 action:
   type: dispatch
   status: running
