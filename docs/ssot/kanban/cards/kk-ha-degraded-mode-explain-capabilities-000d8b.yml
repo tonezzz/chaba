@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
 column: backlog
-updated: 2026-11-23 19:11
+updated: 2026-11-23 20:03
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -188,6 +188,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 20:03
+  from: chaba
+  text: classified as devin (fallback conf 0.00)
+- at: 2026-11-23 20:03
+  from: tony
+  text: queued for processing
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -219,13 +225,12 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
-  lane: codemod
-  lane_source: kw
-  runner: tony-omen
+  status: queued
+  lane: devin
+  lane_source: fallback
   result: 'exit=1 evin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''.
     | devin-task-20261117-233721-kk-ha-degraded-mode-explain-ca.service: Consumed 1.042s CPU time over 11.508s wall
     clock time, 75.2M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
-awaiting_action: true
+claim: {}
