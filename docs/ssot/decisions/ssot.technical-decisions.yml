@@ -640,6 +640,41 @@ decisions:
       - docs/ssot/ssot.knowledge-capture.yml
       - scripts/chaba/capture-apply.py
 
+  - id: wiki-h3-pluggableauth-button-label
+    date: "2026-11-23"
+    title: Fix the PluggableAuth "0" login button on wiki.h3.gizmo-thailand.com via buttonLabelMessage
+    status: accepted
+    context: >-
+      OPS-0029 (created by the one approved capture apply) asked to polish the wiki
+      login leftover from the closed OPS-0066 card. Live Special:UserLogin on both
+      h3 and surf-thailand rendered the PluggableAuth submit button with the literal
+      label "0". PluggableAuth 7.5.0 PluggableAuthFactory.php:107-110 falls back to
+      RawMessage(strval($configId)) when a config entry omits buttonLabelMessage.
+    options:
+      - label: Patch the vendor extension source over FTP
+        pros: [direct]
+        cons: [vendor file, lost on upgrade, no audit trail]
+      - label: Add a MediaWiki message page + buttonLabelMessage in LocalSettings.php
+        pros: [supported extension config, auditable message revision, reversible backup]
+        cons: [one canonical file edit on a prod host]
+      - label: Leave as cosmetic
+        pros: [no prod touch]
+        cons: [confusing login UX persists]
+    chosen: MediaWiki:pluggableauth-google-label message + buttonLabelMessage in LocalSettings.php (h3 only)
+    reasoning: >-
+      The extension exposes a first-class config key; using it avoids vendor edits.
+      A dedicated message page (rev 444) keeps the label content auditable. The
+      LocalSettings.php edit used an exact-match assertion plus a named backup, so
+      rollback is a file swap. Surface verification was required before claiming done.
+    consequences:
+      - h3 Special:UserLogin now renders "Sign in with Google" (surface-verified 2x cache-busted)
+      - backup LocalSettings.php.devin-backup-buttonlabel-20261123-075434 on the FTP root
+      - wiki.surf-thailand.com has the same cosmetic defect but was NOT touched (separate host, needs approval)
+      - OPS-0029 item (2) iframe UX remains open as a board request with options
+    related:
+      - OPS-0029 (backlog)
+      - OPS-0066 (done, closed precursor)
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

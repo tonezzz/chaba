@@ -366,6 +366,31 @@ sessions:
     kb_items:
       - docs/ssot/ssot.knowledge-capture.yml (gated apply write path section)
 
+  - date: "2026-11-23"
+    focus: Triage OPS-0029 from the approved capture apply (wiki login polish)
+    source: Tony said "please proceed" after the OPS-0029 triage recommendation
+    plan:
+      - Verify live board state before acting (not memory)
+      - Fix safely-fixable infra drift (runner-agent on tony-omen)
+      - Fix the confirmed h3 PluggableAuth button-label defect with backup + surface verification
+      - Route the unresolved iframe UX decision to a durable board request
+    done:
+      - tony-omen runner-agent drift fixed (installed md5 e9cbd25e... matches repo HEAD); backup runner-agent.bak-20261123-145018
+      - Confirmed "0" label live on both wiki hosts; PluggableAuth 7.5.0 uses buttonLabelMessage
+      - Created MediaWiki:pluggableauth-google-label (rev 444) + buttonLabelMessage in LocalSettings.php on h3 with named backup; byte-for-byte readback
+      - Surface-verified h3 login button renders "Sign in with Google" (2x cache-busted)
+      - OPS-0029 evidence comm + open request ops-0029-item-2-decision-needed-google-s-3917cf with 3 options
+    follow_up:
+      - Tony to choose iframe UX treatment (weblink card recommended / userloginprompt note / defer-close); live HA dashboard push needs same-session approval
+      - wiki.surf-thailand.com cosmetic "0" label unchanged; needs separate host approval
+      - idc02 SSH key denies access; its drift comms are stale/unrelated
+    next_action: Await the OPS-0029 request answer; do not push dashboard or touch surf-thailand without approval
+    decisions:
+      - id: wiki-h3-pluggableauth-button-label
+        title: Use buttonLabelMessage + MediaWiki message on h3, backup before edit, h3-only scope
+    kb_items:
+      - docs/ssot/decisions/ssot.technical-decisions.yml (wiki-h3-pluggableauth-button-label)
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
