@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: backlog
-updated: 2026-11-23 21:19
+column: doing
+updated: 2026-11-23 21:23
 brief: probe
 ref: OPS-0812
 comms:
@@ -312,6 +312,9 @@ comms:
 - at: 2026-11-23 21:19
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 21:23
+  from: mn01
+  text: claimed
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -347,7 +350,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
@@ -357,8 +360,10 @@ action:
     zero_commit: 2026-11-17 23:41
     failed_noted: 2026-11-17 23:55
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
-claim: {}
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-23 21:23
 spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and tony-dell)
   by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent
   on each respective host. Verify that each host successfully runs the updated runner-agent without drift errors.
-awaiting_action: true
