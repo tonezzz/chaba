@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
 column: backlog
-updated: 2026-11-23 14:20
+updated: 2026-11-23 14:41
 priority: medium
 tags:
 - mddb
@@ -297,10 +297,13 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:41
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: codemod
   executor: devin
   sweep:
@@ -310,11 +313,7 @@ action:
   last_failure: 'journal=exit-code sk-20261120-210254-scripts-embed-embed-lane-py-do.service: Failed with result
     ''exit-code''. | devin-task-20261120-210254-scripts-embed-embed-lane-py-do.service: Consumed 35.526s CPU time
     over 1min 42.961s wall clock time, 259.6M memory peak.'
-  attempts: 2
-  result: 'journal=exit-code sk-20261120-210254-scripts-embed-embed-lane-py-do.service: Failed with result ''exit-code''.
-    | devin-task-20261120-210254-scripts-embed-embed-lane-py-do.service: Consumed 35.526s CPU time over 1min 42.961s
-    wall clock time, 259.6M memory peak.'
-  runner: tony-macbook
+  attempts: 0
 review_kind: verify
 claim:
   since: 2026-11-20 21:00
