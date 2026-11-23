@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
 column: done
-updated: 2026-11-23 14:20
+updated: 2026-11-23 16:21
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -195,6 +195,10 @@ comms:
 - at: 2026-11-23 14:20
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
