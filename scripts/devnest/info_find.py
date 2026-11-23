@@ -523,6 +523,16 @@ def rank(envelopes: list, max_results: int) -> list:
     return out[:max(10, max_results)]
 
 
+def _resolved_ref(results: list) -> str | None:
+    """Top ranked citation, used as the resolved_ref in the time-to-find audit."""
+    if not results:
+        return None
+    top = results[0]
+    cit = top.get("citation") or {}
+    return (str(cit.get("path") or cit.get("id") or top.get("path")
+                or top.get("excerpt", "")[:60]) or None)
+
+
 def audit_append(audit_path: str, rec: dict) -> None:
     p = Path(audit_path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -574,12 +584,24 @@ def run(query: str, session: str, project: str, root: Path, *,
     key = hashlib.sha256(query.encode()).hexdigest()[:16]
     (Path(plan["cache_dir"]) / f"{key}-result.json").write_text(
         json.dumps(out, indent=1))
+    # Phase D time-to-find telemetry: the per-source elapsed_ms already lived
+    # in the result cache; surface the totals + resolved citation in the audit
+    # so capture-metrics.py can aggregate without a second telemetry path.
     audit_append(plan["audit_path"],
                  {"kind": "run", "query": query,
                   "intent": plan["intent"],
                   "statuses": {s: v.get("status")
                                for s, v in statuses.items()},
-                  "result_count": len(results)})
+                  "result_count": len(results),
+                  "total_elapsed_ms": sum(v.get("elapsed_ms", 0)
+                                          for v in statuses.values()),
+                  "elapsed_by_source": {
+                      s: v["elapsed_ms"] for s, v in statuses.items()
+                      if "elapsed_ms" in v},
+                  "source_sequence": [s for s in SOURCES_ALL
+                                      if statuses.get(s, {}).get("status")
+                                      != STATUS_SKIPPED],
+                  "resolved_ref": _resolved_ref(results)})
     return out
 
 

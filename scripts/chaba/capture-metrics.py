@@ -23,7 +23,9 @@ from __future__ import annotations
 import argparse
 import collections
 import datetime as dt
+import json
 import re
+import statistics
 import sys
 import tempfile
 from pathlib import Path
@@ -49,6 +51,8 @@ PRODUCER_PATTERNS = (
 
 POINTER_SINKS = {"ssot", "kb", "oc-note"}
 MISS_INSTRUMENTED_SINCE = "2026-11-23"
+POINTER_LOG = Path.home() / ".local/share/chaba/capture/pointer-incidents.yml"
+INFO_FIND_AUDIT_ROOT = Path.home() / ".cache/devin/info-find"
 
 
 def is_producer_artifact(source_id: str) -> bool:
@@ -144,10 +148,12 @@ def miss_signal(repo: Path = REPO) -> dict[str, Any]:
     }
 
 
-def stale_pointer_signal(entries: list[dict[str, Any]], max_age_days: int = 30) -> dict[str, Any]:
-    """Proxy only: old-as_of capture candidates aimed at pointer sinks.
+def stale_pointer_signal(entries: list[dict[str, Any]], max_age_days: int = 30,
+                         log: Path = POINTER_LOG) -> dict[str, Any]:
+    """Measured from the local stale-pointer log when instrumented.
 
-    These are candidates for review, not recorded stale-pointer incidents.
+    Falls back to the pre-instrumentation proxy (old-as_of pointer candidates)
+    when no log exists. The proxy is never presented as recorded incidents.
     """
     candidates = []
     for e in entries:
@@ -156,35 +162,100 @@ def stale_pointer_signal(entries: list[dict[str, Any]], max_age_days: int = 30) 
         age = _staleness_days(str(e.get("as_of") or "")[:10])
         if age is not None and age > max_age_days:
             candidates.append(e)
-    return {
+    proxy_count = len(candidates)
+    proxy = {
         "status": "proxy",
         "source": f"capture ledger: pointer-sink candidates older than {max_age_days}d",
         "as_of": AS_OF,
-        "count": len(candidates),
+        "count": proxy_count,
         "by_sink": dict(collections.Counter(e.get("proposed_sink") for e in candidates)),
         "caveat": "Capture candidates for review; NOT recorded incidents. No incident log exists.",
         "proposal": (
-            "Add a pointer-incident log (OpenChamber knowledge note or "
-            "docs/ssot/chaba/ssot.chaba.memory.yml) written when a pointer is "
-            "found stale: {pointer_ref, as_of, canonical_ref, found_at, fix}. "
-            "Repeated hits on one pointer promote to a card."
+            "Record incidents via `python3 scripts/chaba/pointer-stale-add.py "
+            "--pointer-ref <ref> --canonical-ref <ref>`; the local log is "
+            "~/.local/share/chaba/capture/pointer-incidents.yml."
         ),
         "owner": "info-find / session-capture",
     }
+    if not log.exists():
+        return proxy
 
-
-def time_to_find_signal() -> dict[str, Any]:
+    incidents = [i for i in (_load_yaml(log).get("incidents") or [])
+                 if isinstance(i, dict)]
+    by_pointer = dict(collections.Counter(i.get("pointer_ref") for i in incidents))
+    dates = sorted({str(i.get("found_at") or "")[:10]
+                    for i in incidents if i.get("found_at")})
     return {
-        "status": "unmeasurable",
-        "source": "none (no lookup telemetry in SSOT, nlmq, chaba-ask, or info-find)",
-        "as_of": AS_OF,
-        "proposal": (
-            "Emit a small event from info-find / chaba-ask / nlmq on each lookup: "
-            "{ts, query_domain, source_sequence, resolved_ref, elapsed_ms}. "
-            "Keep it local-only (capture dir), never in canonical sinks. "
-            "Time-to-find = elapsed_ms and number of source hops before resolution."
+        "status": "measured",
+        "source": str(log),
+        "as_of": dates[-1] if dates else "2026-11-23",
+        "count": len(incidents),
+        "by_pointer": by_pointer,
+        "repeat_pointers": {k: v for k, v in by_pointer.items() if v >= 3},
+        "by_fix": dict(collections.Counter(i.get("fix") for i in incidents)),
+        "proxy_candidates": proxy_count,
+        "promotion_threshold": "3+ hits on one pointer_ref -> card (not enforced)",
+        "refresh": "python3 scripts/chaba/pointer-stale-add.py --pointer-ref ... --canonical-ref ...",
+    }
+
+
+def _audit_runs(root: Path) -> list[dict[str, Any]]:
+    """Read info_find.py run audits (local cache, one ndjson per session)."""
+    runs: list[dict[str, Any]] = []
+    if not root.exists():
+        return runs
+    for path in root.rglob("audit.ndjson"):
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if '"kind"' not in line:
+                    continue
+                rec = json.loads(line)
+                if rec.get("kind") == "run":
+                    runs.append(rec)
+        except (OSError, ValueError):
+            continue  # one corrupt/removed audit must not break the report
+    return runs
+
+
+def time_to_find_signal(root: Path = INFO_FIND_AUDIT_ROOT) -> dict[str, Any]:
+    """Measured from info_find.py's per-session audit (local-only telemetry)."""
+    runs = [r for r in _audit_runs(root) if "total_elapsed_ms" in r]
+    if not runs:
+        return {
+            "status": "unmeasurable",
+            "source": f"no info_find run audits with total_elapsed_ms under {root}",
+            "as_of": AS_OF,
+            "proposal": (
+                "Run `python3 scripts/devnest/info_find.py run --query '...'` to "
+                "write audit.ndjson; the run record now carries total_elapsed_ms, "
+                "elapsed_by_source, source_sequence and resolved_ref."
+            ),
+            "owner": "info-find skill",
+        }
+    elapsed = sorted(int(r["total_elapsed_ms"]) for r in runs)
+    hops = [len(r.get("source_sequence") or []) for r in runs]
+    resolved = sum(1 for r in runs if r.get("resolved_ref"))
+    per_source: dict[str, list[int]] = collections.defaultdict(list)
+    for r in runs:
+        for src, ms in (r.get("elapsed_by_source") or {}).items():
+            per_source[str(src)].append(int(ms))
+    return {
+        "status": "measured",
+        "source": f"info_find.py audit.ndjson under {root}",
+        "as_of": max(str(r.get("t") or "")[:10] for r in runs),
+        "count": len(runs),
+        "median_elapsed_ms": int(statistics.median(elapsed)),
+        "mean_elapsed_ms": round(sum(elapsed) / len(elapsed), 1),
+        "max_elapsed_ms": elapsed[-1],
+        "resolved_pct": round(100 * resolved / len(runs), 1),
+        "mean_source_hops": round(sum(hops) / len(hops), 2),
+        "mean_elapsed_by_source_ms": {
+            s: round(sum(v) / len(v), 1) for s, v in sorted(per_source.items())},
+        "caveat": (
+            "Local cache telemetry: clearing ~/.cache/devin/info-find resets the "
+            "sample. Covers info_find source time only, not agent-tool merge time."
         ),
-        "owner": "info-find skill",
+        "refresh": "python3 scripts/devnest/info_find.py run --query '...'",
     }
 
 
@@ -248,7 +319,9 @@ def render(entries: list[dict[str, Any]], ledger: Path) -> str:
     ]
     for label, s in signals:
         value = ""
-        for key in ("total_asks", "count", "asks_per_week", "misses_per_week", "stale_days"):
+        for key in ("total_asks", "count", "asks_per_week", "misses_per_week",
+                    "median_elapsed_ms", "resolved_pct", "mean_source_hops",
+                    "stale_days"):
             if key in s and s[key] is not None:
                 value += f"{key}={s[key]} "
         value = value.strip() or s["status"]
@@ -325,7 +398,40 @@ def self_test() -> int:
         assert ms["instrumented_since"] == MISS_INSTRUMENTED_SINCE
         reg.write_text("topics: []\n", encoding="utf-8")
         assert miss_signal(Path(d))["status"] == "unmeasurable"
-    print("self-test: 14/14 passed")
+
+    with tempfile.TemporaryDirectory() as d:
+        log = Path(d) / "pointer-incidents.yml"
+        assert stale_pointer_signal(entries, log=log)["status"] == "proxy"
+        log.write_text(
+            "incidents:\n"
+            "  - {pointer_ref: docs/ssot/a.yml, canonical_ref: docs/ssot/b.yml, found_at: '2026-11-23'}\n"
+            "  - {pointer_ref: docs/ssot/a.yml, canonical_ref: docs/ssot/c.yml, found_at: '2026-11-23'}\n"
+            "  - {pointer_ref: docs/ssot/a.yml, canonical_ref: docs/ssot/d.yml, found_at: '2026-11-23'}\n"
+            "  - {pointer_ref: docs/kb/x.md, canonical_ref: docs/kb/y.md, found_at: '2026-11-23'}\n",
+            encoding="utf-8",
+        )
+        sp = stale_pointer_signal(entries, log=log)
+        assert sp["status"] == "measured" and sp["count"] == 4, sp
+        assert "docs/ssot/a.yml" in sp["repeat_pointers"], sp
+
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        audit = root / "session/audit.ndjson"
+        audit.parent.mkdir(parents=True)
+        audit.write_text("\n".join(json.dumps(r) for r in [
+            {"kind": "run", "t": "2026-11-23T10:00:00+00:00", "total_elapsed_ms": 100,
+             "resolved_ref": "docs/ssot/a.yml", "source_sequence": ["mddb", "ssot"],
+             "elapsed_by_source": {"mddb": 80, "ssot": 20}},
+            {"kind": "run", "t": "2026-11-23T11:00:00+00:00", "total_elapsed_ms": 200,
+             "resolved_ref": None, "source_sequence": ["ssot"],
+             "elapsed_by_source": {"ssot": 200}},
+        ]) + "\n", encoding="utf-8")
+        tf = time_to_find_signal(root)
+        assert tf["status"] == "measured" and tf["count"] == 2, tf
+        assert tf["median_elapsed_ms"] == 150, tf
+        assert tf["resolved_pct"] == 50.0, tf
+        assert time_to_find_signal(root / "missing")["status"] == "unmeasurable"
+    print("self-test: 21/21 passed")
     return 0
 
 

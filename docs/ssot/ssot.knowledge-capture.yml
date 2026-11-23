@@ -271,12 +271,17 @@ sections:
           also unmasked dispatch-outcome creates; outcomes are filed artifacts too.
           Miss rate: measured from the `misses:` block of ssot.repeat-asks.yml (instrumented
           2026-11-23; empty at instrumentation, so 0 so far is not evidence of no misses).
+          Stale-pointer incidents: measured from the local pointer-incidents.yml log; the
+          old-as_of candidate count is retained as a proxy_candidates field, never as incidents.
+          Time-to-find: measured from info_find.py's per-session audit.ndjson (total_elapsed_ms,
+          elapsed_by_source, source_sequence, resolved_ref); local cache telemetry, cleared cache
+          resets the sample. Empty logs mean the source exists, not that events never happened.
           Source: scripts/chaba/capture-metrics.py.
       - label: Unmeasurable signals (no durable source)
         text: >-
-          Stale-pointer incidents: no incident log (only a proxy count of old-as_of pointer candidates).
-          Time-to-find: no lookup telemetry. Report each as unmeasurable with a proposal; never
-          present a proxy as a measured incident count.
+          None at current instrumentation. Each signal's script retains an `unmeasurable` fallback
+          with a concrete proposal for the case where its source file is absent (older checkout,
+          fresh host). A proxy is still labelled `proxy`, never presented as measured incidents.
       - label: Miss log write path
         text: >-
           A reply-only lesson/answer is a miss. Append via
@@ -284,12 +289,20 @@ sections:
           --should-have-been <sink-ref> --evidence <pointer>` (deduped by topic+at+location+
           should-have-been; textual, comment-preserving write to the `misses:` block only).
           Commit through the governed SSOT path from a worktree, not the live checkout.
+      - label: Stale-pointer and lookup write paths
+        text: >-
+          Record a stale pointer with `python3 scripts/chaba/pointer-stale-add.py --pointer-ref <ref>
+          --canonical-ref <ref> [--as-of <date>] [--fix <text>]` (local capture log, deduped by
+          pointer_ref+canonical_ref+found_at; --init creates the schema). Time-to-find is written by
+          `python3 scripts/devnest/info_find.py run --query '...'` into its per-session audit.ndjson.
+          Neither writes a canonical sink; both are local-only telemetry.
       - label: Promotion thresholds (proposed; --apply remains gated)
         text: >-
           Never auto-create a kanban card from a focus-inbox producer artifact or a dispatch outcome;
           route to an evidence pointer on the existing artifact. link/skip are safe; create requires
           an uncaptured source or explicit approval. FILED_RE requires hyphenated card/lesson slugs
           and excludes 8-digit dates, so "card spec" and "20261119" cannot collapse proposals.
+          3+ stale-pointer hits on one pointer_ref promote to a kanban card (reported, not enforced).
       - label: Refresh
         text: >-
           Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
