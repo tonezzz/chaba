@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
-column: doing
-updated: 2026-11-23 14:56
+column: review
+updated: 2026-11-23 14:57
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -523,14 +523,39 @@ comms:
     lane-savings EXECUTOR_LANES (kk_mac_local/jules/nlm_batch now attribute correctly — verified live), qwen3:8b->qwen2.5:32b
     repin x5 files, devnest-lanes note. Then merged current origin/master (19 drifted commits) in — branch is 0
     behind, should fast-forward clean through mer'
+- at: 2026-11-23 14:57
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ted; tool-call leg-3 still awaits 2 more qualifying eval runs (deference 0.878 <
+    0.90). | devin-task-20261123-145'
+- at: 2026-11-23 14:57
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 14:57
+  from: chaba
+  text: 'session-end checkpoint e44678d7: 1 leftover file(s) committed'
+- at: 2026-11-23 14:57
+  from: chaba
+  text: banked 160 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 14:57
+  from: chaba
+  text: pushed dispatch/20261123-145003-card-judgment-eval-done-2026-1 to origin
+- at: 2026-11-23 14:57
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 14:57
+  from: chaba
+  text: auto-merged a9e3584c (dispatch/20261123-145003-card-judgment-eval-done-2026-1) → origin/master
+- at: 2026-11-23 14:57
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   lane: devin
-  result: 'exit=0 can be dropped — the merge-conflict requests on the card are resolved by this re-land. | devin-task-20261118-184235-card-judgment-eval-done-2026-1.service:
-    Consumed 2min 8.879s CPU time over 5min 44.749s wall clock time, 915.9M memory peak.'
+  result: 'exit=0 ted; tool-call leg-3 still awaits 2 more qualifying eval runs (deference 0.878 < 0.90). | devin-task-20261123-145003-card-judgment-eval-done-2026-1.service:
+    Consumed 2min 55.852s CPU time over 6min 34.362s wall clock time, 384M memory peak.'
   sweep:
     stale_running: 2026-11-13 20:40
     dirty: 1
@@ -539,6 +564,7 @@ action:
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
   runner: tony-macbook
   attempts: 1
+  verified: true
 requests:
 - id: approve-gateway-leg-placement-proposal-i-9310b0
   ask: 'Approve gateway leg placement? Proposal in docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml.
