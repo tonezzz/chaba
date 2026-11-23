@@ -1,7 +1,7 @@
 id: ada-dispatch-approve-button
 title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
-column: doing
-updated: 2026-11-23 15:20
+column: backlog
+updated: 2026-11-23 15:21
 priority: medium
 tags:
 - ada
@@ -161,14 +161,26 @@ comms:
   from: devin
   text: '[dispatch] resumed worktree — core code already landed in 4df0e492 (respond-time option action exec, verified/unverified
     lifecycle pushes). Verifying tests + finishing approve-ask.py + runbook doc now.'
+- at: 2026-11-23 15:21
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-151040-tony-s-flow-ada-shows-menu-opt.service: Failed with result ''exit-code''.
+    | devin-task-20261123-1510 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 15:21
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt (rate limit)
+    — tony-macbook holds new claims ~30m
 review_kind: verify
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  runner: tony-macbook
   attempts: 1
+  result: 'exit=1 0261123-151040-tony-s-flow-ada-shows-menu-opt.service: Failed with result ''exit-code''. | devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt.service:
+    Consumed 1min 9.774s CPU time over 10min 7.527s wall clock time, 458.5M memory peak.'
+  last_failure: 'exit=1 0261123-151040-tony-s-flow-ada-shows-menu-opt.service: Failed with result ''exit-code''.
+    | devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt.service: Consumed 1min 9.774s CPU time over 10min
+    7.527s wall clock time, 458.5M memory peak.'
 claim:
   since: 2026-11-23 15:10
