@@ -6,18 +6,17 @@ area: input-bridge
 priority: high
 metric: audit-cast.service exits 0 every 5min tick
 verify: systemctl --user status audit-cast shows 'success' result on tony-dell
-note: 'DONE 2026-10-04: fix applied to ~/.local/bin/audit-cast.sh at 12:02 (parallel session — file is
-  host-local, not repo-tracked). Verified: 4 consecutive exit-0 ticks 14:00-14:15, Result=success. Follow-up:
-  script should live in the repo (scripts/ or a job) so fixes are versioned — folded into vcast-input-bridge
-  card.'
+note: 'DONE 2026-10-04: fix applied to ~/.local/bin/audit-cast.sh at 12:02 (parallel session — file is host-local,
+  not repo-tracked). Verified: 4 consecutive exit-0 ticks 14:00-14:15, Result=success. Follow-up: script should
+  live in the repo (scripts/ or a job) so fixes are versioned — folded into vcast-input-bridge card.'
 help: journalctl --user -u audit-cast; fix the unbound var in the script
-updated: 2026-11-21 17:44
+updated: 2026-11-23 14:05
 comms:
 - at: 2026-10-04 12:02
   from: devin
-  text: 'Fixed 12:02 — CB_RSS was a leftover from the removed cast-browser RSS check (moved to omen);
-    dropped the dead field, set -u no longer dies. Verified: exits 0, writes ok line. The xiaomi_c201
-    0-consumer WARN is still firing correctly (real go2rtc outage, separate issue).'
+  text: 'Fixed 12:02 — CB_RSS was a leftover from the removed cast-browser RSS check (moved to omen); dropped the
+    dead field, set -u no longer dies. Verified: exits 0, writes ok line. The xiaomi_c201 0-consumer WARN is still
+    firing correctly (real go2rtc outage, separate issue).'
 - at: 2026-10-04 12:02
   from: tony
   text: closed by Tony
@@ -34,9 +33,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-14 17:16
   from: chaba
-  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence
-    comms. Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion
-    is obsolete.'
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
 - at: 2026-11-17 18:07
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -65,16 +63,16 @@ comms:
   text: moved review -> backlog
 - at: 2026-11-18 01:20
   from: backlog-spec-enrich
-  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-18 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-18 13:20
   from: backlog-spec-enrich
-  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note explicitly states the fix was already applied on 2026-10-04 and any remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-18 17:19
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -89,8 +87,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-18 19:20
   from: backlog-spec-enrich
-  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and any remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and any remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-18 21:18
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -105,12 +103,12 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-19 01:20
   from: backlog-spec-enrich
-  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and the remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and the remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-19 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and the remaining
-    follow-up was folded into the vcast-input-bridge card.
+  text: skipped — The card note indicates the fix was already applied on 2026-10-04 and the remaining follow-up
+    was folded into the vcast-input-bridge card.
 - at: 2026-11-19 17:02
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -129,72 +127,72 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-20 01:20
   from: backlog-spec-enrich
-  text: skipped — The note confirms the task was already completed on 2026-10-04, with follow-up work
-    folded into the vcast-input-bridge card.
+  text: skipped — The note confirms the task was already completed on 2026-10-04, with follow-up work folded into
+    the vcast-input-bridge card.
 - at: 2026-11-20 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the task was already completed on 2026-10-04, with any remaining
-    follow-up work folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the task was already completed on 2026-10-04, with any remaining follow-up
+    work folded into the vcast-input-bridge card.
 - at: 2026-11-20 13:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the task was already completed on 2026-10-04, with remaining
-    follow-up work folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the task was already completed on 2026-10-04, with remaining follow-up
+    work folded into the vcast-input-bridge card.
 - at: 2026-11-20 18:50
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-20 19:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the task was already completed on 2026-10-04, and remaining follow-up
-    work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the task was already completed on 2026-10-04, and remaining follow-up work
+    has been folded into the vcast-input-bridge card.
 - at: 2026-11-21 01:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the task was already completed on 2026-10-04, with any remaining
-    follow-up work folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the task was already completed on 2026-10-04, with any remaining follow-up
+    work folded into the vcast-input-bridge card.
 - at: 2026-11-21 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any
-    remaining follow-up work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any remaining
+    follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-21 13:20
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any
-    remaining follow-up work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any remaining
+    follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-21 17:44
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-21 19:21
   from: backlog-spec-enrich
-  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any
-    remaining follow-up work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note confirms the audit-cast fix was already completed on 2026-10-04, and any remaining
+    follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-22 01:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent comms confirm that the audit-cast fix was already completed
-    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note and recent comms confirm that the audit-cast fix was already completed on 2026-10-04,
+    and any remaining follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-22 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent communications confirm that the audit-cast fix was already
-    completed on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge
-    card.
+  text: skipped — The card note and recent communications confirm that the audit-cast fix was already completed
+    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-22 13:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent communications confirm that the audit-cast fix was already
-    completed on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge
-    card.
+  text: skipped — The card note and recent communications confirm that the audit-cast fix was already completed
+    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-22 19:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent comms confirm that the audit-cast fix was already completed
-    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
+  text: skipped — The card note and recent comms confirm that the audit-cast fix was already completed on 2026-10-04,
+    and any remaining follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-23 07:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent communications confirm that the audit-cast fix was already
-    completed on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge
-    card.
+  text: skipped — The card note and recent communications confirm that the audit-cast fix was already completed
+    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
 - at: 2026-11-23 13:20
   from: backlog-spec-enrich
-  text: skipped — The card note and recent communications confirm that the audit-cast fix was already
-    completed on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge
-    card.
+  text: skipped — The card note and recent communications confirm that the audit-cast fix was already completed
+    on 2026-10-04, and any remaining follow-up work has been folded into the vcast-input-bridge card.
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 ref: AUD-0013
