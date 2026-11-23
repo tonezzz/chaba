@@ -1,6 +1,6 @@
 id: opencode-ada-ha-tab-standard
 title: Add OpenCode/Ada tab after Board with standard protected app integration
-column: backlog
+column: done
 updated: 2026-11-23 15:59
 brief: Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard,
   using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.
@@ -24,6 +24,7 @@ spec: 'Assess whether the tab should embed (A) the full OpenCode web UI behind a
   is verified.'
 action:
   type: manual
+  status: done
 note: Current live order is Pair -> Board -> Cline -> DevNest(Node-RED) -> Ada Pages... Cline follows the strongest
   root-host + Access + JWT-proxy pattern. Board uses a protected app iframe. DevNest currently points directly to
   a tailnet :8080 Node-RED path and uses aspect_ratio, so it is not fully aligned with the full-page iframe standard.
@@ -159,6 +160,9 @@ comms:
 - at: 2026-11-23 15:59
   from: chaba
   text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-23 15:59
+  from: tony
+  text: closed by tony
 requests:
 - id: choose-the-first-opencode-ada-dashboard-66e7fd
   ask: Choose the first OpenCode/Ada dashboard surface for the tab immediately after Board.
@@ -175,4 +179,3 @@ requests:
   suggested: control-plane
   answer: 'control-plane — Recommended: protected read-only Ada/OpenCode control plane (debug/status/plan/handoff/self-test/session
     receipts); no full agent UI or writes.'
-awaiting_action: true
