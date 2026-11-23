@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
-column: doing
-updated: 2026-11-23 20:53
+column: done
+updated: 2026-11-23 20:54
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -10,7 +10,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
@@ -20,6 +20,9 @@ action:
     | devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
     wall clock time, 566.7M memory peak.'
   runner: mn01
+  result: 'exit=0 spatch-outcome-20261123-134412-the-kk-mac-local-lane-admits-4.md`; card comms posted. | devin-task-20261123-134412-the-kk-mac-local-lane-admits-4.service:
+    Consumed 1min 12.086s CPU time over 7min 53.702s wall clock time, 735.9M memory peak.'
+  verified: true
 ref: OPS-0219
 comms:
 - at: 2026-11-19 08:58
@@ -331,6 +334,37 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261123-134412-the-kk-mac-local-lane-admits-4 no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-23 20:53
+  from: mn01
+  text: 'finished (ok): exit=0 spatch-outcome-20261123-134412-the-kk-mac-local-lane-admits-4.md`; card comms posted.
+    | devin-task-20261123-13441'
+- at: 2026-11-23 20:54
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 20:54
+  from: chaba
+  text: 'session-end checkpoint d977c4c6: 1 leftover file(s) committed'
+- at: 2026-11-23 20:54
+  from: chaba
+  text: banked 224 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 20:54
+  from: chaba
+  text: pushed dispatch/20261123-134412-the-kk-mac-local-lane-admits-4 to origin
+- at: 2026-11-23 20:54
+  from: chaba
+  text: 'merge-sweep: merged 5c766468 (dispatch/20261123-134412-the-kk-mac-local-lane-admits-4 from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261123-134412-the-kk-mac-local-lane-admits-4.md)
+    — auto-closed'
+- at: 2026-11-23 20:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 20:54
+  from: chaba
+  text: auto-merged 5c766468 (dispatch/20261123-134412-the-kk-mac-local-lane-admits-4) → origin/master
 review_kind: verify
 claim:
   since: 2026-11-23 20:43
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 20:54
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261123-134412-the-kk-mac-local-lane-admits-4.md
