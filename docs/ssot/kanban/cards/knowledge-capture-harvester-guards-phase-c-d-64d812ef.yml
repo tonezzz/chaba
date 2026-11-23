@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 09:47
+updated: 2026-11-23 10:59
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -52,4 +52,11 @@ comms:
     (3 approved sources: card-comms/focus-inbox/dispatch-outcome; proposal report + append-only ledger; no --apply,
     no timer). Deterministic/no-LLM, DEV-0253 posture. Verification: py_compile OK; router self-test 7/7, harvester
     self-test 4/4; full scan 2906 proposals (2'
+- at: 2026-11-23 10:59
+  from: devin
+  text: '[2026-11-23 opencode] Precision fix landed (778903e435): card-comms candidates routing to kanban now use
+    the parent card id from source_id (<slug>#comms[i]) as the native dedupe key and force action=link (upsert in
+    place, never fork) instead of a hashed key + new-card create. Regression check added to capture-router self-test
+    (8/8). Fresh-outdir re-review: card-comm kanban creates 61 -> 0; all 61 now link to their parent card (e.g.
+    ada-kk-cms-traffic#comms[4] -> link kanban:ada-kk-cms-traffic). '
 action: {}
