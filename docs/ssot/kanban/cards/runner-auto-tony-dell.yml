@@ -2,20 +2,35 @@ id: runner-auto-tony-dell
 title: Runner host `tony-dell` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note,
   fix on the host, close the card.
-column: done
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: medium
-note: 'Auto-recovered 2026-11-23: all bootstrap checks pass.'
+priority: high
+note: 'Failing: runner-agent: checkout sha d9af2b9cd9410faf != pin bf445389228806b3 — chaba clone is stale/divergent;
+  ~/.local/bin/runner-agent sha d9af2b9cd9410faf != pin bf445389228806b3 — installed build is stale. Info: chaba
+  origin is fetch-only (by design — no push creds); merge-sweep salvage path verified; sunsynk-card: push probe
+  fails (?) — sunsynk-card dispatches defer to a pushable host; stranded work relays via board-api; mddb-fork: push
+  probe fails (remote: Permission to tradik/mddb.git denied to tonezzz.
+
+  fat) — mddb-fork dispatches defer to a pushable host; stranded work relays via board-api; gods-eye-view: push
+  probe fails (?) — gods-eye-view dispatches defer to a pushable host; stranded work relays via board-api; ada-voice:
+  push probe fails (?) — ada-voice dispatches defer to a pushable host; stranded work relays via board-api; ada-pi:
+  push probe fails (?) — ada-voice dispatches '
 help: 'Per-check fixes:
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
-  that host''s repos.conf.
+  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
+  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
+  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
+  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
+  as the tool.
 
-  - push-label-false: RUNNER_LABELS declares push:<repo> but `git push --dry-run` fails in the checkout — the label
-  lies about the credential scope (runner-push-cred-gap). Remove the label or fix the key.'
-updated: 2026-11-23 19:07
+  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
+  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
+  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
+  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
+  as the tool.'
+updated: '2026-11-23'
 review_kind: triage
 action:
   status: done
