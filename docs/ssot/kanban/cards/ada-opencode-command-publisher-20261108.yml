@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: doing
-updated: 2026-11-23 11:03
+updated: 2026-11-23 11:05
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -630,6 +630,13 @@ comms:
     complete: canonical stacks/idc02/ada-code/commands/ada.md (sweep native-menu restored, sha 077aaff3), narrow
     allowlisted /opencode-command door (preview/validate/publish/sync/verify, confirm+expect_sha gates, fixed-argv
     ssh atomic deploy, writer-pipeline commits — no arbitrary paths/sh'
+- at: 2026-11-23 11:05
+  from: devin
+  text: 'DONE on dispatch/20261123-105931 (idc02): re-merged verified deliverable origin/dispatch/20261120-132007
+    (bdd2f99b, 3 commits/14 files) onto master as faa1864e67 — .render-state-board2 kept master-side. Verified:
+    24/24 feature tests green, compile clean; live on idc02 verify=in_sync:true (deployed==canonical 077aaff3, menu
+    live), validate=0 errors, sync --confirm correctly no-ops (resolves first-real-sync gate), ada-code.service
+    active. Wider suite: 4 timeout-only failures (save_ms 5-22s at load'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
@@ -679,3 +686,4 @@ action:
 claim:
   since: 2026-11-23 10:57
 review_kind: verify
+awaiting_action: true
