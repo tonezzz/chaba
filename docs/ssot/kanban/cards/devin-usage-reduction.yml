@@ -1,7 +1,7 @@
 id: devin-usage-reduction
 title: Devin usage reduction roadmap (post-assessment follow-up)
 column: backlog
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:16
 brief: 'Reduce Devin dispatch token/allowance burn: 148 sessions / ~657M prompt tokens over the last 30 days, all
   swe-2-high free tier, 97% cached; devin still the lane fallback for many multi-step shapes despite free-lane routing
   existing (OPS-0869/0885).'
@@ -58,3 +58,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:16
+  from: devin
+  text: '2026-11-23: devin-usage.py now reports free-tier allowance burn per window (added this session, verified):
+    last-30d burn = 148 sessions / 661,839,726 tokens (prompt+completion), all swe-2-high free tier, 97% cached.
+    Companion: lane-savings.py Nov report shows devin lane 134 cards/104 done/54 verified with 138 devin-lane dispatch
+    merges this month; cheap-lane evidence (OPS-0885) shows free lane $0.0233/gate vs devin allowance-priced baseline.'
