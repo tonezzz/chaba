@@ -1,7 +1,7 @@
 id: board-api-lock-contention
 title: board-api write latency — render/dispatch hold flock >25s causing 503s
 column: review
-updated: 2026-11-23 14:17
+updated: 2026-11-23 16:12
 brief: Tony's board clicks delay then fail. journal shows "lock wait >25s path=/comment — 503" repeatedly (62 hits
   in 40min). Contenders on /tmp/board-api.lock include render-board2.py --if-changed (93% CPU) and kanban-dispatch.py.
   Writes time out while GET /cards stays fast.
@@ -396,6 +396,11 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:12
+  from: devin
+  text: 'cline review verdict (ollama/qwen2.5:7b, task bb711): INVESTIGATE — Evidence of sustained board use meeting
+    the done-condition is missing.. Artifacts verdict.json+evidence.md verified in worktree patch (1633B; evidence.md,
+    verdict.json). Weak-model draft — human gate stays; decision request posted with options.'
 requests: []
 action:
   lane: paid_frontier
