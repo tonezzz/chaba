@@ -2,7 +2,7 @@ id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
 brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the
   card.'
-column: backlog
+column: doing
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 18:49
+updated: 2026-11-23 18:50
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -173,13 +173,17 @@ comms:
 - at: 2026-11-23 18:49
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 0.96 > 0.85)'
+- at: 2026-11-23 18:50
+  from: tony-macbook
+  text: claimed
 action:
-  status: queued
-  attempts: 0
+  status: running
+  attempts: 1
   lane: devin
   last_failure: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result
     ''exit-code''. | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time,
     405.7M memory peak, 0B memory swap peak.'
+  runner: tony-macbook
 requests:
 - id: cline-drafted-verdict-investigate-connec-96bd80
   ask: 'Cline drafted verdict ''investigate'' (Connection refused issue unresolved after redeployments). One-word
@@ -202,4 +206,4 @@ requests:
   answer: requeue — requeue for another pass
   executed: 2026-11-23 retry
 claim:
-  since: 2026-11-23 16:11
+  since: 2026-11-23 18:50
