@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: review
-updated: 2026-11-23 07:07
+updated: 2026-11-23 07:21
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -131,6 +131,13 @@ comms:
     the evidence is for the WRONG task. ops-readonly''s frozen fixture forced a read-only host-snapshot JSON (idc02
     host/load/mem/disk/failed_units); the artifact at reports/cf-agentic-retest-2026-11-21.md is that 549-byte snapshot
     and verdict.json checks are host-fact checks, not CF model checks. Evidence kept at evals/opencode-lane/runs/llm-provider-verification-2026-11-1795254266-20261121-164437/'
+- at: 2026-11-23 07:21
+  from: tony
+  text: '2026-11-23 — step 1 COMPLETE via manual/benchmark lane (the staged S3 dispatch was held for wrong evidence;
+    not closed). Frozen host-health fixture on tony-dell, three arms: control litellm/gemini-3.5-flash-lite PASS
+    34.9s (9 tool calls, valid health.json); litellm/cf-llama-70b FAIL 14.8s — provider 413, estimated 28,664 tokens
+    exceeds the 24,000-token context window, no tool calls; litellm/cf-gpt-oss-120b PASS 79.9s (9 tool calls, valid
+    health.json) — improved from 2026-11-07 FAIL. Held-out ver'
 action:
   type: dispatch
   repo: chaba
