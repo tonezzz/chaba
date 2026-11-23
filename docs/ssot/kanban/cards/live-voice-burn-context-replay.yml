@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
-column: doing
-updated: 2026-11-23 22:07
+column: backlog
+updated: 2026-11-23 22:31
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -340,6 +340,14 @@ comms:
     Chaba Lab — evaluation platform for Ada — Date: 20; [live-session-token-diet] test gate failed — merge held:
     tests/ada/test_line_fil; [live-voice-burn-context-replay] finished (failed): exit=1 -task-20261117-233258; [live-voice-burn-context-replay]
     merge-sweep: devin-task-2026'
+- at: 2026-11-23 22:31
+  from: tony-dell
+  text: 'finished (failed): exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-v
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220709-goal-address-the-live-voice-to (rate limit)
+    — tony-dell holds new claims ~30m
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -356,20 +364,18 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: devin
   lane_source: kw
   sweep:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 22:07
     session_gone: 2026-11-23 22:07
-  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
-    Failed with result ''exit-code''. | devin-task-20261123-195521-goal-address-the-live-voice-to.service: Consumed
-    3.959s CPU time.'
+  last_failure: 'exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-voice-to.service:
+    Consumed 1min 6.268s CPU time over 24min 17.945s wall clock time, 915.8M memory peak, 230.8M memory swap peak.'
   attempts: 2
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
-    Failed with result ''exit-code''. | devin-task-20261123-195521-goal-address-the-live-voice-to.service: Consumed
-    3.959s CPU time.'
+  result: 'exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-voice-to.service:
+    Consumed 1min 6.268s CPU time over 24min 17.945s wall clock time, 915.8M memory peak, 230.8M memory swap peak.'
   runner: tony-dell
 spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
   for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
