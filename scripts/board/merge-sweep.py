@@ -161,6 +161,10 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
 import dispatch_repos as dr
+try:
+    import waiting_cards as wc
+except Exception:
+    wc = None   # verdict notify degrades to comms-only
 
 HOST = os.uname().nodename
 LOCK = Path("/tmp/board-api.lock")
@@ -734,6 +738,19 @@ def conflict_rid(card: dict) -> str:
     n = sum(1 for r in card.get("requests") or []
             if str(r.get("id", "")).startswith("merge-conflict"))
     return "merge-conflict" if n == 0 else f"merge-conflict-{n + 1}"
+
+
+def _verdict_notify(cid: str, detail: str, event: str = "verified") -> None:
+    """Close-the-loop verdict push (card ada-dispatch-approve-button):
+    the gate's verified/withheld verdict is what Tony approved — push it
+    through /publish (milestone/alert -> Telegram), same lane
+    kanban-dispatch's _notify uses. Best-effort, never raises."""
+    if wc is None:
+        return
+    try:
+        wc.notify_lifecycle(API, cid, event, detail[:200], host=HOST)
+    except Exception:
+        pass
 
 
 # ------------------------------------------------------- verified gate
@@ -1523,11 +1540,20 @@ def sweep_card(card: dict, active: dict, dry: bool,
                     if held.get("why") else " — auto-closed")
             card_note(cid, f"merge-sweep: {merged_txt} — marked "
                            f"verified ({g['why'][:160]}){tail}", dry)
+            if not dry:
+                _verdict_notify(cid, f"{merged_txt} — verified{tail}")
             return True
         key = "verify_deferred" if g.get("defer") else "verify_hold"
-        return flag_once(card, key,
-                         f"merge-sweep: {merged_txt} but verified "
-                         f"withheld — {g['why'][:200]}", dry)
+        out = flag_once(card, key,
+                        f"merge-sweep: {merged_txt} but verified "
+                        f"withheld — {g['why'][:200]}", dry)
+        if not dry and key == "verify_hold" and out:
+            # held verdicts need a human — push once, when the flag
+            # first lands (out=False on debounced repeats); 'defer'
+            # (auto_done_when gap) is routine, stays comms-only
+            _verdict_notify(cid, f"verified withheld — {g['why'][:160]}",
+                            event="unverified")
+        return out
 
     if m["ancestor"]:
         # head already in base — the runner's worktree can go too
