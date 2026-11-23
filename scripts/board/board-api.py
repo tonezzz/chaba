@@ -1711,6 +1711,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
         raise ValueError("no request_id and card has no ask")
     opts = ask.get("options") or []
     answer = ""
+    sel_opt = None   # the option the answer resolved to, when known
     opt = body.get("option")
     if opt is not None and str(opt).strip() != "":
         if not opts:
@@ -1722,6 +1723,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
         if not 0 <= idx < len(opts):
             raise ValueError(f"option must be 0..{len(opts) - 1}")
         answer = _opt_label(opts[idx])
+        sel_opt = opts[idx]
     else:
         answer = str(body.get("text") or body.get("answer") or "").strip()
         if not answer:
@@ -1733,6 +1735,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
             hit = [o for o in opts if _opt_label(o).lower().startswith(low)]
         if len(hit) == 1:
             answer = _opt_label(hit[0])
+            sel_opt = hit[0]
         # ambiguous or unmatched free text stands as its own answer
     if ask.get("status") == "answered" and not body.get("reopen"):
         # idempotent retry: the same answer again is a no-op success —
@@ -1746,18 +1749,68 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
     ask["status"] = "answered"
     ask["answer"] = answer[:500]
     ask["answered_at"] = now()
+    if verb == "re-answered":
+        ask.pop("executed", None)  # fresh answer — the old stamp is stale
     body["answer"] = answer  # resolved text feeds live-session delivery
     comms_add(card, frm, f"{verb} ask: {answer[:200]}")
+    # a declared option action (click-approve) executes in this write —
+    # the click IS the approval signal the dispatch gate accepts
+    exec_note = _exec_option_action(card, ask, sel_opt, frm)
     # answer recorded but nothing is armed to act on it — same triage
-    # nudge as the requests[] path
+    # nudge as the requests[] path (not when the option's declared
+    # action just ran — an executed answer is resolved, not triage)
     a = _act(card)
-    if (card.get("column") != "done"
+    if (not ask.get("executed")
+            and card.get("column") != "done"
             and a.get("status") not in ("queued", "running")):
         card["awaiting_action"] = True
         comms_add(card, "chaba",
                   "answer recorded but no active action — card needs "
                   "triage (queue it, or spec+arm an action)")
-    return "answer saved"
+    return "answer saved" + (f" — {exec_note}" if exec_note else "")
+
+
+def _exec_option_action(card: dict, req: dict, sel_opt, frm: str) -> str:
+    """Respond-time execution of a declared option action (card
+    ada-dispatch-approve-button — the click-approve flow). When the
+    answered option is a dict carrying action:queue|retry|close|hold|none,
+    run it NOW through do_action — the same guarded transition the board
+    buttons use — rather than holding the answer for answer-sweep's next
+    tick (~15min). The click IS the approval signal.
+
+    The sweep stays the backstop for everything deferred here: a live
+    claim (starting/running) and a verb that must wait for it, a
+    guard-refused transition (manual card, merge guard, manual
+    classifier), and answers that never resolved to a concrete option
+    object. A refused/deferred answer is left UNexecuted so the sweep
+    still owns it. Returns the note appended to the respond message (''
+    when nothing ran)."""
+    if not isinstance(sel_opt, dict):
+        return ""
+    act = str(sel_opt.get("action") or "").strip().lower()
+    if act not in OPTION_ACTIONS:
+        return ""
+    stamp = datetime.now().date().isoformat()
+    opt_name = str(sel_opt.get("id") or sel_opt.get("label") or "?")
+    if act == "none":
+        req["executed"] = f"{stamp} none@respond"
+        return f"option {opt_name!r}: resolved — no board action"
+    st = _act(card).get("status")
+    if st in ("starting", "running"):
+        if act == "queue":
+            # approve intent already satisfied by the in-flight session —
+            # same verdict answer-sweep stamps on a busy card
+            req["executed"] = f"{stamp} queue@respond (already {st})"
+            return f"option {opt_name!r}: already {st}"
+        return ""   # retry/close/hold wait for the claim — sweep owns it
+    out = do_action(card, act, frm)
+    if out.startswith(("not queued", "not re-queued",
+                       "classified as manual", "blocked")):
+        # guard refused — do_action already logged the reason; leave the
+        # answer unexecuted so the sweep keeps it for triage/retry
+        return f"option {opt_name!r}: deferred — {out[:120]}"
+    req["executed"] = f"{stamp} {act}@respond"
+    return f"option {opt_name!r}: executed {act} — {out[:160]}"
 
 
 def do_respond(card: dict, body: dict, frm: str) -> str:
@@ -1777,6 +1830,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
         else:
             return do_ask_respond(card, body, frm)
     answer = str(body.get("answer") or body.get("text") or "").strip()
+    sel_opt = None   # the option an index pick resolved to, when known
     if not answer and "option" in body:
         # option-index responds work against requests[] too — the voice/UI
         # path posts {option: N} for whichever ask is open; map the index to
@@ -1788,6 +1842,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                     o = opts[int(body["option"])]
                 except (IndexError, TypeError, ValueError):
                     raise ValueError(f"option must be 0..{len(opts) - 1}")
+                sel_opt = o
                 if isinstance(o, str):
                     answer = o
                 else:
@@ -1813,6 +1868,9 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 verb = "re-answered"
             r["status"] = "answered"
             r["answer"] = answer[:500]
+            if verb == "re-answered":
+                r.pop("executed", None)  # fresh answer — stale stamp
+            body["answer"] = answer  # resolved text feeds session delivery
             comms_add(card, frm, f"{verb} {rid}: {answer[:200]}")
             # owned-prefix requests execute their decision in this same
             # write — an answered lab-review used to sit awaiting_action
@@ -1822,17 +1880,23 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 if _lab_decision(card, r):
                     r["executed"] = datetime.now().date().isoformat()
                     executed_owned = True
+            # a declared option action (click-approve) executes in this
+            # write — the click IS the approval signal the dispatch gate
+            # accepts; the sweep stays the backstop for deferrals
+            exec_note = _exec_option_action(card, r, sel_opt, frm)
             # answer recorded but nothing is armed to act on it —
-            # flag for triage so the decision doesn't sit silent
+            # flag for triage so the decision doesn't sit silent (an
+            # executed answer is resolved, not triage)
             a = _act(card)
             if (not executed_owned
+                    and not r.get("executed")
                     and card.get("column") != "done"
                     and a.get("status") not in ("queued", "running")):
                 card["awaiting_action"] = True
                 comms_add(card, "chaba",
                           "answer recorded but no active action — card needs "
                           "triage (queue it, or spec+arm an action)")
-            return "answer saved"
+            return "answer saved" + (f" — {exec_note}" if exec_note else "")
     raise ValueError(f"no request {rid}")
 
 
@@ -5630,6 +5694,104 @@ def _selftest() -> None:
     gbody = {"option": 0}
     do_respond(gcard, gbody, "tony")
     assert gbody["answer"] == "go"
+
+    # --- click-approve (ada-dispatch-approve-button): a dict option
+    # carrying action:queue|retry|close|hold|none executes through
+    # do_action in the same write — the click IS the approval the
+    # dispatch gate accepts; the sweep stays the deferral backstop.
+    qopts = [{"id": "dispatch", "label": "Approve — queue",
+              "action": "queue"},
+             {"id": "hold", "label": "Hold", "action": "hold"}]
+    # requests[] path: an approve click arms the card immediately
+    qcard = {"id": "c-q", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "devin"},
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    qbody = {"request_id": "ap", "option": 0}
+    msg = do_respond(qcard, qbody, "tony")
+    assert "executed queue" in msg, msg
+    assert qcard["action"]["status"] == "queued"
+    assert "queue@respond" in (qcard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in qcard   # resolved is not triage
+    assert qbody["answer"] == "dispatch — Approve — queue"  # delivery
+    # hold click executes too — and must NOT flag triage
+    hcard = {"id": "c-h", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(hcard, {"request_id": "ap", "option": 1}, "tony")
+    assert "executed hold" in msg, msg
+    assert hcard["action"]["status"] == "idle"
+    assert "hold@respond" in (hcard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in hcard
+    # action:none stamps executed without a board transition
+    ncard = {"id": "c-n", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "ok?",
+                           "status": "open",
+                           "options": [
+                               {"id": "d", "label": "Discuss",
+                                "action": "none"},
+                               {"id": "g", "label": "Go",
+                                "action": "queue"}]}]}
+    msg = do_respond(ncard, {"request_id": "ap", "option": 0}, "tony")
+    assert "no board action" in msg, msg
+    assert "none@respond" in (ncard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in ncard
+    # guard refusal (manual card) leaves the answer UNexecuted — the
+    # sweep keeps it for triage; the refusal is still surfaced
+    mcard = {"id": "c-m", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "manual"},
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(mcard, {"request_id": "ap", "option": 0}, "tony")
+    assert "deferred" in msg, msg
+    assert not mcard["requests"][0].get("executed")
+    assert mcard["action"].get("status") != "queued"
+    assert mcard.get("awaiting_action") is True
+    # busy card: retry/hold/close defer to the sweep; 'queue' stamps
+    # executed — the approve intent is satisfied by the live session
+    bcard = {"id": "c-b", "column": "doing",
+             "action": {"type": "dispatch", "status": "running",
+                        "task_id": "t1"},
+             "requests": [{"id": "ap", "ask": "retry?",
+                           "status": "open",
+                           "options": [
+                               {"id": "r", "label": "Retry",
+                                "action": "retry"},
+                               {"id": "g", "label": "Go",
+                                "action": "queue"}]}]}
+    msg = do_respond(bcard, {"request_id": "ap", "option": 0}, "tony")
+    assert msg == "answer saved", msg        # deferred — no exec note
+    assert not bcard["requests"][0].get("executed")
+    assert bcard["action"]["status"] == "running"
+    msg = do_respond(bcard, {"request_id": "ap", "option": 1,
+                             "reopen": True}, "tony")
+    assert "already running" in msg, msg
+    assert "queue@respond" in (bcard["requests"][0].get("executed") or "")
+    # card-level ask: an index pick AND a uniquely-resolved voice answer
+    # both execute a declared action
+    acard2 = {"id": "c-a2", "column": "backlog",
+              "action": {"type": "dispatch", "executor": "devin"},
+              "ask": {"question": "dispatch?", "options": qopts}}
+    msg = do_respond(acard2, {"option": 0}, "tony")
+    assert "executed queue" in msg, msg
+    assert acard2["action"]["status"] == "queued"
+    assert "queue@respond" in (acard2["ask"].get("executed") or "")
+    vcard = {"id": "c-v", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "devin"},
+             "ask": {"question": "dispatch?", "options": qopts}}
+    msg = do_respond(vcard, {"text": "dispatch"}, "tony")
+    assert "executed queue" in msg, msg       # voice resolved the option
+    assert vcard["action"]["status"] == "queued"
+    # free text on requests[] never resolves an option — verbatim only,
+    # sweep triages (same conservatism as before)
+    tcard = {"id": "c-t", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(tcard, {"request_id": "ap", "answer": "dispatch"},
+                     "tony")
+    assert msg == "answer saved", msg
+    assert not tcard["requests"][0].get("executed")
+    assert (tcard.get("action") or {}).get("status") != "queued"
 
     # _deliver_to_session — /respond on a running card lands in the
     # session's task dir as answers.jsonl (board-answer-live-session);

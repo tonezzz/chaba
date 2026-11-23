@@ -949,12 +949,21 @@ def merge_pending_one(path: Path) -> str:
             # auto-closing (dispatch-empty-closeout-verification-gap).
             if ex_ok is True:
                 a["verified"] = True
+                # close-the-loop (ada-dispatch-approve-button): the
+                # verdict Tony approved for must reach him — milestone
+                # routes to Telegram via /publish
+                _notify("verified", card.get("id") or path.stem,
+                        "merged + verified — auto-close follows")
             else:
                 comms_add(
                     card, "chaba",
                     f"merged but verified withheld — unit exit "
                     f"{'failed' if ex_ok is False else 'unproven'} "
                     f"({ex_ev}); merge-sweep's gate will review")
+                _notify("unverified", card.get("id") or path.stem,
+                        f"merged but verified withheld "
+                        f"({'failed' if ex_ok is False else 'unproven'} "
+                        f"exit) — held for review")
         elif res.get("conflicts") or res.get("test_failures") \
                 or res.get("shadows") or (
                 res.get("gate") and not res["gate"]["ok"]):
