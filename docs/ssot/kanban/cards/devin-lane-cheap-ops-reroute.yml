@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: backlog
-updated: 2026-11-23 20:25
+updated: 2026-11-23 20:30
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -44,3 +44,24 @@ comms:
     purely by kw:host); (2) lane keyword evaluation order now paid_frontier -> codemod -> free_lane -> devin (cheapest-capable-first
     per lane catalog; old order let a broad devin keyword pre-empt a cheap lane); devin remains fail-closed fallback
     for ambiguous '
+- at: 2026-11-23 20:30
+  from: devin
+  text: 'raised request dev-0045-next-slice-decision-the-audit-f-70570c: DEV-0045 next slice decision: the audit
+    found 7 timer-alert-* cards explicitly pinned action.lane=devin (idc03 ada-memor'
+requests:
+- id: dev-0045-next-slice-decision-the-audit-f-70570c
+  ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
+    (idc03 ada-memory-sync / ada-scenario-smoke / log-shipper / log-shipper-severe / mddb-embed-probe, tony-omen
+    focus-dispatcher-overnight, etc.). These are ops-failure diagnoses with deterministic/read-only surfaces; the
+    OPS-1025 remote-read smoke proved an ops-readonly free_lane (litellm/or-free-nemotron-nano, envelope, max_retries
+    0). First slice already landed (free_lane before devin; host keyword removed; 93 tests green). Which next? (a)
+    re-pin the 7 timer-alert cards to free_lane ops-readonly with held-out verifier + 0 retries — recommended, saves
+    devin burn; (b) keep devin pins (these need judgment) and target remaining broad devin keywords instead; (c)
+    hold until the runner-timer resume decision is settled.'
+  status: open
+  at: 2026-11-23 20:30
+  from: devin
+  options:
+  - re-pin 7 timer-alert cards to free_lane (recommended)
+  - keep devin pins, target broad keywords
+  - hold until runner-timer resume
