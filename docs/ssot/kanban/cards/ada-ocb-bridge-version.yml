@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-23 11:31
+updated: 2026-11-23 11:32
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -24,6 +24,7 @@ action:
   lane_source: jevos
   sweep:
     failed_noted: 2026-11-17 22:24
+    stale_running: 2026-11-23 11:32
   last_failure: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
     | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
     11.419s wall clock time, 927.1M memory peak.'
@@ -326,6 +327,10 @@ comms:
   from: devin
   text: 'attempt6 (zombie-claim restart, OPS-1071): feature + copy-tag fix already merged to main via d1881f2/73949e4.
     Re-verifying merged state worktree-local only — no live-checkout probes (that killed earlier attempts).'
+- at: 2026-11-23 11:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-105754-in-ada-voice-opencode-ada-mcp- no longer active on idc02 but card
+    still says running — sweeping its branch'
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
