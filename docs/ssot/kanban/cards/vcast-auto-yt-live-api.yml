@@ -2,7 +2,7 @@ id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
 brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the
   card.'
-column: doing
+column: review
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 19:17
+updated: 2026-11-23 19:20
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -201,14 +201,28 @@ comms:
     + YT_LIVE_BASE=http://192.168.2.67:8083/apps/yt-live. Deeper drift found+fixed: installed yt-live*.sh/py were
     the pre-dub Oct-5 snapshot — resynced repo file set to ~/.local/bin; yt-live-api.py merged upstream (fast_cast+/list
     restored, env-driven). Verified: /sta'
+- at: 2026-11-23 19:20
+  from: tony-macbook
+  text: 'finished (ok): exit=0 playlive-chrome/yolo-detect down — left for the audit lanes as possibly intentional.
+    | devin-task-20261123-185051'
+- at: 2026-11-23 19:20
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:20
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261123-185051-yt-live-api-8791-status-not-20\
+    \ is 41 commits behind origin/master —\n   run 'git pull -"
 action:
-  status: running
+  status: done
   attempts: 1
   lane: devin
   last_failure: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result
     ''exit-code''. | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time,
     405.7M memory peak, 0B memory swap peak.'
   runner: tony-macbook
+  result: 'exit=0 playlive-chrome/yolo-detect down — left for the audit lanes as possibly intentional. | devin-task-20261123-185051-yt-live-api-8791-status-not-20.service:
+    Consumed 2min 30.172s CPU time over 27min 46.663s wall clock time, 745.3M memory peak.'
+  verified: true
 requests:
 - id: cline-drafted-verdict-investigate-connec-96bd80
   ask: 'Cline drafted verdict ''investigate'' (Connection refused issue unresolved after redeployments). One-word
