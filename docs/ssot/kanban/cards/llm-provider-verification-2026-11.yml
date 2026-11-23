@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: review
-updated: 2026-11-23 07:21
+updated: 2026-11-23 07:26
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -138,6 +138,13 @@ comms:
     34.9s (9 tool calls, valid health.json); litellm/cf-llama-70b FAIL 14.8s — provider 413, estimated 28,664 tokens
     exceeds the 24,000-token context window, no tool calls; litellm/cf-gpt-oss-120b PASS 79.9s (9 tool calls, valid
     health.json) — improved from 2026-11-07 FAIL. Held-out ver'
+- at: 2026-11-23 07:26
+  from: tony
+  text: '2026-11-23 — step 2 COMPLETE (read-only probe; no config changed). GROQ_API_KEY on idc03 (0600 env, value
+    never printed/reused) is VALID: GET /openai/v1/models = 200 with 11 models (gpt-oss-20b/120b/safeguard, qwen3.8-27b,
+    allam-2-7b, whisper-large-v3/-turbo, orpheus x2, prompt-guard x2). Rate limits: 1000 requests/min but only 8000
+    tokens/min — token-bound. Single-shot allam-2-7b 200 in 0.19s (''pong''); gpt-oss-20b 200 in 0.51s but empty
+    content at max_tokens=16 because 14/16 were reasoning_toke'
 action:
   type: dispatch
   repo: chaba
