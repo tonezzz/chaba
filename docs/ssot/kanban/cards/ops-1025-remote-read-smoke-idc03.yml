@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: backlog
-updated: 2026-11-23 19:10
+updated: 2026-11-23 19:12
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,14 +69,10 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: failed
-  attempts: 1
+  status: queued
+  attempts: 0
   last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795434600.service: Main
     process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795434600.service:
-    Failed with result ''exit-code''.'
-  runner: idc02
-  result: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795434600.service: Main process
-    exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795434600.service:
     Failed with result ''exit-code''.'
 ref: OPS-0245
 comms:
@@ -204,5 +200,8 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: retry requested
 claim:
   since: 2026-11-23 18:50

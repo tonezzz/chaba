@@ -1,7 +1,7 @@
 id: board-janitor-locked-edit-atomic-write-db7bed
 title: board-janitor-locked-edit-atomic-write
 column: backlog
-updated: 2026-11-23 18:39
+updated: 2026-11-23 19:12
 spec: 'Make the locked_edit fallback write path in board-janitor/merge-sweep atomic. Root cause of 2026-11-19 card
   torn writes (KNB-0212): during idc03 ENOSPC window, board-janitor''s 02:56 merge-sweep tick used a locked_edit
   fallback that does a DIRECT write_text on docs/ssot/kanban/cards/*.yml — writes tore mid-scalar at page boundaries,
@@ -318,6 +318,10 @@ comms:
 - at: 2026-11-23 18:39
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: queued
