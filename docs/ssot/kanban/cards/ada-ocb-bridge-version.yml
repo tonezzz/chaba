@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: doing
-updated: 2026-11-23 11:32
+updated: 2026-11-23 11:33
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -336,6 +336,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261123-105754-in-ada-voice-opencode-ada-mcp- on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-23 11:33
+  from: devin
+  text: 'DONE attempt6 (c83facf on dispatch/20261123-113051): zombie-claim restart — feature + +copy-<hash> fix
+    already merged (d1881f2/73949e4); verified merged state worktree-local. 19/19 bridge+envelope tests, tool-lint
+    clean. Real child probes: canonical=git-05ba2b3 vs untracked-in-worktree=git-05ba2b3+copy-3cd10becaa vs foreign-repo=git-a735b90+copy-106e3e3eb0
+    vs env=2.1.0-deploy-test — all distinct. calls.jsonl: startup event per child pid + bridge_version per call.
+    No code changes needed; card is '
 review_kind: verify
 claim:
   since: 2026-11-23 10:56
