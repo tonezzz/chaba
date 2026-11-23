@@ -191,3 +191,83 @@
         label: "{{ target }}"
       delegate_to: localhost
       run_once: true
+
+- name: Verify canonical HA MCP endpoints (SSOT-driven)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/mcp"
+    mcp_verify_timeout: "{{ mcp_verify_timeout_seconds | default(300) }}"
+    chaba_checkout: "{{ chaba_repo_path | default('/home/tony/CascadeProjects/chaba') }}"
+    canonical_ha_mcp_servers:
+      home-assistant:
+        url: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      michael-ha:
+        url: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
+      michael-dev:
+        url: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
+
+  tasks:
+    - name: Write canonical HA MCP audit config
+      ansible.builtin.copy:
+        content: |
+          {
+            "mcpServers": {
+              "home-assistant": {"url": "{{ canonical_ha_mcp_servers['home-assistant'].url }}"},
+              "michael-ha": {"url": "{{ canonical_ha_mcp_servers['michael-ha'].url }}"},
+              "michael-dev": {"url": "{{ canonical_ha_mcp_servers['michael-dev'].url }}"}
+            }
+          }
+        dest: /tmp/chaba-mcp-audit-canonical.json
+        mode: "0644"
+
+    - name: Verify canonical HA MCP servers
+      ansible.builtin.shell: |
+        cd "{{ chaba_checkout }}" && MCP_CONFIG=/tmp/chaba-mcp-audit-canonical.json timeout {{ mcp_verify_timeout }} python3 scripts/verify-all-mcp-servers.py --json
+      args:
+        executable: /bin/bash
+      register: mcp_probe
+      changed_when: false
+      failed_when: false
+      check_mode: no
+
+    - name: Set canonical HA MCP snapshot
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ (mcp_probe.stdout | default('') | trim | from_json)
+             if (mcp_probe.stdout | default('') | trim | length > 0
+                 and (mcp_probe.stdout | default('') | trim)[:1] == '{')
+             else {
+               'ok': false,
+               'skipped': false,
+               'skip_reason': '',
+               'servers': {},
+               'ok_count': 0,
+               'total': 0,
+               'parse_error': 'rc=' ~ (mcp_probe.rc | default('?') | string) ~ ' stdout=' ~ (mcp_probe.stdout | default('') | trim)[:200] ~ ' stderr=' ~ (mcp_probe.stderr | default('') | trim)[:200]
+             } }}
+
+    - name: Normalize canonical HA MCP skipped field
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ mcp_snapshot | combine({
+               'skipped': (mcp_snapshot.skipped is string and (mcp_snapshot.skipped | length > 0)),
+               'skip_reason': (mcp_snapshot.skipped if (mcp_snapshot.skipped is string) else (mcp_snapshot.skip_reason | default('')))
+             }) }}
+
+    - name: Set canonical HA MCP report host context
+      ansible.builtin.set_fact:
+        target: localhost
+
+    - name: Render canonical HA MCP verification report
+      ansible.builtin.template:
+        src: mcp-verify.j2
+        dest: "{{ benchmark_out }}/canonical-ha.yml"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show canonical HA MCP verification summary
+      ansible.builtin.debug:
+        msg: "{{ (lookup('ansible.builtin.template', 'mcp-verify.j2') | from_yaml).summary }}"
