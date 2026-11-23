@@ -1,0 +1,100 @@
+id: 2026-11-23-queue-consolidation-verify
+title: devnest-queue-consolidation tracker — second live re-verify (supersedes unmerged 2026-11-17 doc)
+host: tony-omen
+card: devnest-queue-consolidation
+supersedes: docs/ssot/jobs/devnest/2026-11-17-queue-consolidation-verify.yml  # content merged but that branch never landed (test-gate hold)
+subs:
+  - ops-1244a-dispatcher-retire-watch-merge   # done + archived 2026-11-23
+  - ops-1244b-one-claimer-jules               # archived 2026-11-23 — CLOSED VIA JULES LANE PURGE, refactor never landed (see open_gaps)
+  - ops-1244c-queue-time-classify             # done + archived
+  - ops-1244d-janitor-merge                   # done + archived — board-janitor.timer live on idc03
+  - ops-1244e-catalog-views                   # done + archived — docs/ssot/generated/jobs.<host>.yml
+  - ops-1244f-timer-alert-retype              # done + archived — 0 live dispatch-typed timer-alert cards
+why: >-
+  Tracker requeued 2026-11-23 by Tony's review pass: the 2026-11-17
+  dispatch (tony-omen) verified the tracker and retired the last two
+  idc03 vestiges but its merge was held — chaba merge test gate timed
+  out at 240s on an overloaded idc03 — and the trail doc never reached
+  master. This doc re-records that verification plus today's live state.
+prior_attempt_notes: >-
+  2026-11-17 attempt: exit=0, pushed dispatch/20261117-185221-…, merge
+  held on "suite timeout (240s)" (environmental — smoke set measured
+  ~70s on tony-omen but idc03 was load 3.63/core that evening).
+  2026-11-23 15:12 attempt 1: died on provider rate-limit, no work
+  produced. Both failures are dispatch-infra, not content.
+verified_2026_11_23:
+  claim_plane: >-
+    runner-agent.timer enabled+firing on tony-omen (local), idc03,
+    idc02, mn01 — last runs all <1min ago at check time; installed
+    ~/.local/bin/runner-agent md5 e9cbd25e… == repo
+    scripts/board/runner-agent.py on all 4 hosts. board-api GET /queue
+    live: 13 queued cards, per-host verdicts flowing (rate-limit
+    cooldowns visible fleet-wide today, claims resume as holds expire).
+  one_claimer: >-
+    kanban-dispatch.timer on idc03: disabled + inactive (11-17 session's
+    retire stuck). runner-agent is the only claim unit family
+    fleet-wide. NOTE: the deeper refactor — long-running
+    nest-runner.service / runner-agent --loop with Restart=always —
+    never landed (ops-1244b closed on lane purge, not completion).
+    Current shape is still oneshot+timer; failure mode it was meant to
+    fix (2026-11-08 mass SIGTERM stall) is mitigated only by timer
+    re-enable, not self-healing.
+  one_catalog: >-
+    repo: 0 `dispatch: dispatcher` jobs in
+    docs/ssot/infrastructure/ssot.jobs.yml. Generated per-host views
+    exist at docs/ssot/generated/jobs.<host>.yml (idc02, idc03, mn01,
+    tony_dell, tony_omen, con01). live: chaba-jobs.timer on idc03
+    disabled + inactive.
+  one_watchdog: >-
+    single nest-queue-watch.timer on idc03, 15m cadence (last 15:42,
+    next 15:57) — the 3x 1-min timers from the 11-09 assessment are
+    gone.
+  one_janitor: >-
+    board-janitor.timer live on idc03 (rendered from ssot.jobs.yml
+    `board-janitor` job) — the "declared but never installed" gap
+    flagged in the 11-12 sweep is closed.
+  timer_alerts: >-
+    0 live dispatch-typed timer-alert cards on the board (was 12 of 25
+    queued on 11-09). Sentinel produces no action block; residue is
+    all done-status.
+  classify: >-
+    queue-time classify live — /queue shows lanes attached at queue
+    time (paid_frontier, free_lane, devin, codemod; unpinned cards
+    show lane:null until classified). ops-1244c done.
+  jev_lane: >-
+    jev-lane.conf [Service] header verified present on tony-omen
+    (local cat), idc02, mn01 — all carry Environment=JEV_LANE=1.
+    idc02 also has OPENCODE_LANES=1. Router armed.
+  scalar_action_card: >-
+    served nest-mgr-v2-actuation now carries dict action (11-17 gap
+    closed); 0 scalar-action cards board-wide — the raw-YAML consumer
+    crash class that killed kanban-dispatch ticks is gone.
+open_gaps:
+  - >-
+    ops-1244b scope is UNCARDED: archived 2026-11-23 13:35 by Tony's
+    done-column sweep after Ada closed it 11-20 on the jules lane
+    purge — but the jules lane retirement did not do the refactor.
+    Still true today: no runner-agent --loop / nest-runner.service, no
+    rendered unit, no self-healing claim service. Needs a fresh card
+    on a live lane if the scope is still wanted (board request raised
+    on the tracker).
+  - >-
+    focus-inbox: 2174 unprocessed top-level files (546 on 11-09 → 1665
+    on 11-17 → 2174 today) — the /inbox fold never happened; file
+    intake keeps accumulating. "ONE QUEUE" is met at the claim layer
+    but not at intake.
+  - >-
+    runner-agent deploy is still manual scp (not in the render
+    catalog); drift is now DETECTED automatically (installed-sha
+    defer check fires in comms) but convergence is still by hand.
+    Also ops-1244b scope.
+  - >-
+    merge test gate fragility: the 240s smoke-set gate can still hold
+    doc-only merges when idc03 is loaded; related open card
+    merge-sweep-test-gate-fail-open is queued.
+verification_commands: |
+  ssh <host> 'systemctl --user list-timers | grep runner-agent'   # idc03 idc02 mn01 tony-omen
+  ssh <host> 'md5sum ~/.local/bin/runner-agent'                   # == md5sum scripts/board/runner-agent.py
+  ssh idc03 'systemctl --user is-enabled kanban-dispatch.timer chaba-jobs.timer'   # disabled disabled
+  curl -s https://idc03.taila0626a.ts.net:10000/queue             # live queue + verdicts
+  grep -c 'dispatch: dispatcher' docs/ssot/infrastructure/ssot.jobs.yml   # 0
