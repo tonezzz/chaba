@@ -256,6 +256,11 @@ free_lane_aliases:
     - or-free-north-code       # cohere/north-mini-code:free — 404 "no provider serves this model anymore" on OpenRouter
     - gemini-2.5-flash-free    # free Gemini key: 404 "no longer available to new users" for 2.5 family
     - gemini-2.5-flash-lite-free # free Gemini key: 404 "no longer available to new users" for 2.5 family
+  openrouter_paid:
+    # paid OR routes — explicit-call only, no job-class chains.
+    - or-deepseek-v4-flash     # deepseek/deepseek-v4-flash $0.09/$0.18 per Mtok — cheap-code-brain
+                               # bench lane (OPS-1256, 2026-11-23); added to chaba key allowlist.
+                               # OR key is $1/wk capped — keep bench traffic small.
   cloudflare_workers_ai:       # deployed, opencode-verified in part
     note: >-
       OpenAI-compatible api_base .../accounts/<acct>/ai/v1, CF_API_WORKER_TOKEN.
