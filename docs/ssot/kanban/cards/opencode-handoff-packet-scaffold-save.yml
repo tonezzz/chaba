@@ -1,0 +1,50 @@
+id: opencode-handoff-packet-scaffold-save
+title: OpenCode handoff-packet scaffold + save helper
+column: backlog
+updated: 2026-11-23 16:00
+priority: medium
+tags:
+- opencode
+- session-capture
+- knowledge-capture
+- dev-0038-followup
+spec: 'Goal: make the required Session Handoff Packet fast to scaffold, fill, and save to a durable sink.
+
+
+  Context:
+
+  - Canonical packet: docs/ssot/ssot.knowledge-capture.yml#Session Handoff Packet (required)
+
+  - Existing: .opencode/commands/session-capture.md, .opencode/skills/session-capture/SKILL.md, OpenChamber knowledge
+  save
+
+  - Required fields: objective, as_of, current_state, canonical_refs, open_asks_decisions, next_action, where_filed,
+  notes
+
+
+  Options:
+
+  A) ★ Command/template scaffold (default) — extend /session-capture or add /handoff-packet to emit a prefilled
+  markdown template (as_of, placeholders) and instruct saving via OpenChamber knowledge note and/or card comms;
+  agent fills evidence refs.
+
+  B) Small local script helper — scripts/chaba/handoff-packet.py generates template + optionally writes to OpenChamber
+  knowledge via tool/API; needs careful auth/path handling.
+
+  C) OpenCode plugin/form UI — interactive form for packet fields; best UX but higher implementation complexity.
+
+
+  Acceptance:
+
+  - Agent can generate a valid packet scaffold in one step.
+
+  - where_filed is mandatory and explicit; no chat-only outcome.
+
+  - Saved artifact is pointer-first and durable (OpenChamber knowledge or card comms).'
+note: DEV-0038 follow-up. /session-capture exists; producing/saving the required handoff packet is still manual
+  and error-prone.
+ref: OPS-0037
+comms:
+- at: 2026-11-23 16:00
+  from: tony
+  text: card captured via board-api

@@ -1,0 +1,50 @@
+id: opencode-session-start-recall-injection
+title: OpenCode session-start recall injection (Chaba L0 context)
+column: backlog
+updated: 2026-11-23 16:00
+priority: medium
+tags:
+- opencode
+- session-capture
+- chaba-memory
+- dev-0038-followup
+spec: 'Goal: give ada-ocb/OpenCode sessions an automatic or one-command resume signal equivalent to Devin''s SessionStart
+  recall (bounded Chaba context).
+
+
+  Context:
+
+  - Canonical: docs/ssot/chaba/ssot.chaba.memory.yml (L0 render), scripts/chaba/render-memory.py, ~/.local/share/chaba/context.md
+
+  - Devin reference: ~/.config/devin/scripts/notebooklm-recall.sh (render --if-stale + inject head)
+
+  - Shared capture contract: docs/ssot/ssot.knowledge-capture.yml
+
+
+  Options:
+
+  A) ★ OpenCode /recall command (default, low risk) — add .opencode/commands/recall.md that instructs agent to run
+  `chaba-session-capture render --if-stale` (or read context.md) and summarize bounded head (<= ~4k chars) as resume
+  context; pointer-first, no volatile truth.
+
+  B) OpenCode plugin/hook startup injection — if OpenCode runtime supports session-start hook/plugin, inject bounded
+  context.md head automatically; fallback to /recall.
+
+  C) AGENTS.md static instruction only — tell agent to read context.md at start; simplest but easy to skip and adds
+  tool cost.
+
+
+  Acceptance:
+
+  - New OpenCode session can obtain recent Chaba resume context with one command or automatically.
+
+  - Bounded/pointer-first; no secrets; no stale volatile snapshots treated as truth.
+
+  - Documented in .opencode instructions/skill and DEV-0038 pointer note.'
+note: DEV-0038 follow-up. Devin gets rendered L0 context via SessionStart hook; ada-ocb/OpenCode starts cold except
+  AGENTS/instructions.
+ref: OPS-0036
+comms:
+- at: 2026-11-23 16:00
+  from: tony
+  text: card captured via board-api

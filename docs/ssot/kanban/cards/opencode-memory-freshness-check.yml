@@ -1,0 +1,62 @@
+id: opencode-memory-freshness-check
+title: Read-only memory/feed freshness status check (Devin + OpenCode)
+column: backlog
+updated: 2026-11-23 16:00
+priority: low
+tags:
+- chaba-memory
+- session-capture
+- observability
+- dev-0038-followup
+spec: 'Goal: provide a read-only command/script that reports Chaba memory feed freshness per host/runtime.
+
+
+  Context:
+
+  - Timer: chaba-render-memory.timer/service (render-memory --if-stale)
+
+  - Files: ~/.local/share/chaba/context.md, events.md, immediate.yml, recent-events.yml, ~/.local/share/devin/notebook-summaries/session-memory.md
+
+  - Devin hooks: devin-session-end.sh, notebooklm-compaction.sh, notebooklm-recall.sh
+
+  - Helper: ~/.local/bin/chaba-session-capture
+
+
+  Checks (read-only):
+
+  - timer active + last service exit status/time
+
+  - context.md age vs newest input/session-memory age
+
+  - session-memory.md recent SessionEnd/Compaction presence
+
+  - hook scripts present and contain Phase B+ capture markers
+
+  - helper/scripts present
+
+
+  Options:
+
+  A) ★ Script in repo (default) — scripts/chaba/check-memory-freshness.py or .sh, SSH fanout or local mode, JSON/text
+  output; no writes.
+
+  B) OpenCode /memory-status command — calls the script and summarizes; convenient for ada-ocb sessions.
+
+  C) Add to existing audit/health surface — integrate with mcp-health or audit-hosts; higher coupling but central
+  visibility.
+
+
+  Acceptance:
+
+  - One command produces per-host freshness report with clear FRESH/STALE/ERROR classification and evidence.
+
+  - Read-only; no fake events/writes.
+
+  - Can be used as Phase C harvester/guard input later.'
+note: DEV-0038 follow-up. Feed freshness was manually verified; a repeatable read-only check would catch stale pipelines
+  early.
+ref: MEM-0035
+comms:
+- at: 2026-11-23 16:00
+  from: tony
+  text: card captured via board-api
