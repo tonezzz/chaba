@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: backlog
-updated: 2026-11-23 15:25
+column: doing
+updated: 2026-11-23 15:51
 priority: high
 tags:
 - devnest
@@ -66,7 +66,7 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   result: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''. |
     devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min 33.542s
@@ -74,10 +74,11 @@ action:
   sweep:
     session_gone: 2026-11-17 19:25
     stale_running: 2026-11-23 15:18
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''.
     | devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min
     33.542s wall clock time, 1G memory peak.'
+  runner: tony-omen
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -323,6 +324,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152219-extend-wiki-page-door-to-allow)
     — claims held ~29m'
+- at: 2026-11-23 15:51
+  from: tony-omen
+  text: claimed
 review_kind: verify
 claim:
-  since: 2026-11-23 15:10
+  since: 2026-11-23 15:51
