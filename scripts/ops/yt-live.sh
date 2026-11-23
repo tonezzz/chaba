@@ -540,8 +540,10 @@ SUBS_ARGS=()
   --sub-langs "$SUBLANG" --sub-format 'vtt/best')
 # -i: a subtitle 429 must not kill the video download
 # YT_LIVE_DL_TIMEOUT caps the download so a runaway (huge VOD, trickle
-# fragments) can't hold the serial cast lane forever.
-yt-dlp() { timeout "${YT_LIVE_DL_TIMEOUT:-1800}" command yt-dlp "$@"; }
+# fragments) can't hold the serial cast lane forever. `env` bypasses this
+# function's own name so timeout execs the real binary, not the `command`
+# builtin (which timeout cannot exec — broke every fresh download 2026-10-10).
+yt-dlp() { timeout "${YT_LIVE_DL_TIMEOUT:-1800}" env yt-dlp "$@"; }
 yt-dlp --no-playlist --no-warnings --quiet -i -f "$FMT" \
   --merge-output-format mp4 "${SUBS_ARGS[@]}" \
   -o "$APP_DIR/src.%(ext)s" "$URL" 2>"$APP_DIR/ytdlp.log" \
@@ -572,8 +574,11 @@ if [ -n "$SUBSRC" ]; then
   # English source with English target -> nothing to translate.
   [ "${LANGS_ARG%%,*}" = "${SRCLANG%%-*}" ] && LANGS_ARG=""
   echo "== translating subs ($(basename "$SUBSRC") -> ${LANGS_ARG:-original only})"
+  # GEMINI_API_KEY is optional (translate falls back to original subs) — a
+  # missing secrets file must not kill the cast (same guard as dub_job).
   # shellcheck disable=SC1091
-  set -a; source "$HOME/.config/secrets/gemini-api-key.env"; set +a
+  [ -f "$HOME/.config/secrets/gemini-api-key.env" ] \
+    && { set -a; source "$HOME/.config/secrets/gemini-api-key.env"; set +a; }
   # Translation cache: keyed by video id + source/track langs — replays skip
   # the whole Gemini pass and start transcoding immediately.
   CACHE_DIR="$HOME/.cache/yt-live-subs"; mkdir -p "$CACHE_DIR"
