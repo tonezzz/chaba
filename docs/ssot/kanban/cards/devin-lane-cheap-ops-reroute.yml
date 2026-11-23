@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: backlog
-updated: 2026-11-23 20:42
+updated: 2026-11-23 21:00
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -89,6 +89,12 @@ comms:
     being dispatched to reduce devin usage. Also note: request dev-0045-next-slice-decision-...-70570c is STILL
     OPEN (which timer-alert slice to do). Re-queue only after either (a) the classifier fix lands on runner hosts
     and the card is re-classified, or (b) Tony explicitly answers with t'
+- at: 2026-11-23 21:00
+  from: tony
+  text: 'answered dev-0045-next-slice-decision-the-audit-f-70570c: re-pin 7 timer-alert cards to free_lane (recommended)'
+- at: 2026-11-23 21:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -99,16 +105,18 @@ requests:
     re-pin the 7 timer-alert cards to free_lane ops-readonly with held-out verifier + 0 retries — recommended, saves
     devin burn; (b) keep devin pins (these need judgment) and target remaining broad devin keywords instead; (c)
     hold until the runner-timer resume decision is settled.'
-  status: open
+  status: answered
   at: 2026-11-23 20:30
   from: devin
   options:
   - re-pin 7 timer-alert cards to free_lane (recommended)
   - keep devin pins, target broad keywords
   - hold until runner-timer resume
+  answer: re-pin 7 timer-alert cards to free_lane (recommended)
 action:
   type: dispatch
   status: idle
   lane: devin
   lane_source: kw
 claim: {}
+awaiting_action: true
