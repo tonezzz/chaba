@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
-column: backlog
-updated: 2026-11-23 20:27
+column: doing
+updated: 2026-11-23 20:43
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -10,14 +10,15 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
-  attempts: 0
+  attempts: 1
   last_failure: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''.
     | devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
     wall clock time, 566.7M memory peak.'
+  runner: mn01
 ref: OPS-0219
 comms:
 - at: 2026-11-19 08:58
@@ -305,6 +306,9 @@ comms:
 - at: 2026-11-23 20:27
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-23 20:43
+  from: mn01
+  text: claimed
 review_kind: verify
 claim:
-  since: 2026-11-23 16:50
+  since: 2026-11-23 20:43
