@@ -1,7 +1,7 @@
 id: ansible-verify-host-software-r7
 title: Ansible read-only verify for R7 host-software capabilities
 column: done
-updated: 2026-11-23 17:08
+updated: 2026-11-23 19:10
 brief: Add a parallel read-only ansible playbook that probes ssot.host-software.yml capabilities and writes per-host
   benchmark reports.
 priority: medium
@@ -39,5 +39,9 @@ comms:
     FAIL=con01 1/4 (python_ml timeout >20s) -> OPS-0039; tony-macbook/kk-macbook 1/2 (venv ensurepip/python3.14-venv
     missing) -> SYS-0040. kk-mac unreachable (Host key verification failed) — treated as down in report; laptop/offline
     class, not carded as defect. No host changes made.'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
