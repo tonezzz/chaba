@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
 column: backlog
-updated: 2026-11-23 19:12
+updated: 2026-11-23 19:22
 tags:
 - wiki
 - dispatch
@@ -27,21 +27,17 @@ spec: "Supersedes manual card wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 (p
   \ Education_talk:Ada-Ocb-Card-Runner as precedent (rev 243)."
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
     failed_noted: 2026-11-12 17:52
     stale_running: 2026-11-17 09:41
     session_gone: 2026-11-17 09:41
-  last_failure: 'exit=1 n-task-20261112-173553-supersedes-manual-card-wiki-ta.service: Failed with result ''exit-code''.
-    | devin-task-20261112-173553-supersedes-manual-card-wiki-ta.service: Consumed 52.532s CPU time over 7min 25.293s
-    wall clock time, 1G memory peak.'
-  attempts: 1
-  runner: tony-omen
-  result: 'exit=1 in-task-20261117-093818-supersedes-manual-card-wiki-ta.service: Failed with result ''exit-code''.
+  last_failure: 'exit=1 in-task-20261117-093818-supersedes-manual-card-wiki-ta.service: Failed with result ''exit-code''.
     | devin-task-20261117-093818-supersedes-manual-card-wiki-ta.service: Consumed 23.983s CPU time over 16.194s
     wall clock time, 741.2M memory peak.'
+  attempts: 0
 ref: OPS-0074
 comms:
 - at: 2026-11-12 17:34
@@ -239,3 +235,7 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:22
+  from: tony
+  text: retry requested
+claim: {}
