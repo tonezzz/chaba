@@ -1,6 +1,6 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
-column: review
+column: backlog
 updated: 2026-11-23 15:11
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
@@ -23,7 +23,7 @@ spec: 'Investigate the live KK-Mac worker: net.adanest.kk-llm-worker LaunchAgent
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: queued
   sweep:
     failed_noted: 2026-10-31 08:49
     session_gone: 2026-11-14 11:10
@@ -33,7 +33,6 @@ action:
   attempts: 1
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
-  runner: tony-dell
   result: 'exit=0 E | devin-task-kk-mac-worker-idle-poll-efficiency-1794628792.service: Failed with result ''exit-code''.
     | devin-task-kk-mac-worker-idle-poll-efficiency-1794628792.service: Consumed 467ms CPU time over 408ms wall
     clock time, 66.8M memory peak.'
@@ -206,5 +205,8 @@ comms:
   from: chaba
   text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-07 16:52 devin: applied on kk-mac (interval 60s) but
     code on unmerged origin/fix/ops-1036; 11-14 dispatch produced no commits; needs merge/PR — requeued for rework.'
+- at: 2026-11-23 15:11
+  from: tony
+  text: queued for processing
 review_kind: verify
 claim: {}
