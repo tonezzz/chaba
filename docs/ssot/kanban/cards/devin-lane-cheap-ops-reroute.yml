@@ -51,6 +51,12 @@ comms:
 - at: 2026-11-23 20:37
   from: tony
   text: '1'
+- at: 2026-11-23 20:37
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 20:37
+  from: tony
+  text: queued for processing
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -68,3 +74,9 @@ requests:
   - re-pin 7 timer-alert cards to free_lane (recommended)
   - keep devin pins, target broad keywords
   - hold until runner-timer resume
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: kw
+claim: {}
