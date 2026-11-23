@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: doing
-updated: 2026-11-23 16:21
+updated: 2026-11-23 16:29
 priority: high
 tags:
 - devnest
@@ -396,6 +396,12 @@ comms:
 - at: 2026-11-23 16:21
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 16:29
+  from: tony
+  text: 'answered ops-1244b-scope-is-uncarded-the-one-clai-61116a: proceed'
+- at: 2026-11-23 16:29
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 review_kind: verify
 claim:
   since: 2026-11-23 15:51
@@ -404,9 +410,10 @@ requests:
   ask: ops-1244b scope is uncarded — the one-claimer refactor (long-running nest-runner.service / runner-agent --loop
     + rendered unit) was closed via jules lane purge, never implemented. Re-card it on a live lane? (a) re-card
     on devin ★ (b) re-card on opencode (c) drop — oneshot+timer + drift-defer is good enough
-  status: open
+  status: answered
   at: 2026-11-23 15:56
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
