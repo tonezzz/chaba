@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: review
-updated: 2026-11-23 09:16
+updated: 2026-11-23 10:53
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -156,6 +156,13 @@ comms:
     PASS 53.4s (12 shell + 1 read + 1 write); both produced a valid health.json and passed the held-out verifier,
     with 0 denials, 0 write attempts outside the artifact, 0 mutating calls, 0 scope violations, exit 0. Contrast:
     cf-llama-70b FAIL (24k context 413) and historic '
+- at: 2026-11-23 10:53
+  from: tony
+  text: '2026-11-23 — step 4 attempted (read-only keyed probe, no config/billing change). On idc03 the four paid
+    Gemini values (GEMINI_API_KEY_TONY/_KK/_PAID/_MICHAEL) were read from the 0600 secret env — never printed —
+    and each used for GET /v1beta/models plus a tiny gemini-3.5-flash-lite generateContent call. ALL FOUR returned
+    200 and replied ''pong'': the paid keys are live. HOWEVER the GCP project-isolation question is NOT resolved:
+    successful responses and headers carry no project number; forced 404 '
 action:
   type: dispatch
   repo: chaba

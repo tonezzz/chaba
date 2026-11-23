@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: backlog
-updated: 2026-11-23 07:13
+updated: 2026-11-23 10:53
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -16,3 +16,18 @@ comms:
 - at: 2026-11-23 07:13
   from: tony
   text: card captured via board-api
+- at: 2026-11-23 10:53
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 10:53
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 10:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.73 > 0.85)'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: kw
+claim: {}
