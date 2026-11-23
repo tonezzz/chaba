@@ -1,7 +1,7 @@
 id: rebuild-gesture-controls-using-yolo-190356
 title: Rebuild gesture controls using YOLO
-column: doing
-updated: 2026-11-23 22:21
+column: review
+updated: 2026-11-23 22:26
 note: Tony initiated idea to rebuild gesture controls using YOLO on the desk companion.
 ref: OPS-0683
 comms:
@@ -529,6 +529,30 @@ comms:
     fleet spot-check idc02/idc03/mn01 clean. gestures: salvaged verified commit 5307864b from tony-dell branch dispatch/20261120-215246-*
     (never pushed) via ssh fetch + cherry-pick onto origin/main as d49f7d2; tool_runner conflict resolved to HEAD
     (fix already upstream). Gates: 33 gesture/c'
+- at: 2026-11-23 22:26
+  from: tony-omen
+  text: 'finished (ok): exit=0 ploy-ada.sh` flow on idc03. Card comms updated; no pending answers in `answers.jsonl`.
+    | devin-task-20261123-2207'
+- at: 2026-11-23 22:26
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 22:26
+  from: chaba
+  text: banked 65 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 22:26
+  from: chaba
+  text: pushed dispatch/20261123-220744-deploy-the-updated-runner-agen to origin
+- at: 2026-11-23 22:26
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 187.8s)
+- at: 2026-11-23 22:26
+  from: chaba
+  text: auto-merged ad27b26c (dispatch/20261123-220744-deploy-the-updated-runner-agen) → origin/main
+- at: 2026-11-23 22:26
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-220744-deploy-the-updated-runner-agen,
+    branch dispatch/20261123-220744-deploy-the-updated-runner-agen'
 requests:
 - id: tony-initiated-an-idea-to-rebu-92b479
   ask: Tony initiated an idea to rebuild gesture controls using YOLO on the desk companion, but the target repository,
@@ -544,7 +568,7 @@ requests:
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   sweep:
@@ -555,10 +579,10 @@ action:
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195341-deploy-the-updated-runner-agen.service:
     Failed with result ''exit-code''. | devin-task-20261123-195341-deploy-the-updated-runner-agen.service: Consumed
     4.269s CPU time.'
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195341-deploy-the-updated-runner-agen.service:
-    Failed with result ''exit-code''. | devin-task-20261123-195341-deploy-the-updated-runner-agen.service: Consumed
-    4.269s CPU time.'
+  result: 'exit=0 ploy-ada.sh` flow on idc03. Card comms updated; no pending answers in `answers.jsonl`. | devin-task-20261123-220744-deploy-the-updated-runner-agen.service:
+    Consumed 2min 47.330s CPU time over 14min 19.849s wall clock time, 1.5G memory peak.'
   runner: tony-omen
+  verified: true
 claim:
   since: 2026-11-23 22:06
 spec: Deploy the updated runner-agent script from the chaba repository to tony-dell to resolve agent drift. Rebuild
@@ -567,3 +591,4 @@ spec: Deploy the updated runner-agent script from the chaba repository to tony-d
   and API routes. The done-condition is verified when the system service runs successfully without failing with
   an exit code and gesture controls function as specified.
 awaiting_action: true
+review_kind: verify
