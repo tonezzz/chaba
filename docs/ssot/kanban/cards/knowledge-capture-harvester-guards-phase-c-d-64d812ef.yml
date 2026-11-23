@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 11:29
+updated: 2026-11-23 11:50
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -65,4 +65,11 @@ comms:
     (kept for audit, no longer cited). Regenerated fresh from clean worktree at master tip 104e40d2d1: report capture-proposal-20261123T112751.md
     + capture-ledger.yml in ~/.local/share/chaba/capture/. Review: 2921 proposals (2201 new, 720 within-run dups);
     0 kanban creates from existing card comms (50 card-comm kanban proposals all action=link, all parent-card-sha'
+- at: 2026-11-23 11:50
+  from: devin
+  text: '[2026-11-23 opencode] Phase D baseline landed (92fc6f92ae). SCOPE (approved via decision): baseline from
+    existing durable sources only — measure repeat-ask rate from ssot.repeat-asks.yml; label miss rate, stale-pointer
+    incidents and time-to-find as unmeasurable where no durable source exists, each with a proposal for where to
+    add one; a proxy may be reported only as a proxy, never as measured incidents. Tune the matrix from measured
+    precision evidence; --apply stays a separate gated decision. RE'
 action: {}
