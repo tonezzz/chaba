@@ -1,7 +1,7 @@
 id: disk-guard-ssot-enforce
 title: Enforce SSOT disk thresholds in disk-trend-watch.py (max_root_disk_percent + 15 GiB floor)
 column: doing
-updated: 2026-11-23 11:07
+updated: 2026-11-23 11:11
 brief: disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01).
   tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
 priority: medium
@@ -56,6 +56,13 @@ comms:
   from: devin
   text: 'picked up: adding per-host max_root_disk_percent + 15GiB floor + underused signal to disk-trend-watch.py,
     parity with disk-headroom.yml'
+- at: 2026-11-23 11:11
+  from: devin
+  text: 'done: disk-trend-watch.py gains warn tier — / >= per-host ssot max_root_disk_percent (85 dell/omen/mn01,
+    90 macbook, default=90) or / avail < 15 GiB mddb floor -> warn card (medium, auto-closes on recovery); flat
+    90 crit + fill unchanged. Underused mounts (<50% or >100 GiB free) flagged in report only, same signal added
+    to disk-headroom.j2 for parity. selftest PASS + fixture verifies tony-dell@88% now cards. Deliverables in worktree:
+    scripts/ada/disk-trend-watch.py, ansible/playbooks/{disk-headr'
 action:
   type: dispatch
   status: running
