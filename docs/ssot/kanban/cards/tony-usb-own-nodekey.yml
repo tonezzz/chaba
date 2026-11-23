@@ -1,9 +1,9 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: doing
+column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 16:50
+updated: 2026-11-23 16:52
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -352,6 +352,17 @@ comms:
     [done] all 3 jobs verified exi; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613
     ; [tony-usb-own-nodekey] finished (failed): exit=1 rocess exited, code=exited, sta; [tony-usb-own-nodekey] finished
     (failed): exit=1 vin-task-202'
+- at: 2026-11-23 16:52
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:  —
+    attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u (rate limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-23 16:52
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 17:22'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -360,16 +371,19 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-23 16:32
     zero_commit: 2026-11-23 16:32
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:
+    Failed with result ''exit-code''. | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service: Consumed
+    34.394s CPU time.'
   attempts: 2
-  result: 'exit=1 261123-162813-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''. | devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u.service:
-    Consumed 1min 26.161s CPU time over 2min 11.818s wall clock time, 814.5M memory peak.'
+  result: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:
+    Failed with result ''exit-code''. | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service: Consumed
+    34.394s CPU time.'
   verified: false
   runner: idc02
 claim:
