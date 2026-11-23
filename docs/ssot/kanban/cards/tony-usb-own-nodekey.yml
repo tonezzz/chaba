@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 16:27
+updated: 2026-11-23 16:28
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -306,6 +306,16 @@ comms:
 - at: 2026-11-23 16:27
   from: tony-omen
   text: claimed
+- at: 2026-11-23 16:28
+  from: chaba
+  text: started devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u on tony-omen (dispatch)
+- at: 2026-11-23 16:28
+  from: chaba
+  text: 'primer injected 8 lesson(s): runbook docs/kb/hardware-mn01-tony-usb.md: mn01 — Fujitsu ESPRIMO Q556/2 (real
+    h; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; runbook docs/kb/mn01-stick-standard.md:
+    USB stick standard — mn01 rescue stick &; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] [done] all 3 jobs
+    verified exi; [dispatch-triage-arbiter-label-pass] session up on tony-omen — prior branch neve; [omen-maintenance-preflight-back-up-ha-st-b3738f]
+    2026-10-25 '
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
