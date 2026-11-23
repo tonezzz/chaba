@@ -1,7 +1,7 @@
 id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
 title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
-column: doing
-updated: 2026-11-23 22:27
+column: backlog
+updated: 2026-11-23 22:35
 priority: medium
 spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
   Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
@@ -23,9 +23,12 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
-  runner: tony-dell
+  status: queued
   attempts: 1
+  result: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
+    Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
+  last_failure: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
+    Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
 ref: OPS-0048
 comms:
 - at: 2026-11-23 22:22
@@ -60,5 +63,13 @@ comms:
     is now qwen2.5:32b, but on the 36 GB KK-Mac a 32b ; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Read-only
     inventory update: KK; runbook docs/kb/devnest-model-cache.md: DevNest model cache — fetch once on a fa; [ai-news-education-morning-brief]
     Tony''s follow-up: structure'
+- at: 2026-11-23 22:35
+  from: tony-dell
+  text: 'finished (failed): exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-ma
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 22:35
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c (rate limit)
+    — tony-dell holds new claims ~30m
 claim:
   since: 2026-11-23 22:26
