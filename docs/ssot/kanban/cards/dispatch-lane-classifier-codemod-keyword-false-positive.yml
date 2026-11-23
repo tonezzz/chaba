@@ -1,7 +1,7 @@
 id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
-column: backlog
+column: done
 updated: 2026-11-23 07:19
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
@@ -38,7 +38,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: failed
+  status: done
   attempts: 2
   sweep:
     stale_running: 2026-11-20 19:12
@@ -200,5 +200,8 @@ comms:
 
 
     AFTER (word-boundary _kw_hit + _codemod_hit '
+- at: 2026-11-23 07:19
+  from: devin
+  text: closed by devin
 claim:
   since: 2026-11-20 19:42
