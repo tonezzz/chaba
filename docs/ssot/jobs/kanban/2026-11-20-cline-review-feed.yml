@@ -1,0 +1,56 @@
+title: Cline review-feed lane — review-column evidence verdicts through con01 cline-kanban
+id: 2026-11-20-cline-review-feed
+date: 2026-11-20
+domain: kanban
+host: con01
+status: verified
+cards:
+  parent: cline-card-review-lane
+  pilots: [vcast-auto-yt-live-api, board-janitor-locked-edit-atomic-write-db7bed]
+summary: >-
+  Built scripts/ops/cline-review-feed.py: selects cline-suitable review
+  cards (bounded deliverable / evidence-verdict only; excludes open human
+  requests, secrets/deploys/host-mutations/live-repo work), creates one
+  con01 Cline task per card ([CARDREVIEW:<id>] marker, cap 3 in-flight,
+  ollama/qwen2.5:7b allowlist = zero paid spend), collects the worktree
+  patch via bridge.collect_patch, verifies verdict.json + evidence.md,
+  and reports back to the card as a comms line plus a /request with
+  close/keep/requeue dict options and a suggestion. Never moves or
+  closes a card — weak-model draft only, human keeps the gate.
+verification:
+  pilots:
+    - card: vcast-auto-yt-live-api
+      kind: auto-incident
+      task: e05b5
+      verdict: investigate
+      patch_bytes: 1799
+      board: comms verdict line + request cline-drafted-verdict-investigate-connec-96bd80 (open)
+    - card: board-janitor-locked-edit-atomic-write-db7bed
+      kind: bounded-deliverable
+      task: b699c
+      verdict: investigate
+      board: comms verdict line + request cline-drafted-verdict-investigate-done-c-a696fe (open)
+  checks:
+    - both cards remained in column=review — no auto-close
+    - rerun pass produced zero new board writes (dedupe latched)
+    - provider ollama/qwen2.5:7b local — zero paid/model-key spend
+fixes:
+  - "8b60e repeat-comms bug: dedupe by last-reported (task_id|column|updatedAt)
+     in ~/.local/state/cline-review-feed.json — a settled task that doesn't
+     change produces no new comms, and the options request fires once per card"
+  - "report latch only after board-api confirms ok — a failed /comment post
+     no longer suppresses the retry"
+  - "marker is [CARDREVIEW:<id>] not the spec'd [CARD:<id>] —
+     cline-board-mirror.py claims every [CARD: task as its own projection
+     and would rewrite/delete live review tasks"
+  - "ACTOR must be devin|chaba|ada|tony — board-api 400s other from values"
+runbook: docs/kb/cline-review-feed.md
+artifacts:
+  - scripts/ops/cline-review-feed.py
+  - docs/kb/cline-review-feed.md
+next:
+  - "declared timer on con01 (e.g. hourly cline-review-feed.service) if the
+     lane proves useful — host mutation, not done in this dispatch"
+  - "tasks stay in_progress on the cline board after collection when the
+     runtime loses the session record; consider a cleanup move to trash
+     after report once the pattern settles"
