@@ -1,6 +1,6 @@
 id: yt-voice-dub-mode
 title: YT voice dub — voice-mode selector on the cast URL
-column: backlog
+column: doing
 program: yt-voice-dub
 area: productization
 priority: high
@@ -28,7 +28,7 @@ spec: 'Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast: acc
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
   sweep:
@@ -37,7 +37,7 @@ action:
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 k-20261123-202153-wire-voice-dubbing-into-the-ca.service: Failed with result ''exit-code''.
     | devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
     wall clock time, 358.3M memory peak.'
@@ -45,7 +45,8 @@ action:
   result: 'exit=1 k-20261123-202153-wire-voice-dubbing-into-the-ca.service: Failed with result ''exit-code''. |
     devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
     wall clock time, 358.3M memory peak.'
-updated: 2026-11-23 20:47
+  runner: mn01
+updated: 2026-11-23 20:56
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -438,7 +439,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
     — claims held ~28m'
+- at: 2026-11-23 20:56
+  from: mn01
+  text: claimed
 claim:
-  since: 2026-11-23 20:21
+  since: 2026-11-23 20:56
 ref: ADA-0156
 review_kind: verify
