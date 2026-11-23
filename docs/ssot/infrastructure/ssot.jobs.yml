@@ -1058,7 +1058,8 @@ jobs:
   host: idc02
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 30m
+  note: '2026-11-23 — 10m too tight: 09:11 run needed 9m47s and later runs were TERM-killed at 10m; OPS-1197.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1135,7 +1136,8 @@ jobs:
   host: idc02
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 30m
+  note: '2026-11-23 — 10m too tight: 09:11 run needed 7m53s and later runs were TERM-killed at 10m; OPS-1198.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
