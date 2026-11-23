@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
-column: doing
-updated: 2026-11-23 14:50
+column: review
+updated: 2026-11-23 14:52
 priority: medium
 tags:
 - mddb
@@ -331,10 +331,17 @@ comms:
     walk, short-page stop, exact boundary, offset-ignored no-spin guard, dict-wrapped results; 12/12 pass. (2) Re-ran
     embed-lane.py banks: 370 new ada-ha-bank-devin-handoff docs delivered, 0 failed (all other colls todo=0). (3)
     Verified live: key-set diff source->mddb-embed :11028 over co'
+- at: 2026-11-23 14:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 tcome-20261123-144230-scripts-embed-embed-lane-py-do.md`, and final card comms posted.
+    | devin-task-20261123-1442'
+- at: 2026-11-23 14:52
+  from: chaba
+  text: ran under executor=devin provider=devin
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   executor: devin
   sweep:
@@ -346,6 +353,9 @@ action:
     over 1min 42.961s wall clock time, 259.6M memory peak.'
   attempts: 1
   runner: tony-macbook
+  result: 'exit=0 tcome-20261123-144230-scripts-embed-embed-lane-py-do.md`, and final card comms posted. | devin-task-20261123-144230-scripts-embed-embed-lane-py-do.service:
+    Consumed 1min 4.329s CPU time over 8min 20.446s wall clock time, 850.1M memory peak.'
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-23 14:41
