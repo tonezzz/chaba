@@ -2739,6 +2739,24 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
     return f"devin-task-{tid}", tid, ""
 
 
+def _kk_mac_tokens_fragment(usage: dict) -> str:
+    """lane-savings TOKENS_RE-compatible usage fragment for a finished
+    kk_mac_local run (card kk-mac-usage-to-lane-savings). Compact JSON —
+    lane-savings matches the literal `"tokens":{"total":N,"input":N,
+    "output":N}` inside action.result, which board-api stores as
+    result[:300], so finish_pass PREPENDS this to the finish result.
+    Ollama counts: prompt_eval_count = input, eval_count = output."""
+    try:
+        inp = int(usage.get("prompt_eval_count") or 0)
+        out = int(usage.get("eval_count") or 0)
+    except (TypeError, ValueError):
+        return ""
+    if not (inp or out):
+        return ""
+    return (f'{{"tokens":{{"total":{inp + out},"input":{inp},'
+            f'"output":{out}}}}} ')
+
+
 def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     """kk_mac_local closeout — runs BEFORE close_out_merge like
     finish_opencode_lane. Returns (may_merge, notes, fallback_reason):
@@ -2778,6 +2796,12 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
             (taskdir / "kk_mac_result.json").read_text())
     except Exception:
         result = {}
+    frag = _kk_mac_tokens_fragment(result.get("usage") or {})
+    if frag:
+        # finish_pass prepends this to its /action result so the
+        # TOKENS_RE fragment lands inside board-api's result[:300]
+        # cap -> action.result -> lane-savings token evidence.
+        ent["result_extra"] = frag
     art = str(verdict.get("artifact")
               or (_act(card)).get("artifact") or "")
     wt = Path(str(meta.get("worktree") or ""))
@@ -3644,8 +3668,11 @@ def finish_pass(st: dict) -> bool:
                 # In-claim fallback (kk-mac-jev-adapter-integration):
                 # the bounded lane declined after starting — mark the
                 # executor consumed on the local copy and run the next
-                # lane now; the card never requeues for it.
+                # lane now; the card never requeues for it. Drop the
+                # kk_mac token fragment so the next lane's own finish
+                # result doesn't carry a stale usage claim.
                 (_ensure_act(card))["kk_mac_tried"] = True
+                ent.pop("result_extra", None)
                 u2, t2, e2 = start_task(card, "dispatch")
                 if e2 or not u2:
                     notes.append(f"kk_mac_local fell back ({kk_fb}) but "
@@ -3675,8 +3702,13 @@ def finish_pass(st: dict) -> bool:
                     verified = False
             else:
                 verified = False
+        # Lane-usage evidence (kk-mac-usage-to-lane-savings): a lane
+        # closeout may stash a compact token fragment on the state entry
+        # (ent["result_extra"]). Prepend so it survives board-api's
+        # result[:300] -> action.result cap where lane-savings reads it.
+        extra = str(ent.pop("result_extra", "") or "")
         body = {"id": cid, "do": "finish", "host": HOST,
-                "ok": ok, "result": result}
+                "ok": ok, "result": extra + result}
         if verified is not None:
             body["verified"] = verified
         resp = api("/action", body)
