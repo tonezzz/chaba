@@ -239,7 +239,8 @@ def publish(collection: str, slug: str, title: str, content: str,
     scope = lane if lane in ("tony", "michael", "kk") else "shared"
     meta = {
         "attribute": ["page"], "bank": ["cms"], "domain": ["memory"],
-        "format": ["markdown"], "instance": ["ada"], "kind": ["report"],
+        "format": ["markdown"], "instance": ["ada"],
+        "kind": ["memory-inspect"],
         "lang": ["en"], "scope": [scope], "slug": [slug], "source": ["api"],
         "status": ["active"], "subject": [slug], "title": [title],
         "updated": [now], "valid_from": [now[:10]], "last_verified": [now[:10]],

@@ -206,7 +206,7 @@ def detect_kind(doc: dict, collection: str = "") -> str:
         return "media-inbox"
     if "timeline" in key:
         return "timeline"
-    if key.startswith("memory-inspect"):
+    if kind == "memory-inspect" or key.startswith("memory-inspect"):
         return "memory-inspect"
     if role == "digest" or key.endswith("-digest"):
         return "digest"
@@ -392,7 +392,7 @@ def md_to_html(md_text: str, collection: str) -> tuple[str, bool]:
 
 PAGE_ORDER = ["digests", "reports", "cameras", "flood", "news", "bench",
               "ops", "research", "projects", "personal", "docs", "meta",
-              "pages", "automation"]
+              "memory", "pages", "automation"]
 DOMAIN_SECTION = {
     "cctv": "cameras", "flood": "flood",
     "news": "news", "media": "news", "weather": "news", "finance": "news",
@@ -412,8 +412,8 @@ SECTION_TITLES = {
     "flood": "Flood", "news": "News & media", "bench": "Bench",
     "ops": "Ops & infra", "research": "Research & notes",
     "projects": "Projects", "personal": "Personal",
-    "docs": "Docs & policy", "meta": "Meta", "pages": "Pages",
-    "automation": "Automation",
+    "docs": "Docs & policy", "meta": "Meta", "memory": "Memory",
+    "pages": "Pages", "automation": "Automation",
 }
 
 
@@ -435,7 +435,7 @@ def index_rows(collection: str, now: dt.datetime) -> list[dict]:
         if kind == "archive" or status in EXCLUDED_STATUS:
             continue
         if collection in ("ada-cms-pages", "ada-cms-pages-kk") \
-                and kind not in ("report", "page"):
+                and kind not in ("report", "page", "memory-inspect"):
             continue
         slug = doc_slug(d)
         role = meta1(meta, "report_role")
@@ -446,6 +446,8 @@ def index_rows(collection: str, now: dt.datetime) -> list[dict]:
             section = "docs"
         elif role == "digest":
             section = "digests"
+        elif kind == "memory-inspect":
+            section = "memory"
         elif kind == "report":
             section = "reports"
         else:

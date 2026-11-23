@@ -18,14 +18,18 @@ design:
     (kb-*, ada-cms-*) are skipped — they live on the CMS plane."
   pages: "<cms_collection>/memory-inspect (index, bank roster + counts)
     + memory-inspect-<bank> leaves — subject|attribute|kind|value|modified
-    tables, meta kind=report / report_role index|leaf / domain=memory /
-    lane=<instance>."
+    tables, meta kind=memory-inspect / report_role index|leaf /
+    domain=memory / lane=<instance>."
   lanes: "tony -> ada-cms-pages, kk -> ada-cms-pages-kk,
     michael -> ada-cms-pages-mn, kk-dev -> ada-cms-pages-kk-dev."
   render: "chaba-cms-render (apps/cms-render) — detect_kind
-    key.startswith('memory-inspect') -> memory-inspect.html (extends
-    report.html); ada-cms-pages-mn + ada-cms-pages-kk-dev added to
-    COLLECTIONS so per-lane pages resolve."
+    kind=memory-inspect or key.startswith('memory-inspect') ->
+    memory-inspect.html (extends report.html + read-only banner);
+    ada-cms-pages-mn + ada-cms-pages-kk-dev added to COLLECTIONS so
+    per-lane pages resolve. index_rows groups them under a 'Memory'
+    section (kind=memory-inspect kept out of kind=report so report
+    sweeps like report-distill skip the snapshots). cms_index.py
+    whitelists the kind too."
   redaction: "entries whose attribute/subject match credential words
     (key|token|secret|passw|credential|api_key|auth) or whose value
     matches live-secret shapes (same family as backup-mddb-banks.py)

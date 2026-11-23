@@ -156,7 +156,7 @@ class RunLaneTest(unittest.TestCase):
         self.assertEqual(keys, ["memory-inspect", "memory-inspect-general"])
         for w in fake.writes:
             self.assertEqual(w["collection"], "ada-cms-pages")
-            self.assertEqual(w["meta"]["kind"], ["report"])
+            self.assertEqual(w["meta"]["kind"], ["memory-inspect"])
             self.assertEqual(w["meta"]["domain"], ["memory"])
             self.assertEqual(w["meta"]["lane"], ["tony"])
         leaf = next(w for w in fake.writes if w["key"].endswith("-general"))

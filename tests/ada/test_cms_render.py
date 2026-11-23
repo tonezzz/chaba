@@ -93,6 +93,8 @@ class MetaHelpers(unittest.TestCase):
              "memory-inspect"),
             ("memory-inspect-general", "ada-cms-pages-mn", "report",
              "leaf", "memory-inspect"),
+            ("snap-1", "ada-cms-pages", "memory-inspect", "leaf",
+             "memory-inspect"),          # kind alone detects too
             ("anything", "ada-cms-pages", "report", "", "report"),
             ("anything", "ada-cms-pages", "page", "", "page"),
             ("cfg", "ada-cms-automation", "automation-config", "",
@@ -250,10 +252,14 @@ class IndexRowsTests(unittest.TestCase):
                                         domain="ops"))
         self.fake.seed("cam-1", meta_=meta(kind="page", slug="cam-1",
                                            domain="cctv"))
+        self.fake.seed("memory-inspect-general", meta_=meta(
+            kind="memory-inspect", slug="memory-inspect-general",
+            domain="memory"))
         rows = srv.index_rows("ada-cms-pages", self.now)
         secs = {r["slug"]: r["section"] for r in rows}
         self.assertEqual(secs, {"dg": "digests", "rp": "reports",
-                                "cam-1": "cameras"})
+                                "cam-1": "cameras",
+                                "memory-inspect-general": "memory"})
 
 
 class RouteTests(unittest.TestCase):
@@ -271,6 +277,12 @@ class RouteTests(unittest.TestCase):
             kind="report", slug="news-digest", report_role="digest",
             domain="news", title="News digest",
             updated="2026-10-15T00:00:00+00:00"), md="# d")
+        cls.fake.seed("memory-inspect-general", meta_=meta(
+            kind="memory-inspect", slug="memory-inspect-general",
+            report_role="leaf", domain="memory",
+            title="Memory inspect — general",
+            updated="2026-11-23T00:00:00+00:00"),
+            md="# Memory inspect\n\n| attribute | kind |\n|---|---|")
         cls.orig_post = srv._post
         cls.orig_listing, cls.orig_pages, cls.orig_feeds = \
             srv.LISTING, srv.PAGES, srv.FEEDS
@@ -309,6 +321,15 @@ class RouteTests(unittest.TestCase):
         r = self.client.get("/k/digest")
         self.assertEqual(r.status_code, 200)
         self.assertIn("news-digest", r.text)
+
+    def test_memory_inspect_page_and_listing(self):
+        r = self.client.get("/p/memory-inspect-general")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("Read-only memory-bank snapshot", r.text)
+        self.assertIn("<table>", r.text)
+        r = self.client.get("/k/memory-inspect")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("memory-inspect-general", r.text)
 
     def test_feed(self):
         import xml.dom.minidom as md
