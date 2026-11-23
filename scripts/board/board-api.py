@@ -2503,12 +2503,27 @@ def _retired_lanes() -> set:
     return retired
 
 
+_VALID_LANES_CACHE: dict = {"mtime": 0.0, "value": None}
+
+
 def valid_lanes() -> set:
     """action.lane values the write door admits — the same union /card
     validates against (LANE_MODELS ∪ LANE_EXECUTORS), minus any lane the
-    DevNest lane catalog marks removed/retired."""
-    return (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)) \
+    DevNest lane catalog marks removed/retired. Cached on the catalog
+    file's mtime so the prose-heavy YAML isn't re-parsed per request."""
+    try:
+        mtime = (REPO / "docs/ssot/infrastructure/"
+                 "ssot.devnest-lanes.yml").stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    if _VALID_LANES_CACHE["value"] is not None and \
+            _VALID_LANES_CACHE["mtime"] == mtime:
+        return _VALID_LANES_CACHE["value"]
+    value = (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)) \
         - _retired_lanes()
+    _VALID_LANES_CACHE["mtime"] = mtime
+    _VALID_LANES_CACHE["value"] = value
+    return value
 
 
 def do_card_set(card: dict, body: dict, frm: str) -> str:
@@ -2519,6 +2534,16 @@ def do_card_set(card: dict, body: dict, frm: str) -> str:
     request flock so it can't race a claim. Field-ownership rule:
     workflow fields (column, requests, comms) are NOT admitted here —
     producers must not use this door on them."""
+    # Routing fields live on dispatch actions only. A card with no
+    # action block (or a non-dispatch one) must be armed via /card first
+    # — _ensure_act would otherwise fabricate an action block here and
+    # make a never-dispatched card dispatchable on the next queue.
+    raw_a = card.get("action")
+    if not isinstance(raw_a, dict) or \
+            str(raw_a.get("type") or "").strip() != "dispatch":
+        raise ValueError(
+            "card has no dispatch action — arm it with /card first; "
+            "/card-set only edits routing fields on dispatch cards")
     a = _ensure_act(card)
     st = a.get("status", "idle")
     if st in ("running", "claimed", "starting") or a.get("runner"):
@@ -5957,6 +5982,18 @@ def _selftest() -> None:
     rejects(lambda: do_card_set(
         scard, {"set": {"tags": [str(i) for i in range(21)]},
                 "reason": "x"}, "devin"), "<=20 entries")
+    # non-dispatch cards (no action, or a non-dispatch type) are refused
+    # — /card-set only edits routing fields on dispatch cards; arming
+    # happens via /card
+    rejects(lambda: do_card_set(
+        {"id": "no-action", "comms": [], "tags": []},
+        {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
+        "no dispatch action")
+    rejects(lambda: do_card_set(
+        {"id": "script-card", "comms": [], "tags": [],
+         "action": {"type": "script", "status": "queued"}},
+        {"set": {"lane": "codemod"}, "reason": "x"}, "devin"),
+        "no dispatch action")
     # the classifier still respects an author-set lane on next queue
     scard2 = {"id": "set-2", "comms": [],
               "action": {"type": "dispatch", "status": "queued"}}
