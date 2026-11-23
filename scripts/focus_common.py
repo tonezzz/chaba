@@ -276,7 +276,7 @@ def inbox_items(inbox_dir, with_file=True):
         if p.name.startswith("TEMPLATE") or p.name == "processed":
             continue
         try:
-            doc = yaml.safe_load(p.read_text())
+            doc = yaml.safe_load(p.read_text()) or {}
         except yaml.YAMLError:
             continue
         focus = doc.get("focus") or doc
