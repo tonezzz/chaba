@@ -1,7 +1,7 @@
 id: chaba-exec-checkout-idc02-dirty-files
 title: 'idc02 exec checkout: 13 modified + ~227 untracked files with no owner; slows repo-sync'
-column: backlog
-updated: 2026-11-23 14:20
+column: done
+updated: 2026-11-23 15:05
 brief: idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash;
   pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.
 priority: medium
@@ -60,3 +60,14 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:05
+  from: devin
+  text: 'CONFIRMED: the 7 code/WIP files stay committed (no revert). All 5 commits pushed to origin/master: cb3c309311
+    (config/profiles), d2d648c256 (code/WIP), b736c7f157 (.gitignore), f3a406e8c8 (eval cleanup), plus the .gitignore
+    change. Exec checkout on idc02 is clean (0 dirty, 0 untracked). Only warning: 21 commits behind origin/master
+    (repo-sync will catch up). Closing this card as resolved.'
+- at: 2026-11-23 15:05
+  from: devin
+  text: closed by devin
+action:
+  status: done
