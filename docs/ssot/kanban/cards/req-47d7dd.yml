@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
 column: review
-updated: 2026-11-23 14:08
+updated: 2026-11-23 14:19
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -445,6 +445,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:18
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-140026-redeploy-the-r'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -508,6 +515,7 @@ action:
     Consumed 23.544s CPU time over 3min 13.149s wall clock time, 1G memory peak, 668.7M memory swap peak.'
   sweep:
     session_gone: 2026-11-23 11:34
+    no_repo: 2026-11-23 14:19
   runner: tony-dell
 spec: Redeploy the runner-agent script from the local chaba repository to tony-dell using scp to ~/.local/bin/runner-agent,
   resolving the drift issue noted by idc03. Once redeployed, queue and execute the Bangkok flood monitoring and

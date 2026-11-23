@@ -1,7 +1,7 @@
 id: dispatch-retry-storm-worktree-flood
 title: Dispatch retry loop spawned ~125 worktrees on omen (Nov 8-9) — needs dedupe/backoff
 column: review
-updated: 2026-11-23 14:08
+updated: 2026-11-23 14:19
 priority: high
 tags:
 - dispatch
@@ -147,6 +147,10 @@ comms:
 - at: 2026-11-23 14:08
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: 'Goal: Implement per-card backoff and a live retry cap in the dispatch loop on tony-omen to prevent worktree
   floods like the ~130 accumulated on Nov 8-9 for cards such as timer-log-shipper-severe and ada-proactive-digest-morning-b.
