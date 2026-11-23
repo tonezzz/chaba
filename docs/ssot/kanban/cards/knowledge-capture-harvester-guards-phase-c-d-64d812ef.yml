@@ -1,0 +1,26 @@
+id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
+title: Knowledge capture Phase C/D - harvester, router, measurement guards
+column: backlog
+updated: 2026-11-23 07:01
+brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
+  D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
+  SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
+priority: medium
+tags:
+- ssot,knowledge-capture,automation,phase-
+spec: 'Goal: implement remaining automation phases from docs/ssot/ssot.knowledge-capture.yml (~lines 256-259). Phase
+  C - idempotent capture-router and harvester/index-refresh jobs writing ONLY to approved sinks (SSOT, board-api,
+  /lesson, docs/kb, evidence surfaces, OpenChamber notes) with audit metadata and stable dedupe keys; no Ada personal-memory
+  (ada-*) writes; respect single-writer/served-checkout and checkout-role rules and the board-api mutation door.
+  Phase D - measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; use results to tune the routing
+  matrix and promotion thresholds in SSOT. Constraints: pointer-first captures (refs + as_of + refresh recipe, not
+  copied SSOT bodies or volatile snapshots); verify by surface (producer AND consumer); fail loud/bounded evidence,
+  bounded retries, advisory components degrade (per DEV-0253 error-handling standard for any unattended lane). Done-condition:
+  jobs run idempotently with auditable dedupe, metrics reported, SSOT tuned. Out of scope / already decided: focus
+  parity (mcp_focus/logs) was raised on DEV-0038 and answered ''card-only'' by Tony 2026-11-21 — do not re-open
+  unless Tony asks. Phase B+ hooks and ansible playbook already landed; do not duplicate.'
+ref: OPS-0016
+comms:
+- at: 2026-11-23 07:01
+  from: tony
+  text: card captured via board-api
