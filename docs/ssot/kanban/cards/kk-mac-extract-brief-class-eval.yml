@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
-column: doing
-updated: 2026-11-23 17:07
+column: backlog
+updated: 2026-11-23 17:10
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -10,15 +10,17 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
-  result: 'exit=1 mac-local-lane-admits-4.service: Failed with result ''exit-code''. | devin-task-20261123-160101-the-kk-mac-local-lane-admits-4.service:
-    Consumed 1min 19.124s CPU time over 19min 9.711s wall clock time, 1G memory peak, 709.6M memory swap peak.'
+  status: failed
+  result: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''. |
+    devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
+    wall clock time, 566.7M memory peak.'
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
   attempts: 2
-  last_failure: 'exit=1 mac-local-lane-admits-4.service: Failed with result ''exit-code''. | devin-task-20261123-160101-the-kk-mac-local-lane-admits-4.service:
-    Consumed 1min 19.124s CPU time over 19min 9.711s wall clock time, 1G memory peak, 709.6M memory swap peak.'
+  last_failure: 'exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result ''exit-code''.
+    | devin-task-20261123-165641-the-kk-mac-local-lane-admits-4.service: Consumed 43.702s CPU time over 12min 46.632s
+    wall clock time, 566.7M memory peak.'
   runner: tony-macbook
 ref: OPS-0219
 comms:
@@ -246,6 +248,15 @@ comms:
     path + kkmac_eval.sh with card-judgment gates) and docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml. Re-ran
     live on kk-mac from tony-omen: structured_extract 0.93-1.00 READY on all 3 models; operator_brief 0.31-0.56
     (facts echo misses, JSON perfect); safe_route 0.33-0.60 NOT rea'
+- at: 2026-11-23 17:10
+  from: tony-macbook
+  text: 'finished (failed): exit=1 k-20261123-165641-the-kk-mac-local-lane-admits-4.service: Failed with result
+    ''exit-code''. | devin-task-20261123-1 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-23 17:10
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-165641-the-kk-mac-local-lane-admits-4 (rate limit)
+    — tony-macbook holds new claims ~30m
 review_kind: verify
 claim:
   since: 2026-11-23 16:50
