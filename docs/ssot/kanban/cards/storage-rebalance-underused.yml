@@ -1,7 +1,7 @@
 id: storage-rebalance-underused
 title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
 column: doing
-updated: 2026-11-23 11:32
+updated: 2026-11-23 11:34
 brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
   and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
   to free space.
@@ -80,6 +80,12 @@ comms:
 - at: 2026-11-23 11:32
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-23 11:34
+  from: devin
+  text: 'attempt 2: recovered attempt-1 work (8c73817d45) — its cherry-pick conflicted because the parallel disk-guard-ssot-enforce
+    checkpoint had already landed the base underused flag. Kept that model and ported the refinements on top: 10
+    GiB size floor, ok-gate (alerting mounts never double-flag), summary surfacing in j2. mddb-backup-offload.sh
+    + plan doc landed. selftest PASS, j2 mock-render verified. Prod batch request still open — no answer yet.'
 action:
   type: dispatch
   status: running
