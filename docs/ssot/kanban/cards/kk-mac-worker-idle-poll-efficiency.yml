@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
 column: backlog
-updated: 2026-11-23 15:25
+updated: 2026-11-23 15:52
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -259,5 +259,8 @@ comms:
   from: chaba
   text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152219-extend-wiki-page-door-to-allow)
     — claims held ~29m'
+- at: 2026-11-23 15:52
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.86 > 1.5)'
 review_kind: verify
 claim: {}
