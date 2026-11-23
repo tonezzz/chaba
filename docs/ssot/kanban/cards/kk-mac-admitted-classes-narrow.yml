@@ -1,7 +1,7 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
 column: doing
-updated: 2026-11-23 22:15
+updated: 2026-11-23 22:27
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
   exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
@@ -293,5 +293,12 @@ comms:
     structured_extract} across kk_mac_llm.ALLOWED_TASKS, capacity_producer, plan_validator, capacity_broker, dispatch_repos+runner-agent
     KK_MAC_TASK_CLASSES, route keywords, lane contract + KB docs, with held-class tests; score.py keeps benching
     held classes (now flagged HELD'
+- at: 2026-11-23 22:27
+  from: devin
+  text: DONE (attempt 2). Recovered attempt-1's completed-but-unmerged narrowing from dispatch/20261123-211800 checkpoints
+    (rate-limit kill post-work), audited it, fixed one test bug (underscore card ids), added score.py HELD flagging,
+    and committed 07df45f3ed + df575fcd9a on the dispatch branch. Admission is now {summary, structured_extract}
+    at all 7 declaration sites + lane contract + 4 docs; held classes fail closed at write door/claim/worker/producer/broker/executor
+    and stay verifier-supported for r
 claim:
   since: 2026-11-23 22:05
