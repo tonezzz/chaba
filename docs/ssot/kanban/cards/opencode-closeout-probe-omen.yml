@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-omen
 title: OpenCode closeout probe pinned to tony-omen
-column: doing
-updated: 2026-11-23 18:46
+column: review
+updated: 2026-11-23 18:49
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-omen.
 priority: low
 program: chaba-ci
@@ -15,7 +15,7 @@ spec: Append one marker line to README.md, run OpenCode free_lane with flash-lit
 action:
   type: dispatch
   host: tony-omen
-  status: running
+  status: done
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   sweep:
@@ -27,6 +27,9 @@ action:
     wall clock time, 1.1G memory peak.'
   attempts: 1
   runner: tony-omen
+  result: 'exit=0 ad.md` on the branch, and the outcome + key-ACL follow-up are posted to the card comms. | devin-task-20261123-183844-append-one-marker-line-to-read.service:
+    Consumed 2min 15.103s CPU time over 7min 28.563s wall clock time, 1.6G memory peak.'
+  verified: true
 ref: OPS-0876
 comms:
 - at: 2026-10-25 20:17
@@ -240,5 +243,13 @@ comms:
 - at: 2026-11-23 18:46
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-192751-append-on'
+- at: 2026-11-23 18:49
+  from: tony-omen
+  text: 'finished (ok): exit=0 ad.md` on the branch, and the outcome + key-ACL follow-up are posted to the card
+    comms. | devin-task-20261123-183'
+- at: 2026-11-23 18:49
+  from: chaba
+  text: ran under executor=devin provider=devin
 claim:
   since: 2026-11-23 18:37
+review_kind: verify
