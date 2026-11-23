@@ -65,7 +65,7 @@ def make_task(path: Path, repo_root: Path) -> tuple[str, dict]:
         "task_id": task_id,
         "lane": "kk_mac_local",
         "task_class": "summary",
-        "model": "qwen3:8b",
+        "model": "qwen2.5:32b",
         "prompt": (
             f"Summarize this durable DevNest report for an operator. "
             f"State the main finding and one next action. Do not invent facts. "

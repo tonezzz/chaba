@@ -80,7 +80,7 @@ def call_remote(
     prompt: str,
     *,
     host: str = "kk-mac",
-    model: str = "qwen3:8b",
+    model: str = "qwen2.5:32b",
     format: str | None = None,
     think: bool | None = None,
     local_url: str = OLLAMA_LOCAL_URL,
@@ -115,7 +115,7 @@ def run_task(task_class: str, prompt: str, **kwargs) -> dict:
     return {
         "ok": True,
         "admission": gate,
-        "model": kwargs.get("model", "qwen3:8b"),
+        "model": kwargs.get("model", "qwen2.5:32b"),
         "task_class": task_class,
         "response": response.get("response", ""),
         "usage": {
