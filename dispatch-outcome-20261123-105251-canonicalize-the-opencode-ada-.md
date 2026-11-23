@@ -68,12 +68,14 @@ currently a no-op.
 
 - `pytest tests/board/test_opencode_command.py` — 24/24 passed
   (re-run post-rebase).
-- Full tests/board suite running at outcome time; the only known
-  failure is the PRE-EXISTING live-data test
-  `test_control_pane_projection.py::test_card_record_is_the_pane_card`
-  (asserts live card KNB-0229 `column == doing`; the card has since
-  moved to `done` — same baseline failure noted by prior dispatches,
-  unrelated to this change).
+- Full `pytest tests/board/` — 848 passed; 3 failed, ALL the
+  PRE-EXISTING live-data assertions in
+  `test_control_pane_projection.py` expecting live card KNB-0229
+  (`kanban-card-cycle-control-pane`) to be `column == doing` — it has
+  moved to `done` on the live board and in the rendered
+  `stacks/web/public/apps/board2/cards.json`. Neither file is touched
+  by this change; same baseline failure prior dispatches recorded.
+- `python3 -m py_compile scripts/board/board-api.py` — ok post-rebase.
 - SSOT validation + optimization gates passed at commit.
 
 ## Not done / gates (unchanged from job record)
