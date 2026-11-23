@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
-column: backlog
-updated: 2026-11-23 20:23
+column: doing
+updated: 2026-11-23 20:24
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -248,9 +248,12 @@ comms:
 - at: 2026-11-23 20:23
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:24
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -260,5 +263,7 @@ action:
   last_failure: 'exit=1 in-task-20261117-094144-corpus-18-jev-bench-cases-4-pi.service: Failed with result ''exit-code''.
     | devin-task-20261117-094144-corpus-18-jev-bench-cases-4-pi.service: Consumed 23.846s CPU time over 14.445s
     wall clock time, 734.5M memory peak.'
-  attempts: 0
-claim: {}
+  attempts: 1
+  runner: tony-dell
+claim:
+  since: 2026-11-23 20:24

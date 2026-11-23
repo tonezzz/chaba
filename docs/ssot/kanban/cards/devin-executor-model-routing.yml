@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
-column: backlog
-updated: 2026-11-23 20:23
+column: doing
+updated: 2026-11-23 20:24
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -270,6 +270,9 @@ comms:
 - at: 2026-11-23 20:23
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:24
+  from: tony-omen
+  text: claimed
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -291,17 +294,17 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   result: 'exit=1 0261123-192619-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''. | devin-task-20261123-192619-fix-the-executor-model-id-mism.service:
     Consumed 2min 20.633s CPU time over 24min 12.209s wall clock time, 990M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 0261123-192619-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''.
     | devin-task-20261123-192619-fix-the-executor-model-id-mism.service: Consumed 2min 20.633s CPU time over 24min
     12.209s wall clock time, 990M memory peak.'
+  runner: tony-omen
 claim:
-  since: 2026-11-23 19:24
-awaiting_action: true
+  since: 2026-11-23 20:24
