@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
-column: doing
-updated: 2026-11-23 20:37
+column: backlog
+updated: 2026-11-23 20:45
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -357,6 +357,10 @@ comms:
     latch file data/lane-budget.json is gone (cleared by prior attempt); provider gate now healthy (0 quota lines,
     9 healthy markers). Recreated prod-allow-casting sentinel and started ada-scenario-casting.service at 20:27
     — suite running, monitoring to completion.'
+- at: 2026-11-23 20:45
+  from: tony-omen
+  text: 'finished (failed): exit=1 61123-202348-investigate-and-resolve-the-fa.service: Failed with result ''exit-code''.
+    | devin-task-20261123-202348 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
@@ -378,7 +382,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -386,10 +390,14 @@ action:
     failed_noted: 2026-11-17 23:39
     stale_running: 2026-11-23 19:52
     zero_commit: 2026-11-23 19:52
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  last_failure: 'exit=1 61123-202348-investigate-and-resolve-the-fa.service: Failed with result ''exit-code''. |
+    devin-task-20261123-202348-investigate-and-resolve-the-fa.service: Consumed 1min 49.288s CPU time over 20min
+    48.215s wall clock time, 931.6M memory peak.'
   attempts: 2
   verified: false
   runner: tony-omen
+  result: 'exit=1 61123-202348-investigate-and-resolve-the-fa.service: Failed with result ''exit-code''. | devin-task-20261123-202348-investigate-and-resolve-the-fa.service:
+    Consumed 1min 49.288s CPU time over 20min 48.215s wall clock time, 931.6M memory peak.'
 spec: Investigate and resolve the failure of ada-scenario-casting.service on host idc03 during the weekly casting
   benchmark. The host idc03 has reported a runner-agent drift, so first redeploy the runner-agent by copying scripts/board/runner-agent.py
   from the chaba repo to idc03:~/.local/bin/runner-agent. Once the agent is updated, inspect the status and logs
