@@ -1,7 +1,7 @@
 id: ada-text-model-promotion-path
 title: ADA_TEXT_MODEL promotion gate — bench-evidence path from flash-lite
 column: doing
-updated: 2026-11-23 23:04
+updated: 2026-11-23 23:07
 priority: low
 action:
   type: dispatch
@@ -15,6 +15,9 @@ action:
     | devin-task-20261123-222811-ada-text-model-promotion-gate-.service: Consumed 1min 27.627s CPU time over 3min
     36.396s wall clock time, 896.8M memory peak.'
   runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-23 23:07
+    no_repo: 2026-11-23 23:07
 note: 'Procedure card: a challenger lane may only take ADA_TEXT_MODEL (or side-tools) after clearing the education-manager
   bench gate (measured 2026-11-20, scripts/bench-edu-manage.py, edu-manager fixture): capture F1 = 1.0 (current
   lane), dedupe ≥ 4/5 (current lane 3/5), recall = 3/3, acceptable latency (p50 ≤ 15s; best measured clawbot: or-free-nemotron-35
@@ -751,5 +754,12 @@ comms:
     Queue diagnosis (2026-11-20 09:01): ADA-0783 is ; [ada-text-model-promotion-path] primer injected 8 lesson(s):
     [ada-text-model-pro; [ada-text-model-promotion-path] finished (failed): exit=1 261123-222811-ada-text; [kk-mac-routing-proposal-fold-local-qwen2-4d513b]
     primer inje'
+- at: 2026-11-23 23:07
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-230449-ada-text-model-promotion-gate- no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-23 23:07
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-230449-ada-text-model-promotion-gate-'
 claim:
   since: 2026-11-23 23:04
