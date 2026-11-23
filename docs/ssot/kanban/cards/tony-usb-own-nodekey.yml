@@ -1,6 +1,6 @@
 id: tony-usb-own-nodekey
 title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
-column: doing
+column: backlog
 priority: medium
 created: 2026-10-10
 updated: 2026-11-23 20:22
@@ -521,6 +521,20 @@ comms:
 - at: 2026-11-23 20:22
   from: mn01
   text: claimed
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: started devin-task-20261123-132246-the-goal-is-to-stop-the-tony-u on mn01 (dispatch)
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'primer injected 8 lesson(s): `tailscale logout` on cloned-nodekey media is a footgun: it expires the SHARED
+    n; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/hardware-mn01-tony-usb.md:
+    mn01 — Fujitsu ESPRIMO Q556/2 (real h; [tony-usb-own-nodekey] merge-sweep: no session/worktree found for devin-task-202;
+    [tony-usb-own-nodekey] primer injected 8 lesson(s): [tony-usb-own-nodekey] prime; [tony-usb-own-nodekey] primer
+    injected 8 lesson(s): runbook d'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -529,19 +543,17 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-23 16:32
-    zero_commit: 2026-11-23 16:32
+    zero_commit: 2026-11-23 20:22
     session_gone: 2026-11-23 19:17
     no_repo: 2026-11-23 19:49
-  last_failure: 'exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
-    | devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Consumed 18.832s CPU time over 5min 5.940s
-    wall clock time, 327.3M memory peak.'
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
-  runner: mn01
+  verified: false
 claim:
   since: 2026-11-23 20:22
 requests:

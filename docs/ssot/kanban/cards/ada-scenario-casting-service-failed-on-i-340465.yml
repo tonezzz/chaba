@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
-column: backlog
-updated: 2026-11-23 19:57
+column: doing
+updated: 2026-11-23 20:22
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -331,6 +331,12 @@ comms:
   from: chaba
   text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
     — claims held ~29m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:22
+  from: tony-omen
+  text: claimed
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
@@ -352,7 +358,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -361,13 +367,13 @@ action:
     stale_running: 2026-11-23 19:52
     zero_commit: 2026-11-23 19:52
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  attempts: 1
+  attempts: 2
   verified: false
+  runner: tony-omen
 spec: Investigate and resolve the failure of ada-scenario-casting.service on host idc03 during the weekly casting
   benchmark. The host idc03 has reported a runner-agent drift, so first redeploy the runner-agent by copying scripts/board/runner-agent.py
   from the chaba repo to idc03:~/.local/bin/runner-agent. Once the agent is updated, inspect the status and logs
   of ada-scenario-casting.service on idc03 to identify and fix the root cause of the weekly casting benchmark failure.
   The done-condition is verified when ada-scenario-casting.service runs successfully on idc03 without failure logs.
 claim:
-  since: 2026-11-23 19:14
-awaiting_action: true
+  since: 2026-11-23 20:22
