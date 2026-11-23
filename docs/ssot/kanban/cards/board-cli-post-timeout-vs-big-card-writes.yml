@@ -1,7 +1,7 @@
 id: board-cli-post-timeout-vs-big-card-writes
 title: board-cli 60s client timeout precedes board-api write completion on large cards
 column: done
-updated: 2026-11-23 16:21
+updated: 2026-11-23 16:43
 brief: 'board-cli POSTs time out at 60s while board-api comment writes on large cards (e.g. opencode-lane-regraduation,
   rainy-day-spend-decisions) take longer; the server-side write still lands and returns ok. Retrying produces silent
   duplicate comments (happened twice 2026-11-11/12). Fix: raise client timeout, or make /comment idempotent by text-hash.'
@@ -359,9 +359,14 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:43
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.runner=tony names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
 action:
   status: done
   attempts: 1
   runner: tony
 claim:
   since: 2026-11-19 20:10
+awaiting_action: true
