@@ -1,0 +1,52 @@
+id: devin-usage-reduction
+title: Devin usage reduction roadmap (post-assessment follow-up)
+column: backlog
+updated: 2026-11-23 18:53
+brief: 'Reduce Devin dispatch token/allowance burn: 148 sessions / ~657M prompt tokens over the last 30 days, all
+  swe-2-high free tier, 97% cached; devin still the lane fallback for many multi-step shapes despite free-lane routing
+  existing (OPS-0869/0885).'
+priority: medium
+program: devnest
+tags:
+- devin
+- usage
+spec: 'ASSESSMENT (2026-11-23, delivered this session): scripts/devin/devin-usage.py last-30d -> 148 sessions /
+  657.1M prompt / 640.1M cached (97%) / 4.7M completion; swe-2-high free tier; est paid spend $0.00 (allowance-bound).
+  Last-7d: 53 sessions / 197.8M; fleet-14d: 157 / 401.6M; 60d: 220 / ~1.015B. Avg session ~4.4M prompt; heaviest
+  outliers 12-17M (goal-*/backfill/audit shapes).
+
+
+  LANE ACCOUNTING (scripts/board/lane-savings.py, Nov): devin lane 134 cards / 104 done / 54 verified, 138 devin-lane
+  dispatch merges this month; cheap-lane evidence already shows target behavior (OPS-0885 free-lane pilot $0.0233/gate,
+  30-38% faster wall than devin baseline; remote-read smoke ran via opencode free lane litellm/or-free-nemotron-nano
+  lane=free_lane).
+
+
+  LEVERS SUGGESTED:
+
+  1. Route before dispatch: keep devin last-resort (lane contract); push deterministic/report/audit shapes to script
+  or free lanes. Gaps: OPS-0838 (queue-time classify) + OPS-0869 (catalog) + kanban-free-lane-routing-contract (draft)
+  still open.
+
+  2. Require spec + lane envelope before dispatch; hold low-risk classes on free lanes; bound crash-driven retries
+  (exit-1 churn seen; retry-storm card exists).
+
+  3. Measure honestly: devin-usage.py must surface free-tier ALLOWANCE remaining (devin /usage authoritative); est-$0
+  masking is acceptable only after allowance visibility lands.
+
+  4. Cut session bloat: 4.4M avg / 12-17M outliers -> scope/priming discipline; big shapes should never have hit
+  devin.
+
+  5. Hygiene: prune retained devin task dirs (851 on idc02).
+
+
+  DECISION GATES: adopt lane-pinned dispatch default (Tony-approved path per OPS gates); runner timers paused since
+  2026-11-08 (KNB-1196) - resume = separate Tony approval; paid_frontier escalation gated.
+
+
+  NEXT: pick first low-risk task class to re-route; file follow-up cards per lever.'
+ref: DEV-0044
+comms:
+- at: 2026-11-23 18:53
+  from: tony
+  text: card captured via board-api
