@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
-column: doing
-updated: 2026-11-23 16:32
+column: review
+updated: 2026-11-23 16:37
 priority: high
 tags:
 - devnest
@@ -66,11 +66,10 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
-  result: 'exit=1 sk-20261123-151207-assessment-2026-11-09-verified.service: Failed with result ''exit-code''. |
-    devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min 33.542s
-    wall clock time, 1G memory peak.'
+  result: 'exit=0 3-155241-assessment-2026-11-09-verified.md`; final verify summary posted to card comms. | devin-task-20261123-155241-assessment-2026-11-09-verified.service:
+    Consumed 1min 57.906s CPU time over 5min 54.374s wall clock time, 1.1G memory peak.'
   sweep:
     session_gone: 2026-11-17 19:25
     stale_running: 2026-11-23 15:18
@@ -80,6 +79,7 @@ action:
     | devin-task-20261123-151207-assessment-2026-11-09-verified.service: Consumed 2min 9.444s CPU time over 8min
     33.542s wall clock time, 1G memory peak.'
   runner: tony-omen
+  verified: true
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -424,6 +424,36 @@ comms:
 - at: 2026-11-23 16:32
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 16:37
+  from: tony-omen
+  text: 'finished (ok): exit=0 3-155241-assessment-2026-11-09-verified.md`; final verify summary posted to card
+    comms. | devin-task-20261123-155'
+- at: 2026-11-23 16:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 16:37
+  from: chaba
+  text: 'session-end checkpoint b6fb5b88: 1 leftover file(s) committed'
+- at: 2026-11-23 16:37
+  from: chaba
+  text: banked 184 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 16:37
+  from: chaba
+  text: pushed dispatch/20261123-155241-assessment-2026-11-09-verified to origin
+- at: 2026-11-23 16:37
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-23 16:37
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/board/test_claim_order.py::RunnerAgentClaimOrderTest::test_claims_drain_in_priority_order,
+    tests/board/test_claim_order.py::RunnerAgentClaimOrderTest::test_ineligible_cards_keep_gating, tests/board/test_claim_order.py::RunnerAgentClaimOrderTest::test_starving_card_claims_first,
+    tests/board/test_runner_agent_lane.py::ClaimPassLaneTest::test_pinned_lane_gets_lane_model_when_unset, tests/board/test_runner_agent_lane.py::Cl'
+- at: 2026-11-23 16:37
+  from: chaba
+  text: auto-merged 4adf5ff7 (dispatch/20261123-155241-assessment-2026-11-09-verified) → origin/master
+- at: 2026-11-23 16:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 review_kind: verify
 claim:
   since: 2026-11-23 15:51
@@ -439,3 +469,4 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-23 queue (already running)
