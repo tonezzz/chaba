@@ -1,7 +1,7 @@
 id: capture-harvester-apply-gate-1426cfed
 title: 'Capture harvester: decide --apply gate'
-column: doing
-updated: 2026-11-23 14:09
+column: done
+updated: 2026-11-23 14:15
 brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
   ever enable --apply.
 priority: medium
@@ -62,6 +62,16 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:15
+  from: devin
+  text: '[2026-11-23 opencode] DONE — gated sink-write door built, landed and exercised. Code: origin/master ac369526db
+    ("OPS-0024: gated key-scoped capture apply door (board-api only)"). Added scripts/chaba/capture-apply.py (separate
+    writer; harvester.py stays read-only), preserved the `applied:` audit block across harvester ledger rewrites,
+    hardened duplicate gate to fail-closed when board-api is unreadable, and documented write path in ssot.knowledge-capture.yml.
+    Gates: exact ledger key, allowlisted s'
+- at: 2026-11-23 14:15
+  from: devin
+  text: closed by devin
 requests:
 - id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
   ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
@@ -78,3 +88,5 @@ requests:
     label: Approve a gated --apply run
     action: none
   answer: b - Build gated sink writes. Explicit chat approval 2026-11-23 (decision page).
+action:
+  status: done
