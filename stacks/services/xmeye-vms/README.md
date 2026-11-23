@@ -43,10 +43,10 @@ password** (`-nopw`): always bind the host's tailscale IP, never LAN/0.0.0.0.
 ## Access
 
 - Direct VNC: `vncviewer <host-tailscale-ip>:5900` (tailnet only)
-- Browser: `https://tony-dell.taila0626a.ts.net/apps/vms/` — noVNC statics in
-  `stacks/web/public/apps/vms/`, Caddy `/apps/vms/ws` → `websockify-vms-mn01.service`
-  (127.0.0.1:6082) → `<bind-ip>:5900`. Route is gated to `Tailscale-User-Login`
-  (funnel-safe). If the backend host changes, update the websockify target.
+- Browser noVNC: **retired 2026-11-23 (OPS-1312)** — the `/apps/vms/` and
+  `/apps/vnc/` statics plus the websockify bridges were removed; restore steps in
+  `docs/kb/retired-apps/vnc-bridges.md`. Direct VNC above is unaffected. Channel
+  snapshots still work through `/apps/vms-snap` (`?src=vms:<channel>` in `/apps/eye`).
 
 ## Gotchas learned (2026-09-24, tony-dell → mn01)
 
