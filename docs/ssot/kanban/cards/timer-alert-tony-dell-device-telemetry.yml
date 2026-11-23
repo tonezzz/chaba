@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-device-telemetry
 title: Timer device-telemetry on tony-dell failing
 column: backlog
-updated: 2026-11-23 16:12
+updated: 2026-11-23 16:13
 priority: high
 tags:
 - timer-alert
@@ -35,5 +35,9 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-23 16:05) of `device-telemetry.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
