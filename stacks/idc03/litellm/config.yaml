@@ -314,6 +314,17 @@ model_list:
   # or-free-north-code removed 2026-11-20: OpenRouter 404s it ("no
   # provider serves this model anymore").
 
+  # ── OpenRouter paid cheap-code lane (OPS-1256, card ───────────────
+  # rainy-day-spend-decisions): DeepSeek V4 Flash as the cheap code
+  # brain — $0.09/M in, $0.18/M out (~$0.05-0.11 per bench session).
+  # Called explicitly (litellm/or-deepseek-v4-flash) by the
+  # agent-cost-bench config.* corpus; not in any job-class chain.
+  - model_name: or-deepseek-v4-flash
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
 router_settings:
   # ordered fallbacks per deployed model_name — paid first, free-tier
   # second, OpenRouter third, local ollama last for text-only classes.
