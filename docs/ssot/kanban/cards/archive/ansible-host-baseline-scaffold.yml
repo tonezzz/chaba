@@ -1,0 +1,231 @@
+id: ansible-host-baseline-scaffold
+title: Land + verify chaba Ansible host-baseline scaffold (dry-run)
+column: done
+updated: 2026-11-23 13:34
+brief: Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim
+  from spec, then ansible ping + site.yml --check --diff. Dry-run only.
+priority: medium
+tags:
+- ansible
+- infrastructure
+- host-baseline
+spec: "GOAL: Land the chaba Ansible host-baseline scaffold on master and verify it end-to-end (dry-run only — do\
+  \ NOT apply changes to real hosts).\n\nCONTEXT: The scaffold was designed from docs/ssot/infrastructure/ssot.host-roles.yml\
+  \ + ssot.audit.hosts.yml + ~/.ssh/config conventions. The ansible/ directory does NOT exist on master yet — create\
+  \ every file below VERBATIM in your session worktree, then verify.\n\n=== FILES TO CREATE (exact contents) ===\n\
+  \n### ansible/ansible.cfg\n```\n[defaults]\ninventory = inventory/hosts.yml\nroles_path = roles\nhost_key_checking\
+  \ = True\nretry_files_enabled = False\nstdout_callback = yaml\nresult_format = yaml\nforks = 10\ninterpreter_python\
+  \ = auto_silent\n# Hosts are reached over Tailscale (100.x) or LAN; SSH config (~/.ssh/config)\n# already carries\
+  \ per-host stanzas, so ansible_user defaults below mirror it.\n\n[privilege_escalation]\nbecome = True\nbecome_method\
+  \ = sudo\n```\n\n### ansible/inventory/hosts.yml\n```\n# Chaba host inventory — SSOT cross-refs:\n#   docs/ssot/infrastructure/ssot.host-roles.yml\n\
+  #   docs/ssot/infrastructure/ssot.audit.hosts.yml\n#   ~/.ssh/config (Host stanzas — ansible_host mirrors them)\n\
+  #\n# All Linux hosts join the tailnet; ansible_host uses the Tailscale IP so\n# playbooks work from anywhere,\
+  \ not just the home LAN. Retired/offline hosts\n# are kept for documentation but excluded by default via `enabled:\
+  \ false`\n# and the `!disabled` limit in README commands.\n\nall:\n  children:\n    workstations:\n      children:\n\
+  \        primary_workstations: {}\n        secondary_workstations: {}\n\n    servers:\n      children:\n     \
+  \   vps: {}\n        portable: {}\n\n    macos: {}\n\n    disabled: {}\n\n    # Baseline playbook targets: everything\
+  \ managed, minus portable laptops\n    # (sleep/off-net is normal) minus macOS (no apt/systemd).\n    baseline:\n\
+  \      children:\n        primary_workstations: {}\n        secondary_workstations: {}\n        vps: {}\n\nprimary_workstations:\n\
+  \  hosts:\n    tony-omen:\n      ansible_host: 100.75.102.88\n      ansible_user: tony\n      # Docker host, GPU/NVR/web\
+  \ server — see ssot.host-roles.yml\n\nsecondary_workstations:\n  hosts:\n    tony-dell:\n      ansible_host: 100.68.142.13\n\
+  \      ansible_user: tony\n      # Secondary workstation; postgres + dnsmasq alias live here.\n      # LAN alias\
+  \ 192.168.2.67 available via ssh config host tony-dell-lan.\n\nvps:\n  hosts:\n    idc02:\n      ansible_host:\
+  \ 100.123.163.11\n      ansible_user: tony\n      # Lab/offload node; playlived headless lane on :9240.\n    idc03:\n\
+  \      ansible_host: 100.102.134.91\n      ansible_user: tony\n      # Primary public VPS — chaba writer checkout\
+  \ lives here.\n    # idc01: RETIRED 2026-11-14 (OPS-0096) — do not re-add.\n\nportable:\n  hosts:\n    tony-macbook:\n\
+  \      ansible_host: 100.77.76.112\n      ansible_user: tony\n      # Ubuntu 26.04 laptop — sleeps/off-net is\
+  \ normal; always use --limit\n      # explicitly, never blanket-run against `all`.\n    mn01:\n      ansible_host:\
+  \ 100.106.196.22\n      ansible_user: tony\n      # Portable Ubuntu PC in mn-home — same caveat as tony-macbook.\n\
+  \nmacos:\n  hosts:\n    kk-mac:\n      ansible_host: 100.108.217.17\n      ansible_user: kkkakk\n      ansible_python_interpreter:\
+  \ /usr/bin/python3\n      # KK's Mac Studio — member device, NOT infra. Managed separately;\n      # excluded\
+  \ from `baseline` on purpose. SSH key seeding in progress\n      # (see ssot.host-roles.yml kk-mac block).\n\n\
+  disabled:\n  hosts:\n    idc01:\n      ansible_host: 100.74.146.0\n      ansible_user: tony\n      enabled: false\n\
+  \      # RETIRED public VPS — ssh dead since 2026-10-12, formally retired\n      # 2026-11-14. Kept for history;\
+  \ never target.\n```\n\n### ansible/group_vars/all.yml\n```\n---\n# Applied to every host in the inventory.\n\
+  # Keep this minimal and safe — everything here must be idempotent and\n# reversible. Host-specific divergence\
+  \ goes in host_vars/, not here.\n\n# Package manager facts\ndebian_arch: \"{{ ansible_architecture }}\"\n\n# Common\
+  \ tooling every Linux host should have. Conservative set —\n# add per-host needs via host_vars instead of growing\
+  \ this list.\ncommon_packages:\n  - curl\n  - wget\n  - git\n  - htop\n  - jq\n  - rsync\n  - unzip\n  - ca-certificates\n\
+  \  - unattended-upgrades\n\n# unattended-upgrades: security updates only, no auto-reboot.\nunattended_upgrades_security_only:\
+  \ true\nunattended_upgrades_reboot: false\n\n# Docker: hosts that run containers opt in via host/group vars.\n\
+  # (docker is NOT installed fleet-wide — enable per host.)\ndocker_enabled: false\n```\n\n### ansible/host_vars/tony-omen.yml\n\
+  ```\n---\ndocker_enabled: true\n```\n\n### ansible/host_vars/idc02.yml\n```\n---\ndocker_enabled: true\n```\n\n\
+  ### ansible/host_vars/idc03.yml\n```\n---\ndocker_enabled: true\n```\n\n### ansible/playbooks/site.yml\n```\n\
+  ---\n# site.yml — chaba host baseline.\n#\n# Safe, idempotent baseline applied to `baseline` group hosts\n# (workstations\
+  \ + vps). Portable laptops and kk-mac are excluded by\n# group design — run them explicitly with --limit when\
+  \ needed.\n#\n# What it does:\n#   1. Common tooling packages (common_packages in group_vars/all.yml)\n#   2.\
+  \ unattended-upgrades: security updates on, auto-reboot off\n#   3. Docker presence check on hosts with docker_enabled:\
+  \ true\n#\n# What it deliberately does NOT do:\n#   - apt upgrade / dist-upgrade (run manually or via a dedicated\n\
+  #     playbook with a maintenance window)\n#   - firewall rules (ufw state differs per host — see ssot.audit.hosts.yml)\n\
+  #   - service restarts or config file edits beyond the two files below\n\n- name: Chaba host baseline\n  hosts:\
+  \ baseline\n  gather_facts: true\n\n  tasks:\n    - name: Install common packages\n      ansible.builtin.apt:\n\
+  \        name: \"{{ common_packages }}\"\n        state: present\n        update_cache: true\n        cache_valid_time:\
+  \ 3600\n      tags: [packages]\n\n    - name: Configure unattended-upgrades (security only)\n      ansible.builtin.copy:\n\
+  \        dest: /etc/apt/apt.conf.d/52chaba-unattended-upgrades\n        owner: root\n        group: root\n   \
+  \     mode: \"0644\"\n        content: |\n          // Managed by ansible (chaba/ansible). Security updates only.\n\
+  \          Unattended-Upgrade::Allowed-Origins {\n              \"${distro_id}:${distro_codename}-security\";\n\
+  \              \"${distro_id}ESMApps:${distro_codename}-apps-security\";\n              \"${distro_id}ESM:${distro_codename}-infra-security\"\
+  ;\n          };\n          Unattended-Upgrade::Automatic-Reboot \"false\";\n          Unattended-Upgrade::Remove-Unused-Kernel-Packages\
+  \ \"true\";\n          Unattended-Upgrade::Remove-Unused-Dependencies \"true\";\n      notify: restart unattended-upgrades\n\
+  \      tags: [packages, security]\n\n    - name: Enable unattended-upgrades service\n      ansible.builtin.service:\n\
+  \        name: unattended-upgrades\n        enabled: true\n        state: started\n      tags: [security]\n\n\
+  \    - name: Check docker presence on docker-enabled hosts\n      ansible.builtin.command: docker --version\n\
+  \      register: docker_check\n      changed_when: false\n      failed_when: false\n      when: docker_enabled\
+  \ | bool\n      tags: [docker]\n\n    - name: Fail clearly if docker_enabled but docker missing\n      ansible.builtin.fail:\n\
+  \        msg: >-\n          docker_enabled is true for {{ inventory_hostname }} but `docker`\n          is not\
+  \ on PATH. Install docker first or set docker_enabled: false\n          in host_vars.\n      when: docker_enabled\
+  \ | bool and docker_check.rc != 0\n      tags: [docker]\n\n  handlers:\n    - name: restart unattended-upgrades\n\
+  \      ansible.builtin.service:\n        name: unattended-upgrades\n        state: restarted\n```\n\n### ansible/README.md\n\
+  ```\n# chaba/ansible — host baseline management\n\nAnsible scaffold for the chaba fleet. Companion to (not a replacement\
+  \ for)\n`scripts/audit-hosts.py` + `docs/ssot/infrastructure/ssot.audit.hosts.yml`\n— the audit runner *observes*\
+  \ drift; Ansible *converges* declared state.\n\n## Layout\n\n```\nansible.cfg               # inventory + become\
+  \ defaults\ninventory/hosts.yml       # all hosts, groups, tailscale IPs (SSOT-linked)\ngroup_vars/all.yml   \
+  \     # common_packages, unattended-upgrades policy\nhost_vars/<host>.yml      # per-host opt-ins (e.g. docker_enabled)\n\
+  playbooks/site.yml        # baseline: packages, security updates, docker check\n```\n\n## Install ansible (once,\
+  \ on the controller — any tailnet host)\n\n```bash\nsudo apt install ansible        # Ubuntu 24.04+: ansible-core\
+  \ 2.x\n# or: pipx install ansible / pip install ansible-core\n```\n\n## Usage\n\n```bash\ncd ansible\n\n# Connectivity\
+  \ check (safe)\nansible baseline -m ping\n\n# Dry run — shows what would change, touches nothing\nansible-playbook\
+  \ playbooks/site.yml --check --diff\n\n# Apply baseline to workstations + vps\nansible-playbook playbooks/site.yml\n\
+  \n# Single host\nansible-playbook playbooks/site.yml --limit tony-dell\n\n# Portable laptops — always explicit\
+  \ (they sleep / leave the tailnet)\nansible-playbook playbooks/site.yml --limit mn01\n\n# kk-mac is macOS — not\
+  \ in `baseline`; manage separately when needed\nansible kk-mac -m ping\n```\n\n## Inventory notes\n\n- `ansible_host`\
+  \ uses **Tailscale IPs** — works from any tailnet node.\n- `idc01` is under `disabled:` (retired 2026-11-14) —\
+  \ never target it.\n- SSH auth relies on `~/.ssh/config` keys already working; no vault needed\n  for the baseline\
+  \ playbook.\n\n## Conventions\n\n- Keep `site.yml` safe: no dist-upgrades, no firewall changes, no service\n \
+  \ restarts beyond the declared handlers.\n- New host → add to `inventory/hosts.yml` + a `host_vars/<host>.yml`,\
+  \ and\n  update `ssot.host-roles.yml` / `ssot.audit.hosts.yml` so the audit\n  contract and the playbook stay\
+  \ in sync.\n- After running, `python3 scripts/audit-hosts.py --host <h>` should show\n  no unexpected drift.\n\
+  ```\n\n=== VERIFICATION STEPS ===\n\n1. Ensure ansible is available where you run: `command -v ansible-playbook`\
+  \ — if missing try `sudo apt-get install -y ansible` (or `pipx install ansible`); if neither works, note it in\
+  \ comms and skip to step 3 only if the binary exists.\n2. `cd ansible && ansible baseline -m ping` — expect ok\
+  \ from tony-omen, tony-dell, idc02, idc03 (Tailscale IPs). Portable laptops and kk-mac are intentionally NOT in\
+  \ the baseline group; unreachable hosts are not failures for this card.\n3. `ansible-playbook playbooks/site.yml\
+  \ --check --diff` — capture the diff summary. DO NOT remove --check; do NOT apply for real. Changes are expected\
+  \ to be limited to: common package installs, /etc/apt/apt.conf.d/52chaba-unattended-upgrades, unattended-upgrades\
+  \ service enable.\n4. Sanity: `python3 -c \"import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('ansible/**/*.yml',recursive=True)]\"\
+  ` must pass.\n5. Commit ansible/ on your session branch like any other change — the normal close-out merge lands\
+  \ it on master.\n6. Final comms entry: ping results per host, --check diff summary per host, anything skipped\
+  \ and why.\n\nCONSTRAINTS: no real apply (no bare ansible-playbook run), no firewall/service changes beyond what\
+  \ site.yml declares, do not edit ssot.*.yml files, do not touch docs/ssot/kanban/cards/ directly (use the board\
+  \ API for comms)."
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: devin
+  lane_source: kw
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`. | devin-task-20261120-172937-goal-land-the-chaba-ansible-ho.service:
+    Consumed 2min 5.732s CPU time over 5min 53.069s wall clock time, 678.1M memory peak.'
+  verified: true
+  sweep:
+    shadow_blocked: 2c9b819ded2d
+comms:
+- at: 2026-11-20 17:24
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-20 17:24
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-20 17:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.43 > 0.85)'
+- at: 2026-11-20 17:25
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-20 17:25
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.46 > 0.85)'
+- at: 2026-11-20 17:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 17:27
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-20 17:29
+  from: chaba
+  text: started devin-task-20261120-172937-goal-land-the-chaba-ansible-ho on tony-macbook (dispatch)
+- at: 2026-11-20 17:29
+  from: chaba
+  text: 'primer injected 8 lesson(s): no chaba-audit.service/chaba-audit-full.service entries exist in ssot.audit.host;
+    [ada-t4-micro-entity-design] [scheduler live] ada-jobs-verify.timer installed on; [board-api-exec-checkout-mismatch]
+    FIXED 2026-11-06. Root cause was two stacked ; [report-graph-producer-metas-never-reach-7b0982] [devin] DONE
+    — option (a) live ; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    [progress] '
+- at: 2026-11-20 17:30
+  from: devin
+  text: '[progress] ansible/ scaffold created verbatim in worktree (8 files). ansible-core 2.22.0 installed via
+    uv tool (no sudo/pipx on tony-macbook). Running verification: ping baseline, site.yml --check --diff, YAML sanity.'
+- at: 2026-11-20 17:35
+  from: devin
+  text: '[done] ansible/ scaffold landed on dispatch branch (commit 2c9b819ded) — all 8 spec files verbatim + additive
+    fix: inventory/{group_vars,host_vars} symlinks. REASON: ansible only auto-loads vars from inventory/ or playbook/
+    dirs; the spec layout leaves them unloaded and site.yml fails with common_packages undefined. PING baseline:
+    tony-omen ok, tony-dell ok, idc02 ok, idc03 ok (4/4 over tailscale). CHECK+DIFF (dry-run only, nothing applied):
+    tony-omen/tony-dell changed=2 (new 52chaba-unattended-'
+- at: 2026-11-20 17:38
+  from: tony-macbook
+  text: 'finished (ok): exit=0 -ansible-ho.md`; the final comms entry was posted to `ansible-host-baseline-scaffold`.
+    | devin-task-20261120-1729'
+- at: 2026-11-20 17:38
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-20 17:38
+  from: chaba
+  text: banked 106 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-20 17:38
+  from: chaba
+  text: pushed dispatch/20261120-172937-goal-land-the-chaba-ansible-ho to origin
+- at: 2026-11-20 17:38
+  from: chaba
+  text: 'merge held — gitignored-dir shadow path(s): ansible/inventory/group_vars (symlink), ansible/inventory/host_vars
+    (symlink) — untrack/rename them or add the bare ignore name (the 2026-10-10 .venv incident class)'
+- at: 2026-11-20 17:38
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-20 17:42
+  from: chaba
+  text: 'merge-sweep: dispatch/20261120-172937-goal-land-the-chaba-ansible-ho adds gitignored-dir shadow path(s)
+    vs origin/master: ansible/inventory/group_vars (symlink), ansible/inventory/host_vars (symlink) — merge blocked
+    (a symlink, or a file whose name is ignored only as a directory — the 2026-10-10 .venv incident class). Untrack/rename
+    it or add the bare ignore name and the next pass lands it.'
+- at: 2026-11-20 18:32
+  from: devin
+  text: 'shadow-guard fix pushed to dispatch branch (09158a4128): replaced inventory/{group_vars,host_vars} symlinks
+    with real dirs — ansible auto-loads vars adjacent to the inventory file, no symlinks needed. Verified ansible-inventory
+    graph + host vars + site.yml --syntax-check. merge-sweep should retry on new head sha.'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:57
+  from: chaba
+  text: 'merge-sweep: merged b9596b03 (dispatch/20261120-172937-goal-land-the-chaba-ansible-ho from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261120-172937-goal-land-the-chaba-ansible-ho.md)
+    — auto-closed'
+- at: 2026-11-20 18:57
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261120-172937-goal-land-the-chaba-ansible-ho,
+    branch dispatch/20261120-172937-goal-land-the-chaba-ansible-ho on tony-macbook'
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+ref: SYS-0023
+claim:
+  since: 2026-11-20 17:27
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-20 18:57
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261120-172937-goal-land-the-chaba-ansible-ho.md

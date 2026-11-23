@@ -1,0 +1,214 @@
+id: trade-lesson-knowledge-base
+title: 'Trade lesson draft: trade-knowledge (free-lane drafting)'
+column: done
+updated: 2026-11-23 13:34
+brief: Distill trade docs (knowledge/** (README, lessons-learned, best-practices, patterns, api-patterns, ssot-configuration-pattern,
+  code-conventions) + kb/* research notes) into lesson trade-trade-knowledge; drafting on the $0 free lane via trade-lesson-migrate.py.
+priority: low
+program: education
+blocked_by: trade-lesson-migrate-script
+tags:
+- education
+- trade
+- free-lane
+spec: 'Free-lane draft+publish for trade docs topic ''trade-knowledge'' (parent: trade-docs-education-migration
+  / OPS-0102; depends on trade-lesson-migrate-script / OPS-0103).
+
+
+  Executor note: pinned devin because the board-api /card door cannot yet create type:script cards (ACTION_TYPES
+  dispatch|manual, and action.script is not in ACTION_KEYS) and opencode profiles all deny bash — the actual LLM
+  drafting inside the script still runs on the FREE lane (opencode run + litellm/gemini-3.5-flash-lite). If a script-card
+  door lands first, convert to type:script host:tony_dell (or idc02 — both have opencode + litellm-chaba.env + ~/CascadeProjects/trade).
+
+
+  Work: on a host with the trade checkout + opencode (tony_dell or idc02), run `python3 scripts/trade-lesson-migrate.py
+  --topic trade-knowledge --apply` from the synced chaba checkout. Source pages: knowledge/** (README, lessons-learned,
+  best-practices, patterns, api-patterns, ssot-configuration-pattern, code-conventions) + kb/* research notes
+
+
+  Gate: exit=0 AND /lesson op:list shows a lesson for topic trade-trade-knowledge AND scripts/lesson-drift-map.yml
+  has a trade-trade-knowledge entry. On opencode failure: review with run.log tail — do NOT retry silently; escalate
+  to devin if the free model can''t handle the doc set.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+  runner: idc02
+  result: 'exit=0 rade-lesson-migrate/runs/20261116-202847-trade-knowledge/`; remaining unpublished topics are trade-ui
+    and trade-workflows under their own cards. | devin-task-20261116-202612-free-lane-draft-publish-for-tr.service:
+    Consumed 34.473s CPU time.'
+  verified: true
+ref: OPS-0107
+comms:
+- at: 2026-11-13 21:45
+  from: devin
+  text: card captured via board-api (trade docs -> education migration, free lane)
+- at: 2026-11-13 22:46
+  from: devin
+  text: queued for processing
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 00:46
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-16 05:06
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.60 > 1.5)'
+- at: 2026-11-16 07:30
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.20 > 1.0)'
+- at: 2026-11-16 17:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-16 20:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.68 > 0.85)'
+- at: 2026-11-16 20:25
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.91 > 0.85)'
+- at: 2026-11-16 20:25
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.12 > 1.0)'
+- at: 2026-11-16 20:26
+  from: idc02
+  text: claimed
+- at: 2026-11-16 20:26
+  from: chaba
+  text: started devin-task-20261116-202612-free-lane-draft-publish-for-tr on idc02 (dispatch executor=devin)
+- at: 2026-11-16 20:28
+  from: devin
+  text: picked up on idc02 — idc02 trade dir has no docs/, rsyncing docs tree from idc03 like the migrate-script
+    dispatch did, then --apply --topic trade-knowledge
+- at: 2026-11-16 20:31
+  from: devin
+  text: 'done on idc02: --apply --topic trade-knowledge -> opencode/gemini-3.5-flash-lite drafted 3608B HTML; /lesson
+    created lesson-be94e95accf5 (trade-knowledge, working); drift-map entry committed on dispatch branch (060de9827a).
+    Gate met — note the spec''s trade-trade-knowledge is the documented double-prefix typo; real topic is trade-knowledge.
+    Run evidence: ~/var/chaba/trade-lesson-migrate/runs/20261116-202847-trade-knowledge/'
+- at: 2026-11-16 20:38
+  from: idc02
+  text: 'finished (ok): exit=0 rade-lesson-migrate/runs/20261116-202847-trade-knowledge/`; remaining unpublished
+    topics are trade-ui and trade-w'
+- at: 2026-11-16 20:40
+  from: chaba
+  text: 'session-end checkpoint 235ca6e7: 1 leftover file(s) committed'
+- at: 2026-11-16 20:41
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-16 20:41
+  from: chaba
+  text: pushed dispatch/20261116-202612-free-lane-draft-publish-for-tr to origin
+- at: 2026-11-16 20:41
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 64.5s)
+- at: 2026-11-16 20:42
+  from: chaba
+  text: auto-merged f2049836 (dispatch/20261116-202612-free-lane-draft-publish-for-tr) → origin/master
+- at: 2026-11-16 20:42
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-16 20:42
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261116-202612-free-lane-draft-publish-for-tr,
+    branch dispatch/20261116-202612-free-lane-draft-publish-for-tr'
+- at: 2026-11-16 20:42
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-16 20:50
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261116-202612-free-lane-draft-publish-for-tr — close will block
+    until merged'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:26
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:48
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:16
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:20
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-16 20:42
+  note: verified — evidence checks green, closing itself

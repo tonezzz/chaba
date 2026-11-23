@@ -1,0 +1,205 @@
+id: claude-agent-idc02-opencode
+title: Wire claude-agent into idc02 bare opencode serve
+column: done
+updated: 2026-11-23 13:34
+brief: 'Fleet probe 2026-11-18: tony-dell is the ONLY OpenChamber host (openchamber.service active, claude-agent
+  verified live). idc02 runs a bare `opencode serve` on :4096 with no OpenChamber UI — claude-agent is an opencode-native
+  provider so it applies there too, but env injection differs (no OpenChamber environment store; the unit/process
+  env must carry OPENCODE_CLAUDE_PATH).'
+priority: low
+program: devnest
+tags:
+- claude-code
+- opencode
+- idc02
+- provider
+spec: 'Follow-up to OPS-0184 (done — scripts/claude-code/openchamber-wire.sh + docs/kb/openchamber-claude-agent-provider.md
+  merged).
+
+
+  Scope:
+
+  1. idc02: `opencode serve --hostname 0.0.0.0 --port 4096` is running outside OpenChamber. Determine its launch
+  path (systemd unit? manual? container?) and inject OPENCODE_CLAUDE_PATH=/home/tony/CascadeProjects/tony-projects/claude-code/node_modules/.bin/claude
+  into that process env — NOTE: openchamber-wire.sh --host idc02 only works if idc02 has the pinned claude-code
+  install + claude auth; install.sh first if missing, then `claude auth login` needs Tony (interactive OAuth) unless
+  setup-token is used.
+
+  2. Confirm whether idc02 opencode is even meant to serve model sessions (it may be a relay/worker) — if not user-facing,
+  document and close.
+
+  3. Re-run `openchamber-wire.sh --check` on tony-dell periodically / after openchamber updates; script is the standard.
+
+
+  Out of scope: LiteLLM lane, other hosts (no OpenChamber/opencode found on omen, idc03, mn01, macs).'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  labels:
+  - push:chaba
+  status: done
+  lane: codemod
+  lane_source: kw
+  runner: idc02
+  result: 'exit=0 te, and committed everything on the dispatch branch (`91b06ea`, `6efa1bd`) with the outcome file
+    written. | devin-task-20261118-135051-follow-up-to-ops-0184-done-scr.service: Consumed 26.453s CPU time, 1.5G
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-11-18 14:10
+ref: OPS-0185
+comms:
+- at: 2026-11-18 13:49
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-18 13:49
+  from: chaba
+  text: classified as codemod (kw:inject conf 1.00)
+- at: 2026-11-18 13:49
+  from: tony
+  text: queued for processing
+- at: 2026-11-18 13:50
+  from: idc02
+  text: claimed
+- at: 2026-11-18 13:50
+  from: chaba
+  text: started devin-task-20261118-135051-follow-up-to-ops-0184-done-scr on idc02 (dispatch)
+- at: 2026-11-18 13:51
+  from: devin
+  text: '[dispatch] Session started on idc02. Investigating launch path of `opencode serve :4096` and checking claude-code
+    install/auth prerequisites.'
+- at: 2026-11-18 13:53
+  from: devin
+  text: 'CORRECTION (2026-11-18): idc02 :4096 is NOT a stray bare opencode — both PIDs are podman containers: ada-code.service
+    (protected Ada OpenCode control-plane backend, was ada-opencode, isolated ada-code podnet) and jack-opencode.service
+    (isolated Jack IDE, jack-ide podnet). Each runs `opencode serve :4096` inside its own container netns. claude-agent
+    wiring here means injecting OPENCODE_CLAUDE_PATH into the container env-file (~/.config/secrets/ada-code.env
+    / jack-ide.env) + the claude binary insi'
+- at: 2026-11-18 13:55
+  from: devin
+  text: '[dispatch] Launch path resolved: there is NO host-level `opencode serve :4096` on idc02 — both matching
+    processes are rootless-podman containers on private podnets: (1) ada-code (quadlet ada-code.container, opencode
+    v2.2.6) = Ada control-plane responder backend, LiteLLM-keyed, not user-facing; (2) jack-opencode (quadlet, opencode
+    1.19.4 — predates claude-agent >=2.2.x) = Jack isolated IDE via jack-enroll, LiteLLM-only by committed config.
+    OPENCODE_CLAUDE_PATH=<host path> cannot reach either cont'
+- at: 2026-11-18 13:55
+  from: devin
+  text: 'raised request idc02-opencode-4096-2-litellm-lane-podma-6bb28b: idc02 opencode :4096 = 2 LiteLLM-lane podman
+    workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection ta'
+- at: 2026-11-18 13:55
+  from: devin
+  text: '[dispatch] Done. Findings + request posted above; docs committed on dispatch branch (kb runbook corrected,
+    job doc docs/ssot/jobs/devnest/2026-11-18-idc02-opencode-claude-agent-probe.yml). No host mutation — the only
+    injection paths are design changes gated on your answer to the request. tony-dell --check remains green.'
+- at: 2026-11-18 13:59
+  from: idc02
+  text: 'finished (ok): exit=0 te, and committed everything on the dispatch branch (`91b06ea`, `6efa1bd`) with the
+    outcome file written. | devin'
+- at: 2026-11-18 13:59
+  from: chaba
+  text: banked 64 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-18 13:59
+  from: chaba
+  text: pushed dispatch/20261118-135051-follow-up-to-ops-0184-done-scr to origin
+- at: 2026-11-18 13:59
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 151.2s)
+- at: 2026-11-18 13:59
+  from: chaba
+  text: auto-merged 19a5dc45 (dispatch/20261118-135051-follow-up-to-ops-0184-done-scr) → origin/master
+- at: 2026-11-18 13:59
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-135051-follow-up-to-ops-0184-done-scr,
+    branch dispatch/20261118-135051-follow-up-to-ops-0184-done-scr'
+- at: 2026-11-18 14:10
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''idc02-opencode-4096-2-litellm-''] block close)'
+- at: 2026-11-18 16:50
+  from: devin
+  text: 'answered idc02-opencode-4096-2-litellm-lane-podma-6bb28b: Resolved by OPS-0187 instead: idc02 :4096 confirmed
+    as LiteLLM-lane podman workers (ada-code, jack-opencode) — correctly out of scope for claude-agent env injection.
+    The actual OpenChamber pane now li'
+- at: 2026-11-18 16:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-18 16:50
+  from: tony
+  text: closed by tony
+- at: 2026-11-18 17:30
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:20
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+requests:
+- id: idc02-opencode-4096-2-litellm-lane-podma-6bb28b
+  ask: idc02 opencode :4096 = 2 LiteLLM-lane podman workers (ada-code worker, jack-opencode IDE for Jack) — no env-injection
+    target for claude-agent. Direction?
+  status: answered
+  at: 2026-11-18 13:55
+  from: devin
+  options:
+  - id: close
+    label: Close — claude-agent stays OpenChamber/tony-dell lane (recommended)
+  - id: wire-jack
+    label: Wire claude-agent into jack-ide (image rebuild to opencode>=2.2, ro claude-code mount, OAuth inside container,
+      anthropic egress)
+  - id: litellm-claude
+    label: Keep isolation; add Claude alias via LiteLLM for Jack
+  suggested: close
+  answer: 'Resolved by OPS-0187 instead: idc02 :4096 confirmed as LiteLLM-lane podman workers (ada-code, jack-opencode)
+    — correctly out of scope for claude-agent env injection. The actual OpenChamber pane now lives ON idc02 and
+    claude-agent is wired + smoke-verified there via openchamber-wire.sh. No further action needed on the containerized
+    opencodes.'
+review_kind: verify
+claim: {}
