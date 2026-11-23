@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: doing
-updated: 2026-11-23 22:07
+column: backlog
+updated: 2026-11-23 22:08
 brief: probe
 ref: OPS-0812
 comms:
@@ -368,6 +368,10 @@ comms:
     Full-fleet run 2026-11-23 (controller tony-ome; [speed-probe] Overnight sweep 2026-11-19: parked in backlog.
     The latest attempt ; A dispatch CAN sweep the home LAN indirectly: ssh to a LAN-resident host (tony-d; Deploy
     note: hosts need the new file via their chaba checkout'
+- at: 2026-11-23 22:08
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; attempt limit reached, needs a human (column -> backlog)'
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -403,7 +407,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
@@ -412,13 +416,12 @@ action:
     wall clock time, 426.1M memory peak.'
   sweep:
     stale_running: 2026-11-17 23:41
-    zero_commit: 2026-11-17 23:41
+    zero_commit: 2026-11-23 22:08
     failed_noted: 2026-11-17 23:55
-  last_failure: 'exit=1 k-20261123-142345-redeploy-the-drifted-runner-ag.service: Failed with result ''exit-code''.
-    | devin-task-20261123-142345-redeploy-the-drifted-runner-ag.service: Consumed 11.083s CPU time over 11min 15.675s
-    wall clock time, 426.1M memory peak.'
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 2
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-23 22:07
 spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and tony-dell)
