@@ -101,7 +101,8 @@ def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
         if d.get("lang") == "th":
             continue
         meta = d.get("meta") or {}
-        if (meta.get("kind") or [""])[0] not in ("report", "page"):
+        if (meta.get("kind") or [""])[0] not in (
+                "report", "page", "memory-inspect"):
             continue
         if (meta.get("status") or [""])[0] in EXCLUDED_STATUS:
             continue
