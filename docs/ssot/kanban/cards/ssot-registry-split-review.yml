@@ -3,7 +3,7 @@ title: Registry SSOT files past 350-line review threshold — split or exempt de
 brief: 'Two registry-style SSOT files crossed the bloat threshold: infrastructure/ssot.secrets.yml (465 lines) and
   kanban/ssot.kanban.yml (460). Registries grow linearly with services/cards — decide whether to split them by domain,
   raise the registry threshold, or accept + document as permanent baseline debt.'
-column: doing
+column: review
 priority: low
 created: 2026-10-09
 tags:
@@ -204,9 +204,30 @@ comms:
     recorded). secrets.yml trimmed 703->671 by moving the ops header to docs/kb/secrets-backup-topology.md. Why
     not split: every consumer loads a single manifest path (secrets-console SECRETS_SSOT, render-board MANIFEST,
     dispatch_repos/runner-fleet-health recursive runner_fleet find) — a spl'
+- at: 2026-11-23 18:42
+  from: tony-macbook
+  text: 'finished (ok): exit=0 mjs` reports 0 errors/0 warnings on all touched files and `ssot-optimize-gate.mjs`
+    passes. | devin-task-20261123-'
+- at: 2026-11-23 18:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 18:42
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: docs/ssot/focus-inbox/ staged outside the served checkout\n\
+    \   (/home/tony/CascadeProjects/chaba-tony-dell). kanban-commit.timer does not sweep"
+- at: 2026-11-23 18:42
+  from: chaba
+  text: banked 197 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 18:42
+  from: chaba
+  text: pushed dispatch/20261123-183707-registry-ssot-files-past-350-l to origin
+- at: 2026-11-23 18:42
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -215,4 +236,7 @@ action:
     3.281s CPU time.'
   attempts: 1
   runner: tony-macbook
-updated: 2026-11-23 18:41
+  result: 'exit=0 mjs` reports 0 errors/0 warnings on all touched files and `ssot-optimize-gate.mjs` passes. | devin-task-20261123-183707-registry-ssot-files-past-350-l.service:
+    Consumed 19.988s CPU time over 4min 10.397s wall clock time, 308.4M memory peak.'
+updated: 2026-11-23 18:42
+review_kind: verify
