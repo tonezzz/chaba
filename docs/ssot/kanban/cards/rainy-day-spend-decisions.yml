@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
-column: doing
-updated: 2026-11-23 16:49
+column: backlog
+updated: 2026-11-23 16:52
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -299,6 +299,14 @@ comms:
     HOLDING OPS-1039 to stop retry/spend churn. Veri; [opencode-retry-stale-worktree] Separate `bench` LiteLLM key
     wiring was tested o; GOTCHA: the OpenRouter account key is valid but has ZERO credit balance — paid m; [decision-arena-benchmark-decision-models-72ab92]
     finished (f'
+- at: 2026-11-23 16:52
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service:  —
+    attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-164920-a-if-approved-top-up-or-key-ad (rate limit)
+    — idc02 holds new claims ~30m
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -336,7 +344,7 @@ requests:
   answer: '2'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -344,9 +352,12 @@ action:
   sweep:
     stale_running: 2026-11-23 16:32
     zero_commit: 2026-11-23 16:32
-  result: 'exit=1 261123-162716-a-if-approved-top-up-or-key-ad.service: Failed with result ''exit-code''. | devin-task-20261123-162716-a-if-approved-top-up-or-key-ad.service:
-    Consumed 1min 25.660s CPU time over 2min 12.618s wall clock time, 957.9M memory peak.'
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  result: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service:
+    Failed with result ''exit-code''. | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service: Consumed
+    29.654s CPU time.'
+  last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service:
+    Failed with result ''exit-code''. | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service: Consumed
+    29.654s CPU time.'
   verified: false
   runner: idc02
 claim:
