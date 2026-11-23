@@ -182,6 +182,9 @@ comms:
 - at: 2026-11-23 19:42
   from: tony
   text: queued for processing
+- at: 2026-11-23 19:42
+  from: tony
+  text: retry requested
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -201,11 +204,12 @@ action:
   status: queued
   lane: devin
   lane_source: kw
-  result: 'exit=1 -task-20261117-233258-live-voice-burn-context-replay.service: Failed with result ''exit-code''.
-    | devin-task-20261117-233258-live-voice-burn-context-replay.service: Consumed 1.167s CPU time over 1min 7.860s
-    wall clock time, 75.4M memory peak.'
   sweep:
     failed_noted: 2026-11-17 23:40
+  last_failure: 'exit=1 -task-20261117-233258-live-voice-burn-context-replay.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233258-live-voice-burn-context-replay.service: Consumed 1.167s CPU time over 1min 7.860s
+    wall clock time, 75.4M memory peak.'
+  attempts: 0
 spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
   for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
   (noting recent runner-agent drift across idc03, tony-macbook, idc02, and tony-dell). Constraints: Rely strictly
