@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 18:51
+updated: 2026-11-23 19:03
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -382,6 +382,17 @@ comms:
     injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/mn01-stick-standard.md: USB stick standard
     — mn01 rescue stick &; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] [done] all 3 jobs verified exi; [devin-session-audit-2026-10-29]
     AUD-0973 independent re-chec'
+- at: 2026-11-23 19:03
+  from: devin
+  text: 'dispatch 185116 (idc02): stick verified NOT booted/attached anywhere reachable — tailnet has no tony-usb
+    node (mn01=real ESPRIMO via DMI), LAN sweep via tony-dell found no stick, lsblk clean on 6 hosts. Physical step
+    cannot run from a dispatch. Delivered the prepared fix instead: scripts/ops/stick-own-nodekey.sh (self-contained,
+    pipe-over-ssh), mn01-stick-standard.md per-stick identity section + registry, hardware-mn01-tony-usb.md update,
+    jobs trail docs/ssot/jobs/infrastructure/2026-11-23-tony-'
+- at: 2026-11-23 19:03
+  from: devin
+  text: 'raised request physical-step-remains-the-tony-usb-stick-41f071: Physical step remains — the tony-usb stick
+    is not booted or attached to any reachable host (verified from idc02: tailnet'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -403,3 +414,16 @@ action:
   runner: idc02
 claim:
   since: 2026-11-23 18:50
+requests:
+- id: physical-step-remains-the-tony-usb-stick-41f071
+  ask: 'Physical step remains — the tony-usb stick is not booted or attached to any reachable host (verified from
+    idc02: tailnet, home-LAN sweep via tony-dell, lsblk on mn01/dell/omen/macbook/con01/idc03). Next time you boot
+    the stick, run FIRST: sudo bash scripts/ops/stick-own-nodekey.sh (or ssh tony@<lan-ip> ''sudo bash -s'' < scripts/ops/stick-own-nodekey.sh
+    from any fleet host), then approve the new tony-usb node in the Tailscale admin console. Everything else is
+    committed on this dispatch branch — docs updated, script ready.'
+  status: open
+  at: 2026-11-23 19:03
+  from: devin
+  options:
+  - proceed
+  - hold
