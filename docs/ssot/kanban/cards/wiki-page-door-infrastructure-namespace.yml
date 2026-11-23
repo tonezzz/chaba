@@ -1,7 +1,7 @@
 id: wiki-page-door-infrastructure-namespace
 title: 'Extend /wiki/page door to allow Infrastructure: namespace writes'
-column: doing
-updated: 2026-11-23 17:07
+column: backlog
+updated: 2026-11-23 17:10
 priority: low
 tags:
 - wiki
@@ -329,19 +329,31 @@ comms:
   from: devin
   text: 'running (attempt on tony-omen): prior work exists as commit 3ac5d7f6f6 (pushed, tests passed; merge held
     only by suite timeout). Cherry-picking onto current master + re-verifying tests.'
+- at: 2026-11-23 17:10
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
+    | devin-task-20261123-17063 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 17:10
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-170638-extend-wiki-page-door-to-allow (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 17:10
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 17:40'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
   attempts: 1
-  last_failure: 'exit=1 ask-20261123-152219-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
-    | devin-task-20261123-152219-extend-wiki-page-door-to-allow.service: Consumed 53.907s CPU time over 2min 6.796s
-    wall clock time, 834.6M memory peak.'
+  last_failure: 'exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''.
+    | devin-task-20261123-170638-extend-wiki-page-door-to-allow.service: Consumed 2min 35.197s CPU time over 3min
+    28.888s wall clock time, 919.5M memory peak.'
   sweep:
     stale_running: 2026-11-20 19:03
     no_repo: 2026-11-20 19:03
-  runner: tony-omen
+  result: 'exit=1 261123-170638-extend-wiki-page-door-to-allow.service: Failed with result ''exit-code''. | devin-task-20261123-170638-extend-wiki-page-door-to-allow.service:
+    Consumed 2min 35.197s CPU time over 3min 28.888s wall clock time, 919.5M memory peak.'
 claim:
   since: 2026-11-23 17:05
 review_kind: verify
