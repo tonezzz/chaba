@@ -1,0 +1,89 @@
+title: ansible disk-headroom.yml hardened — controller-local conn, real
+  dry-run, disk-trend history feed
+subtitle: OPS-0019 follow-up — playbook is now safe to run from any
+  tailnet controller including the probed host itself
+icon: shield
+
+card: ansible-disk-headroom-harden
+date: 2026-11-23
+dispatch: 20261123-110521-goal-make-ansible-disk-headroo (tony-macbook)
+status: landed in worktree — verified --check --diff + real run on controller
+
+# ------------------------------------------------------------- context
+context: |
+  From idc02, `ansible-playbook playbooks/disk-headroom.yml` failed to
+  probe idc02 itself: inventory ansible_host is the host's own tailnet
+  IP, and ssh-to-self has no key path (publickey). The playbook also had
+  two structural problems discovered while hardening:
+  - Its `hosts: localhost` eval play was filtered out entirely by any
+    --limit ("no hosts matched") — so --limit runs wrote no reports at
+    all. Fixed by folding eval into the probe play as
+    delegate_to:localhost + run_once tasks.
+  - Nothing fed the trend: ansible runs were stateless while
+    disk-trend-watch.py owns the slope lifecycle over
+    ~/var/chaba/health/disk-trend.jsonl. The playbook now appends the
+    same record shape to the same file (host keyed by the
+    ssot.audit.hosts.yml name — tony-macbook maps to 'macbook').
+
+# ------------------------------------------------------------- design
+design: |
+  Controller self-detect (play vars, no facts needed):
+    controller_idents = `hostname -I` split + hostname + hostname -f
+    (pipe lookups, errors='ignore' so non-Linux controllers survive).
+    controller_self = first audited host whose ansible_host is in
+    idents, or whose inventory name is in idents. Override:
+    -e self_host=<name>. The pre_tasks set_fact ansible_connection=local
+    for that host — set_fact never opens a connection, so it lands
+    before ssh is attempted.
+  Single-play layout: --limit filters `hosts: localhost` plays to zero,
+  so controller-side steps (report dir, template render, alerts,
+  history append) are end-of-play tasks with delegate_to:localhost +
+  run_once. Task lockstep guarantees every probe finished first.
+  --check --diff: probe is read-only -> check_mode:no so verdicts are
+  genuine; file/template/lineinfile honor check mode natively and show
+  diffs; alerts re-render disk-headroom.j2 in memory via lookup()
+  (loop_var: target binds the template context) instead of reading the
+  not-yet-written files.
+  Trend feed: lineinfile appends one jsonl record per probed host —
+  {ts, epoch, host, unreachable, mounts[{mount,fs,size_kb,used_kb,
+  avail_kb,pct}], dirs:[]}, identical to disk-trend-watch's writer.
+  Gates: diskprobe defined (actually probed — --limit-skipped hosts
+  must not record false 'unreachable') AND ssot key in
+  audit_ssot['hosts'] (only hosts disk-trend-watch samples — avoids a
+  parallel never-merged series). -e disk_trend_feed=false disables.
+  host_key_checking stays True; controllers seed tailnet-IP host keys
+  via ssh-keyscan -H <ip> — documented in ansible/README.md
+  "SSH known_hosts" (hashed hostname entries never match an IP).
+
+# ------------------------------------------------------------- verified
+verification: |
+  On tony-macbook worktree (ansible-playbook 2.x via pipx):
+  - --syntax-check clean
+  - --check --diff --limit tony-macbook: controller_self=tony-macbook
+    detected, local conn set, df probe ran under check (real verdicts),
+    verdict diffs + history-append diff shown, alerts rendered
+  - real run --limit tony-macbook with DISK_TREND_HISTORY redirected:
+    wrote one valid jsonl record {"host": "macbook", ...}
+  - disk-trend-watch.py --history <file> --report ingests the record:
+    macbook appears with both mounts and correct pct/avail (slope n/a
+    until a second sample — expected, MIN_SPAN_H gate)
+  - --limit-excluded hosts show "not probed" (not "unreachable") and
+    write no history sample.
+
+caveats: |
+  - probe_ts renders naive-UTC (ansible now(utc=True) has no %z here) —
+    cosmetic; disk-trend keys all math on epoch and never parses ts.
+  - ssot.audit.hosts.yml has a duplicate 'action:' key (~line 431,
+    focus-dispatcher-overnight.service entry: 'verify-next-run' then
+    'investigate') — PyYAML keeps the last and ansible prints a
+    duplicate-key warning. Pre-existing data smell, flagged, not fixed
+    here.
+  - unreachable hosts in a fleet run DO get an unreachable:true sample
+    appended — same semantics as disk-trend-watch's own probing.
+
+usage: |
+  cd ansible
+  ansible-playbook playbooks/disk-headroom.yml --check --diff  # dry-run
+  ansible-playbook playbooks/disk-headroom.yml                 # probe+feed
+  ansible-playbook playbooks/disk-headroom.yml --limit idc02
+  ansible-playbook playbooks/disk-headroom.yml -e disk_trend_feed=false
