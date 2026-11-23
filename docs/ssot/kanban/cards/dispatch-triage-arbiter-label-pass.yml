@@ -1,6 +1,6 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
-column: backlog
+column: doing
 updated: 2026-11-23 14:41
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
@@ -438,9 +438,12 @@ comms:
 - at: 2026-11-23 14:41
   from: tony
   text: retry requested
+- at: 2026-11-23 14:41
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 19:04
@@ -450,9 +453,10 @@ action:
   last_failure: 'journal=exit-code NT | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Failed
     with result ''exit-code''. | devin-task-20261120-211038-approved-strategy-b-per-the-bo.service: Consumed 31.686s
     CPU time, 345.6M memory peak, 0B memory swap peak.'
-  attempts: 0
+  attempts: 1
+  runner: tony-omen
 claim:
-  since: 2026-11-20 21:09
+  since: 2026-11-23 14:41
 requests:
 - id: spot-check-the-100-row-review-queue-30-5-080d21
   ask: 'Spot-check the 100-row review queue (~30-50min at 20-30s/row): 2 low-confidence rows need adjudication,
