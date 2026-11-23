@@ -1,7 +1,7 @@
 id: r7-con01-python-ml-timeout
 title: 'R7: con01 python_ml probe times out (>20s) in verify-host-software'
-column: backlog
-updated: 2026-11-23 17:08
+column: done
+updated: 2026-11-23 17:11
 brief: 'Full-fleet verify-host-software.yml run: con01 python_ml probe timed out at 20s; may be slow import or broken
   ML venv.'
 priority: medium
@@ -29,3 +29,13 @@ comms:
     -c "import torch, transformers; print(ML-OK)"'' returned ML-OK (within 60s). The 20s probe timeout in verify-host-software
     is likely too tight for cold torch+transformers import on con01, not a broken venv. Consider raising host_sw_probe_timeout
     for that cap or special-casing python_ml; do not bootstrap blindly.'
+- at: 2026-11-23 17:11
+  from: devin
+  text: 'Fixed probe timeout 2026-11-23: ansible verify-host-software now uses host_sw_probe_timeout_python_ml default
+    90s for python_ml/python_ml_gpu (default 20s unchanged for others). chaba origin/master 3ac5475d3e. Re-ran --limit
+    con01: ok (4/4 capabilities pass). Treating as false-timeout resolved; closing.'
+- at: 2026-11-23 17:11
+  from: devin
+  text: closed by devin
+action:
+  status: done
