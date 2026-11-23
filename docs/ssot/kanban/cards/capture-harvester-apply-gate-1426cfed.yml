@@ -1,7 +1,7 @@
 id: capture-harvester-apply-gate-1426cfed
 title: 'Capture harvester: decide --apply gate'
 column: backlog
-updated: 2026-11-23 13:42
+updated: 2026-11-23 13:49
 brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
   ever enable --apply.
 priority: medium
@@ -34,6 +34,13 @@ comms:
   from: devin
   text: 'raised request apply-is-the-only-unresolved-gate-from-o-bd7d0c: --apply is the only unresolved gate from
     OPS-0016. The read-only proposal path is verified (100% actionable kanban creat'
+- at: 2026-11-23 13:49
+  from: devin
+  text: '[2026-11-23 opencode] Precision correction to this card''s wording (''--apply has been deliberately unexercised''):
+    there is no --apply implementation to exercise. Verified in scripts/chaba/harvester.py: ''There is no --apply
+    in this slice by design (OPS-0016 approved 2026-11-23)'' (introduced 424e97f5c6). OPS-0016 approved the read-only
+    propose slice with sink writes explicitly deferred as a separate gated decision. Therefore option (b) means
+    DESIGN AND BUILD a new sink-write feature — define sink s'
 requests:
 - id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
   ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
