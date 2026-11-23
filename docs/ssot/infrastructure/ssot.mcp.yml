@@ -218,27 +218,42 @@ servers:
     description: Consolidated browser automation for local and remote testing
     implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
     wrapper: mcp-single-instance.sh
-    pattern: playlive
-    filter: none
+    pattern: playlive-hosts-loader.py
+    filter: allowlist
+    filtered_tools:
+    - playlive_create_chrome_live
+    - playlive_create_playwright_chrome
+    - playlive_create_playwright
+    - playlive_list_sessions
+    - playlive_status
+    - playlive_close_session
+    - playlive_navigate
+    - playlive_click
+    - playlive_fill
+    - playlive_select
+    - playlive_eval
+    - playlive_state
+    - playlive_screenshot
+    - playlive_screenshot_image
     env:
       PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     single_instance: true
     status: operational
     scope: agent-lanes
-    notes: 'Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
-
-      The playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
-
-      playlive_url, sets PLAYLIVE_HOSTS, and then execs the real playlive-server.py.
-
-      '
+    notes: 'Host registry: docs/ssot/infrastructure/playlive-hosts.yml. The
+      playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
+      playlive_url, sets PLAYLIVE_HOSTS, then execs playlive-server.py.
+      2026-11-23 (OPS-0889): filtered 25->14 via mcp-allowlist.py on omen+dell.
+      pattern must stay "playlive-hosts-loader.py", NOT "playlive" — the broad
+      pattern makes pgrep match the mcp-allowlist proxy cmdline and the
+      playlived daemon, so the wrapper kills its own parent.'
     per_host:
       tony_dell:
         implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
       tony_omen:
         implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
         env:
-          PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
+          PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/playlive-hosts.yml
     config_files:
     - devin: true
     - windsurf: false
@@ -263,7 +278,14 @@ servers:
     description: Financial market data API integration
     implementation: https://mcp.alphavantage.co/mcp
     wrapper: none
-    filter: none
+    filter: allowlist
+    filtered_tools:
+    - TIME_SERIES_DAILY
+    - FX_DAILY
+    - GLOBAL_QUOTE
+    - CURRENCY_EXCHANGE_RATE
+    - GOLD_SILVER_SPOT
+    - GOLD_SILVER_HISTORY
     url: https://mcp.alphavantage.co/mcp?apikey=<PRIVATE_API_KEY>
     single_instance: false
     status: operational
@@ -271,9 +293,10 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'Scoped to omen 2026-11-20 (OPS-0036): only omen configures it. AUD-0886
-      flagged its ~5.6k-line schema as too heavy for every agent session; dell stays
-      free of it. API key lives in ~/.config/devin/mcp_config.json.'
+    notes: 'Scoped to omen 2026-11-20 (OPS-0036). AUD-0886 flagged its ~5.6k-line
+      schema (~133 tools, ~15k tokens); 2026-11-23 (OPS-0889) filtered 133->6 via
+      mcp-allowlist.py + mcp-stdio-bridge.py (url: server bridged to stdio).
+      API key lives in ~/.config/devin/mcp-scripts/allowlist.alphavantage.json.'
   docs:
     name: Documentation Search (Chaba)
     description: Full-text search across chaba project documentation
@@ -328,6 +351,8 @@ servers:
     per_host:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
+      tony_omen:
+        implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-weaviate/server.py
     config_files:
     - devin: true
     - windsurf: true
@@ -374,24 +399,14 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
-
-      mddbd serves streamable-HTTP on idc03:9000/mcp (X-API-Key in runtime config);
-      moved off tony-dell container + stdio bridge per AUD-0886 (2026-10-26).
-
-      Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
-
-      The bridge preserves the 2025-11-25 protocolVersion returned by mddbd
-
-      Allowed tools for Claude: add_document, search_documents, delete_document, get_stats,
-      aggregate, semantic_search
-
-      mcp-health "MDDB MCP Server" check: GET http://tony-dell:9000/mcp returns 400;
-      only POST is valid, so 400 is the healthy HTTP status
-
-      See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
-
-      '
+    notes: 'Endpoint requires /mcp suffix. mddbd serves streamable-HTTP on
+      idc03:9000/mcp (X-API-Key in runtime config); moved off tony-dell container
+      per AUD-0886 (2026-10-26). Devin uses stdio bridge
+      ~/.config/devin/mcp-scripts/mddb-bridge.py (preserves the 2025-11-25
+      protocolVersion mddbd returns). Allowed tools for Claude: add_document,
+      search_documents, delete_document, get_stats, aggregate, semantic_search.
+      mcp-health check: GET :9000/mcp returns 400 — POST-only, so 400 is healthy.
+      See docs/kb/mddb-claude-bridge.md.'
   mcp-health:
     name: Health Monitoring
     description: Centralized health check and telemetry orchestrator on tony-dell
@@ -404,28 +419,14 @@ servers:
     config_files:
     - devin: true
     - windsurf: true
-    notes: 'Persist results to tony-dell Postgres (health_checks and alerts tables).
+    notes: 'Persists results to tony-dell Postgres (health_checks, alerts tables).
 
-      Phase 3 Enhanced: Complete - Port conflict detection, proxy validation, automated
-      recovery, enhanced error context
-
-      Phase 4: Complete - Streamlined health monitoring with advanced features (2026-08-12)
-
-      Features: 4-level status categorization, profile filtering, dependency analysis,
-      recovery suggestions, alert system
-
-      Phase 3 Tools: check_port_conflicts, validate_proxy_config, restart_service,
-      get_troubleshooting_info
-
-      Phase 4 Tools: quick_health (pass/fail for critical services), check_group (group-based
-      checks), reload_config (YAML reload), get_health_score (system metric 0-100),
-      batch_check (parallel checks), set_auto_recovery (automated policies), get_service_template
-      (service templates), sync_to_mddb (health history integration)
-
-      Phase 4 Future: ML-based failure prediction and webhook notifications documented
-      in ssot.improvements.yml
-
-      See ssot.improvements.yml for detailed implementation plan
+      Tools: check_port_conflicts, validate_proxy_config, restart_service,
+      get_troubleshooting_info, quick_health, check_group, reload_config,
+      get_health_score, batch_check, set_auto_recovery, get_service_template,
+      sync_to_mddb. Features: 4-level status, profile filtering, dependency
+      analysis, recovery suggestions, alerts. ML-prediction/webhook roadmap:
+      ssot.improvements.yml.
 
       '
   mcp-focus:
@@ -519,21 +520,16 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'Persistent rootless Podman container on MN01 (quadlet ~/.config/containers/systemd/notebooklm-mcp.container;
-      up since 2026-10-20, verified authed 2026-10-26 — `nlm notebook list` works).
-      Mounts auth state from /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli on mn01.
+    notes: 'Rootless Podman on MN01 (quadlet notebooklm-mcp.container; up since
+      2026-10-20, authed — `nlm notebook list` works). Mounts auth from
+      /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli on mn01.
 
-      2026-10-26 repoint (card dead-mcp-servers-triage, AUD-0886): dell quadlets
-      notebooklm-mcp + notebooklm-rest were left in ~/.config/containers/systemd/migrated-off/
-      but the podman quadlet generator scans subdirs — both crash-looped (~36k restarts)
-      pulling missing localhost images. Both masked on dell. All consumers now ssh
-      to mn01: mcp-notebooklm-ssh.sh / mcp-notebooklm.sh wrappers and the
-      ~/.local/bin/nlm CLI shim on omen+dell (arg-safe via printf %q). This also
-      repairs the nightly notebooklm-kb-sync.timer on omen which was exit-0 while
-      logging ~22 errors/run against the dead local container.
-
-      notebooklm-rest (the :3011 FastAPI facade for nbapi/web app) was NOT rebuilt
-      on mn01 — no active consumers found; mask it if it resurfaces.
+      2026-10-26 repoint (dead-mcp-servers-triage, AUD-0886): dell quadlets
+      notebooklm-mcp + notebooklm-rest left in migrated-off/ crash-looped
+      (~36k restarts, podman generator scans subdirs) — both masked. Consumers
+      ssh to mn01 via mcp-notebooklm-ssh.sh / mcp-notebooklm.sh and the
+      ~/.local/bin/nlm shim on omen+dell (printf %q arg-safe). notebooklm-rest
+      (:3011 FastAPI facade) was NOT rebuilt — no consumers; mask if it resurfaces.
 '
   mcp-colab:
     name: Colab Pack Control Plane
@@ -635,23 +631,21 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
-      Scope widened 2026-11-20 to include tony_omen (omen calls the mn01 endpoint over tailnet).
+    notes: 'FastMCP streamable-HTTP bound to mn01 Tailscale IP (100.106.196.22:8004);
+      scope widened 2026-11-20 to tony_omen over tailnet.
 
-      Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
+      Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/;
+      quadlet google-home-mcp.container on mn01.
 
-      Quadlet: ~/.config/containers/systemd/google-home-mcp.container on mn01.
+      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID); mn01 is on the
+      same 192.168.2.0/24 LAN (enp1s0 .79) — local mDNS + eureka enrichment on :8008.
+      Powered-off devices appear as bare host entries until reachable.
 
-      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box); mn01 is on the
-      same 192.168.2.0/24 LAN (enp1s0 192.168.2.79), so discovery is local mDNS plus
-      eureka enrichment on port 8008. Devices that are powered off appear as bare
-      host entries until reachable.
+      Tools: discover_devices, device_info, cast_status, cast_play_media,
+      cast_media_control, cast_volume, cast_quit_app, eureka_info.
 
-      Tools: discover_devices, device_info, cast_status, cast_play_media, cast_media_control,
-      cast_volume, cast_quit_app, eureka_info.
-
-      Official remote Home MCP (home.googleapis.com/mcp) is configured separately
-      as ''google-home''; it requires a Google Home Premium Advanced subscription
+      Official remote Home MCP (home.googleapis.com/mcp) is the separate
+      ''google-home'' entry — needs a Google Home Premium Advanced subscription
       (not active as of 2026-09-17).
 
       '
@@ -671,14 +665,10 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'OAuth uses a pre-registered Web-application client in a Google Cloud project
-      (Home API enabled, scope https://www.googleapis.com/auth/home.platform.v2).
-
-      Tokens stored by Devin CLI under ~/.local/share/devin/mcp/oauth/.
-
-      Authenticated successfully 2026-09-17 but list_homes returns "At least one Home
-      Premium Advanced subscription is required" — blocked until the account has Google
-      Home Premium Advanced (early access is US English rollout).
+    notes: 'OAuth via a pre-registered Web-application client (Home API enabled,
+      scope home.platform.v2). Tokens under ~/.local/share/devin/mcp/oauth/.
+      Authenticated 2026-09-17 but list_homes returns "Home Premium Advanced
+      subscription required" — blocked on that subscription (US English rollout).
 
       '
 scripts:
@@ -696,7 +686,7 @@ decisions:
     findings:
     - 'dead at probe: home-assistant(9584), michael-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
     - 'mcp-llama superseded by LiteLLM gateway (retire/repoint recommended)'
-    - 'alphavantage schema ~5.6k lines - allowlist or per-session profile recommended'
+    - 'alphavantage schema ~5.6k lines - DONE 2026-11-23: allowlisted 133→6 on omen via mcp-allowlist.py + mcp-stdio-bridge.py'
     - 'mddb moved to idc03 streamable-HTTP + X-API-Key'
     - 'mcp-colab added to this registry'
     - 'triage 2026-10-26 (card dead-mcp-servers-triage): notebooklm REPAIRED by repoint

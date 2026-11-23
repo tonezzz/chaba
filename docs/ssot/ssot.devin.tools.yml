@@ -9,9 +9,11 @@ subtitle: MCP server definitions, tool inventory, and launch configuration
 # - Devin config: ~/.config/devin/mcp_config.json (generated from SSOT)
 # - Windsurf config: ~/.config/windsurf/mcp_config.json (can be generated from SSOT)
 # - Wrapper scripts: Centralized in ~/.config/devin/mcp-scripts/
-# - Filtering: NONE live as of 2026-10-09 audit — the mcp-filter setup
-#   claimed below was never deployed persistently (scripts gone, /tmp
-#   venv wiped). Re-implementation carded: kanban/cards/mcp-tool-filtering.yml
+# - Filtering: mcp-allowlist.py live since 2026-10-09 — github/postgres/yomi
+#   on dell+idc03, playlive on dell; 2026-11-23 added alphavantage+playlive
+#   on omen (alphavantage via mcp-stdio-bridge.py since it is a url: server).
+#   Escape hatch: MCP_ALLOWLIST_OFF=1. Still unfiltered on omen: github,
+#   postgres, yomi (they point at remote upstreams anyway).
 # - Profile switching: home (tony-omen) vs mobile (dynamic IP)
 
 # Configuration Generation
@@ -29,14 +31,14 @@ subtitle: MCP server definitions, tool inventory, and launch configuration
 # - ✅ Testing completed (GitHub, docs MCP servers verified)
 
 mcp:
-  github: GitHub integration (unfiltered — 48 tools measured 2026-10-09; filtering carded).
+  github: GitHub integration (filtered 44→18 on dell+idc03; unfiltered on omen).
   mcp-gpu: Local GPU control (imagen2, llama queue).
   mcp-llama: Local Llama.cpp server.
   mcp-weaviate: Weaviate vector database integration.
-  playlive: Playlive browser automation (consolidated local & remote).
-  postgres: PostgreSQL database operations (unfiltered; filtering carded).
-  yomi: LINE conversation viewer (unfiltered — 41 tools measured 2026-10-09; filtering carded).
-  alphavantage: Alpha Vantage financial data API.
+  playlive: Playlive browser automation (filtered 25→14 on omen+dell).
+  postgres: PostgreSQL database operations (filtered 28→6 on dell; unfiltered on omen).
+  yomi: LINE conversation viewer (filtered 41→10 on dell+idc03; unfiltered on omen).
+  alphavantage: Alpha Vantage financial data API (filtered 133→6 on omen via stdio bridge).
   docs: Documentation search server (chaba project docs).
   docs-trade: Documentation search server (trade project docs).
 
@@ -55,11 +57,11 @@ wrappers:
   base_dir: ~/.config/devin/mcp-scripts/
   scripts:
     - mcp-single-instance.sh (single-instance manager)
-    - run-github-filtered-mcp.sh (planned — does not exist yet, see mcp-tool-filtering card)
+    - mcp-allowlist.py (generic tool allowlist proxy; repo=scripts/mcp-scripts/)
+    - mcp-stdio-bridge.py (stdio<->streamable-HTTP bridge for remote-url servers; repo=scripts/mcp-scripts/)
+    - allowlist.<server>.json (per-server allow spec: command/env/allow)
     - run-github-mcp.sh (GitHub base wrapper)
-    - run-postgres-filtered-mcp.sh (planned — does not exist yet)
     - run-postgres-crud-mcp.sh (PostgreSQL CRUD wrapper)
-    - run-yomi-filtered-mcp.sh (planned — does not exist yet)
     - run-llama-mcp.sh (Llama server wrapper)
 
 # Profile Configuration

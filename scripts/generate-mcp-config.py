@@ -169,10 +169,40 @@ def merge_host_overrides(cfg: dict[str, Any], host: str) -> dict[str, Any]:
     return merged
 
 
-def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], profile: str) -> dict[str, Any]:
-    """Convert one ssot.mcp.yml server entry into an mcp_config.json server entry."""
+def allowlist_entry(name: str) -> dict[str, Any]:
+    """The mcp_config.json entry for an allowlist-filtered server: a single
+    mcp-allowlist.py call whose --allowfile carries the real upstream."""
+    return {
+        "command": "/usr/bin/python3",
+        "args": [
+            str(MCP_SCRIPTS_DIR / "mcp-allowlist.py"),
+            "--allowfile",
+            str(MCP_SCRIPTS_DIR / f"allowlist.{name}.json"),
+        ],
+    }
+
+
+def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], profile: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Convert one ssot.mcp.yml server entry into an mcp_config.json server entry.
+
+    Returns ``(server_entry, allowfile_spec)``. ``allowfile_spec`` is None
+    unless ``filter: allowlist`` — then the server entry is the
+    mcp-allowlist.py wrapper and the spec is the content for
+    ``allowlist.<name>.json`` (upstream command/env + allow patterns).
+    """
     if "url" in cfg:
-        return {"url": resolve_value(cfg["url"], ssot, profile)}
+        url = resolve_value(cfg["url"], ssot, profile)
+        if cfg.get("filter") == "allowlist":
+            allowfile = {
+                "command": [
+                    "/usr/bin/python3",
+                    str(MCP_SCRIPTS_DIR / "mcp-stdio-bridge.py"),
+                    url,
+                ],
+                "allow": cfg.get("filtered_tools") or [],
+            }
+            return allowlist_entry(name), allowfile
+        return {"url": url}, None
 
     wrapper = cfg.get("wrapper", "none")
     implementation = cfg.get("implementation", "")
@@ -217,7 +247,41 @@ def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], pr
             resolved_env[k] = resolve_value(v, ssot, profile)
         server["env"] = resolved_env
 
-    return server
+    if cfg.get("filter") == "allowlist":
+        allowfile = {"command": [command] + args, "allow": cfg.get("filtered_tools") or []}
+        if "env" in server:
+            allowfile["env"] = server["env"]
+        return allowlist_entry(name), allowfile
+
+    return server, None
+
+
+def write_allowfiles(allowfiles: dict[str, dict[str, Any]]) -> None:
+    """Write allowlist.<name>.json files next to the generated config.
+
+    If a file already exists, its ``command``/``env`` win — the deployed
+    upstream may carry per-host paths or credentials (e.g. an apikey URL)
+    that the SSOT cannot express. ``allow`` always comes from the SSOT
+    ``filtered_tools`` list so regen updates the filter without clobbering
+    the deployed upstream.
+    """
+    MCP_SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    for name, spec in allowfiles.items():
+        path = MCP_SCRIPTS_DIR / f"allowlist.{name}.json"
+        merged = dict(spec)
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                existing = {}
+            if isinstance(existing, dict):
+                for k in ("command", "env"):
+                    if k in existing:
+                        merged[k] = existing[k]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(merged, f, indent=2)
+            f.write("\n")
+        print(f"wrote {path} ({len(merged.get('allow') or [])} tools)")
 
 
 def should_include_for_target(cfg: dict[str, Any], target: str) -> bool:
@@ -309,6 +373,7 @@ def main() -> int:
 
     output_file = args.output or OUTPUT_FILE
     mcp_servers: dict[str, Any] = {}
+    allowfiles: dict[str, dict[str, Any]] = {}
     missing: list[str] = []
     skipped: list[str] = []
 
@@ -323,10 +388,12 @@ def main() -> int:
             continue
 
         try:
-            server = build_server_config(name, cfg, ssot, profile)
+            server, allowfile = build_server_config(name, cfg, ssot, profile)
         except (ValueError, KeyError) as e:
             error(f"{name}: {e}")
             return 1
+        if allowfile is not None:
+            allowfiles[name] = allowfile
 
         # Validate that any local implementation paths exist
         for arg in server.get("args", []):
@@ -345,6 +412,9 @@ def main() -> int:
         for item in missing:
             error(f"  - {item}")
         return 1
+
+    if allowfiles:
+        write_allowfiles(allowfiles)
 
     config = {"mcpServers": mcp_servers}
 

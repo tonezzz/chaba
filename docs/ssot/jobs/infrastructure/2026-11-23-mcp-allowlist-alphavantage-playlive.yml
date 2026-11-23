@@ -1,0 +1,72 @@
+id: 2026-11-23-mcp-allowlist-alphavantage-playlive
+title: mcp-allowlist applied to alphavantage + playlive on tony-omen
+date: 2026-11-23
+ref: OPS-0889
+card: mcp-schema-allowlist-heavy-servers-7c22e9
+host: tony-omen
+summary: >-
+  Applied the mcp-allowlist.py tool-surface filter to the two remaining heavy
+  schema servers: alphavantage (remote url: server, 133 tools -> 6) and
+  playlive (stdio, 25 tools -> 14) on tony-omen. Estimated ~20k tokens saved
+  per session (alphavantage schema alone was ~5.6k lines / ~15k tokens).
+
+state:
+  tony_omen:
+    mcp-allowlist.py: ~/.config/devin/mcp-scripts/mcp-allowlist.py (copied from dell)
+    mcp-stdio-bridge.py: ~/.config/devin/mcp-scripts/mcp-stdio-bridge.py (new, this job)
+    allowlist.alphavantage.json: 6 tools - TIME_SERIES_DAILY, FX_DAILY, GLOBAL_QUOTE,
+      CURRENCY_EXCHANGE_RATE, GOLD_SILVER_SPOT, GOLD_SILVER_HISTORY
+    allowlist.playlive.json: 14 tools - create x3, list_sessions, status,
+      close_session, navigate, click, fill, select, eval, state, screenshot x2
+    mcp_config.json: both entries now point at mcp-allowlist.py --allowfile
+      (backup ~/.config/devin/mcp-backups/mcp_config.json.pre-allowlist-av-pl-20261123)
+  tony_dell:
+    allowlist.playlive.json: single-instance pattern fixed playlive ->
+      playlive-hosts-loader.py (was self-killing the proxy; live entry unchanged)
+  repo:
+    - "scripts/mcp-scripts/mcp-allowlist.py (versioned; --install-wrappers syncs it)"
+    - "scripts/mcp-scripts/mcp-stdio-bridge.py (new)"
+    - "scripts/generate-mcp-config.py now honours filter=allowlist + filtered_tools — emits the wrapper entry and writes allowlist.<name>.json (existing command/env preserved on merge, allow comes from SSOT)"
+    - "ssot.mcp.yml — alphavantage/playlive filter=allowlist + filtered_tools; playlive pattern playlive->playlive-hosts-loader.py; tony_omen env path chaba-tony-dell -> chaba; mcp-weaviate per_host.tony_omen implementation added"
+
+alphavantage-notes: >-
+  Remote url: servers cannot be wrapped directly (the proxy needs a stdio
+  child). mcp-stdio-bridge.py bridges stdin JSON-RPC -> streamable-HTTP POST
+  (handles application/json and text/event-stream replies, tracks
+  mcp-session-id). The apikey URL lives in the allowfile's command on the
+  host — same trust domain as mcp_config.json which already held it.
+  SSOT keeps the <PRIVATE_API_KEY> placeholder.
+
+gotchas:
+  - 'mcp-single-instance.sh <pattern> runs pgrep -f <pattern>. With pattern
+    "playlive" it matched the proxy''s own cmdline (allowlist.playlive.json)
+    AND the playlived daemon — the wrapper killed its own parent and the
+    probe hung/died. Use the tight pattern "playlive-hosts-loader.py". Dell''s
+    allowfile had the same bug (fixed in place); before this fix dell''s
+    filtered playlive likely self-terminated on every start.'
+  - 'generate-mcp-config.py used to ignore `filter:` — a regen would have
+    silently reverted all filtering. It now emits the wrapper + allowfile,
+    and preserves existing command/env in allowfiles so deployed credentials
+    are not clobbered.'
+  - 'mcp_config.json changes apply to NEW sessions only — the session that
+    makes the edit keeps its old tool surface.'
+
+verify:
+  playlive-count: >-
+    MCP_ALLOWFILE=~/.config/devin/mcp-scripts/allowlist.playlive.json
+    python3 ~/.config/devin/mcp-scripts/mcp-allowlist.py --list-only
+    -> result.tools length 14
+  alphavantage-count: >-
+    MCP_ALLOWFILE=~/.config/devin/mcp-scripts/allowlist.alphavantage.json
+    python3 ~/.config/devin/mcp-scripts/mcp-allowlist.py --list-only
+    -> result.tools length 6
+  filtered-call-blocked: >-
+    tools/call EMA via the alphavantage allowfile -> JSON-RPC -32601
+    "filtered out by the MCP allowlist" (verified live 2026-11-23)
+  allowed-call-works: >-
+    tools/call CURRENCY_EXCHANGE_RATE USD->THB via the bridge -> live
+    exchange-rate payload (verified live 2026-11-23)
+  rollback: >-
+    cp ~/.config/devin/mcp-backups/mcp_config.json.pre-allowlist-av-pl-20261123
+    ~/.config/devin/mcp_config.json — or set env MCP_ALLOWLIST_OFF=1 on a
+    server entry / empty its allowfile allow list.
