@@ -1,0 +1,103 @@
+title: "cline review feed — review-column cards batched through con01 Cline with drafted verdicts"
+subtitle: >-
+  scripts/ops/cline-review-feed.py SELECTs cline-suitable review cards
+  (auto-incidents get evidence-pack prompts, bounded deliverables get
+  done-claim checks), CREATEs [CARDREVIEW:<id>] tasks on the con01
+  cline-kanban board (cap 3 concurrent, ollama only), COLLECTs the
+  worktree patch when the session ends, and REPORTs a verdict comms +
+  a close/keep/requeue options request back to the card — never
+  auto-closing. The lane-cms 5x-repost bug is fixed by deduping on
+  last-reported (task_id, column, updatedAt) plus a comms/request scan
+  that survives state-file loss.
+icon: 🔁
+id: 2026-11-23-cline-review-feed
+status: done
+owner: devin-dispatch
+project: chaba
+card: cline-card-review-lane
+started: "2026-11-23"
+completed: "2026-11-23"
+
+context:
+  proven_pattern: >-
+    2026-10-29 lane-cms-content-model -> cline task 8b60e ->
+    lane-cms-coverage-procedure.md (856B) -> 'cline verdict
+    (qwen2.5:7b): WEAK-PASS'. Same mechanism, generalized and repeated
+    per card instead of a poll-loop one-off.
+  prior_run_2026_11_20: >-
+    Attempt 1 on idc02 completed the whole lane live — tasks e05b5
+    (vcast-auto-yt-live-api) and b699c
+    (board-janitor-locked-edit-atomic-write-db7bed) both returned
+    verdict=investigate, comms + cline-drafted-verdict requests posted —
+    but the unit exited non-zero after the DONE comms and the branch was
+    never pushed (idc02 has no push creds), so the script itself was
+    lost. This job is the rebuild.
+
+decisions:
+  - id: marker-namespacing
+    text: >-
+      Feed-owned tasks carry [CARDREVIEW:<id>] — the mirror owns
+      [CARD:<id>] (projection tasks that must never be started) and the
+      intake bridge owns [NEST_JOB_KEY:]. Marker is also the idempotency
+      key: a card with a live CARDREVIEW task is never re-created.
+  - id: evidence-only-prompts
+    text: >-
+      Prompts inline the card spec/note/last-12 comms; the disposable
+      workspace has no repo or hosts by design. 'investigate' is the
+      honest verdict whenever proof lives outside the card text — weak
+      models draft, humans gate.
+  - id: two-layer-dedupe
+    text: >-
+      State file (~/.local/state/chaba/cline-review-feed.json) records
+      last-reported (task_id, column, updatedAt) — unchanged tuple skips
+      all writes. Comms/requests are scanned before posting anyway, so
+      dedupe survives host moves and lost state (proven live 2026-11-23:
+      re-run over e05b5/b699c wrote nothing).
+  - id: never-auto-close
+    text: >-
+      Verdicts raise /request cline-drafted-verdict-<verdict>-* with
+      options close/keep/requeue and suggested = close|keep|requeue per
+      verdict — Tony answers with one word. Card column untouched.
+  - id: board-json-moves
+    text: >-
+      Collected tasks are moved to the Cline board's review column via
+      the same atomic board.json edit the mirror uses (the CLI has no
+      column-move verb). Frees the in-flight cap slot.
+  - id: ssh-argv-quoting
+    text: >-
+      Remote podman-exec argv is shlex-joined before ssh — the remote
+      login shell otherwise re-expands $O/$E/$R, pipes and quotes. This
+      is why bridge.py only ever ran on con01 itself; the feed works
+      from any host with ssh con01.
+
+validation:
+  dedupe: >-
+    --execute --phase report over the two already-fed pilots: comms scan
+    found verdicts+requests already posted -> zero new writes; both tasks
+    moved to Cline review column. Chaba cards show no new comms.
+  create: >-
+    --execute --card per pilot: cms-auto-nest-tony-macbook -> task 43d16
+    (incident prompt), report-graph-producer-metas-never-reach-7b0982 ->
+    task 297a1 (deliverable prompt). Both in_progress via kanban task
+    start, ollama/qwen2.5:7b — zero paid spend.
+  select: >-
+    51 of 56 review cards classify suitable after exclusions (open human
+    requests, secret/deploy/security keywords, already-fed); cap holds
+    in-flight CARDREVIEW tasks at 3; incidents sort ahead of
+    deliverables, stalest-updated first.
+
+follow_ups:
+  - >-
+    Timer wiring (e.g. hourly cline-review-feed.timer on a host with ssh
+    con01 + BOARD_API reachability) is a host-mutation step left for the
+    served checkout — this lane is proven manually; declare the unit in
+    ssot.jobs.yml when promoted.
+  - >-
+    An in_progress task whose session dies without agent_end looks
+    running forever and holds a cap slot; `kanban task delete` +
+    re-feed is the manual escape. Worth a stale-session watchdog if it
+    recurs.
+  - >-
+    EXCLUDE_WORDS is a coarse keyword net — a review card needing
+    secrets/host access will still get fed and honestly verdict
+    'investigate'. Tighten only if noisy cards waste model-minutes.
