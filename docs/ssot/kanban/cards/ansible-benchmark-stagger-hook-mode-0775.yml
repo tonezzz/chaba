@@ -1,7 +1,7 @@
 id: ansible-benchmark-stagger-hook-mode-0775
 title: 'Host hygiene: ada-start-stagger.sh mode 0775 vs declared 0755 on idc03'
-column: backlog
-updated: 2026-11-23 16:53
+column: done
+updated: 2026-11-23 16:54
 brief: 'Benchmark finding still live: installed stagger hook is group-writable (0775) while install.sh declares
   0755; content matches.'
 priority: medium
@@ -29,3 +29,8 @@ comms:
     Applied governed minimal fix: ''chmod 755 /home/tony/.local/bin/ada-start-stagger.sh'' on idc03 (reversible,
     matches install.sh -m 0755). Re-ran ''ansible-playbook playbooks/verify-ada-stagger.yml'' from chaba/ansible
     (controller tony-omen, ANSIBLE_CONFIG=./ansible.cfg): msg=''ok — 11 check'
+- at: 2026-11-23 16:54
+  from: devin
+  text: closed by devin
+action:
+  status: done
