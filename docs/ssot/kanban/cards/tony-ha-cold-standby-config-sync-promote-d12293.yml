@@ -1,18 +1,17 @@
 id: tony-ha-cold-standby-config-sync-promote-d12293
 title: tony-ha cold standby — config sync + promote runbook
 column: backlog
-updated: 2026-11-21 17:47
+updated: 2026-11-23 14:08
 ref: HOM-0855
 comms:
 - at: 2026-10-25 13:55
   from: devin
-  text: 'Pain point (2026-10-25): omen maintenance = tony-ha fully down; idc02 shadow front 502s because
-    it proxies the dead backend. SSOT shows tony-ha is portable — all integrations LAN/cloud (tuya/xiaomi/sonoff/cozylife),
+  text: 'Pain point (2026-10-25): omen maintenance = tony-ha fully down; idc02 shadow front 502s because it proxies
+    the dead backend. SSOT shows tony-ha is portable — all integrations LAN/cloud (tuya/xiaomi/sonoff/cozylife),
     no USB radios, secrets already host-independent in idc03 per-instance store.
 
 
-    Proposal (NOT re-homing to dell — that reverses the deliberate omen-dedicate-nest decision): keep
-    a cold standby.
+    Proposal (NOT re-homing to dell — that reverses the deliberate omen-dedicate-nest decision): keep a cold standby.
 
 
     Spec:
@@ -101,8 +100,11 @@ comms:
 - at: 2026-11-23 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba
-  repository. Constraints include adhering to existing infrastructure patterns without inventing hostnames
-  or paths beyond what is established in the chaba repo. The testable done-condition is a documented and
-  committed runbook in the repository detailing the exact config sync and promotion steps for the cold
-  standby setup.
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba repository.
+  Constraints include adhering to existing infrastructure patterns without inventing hostnames or paths beyond what
+  is established in the chaba repo. The testable done-condition is a documented and committed runbook in the repository
+  detailing the exact config sync and promotion steps for the cold standby setup.

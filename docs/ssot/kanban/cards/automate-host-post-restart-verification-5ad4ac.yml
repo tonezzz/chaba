@@ -1,10 +1,22 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: backlog
-updated: 2026-11-21 19:09
+updated: 2026-11-23 14:08
 action:
-  type: manual
-  status: idle
+  type: dispatch
+  status: queued
+  repo: chaba
+  lane: devin
+  executor: devin
+  target_host: idc02
+  attempts: 0
+  prompt: 'Implement SYS-0863 (Automate host post-restart verification). Extend existing mcp-health-snapshot flow
+    (OnBootSec=5min/OnUnitActiveSec=15min) to detect boot-id change/reboot marker and run one check-only transition.post_restart
+    pass per boot. Canonical checklist: docs/kb/host-reboot-verification.md and docs/ssot/infrastructure/ssot.operations.yml#transition.post_restart.
+    Record structured result and open focus-inbox findings on failures; no auto-remediation. Update stale refs:
+    Omen CPU cap 2.00GHz (not 2.20GHz); Barrier retired (no barriers.service/barrier-client/24800), keep only barrier-pin-vt
+    where present. Scope first pass to configured hosts with host-specific checks gated by SSOT; avoid duplicate
+    spam. Verify: boot-id change triggers one pass, structured report/findings on failure, no duplicate spam, check-only.'
 ref: SYS-0863
 comms:
 - at: 2026-10-25 15:49
@@ -155,6 +167,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: ada
+  text: 'triaged: converted manual->dispatch (devin/chaba idc02) and queued per spec'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: multiple-hosts-tony-omen-idc02-a913db
   ask: Multiple hosts (tony-omen, idc02, idc03, tony-macbook) have deferred execution because the installed runner-agent
@@ -174,7 +193,6 @@ requests:
     identical on all hosts (3152244e0372fa88ff6cafe36e1c228d). runner-agent.service restarted on tony-omen/idc03/tony-macbook
     (ran post-restart claim passes; oneshot exits 0 on tony-omen/idc03, active on tony-macbook); idc02 binary updated
     (service was inactive). Dri'
-awaiting_action: true
 brief: Automate boot/post-restart verification via boot-id-change detection and check-only transition.post_restart
   pass.
 spec: 'Extend the existing mcp-health-snapshot path to automate host post-restart verification (check-only).

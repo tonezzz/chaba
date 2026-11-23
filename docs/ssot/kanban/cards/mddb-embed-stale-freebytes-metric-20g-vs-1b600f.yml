@@ -1,7 +1,7 @@
 id: mddb-embed-stale-freebytes-metric-20g-vs-1b600f
 title: 'mddb-embed: stale freeBytes metric (20G vs actual ~75G)'
 column: done
-updated: 2026-11-21 17:47
+updated: 2026-11-23 14:07
 brief: /v1/health freeBytes on :11028 is cached from a much earlier disk state; other instances report live values.
   Minor but could mask a real full-disk.
 ref: MEM-0027
@@ -100,6 +100,10 @@ comms:
 - at: 2026-11-21 17:47
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
