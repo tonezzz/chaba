@@ -1,6 +1,6 @@
 id: gev-map
 title: gev map — cesium panes render or fail honestly
-column: review
+column: backlog
 priority: medium
 program: gev
 area: map
@@ -13,7 +13,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (no pushable remot
   gev-program-design. Work: in the Cesium pane code, panes that cannot render must surface a visible failure state
   instead of a black pane; keep the msaaSamples:1 iPad post-build patch; extend gev_pane_honest_fail coverage to
   every pane type.'
-updated: 2026-11-23 14:20
+updated: 2026-11-23 15:10
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -179,14 +179,25 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-08 16:04 lifecycle bounce: verify criterion closed
+    with no evidence comms; no [verify] note since, repo held/not dispatchable — requeued for rework.'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: classified as devin (fallback conf 0.38)
+- at: 2026-11-23 15:10
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: done
-  runner: tony-omen
+  status: queued
   result: 'exit=0  in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-171642-gods-eye-view-app-work-held-re.service:
     Consumed 1min 25.120s CPU time over 12min 57.602s wall clock time, 998.1M memory peak.'
   sweep:
     no_repo: 2026-11-08 16:18
+  lane: devin
+  lane_source: fallback
 claim: {}
 ref: MED-0135
 review_kind: verify
