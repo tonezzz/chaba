@@ -59,7 +59,15 @@ design:
     (added 2026-10-06: a flaky host must not flap an open alert and
     re-push later). Push is one batched board_notify send per tick
     covering only newly opened cards — quiet-by-design, no per-tick
-    re-pings.
+    re-pings. 2026-11-23 (card disk-guard-ssot-enforce): warn tier added
+    for parity with ansible playbooks/disk-headroom.yml — / pct >= the
+    host's expected_resources.max_root_disk_percent from
+    ssot.audit.hosts.yml (85 dell/omen/mn01, 90 macbook, default = flat
+    crit) or / avail < DISK_TREND_MIN_FREE_GIB (15, the mddb-backup
+    guard floor) -> warn card (priority medium, escalates like others).
+    Underused mounts (DISK_TREND_UNDERUSED_PCT 50% or
+    DISK_TREND_UNDERUSED_FREE_GIB 100 GiB free) are flagged per-mount in
+    the report + summary — informational only, never cards.
   top_growers: >
     Per-host du watchlist trended like mounts; dirs with 24h delta >=
     256MiB land in the report's top_growers_24h and inside alert card
@@ -115,6 +123,13 @@ verification:
     the served checkout stamped status=delta at 09:30. Watcher is live
     in the 15-min tick. LINE leg still pending: /api/yomi/session-status
     valid:false."
+  - "2026-11-23 (dispatch-wt-20261123-110432, card disk-guard-ssot-enforce):
+    --selftest PASS extended — synth tony-dell / at 87% opens a medium-prio
+    warn card ('over limit', note cites ssot max_root_disk_percent 85),
+    idc03 fixture / at 80% with 12 GiB free opens a guard-floor warn card,
+    40%-used host flagged underused in report only. Fixture run: pre-existing
+    warn card auto-closes when / drops to 60%; flat-90 crit on idc03
+    unchanged."
 
 known_limits:
   - "Push fires only when a card newly opens; if the channel is dead at
