@@ -1,7 +1,7 @@
 id: fleet-jobs-report-and-ada-verb
 title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
 column: done
-updated: 2026-11-23 10:05
+updated: 2026-11-23 14:08
 priority: high
 tags:
 - devnest
@@ -405,9 +405,13 @@ comms:
   from: tony
   text: 'Merged dispatch/20261121-164519-two-part-deliverable-repo-work into master (rebased on current master):
     scripts/fleet-jobs-report.py rewire + 9 tests, docs/kb/ada-report-verb-contract.md, ssot.jobs.yml registration,
-    dispatch outcome doc. Verified: 19 targeted tests (report + tooling contracts) pass, script compiles. The
-    earlier "test gate failed: suite timeout (240s)" was a harness timeout, not a test failure. tony-dell runner-agent
-    drift comment above was stale — its installed build now matches the current pin.'
+    dispatch outcome doc. Verified: 19 targeted tests (report + tooling contracts) pass, script compiles. The earlier
+    "test gate failed: suite timeout (240s)" was a harness timeout, not a test failure. tony-dell runner-agent drift
+    comment above was stale — its installed build now matches the current pin.'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-11-21 16:43
 review_kind: verify

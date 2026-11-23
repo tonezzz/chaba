@@ -1,7 +1,7 @@
 id: chaba-exec-checkout-idc02-dirty-files
 title: 'idc02 exec checkout: 13 modified + ~227 untracked files with no owner; slows repo-sync'
 column: backlog
-updated: 2026-11-23 14:05
+updated: 2026-11-23 14:08
 brief: idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash;
   pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.
 priority: medium
@@ -41,3 +41,18 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:08
+  from: devin
+  text: 'PROGRESS 2026-11-23: Steps 1-2 of the plan completed.
+
+
+    Step 1 (discard board card file): DONE — reverted ada-text-model-promotion-path.yml (canonical on idc03 served
+    writer).
+
+
+    Step 2 (commit config + profile changes): DONE — committed as cb3c309311 on origin/master (5 files: ssot.llm-gateway.yml,
+    opencode.json, litellm/config.yaml, info-find/profile.yml, ops-readonly/profile.yml). The ssot-research profile
+    change turned out to be a no-op (already present upstream).
+
+
+    Step 3 (code/WIP files): DONE'

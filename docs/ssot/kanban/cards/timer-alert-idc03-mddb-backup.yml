@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-backup
 title: Timer mddb-backup on idc03 failing
 column: backlog
-updated: 2026-11-23 04:52
+updated: 2026-11-23 14:08
 priority: high
 tags:
 - timer-alert
@@ -194,6 +194,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-23 04:26) of `mddb-backup.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 spec: Investigate why `mddb-backup.service` on `idc03` resulted in an exit-code failure by inspecting the journal
