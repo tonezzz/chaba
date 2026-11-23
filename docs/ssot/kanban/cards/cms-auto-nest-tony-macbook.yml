@@ -9,7 +9,7 @@ priority: high
 note: 'Recovering: nest-tony-macbook healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-macbook'' (or POST /api/cms/pages/nest-tony-macbook/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 20:21
+updated: 2026-11-23 20:33
 comms:
 - at: 2026-11-18 17:20
   from: chaba
@@ -180,6 +180,12 @@ comms:
     is NOT in chaba — writers are ada-voice tools; chaba onl; bbolt compaction wins are transient without maxRevisions:
     cms db regrew 2.4G→22G; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b]
     Rollout sta'
+- at: 2026-11-23 20:33
+  from: devin
+  text: 'investigating: registry last_run=2026-11-23T13:21:06Z status=ok, page nest-tony-macbook fresh (20:21 ICT).
+    Root cause of stale window: host powered off ~34.6h (boot gap Nov 21 20:07 -> Nov 23 06:45 ICT); last publish
+    20:04 ICT was 3min before shutdown. Daemon healthy since 16:55 restart; card should auto-close on next healthy
+    tick once back in review.'
 ok_streak: 1
 requests:
 - id: cline-drafted-verdict-investigate-redepl-5d52a2
