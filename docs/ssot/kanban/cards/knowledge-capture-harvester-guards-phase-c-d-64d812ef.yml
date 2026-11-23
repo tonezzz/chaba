@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 08:40
+updated: 2026-11-23 09:41
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -38,4 +38,11 @@ comms:
     (tony-ideas harvester + report-distill: no LLM, upsert by stable key, registry last_run, managed blocks preserve
     curation). SHAPE: two deterministic scripts under scripts/chaba/. (1) capture-router.py classifies a candidate
     against the 7-row matrix and emits {so'
+- at: 2026-11-23 09:41
+  from: devin
+  text: '[2026-11-23 opencode] Tony APPROVED the Phase C design (all 4 recommendations): (1) posture = read-only
+    propose — router + harvester emit proposals/report + append-only ledger, NO sink writes; --apply stays a separate
+    later gate. (2) sources = card comms + focus-inbox + dispatch-outcome artifacts (tony-ideas precedent). (3)
+    dedupe = sink-native stable keys (SSOT key / card id / topic slug / note domain / artifact id), upsert-in-place,
+    never fork. (4) cadence = on-demand CLI only for the first sl'
 action: {}
