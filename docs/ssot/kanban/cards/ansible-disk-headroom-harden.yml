@@ -1,0 +1,18 @@
+id: ansible-disk-headroom-harden
+title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
+column: backlog
+updated: 2026-11-23 07:13
+brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
+  local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
+priority: low
+tags:
+- ansible
+- infrastructure
+spec: 'GOAL: make ansible disk-headroom.yml production-ready. 1) auto-set ansible_connection=local for the controller
+  host. 2) support --check --diff dry-run. 3) append probe samples to DISK_TREND_HISTORY so trend/slope lifecycle
+  shares data with disk-trend-watch.py. 4) document host_key_checking handling.'
+ref: OPS-0019
+comms:
+- at: 2026-11-23 07:13
+  from: tony
+  text: card captured via board-api
