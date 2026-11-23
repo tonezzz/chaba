@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
 column: doing
-updated: 2026-11-23 18:36
+updated: 2026-11-23 18:44
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -316,6 +316,13 @@ comms:
     Implemented OPS-1036 in commit fb58de0be: a; [kk-mac-worker-idle-poll-efficiency] merge-sweep: devin-task-20261031-084555-inv;
     [jevnest-kk-mac-capacity-loop] Added three real inbox tasks and staged them on K; [kk-mac-launchd-runner-followthrough]
     raised request verified'
+- at: 2026-11-23 18:44
+  from: devin
+  text: 'live investigation done: queue=167 packs (155 done/6 failed/5 fallback-held). Active retry loop NOW: 4
+    packs aborting on memory_pressure_abort 13-14%<50% + 1 pack deterministic invalid_output:fact:launchd (model
+    writes Launched not launchd). Idle pass = 1 recursive lsf = 27 HTTPS req, 5.35s, 0.29s CPU @60s cadence; dirs-only
+    probe = 5 req/2.2s. Also found: ops-1036 installer on fix/ops-1036 renders a STALE plist (nest-worker.py + gdrive:ada-nest-kk-llm)
+    vs live lane-worker truth — folding the fi'
 review_kind: verify
 claim:
   since: 2026-11-23 18:35
