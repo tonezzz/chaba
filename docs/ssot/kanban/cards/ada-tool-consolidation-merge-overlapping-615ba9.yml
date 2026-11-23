@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: doing
-updated: 2026-11-23 16:52
+column: backlog
+updated: 2026-11-23 16:55
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -161,14 +161,27 @@ comms:
     under `dispatch/*` are the established landing path ; tony-macbook has no sudo/pipx/pip for dispatch sessions;
     `uv tool install ansibl; failure-streak alerting still surfaces only on the board (+journal) — a fully we; the
     write never gates the merge (mddb_job posture).; [ada-ben'
+- at: 2026-11-23 16:55
+  from: tony-macbook
+  text: 'finished (failed): exit=1 sk-20261123-165251-ada-tool-consolidation-merge-o.service: Failed with result
+    ''exit-code''. | devin-task-20261123- — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 16:55
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-165251-ada-tool-consolidation-merge-o (rate limit)
+    — tony-macbook holds new claims ~30m
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-macbook
   attempts: 1
+  result: 'exit=1 sk-20261123-165251-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''. |
+    devin-task-20261123-165251-ada-tool-consolidation-merge-o.service: Consumed 10.109s CPU time over 1min 37.308s
+    wall clock time, 505.9M memory peak.'
+  last_failure: 'exit=1 sk-20261123-165251-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
+    | devin-task-20261123-165251-ada-tool-consolidation-merge-o.service: Consumed 10.109s CPU time over 1min 37.308s
+    wall clock time, 505.9M memory peak.'
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
