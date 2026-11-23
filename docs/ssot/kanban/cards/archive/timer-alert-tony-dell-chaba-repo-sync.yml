@@ -1,0 +1,399 @@
+id: timer-alert-tony-dell-chaba-repo-sync
+title: Timer chaba-repo-sync on tony-dell failing
+column: done
+updated: 2026-11-23 13:34
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-08 10:42) of `chaba-repo-sync.service` on `tony-dell` result=timeout — investigate journal:
+  `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-1169
+comms:
+- at: 2026-11-08 10:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-08 11:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 10:54) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 11:19
+  from: devin
+  text: '[still suspicious] Last run (11-08 10:54) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 11:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:28) of `chaba-repo-sync.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 11:49
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:28) of `chaba-repo-sync.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 11:59
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:41) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:02) of `chaba-repo-sync.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:19
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:02) of `chaba-repo-sync.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:15) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:36
+  from: devin
+  text: 'Verified healthy 2026-11-08 ~12:40 +07: chaba-repo-sync.service ran manually after SYS-1175 checkout reconcile
+    — ExecMainStatus=0, checkout converged master==origin/master (was ahead 837/behind 527 mid-rebase). Alert was
+    fired during the divergence window; root cause fixed under SYS-1175 (done). Timer next fires 11:24+15m cadence
+    normally.'
+- at: 2026-11-08 12:36
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 12:39
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 12:41
+  from: idc02
+  text: claimed
+- at: 2026-11-08 12:41
+  from: chaba
+  text: started devin-task-20261108-124119-timer-chaba-repo-sync-on-tony- on idc02 (dispatch)
+- at: 2026-11-08 12:41
+  from: devin
+  text: '[devin] investigating chaba-repo-sync timeout on tony-dell — pulling journal + unit config'
+- at: 2026-11-08 12:50
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:33) of `chaba-repo-sync.service` on `tony-dell` result=signal — investigate
+    journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:52
+  from: devin
+  text: 'ROOT CAUSE (verified 2026-11-08): orphaned board-api.py (spawned ~Nov 4 inside devin-desktop scope) squatted
+    on dell 127.0.0.1:8787 bound to ~/CascadeProjects/chaba (exec role). Sentinel/board-cli defaults POSTed to it
+    -> 837 unpushed local board-api commits (10:31-12:19). Every 15-min pull --rebase replayed the whole pile (card-union
+    driver + .ref-seq churn + reconcile flag posts) -> ~5min CPU -> TimeoutStartSec=300 kills / merge-fallback exit-code.
+    Cleared ~12:30-12:34: rogue killed (per chaba'
+- at: 2026-11-08 12:55
+  from: idc02
+  text: 'finished (ok): exit=0 .1:8787`, which strands writes off-canonical if anything rebinds that port — is flagged
+    as a follow-up. | devin-t'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: pushed dispatch/20261108-124119-timer-chaba-repo-sync-on-tony- to origin
+- at: 2026-11-08 12:55
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: auto-merged b93378a9 (dispatch/20261108-124119-timer-chaba-repo-sync-on-tony-) → origin/master
+- at: 2026-11-08 12:55
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-124119-timer-chaba-repo-sync-on-tony-,
+    branch dispatch/20261108-124119-timer-chaba-repo-sync-on-tony-'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: restarted zombie claim as devin-task-20261108-125504-timer-chaba-repo-sync-on-tony- on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-08 12:56
+  from: devin
+  text: '[dup-dispatch 125504] First dispatch (124119) already root-caused + fixed this (rogue board-api on dell:8787
+    → 837-commit pile → rebase timeouts; reset at 12:34). Re-verified live: 12:35 + 12:51 ticks clean (7.7s), Result=success,
+    exec checkout 0/0 vs origin, nothing on 8787. Waiting for 13:06 tick for final confirmation, then closing alert
+    as stale.'
+- at: 2026-11-08 13:05
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:05
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:08
+  from: devin
+  text: '[dup-dispatch 125504] VERIFIED STALE — 13:06 tick clean (8.6s, Result=success), 3rd consecutive success
+    post-fix (12:35 / 12:51 / 13:06). Root cause stays the OPS-1169 rogue board-api on dell:8787, resolved 12:34
+    under dispatch-124119. Alert fired during the divergence window; no further action needed. Residuals (dell loopback-8787
+    trap, .parked units, ~30 stale worktrees) already carded in comms + docs/ssot/jobs/infrastructure/2026-11-08-chaba-repo-sync-timeout-rogue-board-api.yml.'
+- at: 2026-11-08 13:08
+  from: devin
+  text: '[dup-dispatch 125504] VERIFIED STALE - 13:06 tick clean (8.6s, Result=success), 3rd consecutive success
+    post-fix (12:35 / 12:51 / 13:06). Root cause stays the OPS-1169 rogue board-api on dell:8787, resolved 12:34
+    under dispatch-124119. Alert fired during the divergence window; no further action needed. Residuals (dell loopback-8787
+    trap, parked units, ~30 stale worktrees) already carded in comms + docs/ssot/jobs/infrastructure/2026-11-08-chaba-repo-sync-timeout-rogue-board-api.yml.'
+- at: 2026-11-08 13:09
+  from: chaba
+  text: 'session-end checkpoint f35edbc3: 1 leftover file(s) committed'
+- at: 2026-11-08 13:09
+  from: chaba
+  text: pushed dispatch/20261108-125504-timer-chaba-repo-sync-on-tony- to origin
+- at: 2026-11-08 13:09
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 13:09
+  from: chaba
+  text: auto-merged 9fb6b581 (dispatch/20261108-125504-timer-chaba-repo-sync-on-tony-) → origin/master
+- at: 2026-11-08 13:09
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-125504-timer-chaba-repo-sync-on-tony-,
+    branch dispatch/20261108-125504-timer-chaba-repo-sync-on-tony-'
+- at: 2026-11-09 12:40
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-09 12:40
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 14:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-09 13:52 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 14:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 14:11
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.37 > 0.85)'
+- at: 2026-11-09 14:11
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.84 > 1.0)'
+- at: 2026-11-13 23:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-13 23:13
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-13 23:00) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-13 23:23
+  from: devin
+  text: 'Self-healed 2026-11-13: last run Finished (git pull --rebase --autostash OK, 12s CPU). dedup noise only.'
+- at: 2026-11-13 23:23
+  from: tony
+  text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 21:25
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-15 21:25
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-15 21:08) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-15 21:35
+  from: devin
+  text: '[still suspicious] Last run (11-15 21:08) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-16 01:25
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 01:25
+  from: tony
+  text: closed by tony
+- at: 2026-11-16 01:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-16 01:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-16 01:38) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 02:09
+  from: devin
+  text: '[still suspicious] Last run (11-16 01:38) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 05:45
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 05:45
+  from: tony
+  text: closed by tony
+- at: 2026-11-16 05:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-16 05:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-16 05:37) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 06:08
+  from: devin
+  text: '[still suspicious] Last run (11-16 05:37) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 09:56
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 09:43 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 09:56
+  from: tony
+  text: closed by tony
+- at: 2026-11-16 21:35
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-16 21:35
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-16 21:16) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 21:45
+  from: devin
+  text: '[still suspicious] Last run (11-16 21:31) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-17 03:27
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 03:37
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 03:46
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 03:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-17 04:46
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-17 04:46
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-17 04:25) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-17 04:55
+  from: devin
+  text: '[still suspicious] Last run (11-17 04:41) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-17 08:28
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 08:37
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 11:46
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 11:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-17 12:46
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-17 12:46
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-17 12:27) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-17 12:56
+  from: devin
+  text: '[still suspicious] Last run (11-17 12:44) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-17 15:28
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 15:38
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:20
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:16
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-17 18:56 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-17 19:16
+  from: tony
+  text: closed by tony
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  status: done
+  type: manual
+  lane: devin
+  result: 'exit=0 .1:8787`, which strands writes off-canonical if anything rebinds that port — is flagged as a follow-up.
+    | devin-task-20261108-124119-timer-chaba-repo-sync-on-tony-.service: Consumed 26.284s CPU time, 167.4M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 13:04
+  note: verified — evidence checks green, closing itself
+spec: Investigate why chaba-repo-sync.service failed with an exit-code on host tony-dell by examining the systemd
+  user journal using `journalctl --user -u chaba-repo-sync.service`. Fix any underlying sync failures or configuration
+  errors discovered during the journal inspection. Ensure that the runner-agent is redeployed from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  to tony-dell:~/.local/bin/runner-agent if agent drift is present. The done-condition is verified when chaba-repo-sync.service
+  on tony-dell runs successfully without timing out or returning an exit-code.

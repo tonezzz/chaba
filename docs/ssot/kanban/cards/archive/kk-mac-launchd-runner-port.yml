@@ -1,0 +1,186 @@
+id: kk-mac-launchd-runner-port
+title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
+column: done
+updated: 2026-11-23 13:34
+spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
+  equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
+  — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
+  seam for launchctl bootstrap/kickstart/print of gui/<uid>/devin-task-* wrappers; (b) worktree + push creds (deploy
+  key) under kkkakk; (c) opencode binary for darwin-arm64; (d) overload gate via sysctl vm.loadavg. Prereqs: OPENCODE_LANES
+  contract same as Linux. Bigger job — do after doc-draft/branch-code lanes stabilize on idc02.'
+ref: OPS-1019
+comms:
+- at: 2026-10-30 19:18
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-14 13:09
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-14 13:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.56 > 0.85)'
+- at: 2026-11-14 13:10
+  from: idc02
+  text: claimed
+- at: 2026-11-14 13:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-14 13:10
+  from: chaba
+  text: started devin-task-20261114-131025-kk-approved-full-fleet-use-of- on idc02 (dispatch executor=devin)
+- at: 2026-11-14 13:20
+  from: devin
+  text: picked up in dispatch wt — building the launchd task-runtime seam in runner-agent.py (rt_launch + launchctl
+    bootstrap/print collect path), sysctl vm.loadavg gate, plus kk-mac provisioning script + runbook for the kkkakk
+    worktree/deploy-key/opencode pieces
+- at: 2026-11-14 13:21
+  from: devin
+  text: picked up in dispatch wt - building the launchd task-runtime seam in runner-agent.py (rt_launch + launchctl
+    bootstrap/print collect path), sysctl vm.loadavg gate, plus kk-mac provisioning script + runbook for kkkakk
+    worktree/deploy-key/opencode
+- at: 2026-11-14 13:46
+  from: devin
+  text: 'code complete in dispatch wt: runner-agent launchd seam (rt_launch+_launchd_* — bootstrap/print gui/<uid>/devin-task-*,
+    wrapper watchdog+pgrp+durable .code, $$->$, nice/ulimit plist limits, sysctl vm.loadavg gate, devin executor
+    correctly declines on launchd). 580 board tests OK incl 35 new launchd tests. Provision script + runbook for
+    kkkakk worktree/deploy-key/opencode. NOT run on the metal — provisioning steps listed in job yml gaps.'
+- at: 2026-11-14 13:49
+  from: idc02
+  text: 'finished (ok): exit=0 leet labels), itemized in the job yml''s `gaps_remaining`; no push/deploy performed
+    per the rails. | devin-task-20'
+- at: 2026-11-14 13:49
+  from: chaba
+  text: 'session-end checkpoint f3b00419: 7 leftover file(s) committed'
+- at: 2026-11-14 13:49
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-14 13:49
+  from: chaba
+  text: pushed dispatch/20261114-131025-kk-approved-full-fleet-use-of- to origin
+- at: 2026-11-14 13:49
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_gs_tools.py'
+- at: 2026-11-14 13:49
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 13:51
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-14 13:51
+  from: chaba
+  text: pushed dispatch/20261114-131025-kk-approved-full-fleet-use-of- to origin
+- at: 2026-11-14 13:51
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_gs_tools.py'
+- at: 2026-11-14 13:51
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 13:53
+  from: chaba
+  text: 'merge-sweep: merged 2c07a43e (dispatch/20261114-131025-kk-approved-full-fleet-use-of- from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-131025-kk-approved-full-fleet-use-of-.md)
+    — auto-closed'
+- at: 2026-11-14 13:53
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261114-131025-kk-approved-full-fleet-use-of-,
+    branch dispatch/20261114-131025-kk-approved-full-fleet-use-of- on idc02'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:26
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+  runner: idc02
+  result: 'exit=0 leet labels), itemized in the job yml''s `gaps_remaining`; no push/deploy performed per the rails.
+    | devin-task-20261114-131025-kk-approved-full-fleet-use-of-.service: Consumed 20min 51.474s CPU time, 565.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 13:52
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-131025-kk-approved-full-fleet-use-of-.md

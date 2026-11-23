@@ -1,0 +1,211 @@
+id: opencode-lane-s3-dispatch-hardening
+title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
+column: done
+updated: 2026-11-23 13:34
+priority: medium
+tags:
+- opencode-lane
+- dispatch
+- infra
+spec: 'Found during first S3 card pilots (2026-11-14, ops-event-plane-split-brain-audit + ada-docs-search-drift):
+
+
+  1. run_profile_process (scripts/devnest/opencode_profiles.py) uses capture_output for unattended runs — on TimeoutExpired
+  the partial stdout/stderr is discarded, so events.jsonl/stderr.log never land and the failure is undiagnosable
+  (two pilot runs lost all evidence). Fix: catch TimeoutExpired, write partial e.stdout/e.stderr to the run dir
+  before re-raising/recording.
+
+
+  2. Fleet runner-agent drift: tony-dell runs an Oct-26 binary (~51KB) vs repo scripts/board/runner-agent.py (~164KB)
+  — its stale claimable() lacks target_host gating and claimed S3 cards pinned to idc02, routing them to the generic
+  dispatch executor (failed in 518ms). There is no automated deploy of ~/.local/bin/runner-agent; needs either a
+  sync mechanism or version check in claimable().
+
+
+  3. OPENCODE_LANES env gap: staged dispatch launches transient devin-task-* units that do NOT inherit runner-agent.service
+  drop-in env — admit() failed env_gate until OPENCODE_LANES=1 was added to systemd --user manager env + environment.d
+  on idc02. launch_profile_dispatch should export it in the unit shell (or pass --setenv) so the contract is self-contained.
+
+
+  4. Free-model variance on ssot-research: nemotron-ultra produced 1 verifier-pass artifact, 1 malformed-citations
+  artifact, 1 wrong-schema artifact across 3 attempts on the same card. Consider escalation.max_retries>0 for dispatch
+  cards or a schema-retry hint in the profile prompt.'
+ref: OPS-0121
+comms:
+- at: 2026-11-14 09:55
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-14 10:27
+  from: chaba
+  text: classified as paid_frontier (kw conf 1.00)
+- at: 2026-11-14 10:27
+  from: tony
+  text: queued for processing
+- at: 2026-11-14 10:28
+  from: tony-omen
+  text: claimed
+- at: 2026-11-14 10:28
+  from: chaba
+  text: started devin-task-20261114-102801-found-during-first-s3-card-pil on tony-omen (dispatch)
+- at: 2026-11-14 10:28
+  from: devin
+  text: Session started on tony-omen worktree. Reading opencode_profiles.py + runner-agent.py; will fix timeout
+    partial-output loss, add version gate in claimable(), self-contained OPENCODE_LANES in launched units, and escalation
+    retries for dispatch profiles.
+- at: 2026-11-14 10:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-14 11:06
+  from: devin
+  text: 'All 4 hardening items done + tested on dispatch/20261114-102801-found-during-first-s3-card-pil: (1) TimeoutExpired
+    now writes partial events.jsonl/stderr.log before re-raise; (2) installed-snapshot drift gate in claimable()
+    — stale ~/.local/bin/runner-agent defers claims fail-closed with scp-redeploy hint (in-checkout runs never gated);
+    (3) devin-task-* unit shell exports OPENCODE_LANES=1, no longer depends on service drop-in; (4) escalation.max_retries
+    consumed by cmd_run — retryable failures ('
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261114-102801-found-during-first-s3-card-pil no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-14 11:11
+  from: chaba
+  text: 'merge-sweep: merged 1c86a1d9 (dispatch/20261114-102801-found-during-first-s3-card-pil from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-102801-found-during-first-s3-card-pil.md)
+    — auto-closed'
+- at: 2026-11-14 11:11
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261114-102801-found-during-first-s3-card-pil,
+    branch dispatch/20261114-102801-found-during-first-s3-card-pil on tony-omen'
+- at: 2026-11-14 11:12
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-14 11:12
+  from: chaba
+  text: pushed dispatch/20261114-102801-found-during-first-s3-card-pil to origin
+- at: 2026-11-14 11:12
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_correction_command.py::test_patches_apply_clean'
+- at: 2026-11-14 12:18
+  from: chaba
+  text: restarted zombie claim as devin-task-20261114-121825-found-during-first-s3-card-pil on tony-omen — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-14 12:18
+  from: devin
+  text: 'dispatch started — working 4 hardening items: TimeoutExpired evidence capture, runner-agent claimable()
+    version gate, OPENCODE_LANES self-contained unit env, free-model retry/schema hint'
+- at: 2026-11-14 12:29
+  from: devin
+  text: 'verification pass (2nd dispatch): all 4 spec items already merged to master via dispatch/20261114-102801
+    (dc8dee1851 + 4edd6031f2). Verified in-worktree: TimeoutExpired now writes partial stdout/stderr to run dir;
+    self_stale_reason() gates _claimable() fail-closed on the deployed ~/.local/bin snapshot; transient devin-task-*
+    units export OPENCODE_LANES=1; cmd_run retries retryable failures up to escalation.max_retries with deterministic
+    RETRY_HINT. Tests: 83+83 OK. Residual: tony-dell Oct-26 bin'
+- at: 2026-11-14 12:34
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-14 12:34
+  from: chaba
+  text: pushed dispatch/20261114-121825-found-during-first-s3-card-pil to origin
+- at: 2026-11-14 12:34
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_cast_loop_breaker.py::test_patches_apply_and_scenario_passes'
+- at: 2026-11-14 12:34
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:10
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:23
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:20
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: tony-omen
+  sweep:
+    stale_running: 2026-11-14 11:10
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 11:11
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-102801-found-during-first-s3-card-pil.md

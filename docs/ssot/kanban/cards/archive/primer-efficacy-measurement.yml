@@ -1,0 +1,254 @@
+id: primer-efficacy-measurement
+title: Dispatch primer efficacy — measure repeat-failure rate and primer value
+column: done
+updated: 2026-11-23 13:34
+brief: 'The lesson primer claims compounding (each failure makes the next dispatch smarter) but nothing measures
+  it. Build scripts/board/primer_efficacy.py: an offline analysis over the card corpus + outcome docs that computes
+  whether injected lessons correlate with better outcomes, and reports the numbers honestly.'
+priority: high
+tags:
+- dispatch-tuning
+- primer
+- measurement
+spec: 'Goal: prove or kill the primer''s compounding claim with numbers, and produce the A/B design.
+
+
+  Build scripts/board/primer_efficacy.py (read-only analysis, runs anywhere with a chaba checkout):
+
+
+  Inputs:
+
+  - docs/ssot/kanban/cards/*.yml — comms lines ''primer injected N lesson(s): <previews>'', action.attempts, action.last_failure,
+  action.verified, action.status, action.result, updated timestamps.
+
+  - dispatch-outcome-*.md at repo root.
+
+
+  Metrics:
+
+  - Coverage: % of dispatches since 2026-10-09 (primer launch) where >=1 lesson was injected; distribution of line
+  counts.
+
+  - Repeat-failure rate: for cards with a recorded failure after a primer injection, classify the failure''s topic
+  signature (keyword signature over last_failure/result, same tokenization the primer uses) and count how often
+  a matching lesson class had been injected — i.e., did we fail on something we were warned about?
+
+  - Success comparison: verified/merge rate for primer-era dispatches vs pre-primer era baseline — report raw numbers
+  AND label the confounds (no causal claim).
+
+  - Dead-primer rate: dispatches where 0 lines injected (corpus gaps).
+
+
+  Deliverables:
+
+  - The script (idempotent, --json and --md output modes).
+
+  - docs/ssot/jobs/kanban/<date>-primer-efficacy.yml job doc + reports/primer-efficacy-<date>.md with the computed
+  table + verdict (supported / inconclusive / contradicted).
+
+  - A/B design written into the report: run KANBAN_PRIMER=0 on a sample fraction of dispatches (propose the mechanism
+  — e.g., hash(card_id)%k in kanban-dispatch) and which metric to watch.
+
+
+  Constraints: read-only on the corpus; never blocks anything; cite this analysis card in comms.
+
+  Verify: script runs clean on the live corpus; report lands; spot-check 3 counted cases against the actual card
+  YAML.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: codemod
+  runner: tony-omen
+  result: 'exit=0 on, primer the runner lane) needed before the A/B means anything. | devin-task-20261109-154659-goal-prove-or-kill-the-primer-.service:
+    Consumed 8min 54.371s CPU time over 17min 30.091s wall clock time, 1G memory peak, 8.7M memory swap peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-09 16:09
+    dirty: 4
+ref: OPS-1270
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.05 > 0.85)'
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.08 > 1.0)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
+- at: 2026-11-09 15:46
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: started devin-task-20261109-154659-goal-prove-or-kill-the-primer- on tony-omen (dispatch)
+- at: 2026-11-09 15:47
+  from: devin
+  text: 'started: exploring primer mechanism + card corpus'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 16:04
+  from: devin
+  text: 'DONE: verdict CONTRADICTED — primer injected 15 lessons ever (all 10-09→10-11), zero for ~a month. lp.build()
+    crashes on string comms (kraut-* cards) + runner-agent lane (96% of dispatches) has no primer + zero-injection
+    is never logged. Warned-failure match 8/12 when it ran. A/B design + 3 fix followups in reports/primer-efficacy-2026-11-09.md
+    + job doc.'
+- at: 2026-11-09 16:06
+  from: tony-omen
+  text: 'finished (ok): exit=0 on, primer the runner lane) needed before the A/B means anything. | devin-task-20261109-154659-goal-prove-or-kill'
+- at: 2026-11-09 16:07
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261109-154659-goal-prove-or-kill-the-primer-\
+    \ is 158 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-09 16:08
+  from: chaba
+  text: pushed dispatch/20261109-154659-goal-prove-or-kill-the-primer- to origin
+- at: 2026-11-09 16:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-154659-goal-prove-or-kill-the-primer- no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-154659-goal-prove-or-kill-the-primer- no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261109-154659-goal-prove-or-kill-the-primer- on tony-omen still dirty
+    — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 16:15
+  from: chaba
+  text: 'checkpoint failed: commit: 🧪 Fast test gate: pytest tests/board (≤15s)
+
+    ⚠️  test gate hit the 15s budget — not blocking; run pytest manually before pushing
+
+    🔍 Validating SSOT files...
+
+    📋 Fou'
+- at: 2026-11-09 16:15
+  from: chaba
+  text: pushed dispatch/20261109-154659-goal-prove-or-kill-the-primer- to origin
+- at: 2026-11-09 16:15
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-09 16:15
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-09 16:22
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:22
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 16:22
+  note: verified — evidence checks green, closing itself

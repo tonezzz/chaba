@@ -1,0 +1,153 @@
+id: ada-ocb-bridge-stable-path
+title: 'ada-ocb: point ada-control MCP at a stable origin/main bridge, not a live checkout'
+column: done
+updated: 2026-11-23 13:34
+brief: 'Global ~/.config/opencode/opencode.json runs ada-control as `python3 /home/tony/CascadeProjects/ada-voice/opencode/ada_mcp.py`
+  — a checkout that is currently on branch ada-consult-pr12-edit with uncommitted WIP. Every OpenChamber session
+  silently loads whatever bridge file that checkout happens to hold (observed 2026-11-18: divergent consult WIP,
+  missing comms_tail hydration). DevNest uses its own .opencode/ada_mcp.py copy which drifts separately. Bridge
+  version handshake (ADA-0177) detects staleness after the fact; this card prevents it.'
+priority: high
+tags:
+- ada-ocb
+- opencode
+- infra
+- mcp
+spec: 'Deliver a stable bridge distribution for OpenChamber/OpenCode MCP clients. Design (adjust if a clearly better
+  one exists, but keep it simple): (a) a dedicated checkout/worktree that only ever tracks origin/main — e.g. `git
+  worktree add ~/CascadeProjects/ada-bridge origin/main` or a small bare-sync script; (b) a sync script `scripts/sync-ocb-bridge.sh`
+  in ada-voice that fast-forwards that checkout to origin/main and verifies opencode/ada_mcp.py is clean (refuse
+  to sync a dirty tree — report instead); (c) systemd user timer unit (or hook into deploy-ada.sh / kanban-commit)
+  that runs the sync periodically so the bridge never lags main; (d) update docs (AGENTS.md or docs/kb) with the
+  new canonical path and the cutover step: repoint `mcp.ada-control.command` in ~/.config/opencode/opencode.json
+  and DevNest .opencode/opencode.json to the stable path. REPO-SIDE ONLY: do not edit live host config files (~/.config/opencode,
+  ~/DevNest) — the cutover is a separate manual step after merge. Done when: sync script + timer units + docs are
+  committed, a dry-run shows it would fast-forward a stale checkout and refuse a dirty one, and tests cover the
+  refuse-dirty path.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: done
+  lane: codemod
+  lane_source: kw
+  runner: idc02
+  result: 'exit=0 ing `mcp.ada-control.command` in live `opencode.json` files remains the documented manual cutover
+    step. | devin-task-20261119-084016-deliver-a-stable-bridge-distri.service: Consumed 21.724s CPU time, 319.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-19 08:50
+    session_gone: 2026-11-19 08:50
+comms:
+- at: 2026-11-19 08:38
+  from: chaba
+  text: classified as codemod (kw:config conf 1.00)
+- at: 2026-11-19 08:38
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-19 08:39
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.82 > 0.85)'
+- at: 2026-11-19 08:40
+  from: idc02
+  text: claimed
+- at: 2026-11-19 08:40
+  from: chaba
+  text: started devin-task-20261119-084016-deliver-a-stable-bridge-distri on idc02 (dispatch)
+- at: 2026-11-19 08:40
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.39 > 0.85)'
+- at: 2026-11-19 08:40
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
+- at: 2026-11-19 08:41
+  from: devin
+  text: 'in progress: writing scripts/sync-ocb-bridge.sh (ff-only detached worktree at ~/CascadeProjects/ada-bridge,
+    refuses dirty/diverged) + user timer + tests + kb doc'
+- at: 2026-11-19 08:43
+  from: devin
+  text: 'done on dispatch branch (77b9622, not pushed): sync-ocb-bridge.sh (ff-only worktree, REFUSE exit 2 on dirty/diverged)
+    + ada-ocb-bridge-sync.service/.timer (15min) + docs/kb/ada-ocb-bridge.md + AGENTS.md + ssot yml. 9 new tests
+    pass incl. refuse-dirty; live dry-run verified. Cutover of live opencode.json left manual per spec.'
+- at: 2026-11-19 08:43
+  from: devin
+  text: 'done on dispatch branch 77b9622 (not pushed): sync-ocb-bridge.sh + ada-ocb-bridge-sync timer units + kb
+    doc + ssot + 9 tests (refuse-dirty covered); live dry-run verified ff-report and dirty refusal. Host cutover
+    left manual per spec.'
+- at: 2026-11-19 08:47
+  from: idc02
+  text: 'finished (ok): exit=0 ing `mcp.ada-control.command` in live `opencode.json` files remains the documented
+    manual cutover step. | devin-t'
+- at: 2026-11-19 08:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 08:47
+  from: chaba
+  text: 'session-end checkpoint 36a7d0f6: 1 leftover file(s) committed'
+- at: 2026-11-19 08:47
+  from: chaba
+  text: banked 37 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 08:47
+  from: chaba
+  text: pushed dispatch/20261119-084016-deliver-a-stable-bridge-distri to origin
+- at: 2026-11-19 08:47
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 175.9s)
+- at: 2026-11-19 08:47
+  from: chaba
+  text: auto-merged 6b1fe35a (dispatch/20261119-084016-deliver-a-stable-bridge-distri) → origin/main
+- at: 2026-11-19 08:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-084016-deliver-a-stable-bridge-distri,
+    branch dispatch/20261119-084016-deliver-a-stable-bridge-distri'
+- at: 2026-11-19 08:50
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-084016-deliver-a-stable-bridge-distri no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-19 08:50
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261119-084016-deliver-a-stable-bridge-distri on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 02:36
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc02) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+ref: SYS-0218
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 08:59
+  note: verified — evidence checks green, closing itself

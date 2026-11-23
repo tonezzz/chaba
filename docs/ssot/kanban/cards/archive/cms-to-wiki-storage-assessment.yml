@@ -1,0 +1,134 @@
+id: cms-to-wiki-storage-assessment
+title: Assess residual CMS-to-Wiki storage reduction options
+column: done
+updated: 2026-11-23 13:34
+priority: medium
+program: docs-infrastructure
+tags:
+- cms
+- wiki
+- storage
+- migration
+- assessment
+spec: 'Read-only assessment of whether moving some or all remaining CMS content to Wiki can materially reduce internal
+  storage. First reconcile completed work: 124 lessons + 2 reports migrated to Wiki, Wiki-primary lesson writes
+  enabled, and mddb-cms compacted from 23G toward the verified <4G target. Inventory remaining WP CMS/CPT, ada-cms-pages/MDDB
+  collections and indexes, Wiki pages/revisions, backups, media/attachments, writers, readers, automation, URLs,
+  and access boundaries. Measure actual current bytes and duplicated/revision/index overhead; distinguish movable
+  knowledge/reports from feeds and operational ledgers. Compare (A) no move plus retention/compaction, (B) move
+  selected document-like content, and (C) broader migration; estimate reclaimed bytes, Wiki growth, ongoing operations,
+  search/retrieval impact, backup/restore, redirects, access control, and rollback. Deliver a measured recommendation
+  and phased pilot plan. HARD LIMIT: this card is assessment/planning only—do not migrate, delete, rewrite, redirect,
+  change production writers, or alter access policies; return any actual cutover scope for Tony approval. Done when
+  the artifact cites measured source sizes, maps consumers and ownership, compares scenarios, and gives a reversible
+  recommendation.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: devin
+  lane_source: kw
+  runner: idc02
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-19 12:50
+  verified: true
+comms:
+- at: 2026-11-19 12:38
+  from: chaba
+  text: classified as devin (kw:automation conf 1.00)
+- at: 2026-11-19 12:38
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 12:39
+  from: idc02
+  text: claimed
+- at: 2026-11-19 12:40
+  from: chaba
+  text: started devin-task-20261119-124000-read-only-assessment-of-whethe on idc02 (dispatch)
+- at: 2026-11-19 12:40
+  from: chaba
+  text: 'primer injected 8 lesson(s): [assessments-to-education-split-ssot-keep-113ca4] ALL DONE. (1) chaba-lessons
+    co; [wiki-member-knowledge-surface-migrate-wp-3a1cf2] STEP 5 DONE + two live bugs fi; [wiki-member-knowledge-surface-migrate-wp-3a1cf2]
+    STEP 5 DONE + two live bugs fi; [assessments-to-education-split-ssot-keep-113ca4] (1) DONE: /lesson now dual-wri;
+    [assessments-to-education-split-ssot-keep-113ca4] Backfill DONE 2026-11-08: less; [wiki-member-knowledge-surface-migrate-wp-3a1cf2]
+    DISPATCH BR'
+- at: 2026-11-19 12:40
+  from: devin
+  text: '[devin] session started on idc02 — reconciling prior migration/compaction state, then measuring live stores
+    (mddb-cms, ada-cms-pages, WP, Wiki). Read-only.'
+- at: 2026-11-19 12:46
+  from: devin
+  text: '[devin] DONE — measured assessment in reports/cms-to-wiki-storage-assessment-2026-11-19.md. Verdict: migration
+    reclaims ~0 — all movable content is ~41MB (mddb-cms) + ~10MB (WP) vs 22G/29G db files that are ~98% revisions+freelist
+    churn. Real finds: (1) 67G of stale pre-compact rollback files across 3 mddb banks — delete restores backup
+    headroom; (2) tonight''s cms backup FAILED ENOSPC; (3) cms db regrew 2.4G→22G in 6d (~17k revs/day, no maxRevisions
+    anywhere); (4) ops host-logs retention still b'
+- at: 2026-11-19 12:46
+  from: devin
+  text: '[devin] path correction: report landed at docs/reports/2026-11-19-cms-to-wiki-storage-assessment.md (reports/
+    is gitignored) + runbook pointer docs/ssot/jobs/cms/2026-11-19-cms-to-wiki-storage-assessment.yml. Committed
+    on dispatch branch.'
+- at: 2026-11-19 12:50
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-124000-read-only-assessment-of-whethe no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-19 12:51
+  from: chaba
+  text: 'merge-sweep: merged 656dc82d (dispatch/20261119-124000-read-only-assessment-of-whethe from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261119-124000-read-only-assessment-of-whethe.md)
+    — auto-closed'
+- at: 2026-11-19 12:51
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-124000-read-only-assessment-of-whethe,
+    branch dispatch/20261119-124000-read-only-assessment-of-whethe on idc02'
+- at: 2026-11-19 12:54
+  from: chaba
+  text: pushed dispatch/20261119-124000-read-only-assessment-of-whethe to origin
+- at: 2026-11-19 12:54
+  from: chaba
+  text: 'auto-merge not done: merge: merge: dispatch/20261119-124000-read-only-assessment-of-whethe - not something
+    we can merge — close will block until merged'
+- at: 2026-11-19 12:54
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 12:54
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261119-124000-read-only-assessment-of-whethe — close will block
+    until merged'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+note: This is a residual-scope assessment, not a duplicate of the completed Education/Wiki migration or mddb-cms
+  compaction.
+ref: KNB-0232
+claim:
+  since: 2026-11-19 12:39
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 12:51
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261119-124000-read-only-assessment-of-whethe.md
