@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
-column: doing
-updated: 2026-11-23 16:21
+column: backlog
+updated: 2026-11-23 16:22
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -10,14 +10,15 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
-  result: 'exit=0 9-094835-the-kk-mac-local-lane-admits-4.md`, and results were commented on the card. | devin-task-20261119-094835-the-kk-mac-local-lane-admits-4.service:
-    Consumed 1min 22.073s CPU time over 28min 54.475s wall clock time, 719.5M memory peak.'
+  status: queued
+  result: 'exit=1 mac-local-lane-admits-4.service: Failed with result ''exit-code''. | devin-task-20261123-160101-the-kk-mac-local-lane-admits-4.service:
+    Consumed 1min 19.124s CPU time over 19min 9.711s wall clock time, 1G memory peak, 709.6M memory swap peak.'
   sweep:
     dirty: 12
     session_gone: 2026-11-19 16:55
-  runner: tony-dell
   attempts: 1
+  last_failure: 'exit=1 mac-local-lane-admits-4.service: Failed with result ''exit-code''. | devin-task-20261123-160101-the-kk-mac-local-lane-admits-4.service:
+    Consumed 1min 19.124s CPU time over 19min 9.711s wall clock time, 1G memory peak, 709.6M memory swap peak.'
 ref: OPS-0219
 comms:
 - at: 2026-11-19 08:58
@@ -201,6 +202,17 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:22
+  from: tony-dell
+  text: 'finished (failed): exit=1 mac-local-lane-admits-4.service: Failed with result ''exit-code''. | devin-task-20261123-160101-the-kk-mac-local-la
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-160101-the-kk-mac-local-lane-admits-4 (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-23 16:52'
 review_kind: verify
 claim:
   since: 2026-11-23 16:00
