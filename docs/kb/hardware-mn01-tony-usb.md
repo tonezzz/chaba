@@ -37,8 +37,12 @@ fleet-ready: sshd + fleet authorized_keys baked, tailscale present.
 **Caveat (verified 2026-10-10):** the stick carries a *clone of mn01's
 node key* — booting it anywhere steals the `mn01` tailnet session from
 the real box. When both are up they fight for 100.106.196.22. Policy:
-`mn01-stick-standard.md` — fix pending: stick should get its own node
-key (e.g. `tony-usb`), not mn01's.
+`mn01-stick-standard.md`. Fix prepared 2026-11-23 (card
+`tony-usb-own-nodekey`): run `scripts/ops/stick-own-nodekey.sh` at the
+start of the next stick session — it registers the stick as its own
+node `tony-usb` without `tailscale logout` (logout would expire the
+shared key and drop real mn01 offline). Identity registry lives in
+`mn01-stick-standard.md` → Per-stick tailnet identity.
 
 First-boot fix on stick image (no curl, sshd not enabled):
 `sudo apt install -y curl && sudo systemctl enable ssh`
