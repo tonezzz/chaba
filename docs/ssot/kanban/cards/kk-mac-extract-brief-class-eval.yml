@@ -1,7 +1,7 @@
 id: kk-mac-extract-brief-class-eval
 title: kk-mac non-summary class eval — structured_extract + operator_brief + safe_route
 column: doing
-updated: 2026-11-23 20:44
+updated: 2026-11-23 20:51
 spec: The kk_mac_local lane admits 4 task classes but inbox specs only ever exercise summary. Build a small eval
   (~15 cases each) for structured_extract (JSON field extraction from reports), operator_brief (compress ops state
   to brief), safe_route (pick safe next action). Same harness/temp-gate as card-judgment eval. Determines whether
@@ -319,6 +319,13 @@ comms:
     finished (failed): exit=1 mac-local-lane-admit; [kk-mac-extract-brief-class-eval] primer injected 8 lesson(s):
     [kk-mac-extract-b; [kk-mac-extract-brief-class-eval] Restarted on tony-dell. Recovered the lost 202; Lane stage
     is host-local state + committed reviews; the durab'
+- at: 2026-11-23 20:51
+  from: devin
+  text: 'DONE (mn01, attempt 4). The eval was already built+run live twice but never committed — recovered the intact
+    deliverable from the surviving tony-dell attempt-2 worktree and committed it: d767d24848 adds scripts/bench/kkmac-classes/
+    (51-case corpus: 15 structured_extract / 16 operator_brief / 15 safe_route + 5 summary controls; score.py on
+    the PRODUCTION kk_mac_llm.call_remote + kk_mac_executor.verify path; kkmac_eval.sh with the card-judgment ssh/ollama/temp
+    gates; 3 live model reports) + docs/s'
 review_kind: verify
 claim:
   since: 2026-11-23 20:43
