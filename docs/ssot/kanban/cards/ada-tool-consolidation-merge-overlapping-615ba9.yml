@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-23 20:06
+updated: 2026-11-23 20:15
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -304,10 +304,16 @@ comms:
 - at: 2026-11-23 19:56
   from: chaba
   text: 'idc03 retry backoff: fail 1/3 — next claim not before 11-23 20:26'
+- at: 2026-11-23 20:15
+  from: chaba
+  text: classified as devin (fallback conf 0.00)
+- at: 2026-11-23 20:15
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
   attempts: 2
@@ -320,7 +326,6 @@ action:
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195436-ada-tool-consolidation-merge-o.service:
     Failed with result ''exit-code''. | devin-task-20261123-195436-ada-tool-consolidation-merge-o.service: Consumed
     2.767s CPU time.'
-  runner: idc03
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
@@ -351,4 +356,3 @@ requests:
     task
 claim:
   since: 2026-11-23 19:53
-awaiting_action: true
