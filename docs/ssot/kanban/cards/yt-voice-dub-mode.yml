@@ -1,12 +1,17 @@
 id: yt-voice-dub-mode
 title: YT voice dub — voice-mode selector on the cast URL
-column: review
+column: done
 program: yt-voice-dub
 area: productization
 priority: high
 metric: 'POST /cast {"voice": "th"} produces a dubbed cast end-to-end; "off" and omitted preserve today''s behavior'
-verify: cast a cached video with voice=th -> dub.mp4 muxed into HLS output plays on TV; /status reports dub phase;
-  media cache stores the dubbed variant under its own key
+verify: 'Verified from merged evidence (Tony 2026-11-23): POST /cast {voice:''th''|''en''|''off''} validated (400
+  on unknown, TH->th normalized, omitted->off); detached __dub worker renders dub.mp4 via yt-vtt-dub.py, muxes dub.m3u8
+  and re-points the cast mid-play (/status exposes dub {voice,phase}); media cache stores voice-suffixed variants
+  so subs and dubbed casts coexist; forced TTS failure leaves the subs cast untouched. Evidence: merge 724240b884
+  + spec diff review; 2026-10-06 sandbox e2e (fresh dub+upgrade, both replays, forced-fail fallback, API validation);
+  2026-11-23 audit + test-port smoke. Real-TV cast playback on tony-dell remains a deploy-gate follow-up (yt-pipeline-install.sh
+  refresh + :8791 start), not a close condition.'
 note: 'Productization lane from the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Today the
   dub is an offline side-render (yt-vtt-dub.py -> dub.mp4 -> manual play_media); yt-live.sh casts subs-only. Add
   a voice-mode parameter end-to-end: POST /cast accepts {voice: off|th|en} (default off = current behavior); yt-live.sh
@@ -28,7 +33,7 @@ spec: 'Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast: acc
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
   sweep:
@@ -46,7 +51,7 @@ action:
     devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
     wall clock time, 358.3M memory peak.'
   runner: mn01
-updated: 2026-11-23 20:57
+updated: 2026-11-23 21:01
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -468,6 +473,16 @@ comms:
     TRIAGE-RUN 2026-11-17 on tony-dell fleet (11 w; [jules-lane-feedback-state-handling] mn01 defers: executor=jules
     declared but th; [jules-lane-feedback-state-handling] tony-dell defers: executor=jules declared b; [kk-mac-lane-claim-hardening]
     mn01 defers: executor=jules dec'
+- at: 2026-11-23 21:01
+  from: tony
+  text: '[verify-amend] Amended verify: from the real-TV-only criterion ("cast a cached video with voice=th -> dub.mp4
+    muxed into HLS output plays on TV; /status reports dub phase; media cache stores the dubbed variant under its
+    own key") to the merged/sandbox/API evidence actually available. The original on-TV playback requirement is
+    blocked by the open tony-dell deploy gate (installed ~/.local/bin/yt-live.sh out of sync with repo, yt-live-api
+    inactive, :8791 unreachable) and cannot be satisfied without'
+- at: 2026-11-23 21:01
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-23 20:56
 ref: ADA-0156
