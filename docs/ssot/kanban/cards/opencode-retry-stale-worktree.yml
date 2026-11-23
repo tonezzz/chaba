@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-23 19:13
+updated: 2026-11-23 19:51
 priority: low
 tags:
 - opencode
@@ -664,11 +664,15 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:51
+  from: tony
+  text: 'routing edited: executor=devin by tony: un-staged action.lane_envelope blocks opencode admission; pin devin
+    executor per chaba defer 2026-11-23 18:19 — no attempt burned'
 action:
   type: dispatch
   repo: chaba
   model: litellm/or-gemini-3.1-pro-preview
-  executor: opencode
+  executor: devin
   agent_profile: branch-code-supervised-pilot
   target_host: idc02
   artifact: evals/opencode-lane/out/ops-1039.json
