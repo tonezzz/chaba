@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: doing
-updated: 2026-11-23 23:58
+column: review
+updated: 2026-11-23 23:59
 priority: low
 tags:
 - opencode
@@ -720,6 +720,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-233259-ops-1021-proved-it-when-an-ope,
     branch dispatch/20261123-233259-ops-1021-proved-it-when-an-ope'
+- at: 2026-11-23 23:59
+  from: idc02
+  text: 'finished (ok): exit=0 84e` on `dispatch/20261123-233259-ops-1021-proved-it-when-an-ope` — not pushed per
+    dispatch rails. | devin-task-2'
+- at: 2026-11-23 23:59
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-233259-ops-1021-proved-it-when-an-ope — close will block
+    until merged'
 action:
   type: dispatch
   repo: chaba
@@ -735,7 +743,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: done
   labels:
   - push:chaba
   sweep:
@@ -748,6 +756,9 @@ action:
   button: test-key-alias
   attempts: 1
   runner: idc02
+  result: 'exit=0 84e` on `dispatch/20261123-233259-ops-1021-proved-it-when-an-ope` — not pushed per dispatch rails.
+    | devin-task-20261123-233259-ops-1021-proved-it-when-an-ope.service: Consumed 4min 50.992s CPU time, 525.7M
+    memory peak, 0B memory swap peak.'
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
@@ -791,3 +802,4 @@ requests:
 claim:
   since: 2026-11-23 23:32
 awaiting_action: true
+review_kind: verify
