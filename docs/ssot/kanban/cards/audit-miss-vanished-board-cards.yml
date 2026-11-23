@@ -1,7 +1,7 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
 column: review
-updated: 2026-11-23 12:21
+updated: 2026-11-23 12:32
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
 priority: high
@@ -50,6 +50,10 @@ comms:
 - at: 2026-11-23 12:21
   from: chaba
   text: 'staged profile closeout held: profile evidence differs from the frozen envelope'
+- at: 2026-11-23 12:32
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-audit-miss-vanished-board-cards-1795411168 on idc02 still dirty — 2 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   repo: chaba
@@ -134,6 +138,8 @@ action:
     staged read-only profile. | devin-task-audit-miss-vanished-board-cards-1795411168.service: Consumed 39.064s
     CPU time.'
   verified: false
+  sweep:
+    dirty: 2
 claim:
   since: 2026-11-23 12:19
 review_kind: verify
