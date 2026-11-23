@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
 column: doing
-updated: 2026-11-23 18:43
+updated: 2026-11-23 18:49
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -336,6 +336,11 @@ comms:
     (OR key: $1/wk cap, $0.98 left; account already at 1000/day free tier = top-up done). INCIDENT+FIX: /key/update
     clobbered chaba allowlist to 1 model for ~2min, restored full 44 and re-verified tool-call. Next: config.* code-corpus
     bench on tony-dell.'
+- at: 2026-11-23 18:49
+  from: devin
+  text: '(b) DONE fleet-wide: agent.model swe-2-high -> swe-2-flash-high on all 6 hosts (~/.config/devin/config.json).
+    Note: devin models list shows the whole swe-2 family is Free now (lightning variants are the paid tier); flash-high
+    picked as the cheaper-class free default. VERIFIED live: a devin --print session resolved model_uid=swe-2-flash-high.'
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -387,3 +392,4 @@ action:
   runner: idc02
 claim:
   since: 2026-11-23 18:36
+awaiting_action: true
