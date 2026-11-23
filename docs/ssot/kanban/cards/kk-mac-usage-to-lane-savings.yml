@@ -1,6 +1,6 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
-column: doing
+column: backlog
 updated: 2026-11-23 16:22
 priority: low
 tags:
@@ -317,22 +317,28 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:22
+  from: tony-dell
+  text: 'finished (failed): exit=1 ngs-py-now-attributes.service: Failed with result ''exit-code''. | devin-task-20261123-155847-lane-savings-py-now-a
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-155847-lane-savings-py-now-attributes (rate limit)
+    — tony-dell holds new claims ~30m
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
-  result: 'exit=1 ask-20261123-152131-lane-savings-py-now-attributes.service: Failed with result ''exit-code''.
-    | devin-task-20261123-152131-lane-savings-py-now-attributes.service: Consumed 51.334s CPU time over 2min 9.358s
-    wall clock time, 871.5M memory peak.'
+  status: failed
+  result: 'exit=1 ngs-py-now-attributes.service: Failed with result ''exit-code''. | devin-task-20261123-155847-lane-savings-py-now-attributes.service:
+    Consumed 10min 22.101s CPU time over 17min 46.973s wall clock time, 1G memory peak, 509.3M memory swap peak.'
   sweep:
     dirty: 1
     session_gone: 2026-11-16 15:26
     stale_running: 2026-11-23 16:18
   attempts: 2
-  last_failure: 'exit=1 ask-20261123-152131-lane-savings-py-now-attributes.service: Failed with result ''exit-code''.
-    | devin-task-20261123-152131-lane-savings-py-now-attributes.service: Consumed 51.334s CPU time over 2min 9.358s
-    wall clock time, 871.5M memory peak.'
+  last_failure: 'exit=1 ngs-py-now-attributes.service: Failed with result ''exit-code''. | devin-task-20261123-155847-lane-savings-py-now-attributes.service:
+    Consumed 10min 22.101s CPU time over 17min 46.973s wall clock time, 1G memory peak, 509.3M memory swap peak.'
   runner: tony-dell
 review_kind: verify
 claim:
