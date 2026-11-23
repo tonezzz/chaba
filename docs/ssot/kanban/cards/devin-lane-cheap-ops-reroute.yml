@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: backlog
-updated: 2026-11-23 19:16
+updated: 2026-11-23 20:25
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -37,3 +37,10 @@ comms:
     kw:script x2 incl. req-47d7dd, kw:lock x1), fallback=9 (conf 0.00 -> devin). Final lanes: devin 32 / codemod
     4. High-confidence devin keyword hits: kw:host (ansible-disk-headroom-harden, disk-guard-ssot-enforce, storage-rebalance-underused,
     report-graph-producer-metas, render-job-wr'
+- at: 2026-11-23 20:25
+  from: devin
+  text: '2026-11-23: first re-route slice IMPLEMENTED in working tree (scripts/board/dispatch_repos.py + tests/board/test_queue_time_classify.py).
+    Changes: (1) removed over-broad standalone ''host'' from LANE_KW[''devin''] (audit: 5 devin-lane cards routed
+    purely by kw:host); (2) lane keyword evaluation order now paid_frontier -> codemod -> free_lane -> devin (cheapest-capable-first
+    per lane catalog; old order let a broad devin keyword pre-empt a cheap lane); devin remains fail-closed fallback
+    for ambiguous '
