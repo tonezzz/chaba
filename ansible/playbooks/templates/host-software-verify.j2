@@ -1,0 +1,48 @@
+{# host-software-verify.j2 — per-host R7 capability verdict.
+   Context: target, hostvars, sw_ssot, sw_key_map. #}
+{%- set hv = hostvars[target] -%}
+{%- set sw_host_key = sw_key_map.get(target, target) -%}
+{%- set hs = (sw_ssot['hosts'] | default({})).get(sw_host_key) or {} -%}
+{%- set declared = hs.get('capabilities') | default([]) -%}
+{%- set probed = hv.sw_probe is defined -%}
+{%- set unreachable = probed and (hv.sw_probe.unreachable | default(false)) -%}
+{%- set snapshot = hv.sw_snapshot | default({}) if (probed and not unreachable) else {} -%}
+{%- set ns = namespace(rows=[], fails=0) -%}
+{%- for cap in declared -%}
+{%-   set r = snapshot.get(cap) -%}
+{%-   if not probed -%}
+{%-     set st = 'not-probed' -%}
+{%-     set detail = "outside this run's targets" -%}
+{%-   elif unreachable -%}
+{%-     set st = 'down' -%}
+{%-     set detail = 'unreachable' -%}
+{%-   elif r is mapping -%}
+{%-     set st = r.get('status', 'fail') -%}
+{%-     set detail = r.get('detail', '') -%}
+{%-   else -%}
+{%-     set st = 'missing' -%}
+{%-     set detail = 'no probe result' -%}
+{%-   endif -%}
+{%-   if st in ['fail','timeout','down','missing'] -%}{%- set ns.fails = ns.fails + 1 -%}{%- endif -%}
+{%-   set _ = ns.rows.append({'capability': cap, 'status': st, 'detail': detail}) -%}
+{%- endfor -%}
+{%- if declared | length == 0 -%}
+{%-   set summary = 'not declared in ssot.host-software.yml' -%}
+{%- elif not probed -%}
+{%-   set summary = "not probed (outside this run's targets)" -%}
+{%- elif unreachable -%}
+{%-   set summary = 'unreachable (' ~ (ns.fails) ~ ' declared capabilities down)' -%}
+{%- elif ns.fails == 0 -%}
+{%-   set summary = 'ok (' ~ (declared | length) ~ '/' ~ (declared | length) ~ ' capabilities pass)' -%}
+{%- else -%}
+{%-   set summary = 'fail (' ~ (ns.fails) ~ '/' ~ (declared | length) ~ ' capabilities failing)' -%}
+{%- endif -%}
+host: {{ sw_host_key }}
+inventory_host: {{ target }}
+probed: {{ probed }}
+unreachable: {{ unreachable }}
+declared_count: {{ declared | length }}
+failed_count: {{ ns.fails }}
+summary: {{ summary | to_json }}
+capabilities:
+{{ ns.rows | to_nice_yaml | indent(2, true) }}
