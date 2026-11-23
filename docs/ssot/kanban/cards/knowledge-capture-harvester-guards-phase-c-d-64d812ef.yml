@@ -1,7 +1,7 @@
 id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
 title: Knowledge capture Phase C/D - harvester, router, measurement guards
 column: backlog
-updated: 2026-11-23 07:02
+updated: 2026-11-23 08:40
 brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
   D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
   SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
@@ -31,4 +31,11 @@ comms:
 - at: 2026-11-23 07:02
   from: devin
   text: 'routing edited: tags by devin: normalize tags created via card --tag (raw string) into proper list'
+- at: 2026-11-23 08:40
+  from: devin
+  text: '[2026-11-23 opencode] Phase C design DRAFT (pending Tony approval of 4 choices). Grounded in ssot.knowledge-capture.yml:
+    7-row Capture Matrix, pointer-note template (required fields + dedupe rule), Guardrails, and deterministic precedent
+    (tony-ideas harvester + report-distill: no LLM, upsert by stable key, registry last_run, managed blocks preserve
+    curation). SHAPE: two deterministic scripts under scripts/chaba/. (1) capture-router.py classifies a candidate
+    against the 7-row matrix and emits {so'
 action: {}
