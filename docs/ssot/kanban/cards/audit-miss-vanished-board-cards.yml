@@ -1,6 +1,6 @@
 id: audit-miss-vanished-board-cards
 title: Board-api card creations acknowledged but cards vanished
-column: doing
+column: review
 updated: 2026-11-23 14:58
 brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
   exists on the live board and no card file exists on master, any branch, or disk.'
@@ -83,6 +83,9 @@ comms:
 - at: 2026-11-23 14:58
   from: idc02
   text: claimed
+- at: 2026-11-23 14:58
+  from: idc02
+  text: 'finished (ok): Human confirmed: artifact reviewed, no recreation of AUD-0734/KNB-0733; close as verified.'
 action:
   type: dispatch
   repo: chaba
@@ -160,14 +163,13 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: done
   attempts: 2
-  result: 'exit=0 Started devin-task-audit-miss-vanished-board-cards-1795411168.service - runner audit-miss-vanished-board-cards
-    staged read-only profile. | devin-task-audit-miss-vanished-board-cards-1795411168.service: Consumed 39.064s
-    CPU time.'
+  result: 'Human confirmed: artifact reviewed, no recreation of AUD-0734/KNB-0733; close as verified.'
   sweep:
     dirty: 2
   runner: idc02
+  verified: true
 claim:
   since: 2026-11-23 14:58
 review_kind: verify
