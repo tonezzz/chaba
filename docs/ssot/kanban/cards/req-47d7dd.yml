@@ -1,6 +1,6 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
-column: backlog
+column: doing
 updated: 2026-11-23 13:59
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
@@ -395,6 +395,9 @@ comms:
 - at: 2026-11-23 13:59
   from: tony
   text: queued for processing
+- at: 2026-11-23 13:59
+  from: tony-dell
+  text: claimed
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -449,19 +452,20 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repo to tony-dell and queue the monitoring task there
 action:
-  status: queued
+  status: running
   type: dispatch
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   result: 'exit=0 e-20261123-105630-redeploy-the-runner-agent-scri.md` and final comms posted to req-47d7dd. | devin-task-20261123-105630-redeploy-the-runner-agent-scri.service:
     Consumed 48.157s CPU time over 8min 30.995s wall clock time, 878.8M memory peak.'
   sweep:
     session_gone: 2026-11-23 11:34
+  runner: tony-dell
 spec: Redeploy the runner-agent script from the local chaba repository to tony-dell using scp to ~/.local/bin/runner-agent,
   resolving the drift issue noted by idc03. Once redeployed, queue and execute the Bangkok flood monitoring and
   traffic alert task on tony-dell. The done-condition is verified when the runner-agent is successfully updated
   on tony-dell and the continuous water situation monitoring task runs without deployment drift errors.
 claim:
-  since: 2026-11-23 10:55
+  since: 2026-11-23 13:59
 review_kind: verify
