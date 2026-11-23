@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
 column: doing
-updated: 2026-11-23 14:44
+updated: 2026-11-23 14:50
 priority: medium
 tags:
 - mddb
@@ -324,6 +324,13 @@ comms:
   from: devin
   text: 'picked up on tony-macbook: fix d317c76fec + 11-17 backfill trail already on master. Remaining: add missing
     _docs pagination unit test, re-run banks for live delta, re-verify key-set diff=0 + queue dropped=0.'
+- at: 2026-11-23 14:50
+  from: devin
+  text: 'DONE (attempt 3, tony-macbook). Fix was already on master (d317c76fec, salvage-merged 11-17); this run
+    closed the leftover gaps: (1) added TestDocsPagination x5 to tests/embed/test_embed_lane.py — multi-page offset
+    walk, short-page stop, exact boundary, offset-ignored no-spin guard, dict-wrapped results; 12/12 pass. (2) Re-ran
+    embed-lane.py banks: 370 new ada-ha-bank-devin-handoff docs delivered, 0 failed (all other colls todo=0). (3)
+    Verified live: key-set diff source->mddb-embed :11028 over co'
 action:
   type: dispatch
   repo: chaba
