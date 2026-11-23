@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
-column: review
-updated: 2026-11-23 15:14
+column: done
+updated: 2026-11-23 15:23
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -129,6 +129,19 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261123-150012-repo-work-chaba-scripts-board- — close will block
     until merged'
+- at: 2026-11-23 15:17
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-150012-repo-work-chaba-script'
+- at: 2026-11-23 15:23
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 15:23
+  from: chaba
+  text: '[verify] Review pass 2026-11-23 (Tony): 2026-11-23 11:28 devin FIXED+MERGED+DEPLOYED (132c1119af on origin/master,
+    board-api restarted on idc03, live-verified 400 refusal on non-dispatch card); 15:08 re-dispatch filled spec
+    item-3 selftest gap (no-action/script cards refused AND untouched, valid_lanes cache mtime re-parse) committed
+    4600a0e9aa5; 15:12 test gate passed + auto-merged e6710917 -> origin/master; 15:14 finished ok — done-condition
+    met'
 action:
   status: done
   type: dispatch
@@ -138,6 +151,8 @@ action:
   attempts: 1
   result: 'exit=0 r, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261123-150012-repo-work-chaba-scripts-board-.service:
     Consumed 4min 3.056s CPU time over 8min 46.446s wall clock time, 962.1M memory peak, 674.2M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-23 15:17
 claim:
   since: 2026-11-23 14:59
 review_kind: verify
