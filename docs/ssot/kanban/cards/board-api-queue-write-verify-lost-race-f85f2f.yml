@@ -197,6 +197,10 @@ comms:
   text: 'attempt 3 starting on tony-omen — prior run died on provider rate-limit before any commits (worktree clean).
     Re-doing: (a) /action write verify-or-loud, (b) autostash pop preserves lost writes, (c) docs-only timeout-override
     in merge-sweep.'
+- at: 2026-11-23 19:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-034906-two-dispatch-pipeline-robustne no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -207,5 +211,7 @@ action:
     | devin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Consumed 1.719s CPU time over 3.005s wall
     clock time, 246.5M memory peak.'
   runner: tony-omen
+  sweep:
+    stale_running: 2026-11-23 19:18
 claim:
   since: 2026-11-23 19:16
