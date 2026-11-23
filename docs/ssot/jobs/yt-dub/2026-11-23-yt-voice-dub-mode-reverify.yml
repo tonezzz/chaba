@@ -1,0 +1,111 @@
+title: YT voice dub — re-verification pass + two cast-path bug fixes
+subtitle: kanban card yt-voice-dub-mode — dispatch session 2026-11-23
+icon: microphone
+
+planning:
+  goal: |
+    Re-dispatch of yt-voice-dub-mode. The voice wiring merged 2026-10-07
+    (724240b884); this pass audits the current tree against the spec,
+    re-runs the sandbox e2e after the post-merge yt-vtt-dub.py changes
+    (--qc/--fix-map/--sentences/diarize/redact), and fixes whatever
+    blocks a real cast.
+  out_of_scope: |
+    Real-TV playback (needs Tony — casts to tony_tv_cast are a
+    production action), ~/.local/bin refresh on tony-omen (deploy gate,
+    follows merge), tony-dell stale pipeline copies.
+
+processing:
+  status: completed
+  last_updated: "2026-11-23"
+
+report:
+  summary: |
+    Spec audit: all four requirements already merged and intact —
+    POST /cast voice=off|th|en -> arg3 (400 otherwise), detached __dub
+    worker -> yt-vtt-dub.py -> dub.mp4 -> codec-copy remux to
+    dub.m3u8/dseg_*.ts with mid-play upgrade (chosen latency strategy,
+    documented), voice-suffixed cache keys (<base>.<voice> + meta
+    voice=), /status dub {voice,phase}. yt-vtt-dub.py still accepts
+    every arg yt-live.sh passes.
+
+    Live-state findings on tony-omen (the actual cast host — api moved
+    here from tony-dell): ~/.local/bin refreshed 2026-11-23 19:10, all
+    pipeline files match repo EXCEPT yt-live-api.py which is a superset
+    (adds /list + fast_cast direct-media — uncommitted live drift, a
+    future yt-pipeline-install.sh run would clobber it). Service
+    restarted 19:10, /health + /status.dub verified live.
+
+    Two live bugs found and fixed in scripts/ops/yt-live.sh:
+    (a) d5ceebbd5f (2026-10-10) wrapped yt-dlp as
+        `timeout ... command yt-dlp` — timeout cannot exec the `command`
+        builtin, so EVERY fresh (non-cache) download failed instantly
+        for ~6 weeks; only cache replays worked. Fixed to `env yt-dlp`.
+    (b) the translate step sourced gemini-api-key.env unconditionally —
+        missing on tony-omen, so any subs cast died under set -e before
+        transcode/dub. GEMINI_API_KEY is already optional by design
+        (falls back to original subs); source is now file-guarded,
+        same pattern dub_job already used.
+
+    Sandbox e2e on tony-omen (YT_LIVE_APP/MCACHE=/tmp, HA_BASE=dead,
+    real yt-dlp + real edge-tts + real ffmpeg, video CSKlIsz9SZo 94s):
+    - voice=en fresh cast: subs HLS cast, dub rendered detached
+      (en:rendering->muxing->done), 22 dseg remux, TV re-point to
+      dub.m3u8 logged, cache entry .en.th.en w/ meta voice=en.
+    - voice=en replay: dub.m3u8 served instantly, no TTS.
+    - voice=off (fresh + replay): media.m3u8 path unchanged.
+    - voice=th on EN-only subs (no Gemini key on host): real dubber
+      found 0 TH cues -> th:failed -> subs cast untouched; honest
+      subs-only variant stored under base key, base entry not stomped
+      on the donor-path retry.
+    - donor path: voice=th with only off-variant cached -> instant subs
+      replay + dub off cached src.mp4 + finalize keeps honest entry.
+    - API :18791: voice=fr -> 400, missing q -> 400, voice=th -> 200,
+      /status exposes dub {voice,phase} live.
+  metrics:
+    - variant: fresh voice=en cast (real TTS)
+      result: full chain works post-fixes; dub.m3u8 upgrade fired
+    - variant: replays voice=en/off/th-donor
+      result: right playlist per variant; failed dub never poisons cache
+    - variant: API validation + /status.dub
+      result: 400 on bad voice, dub phase exposed
+    - variant: live service check
+      result: yt-live-api.service active on tony-omen :8791, /status ok
+  lessons_learned:
+    - "`timeout N command foo` never works — timeout execs argv directly;
+      `command` is a shell builtin. Use `env foo` to bypass a same-named
+      shell function."
+    - "Unconditional `source` of an optional secrets file under set -e
+      turns \"key absent\" into \"cast dead\"; guard with [ -f ]."
+    - "pkill -f \"yt-live-api.py\" matches the LIVE systemd unit too —
+      scope test kills by port/pid, not script name."
+    - "The voice feature was live-replayable before this pass (replay
+      path skips both buggy lines); only fresh downloads were dead."
+
+changes:
+  - file: scripts/ops/yt-live.sh
+    summary: 'yt-dlp timeout wrapper uses `env yt-dlp` (command builtin
+      broke every fresh download since 2026-10-10); gemini-api-key.env
+      source file-guarded — missing key falls back to original subs
+      instead of killing the cast.'
+
+verification:
+  artifacts:
+    - /tmp/ytlive-sbx/mcache/CSKlIsz9SZo.en.th     # subs-only variant
+    - /tmp/ytlive-sbx/mcache/CSKlIsz9SZo.en.th.en  # dubbed variant
+    - /tmp/ytlive-sbx/run-en.log / run-th.log / run-th-donor.log
+    - live: curl http://127.0.0.1:8791/status -> dub field present
+  checks:
+    - 'sandbox e2e voice=en: dub.mp4 -> dub.m3u8 + 22 dsegs, mid-play upgrade logged'
+    - 'replay: en->dub.m3u8, off->media.m3u8, th-donor->subs+failed-dub fallback'
+    - 'cache: variants independent, failed dub stores honest subs entry'
+    - 'API: 400 voice=fr, 200 voice=th, /status.dub live'
+    - 'bash -n + py_compile clean'
+  followup: |
+    Real-TV cast still unevidenced (verify: criterion) — needs Tony to
+    trigger or approve a live POST /cast voice=th. After merge, refresh
+    ~/.local/bin on tony-omen via scripts/ops/yt-pipeline-install.sh so
+    the two fixes reach the live pipeline — NOTE the installed
+    yt-live-api.py carries uncommitted /list+fast_cast features that a
+    plain install would clobber; reconcile first (port them into repo
+    or accept the loss). tony-dell ~/.local/bin copies are stale
+    (pre-voice) but the service no longer runs there.
