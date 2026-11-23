@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-23 23:43
+updated: 2026-11-23 23:55
 priority: low
 tags:
 - opencode
@@ -690,6 +690,13 @@ comms:
   text: 'attempt 1: root cause confirmed — runner-{cid}-{epoch} truncates to 60 chars so long card ids collide tids
     across retries; every retry hits worktree already exists. Implementing stale-worktree GC in runner-agent (opencode
     + kk_mac lanes share the path).'
+- at: 2026-11-23 23:55
+  from: devin
+  text: 'DONE (branch dispatch/20261123-233259-ops-1021-proved-it-when-an-ope, commit b58f75984e): _stale_worktree_gate
+    in scripts/board/runner-agent.py now runs before worktree add in BOTH _start_opencode_lane and start_kk_mac_lane
+    (same collision). Live devin-task-<tid>/-fuN unit -> defer; provably-over previous run (taskdir exit_code/verdict.json,
+    or dead lane-family meta for SIGKILL/RuntimeMaxSec/failed-launch residue) -> git worktree remove --force + prune,
+    owning repo resolved via the tree''s --git-'
 action:
   type: dispatch
   repo: chaba
