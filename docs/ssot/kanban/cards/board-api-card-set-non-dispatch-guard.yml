@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
-column: doing
-updated: 2026-11-23 15:12
+column: review
+updated: 2026-11-23 15:14
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -122,12 +122,22 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-150012-repo-work-chaba-scripts-board-,
     branch dispatch/20261123-150012-repo-work-chaba-scripts-board-'
+- at: 2026-11-23 15:14
+  from: tony-dell
+  text: 'finished (ok): exit=0 r, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261123-150012-repo-work-chaba-script'
+- at: 2026-11-23 15:14
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-150012-repo-work-chaba-scripts-board- — close will block
+    until merged'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 r, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261123-150012-repo-work-chaba-scripts-board-.service:
+    Consumed 4min 3.056s CPU time over 8min 46.446s wall clock time, 962.1M memory peak, 674.2M memory swap peak.'
 claim:
   since: 2026-11-23 14:59
+review_kind: verify
