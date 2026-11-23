@@ -1,7 +1,7 @@
 id: ada-ocb-bridge-version
 title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
 column: backlog
-updated: 2026-11-21 17:46
+updated: 2026-11-23 10:49
 brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
   which code a session is talking to. Add a version stamp.
 priority: medium
@@ -19,7 +19,7 @@ spec: 'In ada-voice opencode/ada_mcp.py: define BRIDGE_VERSION (git sha or semve
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: jevos
   sweep:
@@ -27,11 +27,7 @@ action:
   last_failure: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
     | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
     11.419s wall clock time, 927.1M memory peak.'
-  attempts: 2
-  result: 'journal=exit-code 261120-201740-in-ada-voice-opencode-ada-mcp-.service: Failed with result ''exit-code''.
-    | devin-task-20261120-201740-in-ada-voice-opencode-ada-mcp-.service: Consumed 1min 48.325s CPU time over 5min
-    11.419s wall clock time, 927.1M memory peak.'
-  runner: tony-omen
+  attempts: 0
 ref: ADA-0177
 comms:
 - at: 2026-11-17 22:11
@@ -238,6 +234,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 10:49
+  from: tony
+  text: retry requested
 review_kind: verify
 claim:
   since: 2026-11-20 20:16
