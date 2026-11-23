@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-23 16:19
+updated: 2026-11-23 18:48
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -167,14 +167,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 18:48
+  from: tony
+  text: retry requested
 action:
-  status: failed
-  attempts: 2
+  status: queued
+  attempts: 0
   lane: devin
-  runner: idc02
-  result: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result ''exit-code''.
-    | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time, 405.7M memory
-    peak, 0B memory swap peak.'
   last_failure: 'exit=1 RE | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Failed with result
     ''exit-code''. | devin-task-20261123-161256-yt-live-api-8791-status-not-20.service: Consumed 40.094s CPU time,
     405.7M memory peak, 0B memory swap peak.'
