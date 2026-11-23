@@ -1,7 +1,7 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
-column: doing
-updated: 2026-11-23 09:57
+column: review
+updated: 2026-11-23 10:10
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
   FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
@@ -203,12 +203,33 @@ comms:
     filtered EMA blocked -32601; CURRENCY_EXCHANGE_RATE USD->THB returns real data via the new mcp-stdio-bridge.py
     (alphavantage is a url: server, so a stdio->streamable-HTTP bridge sits it behind the proxy). mcp_config.json
     backed up to mcp-backups/pre-allowlist-av-pl-20261123; roll'
+- at: 2026-11-23 10:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 `dispatch-outcome-20261123-094604-apply-mcp-allowlist-py-to-alph.md`; card comms
+    posted. | devin-task-20261123-09'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'session-end checkpoint 7bad5a8e: 2 leftover file(s) committed'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: banked 130 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 10:10
+  from: chaba
+  text: pushed dispatch/20261123-094604-apply-mcp-allowlist-py-to-alph to origin
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
-    | devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph.service: Consumed 38.582s CPU time over 3min 4.580s
-    wall clock time, 1.1G memory peak.'
+  status: done
+  result: 'exit=0 `dispatch-outcome-20261123-094604-apply-mcp-allowlist-py-to-alph.md`; card comms posted. | devin-task-20261123-094604-apply-mcp-allowlist-py-to-alph.service:
+    Consumed 5min 852ms CPU time over 12min 26.103s wall clock time, 1.5G memory peak.'
   sweep:
     session_gone: 2026-11-03 11:57
     no_repo: 2026-11-04 07:45
@@ -217,6 +238,7 @@ action:
   lane_source: fallback
   runner: tony-omen
   attempts: 1
+  verified: false
 review_kind: verify
 claim:
   since: 2026-11-23 09:44
