@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
-column: backlog
-updated: 2026-11-23 10:50
+column: doing
+updated: 2026-11-23 10:51
 priority: medium
 tags:
 - ada
@@ -20,7 +20,7 @@ spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries f
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 20:48
     stale_running: 2026-11-17 09:39
@@ -28,8 +28,9 @@ action:
   last_failure: 'journal=exit-code sk-20261120-201852-ada-voice-backend-realtime-pro.service: Failed with result
     ''exit-code''. | devin-task-20261120-201852-ada-voice-backend-realtime-pro.service: Consumed 56.161s CPU time
     over 4min 15.904s wall clock time, 792.1M memory peak.'
-  attempts: 0
+  attempts: 1
   lane: codemod
+  runner: tony-dell
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -383,5 +384,8 @@ comms:
 - at: 2026-11-23 10:50
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.72 > 1.0)'
+- at: 2026-11-23 10:51
+  from: tony-dell
+  text: claimed
 claim:
-  since: 2026-11-20 20:57
+  since: 2026-11-23 10:51
