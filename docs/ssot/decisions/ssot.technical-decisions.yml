@@ -601,6 +601,45 @@ decisions:
       - 'ada-voice: tests/scenarios-live/{camera_cast_permission,vcast_screen_cast,split_screen,wall_ops,vcast_gesture_ops}.yaml'
       - docs/ssot/chaba/ssot.chaba.memory.yml
 
+  - id: capture-apply-gated-sink-write
+    date: "2026-11-23"
+    title: Keep the capture harvester read-only; sink writes go through a separate key-scoped gated door
+    status: accepted
+    context: >-
+      OPS-0016 shipped a read-only Phase C capture harvester whose ledger held 2220
+      already-filed proposals (0 new on the last run). OPS-0024 asked whether to add
+      --apply to the harvester. A blanket apply would write thousands of low-value
+      artifacts, and the harvester scans focus-inbox/card-comms/dispatch-outcome
+      unattended. Tony approved option (b) "build gated sink writes" (explicit chat
+      approval 2026-11-23).
+    options:
+      - label: Keep harvester permanently read-only
+        pros: [no write surface, zero accidental artifact creation]
+        cons: [no path from proposals to durable sinks]
+      - label: Add --apply to the harvester (bulk-capable)
+        pros: [one script]
+        cons: [bulk writes from an unattended scanner, saturated ledger of dupes, hard to scope]
+      - label: Separate key-scoped gated writer, dry-run default, board-api only first slice
+        pros: [one key per run, reversible sink, explicit retype confirmation, fail-closed gates]
+        cons: [extra script, non-board sinks deferred]
+    chosen: Separate key-scoped gated writer (scripts/chaba/capture-apply.py); harvester stays read-only
+    reasoning: >-
+      The risk is not the write itself but unattended bulk writes against a saturated
+      ledger. A separate door with no bulk mode, dry-run default, --confirm requiring the
+      exact dedupe_key retyped, and allowlisting only kanban/create (reversible by close)
+      keeps the write surface minimal and auditable. board-api via board-cli --ssh idc03
+      respects the single-writer rule; direct canonical file edits and ssot/kb/lesson/
+      oc-note writes are refused rather than improvised.
+    consequences:
+      - scripts/chaba/capture-apply.py: exact-key, allowlist, idempotence, live-source, duplicate, bounded-write, GET-verify, audit gates
+      - harvester.py preserves the ledger `applied:` audit block on every proposal run
+      - first live apply created card OPS-0029 (GET-verified, ledger audit 2026-11-23T07:11:20Z)
+      - re-apply of the same key is blocked by 3 gates; rollback = reason comm + action close
+    related:
+      - OPS-0024 (done)
+      - docs/ssot/ssot.knowledge-capture.yml
+      - scripts/chaba/capture-apply.py
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
