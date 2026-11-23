@@ -1,7 +1,7 @@
 id: 2026-11-12-155922-wiki-login-polish
 title: wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed)
-column: backlog
-updated: 2026-11-23 16:06
+column: done
+updated: 2026-11-23 16:18
 brief: 'wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button
   still renders label "0" on Special:UserLogin — give it a real label (e.g. "Sign in with Google") via $wgPluggableAuth_Config
   in LocalSettings.php, FTP path same as members edit, backup first'
@@ -58,6 +58,16 @@ comms:
     link to chaba-admin wiki view. I attempted board respond via board-cli but got HTTP 400; leaving request open
     in board state and noting the in-session decision here. Will not push to live HA without explicit same-session
     approval.'
+- at: 2026-11-23 16:18
+  from: devin
+  text: 'OPS-0029 item (2) resolved (option a, Tony approved live push in-session 2026-11-23, incl. private-wiki).
+    Mutated ada-ha chaba-admin via push-dashboard.py websocket (lovelace/config/save, no restart): wiki + private-wiki
+    now have markdown note ''Google sign-in can’t complete inside this embedded page (Google blocks iframes). [Open
+    ... in new tab](...)'' above the iframe; panel->normal view to allow 2 cards. Synced snapshot to docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json.
+    Committe'
+- at: 2026-11-23 16:18
+  from: devin
+  text: closed by devin
 requests:
 - id: ops-0029-item-2-decision-needed-google-s-3917cf
   ask: 'OPS-0029 item (2) — decision needed: Google sign-in cannot complete inside the ada-ha chaba-admin/wiki HA
@@ -74,4 +84,5 @@ requests:
   - userloginprompt note on wiki login page
   - defer - close as cosmetic
   answer: open-in-new-tab weblink card (recommended)
-awaiting_action: true
+action:
+  status: done

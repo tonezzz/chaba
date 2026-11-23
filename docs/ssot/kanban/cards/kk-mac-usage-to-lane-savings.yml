@@ -1,7 +1,7 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
 column: doing
-updated: 2026-11-23 16:12
+updated: 2026-11-23 16:18
 priority: low
 tags:
 - kk-mac
@@ -309,6 +309,10 @@ comms:
     sets ent[result_extra] as a TOKENS_RE fragment, finish_pass prepends it (survives board-api result[:300]) and
     pops it on fallback handoff. Fixture check: closed kk_mac_local card reports 1500 in / 200 out under kk_mac_local
     lane. Contract tests running.'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-155847-lane-savings-py-now-attributes no longer active on tony-dell but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   repo: chaba
@@ -320,6 +324,7 @@ action:
   sweep:
     dirty: 1
     session_gone: 2026-11-16 15:26
+    stale_running: 2026-11-23 16:18
   attempts: 2
   last_failure: 'exit=1 ask-20261123-152131-lane-savings-py-now-attributes.service: Failed with result ''exit-code''.
     | devin-task-20261123-152131-lane-savings-py-now-attributes.service: Consumed 51.334s CPU time over 2min 9.358s

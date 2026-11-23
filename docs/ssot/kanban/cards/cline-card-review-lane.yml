@@ -1,7 +1,7 @@
 id: cline-card-review-lane
 title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
 column: doing
-updated: 2026-11-23 16:03
+updated: 2026-11-23 16:18
 priority: medium
 tags:
 - cline
@@ -53,6 +53,7 @@ action:
   sweep:
     stale_running: 2026-11-23 15:20
     session_gone: 2026-11-23 15:20
+    dirty: 1
   result: 'exit=1 0261123-145629-goal-drain-the-review-column-s.service: Failed with result ''exit-code''. | devin-task-20261123-145629-goal-drain-the-review-column-s.service:
     Consumed 2min 7.639s CPU time over 27min 5.995s wall clock time, 445.4M memory peak.'
   runner: tony-macbook
@@ -470,5 +471,9 @@ comms:
   text: 'live drain in progress on con01: created task bb711 for board-api-lock-contention (ollama/qwen2.5:7b).
     Also adopting 2 orphaned attempt-4 feed tasks (43d16 cms-auto-nest-tony-macbook, fabd1) on the next pass — cap
     was the reason only 1 created. Collecting with a 20min bounded wait.'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261123-155555-goal-drain-the-review-column-s on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-23 15:55

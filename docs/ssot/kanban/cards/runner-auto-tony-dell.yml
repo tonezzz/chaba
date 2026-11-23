@@ -15,7 +15,7 @@ help: 'Per-check fixes:
 
   - push-label-false: RUNNER_LABELS declares push:<repo> but `git push --dry-run` fails in the checkout — the label
   lies about the credential scope (runner-push-cred-gap). Remove the label or fix the key.'
-updated: 2026-11-23 14:20
+updated: 2026-11-23 16:18
 review_kind: triage
 action:
   status: done
@@ -169,6 +169,10 @@ comms:
 - at: 2026-11-23 14:20
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 ref: OPS-0407

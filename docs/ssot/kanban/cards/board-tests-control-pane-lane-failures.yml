@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
 column: backlog
-updated: 2026-11-23 14:53
+updated: 2026-11-23 16:18
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -49,3 +49,7 @@ comms:
   text: 'worktree triage: wt dispatch-wt-20261119-control-pane dropped on tony-dell. Branch feat/kanban-card-cycle-control-pane
     @51f4c829 kept — holds unpushed render-board2 run-evidence feature (163L + focus ymls) possibly related to this
     lane''s failures.'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
