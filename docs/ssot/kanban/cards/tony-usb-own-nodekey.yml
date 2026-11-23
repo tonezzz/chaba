@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-11-23 19:49
+updated: 2026-11-23 20:15
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -495,6 +495,9 @@ comms:
 - at: 2026-11-23 19:49
   from: chaba
   text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 20:19'
+- at: 2026-11-23 20:15
+  from: tony
+  text: retry requested
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -503,7 +506,7 @@ spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet
   details.
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -514,11 +517,7 @@ action:
   last_failure: 'exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
     | devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Consumed 18.832s CPU time over 5min 5.940s
     wall clock time, 327.3M memory peak.'
-  attempts: 2
-  result: 'exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
-    | devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Consumed 18.832s CPU time over 5min 5.940s
-    wall clock time, 327.3M memory peak.'
-  runner: tony-macbook
+  attempts: 0
 claim:
   since: 2026-11-23 19:42
 requests:
