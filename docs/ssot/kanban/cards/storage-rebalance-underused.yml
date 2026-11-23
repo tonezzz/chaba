@@ -1,7 +1,7 @@
 id: storage-rebalance-underused
 title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
 column: doing
-updated: 2026-11-23 11:15
+updated: 2026-11-23 11:30
 brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
   and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
   to free space.
@@ -67,6 +67,10 @@ comms:
     flagged) and disk-trend-watch.py (selftest PASS, report-only, no cards). NEW mddb-backup-offload.sh -> idc02
     archive, e2e tested. Survey+plan: docs/ssot/jobs/infrastructure/2026-11-23-storage-rebalance-plan.yml. Board
     request raised for the prod delete/move batch — dell fills in ~2.9d, idc03 ~4.7d at current slopes'
+- at: 2026-11-23 11:30
+  from: chaba
+  text: restarted zombie claim as devin-task-20261123-113021-goal-rebalance-disk-usage-acro on tony-omen — claim
+    committed but the response was lost (OPS-1071)
 action:
   type: dispatch
   status: running

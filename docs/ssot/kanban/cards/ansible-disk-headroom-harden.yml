@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: doing
-updated: 2026-11-23 11:14
+updated: 2026-11-23 11:29
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -62,6 +62,10 @@ comms:
     DISK_TREND_HISTORY jsonl append gated on actually-probed + ssot-known hosts (macbook key mapping, used_kb added),
     host_key_checking documented in ansible/README.md known_hosts section. Fixed latent bug: dedicated localhost
     eval play was stripped by --limit. Verified on to'
+- at: 2026-11-23 11:29
+  from: chaba
+  text: restarted zombie claim as devin-task-20261123-112950-goal-make-ansible-disk-headroo on tony-macbook — claim
+    committed but the response was lost (OPS-1071)
 action:
   type: dispatch
   status: running
