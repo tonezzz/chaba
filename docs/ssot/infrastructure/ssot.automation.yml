@@ -149,6 +149,11 @@ automation:
     service: systemd/mcp-health-snapshot.service
     log_file: logs/mcp-health-snapshot.log
     alert_dir: docs/ssot/focus-inbox
+    chained_execstart: >-
+      scripts/post-restart-verify.py — check-only post-restart verification,
+      once per boot via boot-id gate (ssot.operations.yml
+      automation.post_restart_verify; reports in ~/var/chaba/health/, findings
+      via board-api /inbox). Added 2026-11-23.
     status: active (2026-08-29)
 
   system_report:

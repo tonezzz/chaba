@@ -21,6 +21,29 @@ Rules:
   to fail during the window — run the equivalent commands locally/SSH instead,
   or follow `ssot.tony-dell-failover.yml` to switch wrappers to local stdio.
 
+## Automated pass (since 2026-11-23)
+
+`mcp-health-snapshot.service` (timer: OnBootSec=5min / OnUnitActiveSec=15min)
+runs a chained, check-only pass of `scripts/post-restart-verify.py` on every
+fire. The script gates on `/proc/sys/kernel/random/boot_id`, so it verifies
+**once per boot** — repeat timer fires inside the same boot no-op on
+`~/var/chaba/post-restart-verify/last-boot-id`.
+
+- Checklist executed: `automation.post_restart_verify.checks_common` +
+  `host_notes.<host>.post_restart_checks` in `ssot.operations.yml`
+  (currently tony-omen + tony-dell; other hosts no-op).
+- Structured result: `~/var/chaba/health/post-restart-verify-<host>-<bootid8>.json`
+  (+ `post-restart-verify-latest.json`), one record in
+  `~/var/chaba/reports/timeline.jsonl`.
+- On `must`-severity failures it posts ONE aggregate focus-inbox entry via
+  board-api `/inbox` (fingerprinted per boot + fail-set). `warn` failures
+  stay in the JSON report.
+- **Check-only**: it never restarts or fixes anything. The manual checklist
+  below is still the authoritative procedure for planned reboots and for
+  remediating what the automated pass flags.
+- Manual run: `python3 ~/CascadeProjects/chaba/scripts/post-restart-verify.py
+  --force` (`--dry-run`, `--exit-code`, `--host`, `--boot-id` for testing).
+
 ---
 
 ## Phase 0 — Before either host reboots
@@ -75,7 +98,7 @@ curl -s -o /dev/null -w '%{http_code}\n' https://tony-dell.taila0626a.ts.net:844
 
 # 5. Physical display (monitor is on iGPU DP-2, not the AMD card)
 ssh tony-dell 'pgrep -a Xorg'                       # expect ":1 vt7" (xorg-seat.service)
-ssh tony-dell 'systemctl --user is-active xfce-seat.service barrier-pin-vt.timer'
+ssh tony-dell 'systemctl --user is-active lxqt-seat.service xfce-seat.service barrier-pin-vt.timer'
 ssh tony-dell 'cat /sys/class/drm/card1-DP-2/status' # expect connected (else check cable)
 ```
 

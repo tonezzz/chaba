@@ -1,5 +1,5 @@
 title: tony-dell
-subtitle: Secondary workstation / Barrier client
+subtitle: Secondary workstation / headless primary
 icon: 🖥️
 sections:
   - title: Overview
@@ -11,7 +11,7 @@ sections:
       - label: IP
         text: 192.168.1.42
       - label: Role
-        text: Secondary workstation / Barrier client
+        text: Secondary workstation / headless primary (Barrier KVM retired 2026-10-25)
       - label: OS
         text: Ubuntu / XFCE
 
@@ -19,16 +19,10 @@ sections:
     icon: ⚙️
     layout: list
     items:
-      - label: Barrier client
-        text: "Connects to tony-omen Barrier server on 100.75.102.88:24800 (Tailscale); binary at ~/.local/bin/barrierc"
-      - label: Barrier start command
-        text: 'nohup "$HOME/.local/bin/barrierc" --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
-      - label: Health check
-        text: 'ps -ef | grep barrierc; tail -n 5 /tmp/barrier-client.log should show "connected to server"'
-      - label: Autofix
-        text: 'pkill -x barrierc; nohup "$HOME/.local/bin/barrierc" --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
-      - label: Backup paths
-        text: "~/.local/bin/barrierc, ~/.config/autostart/barrierc.desktop"
+      - label: Barrier KVM
+        text: "RETIRED 2026-10-25 — no barriers.service, barrierc client, or port 24800. Do not reinstall; see docs/kb/host-reboot-verification.md for the historical record. barrier-pin-vt.timer remains only as a physical-seat VT pin helper."
+      - label: Physical seat
+        text: 'xorg-seat.service (root Xorg :1 vt7) + lxqt-seat.service user unit; verify: pgrep -a Xorg (expect ":1"), systemctl --user is-active lxqt-seat.service barrier-pin-vt.timer'
       - label: Chaba Funnel
         text: "24/7 Tailscale Funnel landing page and active-connections API on port 8444 (local listener 8082). Port 443 is the mcp-rview OAuth proxy; 8443 is Caddy/rview."
         url: "https://tony-dell.taila0626a.ts.net:8444/"
@@ -39,4 +33,4 @@ sections:
     layout: list
     items:
       - label: Last verified
-        text: "2026-07-26"
+        text: "2026-11-23"

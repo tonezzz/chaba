@@ -1,0 +1,84 @@
+id: 2026-11-23-post-restart-verify
+title: Automated check-only post-restart verification via mcp-health-snapshot
+date: 2026-11-23
+card: automate-host-post-restart-verification-5ad4ac
+ref: SYS-0863
+dispatch: dispatch-wt-20261123-141054-extend-the-existing-mcp-health
+
+summary: >
+  transition.post_restart was a manual-only checklist. The existing
+  mcp-health-snapshot.timer (OnBootSec=5min / OnUnitActiveSec=15min) already
+  fired after every boot but only took a global health snapshot. This job
+  extends that same service with a chained ExecStart running
+  scripts/post-restart-verify.py — a check-only, once-per-boot verification
+  pass driven entirely by ssot.operations.yml.
+
+mechanism:
+  trigger: >-
+    mcp-health-snapshot.service gains a FIRST ExecStart
+    `python3 scripts/post-restart-verify.py` ('-' prefix: a finding never
+    fails the unit — OPS-0581 finding-reporter convention — and the snapshot
+    ExecStart's known exit-nonzero quirk cannot skip the verifier, since a
+    failed non-'-' ExecStart aborts later ExecStarts on a oneshot).
+  once_per_boot: >-
+    The script reads /proc/sys/kernel/random/boot_id and compares it to
+    ~/var/chaba/post-restart-verify/last-boot-id. Match = no-op exit 0, so
+    the 15-min timer cadence produces exactly one pass per boot with no
+    duplicate spam. --force re-runs manually.
+  scope: >-
+    Only hosts in automation.post_restart_verify.configured_hosts
+    (tony_omen, tony_dell) or carrying host_notes.<host>.post_restart_checks
+    run a pass; every other host logs "not in scope" and exits 0.
+  checks: >-
+    Declarative types: command, systemd, http, file, mount, podman,
+    failed_units. severity must -> inbox finding + overall=fail; warn ->
+    report only (post-boot lag like mddb's 4-8 min init is expected).
+  outputs:
+    - "~/var/chaba/health/post-restart-verify-<host>-<bootid8>.json (+ -latest.json)"
+    - "~/var/chaba/reports/timeline.jsonl result record"
+    - "board-api POST /inbox: ONE aggregate finding per boot per must-fail-set
+      (fingerprinted; host-ready-check pattern)"
+  remediation: none — check-only by design; fixes stay manual per
+    docs/kb/host-reboot-verification.md (mcp.devin's HA-container restart is
+    deliberately NOT automated).
+
+files_changed:
+  - scripts/post-restart-verify.py (new)
+  - systemd/mcp-health-snapshot.service (chained ExecStart)
+  - docs/ssot/infrastructure/ssot.operations.yml (automation.post_restart_verify
+    + host_notes.*.post_restart_checks)
+  - docs/ssot/infrastructure/ssot.automation.yml (chained_execstart note)
+  - docs/kb/host-reboot-verification.md (Automated pass section; seat unit
+    name lxqt-seat/xfce-seat)
+  - docs/ssot/ssot.mysystem.home.yml + public/docs/overview/ +
+    stacks/web/public/ copies (2.20GHz -> 2.00GHz cap)
+  - docs/overview/hosts.tony-dell.yml + public copy (Barrier retired)
+  - workflows/monitoring/home-profile-health-check.yml (Barrier check ->
+    barrier-pin-vt.timer; fixed self-dependency depends_on bug)
+
+stale_refs_fixed:
+  - Omen CPU cap is 2.00GHz / scaling_max_freq=2000000 (was 2.20GHz in
+    ssot.mysystem.home.yml and both published copies; ssot.operations.yml
+    host_notes already correct).
+  - "Barrier KVM retired 2026-10-25: no barriers.service / barrierc / :24800
+    expectations remain in checklists; barrier-pin-vt.timer kept as the
+    physical-seat helper (dell warn check)."
+
+deployment:
+  status: repo-only — unit + script land on hosts via the normal checkout
+    sync; the installed ~/.config/systemd/user/mcp-health-snapshot.service on
+    each host must be refreshed from systemd/mcp-health-snapshot.service to
+    pick up the chained ExecStart (systemctl --user daemon-reload).
+  first_run: first timer fire after install verifies the CURRENT boot (no
+    state file yet) — expected, check-only.
+
+verified:
+  - "boot-id gate: new boot -> one pass; repeat same-boot run -> 'already
+    verified' no-op; --force and --dry-run behave."
+  - "scope gate: unconfigured host (idc02) skips twice with no state writes."
+  - "failures produce JSON report + timeline record + single inbox POST
+    attempt (dead BOARD_API in test logged gracefully, report still written)."
+  - "check-only: exits 0 on completed pass regardless of findings
+    (--exit-code opt-in for manual runs)."
+  - "ssot-validate-all: changed files valid; 5 pre-existing errors elsewhere
+    (focus-inbox drafts, jobs/devnest) untouched."
