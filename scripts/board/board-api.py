@@ -1463,12 +1463,19 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     return f"moved to {col}"
 
 
-def do_archive(card: dict, frm: str, cap: bool = False) -> str:
+def do_archive(card: dict, frm: str, cap: bool = False,
+               min_days: float | None = None) -> str:
     """Eligibility gate for /action do=archive — the file move itself is
     done by the caller (_archive_move). Only verified done work ages out;
     unverified done cards stay on the board for human review — unless
     cap=True (board over its card cap, archive-done.py --cap): then any
-    done card ages out, but never one with an unanswered request."""
+    done card ages out, but never one with an unanswered request.
+
+    min_days comes from the sweep's own --days so dry-run and the write
+    door agree; without it the service default (ARCHIVE_MIN_DAYS) applies.
+    Needed when a bulk YAML rewrite has stamped `updated` on every card
+    (2026-11-21) — the 7d default then finds nothing until the stamps
+    age out, while --days lets an operator run a bounded recovery pass."""
     if card.get("column") != "done":
         raise ValueError("archive needs column=done")
     verified = bool((_act(card)).get("verified"))
@@ -1484,9 +1491,10 @@ def do_archive(card: dict, frm: str, cap: bool = False) -> str:
     except Exception:
         raise ValueError(f"unparseable updated: {upd!r}")
     age = (datetime.now() - dt).days
-    if age < ARCHIVE_MIN_DAYS:
+    floor = ARCHIVE_MIN_DAYS if min_days is None else float(min_days)
+    if age < floor:
         raise ValueError(
-            f"too fresh: updated {upd} ({age}d < {ARCHIVE_MIN_DAYS}d)")
+            f"too fresh: updated {upd} ({age}d < {floor}d)")
     comms_add(card, frm, f"archived ({age}d in done, "
                          f"{'verified' if verified else 'board over card cap'})")
     return f"archived ({age}d in done)"
@@ -5391,7 +5399,8 @@ class H(BaseHTTPRequestHandler):
                         save(p, card)
                     elif verb == "archive":
                         msg = do_archive(card, actor(body),
-                                         cap=body.get("cap") is True)
+                                         cap=body.get("cap") is True,
+                                         min_days=body.get("min_days"))
                         card["updated"] = now()
                         _archive_move(p, card)
                     elif verb == "unarchive":

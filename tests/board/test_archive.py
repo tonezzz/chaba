@@ -6,10 +6,12 @@ from __future__ import annotations
 
 import datetime as dt
 import importlib.util
+import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -88,6 +90,20 @@ class DoArchiveTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mod.do_archive(card, "devin", cap=True)
 
+    def test_min_days_override_lets_recovery_pass_age_fresh_stamps(self):
+        fresh = (dt.datetime.now() - dt.timedelta(days=1)).strftime(
+            "%Y-%m-%d %H:%M")
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(updated=fresh), "devin")
+        self.assertIn("archived", self.mod.do_archive(
+            _card(updated=fresh), "devin", min_days=0))
+
+    def test_min_days_override_keeps_verified_and_column_gates(self):
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(verified=False), "devin", min_days=0)
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(column="review"), "devin", min_days=0)
+
 
 class SweepPlanTest(unittest.TestCase):
     """archive-done.py plan(): verified first, then oldest done to cap."""
@@ -121,6 +137,24 @@ class SweepPlanTest(unittest.TestCase):
             self.assertEqual(total, 5)
             self.assertEqual([c["id"] for c in verified], ["v1"])
             self.assertEqual([c["id"] for c in capped], ["u-old", "u-mid"])
+
+    def test_request_carries_days_to_the_write_door(self):
+        with tempfile.TemporaryDirectory() as td:
+            os.environ["KANBAN_CARD_DIR"] = td
+            mod = self._sweep(td)
+            try:
+                with mock.patch.object(mod.urllib.request, "urlopen") as op:
+                    reply = mock.MagicMock()
+                    reply.__enter__.return_value.read.return_value = b"{}"
+                    op.return_value = reply
+                    mod.archive("v1", False, days=2.0)
+                    req = op.call_args[0][0]
+                    body = json.loads(req.data)
+            finally:
+                os.environ.pop("KANBAN_CARD_DIR", None)
+            self.assertEqual(body["min_days"], 2.0)
+            self.assertEqual(body["do"], "archive")
+            self.assertNotIn("cap", body)
 
 
 class ArchiveMoveTest(unittest.TestCase):
