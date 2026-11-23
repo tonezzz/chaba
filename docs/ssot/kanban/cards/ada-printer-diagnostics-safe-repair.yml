@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: doing
-updated: 2026-11-23 11:34
+updated: 2026-11-23 11:35
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -348,6 +348,10 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-20261123-113415-use-the-existing-ada-document- on idc02 — claim committed
     but the response was lost (OPS-1071)
+- at: 2026-11-23 11:35
+  from: devin
+  text: 'zombie-claim restart (113415): prior attempt 3 work is merged in this worktree. Re-verifying gates (printer
+    tests, tool-lint, suite); retarget request still open so queue stays untouched.'
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
