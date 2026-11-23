@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: backlog
-updated: 2026-11-23 21:15
+updated: 2026-11-24 00:00
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -102,6 +102,10 @@ comms:
     (not 7), and all 6 are now done/auto-resolved by timer-sentinel KNB-0577 (5 explicitly closed at 19:13/21:03,
     1 stale status=done) — re-pinning them would reopen finished work, so NO card mutations were made. Durable fix
     instead: dispatch_repos.classify_lane now pins card'
+- at: 2026-11-24 00:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
