@@ -1,7 +1,7 @@
 id: board-api-card-set-non-dispatch-guard
 title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
 column: doing
-updated: 2026-11-23 15:07
+updated: 2026-11-23 15:08
 brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
   no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
   a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
@@ -92,6 +92,13 @@ comms:
   text: 're-dispatch: guard+cache code verified present (132c1119af). Filled selftest gap vs spec item 3 — mtime-cache
     invalidation test + untouched-card asserts; LANES_FILE extracted for redirect. Also fixed codemod-gate test
     rotting on archived fixture card. selftest ok; 95 board tests pass.'
+- at: 2026-11-23 15:08
+  from: devin
+  text: 'DONE (worktree dispatch 20261123-150012): guard+cache verified already landed via 132c1119af. Delta: filled
+    spec item-3 selftest gap — no-action/script cards refused AND left untouched; valid_lanes cache re-parse on
+    catalog mtime bump (LANES_FILE extracted for redirect). Bonus fix: codemod-gate _load_card archive fallback
+    (fixture archived today). selftest ok; tests/board 193 pass. Commit 4600a0e9aa5 on dispatch/20261123-150012-repo-work-chaba-scripts-board-,
+    not pushed.'
 action:
   status: running
   type: dispatch
