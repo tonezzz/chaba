@@ -1,16 +1,16 @@
 id: board-api-wiki-read-search-doors
 title: 'board-api: /wiki/page mode=read + /wiki/search — generic wiki recall doors'
 column: backlog
-updated: 2026-11-21 17:47
+updated: 2026-11-23 14:07
 ref: KNB-0017
 comms:
 - at: 2026-11-20 13:42
   from: devin
-  text: 'spec (chaba repo, scripts/board/board-api.py): ada-voice now ships wiki_read/wiki_search tools.d
-    modules (card ada-tools-wiki-read-wiki-search-recall-t-8f32dd). They POST /wiki/page {mode:read,title}
-    and /wiki/search {query} first, but those ops do not exist — /wiki/page is write-only and /wiki/search
-    404s, so the tools fall back to /lesson op=get source=wiki (Education: only), /wiki/news-review (PrivateNews:),
-    chaba-lessons vector + /report search.
+  text: 'spec (chaba repo, scripts/board/board-api.py): ada-voice now ships wiki_read/wiki_search tools.d modules
+    (card ada-tools-wiki-read-wiki-search-recall-t-8f32dd). They POST /wiki/page {mode:read,title} and /wiki/search
+    {query} first, but those ops do not exist — /wiki/page is write-only and /wiki/search 404s, so the tools fall
+    back to /lesson op=get source=wiki (Education: only), /wiki/news-review (PrivateNews:), chaba-lessons vector
+    + /report search.
 
 
     Add: 1) mode=read|parse on do_wiki_page — bot'
@@ -25,9 +25,12 @@ comms:
 - at: 2026-11-21 19:22
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: Implement mode=read|parse on do_wiki_page and add /wiki/search in scripts/board/board-api.py
-  on the chaba repo, while also redeploying runner-agent to tony-dell and idc02 via scp from the repo.
-  Constraints: Ensure installed runner-agent matches /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-  on host targets. Testable done-condition: /wiki/page supports mode=read and mode=parse, /wiki/search
-  successfully returns wiki query results without 404s, and runner-agent is successfully redeployed to
-  tony-dell and idc02.'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: 'Goal: Implement mode=read|parse on do_wiki_page and add /wiki/search in scripts/board/board-api.py on the
+  chaba repo, while also redeploying runner-agent to tony-dell and idc02 via scp from the repo. Constraints: Ensure
+  installed runner-agent matches /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py on host targets.
+  Testable done-condition: /wiki/page supports mode=read and mode=parse, /wiki/search successfully returns wiki
+  query results without 404s, and runner-agent is successfully redeployed to tony-dell and idc02.'
