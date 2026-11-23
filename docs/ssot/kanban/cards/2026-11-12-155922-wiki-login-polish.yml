@@ -1,7 +1,7 @@
 id: 2026-11-12-155922-wiki-login-polish
 title: wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed)
 column: backlog
-updated: 2026-11-23 14:20
+updated: 2026-11-23 14:55
 brief: 'wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button
   still renders label "0" on Special:UserLogin — give it a real label (e.g. "Sign in with Google") via $wgPluggableAuth_Config
   in LocalSettings.php, FTP path same as members edit, backup first'
@@ -35,3 +35,22 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:55
+  from: devin
+  text: 'raised request ops-0029-item-2-decision-needed-google-s-3917cf: OPS-0029 item (2) — decision needed: Google
+    sign-in cannot complete inside the ada-ha chaba-admin/wiki HA iframe because'
+requests:
+- id: ops-0029-item-2-decision-needed-google-s-3917cf
+  ask: 'OPS-0029 item (2) — decision needed: Google sign-in cannot complete inside the ada-ha chaba-admin/wiki HA
+    iframe because Google sends X-Frame-Options DENY (no technical workaround; must open outside the iframe). Pick
+    a UX treatment: (a) add an ''Open wiki in new tab'' weblink/button card to the chaba-admin wiki view [RECOMMENDED
+    — smallest change, solves the confusion directly]; (b) add a userloginprompt note on the wiki login page telling
+    iframe users to open in a new tab; (c) defer/close as cosmetic edge case. Dashboard pushes to live HA need same-session
+    approval.'
+  status: open
+  at: 2026-11-23 14:55
+  from: devin
+  options:
+  - open-in-new-tab weblink card (recommended)
+  - userloginprompt note on wiki login page
+  - defer - close as cosmetic
