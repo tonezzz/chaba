@@ -229,7 +229,8 @@ hosts:
       yt-live-api + raceman media:
         data_dirs: ["%h/.cache/yt-live-media", "%h/GoogleDrive/chaba-media-corpus/yt-live-media"]
         unit_file: "%h/.config/systemd/user/{yt-live-api,raceman-web}.service"
-        secrets_env: pending
+        unit_dropin: "%h/.config/systemd/user/yt-live-api.service.d/override.conf — YT_LIVE_APP=%h/CascadeProjects/chaba-raceman/public/apps/yt-live, YT_LIVE_BASE=http://192.168.2.67:8083/apps/yt-live (added 2026-11-23; repo script defaults still target dell paths)"
+        secrets_env: "%h/.config/secrets/nodered-ha.env (HASS_TOKEN for play_media/fast_cast)"
         front_name: "api :8791; media via raceman nginx :8083/apps/yt-live"
       ha-live:
         data_dirs: []

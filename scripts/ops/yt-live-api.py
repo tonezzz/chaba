@@ -5,7 +5,12 @@ POST /cast   {"q"|"url"|"query": "...", "lang": "th",
               "voice": "off|th|en"}                   -> start pipeline
 POST /stop                                            -> stop cast
 GET  /status                                          -> progress + dub phase
+GET  /list                                            -> cast-ready media files
 GET  /health                                          -> ok
+
+Env: YT_LIVE_APP (media dir, shared with yt-live.sh), YT_LIVE_MCACHE,
+YT_LIVE_BASE (public media URL base for /list links), YT_LIVE_API_PORT,
+HA_BASE (fast_cast target, default http://127.0.0.1:8123).
 """
 import json
 import os
@@ -26,9 +31,70 @@ APP = os.environ.get(
     "/apps/yt-live")
 MCACHE = os.environ.get("YT_LIVE_MCACHE",
                         os.path.expanduser("~/.cache/yt-live-media"))
+MEDIA_BASE = os.environ.get(
+    "YT_LIVE_BASE", "http://192.168.2.67/apps/yt-live")
 RUNLOG = os.path.expanduser("~/.cache/yt-live-api.last.log")
 PORT = int(os.environ.get("YT_LIVE_API_PORT", "8791"))
 VOICES = ("off", "th", "en")
+
+PLAYER = "media_player.tony_tv_cast"
+HA = os.environ.get("HA_BASE", "http://127.0.0.1:8123")
+
+
+def _ha_token():
+    try:
+        for line in open(
+                os.path.expanduser("~/.config/secrets/nodered-ha.env")):
+            if line.startswith("HASS_TOKEN="):
+                return line.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    return ""
+
+
+def fast_cast(url):
+    """Direct media file (mp4 etc.) -> play_media on the TV.
+
+    Skips the yt-dlp + HLS transcode pipeline entirely — a Chromecast
+    plays a plain mp4 natively, so this starts in ~2s. Wakes the TV
+    first: play_media on an 'off' entity returns 200 but no-ops
+    (2026-10-05 incident)."""
+    import time
+    import urllib.request
+    tok = _ha_token()
+    def call(svc, payload):
+        req = urllib.request.Request(
+            f"{HA}/api/services/{svc}",
+            data=json.dumps(payload).encode(),
+            headers={"Authorization": f"Bearer {tok}",
+                     "Content-Type": "application/json"})
+        return urllib.request.urlopen(req, timeout=10).status
+    def state():
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(
+                f"{HA}/api/states/{PLAYER}",
+                headers={"Authorization": f"Bearer {tok}"}), timeout=5)
+            return json.load(r)["state"]
+        except Exception:
+            return "?"
+    def box_state():
+        # media_player.tony_tv is the TrueID box via Android TV — the
+        # Samsung panel itself has no sensor (IR toggle only).
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(
+                f"{HA}/api/states/media_player.tony_tv",
+                headers={"Authorization": f"Bearer {tok}"}), timeout=5)
+            return json.load(r)["state"]
+        except Exception:
+            return "?"
+    if state() == "off":
+        call("media_player/turn_on", {"entity_id": PLAYER})
+        time.sleep(5)
+    code = call("media_player/play_media",
+                {"entity_id": PLAYER, "media_content_id": url,
+                 "media_content_type": "video/mp4"})
+    return {"http": code, "player": state(), "box": box_state(),
+            "panel": "unsensed (IR toggle only)"}
 
 
 def spawn(args):
@@ -111,6 +177,17 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/health"):
             self._json(200, {"ok": True})
+        elif self.path.startswith("/list"):
+            try:
+                files = sorted(
+                    f for f in os.listdir(APP)
+                    if f.lower().endswith((".mp4", ".m4v", ".webm", ".mkv",
+                                           ".mp3", ".m4a")))
+            except OSError:
+                files = []
+            self._json(200, {"ok": True, "files": [
+                {"name": f, "url": f"{MEDIA_BASE}/{f}"} for f in files]})
+            return
         elif self.path.startswith("/status"):
             self._json(200, status())
         else:
@@ -126,6 +203,18 @@ class H(BaseHTTPRequestHandler):
             q = b.get("q") or b.get("url") or b.get("query")
             if not q:
                 self._json(400, {"error": "need q/url/query"})
+                return
+            # direct media files play natively on Chromecast — skip the
+            # yt-dlp + transcode pipeline (2026-10-05: mp4 demo casts)
+            if re.search(r"\.(mp4|m4v|webm|mkv|mp3|m4a|m3u8)(\?|#|$)",
+                         str(q), re.I):
+                try:
+                    res = fast_cast(str(q))
+                    self._json(200, {"ok": True, "action": "cast",
+                                     "mode": "direct", "query": q,
+                                     **res})
+                except Exception as e:
+                    self._json(502, {"ok": False, "error": str(e)[:200]})
                 return
             lang = str(b.get("lang") or "th")
             voice = str(b.get("voice") or "off").lower()
