@@ -1,0 +1,26 @@
+id: rotate-or-key-restart-openclaw-gateway
+title: 'rotate-or-key.sh: always restart openclaw-gateway after key swap'
+column: backlog
+updated: 2026-11-23 13:46
+brief: 'During the 2026-11-23 OR rotation, all 4 stores were updated correctly but a live OpenClaw agent turn STILL
+  returned 401. The script only restarts openclaw-gateway if the unit has EnvironmentFile.*openrouter — it does
+  not; the gateway caches the authProfiles.store key at startup, so it keeps using the old key until restarted.
+  The script prints the misleading line "openclaw-gateway: reads sqlite at call time — no restart needed".'
+priority: medium
+tags:
+- secrets
+- openclaw
+- runbook
+spec: 'Fix in scripts/ops/rotate-or-key.sh (installed copy ~/.local/bin/rotate-or-key on tony-dell): (1) unconditionally
+  `systemctl --user restart openclaw-gateway` on tony-omen in the restarts section, remove the wrong EnvironmentFile
+  conditional and wrong comment; (2) wait for readiness — the gateway process is active ~15s before 127.0.0.1:18789
+  starts listening (observed ~30s warm-up), so gate the e2e/probe on the port; (3) make the final e2e probe retry
+  across several :free models — a single pick hit an upstream 429 (inclusionai/ling-3.2-flash:free) and made a successful
+  rotation report exit 1; (4) update the rotation note in docs/ssot/infrastructure/ssot.services.yml (~line 743)
+  and the archive card rotate-or-key-script procedure. Done condition: next rotation leaves no 401 on a live agent
+  turn without manual gateway restart.'
+ref: SEC-0027
+comms:
+- at: 2026-11-23 13:46
+  from: devin
+  text: card captured via board-api
