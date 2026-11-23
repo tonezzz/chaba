@@ -1,7 +1,7 @@
 id: kk-mac-admitted-classes-narrow
 title: kk-mac lane — narrow admitted task classes to proven set
-column: doing
-updated: 2026-11-23 21:25
+column: backlog
+updated: 2026-11-23 21:33
 spec: 'kk-mac-classes eval (2026-11-19) proved structured_extract 0.93-1.00 READY but operator_brief 0.31-0.56 and
   safe_route 0.33-0.60 NOT ready (safe_route over-acts on priority:high prod cards — the exact failure the lane
   exists to prevent). Action: (1) narrow TASK_CLASSES/admission in kk_mac_capacity_producer.py + lane contract to
@@ -12,12 +12,13 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: queued
   attempts: 1
-  last_failure: 'exit=1 in-task-20261119-134850-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''.
-    | devin-task-20261119-134850-kk-mac-classes-eval-2026-11-19.service: Consumed 25.225s CPU time over 16.246s
-    wall clock time, 784.5M memory peak.'
-  runner: tony-omen
+  last_failure: 'exit=1 261123-211800-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''.
+    | devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19.service: Consumed 3min 4.807s CPU time over 15min
+    10.510s wall clock time, 980.2M memory peak.'
+  result: 'exit=1 261123-211800-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''. | devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19.service:
+    Consumed 3min 4.807s CPU time over 15min 10.510s wall clock time, 980.2M memory peak.'
 ref: OPS-0237
 comms:
 - at: 2026-11-19 13:38
@@ -229,5 +230,13 @@ comms:
   text: 'starting: inventory complete — admission sets live in kk_mac_llm.ALLOWED_TASKS (root), capacity_producer,
     capacity_broker, plan_validator, dispatch_repos+runner-agent KK_MAC_TASK_CLASSES, lane contract in ssot.devnest-lanes.yml.
     Narrowing to {summary, structured_extract}; bench score.py keeps scoring held classes for re-eval.'
+- at: 2026-11-23 21:33
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-211800-kk-mac-classes-eval-2026-11-19.service: Failed with result ''exit-code''.
+    | devin-task-20261123-21180 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 21:33
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19 (rate limit)
+    — tony-omen holds new claims ~30m
 claim:
   since: 2026-11-23 21:17
