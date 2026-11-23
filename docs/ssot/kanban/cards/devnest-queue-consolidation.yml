@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: doing
-updated: 2026-11-23 15:54
+updated: 2026-11-23 15:58
 priority: high
 tags:
 - devnest
@@ -341,6 +341,28 @@ comms:
   from: devin
   text: 'Attempt 2 on tony-omen: prior failure was provider rate-limit (infra), 11-17 merge held by test-gate timeout
     on overloaded idc03. Re-verifying tracker done-condition now and landing the trail doc.'
+- at: 2026-11-23 15:56
+  from: devin
+  text: 'raised request ops-1244b-scope-is-uncarded-the-one-clai-61116a: ops-1244b scope is uncarded — the one-claimer
+    refactor (long-running nest-runner.service / runner-agent --loop + rendere'
+- at: 2026-11-23 15:58
+  from: devin
+  text: 'VERIFY COMPLETE (attempt 2, tony-omen). Done-condition all PASS: runner-agent.timer firing on all 4 runners
+    (md5==repo), kanban-dispatch+chaba-jobs disabled/inactive on idc03, 0 dispatch:dispatcher jobs, nest-queue-watch=1
+    @15m, board-janitor live, 0 live dispatch timer-alerts, jev-lane armed on omen/idc02/mn01, classify live in
+    /queue. KEY FINDING: ops-1244b archived via jules-lane purge — one-claimer refactor never landed and is now
+    uncarded; request raised. focus-inbox 2174 unprocessed. Trail'
 review_kind: verify
 claim:
   since: 2026-11-23 15:51
+requests:
+- id: ops-1244b-scope-is-uncarded-the-one-clai-61116a
+  ask: ops-1244b scope is uncarded — the one-claimer refactor (long-running nest-runner.service / runner-agent --loop
+    + rendered unit) was closed via jules lane purge, never implemented. Re-card it on a live lane? (a) re-card
+    on devin ★ (b) re-card on opencode (c) drop — oneshot+timer + drift-defer is good enough
+  status: open
+  at: 2026-11-23 15:56
+  from: devin
+  options:
+  - proceed
+  - hold

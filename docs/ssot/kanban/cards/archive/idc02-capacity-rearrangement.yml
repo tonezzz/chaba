@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-23 13:35
+updated: 2026-11-23 15:58
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -162,6 +162,20 @@ comms:
 - at: 2026-11-23 13:35
   from: tony
   text: archived (1d in done, board over card cap)
+- at: 2026-11-23 15:58
+  from: devin
+  text: 'ROOT CAUSE INVESTIGATION 2026-11-23 (live runtime, tested on backup copy of 3GB db, original untouched):
+
+
+    Root cause: mddb 2.19.8 runs an internal vector trainer (vectorTrainer.run in vector_train.go) as a background
+    goroutine. Confirmed via SIGQUIT goroutine dump: ''goroutine 63 ... main.(*vectorTrainer).run ... created by
+    main.(*Server).startVectorTraining''. It runs continuously, consuming ~100-150% CPU on a 3GB database. On an
+    empty database, CPU is ~0.5%.
+
+
+    Eliminated causes:
+
+    - Freelist rebuil'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
