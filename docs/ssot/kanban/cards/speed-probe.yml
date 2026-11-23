@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: doing
-updated: 2026-11-23 21:23
+column: backlog
+updated: 2026-11-23 21:35
 brief: probe
 ref: OPS-0812
 comms:
@@ -325,6 +325,14 @@ comms:
     2026-11-19: parked in backlog. The latest attempt ; A dispatch CAN sweep the home LAN indirectly: ssh to a LAN-resident
     host (tony-d; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s; [kk-mac-live-memory-guard]
     Verification staging update: branc'
+- at: 2026-11-23 21:35
+  from: mn01
+  text: 'finished (failed): exit=1 k-20261123-142345-redeploy-the-drifted-runner-ag.service: Failed with result
+    ''exit-code''. | devin-task-20261123-1 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-142345-redeploy-the-drifted-runner-ag (rate limit)
+    — mn01 holds new claims ~30m
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -360,17 +368,20 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
-  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
+  result: 'exit=1 k-20261123-142345-redeploy-the-drifted-runner-ag.service: Failed with result ''exit-code''. |
+    devin-task-20261123-142345-redeploy-the-drifted-runner-ag.service: Consumed 11.083s CPU time over 11min 15.675s
+    wall clock time, 426.1M memory peak.'
   sweep:
     stale_running: 2026-11-17 23:41
     zero_commit: 2026-11-17 23:41
     failed_noted: 2026-11-17 23:55
-  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
-  runner: mn01
+  last_failure: 'exit=1 k-20261123-142345-redeploy-the-drifted-runner-ag.service: Failed with result ''exit-code''.
+    | devin-task-20261123-142345-redeploy-the-drifted-runner-ag.service: Consumed 11.083s CPU time over 11min 15.675s
+    wall clock time, 426.1M memory peak.'
   attempts: 1
 claim:
   since: 2026-11-23 21:23
