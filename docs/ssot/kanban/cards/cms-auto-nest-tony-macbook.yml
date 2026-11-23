@@ -2,14 +2,14 @@ id: cms-auto-nest-tony-macbook
 title: CMS automation `nest-tony-macbook` stale
 brief: A scheduled report-page job ('nest-tony-macbook') is stale. Re-run it or check the generator — details in
   the note.
-column: doing
+column: review
 review_kind: triage
 generated: cms-auto-health
 priority: high
 note: 'Recovering: nest-tony-macbook healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-macbook'' (or POST /api/cms/pages/nest-tony-macbook/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-23 20:34
+updated: 2026-11-23 20:36
 comms:
 - at: 2026-11-18 17:20
   from: chaba
@@ -193,6 +193,30 @@ comms:
     publishing normally since 16:55 restart (last_run 13:21Z, status=ok). Card auto-closes on next healthy tick
     once back in review (ok_streak already 1/2). Follow-up filed: cms-auto-health-stop-carding-powered-off-e11c7a
     (KNB-0046) — reachability gate so off-hosts stop generating the'
+- at: 2026-11-23 20:36
+  from: tony-macbook
+  text: 'finished (ok): exit=0 stale.yml` plus `dispatch-outcome-20261123-202118-cms-automation-nest-tony-macbo.md`.
+    | devin-task-20261123-20211'
+- at: 2026-11-23 20:36
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 20:36
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\n\
+    docs/ssot/jobs/cms/2026-11-23-nest-tony-macbook-host-off-stale.yml\n\U0001F527 Checking YAML syntax...\n\e[0;31m❌"
+- at: 2026-11-23 20:36
+  from: chaba
+  text: banked 227 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 20:36
+  from: chaba
+  text: pushed dispatch/20261123-202118-cms-automation-nest-tony-macbo to origin
+- at: 2026-11-23 20:36
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-23 20:36
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 ok_streak: 1
 requests:
 - id: cline-drafted-verdict-investigate-redepl-5d52a2
@@ -215,12 +239,14 @@ requests:
   answer: requeue — requeue for another pass
   executed: 2026-11-23 retry
 action:
-  status: running
+  status: done
   attempts: 1
   lane: devin
   last_failure: 'exit=1 sk-20261123-194012-cms-automation-nest-tony-macbo.service: Failed with result ''exit-code''.
     | devin-task-20261123-194012-cms-automation-nest-tony-macbo.service: Consumed 34.114s CPU time over 7min 33.486s
     wall clock time, 433.9M memory peak.'
   runner: tony-macbook
+  result: 'exit=0 stale.yml` plus `dispatch-outcome-20261123-202118-cms-automation-nest-tony-macbo.md`. | devin-task-20261123-202118-cms-automation-nest-tony-macbo.service:
+    Consumed 1min 6.121s CPU time over 13min 27.318s wall clock time, 638.8M memory peak.'
 claim:
   since: 2026-11-23 20:20
