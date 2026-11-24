@@ -1,7 +1,7 @@
 id: michael-lane-context-window
 title: 'ada-ha-michael: same context-window bump — floor ~28.9k vs trigger 32k violates policy ratio'
 column: doing
-updated: 2026-11-24 15:34
+updated: 2026-11-24 15:47
 priority: low
 tags:
 - ada
@@ -199,6 +199,13 @@ comms:
     (ADA_INSTANCE_ID=michael, :8003, env=michael-ha/backend.env); no ADA_CONTEXT_* set → defaults 32k/24k confirmed
     via /proc. mn01 still runs ada-ha-michael.service as standby (also defaults). Measuring live floor via date_echo
     smoke, then applying ~49k/37k.'
+- at: 2026-11-24 15:47
+  from: devin
+  text: 'DONE. Spec was stale post-rename: live lane on idc03 is ada-ai-kraut.service (ADA_INSTANCE_ID=michael,
+    :8003, env=michael-ha/backend.env) — set ADA_CONTEXT_TRIGGER_TOKENS=49000/TARGET=37000 + restarted, verified
+    via /proc/2345219/environ. Also covered mn01 standby ada-ha-michael.service (same vars in ada-ha-michael.env,
+    restarted, :8003 listening, /proc verified). Fresh floor measured in=20388 (~20.4k not 28.9k) → ratios 2.4x/1.8x,
+    rotation-bounded like tony lane. date_echo smoke on :8003: sessi'
 action:
   type: dispatch
   status: running
