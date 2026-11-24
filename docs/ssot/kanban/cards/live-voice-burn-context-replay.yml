@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
-column: doing
-updated: 2026-11-24 08:24
+column: review
+updated: 2026-11-24 08:30
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -455,6 +455,30 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    Failed to ope'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:30
+  from: chaba
+  text: banked 67 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:30
+  from: chaba
+  text: pushed dispatch/20261124-080026-goal-address-the-live-voice-to to origin
+- at: 2026-11-24 08:30
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 286.6s)
+- at: 2026-11-24 08:30
+  from: chaba
+  text: auto-merged 87836bff (dispatch/20261124-080026-goal-address-the-live-voice-to) → origin/main
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-080026-goal-address-the-live-voice-to,
+    branch dispatch/20261124-080026-goal-address-the-live-voice-to'
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -471,7 +495,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   sweep:
@@ -482,6 +506,10 @@ action:
     Consumed 1min 6.268s CPU time over 24min 17.945s wall clock time, 915.8M memory peak, 230.8M memory swap peak.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    No such file or directory'
+  verified: true
 spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
   for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
   (noting recent runner-agent drift across idc03, tony-macbook, idc02, and tony-dell). Constraints: Rely strictly
@@ -491,3 +519,4 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
 claim:
   since: 2026-11-24 07:59
 awaiting_action: true
+review_kind: verify
