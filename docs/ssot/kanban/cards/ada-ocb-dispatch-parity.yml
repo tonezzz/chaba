@@ -1,7 +1,7 @@
 id: ada-ocb-dispatch-parity
 title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
 column: backlog
-updated: 2026-11-24 11:21
+updated: 2026-11-24 11:26
 brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
   no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
   path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
@@ -114,6 +114,13 @@ comms:
     job/<id> docs to MDDB ada-ha-bank-devin-handoff in the job-run.sh shape (list-valued meta) for status running
     -> awaiting-user -> answered; (3) raises a board /request carrying the question + awaiting_action instead of
     do_finish(ok=False), so a blocked job never burns retries or auto'
+- at: 2026-11-24 11:26
+  from: chaba
+  text: 'ADA-0024 refinement: verified runner claims never stamp action.task_id, so board-api cannot deliver answers
+    to answers.jsonl for these jobs. The answer path now reads the two durable channels the runner actually owns:
+    (a) the answered job-input-<card> board request (requests[].answer, covers Tony clicks / Ada board answers),
+    and (b) the MDDB answer/<card> doc (covers Ada voice devin_answer, GET /get by key). answers.jsonl remains a
+    first-priority fallback and the copied answer is written into th'
 requests:
 - id: scope-for-ada-0024-how-far-should-ada-oc-484b93
   ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
