@@ -4622,6 +4622,16 @@ def claim_pass(st: dict) -> bool:
         cid = card.get("id") or ""
         typ = claimable(card)
         if not typ:
+            # KNB-0036: defer notes explain why a QUEUED card in an
+            # actionable column was not claimed. A done/review card with
+            # a stale action.runner still lands here — the fleet-gap
+            # check below doesn't look at column/status — so every
+            # runner wrote a fresh comms + awaiting_action on it on
+            # every pass (154+ notes grew one done lab card past the
+            # CI hard-bloat threshold). Nothing to defer off-queue.
+            if card.get("column") not in ("backlog", "doing") or \
+                    _act(card).get("status") != "queued":
+                continue
             stale = self_stale_reason()
             if stale:
                 note_defer(card, "stale", stale)
