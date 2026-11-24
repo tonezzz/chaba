@@ -702,6 +702,30 @@ class AdaVoiceCard extends HTMLElement {
         // deep-memory calls; same channel as avcSpeak.
         if (ev.text) avcSpeak(ev.text);
         break;
+      case "degraded":
+        // Server-side degraded-mode notice — credit/quota outage or
+        // text-only fallback (card kk-ha-degraded-mode-explain-ca). It
+        // can be the only reply the lane can still produce, so show it
+        // and speak it once in the machine voice.
+        if (ev.message) {
+          this._line.textContent = ev.message;
+          avcLog("ada", `degraded: ${ev.message}`);
+          avcSpeak(ev.message);
+        }
+        break;
+      case "live_budget_hold":
+        // lane_budget hold — voice suspended until rollover/top-up while
+        // the provider retries server-side. Show it; don't spam audio.
+        this._line.textContent =
+          ev.message || "Voice paused — retrying later";
+        avcLog("status",
+               `budget hold${ev.retry_in_s ? ` (${ev.retry_in_s}s)` : ""}`);
+        this._setStatus("Voice paused — retrying later");
+        break;
+      case "notify_voice":
+        // Command-lane machine-voice notices (announce/bark channel).
+        if (ev.text) avcSpeak(ev.text);
+        break;
       case "error":
         this._line.textContent = ev.stage === "provider_connect"
           ? `Upstream provider refused: ${ev.message}`

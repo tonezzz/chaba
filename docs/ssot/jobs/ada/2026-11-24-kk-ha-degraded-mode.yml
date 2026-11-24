@@ -1,0 +1,86 @@
+title: kk-ha degraded mode — defined notice when member-lane LLM credits die
+id: 2026-11-24-kk-ha-degraded-mode
+card: kk-ha-degraded-mode-explain-capabilities-000d8b
+date: 2026-11-24
+status: implemented-in-worktree (chaba side staged drops; ada-voice merge+deploy is a separate Tony gate)
+summary: |
+  Learning pilot for member lanes: when an LLM call fails with
+  insufficient-credits/model-unavailable, the lane now replies with a
+  defined degraded-mode notice explaining what still works instead of
+  going silent. Learning case = KK's 2026-10-14 OpenRouter depletion.
+
+learning_case:
+  what_happened: |
+    2026-10-14 KK's lane (ada-kk / kaewta) exhausted its OpenRouter
+    credit mid-day. Every reply transport failed and the lane answered
+    with silence — OpenRouterTextProvider._complete died as
+    response_interrupted with no words; voice connects died on a bare
+    provider_cap error frame. The member experienced a dead assistant,
+    not an explained outage.
+  prior_art: docs/kb/llm-credit-outage.md (lane-down ladder),
+    docs/kb/voice-fallback-options.md (rainy-day voice plan)
+
+what_landed:
+  chaba_repo:
+    - path: integrations/ada-voice/backend/degraded_mode.degraded-mode.patch
+      what: |
+        New ada-voice module (new-file patch). is_credit_failure()
+        classifies sustained credit/quota/billing/model-gone failures —
+        quota taxonomy mirrors gemini_pool._park_until (daily/billing
+        parks sustained; per-minute 429s and retry hints transient);
+        lane_budget holds by code/class name. turn_failure_notice() /
+        connect_notice() render the canned bilingual (EN/TH) notice —
+        Thai auto-detected from the triggering user text; env knobs
+        ADA_DEGRADED_LANG/CONTACT/PARTICLE/NOTICE_{EN,TH}.
+    - path: integrations/ada-voice/backend/openrouter_provider.degraded-mode.patch
+      what: |
+        _complete() wraps _or_turn: on total transport failure it asks
+        degraded_mode.turn_failure_notice(gemini_err, or_err,
+        user_text=last user turn) — credit-shaped failure emits the
+        notice as a normal assistant reply (transcript deltas +
+        response_completed, ops event degraded_mode_reply); anything
+        else keeps response_interrupted. Reply emit extracted to
+        _emit_reply(); _last_user_text() feeds language detection.
+    - path: integrations/ada-voice/pwa_server.degraded-mode.patch
+      what: |
+        On provider connect failure, billing-class errors send a
+        {"type":"degraded","kind":"connect","message":...} ws frame
+        BEFORE the error+close — the client can show/speak the
+        explanation instead of a bare provider refusal.
+    - path: stacks/{idc03/kk-ha,tony-dell/tony-ha,tony-dell/ada-ha}/www/ada-voice-card.js
+      what: |
+        _handleControl gains degraded (show + avcSpeak once),
+        live_budget_hold (status line + log, no audio spam), and
+        notify_voice (avcSpeak) cases. All three copies byte-identical
+        as before.
+    - path: tests/ada/test_kk_degraded_mode.py
+      what: |
+        28 tests — classifier sustained/transient shapes, EN/TH
+        notices + env knobs, patch tri-state vs live checkout, and
+        end-to-end _complete drive on a patched scratch tree (credit
+        failure -> notice deltas; transient 429 -> interrupted).
+    - path: docs/kb/member-lane-degraded-mode.md
+      what: Runbook — contract, capability matrix, per-lane env knobs,
+        deploy path, top-up pointers.
+
+verify:
+  - python3 -m pytest tests/ada/test_kk_degraded_mode.py -x -q
+  - git apply --check of all three patches vs ada-voice origin/main @ fcb38ee
+  - |
+    manual drive — OpenRouterTextProvider(tools=False)._complete with
+    _or_turn raising 402 emits Thai notice deltas + response_completed;
+    429-per-minute emits response_interrupted (unchanged)
+
+gap_remaining:
+  - |
+    ada-voice merge + idc03 deploy is a separate approval (deploy-ada.sh
+    drains live sessions; prod restart = Tony gate). Until merged, lanes
+    still fail silent on total credit outage.
+  - |
+    Live-ws mid-session death -> reconnect loop emits live_budget_hold
+    every hold interval; the card now displays it but does not speak it
+    (by design — hold repeats for hours).
+  - |
+    The notice is canned text, not persona-generated — register is
+    env-tunable but a male-polite Thai lane needs ADA_DEGRADED_NOTICE_TH
+    override (documented in the KB).

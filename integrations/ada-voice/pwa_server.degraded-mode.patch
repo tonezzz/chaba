@@ -1,0 +1,22 @@
+diff --git a/pwa_server.py b/pwa_server.py
+index f405a3e..63ab52e 100644
+--- a/pwa_server.py
++++ b/pwa_server.py
+@@ -1430,6 +1430,17 @@ async def voice_socket(ws: WebSocket) -> None:
+             "code": getattr(exc, "code", None),
+             "message": _provider_error_message(exc),
+         }
++        # Degraded-mode notice (kk-ha-degraded-mode-explain-ca): when the
++        # connect died on credits/quota/billing the client gets the
++        # defined explanation as a 'degraded' frame BEFORE the error +
++        # close — silence was KK's 2026-10-14 failure mode.
++        with suppress(Exception):
++            from backend import degraded_mode
++            _dmsg = degraded_mode.connect_notice(exc, channel=channel)
++            if _dmsg:
++                await ws.send_text(json.dumps({
++                    "type": "degraded", "kind": "connect",
++                    "message": _dmsg}))
+         # Text channels degrade to OpenRouter instead of dying (card
+         # ada-chat-or-fallback). Voice has no equivalent path — fail loudly.
+         if channel:
