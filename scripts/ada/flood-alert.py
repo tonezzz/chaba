@@ -91,6 +91,21 @@ CMS_CLICK = os.environ.get(
     "FLOOD_ALERT_CLICK",
     "https://idc03.taila0626a.ts.net/cms/#/flood-report")
 
+# --- flood-hub gauge alerts ------------------------------------------------
+# Google Flood Hub severities (FloodStatus.Severity) have no literal
+# WARNING — ABOVE_NORMAL is the watch tier, SEVERE/EXTREME the alert
+# tiers. The card's ">= WARNING" threshold maps to ABOVE_NORMAL+.
+# flood-hub-poll.py on idc01 publishes the 'flood-hub-status' doc; this
+# lane reads it (the API key is IP-locked to idc01, so we never call
+# floodforecasting.googleapis.com from here).
+HUB_AREA_PAGE = {
+    "chao-phraya": "flood-report",
+    "nakhon-nayok": "flood-report",
+    "saraburi-lopburi": "flood-report-nongdon-saraburi",
+}
+HUB_SEV_LEVEL = {"ABOVE_NORMAL": "warning", "SEVERE": "critical",
+                 "EXTREME": "critical"}
+
 # --- severity classifier ------------------------------------------------
 # Paired barrier+breach match catches "เขื่อนแตก"/"dike breach" phrasing in
 # either order; single-term list catches the rest. Thai substring matches
@@ -202,6 +217,61 @@ def select_alerts(pages_items, state, default_min):
                   key=lambda a: (order[a["level"]],
                                  -(a["item"]["pub"].timestamp()
                                    if a["item"].get("pub") else 0)))
+
+
+def _iso_dt(raw):
+    try:
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+
+def select_hub_alerts(hub_status, pages_items, state):
+    """Alert dicts (same shape as select_alerts) from the flood-hub-status
+    doc. Dedup key hub:<gaugeId> — re-alerts only on severity escalation,
+    same contract as the news path."""
+    out = {}
+    seen = state.get("items", {})
+    for rec in (hub_status or {}).get("alertable") or []:
+        sev_level = HUB_SEV_LEVEL.get(rec.get("severity"), "info")
+        if sev_level == "info":
+            continue
+        key = f"hub:{rec.get('gaugeId')}"
+        prev = seen.get(key)
+        if prev and LEVELS.index(prev.get("level", "info")) >= LEVELS.index(sev_level):
+            continue
+        label = (rec.get("siteName") or rec.get("river")
+                 or rec.get("gaugeId") or "?")
+        areas = set()
+        for a in rec.get("areas") or []:
+            page = HUB_AREA_PAGE.get(a)
+            if not page or page not in pages_items:
+                continue
+            cfg = pages_items[page][0]
+            minlvl = page_min_level(cfg, "warning")
+            if minlvl == "off" or not cfg.get("alert", True):
+                continue
+            if LEVELS.index(sev_level) < LEVELS.index(minlvl):
+                continue
+            areas.add(cfg.get("alert_label") or page)
+        if not areas:
+            continue
+        cur = out.get(key)
+        if cur is None:
+            out[key] = {
+                "key": key, "level": sev_level, "areas": areas,
+                "item": {"title": f"Flood Hub {rec.get('severity')}: {label}",
+                         "desc": "", "pub": _iso_dt(rec.get("issuedTime")),
+                         "link": "", "source": "flood-hub"}}
+        else:
+            cur["areas"] |= areas
+            if LEVELS.index(sev_level) > LEVELS.index(cur["level"]):
+                cur["level"] = sev_level
+    order = {l: i for i, l in enumerate(reversed(LEVELS))}
+    return sorted(out.values(),
+                  key=lambda a: (order[a["level"]],
+                                 -a["item"]["pub"].timestamp()))
 
 
 def render_push(alerts):
@@ -363,7 +433,9 @@ def main():
         state = {"items": {}}
     prune_state(state, now)
 
+    hub_status = fnu.get_hub_status(now)
     alerts = select_alerts(pages_items, state, args.min_level)
+    alerts += select_hub_alerts(hub_status, pages_items, state)
 
     if seeding and not args.dry_run:
         # arm silently: every qualifying item becomes 'already alerted'
@@ -377,6 +449,15 @@ def main():
                     state["items"][fnu.dedup_key(it["title"])] = {
                         "level": sev, "at": now.isoformat(timespec="seconds"),
                         "page": page, "title": it["title"][:140]}
+        # seed hub gauges too — first armed run must not burst on
+        # gauges that were already ABOVE_NORMAL at seed time.
+        for a in select_hub_alerts(hub_status, pages_items,
+                                   {"items": {}}):
+            state["items"][a["key"]] = {
+                "level": a["level"],
+                "at": now.isoformat(timespec="seconds"),
+                "page": next(iter(a["areas"])),
+                "title": a["item"]["title"][:140]}
         print(f"seeded {len(state['items'])} items — no push "
               f"({'missing state file' if not state_existed else '--seed'})")
         alerts = []

@@ -15,6 +15,12 @@ focus:
     then enumerate Thai gauges via gauges:searchGaugesByArea regionCode=TH.
     Full plan + endpoint details in docs/assessments/flood-hub-assessment.md.
     Watch Tony's Gmail for the approval — that is the only trigger.
+    2026-11-24 update: key is IP-locked to idc01, so the design is now
+    idc01 poller (flood-hub-poll.py -> flood-hub-status MDDB doc) with
+    keyless consumers — CMS flood-hub:auto block, flood-alert hub
+    severities, michael-dev flood_hub_* sensors all built and tested.
+    ALSO BLOCKING: idc01 unreachable (tailscale last seen ~2026-10-22) —
+    the poller timer can't install until the host is back.
   branch: chaba
   priority: medium
   status: draft
@@ -32,8 +38,8 @@ focus:
       status: not_started
     - label: Enumerate TH gauges, pick watch list (Nakhon Nayok / Chao Phraya / Saraburi-Lopburi)
       status: not_started
-    - label: HA REST sensors on michael-dev + flood-news-update.py gauge block
-      status: not_started
+    - label: HA sensors on michael-dev + flood-news-update.py gauge block
+      status: done_repo_side  # built keyless vs flood-hub-status doc; goes live when poller publishes
     - label: Housekeeping — collapse duplicate flood-report-nongdon CMS slugs
       status: not_started
 

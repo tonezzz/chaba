@@ -1,7 +1,7 @@
 # Google Flood Hub — Assessment & Integration Report
 
 Status: **living document** — updated in place as we learn more, before making any contact. Git history is the version trail; freeze a dated snapshot only when we send something external.
-Created: 2026-09-30 · Last updated: 2026-09-30
+Created: 2026-09-30 · Last updated: 2026-11-24
 
 ## TL;DR
 
@@ -104,7 +104,7 @@ Existing consumers worth copying: **TAK-NZ/etl-floodhub** (poll → CoT map poin
 Ranked by effort/benefit. All assume waitlist approval except #1.
 
 1. **Sign up for the waitlist now** (zero code). We already have GCP projects (gev-gemini/Gemini API) — pick one, submit the form with a "home automation + local alerting" use case. Approval reportedly takes months; queue it.
-2. **HA REST sensors on michael-dev** (once keyed): `gauges:searchGaugesByArea` once to enumerate Thai gauges near us (Chao Phraya basin for Bang Phli-side relevance + Nakhon Nayok basin for the current event + Saraburi/Lopburi for the nongdon pages), then poll `floodStatus:queryLatestFloodStatusByGaugeIds` every ~6–12h. Store gauge IDs + thresholds in SSOT. Follow the `mha_mirror_*`/package pattern, not ad-hoc YAML.
+2. ~~HA REST sensors on michael-dev~~ → **revised 2026-11-24**: the key is IP-restricted to idc01, so nothing off-idc01 can call the API. Topology is now poll→publish→consume: `flood-hub-poll.py` on idc01 writes the `flood-hub-status` doc (ada-cms-automation); michael-dev `flood_hub_*` command_line sensors read that doc over MDDB (deployed-copy note: packages live in `stacks/*/michael-dev/`).
 3. **Extend `flood-news-update.py`** — instead of a new job, add a `<!-- flood-hub:auto -->` managed block to `flood-report` + nongdon pages: today's gauge severities + 7-day trend per watched basin, next to the news digest. The regeneration plumbing (automation registry, `run_now`, worker) is already built.
 4. **Ada alert path**: `flood_status` tool in ada-pi reading HA entities or hitting the API from idc01; severity ≥ WARNING → LINE push via Yomi + spoken note. Scenario test under `tests/scenarios-live/` (fits the existing `deep_dive_flood_report`/`flood_situation` family).
 5. **GEV overlay**: `serializedPolygons/{id}` returns KML inundation areas — Cesium in gods-eye-view can drape these. Medium effort; only worthwhile while there's an active event or as an optional layer.
@@ -121,7 +121,7 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 ## Next actions
 
 1. ~~Submit the waitlist form~~ — **done 2026-09-30**. Now: watch Tony's Gmail for the approval email (reportedly months). Focus item parked: `docs/ssot/focus-inbox/2026-09-30-193000-flood-hub-api-waitlist.yml`.
-2. On approval email: reply with Google Cloud Project ID **`flood-watch-510211`** (created 2026-09-30) → enable `floodforecasting.googleapis.com` → create key restricted to the API + idc01 IP (`157.85.110.99`) → store `FLOODS_API_KEY` in `~/.config/secrets/flood-forecasting.env`.
+2. On approval email: reply with Google Cloud Project ID **`flood-watch-510211`** (created 2026-09-30) → enable `floodforecasting.googleapis.com` → create key restricted to the API + idc01 IP (`157.85.110.99`) → store `FLOODS_API_KEY` in `~/.config/secrets/flood-forecasting.env` on idc01 → sync chaba-vault checkout → `render-jobs.py --host idc01 --install` → `flood-hub-poll.py --dry-run` then live. Everything downstream is already built (2026-11-24).
 3. Verify with `scripts/ada/flood-hub-check.py` (ready): `gauges --region TH` lists gauges, `status <id>...` shows severity/trend, `forecast <id>...` dumps the 8-day series.
 4. Meanwhile `flood-report` keeps working off news data — no blocker.
 5. ~~Housekeeping~~ — **done**: `flood-report-nongdon-saraburi` collapsed into `flood-report-nongdon` (leaf); orphaned CMS page + automation docs deleted.
@@ -129,6 +129,7 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 
 ## Update log
 
+- **2026-11-24** — dispatch `flood-hub-integration` found still gated (no approval email visible, no key, idc01 offline ~33d) and built the entire keyless slice instead: `scripts/ada/flood-hub-poll.py` (idc01 poller → `flood-hub-status` MDDB doc), `flood-hub:auto` managed block in `flood-news-update.py` (opt-in `hub: true` on flood-report + saraburi leaf), hub severity alerts in `flood-alert.py` (ABOVE_NORMAL→warning, SEVERE/EXTREME→critical; LINE = `ha,yomi` channel once yomi session+chat id exist), michael-dev `flood_hub_*` sensors, `flood-hub-poll` job declared+rendered (not installed). Remaining: waitlist approval → key file on idc01 → install timer → verify; Ada `flood_status` tool is an ada-voice-repo change. Job doc: `docs/ssot/jobs/ada/2026-11-24-flood-hub-keyless-prep.yml`.
 - **2026-10-03** — published CMS mirror: `flood-hub-assessment` (en+th) under `parent: flood-report`, `attribute=assessment`, hand-maintained (no `generated_by`). Only `parent` is set on the child — `children` on `flood-report` is owned by the generator and would be re-stamped on the next run.
 - **2026-10-03 (later)** — **Flood family restructured + dedicated CMS tab**. Found the 09-30 collapse had been *reverted by the stale registry*: `flood-report-nongdon-saraburi` was regenerating with `parent: flood-report-nongdon` (phantom) and `flood-report.children` pointed at the same phantom. Rewired all three registry docs (flood-report children → saraburi leaf + parent → flood-overview; saraburi parent → flood-report; nongdon registry `enabled: false`), fixed page meta to match, promoted `flood-overview` to family index, parented the two regional hand pages under `flood-report`, archived `flood-report-nongdon-combined`. Added **Flood tab** to the CMS sidebar (`flood-*` slugs + น้ำท่วม-titled pages; ada-pi `d3914a7`, pushed — deploy to idc01 pending approval). Proposed the page-family standard above; kanban card `flood-cms-tab`.
 - **2026-09-30** — initial assessment; link geocoded to Ongkharak, Nakhon Nayok (active dam-discharge flood); confirmed flood-report CMS pages exist and auto-regenerate (`flood-news-update.py`, last run 17:16); no Flood Hub data in ada-cms yet; found duplicate nongdon slugs.

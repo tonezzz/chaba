@@ -1,8 +1,9 @@
 {
-  "_comment": "flood-news-update.py feed map — CMS page slug -> [[name, Google News RSS search url], ...] or {feeds: [...], require: \"<regex>\", parent: \"<slug>\", children: [\"<slug>\", ...]}. 'require' filters title+description (case-insensitive) to drop query noise; _require_default applies to every page. parent/children stamp provenance meta per ssot.apps.cms-reports.yml. Add a page by adding a key, then run --all or --page <slug>.",
+  "_comment": "flood-news-update.py feed map — CMS page slug -> [[name, Google News RSS search url], ...] or {feeds: [...], require: \"<regex>\", parent: \"<slug>\", children: [\"<slug>\", ...]}. 'require' filters title+description (case-insensitive) to drop query noise; _require_default applies to every page. parent/children stamp provenance meta per ssot.apps.cms-reports.yml. Add a page by adding a key, then run --all or --page <slug>. 'hub': true renders the <!-- flood-hub:auto --> Google Flood Hub gauge block (data from the flood-hub-status MDDB doc written by flood-hub-poll.py on idc01 — the API key is IP-locked there).",
   "_require_default": "น้ำท่วม|อุทกภัย|น้ำล้น|น้ำเอ่อ|ระบายน้ำ|เขื่อน|flood|inundat|overflow",
   "flood-report": {
     "interval_min": 120,
+    "hub": true,
     "children": [
       "flood-report-nongdon-saraburi",
       "flood-report-pattaya-rayong",
@@ -29,6 +30,7 @@
   },
   "flood-report-nongdon-saraburi": {
     "interval_min": 120,
+    "hub": true,
     "parent": "flood-report",
     "feeds": [
       [

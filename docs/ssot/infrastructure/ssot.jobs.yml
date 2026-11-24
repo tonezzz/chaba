@@ -1003,6 +1003,23 @@ jobs:
     Pure-CMS producer: writes ada-cms-automation/flood-alert state doc via flood-news-update machinery only;
     MDDB_BASE_URL repointed :11023 -> :11027 2026-10-22 (cms-11023-parked-writers). Was rendered from this manifest
     under commit 120a10896 but the jobs entry was lost; restored 2026-10-22 to match the deployed unit.'
+- id: flood-hub-poll
+  name: Flood Hub gauge status poll -> MDDB (idc01, key IP-locked)
+  host: idc01
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-vault/scripts/ada/flood-hub-poll.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11027/v1
+  note: 'card flood-hub-integration (OPS-0007). Declared 2026-11-24 ahead of waitlist approval — the FLOODS_API_KEY
+    lives in ~/.config/secrets/flood-forecasting.env on idc01 and the key is IP-restricted to idc01 egress, so this
+    poller is the ONLY Flood Hub API caller; every consumer (flood-hub:auto CMS block, flood-alert hub severities,
+    michael-dev flood_hub_* sensors) reads the ada-cms-automation/flood-hub-status doc it publishes. Script exits 0
+    quietly while the key is absent. idc01 was offline ~33d at declaration — install with
+    render-jobs.py --host idc01 --install once the host is back AND the key file exists. exec checkout for idc01 is
+    chaba-vault per config.repo.'
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
   host: con01
