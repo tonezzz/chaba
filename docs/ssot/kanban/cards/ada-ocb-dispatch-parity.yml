@@ -1,7 +1,7 @@
 id: ada-ocb-dispatch-parity
 title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
 column: backlog
-updated: 2026-11-24 11:26
+updated: 2026-11-24 11:27
 brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
   no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
   path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
@@ -121,6 +121,13 @@ comms:
     (a) the answered job-input-<card> board request (requests[].answer, covers Tony clicks / Ada board answers),
     and (b) the MDDB answer/<card> doc (covers Ada voice devin_answer, GET /get by key). answers.jsonl remains a
     first-priority fallback and the copied answer is written into th'
+- at: 2026-11-24 11:27
+  from: chaba
+  text: 'ADA-0024 committed locally on worktree branch ada-ocb: commit 180bc1ba43 ''runner: ADA-0024 dispatch job-lifecycle
+    parity''. 3 files changed, 622 insertions. Evidence: 15/15 lifecycle tests, 70 focused runner regression pass,
+    py_compile OK, SHA pin 52cbc072 matches file. Full tests/board suite: 912 passed, 4 failed -- all 4 are pre-existing
+    FileNotFoundError in test_control_pane_projection.py for gitignored/generated board2/ artifacts + a KNB-0229
+    card file absent in this fresh worktree (they do n'
 requests:
 - id: scope-for-ada-0024-how-far-should-ada-oc-484b93
   ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
