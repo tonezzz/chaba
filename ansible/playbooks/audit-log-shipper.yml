@@ -1,0 +1,411 @@
+---
+# audit-log-shipper.yml — fleet log-shipper audit (READ-ONLY).
+#
+# Companion report template: templates/log-shipper-audit.j2 (in this dir).
+# `repo_root` defaults to the chaba checkout containing this playbook;
+# override with -e chaba_repo=/path/to/chaba if running from elsewhere.
+#
+# What it does:
+#   * one batched, read-only probe per host of the installed user units,
+#     timer state, last run result, shipper checksum, linger and both
+#     journald legs (user + sys)
+#   * controller compares live state against ssot.jobs.yml (the authority
+#     for units/timeout/cadence/env), systemd/generated (stale-render check),
+#     ssot.log-digest-standard.yml (expected-host coverage), and the repo
+#     copy of scripts/ada/log-shipper.py
+#   * writes per-host verdict reports to
+#     reports/ansible-benchmark/log-shipper/<inventory_host>.yml
+#   * unreachable hosts declared offline_ok in ssot.audit.hosts.yml get an
+#     `offline-ok` verdict instead of a false failure (laptops sleep)
+#
+# It does NOT install, restart, enable or edit anything on the hosts; the
+# only writes are controller-side report files. Under --check --diff the
+# probe still runs (check_mode: no) but report writes are skipped.
+#
+# Controller self-detect matches the disk-headroom.yml pattern: the machine
+# running the playbook is probed with ansible_connection=local because
+# ssh-to-self over its own tailnet IP has no key path (OPS-0019).
+# Override with -e self_host=<name> if detection picks wrong.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/audit-log-shipper.yml --check --diff
+#   ansible-playbook playbooks/audit-log-shipper.yml --limit tony-dell
+#
+# Known drift this surfaces (2026-11-23 baseline):
+#   - idc02: ssot.jobs.yml timeout 30m (OPS-1197) vs generated 600s
+#     (live unit is already 1800s)
+#   - con01: has jobs + generated units, missing from bars.fleet.hosts
+
+- name: Fleet log-shipper audit
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    repo_root: "{{ (chaba_repo | default(playbook_dir ~ '/../..')) | regex_replace('/+$', '') }}"
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    benchmark_out: "{{ repo_root }}/reports/ansible-benchmark/log-shipper"
+    jobs_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/docs/ssot/infrastructure/ssot.jobs.yml')
+         | from_yaml }}
+    digest_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/docs/ssot/infrastructure/ssot.log-digest-standard.yml')
+         | from_yaml }}
+    audit_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/docs/ssot/infrastructure/ssot.audit.hosts.yml')
+         | from_yaml }}
+    # inventory name -> ssot.audit.hosts.yml key where they differ
+    ssot_key_map:
+      tony-macbook: macbook
+    shipper_job_ids:
+      - log-shipper
+      - log-shipper-severe
+      - log-shipper-mha
+      - log-shipper-severe-mha
+    # Observed via a pull lane on tony-dell, not a local timer on HAOS.
+    bar_host_map:
+      michael-ha: tony-dell
+    # rstrip=False: lookup('file') strips trailing newlines by default,
+    # which would hash different bytes than the deployed script.
+    repo_script_sha: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/scripts/ada/log-shipper.py',
+                errors='ignore', rstrip=False)
+         | hash('sha256') }}
+    probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP has no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+  tasks:
+    - name: Build expected shipper lanes from ssot.jobs.yml
+      ansible.builtin.set_fact:
+        shipper_expected: >-
+          {% set ns = namespace(items=[]) -%}
+          {% for job in jobs_ssot['jobs'] | default([]) -%}
+          {%   if job.id | default('') in shipper_job_ids -%}
+          {%     set job_host = job.host | default('') | replace('_', '-') -%}
+          {%     if job_host == inventory_hostname -%}
+          {%       set gen = repo_root ~ '/systemd/generated/' ~ job.host ~ '/' ~ job.id -%}
+          {%       set _ = ns.items.append({
+                      'id': job.id,
+                      'job_host': job.host | default(''),
+                      'timeout_sec': ((job.timeout | default('10m')
+                                       | regex_replace('[^0-9]', '') | int) * 60),
+                      'cadence_sec': (3600 if 'h' in (job.every | default('1h'))
+                                      else ((job.every | default('1h')
+                                             | regex_replace('[^0-9]', '') | int) * 60)),
+                      'exec_cmd': job.exec | default(''),
+                      'env_expected': job.env | default({}, true),
+                      'service_text': lookup('ansible.builtin.file',
+                                             gen ~ '.service', errors='ignore'),
+                      'timer_text': lookup('ansible.builtin.file',
+                                           gen ~ '.timer', errors='ignore')
+                    }) -%}
+          {%     endif -%}
+          {%   endif -%}
+          {% endfor -%}
+          {{ ns.items }}
+      changed_when: false
+
+    - name: Probe installed shipper state (single round-trip, read-only)
+      ansible.builtin.shell: |
+        python3 - <<'PYEOF'
+        import hashlib, json, os, re, subprocess
+        from pathlib import Path
+
+        EXPECT = json.loads(os.environ.get("SHIPPER_EXPECT_JSON", "[]"))
+        uid = os.getuid()
+        penv = dict(os.environ)
+        penv.setdefault("XDG_RUNTIME_DIR", "/run/user/%d" % uid)
+        penv.setdefault("DBUS_SESSION_BUS_ADDRESS",
+                        "unix:path=/run/user/%d/bus" % uid)
+
+        def sh(cmd, timeout=10):
+            try:
+                p = subprocess.run(["bash", "-c", cmd], capture_output=True,
+                                   text=True, timeout=timeout, env=penv)
+                return p.returncode, p.stdout.strip(), p.stderr.strip()
+            except Exception as exc:
+                return 99, "", str(exc)
+
+        def parse_text(txt):
+            props = {}
+            for line in (txt or "").splitlines():
+                s = line.strip()
+                if not s or s.startswith(("#", "[")) or "=" not in s:
+                    continue
+                k, v = s.split("=", 1)
+                props.setdefault(k, []).append(v.strip().strip('"'))
+            return props
+
+        def to_sec(v):
+            if v is None:
+                return None
+            m = re.match(r"^(\d+)(min|m|h|s)?$", str(v).strip())
+            if not m:
+                return None
+            unit = m.group(2) or ""
+            return int(m.group(1)) * {"": 1, "s": 1, "min": 60,
+                                      "m": 60, "h": 3600}[unit]
+
+        def env_map(props):
+            out = {}
+            for raw in props.get("Environment", []):
+                if "=" in raw:
+                    k, v = raw.split("=", 1)
+                    out[k] = v
+            return out
+
+        def finding(items, sev, msg):
+            items.append("[" + sev + "] " + msg)
+
+        units = []
+        udir = Path.home() / ".config" / "systemd" / "user"
+        for e in EXPECT:
+            name = e.get("id", "")
+            findings = []
+            svc_path = udir / (name + ".service")
+            tim_path = udir / (name + ".timer")
+
+            def read_unit(path):
+                if not path.is_file():
+                    return None
+                txt = path.read_text(errors="replace")
+                return {"text": txt, "props": parse_text(txt)}
+
+            live_s, live_t = read_unit(svc_path), read_unit(tim_path)
+            gen_s = parse_text(e.get("service_text", ""))
+            gen_t = parse_text(e.get("timer_text", ""))
+
+            if not e.get("service_text") or not e.get("timer_text"):
+                finding(findings, "warn",
+                        "generated unit missing in repo for " + name)
+
+            gen_to = to_sec((gen_s.get("TimeoutStartSec") or [None])[0])
+            if gen_to is not None and e.get("timeout_sec") and gen_to != int(e["timeout_sec"]):
+                finding(findings, "warn",
+                        "generated TimeoutStartSec=" + str(gen_to)
+                        + " but ssot.jobs.yml says " + str(e["timeout_sec"]))
+            gen_cad = to_sec((gen_t.get("OnUnitActiveSec") or [None])[0])
+            if gen_cad is not None and e.get("cadence_sec") and gen_cad != int(e["cadence_sec"]):
+                finding(findings, "warn",
+                        "generated cadence=" + str(gen_cad) + "s"
+                        + " but ssot.jobs.yml says " + str(e["cadence_sec"]) + "s")
+
+            if not live_s:
+                finding(findings, "fail", "missing " + str(svc_path))
+            if not live_t:
+                finding(findings, "fail", "missing " + str(tim_path))
+
+            if live_s:
+                sprops = live_s["props"]
+                live_to = to_sec((sprops.get("TimeoutStartSec") or [None])[0])
+                if e.get("timeout_sec") and live_to != int(e["timeout_sec"]):
+                    finding(findings, "fail",
+                            "live TimeoutStartSec=" + str(live_to)
+                            + " expected " + str(e["timeout_sec"]))
+                live_exec = (sprops.get("ExecStart") or [""])[0]
+                if e.get("exec_cmd") and live_exec != e["exec_cmd"]:
+                    finding(findings, "warn", "ExecStart differs from ssot.jobs.yml")
+                live_env = env_map(sprops)
+                for k, v in (e.get("env_expected") or {}).items():
+                    if live_env.get(k) != v:
+                        finding(findings, "fail",
+                                k + " mis-routed: live=" + str(live_env.get(k))
+                                + " expected=" + str(v))
+
+            if live_t:
+                tprops = live_t["props"]
+                live_cad = to_sec((tprops.get("OnUnitActiveSec") or [None])[0])
+                if e.get("cadence_sec") and live_cad != int(e["cadence_sec"]):
+                    finding(findings, "warn",
+                            "live cadence=" + str(live_cad) + "s"
+                            + " expected " + str(e["cadence_sec"]) + "s")
+
+            _, en, _ = sh("systemctl --user is-enabled " + name + ".timer")
+            _, ac, _ = sh("systemctl --user is-active " + name + ".timer")
+            if not en.startswith("enabled") or ac != "active":
+                finding(findings, "fail",
+                        "timer not enabled/active (enabled=" + en
+                        + " active=" + ac + ")")
+
+            _, show, _ = sh("systemctl --user show " + name + ".service"
+                            + " -p ExecMainStatus -p ExecMainExitTimestamp"
+                            + " -p Result -p ActiveEnterTimestamp")
+            sprops = {}
+            for line in show.splitlines():
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    sprops[k] = v
+            exit_rc = sprops.get("ExecMainStatus", "")
+            result = sprops.get("Result", "")
+            if (exit_rc not in ("", "0")) or (result and result != "success"):
+                finding(findings, "warn",
+                        "last run exit=" + (exit_rc or "?")
+                        + " result=" + (result or "?"))
+
+            units.append({
+                "unit": name,
+                "service_file": live_s is not None,
+                "timer_file": live_t is not None,
+                "timer_enabled": en,
+                "timer_active": ac,
+                "last_exit": exit_rc,
+                "last_result": result,
+                "last_exit_ts": sprops.get("ExecMainExitTimestamp", ""),
+                "findings": findings,
+            })
+
+        script_path = Path.home() / ".local/share/log-shipper/log-shipper.py"
+        script_sha = (hashlib.sha256(script_path.read_bytes()).hexdigest()
+                      if script_path.is_file() else None)
+        uname = os.environ.get("USER") or Path.home().name
+        _, linger_out, _ = sh("loginctl show-user " + uname + " -p Linger")
+        linger = "Linger=yes" in linger_out
+
+        journals = {}
+        for scope in ("user", "sys"):
+            cmd = ("journalctl --user -n 1 -o cat --no-pager" if scope == "user"
+                   else "journalctl -n 1 -o cat --no-pager")
+            rc, out, err = sh(cmd, 8)
+            # Only readability/status matters here: the newest entry is often
+            # noise (sshd banners, the ansible journal line, unit warnings),
+            # so the raw text is deliberately not reported.
+            if rc != 0:
+                val = "denied" if ("denied" in err.lower()
+                                   or "permission" in err.lower()) else "error"
+            elif not out or out.lstrip().startswith("-- No entries --"):
+                val = "empty"
+            else:
+                val = "ok"
+            journals[scope] = val
+
+        print(json.dumps({"units": units, "linger": linger,
+                          "script_sha256": script_sha,
+                          "journals": journals, "user": uname}))
+        PYEOF
+      environment:
+        SHIPPER_EXPECT_JSON: "{{ shipper_expected | to_json }}"
+      register: ship_probe_raw
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+      check_mode: no
+
+    - name: Store shipper snapshot
+      ansible.builtin.set_fact:
+        ship_probe: >-
+          {{ (ship_probe_raw.stdout | trim | from_json)
+             if (ship_probe_raw.stdout is defined
+                 and (ship_probe_raw.stdout | trim | length) > 0
+                 and (ship_probe_raw.stdout | trim)[:1] == '{')
+             else {} }}
+      changed_when: false
+      ignore_unreachable: true
+
+    - name: Flag a probe that produced no JSON
+      ansible.builtin.set_fact:
+        ship_probe:
+          error: >-
+            unreachable or no JSON
+            {%- if ship_probe_raw.stderr is defined %} :: {{ ship_probe_raw.stderr | trim | truncate(160) }}{% endif %}
+      changed_when: false
+      ignore_unreachable: true
+      when: ship_probe is not defined or ship_probe | length == 0
+
+    # --- controller-side evaluation: one play on purpose so --limit
+    # cannot filter out the report/alert tasks (see disk-headroom.yml) ---
+
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Resolve expected hosts from the log-digest bars
+      ansible.builtin.set_fact:
+        bar_mapped_hosts: >-
+          {% set ns = namespace(items=[]) -%}
+          {% for h in digest_ssot['bars']['fleet']['hosts'] | default([]) -%}
+          {%   set _ = ns.items.append(bar_host_map.get(h, h)) -%}
+          {% endfor -%}
+          {{ ns.items | unique | list }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+
+    - name: Collect hosts actually probed this run
+      ansible.builtin.set_fact:
+        probed_hosts: >-
+          {{ hostvars | dict2items
+             | selectattr('key', 'in', audited_hosts)
+             | selectattr('value.ship_probe', 'defined')
+             | map(attribute='key')
+             | sort | list }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+
+    - name: Render per-host log-shipper verdicts
+      ansible.builtin.template:
+        src: templates/log-shipper-audit.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ probed_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show shipper summaries (re-rendered in memory — correct under --check)
+      ansible.builtin.debug:
+        msg: >-
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'templates/log-shipper-audit.j2')
+              | from_yaml).summary }}
+      loop: "{{ probed_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
