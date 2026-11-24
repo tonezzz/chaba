@@ -96,7 +96,14 @@ def _record(u, ok):
                 st["dead_until"] = time.time() + DEAD_COOLDOWN_S
 
 
-def _call(upstream, path, body, lane=None):
+def _call(upstream, path, body, lane=None, stop=None, responses=None):
+    """Call one upstream. `stop`/`responses` let _race abort losing calls
+    as soon as a winner is declared: a thread that has already received
+    response headers registers them, and the winner closes them so the
+    blocked read() raises. Without this, every loser keeps computing for
+    the full TIMEOUT — CPU-bound ollama upstreams (con01 bge-m3) log a
+    400 after ~8s and burn a core for a response nobody uses. A caller
+    that has not yet got headers sees `stop` and closes its own socket."""
     headers = {"Content-Type": "application/json"}
     if lane:
         headers["x-embed-lane"] = lane
@@ -104,30 +111,59 @@ def _call(upstream, path, body, lane=None):
         upstream + path, data=body, headers=headers)
     t0 = time.time()
     r = urllib.request.urlopen(req, timeout=TIMEOUT)
+    if responses is not None:
+        with _lock:
+            responses.append(r)
+    if stop is not None and stop.is_set():
+        try:
+            r.close()
+        except Exception:
+            pass
+        return None
     data = r.read()
-    return r.status, data, (time.time() - t0) * 1000
+    return r.status, data, (time.time() - t0) * 1000, r
 
 
 def _race(path, body, lane=None):
     """Fan out to primary upstreams; deferred upstreams join the race
-    only after DEFER_AFTER_S with no winner yet. First 2xx wins."""
+    only after DEFER_AFTER_S with no winner yet. First 2xx wins. Losing
+    calls are cancelled immediately, not left to run into the timeout."""
     q = []
     threads = []
+    responses = []            # in-flight response handles, for cancellation
+    stop = threading.Event()  # set by the winner to abort the other calls
     defer_fired = [False]
     t0 = time.time()
 
     def worker(u):
         try:
-            st, data, ms = _call(u, path, body, lane)
+            result = _call(u, path, body, lane, stop, responses)
+            if result is None:       # cancelled before headers arrived
+                return
+            st, data, ms, resp = result
+            if stop.is_set():        # another upstream already won
+                return
             if 200 <= st < 300:
                 _record(u, True)
                 with _lock:
                     _stats[u]["last_ms"] = int(ms)
+                stop.set()
+                # Close the losers' sockets so their blocked read() aborts.
+                # This is NOT a failure of those upstreams — they were
+                # cancelled because a peer won the race.
+                with _lock:
+                    for other in responses:
+                        if other is not resp:
+                            try:
+                                other.close()
+                            except Exception:
+                                pass
                 q.append((u, st, data))
             else:
                 _record(u, False)
         except Exception:
-            _record(u, False)
+            if not stop.is_set():    # ignore cancellation-driven exceptions
+                _record(u, False)
 
     def spawn(u):
         t = threading.Thread(target=worker, args=(u,), daemon=True)
@@ -146,6 +182,14 @@ def _race(path, body, lane=None):
             for u in _alive_deferred():
                 spawn(u)
         time.sleep(0.02)
+    # No winner: abort everything still in flight before returning 504.
+    stop.set()
+    with _lock:
+        for r in responses:
+            try:
+                r.close()
+            except Exception:
+                pass
     for t in threads:
         t.join(timeout=0.1)
     return (None, 504, b'{"error":"no upstream answered in time"}')
@@ -156,7 +200,7 @@ def _first(path, body, lane=None):
     deferred) until one answers."""
     for u in _alive_upstreams() + _alive_deferred():
         try:
-            st, data, _ = _call(u, path, body, lane)
+            st, data, _, _ = _call(u, path, body, lane)
             if 200 <= st < 400:
                 _record(u, True)
                 return u, st, data

@@ -104,6 +104,27 @@ class DeferTier(unittest.TestCase):
         self.assertEqual(st, 200)
         self.assertEqual(u, fast_p)
 
+    def test_losing_call_is_cancelled_not_counted_as_failure(self):
+        """A race loser must not burn TIMEOUT seconds of upstream CPU nor
+        be recorded as a failed call (the latter tripped dead-cooldown on
+        con01 after 3 lost races and took a healthy upstream out of the
+        pool). Regression for the bge-m3 timeout storm."""
+        fast_p, hits_p = _stub(0.05, 1)
+        slow_p2, hits_p2 = _stub(3.0, 9)
+        self._wire([fast_p, slow_p2], [])
+        t0 = time.time()
+        u, st, _ = shim._race("/api/embed", b"{}")
+        elapsed = time.time() - t0
+        self.assertEqual(st, 200)
+        self.assertEqual(u, fast_p)
+        self.assertLess(elapsed, 1.0, "race waited for the losing call")
+        # Give the loser's worker a moment to unwind and record its result.
+        time.sleep(0.3)
+        self.assertEqual(shim._stats[slow_p2]["fails"], 0,
+                         "cancelled loser was counted as an upstream failure")
+        self.assertEqual(shim._stats[slow_p2]["consec"], 0)
+        self.assertEqual(shim._stats[fast_p]["wins"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
