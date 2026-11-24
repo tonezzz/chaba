@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: review
-updated: 2026-11-24 18:09
+column: backlog
+updated: 2026-11-24 20:07
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -306,9 +306,18 @@ comms:
 - at: 2026-11-24 18:09
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261118-213418-goal-improve-devnest-throughpu'
+- at: 2026-11-24 20:07
+  from: tony
+  text: 'triage (design): v2 spec is drafted (monitor/recommend/guarded modes, allowlisted restarts only) but the
+    dispatch is not landed — action.status=done, verified=False, merge-sweep 2026-11-24 18:09: no served checkout
+    for repo ''?''. v1 nest-mgr on tony-dell is stopped (08:03 today). Holding in backlog with evidence: re-route
+    the dispatch with an explicit repo and decide monitor vs guarded pilot.'
+- at: 2026-11-24 20:07
+  from: tony
+  text: put on hold
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: codemod
   lane_source: kw
   runner: tony-omen
