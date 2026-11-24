@@ -1,7 +1,7 @@
 id: ada-scenario-smoke-timeout-truncation
 title: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
 column: doing
-updated: 2026-11-24 21:45
+updated: 2026-11-24 21:55
 priority: medium
 tags:
 - ada
@@ -233,6 +233,13 @@ comms:
     repo, sequential, :8199 lock). 47 smoke scenarios now. Plan: raise TimeoutStartSec (unit lives in chaba), keep
     hourly timer (lock self-throttles), ship scenario-report.py last-fail-first + budget patch under docs/kb/patches/
     since ada-voice is outside this worktree.'
+- at: 2026-11-24 21:55
+  from: devin
+  text: 'DONE (not deployed). Commit 9c58d30: smoke.container TimeoutStartSec 2700->7800 + SCENARIO_BUDGET_S=7000
+    env; README scheduling updated. ada-voice side shipped as verified patch docs/kb/patches/ada-scenario-report-truncation-20261124.patch
+    (worst-first fail/flaky/never-seen ordering + --budget-s graceful stop) — apply in ada-voice repo then re-run
+    install.sh on idc03 to activate. Rejected parallelism (shared session/vcast contamination + :8199 lock by design);
+    tier-split deferred. Job doc: docs/'
 action:
   type: dispatch
   status: running
