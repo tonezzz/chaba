@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: review
-updated: 2026-11-24 22:54
+updated: 2026-11-24 23:08
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -293,6 +293,9 @@ comms:
   text: 'pub milestone: card verified: boards-502-residuals-dns-h3-access on idc03 — dispatch/20261124-152510-see-rca-doc-part-1-harden-idc0
     already in origin/master — verified — held in review (open reque — dispatch/20261124-152510-see-rca-doc-part-1-harden-idc0
     already in origin/master — verified — held in review (open request(s) [''h3-forensic-access-plesk-panel''] [evt-67f129ae01ee2a46]'
+- at: 2026-11-24 23:08
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''h3-forensic-access-plesk-panel''] block close)'
 action:
   type: dispatch
   status: done
@@ -304,6 +307,8 @@ action:
   result: 'exit=0 `dispatch-outcome-20261124-152510-see-rca-doc-part-1-harden-idc0.md` at the worktree root. | devin-task-20261124-152510-see-rca-doc-part-1-harden-idc0.service:
     Consumed 50.016s CPU time over 23min 8.302s wall clock time, 433.1M memory peak.'
   verified: true
+  sweep:
+    close_held: 2026-11-24 23:08
 claim:
   since: 2026-11-24 22:24
 requests:
