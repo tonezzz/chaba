@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
-column: doing
-updated: 2026-11-24 20:03
+column: review
+updated: 2026-11-24 20:05
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -277,18 +277,38 @@ comms:
     evidence gate + JOB_TRANSITIONS in do_job, milestone-no-done job sink, GET /nest-jobs, read-only nest-job-reconcile.py,
     plus attempt-2 fixes (meta.status bypass closed, queue-mgr done evidence). Outcome doc: dispatch-outcome-20261124-192544-review-and-harden-the-runtime-.md;
     SSOT trail: docs/ssot/jobs/nest/2026-11-24-nest-job-done-evidence-gate.yml. Repo landing only — board-api depl'
+- at: 2026-11-24 20:05
+  from: tony-macbook
+  text: 'finished (ok): exit=0 patch-outcome-20261124-192544-review-and-harden-the-runtime-.md`; card comms posted.
+    | devin-task-20261124-192544'
+- at: 2026-11-24 20:05
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 20:05
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-192544-review-and-harden-the-runtime-
+    is 95 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 20:05
+  from: chaba
+  text: pushed dispatch/20261124-192544-review-and-harden-the-runtime- to origin
+- at: 2026-11-24 20:05
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 20:05
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   attempts: 2
-  result: 'exit=0 ice: No such file or directory | devin-task-20261124-165943-review-and-harden-the-runtime-.service:
-    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-165943-review-and-harden-the-runtime-.service:
-    No such file or directory'
+  result: 'exit=0 patch-outcome-20261124-192544-review-and-harden-the-runtime-.md`; card comms posted. | devin-task-20261124-192544-review-and-harden-the-runtime-.service:
+    Consumed 19min 1.196s CPU time over 37min 51.019s wall clock time, 475.9M memory peak.'
   sweep:
     conflict_sig: 5033b78e0cb6|docs/kb/board-api-write-door.md
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-24 19:25
 review_kind: verify
