@@ -1369,14 +1369,24 @@ jobs:
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/lessons-audit.py
-  note: 'card lesson-polish-nest-pack (OPS-0829) + AUD-0831 — deterministic
-    scan of the lesson CPT against policy (R1 review dates, R3 split-rule
-    pointers, R4 series hubs). Prints + persists an audit JSON; a violation
-    over threshold should queue the Fable polish pass. Runs 10 min after the
-    lessons-due refresh so both education surfaces are current. Requires
-    scripts/lessons-audit.py in the served checkout. Kept running alongside
-    chaba-education-report (2026-10-27) — the consolidated report is the
-    observability layer, this stays the standalone component + its control.'
+  note: 'card lesson-polish-nest-pack (OPS-0829) + AUD-0831 +
+    lesson-audit-scheduled — deterministic scan of the lesson store
+    against policy (R1 review dates, R3 split-rule pointers, R4 series
+    hubs, +R2/R5 report-only). Parallel op:get fetch (8 workers) fixed
+    the recurring 10m timeouts; report lands in
+    docs/reports/lesson-audit/{<date>,latest}.json (kanban-commit
+    sweeps the dir) + a one-line comms on card lesson-audit-scheduled.
+    When R1/R3/R4 flags exist the script re-arms the standing
+    lesson-polish-run dispatch card (POST /card on_exists=queue,
+    executor=devin) — the Fable polish pass — with the flagged list in
+    card comms; flag-signature dedup + 20h min-interval bound re-arms
+    (LESSON_POLISH_* env knobs; runbook
+    docs/ssot/jobs/education/2026-11-24-lesson-audit-schedule.yml).
+    Runs 10 min after the lessons-due refresh so both education
+    surfaces are current. Requires scripts/lessons-audit.py in the
+    served checkout. Kept running alongside chaba-education-report
+    (2026-10-27) — the consolidated report is the observability layer,
+    this stays the standalone component + its control.'
 - id: chaba-education-report
   name: Education consolidated maintenance report (audit+drift+due+trend)
   host: idc03

@@ -40,7 +40,7 @@ REPO="${KANBAN_REPO:-$HOME/CascadeProjects/chaba-tony-dell}"
 # (dev-system assess, host-roles writers) whose files collide on every
 # autostash pop — a narrow kanban-only regex left those "for manual
 # merge" and wedged the tree + spammed the ops-guard card each cycle.
-GENERATED_RE='^(docs/ssot/|reports/SSOT_OPTIMIZATION_WARNINGS\.json$|stacks/web/public/apps/board/|docs/reports/education-maintenance/)'
+GENERATED_RE='^(docs/ssot/|reports/SSOT_OPTIMIZATION_WARNINGS\.json$|stacks/web/public/apps/board/|docs/reports/education-maintenance/|docs/reports/lesson-audit/)'
 PUSH_RETRIES="${KANBAN_PUSH_RETRIES:-3}"
 SAFE_PULL="$(cd "$(dirname "$0")" && pwd)/../git-safe-pull.sh"
 cd "$REPO" || exit 1
@@ -233,7 +233,7 @@ git_lock_retry() {
     return 1
 }
 
-for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/; do
+for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/ docs/reports/lesson-audit/; do
     [ -d "$d" ] && git_lock_retry git add "$d" >/dev/null 2>&1 || true
 done
 if git diff --cached --quiet; then
