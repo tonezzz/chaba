@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 15:37
+updated: 2026-11-24 15:38
 tags:
 - hardware
 - omen
@@ -204,6 +204,14 @@ comms:
     proven clone; NO spare plug — all 4 in use. Staged full 85/45 automation + failsafes + runbooks in docs/ssot/jobs/home-assistant/2026-11-24-omen-battery-charge-band.yml
     (commit 91b39c3 on dispatch branch). Board request omen-charge-policy-a-vs-b raised, suggested A. Also flagged:
     mac'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-151835-goal-keep-omen-battery-in-40-8 no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-151835-goal-keep-omen-battery-in-40-8 on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -211,6 +219,9 @@ action:
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 15:38
+    dirty: 1
 claim:
   since: 2026-11-24 15:17
 requests:
