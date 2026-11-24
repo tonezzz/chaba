@@ -1,7 +1,7 @@
 id: opencode-handoff-packet-scaffold-save
 title: OpenCode handoff-packet scaffold + save helper
 column: doing
-updated: 2026-11-24 23:17
+updated: 2026-11-24 23:20
 priority: medium
 tags:
 - opencode
@@ -193,6 +193,13 @@ comms:
   text: '[devin-dispatch] Prior A delivery (/handoff-packet command) is merged. Closing remaining gap: adding scripts/chaba/handoff-packet.py
     scaffold+validate helper (one-step prefilled as_of, required-field check) and wiring concrete save paths into
     the command.'
+- at: 2026-11-24 23:20
+  from: devin
+  text: '[devin-dispatch] Done on dispatch/20261124-231605 (commits 862ca1962f + outcome doc). Prior /handoff-packet
+    command was already merged; this adds scripts/chaba/handoff-packet.py — `scaffold` emits the canonical template
+    with as_of prefilled (--objective/--state/--refs/--out), `validate` enforces all 8 required fields and rejects
+    placeholder where_filed. Command + session-capture sweep docs (opencode command/instructions, devin skill) now
+    point at the helper and name concrete save sinks: OpenCham'
 action:
   type: dispatch
   status: running
