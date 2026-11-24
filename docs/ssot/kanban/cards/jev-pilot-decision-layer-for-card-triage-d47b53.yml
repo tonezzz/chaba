@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
-column: doing
-updated: 2026-11-24 16:30
+column: review
+updated: 2026-11-24 16:37
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -253,12 +253,42 @@ comms:
     FINDINGS: jev-student choice/score still dead (answer@0.0 x10, noul-collapsed score); student-1b (omen:8778
     gemma-3-1b) choice works but argmax collapses to devin 9/10; priority score degenerate; prod kw classifier false-positived
     3 cards to free_lane on broad substring '
+- at: 2026-11-24 16:37
+  from: tony-dell
+  text: 'finished (ok): exit=0 oc serve down again; real Jev API still keyless (KNB-0822). | devin-task-20261124-155244-phase-1-today-run-jev-st'
+- at: 2026-11-24 16:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:37
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-155244-phase-1-today-run-jev-student-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 16:37
+  from: chaba
+  text: pushed dispatch/20261124-155244-phase-1-today-run-jev-student- to origin
+- at: 2026-11-24 16:37
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 53.5s)
+- at: 2026-11-24 16:37
+  from: chaba
+  text: auto-merged dc6fd4d4 (dispatch/20261124-155244-phase-1-today-run-jev-student-) → origin/master
+- at: 2026-11-24 16:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 oc serve down again; real Jev API still keyless (KNB-0822). | devin-task-20261124-155244-phase-1-today-run-jev-student-.service:
+    Consumed 2min 23.244s CPU time over 39min 29.524s wall clock time, 895.7M memory peak, 705.3M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 15:52
+review_kind: verify
