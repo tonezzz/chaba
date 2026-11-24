@@ -1,7 +1,7 @@
 id: audit-miss-education-lesson-write-timeout
 title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
 column: doing
-updated: 2026-11-24 17:17
+updated: 2026-11-24 17:28
 brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
   the supported board-api writer.
 priority: medium
@@ -195,6 +195,13 @@ comms:
     Education procedure added via board-api lesson write; "Only en/th supported" was never the MDDB store — verify
     the store layer first; ; lp.build does a repo walk + a 10s-timeout MDDB bank fetch on first call — unit t; [confirm-token-retry-expiry]
     filed from transcript audit — tw'
+- at: 2026-11-24 17:28
+  from: devin
+  text: 'retry in progress: board-api /lesson reads healthy (op:list/op:get respond; store is now wiki-primary Education:
+    namespace post-2026-11-06 cutover, WP CPT frozen — the 502 path no longer applies). Lesson absent (op:get not
+    found). Reconstructing content from durable artifacts in dd8a1684d2 (runbook + devnest-tab job + mutate script).
+    Side finding: that commit is stranded on unmerged branch fix/ada-devnest-tab-render — runbook/procedures entry
+    not on master; live dashboard fix did land (snapshot '
 action:
   type: dispatch
   status: running
