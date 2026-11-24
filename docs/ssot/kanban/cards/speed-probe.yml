@@ -1,6 +1,6 @@
 id: speed-probe
 title: speed probe
-column: backlog
+column: doing
 updated: 2026-11-24 07:58
 brief: probe
 ref: OPS-0812
@@ -414,6 +414,9 @@ comms:
 - at: 2026-11-24 07:58
   from: chaba
   text: 'idc03 defers: disk headroom 1388MB < 2048MB floor'
+- at: 2026-11-24 07:58
+  from: tony-macbook
+  text: claimed
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -449,7 +452,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
@@ -460,9 +463,10 @@ action:
   last_failure: 'exit=1 k-20261123-142345-redeploy-the-drifted-runner-ag.service: Failed with result ''exit-code''.
     | devin-task-20261123-142345-redeploy-the-drifted-runner-ag.service: Consumed 11.083s CPU time over 11min 15.675s
     wall clock time, 426.1M memory peak.'
-  attempts: 0
+  attempts: 1
+  runner: tony-macbook
 claim:
-  since: 2026-11-23 22:07
+  since: 2026-11-24 07:58
 spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and tony-dell)
   by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent
   on each respective host. Verify that each host successfully runs the updated runner-agent without drift errors.
