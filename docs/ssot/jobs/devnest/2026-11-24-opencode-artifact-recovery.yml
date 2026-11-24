@@ -1,0 +1,54 @@
+# Job: recover non-durable opencode artifact from session DB
+# (AUD-1123 / card audit-oc-artifact-not-durable-qgxpgcc5)
+title: Recover opencode artifact_not_durable misses via opencode.db
+subtitle: >-
+  Runbook for audit-oc-artifact-not-durable-* cards: when an opencode
+  dispatch wrote an artifact in a transient worktree whose merge was
+  held, the full file content is still recoverable from the session's
+  SQLite store — no re-run needed.
+icon: terminal
+date: 2026-11-24
+card: audit-oc-artifact-not-durable-qgxpgcc5
+ref: AUD-1123
+session: "dispatch-wt-20261124-220505-auto-filed-by-opencode-session (tony-omen)"
+status: done
+
+what:
+  problem: >-
+    ses_e70680598ffe0xrvVKQGxPgCc5 (2026-10-31, idc02,
+    dispatch-wt-devnest-fl-pilot-artwrite3-1793410460) wrote
+    docs/reports/opencode-profile-inventory-2026-10-30.md; the executor
+    verifier failed, merge was held, the worktree was swept dirty, and
+    the 2026-11-07 session audit flagged artifact_not_durable.
+  recovery: >-
+    The opencode session DB on the runner host keeps every tool call
+    verbatim. The `write` part's state.input.content IS the file.
+  steps:
+    - "Find the session row in evals/opencode-lane/reports/<date>-session-audit.json
+      (session_id, directory=worktree host, mutations.writes[].path)."
+    - "On the host that ran the session (the `directory` path's host —
+      here idc02):"
+    - "python3 + sqlite3 uri mode=ro on ~/.local/share/opencode/opencode.db;
+      select data from part where session_id='<ses_...>' — pick the part
+      whose type=tool and tool=write/edit; content is at
+      state.input.content (write) or the patch payload (edit)."
+    - "scp/cat the content into the declared repo path on a dispatch
+      branch and commit — provenance note goes in the commit message."
+  landed: "docs/reports/opencode-profile-inventory-2026-10-30.md @ 7c82e24713d
+    (verbatim recovered content, 1832 bytes)"
+
+caveats:
+  - "Recovered content is what the model wrote — verify against current
+    profiles before relying on field values; the 2026-10-30 inventory
+    predates profiles added since (gs-capture-eval, ops-remote-read,
+    branch-code-supervised-pilot)."
+  - "sqlite3 CLI is not installed on idc02 — use python3's sqlite3
+    module with uri mode=ro (DB is 0600, ~200MB)."
+  - "If the session ran `edit`/`patch` instead of `write`, the part
+    payload differs — check state.input keys before extracting."
+  - "Sessions older than the DB retention or on wiped hosts are
+    unrecoverable this way; then regenerate from the card spec."
+
+verify: "git log --all -- docs/reports/opencode-profile-inventory-2026-10-30.md
+  shows the landing commit; file frontmatter report_id matches the
+  declared artifact path in the audit JSON."
