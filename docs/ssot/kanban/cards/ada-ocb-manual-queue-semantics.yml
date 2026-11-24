@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
 column: backlog
-updated: 2026-11-24 19:50
+updated: 2026-11-24 20:32
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -159,6 +159,13 @@ comms:
     plus human_only=true/dispatchable=false; non-manual queue picks keep the exact previous ''queued for dispatch''
     shape and response fields. Manual cards remain selectable with issued selection_token; ada_plan confirmation
     + token gates untouched and covered by a new'
+- at: 2026-11-24 20:32
+  from: chaba
+  text: 'TIDY-UP / remaining follow-up: the fix commit 92f2355 is merged on ada-voice origin/main (now c9d0f30;
+    verified ancestor), and the isolated worktree ada-voice-wt-ada-0189 + its branch were removed after push. The
+    chaba KB commit carrying the two verified findings was rebased onto current master and pushed (df8180908e);
+    the stale runner-auto-*.yml producer drift in this worktree was discarded because origin/master already holds
+    the authoritative triaged versions (Tony''s 19:44 triage). NOT DONE an'
 review_kind: verify
 action:
   status: idle
