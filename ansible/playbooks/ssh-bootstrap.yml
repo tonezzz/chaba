@@ -1,0 +1,102 @@
+---
+# ssh-bootstrap.yml — seed hashed known_hosts on THIS controller (SYS-0032).
+#
+# Replaces the hand-maintained `ssh-keyscan | xargs` snippet in ansible/README.md
+# and docs/kb/new-host-onboarding.md §2 for a new controller. Uses the
+# ansible.builtin.known_hosts module (idempotent, hash_host=yes), so
+# host_key_checking / StrictHostKeyChecking=yes stays ON — never weakened.
+#
+# Primary tailnet IPs are gated. Declared LAN aliases (tony-dell-lan) are
+# best-effort: a sleeping/off-LAN box must not fail the bootstrap.
+# Retired idc01 (disabled group) is never scanned. kk-mac is excluded while
+# its key seeding is partial (ssh_enabled: false).
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ssh-bootstrap.yml --check --diff   # preview
+#   ansible-playbook playbooks/ssh-bootstrap.yml                  # seed
+#   ansible-playbook playbooks/ssh-mesh-verify.yml                # gate
+
+- name: Bootstrap hashed known_hosts on this controller
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    ssh_known_hosts_path: "{{ lookup('env', 'HOME') }}/.ssh/known_hosts"
+    ssh_boot_hosts: >-
+      {{ groups['all'] | difference(groups['disabled'] | default([])) }}
+
+  tasks:
+    - name: Resolve primary tailnet targets (enabled hosts only)
+      ansible.builtin.set_fact:
+        ssh_primary_targets: >-
+          {{ ssh_primary_targets | default([])
+             + [hostvars[item].ansible_host] }}
+      loop: "{{ ssh_boot_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when: hostvars[item].get('ssh_enabled', true) | bool
+
+    - name: Resolve declared LAN aliases (best-effort)
+      ansible.builtin.set_fact:
+        ssh_lan_targets: >-
+          {{ ssh_lan_targets | default([])
+             + [hostvars[item].ssh_lan_host] }}
+      loop: "{{ ssh_boot_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when:
+        - hostvars[item].get('ssh_enabled', true) | bool
+        - hostvars[item].get('ssh_lan_host', '') | length > 0
+
+    - name: Show seed scope
+      ansible.builtin.debug:
+        msg: >-
+          primary={{ ssh_primary_targets | unique | join(', ') }}
+          lan(best-effort)={{ ssh_lan_targets | unique | join(', ') }}
+
+    - name: Seed hashed host keys for primary targets
+      ansible.builtin.known_hosts:
+        name: "{{ item }}"
+        state: present
+        hash_host: true
+        path: "{{ ssh_known_hosts_path }}"
+      loop: "{{ ssh_primary_targets | unique }}"
+      loop_control:
+        label: "{{ item }}"
+      register: seed_primary
+      failed_when: false
+
+    - name: Seed hashed host keys for LAN aliases (best-effort)
+      ansible.builtin.known_hosts:
+        name: "{{ item }}"
+        state: present
+        hash_host: true
+        path: "{{ ssh_known_hosts_path }}"
+      loop: "{{ ssh_lan_targets | unique }}"
+      loop_control:
+        label: "{{ item }}"
+      register: seed_lan
+      failed_when: false
+
+    - name: Report LAN seed skips
+      ansible.builtin.debug:
+        msg: "LAN alias {{ item.item }} unavailable — skipped (not a gate): {{ item.msg | default('') }}"
+      loop: "{{ seed_lan.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.failed | default(false)
+
+    - name: Assert every primary host key was seeded
+      ansible.builtin.assert:
+        that: not (item.failed | default(false))
+        fail_msg: "known_hosts seed failed for {{ item.item }}: {{ item.msg | default('') }}"
+        success_msg: "hashed host key present: {{ item.item }}"
+      loop: "{{ seed_primary.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Confirm host key checking stays enabled
+      ansible.builtin.debug:
+        msg: >-
+          hashed entries written to {{ ssh_known_hosts_path }};
+          StrictHostKeyChecking=yes unchanged — verify with ssh-mesh-verify.yml

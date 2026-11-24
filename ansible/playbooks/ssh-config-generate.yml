@@ -1,0 +1,87 @@
+---
+# ssh-config-generate.yml — write the declared SSH aliases on THIS controller
+# (SYS-0032 slice 2). Companion to the read-only ssh-mesh-verify.yml gate.
+#
+# Scope discipline:
+#   - blockinfile owns ONE marked block at BOF; every other stanza in
+#     ~/.ssh/config (github-*, camwall-*, and any operator additions) is
+#     preserved byte-for-byte.
+#   - idc01 is excluded via the `disabled` group — never generated, never
+#     targeted. kk-mac IS generated (its missing User is the drift being
+#     fixed) but stays out of the reachability gate via ssh_enabled: false.
+#   - no secret/key material: only identity FILE PATHs from inventory.
+#   - mode 0600; a timestamped backup is kept before the first write.
+#
+# Always preview first:
+#   ansible-playbook playbooks/ssh-config-generate.yml --check --diff
+# Then apply:
+#   ansible-playbook playbooks/ssh-config-generate.yml
+# Verify afterwards:
+#   ansible-playbook playbooks/ssh-mesh-verify.yml   (kk-mac drift -> MATCH)
+
+- name: Generate the declared SSH config block on this controller
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    ssh_config_path: "{{ lookup('env', 'HOME') }}/.ssh/config"
+    ssh_config_backup: >-
+      {{ lookup('env', 'HOME') }}/.ssh/config.bak-{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}
+
+  tasks:
+    - name: Render the managed block
+      ansible.builtin.set_fact:
+        ssh_managed_block: "{{ lookup('template', 'ssh-config-stanzas.j2') }}"
+
+    - name: Guard — rendered block is controller-neutral and safe
+      ansible.builtin.assert:
+        that:
+          # built by concatenation so Ansible does not read it as a template
+          - "'{' ~ '{' not in ssh_managed_block"
+          - "'/home/' not in ssh_managed_block"
+          - "'Host idc01' not in ssh_managed_block"
+          - "'IdentitiesOnly yes' in ssh_managed_block"
+        fail_msg: >-
+          rendered block is not controller-neutral (absolute home path or
+          unresolved template) or includes retired idc01
+
+    - name: Print managed block fingerprint
+      ansible.builtin.debug:
+        msg: "writing managed block sha256={{ ssh_managed_block | hash('sha256') }}"
+
+    - name: Stat the current config
+      ansible.builtin.stat:
+        path: "{{ ssh_config_path }}"
+      register: ssh_cfg_stat
+
+    - name: Back up the current config before the first write
+      ansible.builtin.copy:
+        src: "{{ ssh_config_path }}"
+        dest: "{{ ssh_config_backup }}"
+        mode: preserve
+        remote_src: true
+      when:
+        - ssh_cfg_stat.stat.exists
+        - not (ansible_check_mode | bool)
+
+    - name: Write the managed block (all other stanzas preserved)
+      ansible.builtin.blockinfile:
+        path: "{{ ssh_config_path }}"
+        block: "{{ ssh_managed_block }}"
+        marker: "# {mark} SYS-0032 MANAGED SSH STANZAS"
+        insertbefore: BOF
+        create: true
+        mode: '0600'
+      diff: true
+
+    - name: Post-write fingerprint of the on-disk config
+      ansible.builtin.shell: |
+        set -eu
+        sha256sum '{{ ssh_config_path }}' | cut -d' ' -f1
+      register: ssh_cfg_sha
+      changed_when: false
+      when: not (ansible_check_mode | bool)
+
+    - name: Report on-disk config fingerprint
+      ansible.builtin.debug:
+        msg: "{{ ssh_config_path }} sha256={{ ssh_cfg_sha.stdout | default('n/a (check mode)') }}"

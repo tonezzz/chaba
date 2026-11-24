@@ -147,21 +147,21 @@ checks the key against the *IP*, so each controller needs the IP in
 `~/.ssh/known_hosts`. Existing hashed entries made by ssh'ing a hostname
 do **not** match (`|1|…` hashes are keyed on the exact name/IP asked for).
 
-Seed all inventory IPs once per controller:
+Seed all inventory IPs once per controller with the bootstrap playbook
+(replaces the old hand-written `ssh-keyscan` snippet):
 
 ```bash
 cd ansible
-ansible-inventory --list \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin)
-print("\n".join(sorted({v["ansible_host"] for g in d.values()
-  for v in (g.get("hosts") or {}).values()
-  if isinstance(v, dict) and "ansible_host" in v})))' \
-  | xargs -I{} sh -c 'ssh-keyscan -H {} >> ~/.ssh/known_hosts 2>/dev/null'
+ansible-playbook playbooks/ssh-bootstrap.yml --check --diff  # preview
+ansible-playbook playbooks/ssh-bootstrap.yml                 # seed hashed IPs
 ```
 
-(`ssh-keyscan -H` hashes the IP — it still matches, and known_hosts stays
-non-enumerable.) The controller's own host key is not needed: self is
-probed via `ansible_connection=local`, not ssh.
+It uses `ansible.builtin.known_hosts` with `hash_host: true` — hashed IPs
+still match and known_hosts stays non-enumerable. Primary tailnet IPs are
+gated; declared LAN aliases (`tony-dell-lan`) are best-effort so an off-LAN
+box does not fail a bootstrap. Retired idc01 is never scanned. The
+controller's own host key is not needed: self is probed via
+`ansible_connection=local`, not ssh.
 
 ## SSH access contract (read-only verifier)
 
@@ -170,9 +170,29 @@ probed via `ansible_connection=local`, not ssh.
 `ssh_identity_file`, `ssh_network`, `ssh_enabled`, `ssh_push_chaba`,
 `ssh_push_repo_path`) against the live mesh. (`ssh_push_repo_path` is a
 verifier-specific path so it can stay in `~` form — unlike `chaba_repo_path`,
-which `session_capture.yml` renders verbatim into systemd units.) It never writes: `ssh-mesh-sync.sh`
-remains the writer of `authorized_keys`/`known_hosts`. No private key is read
-into Ansible — only the pubkey file named by `ssh_identity_file`.
+which `session_capture.yml` renders verbatim into systemd units.) The
+verifier never writes: `ssh-mesh-sync.sh` remains the writer of
+`authorized_keys`, while `ssh-bootstrap.yml` owns controller `known_hosts`.
+No private key is read into Ansible — only the pubkey path named by
+`ssh_identity_file`.
+
+Generate the controller's aliases from the same declarations:
+
+```bash
+cd ansible
+ansible-playbook playbooks/ssh-config-render.yml              # read-only block + sha256
+ansible-playbook playbooks/ssh-config-generate.yml --check --diff  # preview
+ansible-playbook playbooks/ssh-config-generate.yml            # write (keeps a .bak-*)
+```
+
+`blockinfile` owns one marked block at the top of `~/.ssh/config`; all other
+stanzas (github-*, camwall-*, operator additions) are preserved byte-for-byte
+and the file is tightened to mode 0600. The rendered block is a pure inventory
+function (literal `~` identity paths), so it is byte-identical on every
+controller — verified from tony-omen, tony-dell and idc02 at SHA
+`c126240bd94e41182015417520594b840da724e4631a0b7e40c35bada6a37e14`. idc01 is
+excluded via the `disabled` group; kk-mac is generated (fixing its old missing
+`User`) while staying out of the reachability gate via `ssh_enabled: false`.
 
 ```bash
 cd ansible
@@ -186,8 +206,8 @@ Four legs are asserted: BatchMode reachability, this controller's declared
 identity in the host's `authorized_keys`, a live `git push --dry-run` for
 every host declaring `ssh_push_chaba`, and `ssh_user` == effective
 `ansible_user`. A fifth check — `ssh -G <alias>` user vs declared user — is
-**reported only** in this slice, because kk-mac's `~/.ssh/config` stanza has
-no `User` line (the generated-config slice will reconcile it). Pass creds
+reported; after running `ssh-config-generate.yml` it reads `MATCH` for kk-mac,
+which had no `User` line before generation. Pass creds
 were probed 2026-11-24 on idc02, idc03, tony-omen, tony-dell and mn01 before
 declaring them. Retired hosts (`ssh_enabled: false`, i.e. idc01) are always
 excluded. Use `--limit` for sleeping laptops; `ssh_strict=false` downgrades

@@ -1,0 +1,32 @@
+{# SYS-0032 / ssh-access-ansible-standard -----------------------------------
+   Generated SSH aliases for the invoking controller.
+
+   Purity rule: this template is a function of inventory ONLY. IdentityFile
+   stays a literal ~ path and no hostname/home-path fact is used, so the
+   rendered block is byte-identical on every controller. That is what makes
+   the two-controller proof meaningful.
+
+   Host set = all inventory hosts MINUS the `disabled` group (retired idc01).
+   kk-mac is intentionally INCLUDED here: ssh_enabled=false excludes it from
+   the reachability gate only (partial key seeding), while its alias still
+   needs the declared User/IdentityFile to reconcile the long-standing drift.
+--------------------------------------------------------------------------- #}
+{% set ssh_alias_hosts = groups['all'] | difference(groups['disabled'] | default([])) | sort %}
+{% for host in ssh_alias_hosts %}
+Host {{ host }}
+    HostName {{ hostvars[host].ansible_host }}
+    User {{ hostvars[host].ssh_user }}
+    Port {{ hostvars[host].ssh_port }}
+    IdentityFile {{ hostvars[host].ssh_identity_file }}
+    IdentitiesOnly yes
+
+{% endfor %}
+{% for host in ssh_alias_hosts if hostvars[host].get('ssh_lan_host', '') %}
+Host {{ host }}-lan
+    HostName {{ hostvars[host].ssh_lan_host }}
+    User {{ hostvars[host].ssh_user }}
+    Port {{ hostvars[host].ssh_port }}
+    IdentityFile {{ hostvars[host].ssh_identity_file }}
+    IdentitiesOnly yes
+
+{% endfor %}
