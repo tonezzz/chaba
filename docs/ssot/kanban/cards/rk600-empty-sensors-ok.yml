@@ -6,7 +6,7 @@ brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned 
 column: backlog
 priority: medium
 program: ada-tools
-updated: 2026-11-24 12:08
+updated: 2026-11-24 14:59
 tags:
 - tool-contract
 - audit-2026-10-08
@@ -153,9 +153,21 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 14:59
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-24 14:59
+  from: tony
+  text: queued for processing
 ref: OPS-0222
 spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and station offline/unreachable when
   the sensors dictionary is empty, following the fix pattern seen in backend/tool_runner/cms.py get on miss. Host/repo:
   tony-dell, chaba. Constraints: Apply the exact error return structure and pattern from the CMS tool runner reference.
   Testable done-condition: A unit or integration test asserts that calling get_rk600_weather with empty sensors
   yields ok:false and the specified offline message instead of ok:true.'
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
