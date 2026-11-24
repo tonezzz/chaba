@@ -1,7 +1,7 @@
 id: wiki-extension-control-plane
 title: Controlled MediaWiki extension management for Ada/OpenCode
 column: doing
-updated: 2026-11-24 19:25
+updated: 2026-11-24 19:42
 brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
   without arbitrary Springboard/API or shell access.
 priority: high
@@ -211,6 +211,13 @@ comms:
     SLICE 1 DONE — verifier first (per answered scope ; [wiki-page-door-infrastructure-namespace] [verify-fail]
     Review pass 2026-11-23 (; "Only en/th supported" was never the MDDB store — verify the store layer first; ;
     [ada-benchmark-coverage-scenarios-for-kan-152a4f] offline cov'
+- at: 2026-11-24 19:42
+  from: devin
+  text: 'control plane hardened in dispatch worktree: /wiki/extension now requires confirm=true on mutations, captures
+    Special:Version+extension table before/after, writes durable receipts (~/.local/state/board-api-wiki-ext/),
+    fails honestly on unverified results. 9 new tests green + selftest ok. LIVE FINDING: deployed Springboard rejects
+    every sbname (Unrecognized value) — $wgSpringboardURL has no MW 1.46 recommended YAML (CanastaWiki ships 1.39/1.43/1.44/1.47
+    only); needs LocalSettings fix (point to 1.'
 action:
   type: dispatch
   status: running
