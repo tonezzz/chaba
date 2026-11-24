@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
 column: review
-updated: 2026-11-24 15:23
+updated: 2026-11-24 15:41
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -249,6 +249,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-151854-shutter-control-ui-armed-gate- on tony-macbook still
     dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 15:41
+  from: tony
+  text: 'answered rk600-wind-unit-20261124: Relabel both to m/s (recommended — no value changes; 12.0 threshold
+    then = 12 m/s ≈ 23kt storm-close)'
+- at: 2026-11-24 15:41
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -269,7 +276,7 @@ requests:
     labeled kn but the scaled value is m/s (raw 772 -> 7.72 shown as kn; really ~15kt). Pick the fix. (2) MOTORS
     — are the shutter motors repaired yet? If yes, next step is the manual smoke (arm helper, flip Shutter Command,
     watch covers move).'
-  status: open
+  status: answered
   at: 2026-11-24 15:20
   from: devin
   options:
@@ -277,4 +284,6 @@ requests:
   - Rescale to true knots (displayed numbers x1.944)
   - Leave mislabeled for now
   suggested: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
+  answer: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
 review_kind: verify
+awaiting_action: true
