@@ -1,6 +1,6 @@
 id: vcast-ha-screens
 title: vcast HA screens card — tony-ha/www/vcast-screens-card.js
-column: backlog
+column: doing
 priority: medium
 program: vcast
 area: ha-screens
@@ -14,7 +14,7 @@ spec: 'Sync tony-ha/www/vcast-screens-card.js screen list with the real cast-tar
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: Sync vcast-screens-card.js target list with the real cast registry per card spec; stage+verify on michael-dev,
     no live deploy.
   result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-071151-sync-tony-ha-www-vcast-screens.service:
@@ -23,7 +23,10 @@ action:
     session_gone: 2026-11-08 16:22
   lane: free_lane
   lane_source: kw
-updated: 2026-11-24 14:59
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+updated: 2026-11-24 15:00
 comms:
 - at: 2026-10-06 06:58
   from: tony
@@ -235,6 +238,10 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
-claim: {}
+- at: 2026-11-24 15:00
+  from: tony-omen
+  text: claimed
+claim:
+  since: 2026-11-24 15:00
 ref: HOM-0112
 review_kind: verify
