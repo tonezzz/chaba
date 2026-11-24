@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
-column: doing
-updated: 2026-11-24 09:39
+column: review
+updated: 2026-11-24 09:43
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -307,6 +307,19 @@ comms:
     15) — consistent with post-flip steady state. (2) Watch implemented: kanban-stats.py emits a lane x lane_source
     matrix on open cards every 15m via kanban-sync.timer -> system-report, so misroute cohorts stay visible without
     manual audits. (3) Misroute spot-check recorded on job doc do'
+- at: 2026-11-24 09:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 on3 scripts/board/kanban-stats.py --check` rendering the matrix on live card YAMLs.
+    | devin-task-20261124-090439-'
+- at: 2026-11-24 09:43
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 09:43
+  from: chaba
+  text: banked 281 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 09:43
+  from: chaba
+  text: pushed dispatch/20261124-090439-findings-2026-11-23-from-board to origin
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -346,7 +359,7 @@ requests:
   executed: 2026-11-24 queue (already running)
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   attempts: 2
@@ -354,10 +367,11 @@ action:
     stale_running: 2026-11-24 08:22
     no_repo: 2026-11-24 08:22
     close_held: 2026-11-24 08:53
-  result: 'exit=0 posted the final card comms. No push, no deploy — changes await dispatch close-out. | devin-task-20261124-080808-findings-2026-11-23-from-board.service:
-    Consumed 12min 54.168s CPU time over 28min 32.647s wall clock time, 626.5M memory peak.'
+  result: 'exit=0 on3 scripts/board/kanban-stats.py --check` rendering the matrix on live card YAMLs. | devin-task-20261124-090439-findings-2026-11-23-from-board.service:
+    Consumed 19min 39.718s CPU time over 34min 44.990s wall clock time, 934.5M memory peak.'
   model: litellm/gemini-3.5-flash-lite
   runner: tony-omen
+  verified: true
 claim:
   since: 2026-11-24 09:03
 review_kind: verify
