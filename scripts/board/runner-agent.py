@@ -1814,9 +1814,11 @@ def _self_stale_check() -> str:
             return ""
     except OSError:
         return ""
-    return (f"installed runner-agent drifted from repo {ref} — redeploy "
-            "it (scp scripts/board/runner-agent.py "
-            "<host>:~/.local/bin/runner-agent)")
+    return (f"installed runner-agent drifted from repo {ref} — "
+            "_self_update/sync-runner-tools converge it within a sync "
+            "cycle; persistent drift means a stale checkout or an "
+            "unpinned source (runner-tooling.manifest.json), not a "
+            "missing scp")
 
 
 def _claimable(card: dict) -> tuple:
@@ -5171,16 +5173,43 @@ def verdict_pass(st: dict) -> None:
         print(f"warn: verdict_pass failed: {e}")
 
 
+def _self_pin_ok(src: Path, data: bytes) -> bool:
+    """True when the repo copy's bytes match the runner_agent pin in
+    scripts/devin/runner-tooling.manifest.json — the same fail-closed
+    gate sync-runner-tools.sh applies. Without it the fast path
+    propagates whatever the checkout happens to hold: an unpinned tool
+    change, a dirty local edit, or a half-landed pin bump — states the
+    pin contract (and fleet-health's tool-pin audit) considers invalid.
+    2026-11-24: commit 7dc2187b7d changed this file without bumping the
+    pin; sync-runner-tools refused installs while _self_update happily
+    installed the unpinned build — the two paths disagreed about what
+    'current' means."""
+    manifest = (src.parents[2] / "scripts" / "devin"
+                / "runner-tooling.manifest.json")
+    try:
+        tools = json.loads(manifest.read_text()).get("tools") or {}
+    except Exception:
+        return False
+    for pin in tools.values():
+        if pin.get("source") == "scripts/board/runner-agent.py":
+            want = str(pin.get("sha256") or "")
+            return bool(want) and \
+                hashlib.sha256(data).hexdigest() == want
+    return False
+
+
 def _self_update():
     """~/.local/bin/runner-agent is a deploy SNAPSHOT — chaba-repo-sync
     pulls the repo but the binary never refreshes (OPS-1026: every host
     ran stale code until manual scp, and a stale snapshot claimed OPS-1021
     with a bug already fixed in the repo). When running AS the snapshot,
-    install a differing repo copy if it byte-compiles, then re-exec so
-    this pass runs the new code — no restart step, no fleet scp. The
+    install a differing PINNED repo copy if it byte-compiles, then re-exec
+    so this pass runs the new code — no restart step, no fleet scp. The
     fleet-level convergence for this and the sibling tools (devin-dispatch
     etc.) is scripts/devin/sync-runner-tools.sh at git-safe-pull's tail —
-    this remains the fast path for a running agent."""
+    this remains the fast path for a running agent, gated by the same
+    content pin so the two paths can never disagree about what is
+    installable."""
     me = Path(__file__).resolve()
     if me != Path.home() / ".local/bin/runner-agent":
         return                     # repo checkout/dev run — not the snapshot
@@ -5198,6 +5227,10 @@ def _self_update():
         if data == me.read_bytes():
             return
         compile(data, str(src), "exec")   # never self-install a broken copy
+        if not _self_pin_ok(src, data):
+            return            # unpinned/dirty checkout state — the pin
+                             # contract refuses it; keep the last pinned
+                             # snapshot until the pin lands
         me.write_bytes(data)
     except Exception:
         return                            # keep the known-good snapshot
