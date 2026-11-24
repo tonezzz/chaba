@@ -1,7 +1,7 @@
 id: audit-miss-ada-chaba-home-snapshot
 title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
-column: backlog
-updated: 2026-11-24 17:06
+column: doing
+updated: 2026-11-24 17:09
 brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
 priority: medium
 program: home-assistant
@@ -182,9 +182,15 @@ comms:
 - at: 2026-11-24 17:06
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 17:09
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-24 17:09
