@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
-column: backlog
-updated: 2026-11-24 14:09
+column: done
+updated: 2026-11-24 14:23
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -1219,6 +1219,15 @@ comms:
 - at: 2026-11-24 14:09
   from: tony-macbook
   text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:23
+  from: tony
+  text: 'TRIAGE 2026-11-24: closed on merged evidence. Lane comparison verdict posted 2026-10-29 16:54 — MLX-distilled
+    7-10s/shot vs PyTorch-MPS 80-81s/shot with better prompt adherence; winner pack landed on origin/master as 54ff3b4e03e
+    (scripts/colab/packs/kk-video-c9f99fee6146-preview-mac/pack.yml). Later failures were owner-window/gate churn,
+    not missing deliverables.'
+- at: 2026-11-24 14:23
+  from: tony
+  text: closed by tony
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -1308,7 +1317,7 @@ requests:
   answer: kk-mac is online now.
 action:
   type: dispatch
-  status: failed
+  status: done
   last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
   attempts: 2
   lane: codemod
@@ -1319,4 +1328,3 @@ action:
     failed_noted: 2026-11-17 21:25
 claim:
   since: 2026-11-20 21:12
-awaiting_action: true
