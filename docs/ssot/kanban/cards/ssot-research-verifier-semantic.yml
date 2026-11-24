@@ -1,7 +1,7 @@
 id: ssot-research-verifier-semantic
 title: ssot-research verifier passes fabricated answers when cited paths exist (OPS-1017 twin)
 column: doing
-updated: 2026-11-24 19:43
+updated: 2026-11-24 19:45
 spec: 'Evidence KNB-1029 (qwen3:8b, 2026-10-30): artifact answered kk-mac declarations with citations to AGENTS.md
   + ssot.mcp.yml — both paths exist so every check passed, but the answer was wrong (claimed /etc/hosts + MCP tools;
   truth is ssot.audit.hosts.yml + stacks/idc03/litellm/config.yaml). Citation-existence != answer-truth. Same class
@@ -194,6 +194,16 @@ comms:
 - at: 2026-11-24 19:43
   from: tony-omen
   text: claimed
+- at: 2026-11-24 19:45
+  from: chaba
+  text: started devin-task-20261124-194511-evidence-knb-1029-qwen3-8b-202 on tony-omen (dispatch)
+- at: 2026-11-24 19:45
+  from: chaba
+  text: 'primer injected 8 lesson(s): "worktree already exists" was a hard fail with no liveness/evidence check
+    — lane; member-device lanes (kk-mac) sleep without warning — bench gates fail closed; sc; no chaba-audit.service/chaba-audit-full.service
+    entries exist in ssot.audit.host; same-tag ollama on another tailnet host is a cheap same-weights sanity check
+    whe; [dispatch-triage-arbiter-label-pass] session up on tony-omen — prior branch neve; [gev-voice] primer injected
+    8 lesson(s): "The render_job writ'
 action:
   type: dispatch
   status: running
