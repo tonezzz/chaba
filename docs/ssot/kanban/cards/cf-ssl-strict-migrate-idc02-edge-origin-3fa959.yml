@@ -1,7 +1,7 @@
 id: cf-ssl-strict-migrate-idc02-edge-origin-3fa959
 title: 'CF SSL=strict: migrate idc02 edge origin certs off tls internal, then flip zone'
 column: doing
-updated: 2026-11-24 22:32
+updated: 2026-11-24 23:14
 priority: medium
 spec: 'Make surf-thailand.com zone SSL mode ''strict'' without breaking any proxied hostname.
 
@@ -99,6 +99,13 @@ comms:
     internal), api+app+idc03 hit idc03 (LE ok), idc01 unreachable, wiki+wiki-internal CNAME->Plesk 103.99.11.249
     (gizmo cert, no surf SANs), claw=CF worker no origin, edge=dns-only. CF token on idc03 has DNS+zone-settings
     scope. Next: inspect live caddy configs on idc02/idc03, then Origin-CA cert plan.'
+- at: 2026-11-24 23:14
+  from: devin
+  text: 'DONE — ssl=strict LIVE on surf-thailand.com zone. All 23 proxied names verified: 200/301/302/308/404, zero
+    525/526. Work: (1) idc02 caddy-edge tls internal x15 -> single LE wildcard (*.surf-thailand.com+apex, acme.sh
+    DNS-01 via cfat_ token, certs in /data/certs, cron renewal armed); (2) FOUND+FIXED latent bug: quadlet dir mounts
+    used ,Z comma-form -> podman phantom mounts (apex www webroot, /feeds/usage.json, /kk-ha, /tony-ha were silently
+    dead for weeks) — switched to :z + restart, all healed; '
 action:
   type: dispatch
   status: running
