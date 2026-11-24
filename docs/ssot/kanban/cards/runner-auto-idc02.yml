@@ -2,19 +2,12 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 7 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: runner-agent: checkout sha 94ce1cb7c20f2c69 != pin 35d284ec68ed0a9c — chaba clone is stale/divergent;
-  ~/.local/bin/runner-agent sha 94ce1cb7c20f2c69 != pin 35d284ec68ed0a9c — installed build is stale; devin-dispatch:
-  checkout sha 156113c84477e42d != pin 384680d4ccbfe2c3 — chaba clone is stale/divergent; ~/.local/bin/devin-dispatch
-  sha 156113c84477e42d != pin 384680d4ccbfe2c3 — installed build is stale; dispatch-repos: checkout sha e88aa0e64f6dda7e
-  != pin ff858dba25e0da01 — chaba clone is stale/divergent; ~/.local/bin/runner-agent sha 94ce1cb7c20f2c69 != repo
-  35d284ec68ed0a9c — installed copy drifted; redeploy; ~/.local/bin/devin-dispatch sha 156113c84477e42d != repo
-  384680d4ccbfe2c3 — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design — no push creds);
-  merge-sweep salvage path verified; ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS'
+note: 'Auto-recovered 2026-11-24: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
@@ -52,7 +45,7 @@ help: 'Per-check fixes:
 
   - devin-dispatch: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull).
   Manual: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
-updated: 2026-11-24 08:40
+updated: '2026-11-24'
 review_kind: triage
 action:
   status: done
