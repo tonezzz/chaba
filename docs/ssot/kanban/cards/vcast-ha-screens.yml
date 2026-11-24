@@ -26,7 +26,7 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
-updated: 2026-11-24 15:01
+updated: 2026-11-24 15:24
 comms:
 - at: 2026-10-06 06:58
   from: tony
@@ -254,6 +254,13 @@ comms:
     Phase B+ ansible session-captu; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s;
     [ada-memory-sync-transient-mddb-hardening] Merged to origin/master as 7d3196d24d; [devnest-queue-consolidation]
     VERIFY COMPLETE (attempt 2, ton'
+- at: 2026-11-24 15:24
+  from: devin
+  text: '[progress] Card now gates cast targets on real liveness: relay lifecycle field when present, else connected+last_seen<150s
+    (server STALE_SEEN_MS=120s). Dead registry entries collapse into a ⚠ offline section keeping Sweep/Release.
+    Verified: fixture checks pass, --live vs real relay lists only screens 6/7 (dead headless-2/4 ~18h stale → offline),
+    headless-Chrome render of staged file OK. Staged on michael-dev www (idc02, md5 match, /local 200). tony-ha
+    still serves old 267-line card — promotion n'
 claim:
   since: 2026-11-24 15:00
 ref: HOM-0112
