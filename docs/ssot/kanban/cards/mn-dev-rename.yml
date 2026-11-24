@@ -1,7 +1,7 @@
 id: mn-dev-rename
 title: Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)
 column: review
-updated: 2026-11-24 18:19
+updated: 2026-11-24 18:23
 brief: 'Public hostname renamed to mn-ha.surf-thailand.com (2026-10-16) and system-map now calls the dev twin mn-dev.
   Physical rename pending: michael-dev.service, podman container michael-dev, ~/.config/michael-dev, ~/.config/secrets/ha-michael-dev.env,
   plus ~119 references across docs/ssot, AGENTS.md, scripts. All must move together or scripts break.'
@@ -295,6 +295,9 @@ comms:
 - at: 2026-11-24 18:19
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 18:23
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''target-name-for-the-dev-twin-r''] block close)'
 action:
   type: dispatch
   status: done
@@ -304,6 +307,7 @@ action:
   sweep:
     stale_running: 2026-11-24 17:08
     zero_commit: 2026-11-24 17:08
+    close_held: 2026-11-24 18:23
   verified: true
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
   runner: tony-dell
