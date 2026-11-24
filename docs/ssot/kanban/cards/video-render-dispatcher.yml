@@ -1,7 +1,7 @@
 id: video-render-dispatcher
 title: Build canonical video render dispatcher and queue status
 column: review
-updated: 2026-11-24 19:50
+updated: 2026-11-24 19:54
 brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
   final artifact.
 priority: high
@@ -266,6 +266,10 @@ comms:
 - at: 2026-11-24 19:50
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 19:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-185802-implement-a-read-only-inventor on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -275,6 +279,8 @@ action:
   attempts: 1
   result: 'exit=0 inventor.md`, all committed on the dispatch branch (not pushed) and card comms posted. | devin-task-20261124-185802-implement-a-read-only-inventor.service:
     Consumed 6min 23.275s CPU time over 46min 10.273s wall clock time, 915M memory peak.'
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-24 18:56
 review_kind: verify
