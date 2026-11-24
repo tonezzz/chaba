@@ -1,7 +1,7 @@
 id: persona-name-leaks-tool-result
 title: persona-name-leaks-tool-result
 column: doing
-updated: 2026-11-24 15:15
+updated: 2026-11-24 15:16
 brief: 'Shared tool-result wording leaks Ada into non-Ada lanes: realtime_provider.py:5326 returns Ada is now <expr>
   for set_facial_expression; openrouter_provider.py:414 same pattern. On mn/Kraut lane the model sees Ada is now
   neutral (idc03 journal 2026-10-17 14:51). Fix: use ADA_PWA_NAME default Ada in result text. Same class as TG_PERSONA_NAME
@@ -400,6 +400,13 @@ comms:
 - at: 2026-11-24 15:15
   from: devin
   text: 'dispatch started: redeploying runner-agent.py to tony-macbook, tony-dell, idc02, idc03; repo sha256 52cbc072'
+- at: 2026-11-24 15:16
+  from: devin
+  text: 'DONE: scp-deployed scripts/board/runner-agent.py to ~/.local/bin/runner-agent on tony-macbook, tony-dell,
+    idc02, idc03. All four now sha256 52cbc072f269 (== origin/master blob), mode 0755. Drift had already self-healed
+    via _self_update/repo-sync before this run; scp re-asserted it. Side note: idc02 ~/CascadeProjects/chaba-tony-dell
+    (legacy, no role stamp) still holds an older runner-agent.py copy but no unit executes it — runner-agent.service
+    uses ~/.local/bin. Outcome doc: dispatch-outcome-2026'
 spec: 'Goal: Redeploy the drifted runner-agent script from the local chaba repository to all affected hosts (tony-macbook,
   tony-dell, idc02, idc03). Host: tony-macbook, tony-dell, idc02, idc03. Repo: chaba. Constraints: Copy scripts/board/runner-agent.py
   to ~/.local/bin/runner-agent on each specified host using scp. Testable done-condition: Verify that the installed
