@@ -88,7 +88,7 @@ coding agent can execute. Rules:
 
 CATEGORIES = ("asr_noise_en", "asr_noise_th", "thai_eng_mix", "typo",
               "fragment", "clean", "entity_heavy", "chit_chat",
-              "ambiguous", "gibberish", "dispatch_cmd")
+              "ambiguous", "gibberish", "dispatch_cmd", "dispatch_real")
 
 
 def downstream_system(fx):

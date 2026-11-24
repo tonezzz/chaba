@@ -470,3 +470,104 @@ fixtures:
     gold: Ask Ada to remember that the printer IP is 192.168.2.78, not 192.168.2.75.
     preserve: [192.168.2.78, 192.168.2.75]
     expected_tool_call: null
+  # --- dispatch_real (command-polish-before-ai-dispatch): raw = VERBATIM
+  #     titles of live kanban cards — the real terse shorthand that flows
+  #     into dispatch intake. gold = canonical spec-grade rewrite.
+  #     Splitting from dispatch_cmd (synthetic Tony-style) so the report
+  #     can score polish on real vs synthetic commands separately. ---
+  - id: real-stale-local-conflict
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever
+    gold: Investigate and fix stale .local-conflict-* files accumulating in job checkouts, where reconcile keeps re-flagging them forever.
+    preserve: [local-conflict]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-smoke-tier-timeout
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
+    gold: Fix the smoke tier outgrowing its 45-minute TimeoutStartSec, which truncates the suite mid-run.
+    preserve: [TimeoutStartSec, 45]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-live-session-token-diet
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Live session token diet — 134M text-in/day on ada-ha-tony
+    gold: Reduce live session token usage — 134M text-in/day on ada-ha-tony.
+    preserve: [134M, ada-ha-tony]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-openchamber-path
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
+    gold: Fix the stale OpenChamber project path from DevNest-ada-agent to DevNest.
+    preserve: [OpenChamber, DevNest-ada-agent, DevNest]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-mddb-ops-compact
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: "mddb-ops 30G: analyze + compact via mddbd -repair-db if freelist-bloated"
+    gold: Analyze and compact the 30G mddb-ops store via mddbd -repair-db if the freelist is bloated.
+    preserve: [mddb-ops, 30G, mddbd, repair-db]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-devin-handoff-ledger
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
+    gold: Investigate devin-handoff job-ledger terminal writes — 1176/1555 jobs stuck running.
+    preserve: [devin-handoff, 1176, 1555]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-idc02-second-lane
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Provision idc02 as second ada-pi dispatch lane
+    gold: Provision idc02 as the second ada-pi dispatch lane.
+    preserve: [idc02, ada-pi]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-video-render-dispatcher
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Build canonical video render dispatcher and queue status
+    gold: Build the canonical video render dispatcher and queue status.
+    preserve: [video render dispatcher]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-wiki-page-door
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: "Extend /wiki/page door to allow Infrastructure: namespace writes"
+    gold: "Extend the /wiki/page door to allow writes in the Infrastructure: namespace."
+    preserve: [wiki page, Infrastructure]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-ansible-verify-r7
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Ansible read-only verify for R7 host-software capabilities
+    gold: Run an Ansible read-only verify of R7 host-software capabilities.
+    preserve: [Ansible, R7]
+    expected_tool_call: {name: dispatch_opencode}
+  - id: real-timer-alert-idc03
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Timer chaba-tony-ideas on idc03 failing
+    gold: Investigate why the chaba-tony-ideas timer on idc03 is failing.
+    preserve: [chaba-tony-ideas, idc03]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-local-conflict-guard
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: local-conflict reconcile failed
+    gold: Investigate the local-conflict reconcile failure.
+    preserve: [local-conflict]
+    expected_tool_call: {name: dispatch_devin}
