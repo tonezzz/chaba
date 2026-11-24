@@ -1,0 +1,24 @@
+id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
+title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
+column: backlog
+updated: 2026-11-24 23:29
+priority: medium
+tags:
+- mddb
+- embedding
+- bge
+- cms
+spec: 'Found by cms-plane-bge-golden-set-eval (MEM-0204, docs/ssot/jobs/mddb/2026-11-24-cms-bge-golden-eval.yml).
+  vector-stats on :11027 shows embedded_documents < total_documents in chaba-archive 2/14, chaba-docs 25/40, chaba-lessons
+  206/207, devin-kb 0/9, documents 274/275, infrastructure-ssot 8450/8611, kb-development 7/20, kb-features 134/145,
+  kb-operations 277/289, kb-system 20/34, ssot 0/1 (~250 docs). Queue stats dropped=910 retried=753 — drops during
+  embed-pool-shim degraded windows silently remove docs from vector search (verified: qrel docs absent from top-50).
+  ALSO: devin-kb/* and ssot.focus have empty contentMd (meta-only) and can never embed — decide backfill vs keyword-only.
+  ACTIONS: (1) non-force POST /v1/vector-reindex per affected collection to embed missing docs (low-traffic window);
+  (2) investigate why queue drops happen and alert on dropped>0; (3) warm-ping cron for bge-m3 upstreams per spike
+  gotcha.'
+ref: MEM-1336
+comms:
+- at: 2026-11-24 23:29
+  from: devin
+  text: card captured via board-api
