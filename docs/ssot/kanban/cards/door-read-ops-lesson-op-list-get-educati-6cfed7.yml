@@ -1,7 +1,7 @@
 id: door-read-ops-lesson-op-list-get-educati-6cfed7
 title: 'Door read ops: /lesson op=list|get (education content to agents)'
-column: backlog
-updated: 2026-11-24 15:32
+column: doing
+updated: 2026-11-24 15:40
 brief: Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review)
   and op=get (full content by slug) so agents + lessons-due can read without WP creds.
 tags:
@@ -169,9 +169,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 15:40
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
-claim: {}
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 15:40
