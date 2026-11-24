@@ -1,7 +1,7 @@
 id: model-efficiency-refresh-deepseek-flint-providers
 title: Refresh model efficiency scorecard across providers
-column: doing
-updated: 2026-11-24 17:31
+column: review
+updated: 2026-11-24 17:35
 spec: Run a fixed efficiency fixture across local Ollama, Colab burst, OpenRouter pinned free models, Gemini gateway/direct,
   and DeepSeek API when credentials are available. Include warm/cold latency, tokens, error/429 rate, structured/tool
   correctness, vision where supported, cost/quota, license/data policy, and hardware fit. Add DeepSeek V4.1 Flash
@@ -212,13 +212,43 @@ comms:
     docs/ssot/jobs/models/2026-11-24-model-efficiency-refresh.yml (commit b4c23b34de). Headline: deepseek-flash
     warm p50 0.97s @$0.00028/run (json/tool/vision ok); OR :free all 429 daily cap + laguna-s-2.1 delisted; Colab
     tunnel down; NO routing changes'
+- at: 2026-11-24 17:35
+  from: tony-omen
+  text: 'finished (ok): exit=0 re applied pending verifier review, and card comms were posted. | devin-task-20261124-164544-run-a-fixed-efficien'
+- at: 2026-11-24 17:35
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 17:35
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-164544-run-a-fixed-efficiency-fixture'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 17:35
+  from: chaba
+  text: pushed dispatch/20261124-164544-run-a-fixed-efficiency-fixture to origin
+- at: 2026-11-24 17:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 74.7s)
+- at: 2026-11-24 17:35
+  from: chaba
+  text: auto-merged 9294be3e (dispatch/20261124-164544-run-a-fixed-efficiency-fixture) → origin/master
+- at: 2026-11-24 17:35
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 re applied pending verifier review, and card comms were posted. | devin-task-20261124-164544-run-a-fixed-efficiency-fixture.service:
+    Consumed 5min 8.686s CPU time over 46min 33.263s wall clock time, 1.1G memory peak, 14.4M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 16:44
+review_kind: verify
