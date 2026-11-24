@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
-column: doing
-updated: 2026-11-24 20:20
+column: review
+updated: 2026-11-24 20:22
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -281,9 +281,32 @@ comms:
     confirmed in /Library/LaunchDaemons/net.adanest.ollama.plist via launchctl print system/ (no adanest needed)
     — bind survives reboot, card goal MET. New findings: LAN exposure is on BOTH 192.168.0.101 and 192.168.2.90
     (verified answering); kk-mac-onboard.sh was d'
+- at: 2026-11-24 20:22
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ds; full details in `dispatch-outcome-20261124-200347-ollama-serve-runs-on-kk-mac-un.md`.
+    | devin-task-20261124-2'
+- at: 2026-11-24 20:22
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 20:22
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-24 20:22
+  from: chaba
+  text: banked 342 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 20:22
+  from: chaba
+  text: pushed dispatch/20261124-200347-ollama-serve-runs-on-kk-mac-un to origin
+- at: 2026-11-24 20:22
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 20:22
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -291,9 +314,10 @@ action:
   sweep:
     stale_running: 2026-11-24 18:54
     dirty: 1
-  result: 'exit=0 ed; full details in `dispatch-outcome-20261124-184115-ollama-serve-runs-on-kk-mac-un.md`. | devin-task-20261124-184115-ollama-serve-runs-on-kk-mac-un.service:
-    Consumed 3min 54.334s CPU time over 10min 1.461s wall clock time, 1G memory peak.'
+  result: 'exit=0 ds; full details in `dispatch-outcome-20261124-200347-ollama-serve-runs-on-kk-mac-un.md`. | devin-task-20261124-200347-ollama-serve-runs-on-kk-mac-un.service:
+    Consumed 48.745s CPU time over 16min 36.037s wall clock time, 390.2M memory peak.'
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-24 20:03
 requests:
