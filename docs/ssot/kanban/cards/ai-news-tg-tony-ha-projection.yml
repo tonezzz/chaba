@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
 column: backlog
-updated: 2026-11-24 12:09
+updated: 2026-11-24 16:31
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -152,3 +152,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 16:31
+  from: chaba
+  text: classified as free_lane (jevos conf 0.58)
+- at: 2026-11-24 16:31
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: jevos
+claim: {}
