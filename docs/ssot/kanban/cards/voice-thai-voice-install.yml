@@ -1,7 +1,7 @@
 id: voice-thai-voice-install
 title: 'voice: install Thai Piper voice (th_TH-tsync2) — needs tltk+pandas dep fix'
-column: backlog
-updated: 2026-11-24 15:32
+column: doing
+updated: 2026-11-24 15:35
 brief: 'Thai replies in the voice mini-app. Voice model downloaded (61MB th_TH-tsync2) but needs tltk+pandas; numpy
   dtype mismatch in ada-whisper venv blocks install (ValueError: numpy.dtype size changed).'
 priority: medium
@@ -174,9 +174,16 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 15:35
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 15:35
