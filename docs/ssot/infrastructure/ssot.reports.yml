@@ -303,6 +303,19 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
+  - id: audit-hosts/kk-mac
+    layer: L1-producer
+    purpose: Host snapshot — macOS launchd inventory (all domains) + fleet
+      process scan vs expected state (added 2026-11-24, OPS-1018)
+    generator: scripts/audit-hosts.py --host kk-mac
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "kk-mac-*.yml"
+    meta: reports/audit-hosts/meta.kk-mac.yml
+    offline_ok: true   # member device — travels with KK, sleeps/off-net is normal
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
   - id: health-monitor
     layer: L1-producer
     purpose: Continuous tony-dell health snapshots (JSON, ~5 min cycle)
@@ -535,6 +548,7 @@ nodes:
       - audit-hosts/mn01
       - audit-hosts/idc03
       - audit-hosts/macbook
+      - audit-hosts/kk-mac
       - health-monitor
       - host-loads
       - disk-trend

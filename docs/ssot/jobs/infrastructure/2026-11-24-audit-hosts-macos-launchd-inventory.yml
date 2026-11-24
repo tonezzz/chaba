@@ -1,0 +1,91 @@
+id: audit-hosts-macos-launchd-inventory
+title: audit-hosts.py — macOS all-domain launchd inventory + fleet-process scan (OPS-1018)
+host: fleet
+date: 2026-11-24
+card: audit-hosts-macos-blindspot
+status: done — verified live against kk-mac
+
+trigger: >
+  Evidence 2026-10-30: kk-mac ran `ollama serve` under the adanest account
+  for days/weeks and the fleet didn't know. Three stacked gaps — kk-mac
+  absent from audit-hosts.py HOSTS, `launchctl list` only sees the
+  caller's gui domain, and nothing consumed an "undeclared process"
+  class anyway.
+
+root_cause_verified_live: >
+  Probed kk-mac directly (ssh kkkakk@kk-mac, 2026-11-24):
+  - `launchctl list` as kkkakk shows ONLY gui/501 — adanest's jobs and
+    the system domain are invisible to it.
+  - The ollama daemon is a LaunchDaemon
+    (/Library/LaunchDaemons/net.adanest.ollama.plist, UserName=adanest,
+    loopback :11434) — label net.adanest.ollama, NOT the
+    ai.adanest.ollama that scripts/ops/kk-mac-onboard.sh would write
+    (script/deployed drift, noted in SSOT).
+  - `launchctl print system/<label>` answers unprivileged for
+    /Library/LaunchDaemons labels (state/pid/program) — no sudo needed.
+  - gui/<other-uid> and user/<uid> prints are denied unprivileged;
+    kkkakk has no passwordless sudo (`sudo -n` fails).
+  - `ps -axo user,pid,command` sees every user's processes — adanest's
+    ollama serve + llama-server are plainly visible there.
+  - Latent bug found: `launchctl list | sed '1,/^PID/d'` deletes to EOF
+    on macOS/BSD sed (range-end regex isn't tested on the range's first
+    line) — the old macos_services() would always have seen an empty
+    service list. Replaced with `tail -n +2` + one empty-retry.
+
+changes: >
+  scripts/audit-hosts.py — HOSTS += kk-mac {tailnet: kk-mac, os: macos,
+  user: kkkakk}. macos_services() rewritten: caller launchctl list
+  (domain-qualified gui/<uid>/<label> units; active=running,
+  loaded=registered-not-running), _MACOS_INVENTORY remote pass
+  enumerating dscl users (uid>=500), /Library/LaunchDaemons (label via
+  plutil + `launchctl print system/<label>` state), /Library/LaunchAgents,
+  and every user's ~/Library/LaunchAgents (state "plist" = on-disk
+  intent, unverifiable loaded state without sudo). Optional `sudo -n`
+  upgrade prints gui/<uid>/<label> for other users' agents.
+  fleet_processes: `ps -axo user,pid,command` filtered by FLEET_PROC_RE
+  (service-shaped patterns only — FLEET_SYS_RE false-positives on app
+  args like "mcp_"/"gesture"). diff_against_ssot: is_macos branch —
+  every non-noise launchd service (MACOS_LAUNCHD_NOISE filters
+  com.apple./application./vendor updaters/devin-task transient jobs)
+  must be declared in expected_services/expected_absent/allowed_running;
+  every fleet_processes entry must match an expected service's `procs`
+  globs or top-level `allowed_processes`. _is_present + expected_absent
+  gained domain-suffix matching so bare labels match system/<label>,
+  gui/<uid>/<label>, etc.
+  ssot.audit.hosts.yml — kk-mac block: expected_services
+  (net.adanest.ollama system+procs, net.adanest.heartbeat,
+  net.adanest.kk-llm-worker, ai.chaba.runner-agent, sh.brew.tailscale),
+  allowed_running (Adobe_*), allowed_processes (*runner-agent/launchd/*),
+  notes rewritten (no longer "probe only").
+  ssot.jobs.yml — kk-mac added to the chaba-system-report con01 host
+  loop + prereq note (con01 needs `ssh-keyscan kk-mac` once; tony-dell
+  --all --cards chain already reaches it).
+  ssot.reports.yml — audit-hosts/kk-mac node + fleet children entry.
+
+verification: >
+  `audit-hosts.py --host kk-mac --ssh` → "No deltas" against live host.
+  Same run against an SSOT copy with kk-mac declarations stripped →
+  flags system/net.adanest.ollama (state=active), the adanest
+  ollama/llama-server processes, and all undeclared launchd jobs —
+  i.e. it reproduces the OPS-1018 detection. Linux regression:
+  `--host mn01` diff unchanged (pre-existing live deltas only).
+  `audited_hosts()` now returns kk-mac → tony-dell
+  `audit-hosts.py --all --cards` picks it up on the next 06:45 run;
+  audit-auto-kk-mac.yml cards will appear on drift.
+
+followups:
+  - >
+    con01 ssh host key for kk-mac not yet accepted — one-time
+    `ssh-keyscan kk-mac >> ~/.ssh/known_hosts` on con01 (or first
+    interactive ssh) before the con01 chain can probe it; until then
+    con01 reports unreachable → offline_ok → silent, and tony-dell's
+    --cards chain carries the drift cards.
+  - >
+    scripts/ops/kk-mac-onboard.sh writes label ai.adanest.ollama but
+    the deployed daemon is net.adanest.ollama — script drift worth a
+    card if the daemon is ever re-onboarded.
+  - >
+    kk-mac onboarding note said "remaining fleet keys + adanest user
+    pending KK sign-off" — adanest now exists (uid 502) and tony-omen's
+    key is authorized (verified this session); only con01's host key
+    acceptance remains.
