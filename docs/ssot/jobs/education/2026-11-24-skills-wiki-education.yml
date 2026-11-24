@@ -62,6 +62,7 @@ verify:
   - "DONE 2026-11-24: POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row (slug lesson-d8b6938588d3, next_review 2026-12-08)"
   - "DONE 2026-11-24: card ADA-0031 closed (column done via board-api /action)."
   - "DONE 2026-11-24: republished after frontmatter update -> wiki-education delivered, Education:Ada-Ocb-Skills pageid 333 revid 492 (event skills-wiki-export-2026-11-24-r2); /lesson op=get source=wiki confirms new auto-kb + overnight-assessment descriptions."
+  - "DONE 2026-11-24: PR #208 squash-merged to master (skills inventory, wiki education record, repo references + pre-existing CI fixes); idc03 pulled; EDU_SOURCE=wiki education-report -> 223 lessons, 203 flagged, compliance 0.8200, drift 28/50, due 164, verify=pass; no source-gone flags for lesson-d8b6938588d3; card ADA-0037 closed."
   - "DONE 2026-11-24: repositories explored added to docs/kb and exported wiki page (tonezzz/chaba + ada-ocb worktree, tonezzz/mddb + lag snapshots, anthropics/claude-plugins-official with installed skill-creator) -> republished revid 494 (event skills-wiki-export-2026-11-24-r3); /lesson op=get source=wiki confirms the Repositories explored section and all three refs."
   - "DONE 2026-11-24: EDU_SOURCE=wiki education-report on idc03 -> 220 lessons, 205 flagged, compliance 0.7390, drift 16/40, due 164, verify=pass, holds=1; lesson-d8b6938588d3 (ada-ocb-skills) present in latest.md/json. Its source-gone flags for tests/test_agents_skills_explored.py and docs/kb/ada-ocb-skills-education.md are expected until this branch merges into the idc03 checkout."
 
@@ -83,7 +84,6 @@ polish_attempt:
     left behind.
 
 remaining:
-  - "CARD ADA-0037 (ada-ocb-skills-edu-postmerge-recheck): after merge to the idc03 checkout, re-run EDU_SOURCE=wiki education-report to clear the two source-gone flags on lesson-d8b6938588d3."
   - "CARD OPS-0038 (wiki-education-cargo-table-setup): wiki host needs Cargo table setup/maintenance first (see polish_attempt); retry the declare/store only after the table exists."
   - "CARD KNB-0039 (ssot-validation-errors-cleanup): 5 pre-existing SSOT validation errors; unrelated uncommitted worktree files stay with their owners."
   - "No card: routine hub-inventory refresh when a skill is added/removed — the inventory test fails first."
