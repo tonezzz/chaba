@@ -1,0 +1,60 @@
+title: Documentary control plane P0-P3 scaffold (asset identity + continuity)
+date: 2026-11-24
+card: ai-video-quality-control-plane
+session: dispatch-wt-20261124-164201-extend-the-existing-ada-nest-d (tony-macbook)
+
+what:
+  tool: scripts/nest/doc_control.py   # stdlib + pyyaml, additive only
+  runbook: docs/kb/documentary-control-plane.md
+  tests: tests/nest/test_doc_control.py (7 tests, unittest)
+  prior_p0: "scripts/ops/video-qc.py already merged via PR 77 — bound as the
+            per-shot technical QA gate, not re-implemented"
+  preserved: LTX render lane (doc-render-*), VYNCX VO lane (doc-vo-*),
+            durable pack artifacts — no existing pack files touched
+
+stages_landed:
+  p0: "shot-manifest-v2.json — immutable per-shot manifest: asset_id
+       (<doc>-sNN), continuity link -> prev_shot (i2v DAG enforced
+       acyclic), scratch-VO timing (est_s + measured wav duration vs
+       num_frames/fps slot, overrun>15%/underrun<0.5s fail), control
+       slots, QC binding to video-qc.py"
+  p1: "assets/bibles.yml schema (nest-doc-bibles-v1: characters/objects/
+       locations + facts), qc/continuity-ledger.jsonl append-only event
+       log (rendered/qc/approved/rejected), controls.pose/depth slots
+       for DWPose/depth"
+  p2: "controls.scene (blender|stock|space|gaussian plate) +
+       controls.camera (SCoPE trajectory) slots — fields reserved in the
+       manifest; GPU/plate producers fill them, verifier reports
+       coverage"
+  p3: "evals/<doc>-fixture-v1.json — per-shot cases with verbatim
+       prompt/negative/seed/duration + scene graph (objects,
+       characters, location, continues_from/depicts relations, bible
+       facts) tagged vbench/t2v-compbench/videoscore2"
+
+verifiers:
+  - "doc_control.py verify -> qc/control-verify.json; exit 1 on fail.
+     Checks: manifest schema/contiguity/unique ids/prompts/VO timing/
+     i2v acyclic; bibles validity + asset resolution (absent = warn);
+     ledger parse; approved-takes consistency (approved rows need a
+     matching approved ledger event); optional --require-artifacts binds
+     per-shot video-qc json"
+  - "stage_coverage pose/depth/scene/camera/scene_graph filled/total —
+     informational progress-through-stages signal"
+  - "every stage's approved-take manifest: qc/approved-takes.json via
+     `doc_control.py takes` (latest approved ledger event wins, artifact
+     sha256 recorded when the file is present)"
+
+verified:
+  - "python3 -m unittest tests.nest.test_doc_control — 7 OK"
+  - "python3 -m unittest discover -s tests/nest — 15 OK"
+
+not_done_next:
+  - "backfill bibles.yml + ledger for the live doc-pilot project on
+     gdrive:ada-nest/projects/ (needs Drive access — out of worktree
+     scope)"
+  - "P2 producers: Blender/stock/space scene packs + Gaussian/camera
+     plates + SCoPE control inputs — new packs, separate dispatches"
+  - "P3: actually run the fixture through VBench/T2V-CompBench/
+     VideoScore2 — needs model lanes, separate dispatch"
+  - "wire doc_control verify into pack-preflight requires-chain if a
+     doc project adopts it (currently standalone gate)"
