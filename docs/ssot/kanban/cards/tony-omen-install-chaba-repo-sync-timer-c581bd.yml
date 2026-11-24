@@ -1,7 +1,7 @@
 id: tony-omen-install-chaba-repo-sync-timer-c581bd
 title: 'tony-omen: install chaba-repo-sync.timer — exec checkout has no periodic pull'
-column: review
-updated: 2026-11-24 15:16
+column: done
+updated: 2026-11-24 15:24
 tags:
 - tony-omen
 - ops
@@ -223,6 +223,11 @@ comms:
 - at: 2026-11-24 15:16
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 15:24
+  from: chaba
+  text: 'merge-sweep: merged a8efa655 (dispatch/20261124-151250-install-chaba-repo-sync-timer- from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-151250-install-chaba-repo-sync-timer-.md)
+    — auto-closed'
 spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
   Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,
   and enable --now the timer. The host is tony-omen and the repo is chaba. The done-condition is verified when systemctl
@@ -238,7 +243,11 @@ action:
   result: 'exit=0 261124-151250-install-chaba-repo-sync-timer-.md` and a DONE comms entry posted to the card. |
     devin-task-20261124-151250-install-chaba-repo-sync-timer-.service: Consumed 8.608s CPU time over 2min 29.128s
     wall clock time, 290.1M memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-24 15:12
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-151250-install-chaba-repo-sync-timer-.md
