@@ -1,7 +1,7 @@
 id: tony-omen-install-chaba-repo-sync-timer-c581bd
 title: 'tony-omen: install chaba-repo-sync.timer — exec checkout has no periodic pull'
 column: doing
-updated: 2026-11-24 15:12
+updated: 2026-11-24 15:15
 tags:
 - tony-omen
 - ops
@@ -196,6 +196,11 @@ comms:
     does NOT restart a running unit — install/upgrad; Deploy note: hosts need the new file via their chaba checkout
     sync (chaba-repo-s; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [ops-1244d-janitor-merge]
     [sweep 2026-11-12] board-janitor is'
+- at: 2026-11-24 15:15
+  from: devin
+  text: 'DONE: chaba-repo-sync.timer installed+enabled on tony-omen (~/.config/systemd/user/, md5 4f2349f7 == repo
+    systemd/). systemctl --user status: active (waiting), next trigger 16:00 +07; last service run 15:00 exited
+    0. Timer was already present — synced unit files to current repo versions (description-only drift) and daemon-reloaded.'
 spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
   Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,
   and enable --now the timer. The host is tony-omen and the repo is chaba. The done-condition is verified when systemctl
