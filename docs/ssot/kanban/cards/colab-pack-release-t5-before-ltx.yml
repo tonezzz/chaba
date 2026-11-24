@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
-column: doing
-updated: 2026-11-24 17:14
+column: review
+updated: 2026-11-24 17:15
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -212,12 +212,36 @@ comms:
     + gc + empty_cache) and consumer prologues extended to (''model'',''pipe'',''enc'',''tok'') in 6 LTX packs +
     prologue added to nasa-i2v which had none. New tests/colab/test_pack_namespace_hygiene.py (5 tests) execs the
     real run: blocks against a fake live-vs-cached CUDA allocator — the '
+- at: 2026-11-24 17:15
+  from: tony-macbook
+  text: 'finished (ok): exit=0 hing was pushed — the fixes take effect on the next pack release to `ada-nest/packs/`.
+    | devin-task-20261124-1653'
+- at: 2026-11-24 17:15
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:15
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-165350-investigate-the-active-sacred-
+    is 56 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 17:15
+  from: chaba
+  text: pushed dispatch/20261124-165350-investigate-the-active-sacred- to origin
+- at: 2026-11-24 17:15
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 17:15
+  from: chaba
+  text: 'worktree kept: dirty — 3 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 hing was pushed — the fixes take effect on the next pack release to `ada-nest/packs/`. | devin-task-20261124-165350-investigate-the-active-sacred-.service:
+    Consumed 2min 58.329s CPU time over 20min 32.582s wall clock time, 775M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 16:53
+review_kind: verify
