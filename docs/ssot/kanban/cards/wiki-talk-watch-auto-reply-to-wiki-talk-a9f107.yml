@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
-column: doing
-updated: 2026-11-24 08:27
+column: review
+updated: 2026-11-24 08:28
 tags:
 - wiki
 - dispatch
@@ -27,7 +27,7 @@ spec: "Supersedes manual card wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 (p
   \ Education_talk:Ada-Ocb-Card-Runner as precedent (rev 243)."
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -41,6 +41,8 @@ action:
     47.751s wall clock time, 979.3M memory peak.'
   attempts: 1
   runner: tony-omen
+  result: 'exit=0 eral edit-POST path is proven by self-test + dry-run only until the first live tick. | devin-task-20261124-075942-supersedes-manual-card-wiki-ta.service:
+    Consumed 2min 33.341s CPU time over 19min 44.503s wall clock time, 940.4M memory peak.'
 ref: OPS-0074
 comms:
 - at: 2026-11-12 17:34
@@ -508,5 +510,24 @@ comms:
 - at: 2026-11-24 08:27
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 08:28
+  from: tony-omen
+  text: 'finished (ok): exit=0 eral edit-POST path is proven by self-test + dry-run only until the first live tick.
+    | devin-task-20261124-075942'
+- at: 2026-11-24 08:28
+  from: chaba
+  text: 'session-end checkpoint f74734a1: 2 leftover file(s) committed'
+- at: 2026-11-24 08:28
+  from: chaba
+  text: banked 251 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:28
+  from: chaba
+  text: pushed dispatch/20261124-075942-supersedes-manual-card-wiki-ta to origin
+- at: 2026-11-24 08:28
+  from: chaba
+  text: "auto-merge not done: push: To github-chaba:tonezzz/chaba.git\n ! [rejected]              HEAD -> master\
+    \ (fetch first)\nerror: failed to push some refs to 'github-chaba:tonezzz/chaba.git'\nhint: Updates were rejected\
+    \ because the re — close will block until merged"
 claim:
   since: 2026-11-24 07:58
+review_kind: verify
