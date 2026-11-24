@@ -1,7 +1,7 @@
 id: done-card-runner-defer-spam
 title: done cards with stale action.runner get defer-spam from every runner
-column: backlog
-updated: 2026-11-24 22:35
+column: doing
+updated: 2026-11-24 22:52
 priority: medium
 tags:
 - board
@@ -78,9 +78,15 @@ comms:
 - at: 2026-11-24 22:35
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.60 > 1.5)'
+- at: 2026-11-24 22:52
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 22:52
