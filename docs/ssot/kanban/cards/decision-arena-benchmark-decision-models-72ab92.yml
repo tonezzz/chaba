@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
-column: doing
-updated: 2026-11-24 08:52
+column: review
+updated: 2026-11-24 08:57
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -406,9 +406,23 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-084328-corpus-18-jev-bench-cases-4-pi on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 08:57
+  from: tony-dell
+  text: 'finished (ok): exit=0 ub.github/github-mcp-server, org.opencontainers.image.created=2026-08-25T14:04:43.052Z)
+    | devin-task-20261124-084'
+- at: 2026-11-24 08:57
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:57
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-084328-corpus-18-jev-bench-cases-4-pi'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 08:57
+  from: chaba
+  text: banked 266 outcome lesson(s) → devin-handoff bank
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -420,5 +434,9 @@ action:
     Consumed 1min 21.766s CPU time over 16min 36.261s wall clock time, 1G memory peak, 624.4M memory swap peak.'
   attempts: 1
   runner: tony-dell
+  result: 'exit=0 ub.github/github-mcp-server, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261124-084328-corpus-18-jev-bench-cases-4-pi.service:
+    Consumed 1min 54.934s CPU time over 8min 59.169s wall clock time, 1.3G memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 08:42
+review_kind: verify
