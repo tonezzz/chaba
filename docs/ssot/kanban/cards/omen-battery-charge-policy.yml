@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 15:38
+updated: 2026-11-24 15:40
 tags:
 - hardware
 - omen
@@ -212,6 +212,15 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-151835-goal-keep-omen-battery-in-40-8 on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 15:40
+  from: chaba
+  text: 'raised request job-input-omen-battery-charge-policy: Job needs your input: Which charge-limit path for
+    tony-omen — A (Tuya smart plug + staged HA 85/45 automation, needs a p'
+- at: 2026-11-24 15:40
+  from: chaba
+  text: 'needs input: Which charge-limit path for tony-omen — A (Tuya smart plug + staged HA 85/45 automation, needs
+    a plug ~THB 250) or B (check BIOS Battery Health Manager at next F10 reboot, likely absent on 2018 Omen 15-BC)?
+    Board request omen-charge-policy-a-vs-b is open on the card with options A/B/A+B (suggested A'
 action:
   type: dispatch
   status: running
@@ -220,7 +229,7 @@ action:
   runner: tony-dell
   attempts: 1
   sweep:
-    stale_running: 2026-11-24 15:38
+    stale_running: 2026-11-24 15:39
     dirty: 1
 claim:
   since: 2026-11-24 15:17
@@ -247,3 +256,18 @@ requests:
   - id: ab
     label: A+B — plug anyway, BIOS opportunistic
   suggested: a
+- id: job-input-omen-battery-charge-policy
+  ask: 'Job needs your input: Which charge-limit path for tony-omen — A (Tuya smart plug + staged HA 85/45 automation,
+    needs a plug ~THB 250) or B (check BIOS Battery Health Manager at next F10 reboot, likely absent on 2018 Omen
+    15-BC)? Board request omen-charge-policy-a-vs-b is open on the card with options A/B/A+B (suggested A'
+  status: open
+  at: 2026-11-24 15:40
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
