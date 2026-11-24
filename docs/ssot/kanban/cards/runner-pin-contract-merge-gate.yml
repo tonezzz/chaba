@@ -1,6 +1,6 @@
 id: runner-pin-contract-merge-gate
 title: Block merges that leave runner tooling pins stale
-column: backlog
+column: done
 updated: 2026-11-24 22:27
 brief: ops-1036 conflict resolution (da9798df42c) took source files from one side and runner-tooling.manifest.json
   pins from the other. The contract test failed and all 6 hosts showed tool drift. Pins were realigned in f13edd01d0d
@@ -39,3 +39,9 @@ comms:
     the new .husky/pre-merge-commit; the hook reads git blobs so it catches the ops-1036 conflict shape (source
     from one parent, pins from the other) that a clean text merge lets through. scripts/board/dispatch_repos.pin_contract_gate
     runs tests/board/test_runner_tooling_contract.py
+- at: 2026-11-24 22:27
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}
