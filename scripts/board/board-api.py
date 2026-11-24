@@ -4576,16 +4576,19 @@ def report_note_append(slug: str, text: str, lang: str) -> dict:
 
 
 def report_create_doc(slug: str, title: str, content_md: str,
-                      meta_extra: dict) -> dict:
+                      meta_extra: dict, lang: str = "en") -> dict:
     """Create an ada-cms-pages doc honoring the writer contract — reuses
     cms-report-note's merged_meta (empty doc = contract defaults) so the
-    create branch stays format-compatible with note-appended pages."""
+    create branch stays format-compatible with note-appended pages.
+    `lang` is the MDDB doc lang — any BCP-47-ish code works (en, th, de,
+    …); the store keys variants by (collection, key, lang)."""
     now_dt = datetime.now(timezone.utc)
     meta = _crn().merged_meta({}, slug, now_dt, now_dt.date().isoformat())
     if meta_extra:
         for k, v in meta_extra.items():
             meta[str(k)] = v if isinstance(v, list) else [str(v)]
-    _mddb_post("add", {"collection": MDDB_PAGES, "key": slug, "lang": "en",
+    meta["lang"] = [lang]
+    _mddb_post("add", {"collection": MDDB_PAGES, "key": slug, "lang": lang,
                        "contentMd": content_md, "meta": meta}, timeout=60)
     try:
         from lib.cms_index import regen_reports_index
@@ -4690,7 +4693,9 @@ def do_report(body: dict, frm: str) -> dict:
     title = title or slug
     meta_extra = body.get("meta") if isinstance(body.get("meta"), dict) \
         else {}
-    r = report_create_doc(slug, title, content_md[:200000], meta_extra)
+    lang = str(body.get("lang") or "en").strip()[:10] or "en"
+    r = report_create_doc(slug, title, content_md[:200000], meta_extra,
+                          lang=lang)
     return {"message": f"created report page {r['slug']}",
             "slug": r["slug"]}
 

@@ -245,6 +245,29 @@ class IndexRowsTests(unittest.TestCase):
         slugs = [r["slug"] for r in rows]
         self.assertEqual(slugs, ["pg"])   # th dedup, superseded+archive out
 
+    def test_lang_variants_dedupe_preferring_en(self):
+        # the fake listing sorts (coll,key,lang) so de precedes en — the
+        # en row must still win, and a de-only key must still surface
+        # (any-lang variant support)
+        self.fake.seed("pg", meta_=meta(kind="page", slug="pg",
+                                        domain="ops", status="active",
+                                        title="EN title"))
+        self.fake.seed("pg", lang="de", meta_=meta(kind="page", slug="pg",
+                                                   status="active",
+                                                   title="DE title"))
+        self.fake.seed("pg", lang="th", meta_=meta(kind="page", slug="pg",
+                                                   status="active",
+                                                   title="TH title"))
+        self.fake.seed("de-only", lang="de", meta_=meta(
+            kind="page", slug="de-only", status="active",
+            title="Nur DE"))
+        rows = srv.index_rows("ada-cms-pages", self.now)
+        by_slug = {r["slug"]: r for r in rows}
+        self.assertEqual(sorted(by_slug), ["de-only", "pg"])
+        self.assertEqual(by_slug["pg"]["title"], "EN title")
+        self.assertEqual(by_slug["pg"]["langs"], ["de", "en", "th"])
+        self.assertEqual(by_slug["de-only"]["title"], "Nur DE")
+
     def test_sections(self):
         self.fake.seed("dg", meta_=meta(kind="page", slug="dg",
                                         report_role="digest", domain="news"))

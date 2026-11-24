@@ -444,6 +444,29 @@ class ReportDoorTest(DoorTestBase):
         self.assertEqual(payload["collection"], "ada-cms-pages")
         self.assertEqual(payload["key"], "new-report")
         self.assertEqual(payload["meta"]["subject"], ["new-report"])
+        self.assertEqual(payload["lang"], "en")
+        self.assertEqual(payload["meta"]["lang"], ["en"])
+
+    def test_create_lang_variant(self):
+        """lang=de creates the German variant doc — the store keys
+        variants by (collection, key, lang); any code passes through."""
+        adds = []
+        self.mod._mddb_post = (
+            lambda p, payload, timeout=30: adds.append((p, payload)) or {})
+
+        class FakeCRN:
+            @staticmethod
+            def merged_meta(doc, slug, now, today):
+                return {"bank": ["cms"], "subject": [slug]}
+        self.mod._crn = lambda: FakeCRN
+        res = self.mod.do_report({"slug": "translate-probe", "lang": "de",
+                                  "title": "Translate Probe (DE)",
+                                  "content_md": "# hallo"}, "devin")
+        self.assertEqual(res["slug"], "translate-probe")
+        path, payload = adds[0]
+        self.assertEqual(path, "add")
+        self.assertEqual(payload["lang"], "de")
+        self.assertEqual(payload["meta"]["lang"], ["de"])
 
 
 if __name__ == "__main__":
