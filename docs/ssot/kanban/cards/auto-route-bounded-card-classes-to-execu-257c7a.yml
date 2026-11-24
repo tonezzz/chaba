@@ -1,7 +1,7 @@
 id: auto-route-bounded-card-classes-to-execu-257c7a
 title: Auto-route bounded card classes to executor=claude (classifier policy)
-column: doing
-updated: 2026-11-24 23:38
+column: review
+updated: 2026-11-24 23:42
 priority: medium
 tags:
 - claude-lane
@@ -38,14 +38,16 @@ spec: 'Follow-up to PR #187 (claude executor lane, merged 2026-11-18). Today exe
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-macbook
   attempts: 1
   sweep:
-    stale_running: 2026-11-24 23:38
+    stale_running: 2026-11-24 23:39
     dirty: 8
+  result: 'exit=0 route.yml`, and a final card comms entry — all uncommitted per card constraints. | devin-task-20261124-221236-follow-up-to-pr-187-claude-exe.service:
+    Consumed 36min 50.989s CPU time over 1h 25min 27.697s wall clock time, 799.1M memory peak.'
 ref: KNB-0215
 comms:
 - at: 2026-11-19 08:29
@@ -210,5 +212,30 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-221236-follow-up-to-pr-187-claude-exe on tony-macbook still
     dirty — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 23:42
+  from: tony-macbook
+  text: 'finished (ok): exit=0 route.yml`, and a final card comms entry — all uncommitted per card constraints.
+    | devin-task-20261124-221236-fol'
+- at: 2026-11-24 23:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 23:42
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-221236-follow-up-to-pr-187-claude-exe
+    is 244 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 23:42
+  from: chaba
+  text: banked 103 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:42
+  from: chaba
+  text: pushed dispatch/20261124-221236-follow-up-to-pr-187-claude-exe to origin
+- at: 2026-11-24 23:42
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 23:42
+  from: chaba
+  text: 'worktree kept: dirty — 8 uncommitted file(s)'
 claim:
   since: 2026-11-24 22:11
+review_kind: verify
