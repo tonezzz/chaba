@@ -1,7 +1,7 @@
 id: audit-miss-education-lesson-write-timeout
 title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
 column: doing
-updated: 2026-11-24 17:28
+updated: 2026-11-24 17:32
 brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
   the supported board-api writer.
 priority: medium
@@ -202,6 +202,13 @@ comms:
     found). Reconstructing content from durable artifacts in dd8a1684d2 (runbook + devnest-tab job + mutate script).
     Side finding: that commit is stranded on unmerged branch fix/ada-devnest-tab-render — runbook/procedures entry
     not on master; live dashboard fix did land (snapshot '
+- at: 2026-11-24 17:32
+  from: devin
+  text: 'DONE. Lesson upsert retried and landed: lesson-4dd48148b1be → Education:Missed-Job-Sweep-And-Safe-Opencode-Ha-Tabs
+    (wiki store, WIKI_EDUCATION_WRITE=wiki — the 2026-10-29 WP-502 path no longer exists; WP CPT is a frozen archive).
+    Verified via op:get read-back (full wikitext + meta: working/chat/learned 2026-11-24/review 2026-12-01/no_th)
+    AND MDDB chaba-lessons mirror doc lesson-4dd48148b1be. Content reconstructed from durable artifacts in dd8a1684d2
+    (original transcript unavailable). Side findin'
 action:
   type: dispatch
   status: running
