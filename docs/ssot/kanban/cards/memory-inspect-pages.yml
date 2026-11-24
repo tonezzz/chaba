@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: doing
-updated: 2026-11-24 14:31
+updated: 2026-11-24 14:38
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -688,6 +688,10 @@ comms:
     picked up on idc02 dispatch; trade checkout is on ; `~/var/chaba/reports/timeline.jsonl` is the report-event
     timeline (node/layer/st; [embed-lane-banks-search-pagination] DONE (attempt 3, tony-macbook). Fix was alr; [kk-mac-usage-to-lane-savings]
     [verify-fail] Review pass 2026'
+- at: 2026-11-24 14:38
+  from: devin
+  text: 'retry dispatch picked up on idc02 — work already merged to origin/master (b70550b9, commits b12887a4b5b+1f496e22609).
+    Running verification pass: bank-inspect tests + cms-render tests + dry-run snapshot + timer check on tony-dell.'
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -726,3 +730,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-23 16:16
   note: verified — evidence checks green, closing itself
+awaiting_action: true
