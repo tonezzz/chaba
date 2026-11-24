@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
 column: doing
-updated: 2026-11-24 15:20
+updated: 2026-11-24 15:21
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -176,6 +176,16 @@ comms:
 - at: 2026-11-24 15:20
   from: tony-macbook
   text: claimed
+- at: 2026-11-24 15:21
+  from: chaba
+  text: started devin-task-20261124-152133-move-recurring-qa-backups-to-i on tony-macbook (dispatch)
+- at: 2026-11-24 15:21
+  from: chaba
+  text: 'primer injected 8 lesson(s): no chaba-audit.service/chaba-audit-full.service entries exist in ssot.audit.host;
+    tony-dell has runner-agent-converge.timer (nightly checksum-gated ansible redepl; Deploy note: hosts need the
+    new file via their chaba checkout sync (chaba-repo-s; after the MEM-0545 mddb split, any long-lived script with
+    a hardcoded :11023 def; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    [done] all '
 action:
   type: dispatch
   status: running
