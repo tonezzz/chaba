@@ -4000,6 +4000,7 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
             continue
         lessons.append(row)
     if body.get("op") == "list":
+        want_content = bool(body.get("content") or body.get("full"))
         out = [{"slug": l["slug"], "wiki_title": l["wiki_title"],
                 "url": url_of(l["wiki_title"]),
                 "topic": l["topic"], "level": l["level"],
@@ -4007,6 +4008,15 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
                 "next_review": l["next_review"],
                 "status": l["status"], "no_th": l["no_th"]}
                for l in lessons]
+        if want_content:
+            # bulk read — the namespace scan already fetched every
+            # wikitext; per-slug op=get would rescan it each call
+            # (lesson-audit-scheduled: 221 lessons x ~13s was a
+            # guaranteed 10m-timeout). content=1 costs zero extra
+            # upstream calls.
+            for row, l in zip(out, lessons):
+                row["content"] = l["content"]
+                row["meta"] = l["meta"]
         out.sort(key=lambda r: r["slug"])
         rows, paging = _lesson_page(body, out)
         return {"lessons": rows, "count": len(rows),
@@ -6916,6 +6926,11 @@ def _selftest() -> None:
         assert res["source"] == "wiki" and res["count"] == 1
         assert res["skipped_non_lesson"] == 1
         assert res["lessons"][0]["topic"] == "Alpha"
+        assert "content" not in res["lessons"][0]
+        res = _read_lessons({"op": "list", "source": "wiki",
+                             "content": 1}, "devin")
+        assert "wiki body" in res["lessons"][0]["content"]
+        assert res["lessons"][0]["meta"]["topic"] == "Alpha"
         wslug = "lesson-" + hashlib.md5(b"alpha").hexdigest()[:12]
         res = _read_lessons({"op": "get", "source": "wiki",
                              "slug": wslug}, "devin")

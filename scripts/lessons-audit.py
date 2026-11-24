@@ -90,8 +90,10 @@ docs/reports/lesson-audit/latest.json in the served checkout
 (idc03 ~/CascadeProjects/chaba-tony-dell).
 
 Procedure:
-1. Refresh flags yourself — POST {API}/lesson {op:"list"}, then
-   {op:"get", slug} per lesson and apply
+1. Refresh flags yourself — POST {API}/lesson
+   {"op":"list","content":1} (one call returns every lesson WITH
+   body; per-slug op=get rescans the whole wiki namespace and is too
+   slow for a full pass), then apply
    scripts/lessons-audit.py:audit_one (or read the latest audit JSON).
    Act ONLY on R1/R3/R4 flags. R2 thin/junk and R5 Thai are out of
    scope: junk deletion is human-gated, and Thai exemptions live in
@@ -122,10 +124,14 @@ Procedure:
 """
 
 
+API_TIMEOUT = float(os.environ.get("LESSON_API_TIMEOUT", "90"))
+
+
 def api(body: dict) -> dict:
     req = urllib.request.Request(API, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=30).read().decode())
+    return json.loads(
+        urllib.request.urlopen(req, timeout=API_TIMEOUT).read().decode())
 
 
 _BOARD_BASE = None
@@ -338,22 +344,33 @@ def main():
     args = ap.parse_args()
 
     try:
-        d = api({"op": "list"})
+        # content=1: wiki op:list already scans every page — rows come
+        # back with bodies and NO per-slug gets are needed (the old
+        # serial/parallel get loop was the 10m-timeout cause; on the
+        # wiki store each get rescans the whole namespace). wp/mddb
+        # lists ignore the param and rows lack "content" -> the get
+        # fallback below still covers them.
+        d = api({"op": "list", "content": 1})
     except Exception as e:  # noqa: BLE001
         print(f"audit: /lesson list failed: {e}", file=sys.stderr)
         return 2
     lessons = d.get("lessons", [])
 
-    # parallel op=get — the serial version timed out the 10m unit when
-    # WP/edge was slow (~92 gets through tailnet->caddy->WP)
-    contents = {}
+    contents = {l["slug"]: l["content"] for l in lessons
+                if isinstance(l.get("content"), str)}
+    missing = [l.get("slug", "") for l in lessons
+               if l.get("slug") not in contents]
     get_errors = 0
-    with ThreadPoolExecutor(max_workers=WORKERS) as ex:
-        for slug, content, err in ex.map(
-                _get_content, [l.get("slug", "") for l in lessons]):
-            contents[slug] = content
-            if err:
-                get_errors += 1
+    if missing:
+        # fallback for sources whose list rows carry no content
+        # (wp/mddb, or an older board-api without content=1) —
+        # parallel op:get. On the wiki store this path should be
+        # empty; if it isn't, the door predates the bulk read.
+        with ThreadPoolExecutor(max_workers=WORKERS) as ex:
+            for slug, content, err in ex.map(_get_content, missing):
+                contents[slug] = content
+                if err:
+                    get_errors += 1
 
     rows = []
     for l in lessons:
