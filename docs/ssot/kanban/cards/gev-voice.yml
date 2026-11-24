@@ -1,6 +1,6 @@
 id: gev-voice
 title: gev voice — mic pcm path, mute gating, playback gap
-column: doing
+column: review
 priority: medium
 program: gev
 area: voice
@@ -15,7 +15,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-d
   document the iOS constraint (mic works in Safari, not standalone PWA — apple-mobile-web-app-capable=no), and close
   the playback gap: Gemini output is currently transcription-text only, no audio playback path exists in the GEV
   page (vcast_say covers non-Latin TTS separately).'
-updated: 2026-11-24 15:13
+updated: 2026-11-24 15:16
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -365,9 +365,38 @@ comms:
     to index-Bd5DfCi5.js, honest-fail.js preserved, patch-gev-dist.sh now runs gev-patch-dist.mjs so rebuilds keep
     playback. Evidence: gev-voice-check.mjs 21/21 (muted => 0 outbound PCM frames, flag-stripped mutation still
     silent — GainNode carries invariant; pre-patch bundle 17/21 fails on'
+- at: 2026-11-24 15:16
+  from: tony-dell
+  text: 'finished (ok): exit=0 l: `docs/ssot/jobs/gev/2026-11-24-gev-voice-playback-land.yml`. | devin-task-20261124-150027-gods-eye-view-app-wo'
+- at: 2026-11-24 15:16
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 15:16
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-150027-gods-eye-view-app-work-held-re'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 15:16
+  from: chaba
+  text: banked 288 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:16
+  from: chaba
+  text: pushed dispatch/20261124-150027-gods-eye-view-app-work-held-re to origin
+- at: 2026-11-24 15:16
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 63.9s)
+- at: 2026-11-24 15:16
+  from: chaba
+  text: auto-merged 4738e4e3 (dispatch/20261124-150027-gods-eye-view-app-work-held-re) → origin/master
+- at: 2026-11-24 15:16
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     no_repo: 2026-11-08 16:20
     failed_noted: 2026-11-09 09:49
@@ -377,9 +406,10 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service: Consumed
     2.505s CPU time.'
   attempts: 2
-  result: 'exit=0 -eye-view-app-work-held-re.md` and a `[verify]` evidence comment posted to the card. | devin-task-20261117-090610-gods-eye-view-app-work-held-re.service:
-    Consumed 1min 20.753s CPU time over 7min 37.408s wall clock time, 1021.7M memory peak.'
+  result: 'exit=0 l: `docs/ssot/jobs/gev/2026-11-24-gev-voice-playback-land.yml`. | devin-task-20261124-150027-gods-eye-view-app-work-held-re.service:
+    Consumed 2min 46.584s CPU time over 13min 23.015s wall clock time, 1G memory peak, 668.5M memory swap peak.'
   runner: tony-dell
+  verified: true
 requests:
 - id: arm-gev-dispatch-approve-deploy-1-add-go-53bf0b
   ask: Arm GEV dispatch + approve deploy? (1) add `gods-eye-view /home/tony/gods-eye-view main` to ~/.local/share/devin-dispatch/repos.conf
