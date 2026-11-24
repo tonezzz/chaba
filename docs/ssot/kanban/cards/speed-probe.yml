@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: review
-updated: 2026-11-24 08:05
+column: done
+updated: 2026-11-24 08:07
 brief: probe
 ref: OPS-0812
 comms:
@@ -467,6 +467,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-075921-redeploy-the-drifted-runner-ag,
     branch dispatch/20261124-075921-redeploy-the-drifted-runner-ag'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -525,3 +528,7 @@ spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, ton
   by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent
   on each respective host. Verify that each host successfully runs the updated runner-agent without drift errors.
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:07
+  note: verified — evidence checks green, closing itself
