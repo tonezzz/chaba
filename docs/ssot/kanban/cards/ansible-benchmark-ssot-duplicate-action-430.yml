@@ -1,7 +1,7 @@
 id: ansible-benchmark-ssot-duplicate-action-430
 title: 'SSOT hygiene: duplicate action key in ssot.audit.hosts.yml (~:430)'
 column: doing
-updated: 2026-11-24 21:40
+updated: 2026-11-24 21:46
 brief: 'Benchmark finding still live: focus-dispatcher-overnight.service has two action: keys (verify-next-run,
   investigate) in the same list item; YAML keeps the last.'
 priority: medium
@@ -119,6 +119,13 @@ comms:
     MANUAL LANDING (devin session, tony-dell con; [disk-guard-ssot-enforce] primer injected 8 lesson(s): [ansible-vs-legacy-fleet-;
     Zombie restarts (OPS-1071) produce duplicate sessions — before doing work, check; prune-old-docs.py still silently
     fails on ops host-logs (`lis'
+- at: 2026-11-24 21:46
+  from: devin
+  text: 'Fixed: kept action: verify-next-run, dropped the shadowed action: investigate on tony-dell focus-dispatcher-overnight.service
+    (known_failed). Rationale: reason text ends "next scheduled run verifies", diagnosis already done (ExecStartPre
+    git pull exit 128, manual run clean 2026-10-09), and the tony-omen twin entry for the same unit uses verify-next-run.
+    Both dup lines were born in the same bulk commit 962fc698331 — same-edit artifact, not staged intent. Validated:
+    file parses, 0 dup keys, ssot-v'
 action:
   type: dispatch
   status: running
