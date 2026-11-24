@@ -1,7 +1,7 @@
 id: audit-miss-ada-chaba-home-snapshot
 title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
-column: doing
-updated: 2026-11-24 17:18
+column: review
+updated: 2026-11-24 17:22
 brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
 priority: medium
 program: home-assistant
@@ -202,12 +202,42 @@ comms:
     live dashboard untouched, snapshot == live config (views ai/chat/calendar/gesture/report/nobito). The 86ae90671
     deletion premise (dashboard gone) was wrong — SSOT note updated with rationale. Also: --instance ada-ha in sync-ssot-from-live.sh
     no'
+- at: 2026-11-24 17:22
+  from: tony-dell
+  text: 'finished (ok): exit=0 em.assessment.yml` refresh left untouched per worktree rules. | devin-task-20261124-170951-reconcile-the-live-ada'
+- at: 2026-11-24 17:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:22
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-170951-reconcile-the-live-ada-ha-chab'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 17:22
+  from: chaba
+  text: pushed dispatch/20261124-170951-reconcile-the-live-ada-ha-chab to origin
+- at: 2026-11-24 17:22
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 57.4s)
+- at: 2026-11-24 17:22
+  from: chaba
+  text: auto-merged 637f35ed (dispatch/20261124-170951-reconcile-the-live-ada-ha-chab) → origin/master
+- at: 2026-11-24 17:22
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 em.assessment.yml` refresh left untouched per worktree rules. | devin-task-20261124-170951-reconcile-the-live-ada-ha-chab.service:
+    Consumed 3min 2.311s CPU time over 9min 26.326s wall clock time, 976.6M memory peak, 568.4M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 17:09
+review_kind: verify
