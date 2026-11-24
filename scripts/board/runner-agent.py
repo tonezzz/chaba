@@ -4310,6 +4310,7 @@ def claim_pass(st: dict) -> bool:
             # codemod/paid_frontier lanes (OPS-0885 miss class).
             lane = str(a.get("lane") or "")
             kk_tc = ""
+            lane_src = ""
             if not lane:
                 # Bounded read-only classes self-route to the kk_mac
                 # executor (kk-mac-auto-lane-classifier) — the same rule
@@ -4320,6 +4321,10 @@ def claim_pass(st: dict) -> bool:
                     kk_tc = dr.kk_mac_route(card)
                 if not kk_tc:
                     lane = classify_lane(card)
+                    # classifier output, not an author pin — flag it so
+                    # board-api stamps lane_source and the next queue
+                    # re-evaluates (devin-lane-cheap-ops-reroute)
+                    lane_src = "claim"
             if lane == "manual":
                 continue
             if kk_tc:
@@ -4334,6 +4339,8 @@ def claim_pass(st: dict) -> bool:
                     a["model"] = LANE_MODELS[lane]
                 claim_body["lane"] = lane
                 claim_body["model"] = a.get("model", "")
+                if lane_src:
+                    claim_body["lane_source"] = lane_src
         resp = api("/action", claim_body)
         if resp.get("error"):
             # rejections (lost race, already running on a stale view)

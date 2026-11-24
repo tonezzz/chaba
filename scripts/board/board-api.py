@@ -1568,7 +1568,20 @@ def do_claim(card: dict, body: dict) -> str:
         if lane not in {"codemod", "free_lane", "paid_frontier", "devin",
                         "manual", "nlm_batch"}:
             raise ValueError("invalid action lane")
+        # A claim-time lane is classifier output, not author intent —
+        # stamp lane_source provenance so the next queue re-evaluates it
+        # instead of reading a bare stamp as an explicit pin forever
+        # (devin-lane-cheap-ops-reroute: the audit's explicit bucket was
+        # mostly bare claim stamps). An author pin — lane already on the
+        # card with no lane_source — stays untouched.
+        author_pin = bool(a.get("lane")) and not a.get("lane_source")
         a["lane"] = lane
+        if not author_pin:
+            src = str(body.get("lane_source") or "").strip()[:40]
+            if src:
+                a["lane_source"] = src
+            elif not a.get("lane_source"):
+                a["lane_source"] = "claim"
     if model:
         if not dr.MODEL_ID_RE.match(model):
             raise ValueError("invalid action model")
