@@ -1,7 +1,7 @@
 id: persona-name-leaks-tool-result
 title: persona-name-leaks-tool-result
-column: review
-updated: 2026-11-24 15:19
+column: done
+updated: 2026-11-24 15:22
 brief: 'Shared tool-result wording leaks Ada into non-Ada lanes: realtime_provider.py:5326 returns Ada is now <expr>
   for set_facial_expression; openrouter_provider.py:414 same pattern. On mn/Kraut lane the model sees Ada is now
   neutral (idc03 journal 2026-10-17 14:51). Fix: use ADA_PWA_NAME default Ada in result text. Same class as TG_PERSONA_NAME
@@ -434,6 +434,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-151445-goal-redeploy-the-drifted-runn,
     branch dispatch/20261124-151445-goal-redeploy-the-drifted-runn'
+- at: 2026-11-24 15:22
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: 'Goal: Redeploy the drifted runner-agent script from the local chaba repository to all affected hosts (tony-macbook,
   tony-dell, idc02, idc03). Host: tony-macbook, tony-dell, idc02, idc03. Repo: chaba. Constraints: Copy scripts/board/runner-agent.py
   to ~/.local/bin/runner-agent on each specified host using scp. Testable done-condition: Verify that the installed
@@ -452,3 +455,7 @@ action:
 claim:
   since: 2026-11-24 15:14
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:22
+  note: verified — evidence checks green, closing itself
