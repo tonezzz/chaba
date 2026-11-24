@@ -1,7 +1,7 @@
 id: cms-auto-health-stop-carding-powered-off-e11c7a
 title: 'cms-auto-health: stop carding powered-off/sleeping hosts'
 column: doing
-updated: 2026-11-24 22:36
+updated: 2026-11-24 22:46
 brief: cms-auto-* cards reopen every time a portable host (tony-macbook) is powered off > interval+grace. nest-tony-macbook
   alone has auto-recovered 4x (11-18, 11-19, 11-21, 11-23) and each open card can burn a dispatch triage — dispatch
   20261123-202118 was triggered by exactly this. Host-down alerting already exists separately (ops-event reachability
@@ -141,6 +141,13 @@ comms:
   text: 'dispatch picked up — implementing direction A: nest-mgr stamps host:<hostname> into ada-cms-automation
     cfg; cms-auto-health gates non-ok verdicts on tailscale reachability (tailscale status --json, fail-open) ->
     state=host-down suppresses cards and auto-closes open ones through the green-window path.'
+- at: 2026-11-24 22:46
+  from: devin
+  text: 'DONE — direction A implemented on dispatch/20261124-222738-recurring-false-positive-class (commits f2aeb3a39c7
+    + outcome doc). nest-mgr publish() now stamps host:<hostname> into ada-cms-automation cfg; cms-auto-health host_gate()
+    demotes stale/error/dead to state=host-down when cfg.host is tailnet-offline via tailscale status --json (lazy,
+    one cached probe/run, FAIL-OPEN on unknown). host-down suppresses card creation and auto-closes open review
+    cards via GREEN_WINDOWS with a host-down note. 14 '
 action:
   type: dispatch
   status: running
