@@ -1,0 +1,87 @@
+title: Ada lane restarts — clear deleted ada-pi venv from running processes (ADA-0033)
+date: 2026-11-24
+card: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
+dispatch: dispatch-wt-20261124-212710-found-during-michael-lane-cont
+status: shipped-live   # all dirty lanes restarted clean + ws-smoked
+
+summary: |
+  Follow-up to michael-lane-context-window (same day). Four idc03 lane
+  processes were still executing on the deleted ~/CascadeProjects/ada-pi
+  venv (launched via stale console-script shebangs before the 2026-11-24
+  repair). Restarted each once, sequenced, at a zero-established-
+  connections window (~21:34-21:41 +07). mn01 needed no restarts — both
+  lanes were already running the ada-voice interpreter path.
+
+detection: |
+  Reliable per-process check: /proc/<pid>/cmdline argv[0]. Console-script
+  launches record the shebang interpreter literally — dirty lanes show
+  `/home/tony/CascadeProjects/ada-pi/.venv/bin/python` even though
+  exe(5) resolves to /usr/bin/python3.12 (venv python is a symlink).
+  `pgrep -af ada-pi/.venv` fleet-wide is the one-liner audit.
+  /proc/<pid>/maps shows 0 ada-pi hits even when dirty (no extension
+  modules loaded yet) — maps alone is NOT a reliable detector; cmdline is.
+  /proc/<pid>/environ carries no VIRTUAL_ENV/PYTHONPATH for these units.
+
+changes:
+  - host: idc03
+    unit: ada-chaba.service    # :8008  pid 3723  -> 3215397  21:34 +07
+    unit: ada-kk.service       # :8007  pid 5975  -> 3217279  21:35 +07
+    unit: ada-ha-ada.service   # :8006  pid 7279  -> 3225904  21:36 +07
+    unit: ada-ha-tony.service  # :8002  pid 3878  -> 3242571  21:40 +07
+  - host: mn01
+    action: none — ada-ha-tony (pid 2916082, started 13:21 UTC) and
+      ada-ha-michael (pid 2685671, 08:44 UTC) both post-date the shebang
+      repair; cmdline + maps confirm ada-voice/.venv site-packages.
+      pgrep ada-pi/.venv = 0 on mn01.
+
+already_clean_idc03: |
+  ada-ai-kraut (:8003, restarted 15:39 +07 by the michael-lane dispatch,
+  post-repair), ada-kk-dev (:8009, restarted 19:40 +07), all four relays
+  (line/tg x3 — ExecStart uses explicit `.venv/bin/python -m backend.*`,
+  never a console script, so shebang drift never applied), ada-bankq-student
+  (open-jev venv, unrelated), ada-stt (audiocpp binary, unrelated).
+
+verification:
+  - >-
+    pgrep -af 'ada-pi/.venv' on idc03 post-restart: 0 processes.
+  - >-
+    /proc/<new MainPID>/cmdline argv[0] =
+    /home/tony/CascadeProjects/ada-voice/.venv/bin/python for all four.
+  - >-
+    curl /api/health 200 on :8002/:8006/:8007/:8008; journal shows
+    'Application startup complete' + 'Uvicorn running' per unit.
+  - >-
+    ws smoke per lane: scenario-live.py /tmp/venv-restart-smoke.yaml
+    (1-turn text, response_nonempty) vs ws://127.0.0.1:<port>/ws with each
+    lane's ADA_API_KEY — ALL PASS, real assistant transcripts returned.
+    This exercises the ConversationMemory -> NotebooklmClient -> httpx
+    path that was dying on FileNotFoundError pre-restart.
+  - >-
+    journalctl --since restart: 0 Traceback / 0 FileNotFoundError across
+    all four units.
+
+findings:
+  - id: notebooklm-rest-url-dead
+    detail: |
+      ada-chaba logged `voice.conversation: notebooklm failed: All
+      connection attempts failed` once during its smoke. Root cause is
+      config drift, NOT the venv: every lane env points
+      NOTEBOOKLM_REST_BASE_URL at http://100.68.142.13:3011/v1 (tony-dell)
+      where notebooklm-rest.service is masked+dead — nothing listens on
+      :3011. Smoke still passed (degraded recall only). Carded as
+      ADA-1328. The ExecStartPre gate curls idc03:11023 which is MDDB,
+      not notebooklm — the dependency is ungated.
+  - id: ada-adobe-stock-tool-declaration
+    detail: |
+      Pre-existing `tools.d tool 'ada_adobe_stock' failed to load:
+      missing DECLARATION dict with a 'name'` on chaba/tony lanes —
+      present before AND after restart, unrelated to this work.
+
+artifacts:
+  - restarted units on idc03 (live state, no repo diff)
+  - /tmp/venv-restart-smoke.yaml on idc03 (throwaway smoke scenario)
+  - card ADA-1328 notebooklm-rest-base-url-points-at-dead-b8ef61
+
+related_files:
+  - docs/ssot/jobs/ada/2026-11-24-michael-lane-context-window.yml
+  - docs/ssot/kanban/cards/ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81.yml
