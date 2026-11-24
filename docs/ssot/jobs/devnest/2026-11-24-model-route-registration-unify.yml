@@ -1,0 +1,106 @@
+title: "Model route registration unified — sync-opencode-models hardened + hourly jobs on idc02/tony_dell + CI drift gate"
+date: 2026-11-24
+card: model-route-registration-unify
+ref: OPS-1020
+session: "dispatch-wt-20261124-184132-adding-one-model-today-require"
+status: "implemented in worktree — merge pending dispatch close-out"
+
+context: >-
+  Card spec: adding one model required edits in stacks/idc03/litellm/
+  config.yaml (+restart), idc03 ~/.config/litellm/config.yaml live copy,
+  each host's ~/.config/opencode/opencode.json provider map, and every
+  evals/opencode-lane/profiles/*/profile.yml model.allowed — four
+  surfaces, zero cross-validation. Option (a) recommended and taken:
+  scripts/devnest/sync-opencode-models.py (already existed since
+  2026-10-30, Tony's commit 384848259d) + timer + CI check-mode.
+
+what_changed:
+  script_hardening:
+    - "provider-aware validation: only refs under --provider (default
+      litellm) are checked against the route list — opencode/*,
+      openrouter/*, ollama/* profile refs are foreign-provider and were
+      false-flagged as profile_route_missing before the fix (12 refs
+      across info-find/ops-readonly/ssot-research)"
+    - "empty model.allowed now correctly means 'any model in tier'
+      (matches check_envelope semantics) — profile_default_unallowed
+      only fires on a non-empty list"
+    - "--write refuses (opencode_map_unwritable, breaking) when the
+      provider block lacks options.baseURL — previously it would mint a
+      dead provider.litellm.models stub with no baseURL/apiKey on a
+      host that never configured the provider"
+    - "missing/unparseable opencode.json handled: absent -> note
+      opencode_map_absent (map checks skipped), unreadable -> breaking
+      opencode_map_unreadable (jsonc files need renaming or a parser)"
+    - "--from-api key discovery: --key-env comma list tried in order,
+      then ~/.config/secrets/litellm-keys.env + litellm-chaba.env
+      (same order as opencode_profiles.litellm_key); report records
+      key_env + route_source, flagging per-key-filtered /v1/models"
+    - "--alert: deduped (24h) board-api /inbox entry on breaking
+      findings — state at ~/var/chaba/opencode-models-sync-alerts.json,
+      override CHABA_OPENCODE_SYNC_ALERT_STATE"
+  profile_drift_fixed:
+    - "ops-remote-read: litellm/gemini-3-flash -> litellm/gemini-3.5-flash
+      (same typo class Tony fixed in 5 profiles 2026-10-30; this profile
+      postdates that fix, OPS-1025)"
+    - "ssot-research: removed litellm/or-free-north-code — route deleted
+      from LiteLLM 2026-11-20 (OR 404) per the verification report,
+      which claimed the removal but it never landed in this file"
+    - "branch-code-supervised-pilot: default litellm/claude-fable-5.1 ->
+      litellm/or-claude-fable-5.1; allowed dropped the never-existent
+      litellm/claude-fable-5.1 + litellm/gemini-3-pro (no such
+      model_name ever committed — git log -S empty) keeping the two
+      verified or- routes already in the list"
+  jobs_declared:
+    - "ssot.jobs.yml opencode-models-sync x2 (same-id per-host pattern
+      like log-shipper): idc02 hourly *:37, tony_dell *:41 — the two
+      hosts known to carry a litellm provider map in
+      ~/.config/opencode/opencode.json"
+    - "exec: sync-opencode-models.py --from-config <repo
+      stacks/idc03/litellm/config.yaml> --write --alert — route truth
+      is the repo config, NOT live /v1/models: LiteLLM virtual keys
+      return per-key-filtered model lists which would false-flag
+      routes other keys can call (card KNOWN_PITFALLS). config.yaml is
+      what deploy.sh pushes live; live-vs-repo parity is a separate
+      drift class owned by deploy.sh/check-serve-config"
+    - "--write is additive only (missing routes added, stale reported
+      never pruned by the timer); profile drift cannot be auto-fixed —
+      it fails the unit + files the inbox alert"
+    - "units rendered: systemd/generated/{idc02,tony_dell}/
+      opencode-models-sync.{service,timer}; install on-host via
+      render-jobs.py --host <h> --ids opencode-models-sync --install"
+  ci_gate:
+    - "repo-lint.yml tooling-contracts job: new 'OpenCode model drift
+      check' step runs --check against repo config.yaml + the jack-ide
+      repo opencode.json; paths filter extended to evals/opencode-lane,
+      ssot.jobs.yml, stacks/idc03/litellm, systemd/generated"
+    - "tests/devnest/test_sync_opencode_models.py — 13 tests, all pass;
+      also wired into the workflow pytest line and the nightly
+      chaba-pytest-suite"
+
+known_remaining_drift:
+  - "lane_gate.STRONG_MODELS + PRICE_TABLE still name litellm/
+    claude-fable-5.1, litellm/gemini-3-pro, litellm/gpt-5.2-codex —
+    routes that never existed. Harmless while no enabled profile allows
+    them (post-fix none do), but an envelope could still name one and
+    pass the strong-tier gate then die at provider. Left for Tony: are
+    native Anthropic/OpenAI routes planned, or should STRONG_MODELS drop
+    the phantoms?"
+  - "idc03 ~/.config/litellm/config.yaml live copy parity vs repo is
+    not checked by this sync — deploy.sh owns that push; a live-config
+    drift check would be a separate job if wanted"
+  - "hosts beyond idc02/tony_dell may carry ~/.config/opencode/
+    opencode.json litellm maps (mn01/omen/macbook unverified) — the
+    job is per-host declared; add entries if a litellm lane 401s
+    elsewhere (rainy-day-spend-decisions blast-radius note)"
+
+verify:
+  - "python3 scripts/devnest/sync-opencode-models.py --from-config
+    stacks/idc03/litellm/config.yaml --check -> ok:true, 0 breaking"
+  - "same + --opencode stacks/idc02/jack-ide/opencode/opencode.json
+    --check -> ok:true (CI gate command)"
+  - "python3 scripts/render-jobs.py --check -> OK 122 jobs, 8 hosts"
+  - "pytest tests/devnest/test_sync_opencode_models.py -> 13 passed"
+  - "pre-existing failures on worktree base (NOT this diff):
+    test_lane_gate.py::Admit::test_s1_requires_opencode_lanes_env,
+    test_runner_tooling_contract.py::test_pin_hashes_match_sources
+    (runner-agent.py sha drift vs manifest pin)"
