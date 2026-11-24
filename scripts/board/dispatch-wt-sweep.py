@@ -9,10 +9,12 @@ when ALL hold:
 
   * it is older than --days (default 3) — forensic window preserved
   * no devin-task-<tid>* unit is active/activating — never reap in-flight
+    (systemd --user on Linux, launchd gui/<uid> jobs on darwin — the
+    same task-unit names runner-agent registers on each runtime)
   * its task evidence is captured: the dispatch task dir exists with
-    meta.json — every executor writes it; opencode runs additionally
-    have events.jsonl (the full tool-call transcript — including write
-    payloads, so uncommitted tree content is not lost)
+    any durable run record — meta.json (every executor), events.jsonl
+    (opencode transcript — including write payloads, so uncommitted
+    tree content is not lost), usage.json, verdict.json, or exit_code
   * --apply was passed (default is dry-run)
 
 Removal uses `git worktree remove --force` — dirty trees are EXPECTED
@@ -25,11 +27,17 @@ Salvage-before-reap (card dispatch-runner-resilience): the evidence dir
 preserves the transcript, not git history — a failed run's COMMITTED
 work sits only on the local dispatch branch, and -D deletes it forever.
 Before reaping, the worktree head is checked against origin
-(remote-tracking refs after a fresh fetch): commits already on origin
-reap as before; anything else is pushed to a recoverable
-`wip/dispatch/<task-id>` ref first and the pushed ref is logged to the
-card's comms. When origin can't be reached or the push fails, the tree
-is KEPT — an unproven head is never silently lost.
+(remote-tracking refs after a fresh fetch — one fetch per repo root
+per run): commits already on origin reap as before; anything else is
+pushed to a recoverable `wip/dispatch/<task-id>` ref first and the
+pushed ref is logged to the card's comms. When origin can't be reached
+or the push fails, the tree is KEPT — an unproven head is never
+silently lost.
+
+Scheduled path (card OPS-1036): runner-agent's wt_sweep_pass invokes
+sweep(..., apply=True) once per RUNNER_WT_SWEEP_S (default 24h) on every
+runner host — no separate unit needed, the pass rides the already-
+declared runner-agent.timer/LaunchAgent. DISPATCH_WT_SWEEP=0 disables.
 
 Usage:
   dispatch-wt-sweep.py            # dry-run report
@@ -43,11 +51,18 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 import urllib.request
 from pathlib import Path
+
+# Any one of these in the task dir proves the dispatch machinery ran and
+# left durable records — the card's named set (events.jsonl, usage.json,
+# verdict.json) plus the legacy/meta equivalents.
+EVIDENCE_FILES = ("meta.json", "events.jsonl", "usage.json",
+                  "verdict.json", "exit_code")
 
 
 def sh(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
@@ -55,7 +70,47 @@ def sh(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
                           timeout=timeout)
 
 
+def _launchd_active(task_id: str) -> bool:
+    """macOS twin of the systemctl probe — conservative by design.
+
+    runner-agent registers task jobs as gui/<uid>/devin-task-<tid>
+    (plus -fuN followups) launchd jobs bootstrapped from plists under
+    RUNNER_STATE/launchd/ (~/.local/share/runner-agent/launchd/). A job
+    counts as live while `launchctl print` shows a pid or
+    state=running — the same predicate runner-agent._launchd_active
+    uses. No launchctl -> we cannot prove in-flight safety -> True
+    (keep), matching the sweeper's keep-on-doubt rule."""
+    if shutil.which("launchctl") is None:
+        return True
+    base = f"devin-task-{task_id}"
+    cands = {base}
+    ldir = Path.home() / ".local/share/runner-agent/launchd"
+    try:
+        for p in ldir.glob(f"{base}*.plist"):
+            name = p.name[:-len(".plist")]
+            if name == base or re.fullmatch(
+                    re.escape(base) + r"-fu\d+", name):
+                cands.add(name)
+    except OSError:
+        pass
+    for unit in sorted(cands):
+        r = sh(["launchctl", "print", f"gui/{os.getuid()}/{unit}"],
+               timeout=15)
+        if r.returncode != 0:
+            continue
+        out = r.stdout or ""
+        m = re.search(r"(?m)^\s*pid\s*=\s*(\d+)", out)
+        if m and int(m.group(1)) > 0:
+            return True
+        m = re.search(r"(?m)^\s*state\s*=\s*(\S+)", out)
+        if m and m.group(1) == "running":
+            return True
+    return False
+
+
 def unit_active(task_id: str) -> bool:
+    if sys.platform == "darwin":
+        return _launchd_active(task_id)
     r = sh(["systemctl", "--user", "list-units", f"devin-task-{task_id}*",
             "--state=active,activating", "--no-legend", "--plain"],
            timeout=15)
@@ -64,9 +119,7 @@ def unit_active(task_id: str) -> bool:
 
 def evidence_dir(task_id: str) -> Path | None:
     d = Path.home() / ".local/share/devin-dispatch/tasks" / task_id
-    # meta.json is the cross-executor durable record; opencode runs add
-    # events.jsonl (full tool-call transcript).
-    if (d / "meta.json").is_file() or (d / "events.jsonl").is_file():
+    if any((d / f).is_file() for f in EVIDENCE_FILES):
         return d
     return None
 
@@ -93,13 +146,19 @@ def head_sha(wt: Path) -> str:
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
-def on_origin(root: Path, sha: str) -> bool:
+def on_origin(root: Path, sha: str, fetched: set | None = None) -> bool:
     """Every commit at sha reachable from an origin remote-tracking ref.
     Fetch first so the view is fresh; a failed fetch still leaves the
     last-fetched refs, which are proof enough — a commit that WAS on
-    origin is still there (wip/base refs are never force-rewound)."""
-    sh(["git", "-C", str(root), "fetch", "-q", "--prune", "origin"],
-       timeout=90)
+    origin is still there (wip/base refs are never force-rewound).
+    `fetched` (when given) dedupes the fetch across worktrees sharing
+    one repo root — a failed fetch is recorded too, so a dead origin
+    costs one timeout per repo, not one per tree."""
+    if fetched is None or root not in fetched:
+        sh(["git", "-C", str(root), "fetch", "-q", "--prune", "origin"],
+           timeout=90)
+        if fetched is not None:
+            fetched.add(root)
     r = sh(["git", "-C", str(root), "branch", "-r", "--contains", sha])
     return any(ln.strip().startswith("origin/")
                for ln in r.stdout.splitlines())
@@ -152,9 +211,13 @@ def note_salvage(cid: str, text: str) -> None:
 
 
 def sweep(base: Path, days: float, task_root: Path, apply: bool) -> int:
+    if os.environ.get("DISPATCH_WT_SWEEP", "1") == "0":
+        print("dispatch-wt-sweep disabled: DISPATCH_WT_SWEEP=0")
+        return 0
     now = time.time()
     cutoff = now - days * 86400
     rc = 0
+    fetched: set = set()
     for wt in sorted(base.glob("dispatch-wt-*")):
         if not wt.is_dir():
             continue
@@ -170,11 +233,11 @@ def sweep(base: Path, days: float, task_root: Path, apply: bool) -> int:
             continue
         ev = evidence_dir(tid) if task_root is None else \
             (task_root / tid
-             if ((task_root / tid / "meta.json").is_file()
-                 or (task_root / tid / "events.jsonl").is_file())
+             if any((task_root / tid / f).is_file()
+                    for f in EVIDENCE_FILES)
              else None)
         if ev is None:
-            print(f"  KEEP  {tag} — no task evidence (meta.json/events.jsonl); "
+            print(f"  KEEP  {tag} — no task evidence ({'/'.join(EVIDENCE_FILES)}); "
                   f"evidence not captured, needs manual review")
             continue
         root = repo_root(wt)
@@ -186,7 +249,7 @@ def sweep(base: Path, days: float, task_root: Path, apply: bool) -> int:
         # can take it. unpushed=None means 'can't even read HEAD' — the
         # same non-git case the old code reaped blindly; keep it.
         sha = head_sha(wt)
-        unpushed = None if not sha else not on_origin(root, sha)
+        unpushed = None if not sha else not on_origin(root, sha, fetched)
         if unpushed is None:
             print(f"  KEEP  {tag} — HEAD unreadable; not reaping blind")
             continue
