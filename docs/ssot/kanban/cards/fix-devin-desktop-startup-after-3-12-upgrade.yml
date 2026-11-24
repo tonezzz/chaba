@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
-column: doing
-updated: 2026-11-24 21:25
+column: review
+updated: 2026-11-24 21:30
 priority: high
 tags:
 - devin
@@ -244,12 +244,45 @@ comms:
     the two never saw each other so every launch spawned a parallel instance fighting over the profile (LevelDB
     LOCK errors). dell was worst: stale pre-upgrade instance (deleted exe) squatted since Nov-23 16:10. FIX: watchdog
     now exports XDG_RUNTIME_DIR (committed de193f9'
+- at: 2026-11-24 21:30
+  from: tony-dell
+  text: 'finished (ok): exit=0 x-the-devin-des.md`; card comms posted with the full summary. | devin-task-20261124-205944-diagnose-and-fix-the-d'
+- at: 2026-11-24 21:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:30
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-205944-diagnose-and-fix-the-devin-des'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 21:30
+  from: chaba
+  text: banked 477 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:30
+  from: chaba
+  text: pushed dispatch/20261124-205944-diagnose-and-fix-the-devin-des to origin
+- at: 2026-11-24 21:30
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 21:30
+  from: chaba
+  text: auto-merged 44b1ef60 (dispatch/20261124-205944-diagnose-and-fix-the-devin-des) → origin/master
+- at: 2026-11-24 21:30
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 x-the-devin-des.md`; card comms posted with the full summary. | devin-task-20261124-205944-diagnose-and-fix-the-devin-des.service:
+    Consumed 5min 47.589s CPU time over 25min 59.994s wall clock time, 1.7G memory peak, 778.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 20:59
+review_kind: verify
