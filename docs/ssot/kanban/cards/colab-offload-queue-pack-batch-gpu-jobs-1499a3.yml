@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
-column: doing
-updated: 2026-11-24 17:13
+column: review
+updated: 2026-11-24 17:17
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -243,12 +243,42 @@ comms:
     status derived) + pack children + job-<name> manifest entries; delta-only fingerprint writes, comms on transitions,
     kill switch ~/.config/queue-mgr.off. 21 unit tests + 119 ops tests green; live --dry-run derives 77 posts in
     ~47s (root queued, 60 done, 9 pending). ssot.jobs.y'
+- at: 2026-11-24 17:17
+  from: tony-dell
+  text: 'finished (ok): exit=0 b-offload-queue-pack-batch.md`; final comms posted to the card. | devin-task-20261124-162634-colab-offload-queue-'
+- at: 2026-11-24 17:17
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:17
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-162634-colab-offload-queue-pack-batch'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 17:17
+  from: chaba
+  text: pushed dispatch/20261124-162634-colab-offload-queue-pack-batch to origin
+- at: 2026-11-24 17:17
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 53.7s)
+- at: 2026-11-24 17:17
+  from: chaba
+  text: auto-merged 2ed9057f (dispatch/20261124-162634-colab-offload-queue-pack-batch) → origin/master
+- at: 2026-11-24 17:17
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 b-offload-queue-pack-batch.md`; final comms posted to the card. | devin-task-20261124-162634-colab-offload-queue-pack-batch.service:
+    Consumed 4min 21.118s CPU time over 47min 54.574s wall clock time, 1G memory peak, 556.2M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 16:25
+review_kind: verify
