@@ -1,6 +1,6 @@
 id: idc01-return-role
 title: 'idc01 returns: warm-DR node — mddb follower #2, standby edge, lab sandbox'
-column: review
+column: done
 priority: high
 review_kind: decide
 note: 'DEPLOYED 2026-10-06: zombies stopped+disabled; mddb-follower live (snapshot applied 4m17s, catching up to
@@ -39,7 +39,7 @@ action:
     Consumed 1min 22.257s CPU time over 8min 8.623s wall clock time, 1.2G memory peak.'
   sweep:
     session_gone: 2026-11-19 07:13
-updated: 2026-11-24 17:01
+updated: 2026-11-24 20:07
 comms:
 - at: 2026-10-06 13:30
   from: devin
@@ -253,5 +253,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:07
+  from: tony
+  text: 'triage (decide): deployment is complete and verified — 2026-10-06 devin verify pass closed all gaps (zombies
+    masked, mddb follower converging, edge 200 via curl --resolve, secrets-backup armed), 2026-10-08 cert-sync.timer
+    fix verified, action.status=done, Tony closed 2026-10-06. No open decision remains; re-close with evidence.'
+- at: 2026-11-24 20:07
+  from: tony
+  text: closed by tony
 claim: {}
 ref: OPS-0133
