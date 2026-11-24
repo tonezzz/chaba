@@ -39,6 +39,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
 | **`/opencode-command`** | `{op: preview\|validate\|publish\|sync\|verify, name: ada, content?, confirm?, expect_sha?}` | allowlisted OpenCode command file — canonical write + commit queue + atomic idc02 deploy + sha verify (runbook: `docs/kb/opencode-command-publisher.md`) |
 | **`/wiki/page`** | `{title|wiki_title, wikitext|text, summary?}` | guarded raw wiki page write — `Education:`/`Reports:`/`Infrastructure:` titles + configured support templates only |
+| **`/wiki/extension`** | `{action: list\|install\|enable\|disable, name?, confirm?}` | MediaWiki extension control via wiki-side Springboard — allowlisted names only, `confirm:true` on mutations, Special:Version + receipt per change |
 
 ## Endpoint notes
 
@@ -187,6 +188,29 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   it's Lockdown-protected, so the write only succeeds because the door's
   wiki account sits in the inhouse/sysop group — the allowlist is a
   guard, not an ACL grant.
+- **`/wiki/extension`** — the controlled extension-management door
+  (card `wiki-extension-control-plane`). `action` is
+  `list|install|enable|disable`; `list` needs no confirm and returns
+  the siteinfo extension table plus the approved-name allowlist
+  (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
+  Lockdown — Graph/Drawio/arbitrary repos are refused). One extension
+  per call; mutations require `confirm:true` (400 otherwise — list
+  first, then confirm). Springboard stays server-side: callers never
+  pass repo/branch/commit/delete parameters. Each mutation captures
+  Special:Version + the extension table before/after, verifies the
+  change is reflected, and writes a receipt to
+  `~/.local/state/board-api-wiki-ext/` on the service host
+  (`BOARD_API_WIKI_EXT_STATE` overrides). Mutations are idempotent:
+  when the extension is already in the requested state (present for
+  install/enable, absent for disable — siteinfo lists enabled
+  extensions only) the door verifies the end-state and returns
+  `verified:true, no_op:true` with a receipt without calling
+  Springboard. Otherwise Springboard errors or an unverified result
+  surface as 502 — the door never claims an install that didn't
+  happen. Wiki credentials stay in
+  `~/.config/secrets/wiki-h3-gizmo.env` on idc03; agents (Ada voice,
+  ada-ocb `ada_wiki_extension(s)`, OpenCode) reach it only through this
+  endpoint.
 
 ## /publish — the provider-neutral publication door
 

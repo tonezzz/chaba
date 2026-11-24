@@ -1422,6 +1422,7 @@ REPO_TESTS = {
               "tests/board/test_runner_push_guard.py "
               "tests/board/test_board_api_mutations.py "
               "tests/board/test_kanban_act.py "
+              "tests/board/test_wiki_extension.py "
               "tests/board/test_board_api_action_persistence.py "
               "tests/test_ssot_validate_refs.py "
               "-x -q",

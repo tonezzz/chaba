@@ -239,6 +239,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from http.cookiejar import CookieJar
 from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -3182,6 +3183,12 @@ WIKI_EXTENSION_ALLOWLIST = {
     "Cargo", "PageForms", "Lockdown",
 }
 WIKI_API_CALL = None
+# Test seam for the Special:Version HTML fetch (not an api.php call).
+WIKI_SPECIAL_VERSION = None
+# Off-repo receipt store — one JSON receipt per mutation attempt.
+WIKI_EXT_STATE = Path(os.environ.get(
+    "BOARD_API_WIKI_EXT_STATE",
+    str(Path.home() / ".local/state/board-api-wiki-ext")))
 
 # --- publication layer (devnest-publication-adapter-layer) ------------------
 # State lives off-repo on the service host; tests redirect via env.
@@ -3262,8 +3269,54 @@ def _wiki_installed(api_url: str, opener) -> list[str]:
                   for x in result.get("query", {}).get("extensions", []))
 
 
+def _wiki_special_version(api_url: str, opener) -> dict:
+    """Best-effort Special:Version capture. The pretty /wiki/ path 404s
+    for special pages on this host — index.php/Special:Version (which
+    redirects to the localized name) is the reachable form. Returns a
+    hash+size receipt; callers treat a fetch failure as non-fatal but
+    recorded (the siteinfo extension table is the structured check)."""
+    if WIKI_SPECIAL_VERSION is not None:
+        return WIKI_SPECIAL_VERSION(api_url)
+    base = api_url.split("/api.php", 1)[0].rstrip("/")
+    req = urllib.request.Request(
+        base + "/index.php/Special:Version",
+        headers={"User-Agent": "chaba-board-api/1.0"})
+    try:
+        data = opener.open(req, timeout=30).read()
+    except OSError as e:
+        return {"error": str(e)}
+    return {"sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": len(data)}
+
+
+def _wiki_ext_receipt(state_dir: Path, rec: dict) -> str:
+    """Persist one mutation receipt; returns the receipt id (filename
+    stem). Never raises — a receipt-write failure must not mask the
+    real result, but it is recorded on stderr."""
+    try:
+        state_dir.mkdir(parents=True, exist_ok=True)
+        rid = "{}-{}-{}-{}".format(
+            datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+            re.sub(r"[^a-z0-9-]", "", rec.get("action", "?").lower()),
+            re.sub(r"[^A-Za-z0-9_-]", "", rec.get("name", "none")),
+            uuid.uuid4().hex[:6])
+        path = state_dir / (rid + ".json")
+        path.write_text(json.dumps(rec, indent=2, sort_keys=True))
+        return rid
+    except OSError as e:
+        sys.stderr.write(f"wiki-ext receipt write failed: {e}\n")
+        return ""
+
+
 def do_wiki_extension(body: dict, frm: str) -> dict:
-    """List or confirm-gated install/enable/disable of approved extensions."""
+    """List or confirm-gated install/enable/disable of approved extensions.
+
+    Mutations are single-extension, allowlisted, and require
+    confirm=true (same gate shape as /opencode-command). Springboard
+    stays server-side: callers never see repo/branch/commit/delete
+    parameters. Every mutation records before/after Special:Version +
+    the siteinfo extension table and a durable receipt; failures raise
+    UpstreamError instead of claiming success."""
     action = str(body.get("action") or "list").strip().lower()
     name = str(body.get("name") or "").strip()
     if action not in {"list", "install", "enable", "disable"}:
@@ -3274,44 +3327,92 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
     env, api_url = _wiki_env()
     opener = urllib.request.build_opener(
         urllib.request.HTTPCookieProcessor(CookieJar()))
-    before = _wiki_installed(api_url, opener)
+    before_ext = _wiki_installed(api_url, opener)
     if action == "list":
-        return {"action": "list", "installed": before,
+        return {"action": "list", "installed": before_ext,
                 "approved": sorted(WIKI_EXTENSION_ALLOWLIST),
                 "message": "wiki extension list"}
+    if body.get("confirm") is not True:
+        raise ValueError(
+            f"{action} {name} needs confirm=true — run action=list, "
+            "then re-call with confirm=true")
 
-    login = _wiki_api_call(
-        api_url, opener,
-        {"action": "query", "meta": "tokens", "type": "login",
-         "format": "json"})
-    login_token = login["query"]["tokens"]["logintoken"]
-    logged = _wiki_api_call(
-        api_url, opener,
-        {"action": "login", "lgname": env["WIKI_USER"],
-         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
-         "format": "json"}, post=True).get("login", {})
-    if logged.get("result") != "Success":
-        raise UpstreamError("mediawiki login failed")
-    csrf = _wiki_api_call(
-        api_url, opener,
-        {"action": "query", "meta": "tokens", "format": "json"}
-    )["query"]["tokens"]["csrftoken"]
-    result = _wiki_api_call(
-        api_url, opener,
-        {"action": "springboard", "sbaction": action,
-         "sbtype": "extension", "sbname": name, "token": csrf,
-         "format": "json"}, post=True)
-    if "error" in result:
-        raise UpstreamError("springboard: " +
-                            str(result["error"].get("info") or
-                                result["error"].get("code")))
-    after = _wiki_installed(api_url, opener)
-    if action == "install" and name not in after:
-        raise UpstreamError(f"{name} install was not visible after request")
-    return {"action": action, "name": name, "before": before,
-            "after": after, "verified": name in after,
-            "actor": frm,
-            "message": f"wiki extension {action}: {name}"}
+    rec = {"schema": "wiki-extension-receipt/1", "actor": frm,
+           "action": action, "name": name, "at": now(),
+           "before": {"extensions": before_ext,
+                      "special_version": _wiki_special_version(
+                          api_url, opener)},
+           "status": "failed"}
+    # Idempotent no-op: siteinfo lists enabled extensions, so a name
+    # already present satisfies install|enable and an absent name
+    # satisfies disable. Verify the end-state directly instead of
+    # calling Springboard — this also keeps the door honest while
+    # Springboard's sbname validation is broken on this MW version.
+    already = (name in before_ext) if action in ("install", "enable") \
+        else (name not in before_ext)
+    if already:
+        rec["verified"] = True
+        rec["status"] = "ok"
+        rec["note"] = "no-op: extension already in requested state"
+        rec["after"] = {"extensions": before_ext,
+                        "special_version": rec["before"]
+                        ["special_version"]}
+        rid = _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+        return {"action": action, "name": name, "before": before_ext,
+                "after": before_ext, "verified": True, "no_op": True,
+                "receipt": rid, "actor": frm,
+                "message": f"wiki extension {action}: {name} "
+                           "(already in requested state)"}
+    try:
+        login = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "meta": "tokens", "type": "login",
+             "format": "json"})
+        login_token = login["query"]["tokens"]["logintoken"]
+        logged = _wiki_api_call(
+            api_url, opener,
+            {"action": "login", "lgname": env["WIKI_USER"],
+             "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+             "format": "json"}, post=True).get("login", {})
+        if logged.get("result") != "Success":
+            raise UpstreamError("mediawiki login failed")
+        csrf = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "meta": "tokens", "format": "json"}
+        )["query"]["tokens"]["csrftoken"]
+        result = _wiki_api_call(
+            api_url, opener,
+            {"action": "springboard", "sbaction": action,
+             "sbtype": "extension", "sbname": name, "token": csrf,
+             "format": "json"}, post=True)
+        if "error" in result:
+            raise UpstreamError("springboard: " +
+                                str(result["error"].get("info") or
+                                    result["error"].get("code")))
+        after = _wiki_installed(api_url, opener)
+        rec["springboard"] = {k: result.get(k) for k in
+                              ("springboard", "result") if k in result}
+        rec["after"] = {"extensions": after,
+                        "special_version": _wiki_special_version(
+                            api_url, opener)}
+        expected = (name in after) if action in ("install", "enable") \
+            else (name not in after)
+        rec["verified"] = bool(expected)
+        if not expected:
+            raise UpstreamError(
+                f"{name} {action} was not reflected in Special:Version "
+                "extension list")
+        rec["status"] = "ok"
+    except Exception as e:
+        rec["error"] = str(e)[:500]
+        _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+        raise
+    rid = _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+    out = {"action": action, "name": name, "before": before_ext,
+           "after": after, "verified": True,
+           "receipt": rid, "actor": frm,
+           "message": f"wiki extension {action}: {name}"}
+    return out
 
 
 def do_wiki_news_review(body: dict, frm: str) -> dict:
