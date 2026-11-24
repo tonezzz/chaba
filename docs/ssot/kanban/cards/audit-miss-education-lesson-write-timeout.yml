@@ -1,7 +1,7 @@
 id: audit-miss-education-lesson-write-timeout
 title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
 column: backlog
-updated: 2026-11-24 12:05
+updated: 2026-11-24 17:01
 brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
   the supported board-api writer.
 priority: medium
@@ -150,3 +150,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:01
+  from: chaba
+  text: classified as devin (fallback conf 0.13)
+- at: 2026-11-24 17:01
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
