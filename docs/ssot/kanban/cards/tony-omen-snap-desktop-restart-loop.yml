@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 19:58
 priority: medium
 tags:
 - tony-omen
@@ -13,7 +13,7 @@ spec: Find why snap.snapd-desktop-integration.snapd-desktop-integration.service 
 help: 'Observed during post-reboot verification on 2026-11-06: unit active but NRestarts=453 in about 1h52; journal
   repeatedly reports Failed to open display. A 2026-10-24 Omen job trail already noted this as a separate noisy
   crash loop (~34,580 restarts). No service changes made.'
-ref: OPS-1042
+ref: OPS-1323
 comms:
 - at: 2026-11-06 11:39
   from: devin
@@ -154,3 +154,8 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:58
+  from: chaba
+  text: 'Ref reassigned OPS-1042 -> OPS-1323 in the active-card duplicate ref sweep: video-render-dispatcher keeps
+    OPS-1042 (earliest claim among non-done cards). Slug id and all workflow fields unchanged; historical done cards
+    are intentionally untouched.'

@@ -1,7 +1,7 @@
 id: ssot-validation-errors-cleanup
 title: Fix 5 pre-existing SSOT validation errors
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 19:58
 brief: 'ssot-validate-all.mjs reports 5 errors unrelated to the skills/wiki work: missing title in 4 cards and a
   YAML syntax error in ssot.devnest-lanes.yml.'
 priority: medium
@@ -15,7 +15,7 @@ spec: 'Errors: focus-inbox/2026-11-19-022605-report-watch-fleet-jobs-report.yml,
   required field: title); infrastructure/ssot.devnest-lanes.yml line 262 column 177 (mapping values are not allowed
   here). Do not sweep unrelated uncommitted worktree files (ansible, SSOT, scripts/tests) without their owners;
   fix only the validation errors. Verify: node scripts/ssot-validate-all.mjs -> 0 errors.'
-ref: KNB-0039
+ref: KNB-1317
 comms:
 - at: 2026-11-24 16:35
   from: tony
@@ -24,3 +24,8 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:58
+  from: chaba
+  text: 'Ref reassigned KNB-0039 -> KNB-1317 in the active-card duplicate ref sweep: board-tests-control-pane-lane-failures
+    keeps KNB-0039 (earliest claim among non-done cards). Slug id and all workflow fields unchanged; historical
+    done cards are intentionally untouched.'
