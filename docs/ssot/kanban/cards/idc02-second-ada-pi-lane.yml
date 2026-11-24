@@ -1,7 +1,7 @@
 id: idc02-second-ada-pi-lane
 title: Provision idc02 as second ada-pi dispatch lane
 column: doing
-updated: 2026-11-24 15:03
+updated: 2026-11-24 15:16
 priority: medium
 tags:
 - dispatch
@@ -167,6 +167,13 @@ comms:
     checkout may sit on someone else''s featur; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen).
     Done-condi; [dispatch-worktree-gc] done: dr.gc_worktree guard helper (clean + ancestor-of-me; [dispatch-worktree-gc]
     done: gc_worktree guard helper in disp'
+- at: 2026-11-24 15:16
+  from: devin
+  text: 'progress: (a) done — runner-agent.service.d/vps-lane.conf adds vps + push:ada-voice to RUNNER_LABELS (last
+    drop-in wins); kanban-dispatch.service.d/vps-lane.conf mirrors via KANBAN_HOST_LABELS + repoints stale ExecStart
+    (chaba-tony-dell scaffold, Oct-16) to exec checkout + sets BOARD_API tailnet route. (b) verified — ada-pi symlink->ada-voice,
+    push dry-run OK via github-ada-pi ssh (ls-remote main SHA matches fetch remote), devin-dispatch builtin repo
+    table + dispatch-wt flow proven by 29 prior a'
 action:
   type: dispatch
   status: running
