@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
-column: doing
-updated: 2026-11-24 20:23
+column: review
+updated: 2026-11-24 20:26
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -213,12 +213,35 @@ comms:
     rides the already-declared runner-agent.timer/LaunchAgent so zero new units (host-hygiene satisfied); (2) hardened
     the sweep: launchd-aware unit_active for macOS runners, fetch-once-per-repo-root, evidence gate widened to meta/events/usage/verdict/exit_code,
     DISPATCH_WT_SWEEP=0'
+- at: 2026-11-24 20:26
+  from: tony-dell
+  text: 'finished (ok): exit=0 ale-dispatch-wt.md`; card comms posted with the full summary. | devin-task-20261124-193310-idc02-has-68-stale-dis'
+- at: 2026-11-24 20:26
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 20:26
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-193310-idc02-has-68-stale-dispatch-wt'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 20:26
+  from: chaba
+  text: pushed dispatch/20261124-193310-idc02-has-68-stale-dispatch-wt to origin
+- at: 2026-11-24 20:26
+  from: chaba
+  text: 'auto-merge conflicts: scripts/devin/runner-tooling.manifest.json — card stays in review for manual resolution'
+- at: 2026-11-24 20:26
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 ale-dispatch-wt.md`; card comms posted with the full summary. | devin-task-20261124-193310-idc02-has-68-stale-dispatch-wt.service:
+    Consumed 15min 8.831s CPU time over 50min 48.840s wall clock time, 1.2G memory peak, 487.1M memory swap peak.'
+  verified: false
 claim:
   since: 2026-11-24 19:32
+review_kind: verify
