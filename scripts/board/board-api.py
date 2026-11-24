@@ -128,8 +128,11 @@ Endpoints (after prefix strip):
                   now a thin CLI client of this endpoint. Every write also
                   mirrors into the MDDB chaba-lessons collection — the
                   retrieval surface agents search to get lessons back
-                  (card assessments-to-education-split-ssot-keep-113ca4);
-                  {op:list|get, source:"mddb"} reads it.
+                  (card assessments-to-education-split-ssot-keep-113ca4).
+                  Read ops {op:"list"|"get", source?:wp|wiki|mddb,
+                  limit?, offset?}: list -> paginated rows {slug, topic,
+                  level, modified, next_review, status}; get{slug} ->
+                  {slug, topic, content, meta} (OPS-0821).
   POST /job      {slug, title?, status?, comms?|note?, parent?, kind?,
                   host?, pack?, runner?, result_ref?, error?} — nest_job
                   CPT upsert by slug: queue-mgr mirrors the ada-nest Drive
@@ -3667,6 +3670,28 @@ def _touch_lessons(body: dict, frm: str) -> dict:
             "touched": touched, "missing": missing, "via": frm}
 
 
+LESSON_LIST_MAX = 500
+
+
+def _lesson_page(body: dict, rows: list) -> tuple:
+    """limit/offset paging for op:list — same convention as GET /cards
+    (limit capped at LESSON_LIST_MAX, offset, truncated flag). No
+    params -> the full list, so existing consumers are unaffected."""
+    total = len(rows)
+    try:
+        off = max(0, int(body.get("offset") or 0))
+    except (TypeError, ValueError):
+        off = 0
+    try:
+        lim = int(body.get("limit") or 0)
+    except (TypeError, ValueError):
+        lim = 0
+    lim = min(lim, LESSON_LIST_MAX) if lim > 0 else 0
+    page = rows[off: off + lim if lim else None]
+    return page, {"total": total, "offset": off,
+                  "truncated": off + len(page) < total}
+
+
 def _read_lessons(body: dict, frm: str) -> dict:
     """op=list | op=get — read side of the education door (OPS-0821).
     Agents/lessons-due get lesson content without WP creds.
@@ -3708,9 +3733,11 @@ def _read_lessons(body: dict, frm: str) -> dict:
                             "next_review": m.get("next_review", ""),
                             "status": m.get("status", ""),
                             "no_th": bool(m.get("no_th"))})
-        return {"lessons": out, "count": len(out), "via": frm,
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows), "via": frm,
                 "source": "wp",
-                "message": f"listed {len(out)} lessons"}
+                "message": f"listed {len(rows)} of {len(out)} lessons",
+                **paging}
     slug = str(body.get("slug") or "").strip()
     if not slug:
         raise ValueError("op=get requires slug")
@@ -3718,9 +3745,14 @@ def _read_lessons(body: dict, frm: str) -> dict:
     if not (isinstance(hits, list) and hits):
         raise ValueError(f"lesson not found: {slug}")
     h = hits[0]
-    return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
+    m = h.get("meta") or {}
+    title = (h.get("title") or {}).get("rendered", "")
+    return {"slug": h.get("slug"),
+            "topic": m.get("topic")
+            or title.replace("Education — ", "").strip(),
+            "title": title,
             "content": (h.get("content") or {}).get("rendered", ""),
-            "meta": h.get("meta") or {}, "modified": h.get("modified"),
+            "meta": m, "modified": h.get("modified"),
             "via": frm, "source": "wp", "message": f"get {slug}"}
 
 
@@ -3748,9 +3780,11 @@ def _read_lessons_mddb(body: dict, frm: str) -> dict:
                         "status": _meta_first(m, "status"),
                         "no_th": bool(m.get("no_th"))})
         out.sort(key=lambda r: r["slug"])
-        return {"lessons": out, "count": len(out), "via": frm,
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows), "via": frm,
                 "source": "mddb",
-                "message": f"listed {len(out)} lessons"}
+                "message": f"listed {len(rows)} of {len(out)} lessons",
+                **paging}
     slug = str(body.get("slug") or "").strip()
     if not slug:
         raise ValueError("op=get requires slug")
@@ -3758,6 +3792,7 @@ def _read_lessons_mddb(body: dict, frm: str) -> dict:
         if d.get("key") == slug:
             m = d.get("meta") or {}
             return {"slug": slug,
+                    "topic": _meta_first(m, "topic"),
                     "title": _meta_first(m, "title"),
                     "wiki_title": _meta_first(m, "wiki_title"),
                     "url": _meta_first(m, "url"),
@@ -3973,10 +4008,12 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
                 "status": l["status"], "no_th": l["no_th"]}
                for l in lessons]
         out.sort(key=lambda r: r["slug"])
-        return {"lessons": out, "count": len(out),
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows),
                 "skipped_non_lesson": skipped,
                 "source": "wiki", "via": frm,
-                "message": f"listed {len(out)} wiki lessons"}
+                "message": f"listed {len(rows)} of {len(out)} wiki lessons",
+                **paging}
     wiki_title = str(body.get("wiki_title") or "").strip()
     slug = str(body.get("slug") or "").strip()
     topic = str(body.get("topic") or "").strip()
@@ -3993,7 +4030,8 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
             f"lesson not found: {wiki_title or slug or topic}")
     return {"slug": row["slug"], "wiki_title": row["wiki_title"],
             "url": url_of(row["wiki_title"]),
-            "title": row["topic"], "content": row["content"],
+            "topic": row["topic"], "title": row["topic"],
+            "content": row["content"],
             "meta": row["meta"], "modified": row["modified"],
             "source": "wiki", "via": frm,
             "message": f"get {row['wiki_title']}"}
@@ -6805,6 +6843,86 @@ def _selftest() -> None:
         _, payload = wp2c.posts[-1]
         assert "ไทย" not in payload["content"]
         assert payload["meta"]["no_th"] is True
+
+        # /lesson read ops (OPS-0821) — op=list paging + op=get topic
+        wpr = FakeWP([{"slug": "lesson-a", "modified": "m1",
+                       "title": {"rendered": "Education — Alpha"},
+                       "content": {"rendered": "<p>alpha body</p>"},
+                       "meta": {"topic": "Alpha", "level": "intro",
+                                "next_review": "2026-12-01",
+                                "status": "open"}},
+                      {"slug": "lesson-b", "modified": "m2",
+                       "title": {"rendered": "Education — Beta"},
+                       "content": {"rendered": "<p>beta body</p>"},
+                       "meta": {"topic": "Beta", "level": "deep",
+                                "next_review": "", "status": "learned"}}])
+        globals()["wp_api"] = wpr
+        res = _read_lessons({"op": "list", "source": "wp"}, "devin")
+        assert res["source"] == "wp" and res["count"] == 2
+        assert res["total"] == 2 and res["truncated"] is False
+        assert res["lessons"][0]["topic"] == "Alpha"
+        assert res["lessons"][0]["next_review"] == "2026-12-01"
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": 1}, "devin")
+        assert res["count"] == 1 and res["total"] == 2
+        assert res["offset"] == 0 and res["truncated"] is True
+        assert res["lessons"][0]["slug"] == "lesson-a"
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": 1, "offset": 1}, "devin")
+        assert res["count"] == 1 and res["total"] == 2
+        assert res["offset"] == 1 and res["truncated"] is False
+        assert res["lessons"][0]["slug"] == "lesson-b"
+        res = _read_lessons({"op": "get", "source": "wp",
+                             "slug": "lesson-a"}, "devin")
+        assert res["slug"] == "lesson-a" and res["topic"] == "Alpha"
+        assert "alpha body" in res["content"]
+        assert res["meta"]["level"] == "intro"
+        # bad paging params degrade to defaults, not errors
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": "junk", "offset": -5}, "devin")
+        assert res["count"] == 2 and res["offset"] == 0
+
+        # source=mddb — mirror read, same row contract
+        globals()["_mddb_post"] = lambda p, payload, timeout=30: [
+            {"key": "lesson-x", "updated_at": "u1",
+             "contentMd": "# X Topic\n\nmirror body",
+             "meta": {"topic": ["X Topic"], "level": ["intro"],
+                      "status": ["open"], "next_review": ["2026-12-01"]}}]
+        res = _read_lessons({"op": "list", "source": "mddb",
+                             "limit": 1}, "devin")
+        assert res["source"] == "mddb" and res["count"] == 1
+        assert res["total"] == 1 and res["truncated"] is False
+        res = _read_lessons({"op": "get", "source": "mddb",
+                             "slug": "lesson-x"}, "devin")
+        assert res["topic"] == "X Topic" and "mirror body" in res["content"]
+
+        # source=wiki — Education: namespace rows, index pages skipped
+        real_we, real_wl = _wiki_env, _wiki_login
+        real_wns, real_wpu = _wiki_ns_pages, _wiki_page_url
+        globals()["_wiki_env"] = lambda: (
+            {"WIKI_HOST": "https://wiki.example"},
+            "https://wiki.example/api.php")
+        globals()["_wiki_login"] = lambda api, env: (object(), "csrf")
+        globals()["_wiki_ns_pages"] = lambda api, opener, ns: [
+            {"title": "Education:Alpha", "modified": "2026-11-01T00:00:00Z",
+             "wikitext": "{{แม่แบบ:Education|topic=Alpha|level=intro|"
+                         "next_review=2026-12-01|status=open}}\n\n"
+                         "wiki body"},
+            {"title": "Education:Index", "modified": "m",
+             "wikitext": "{{แม่แบบ:Education|topic=Index|status=index}}"}]
+        globals()["_wiki_page_url"] = (
+            lambda env, t: f"https://wiki.example/{t}")
+        res = _read_lessons({"op": "list", "source": "wiki"}, "devin")
+        assert res["source"] == "wiki" and res["count"] == 1
+        assert res["skipped_non_lesson"] == 1
+        assert res["lessons"][0]["topic"] == "Alpha"
+        wslug = "lesson-" + hashlib.md5(b"alpha").hexdigest()[:12]
+        res = _read_lessons({"op": "get", "source": "wiki",
+                             "slug": wslug}, "devin")
+        assert res["topic"] == "Alpha" and "wiki body" in res["content"]
+        globals()["_wiki_env"], globals()["_wiki_login"] = real_we, real_wl
+        globals()["_wiki_ns_pages"], globals()["_wiki_page_url"] = (
+            real_wns, real_wpu)
 
         # /job — validation + create/update + comms log + parent
         assert job_actor({}, "local") == "local"
