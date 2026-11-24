@@ -1,7 +1,7 @@
 id: timer-alert-idc02-log-shipper
 title: Timer log-shipper on idc02 failing
 column: backlog
-updated: 2026-11-24 09:04
+updated: 2026-11-24 09:13
 priority: high
 tags:
 - timer-alert
@@ -1297,6 +1297,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-24 08:41) of `log-shipper.service` on `idc02` result=timeout
     — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-24 09:13
+  from: devin
+  text: '[still suspicious] Last run (11-24 08:41) of `log-shipper.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc02`.'
 action:
   status: done
 spec: Investigate the recurring timeout failure of log-shipper.service on idc02 by examining the user journal using
