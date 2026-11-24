@@ -3,7 +3,7 @@ title: MDDB /v1/search hangs — all queries timeout
 column: done
 note: Resolved 2026-10-03 — search 7ms again after mddb restart; ada-memory-sync Result=success at 11:00, backlog
   draining hourly.
-updated: 2026-11-24 15:45
+updated: 2026-11-24 15:49
 ref: MEM-0008
 comms:
 - at: 2026-10-11 08:35
@@ -147,3 +147,8 @@ comms:
     again — leader idc03:11023 ada-cms-pages 30ms, infrastructure-ssot 32ms; cms plane :11027 152ms w/ hits; idc02
     follower :11023 20ms; /health 200/5ms; vector-search 1.8s (embed call). Card stays done — no regression since
     2026-10-03 resolution.'
+- at: 2026-11-24 15:49
+  from: devin
+  text: '[done] attempt-2 dispatch closed: card already done since 2026-10-03, /v1/search re-verified healthy on
+    all planes (leader 30ms, cms 152ms, idc02 follower 20ms). This launch was untracked (no action block, meta.card
+    empty) — likely the idc02-runner canary burst or manual retry, not a card regression. Outcome doc: dispatch-outcome-20261124-152733-mddb-v1-search-hangs-all-queri.md'
