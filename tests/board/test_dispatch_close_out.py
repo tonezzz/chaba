@@ -1156,5 +1156,103 @@ class MergeRetryTest(unittest.TestCase):
                             (evidence, card.get("comms")))
 
 
+class PinContractGateTest(unittest.TestCase):
+    """OPS-1326: the merge-sweep pin gate is path-conditional and
+    fail-closed. A merge touching a pinned source or the manifest runs
+    test_runner_tooling_contract.py; an unrelated merge costs nothing.
+    """
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.wt = Path(self.td.name)
+        for args in (["git", "init", "-q", "-b", "master", str(self.wt)],
+                     ["git", "-C", str(self.wt), "config", "user.email", "t@t"],
+                     ["git", "-C", str(self.wt), "config", "user.name", "t"]):
+            r = subprocess.run(args, capture_output=True)
+            assert r.returncode == 0, r.stderr
+        self.manifest = dr.PIN_MANIFEST
+        mpath = self.wt / self.manifest
+        mpath.parent.mkdir(parents=True, exist_ok=True)
+        mpath.write_text(json.dumps({"tools": {"tool": {
+            "source": "scripts/board/tool.py", "dest": "tool.py",
+            "sha256": "0" * 64}}}))
+        (self.wt / "scripts/board").mkdir(parents=True, exist_ok=True)
+        (self.wt / "scripts/board/tool.py").write_text("x=1\n")
+        (self.wt / "notes.md").write_text("base\n")
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "base"],
+                       check=True, capture_output=True)
+        self.base = subprocess.run(
+            ["git", "-C", str(self.wt), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True).stdout.strip()
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def _commit_change(self, path, content):
+        p = self.wt / path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "change"],
+                       check=True, capture_output=True)
+
+    @staticmethod
+    def _fake_contract(rc=0, output="OK"):
+        """Let git through, stub only the contract-test subprocess."""
+        real_run = subprocess.run
+
+        def fake(cmd, *args, **kwargs):
+            if isinstance(cmd, list) and cmd[:1] == ["git"]:
+                return real_run(cmd, *args, **kwargs)
+            return subprocess.CompletedProcess(cmd, rc, output, "")
+
+        return mock.patch.object(dr.subprocess, "run", side_effect=fake)
+
+    def test_unrelated_merge_skips_gate(self):
+        self._commit_change("notes.md", "new\n")
+        with self._fake_contract() as patched:
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(any("unittest" in str(c) for c in patched.call_args_list))
+        self.assertFalse(result["ran"])
+        self.assertTrue(result["ok"])
+
+    def test_pinned_source_change_runs_contract(self):
+        self._commit_change("scripts/board/tool.py", "x=2\n")
+        with self._fake_contract() as patched:
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertTrue(result["ran"])
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["paths"], ["scripts/board/tool.py"])
+        cmd = " ".join(patched.call_args.args[0])
+        self.assertIn("test_runner_tooling_contract.py", cmd)
+
+    def test_manifest_change_runs_contract(self):
+        self._commit_change(self.manifest, '{"tools": {}}')
+        with self._fake_contract():
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertTrue(result["ran"])
+        self.assertEqual(result["paths"], [self.manifest])
+
+    def test_contract_failure_holds_merge(self):
+        self._commit_change("scripts/board/tool.py", "x=2\n")
+        with self._fake_contract(rc=1, output="FAILED test_pin_hashes_match_sources"):
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["failed"])
+
+    def test_deleted_manifest_fails_closed(self):
+        (self.wt / self.manifest).unlink()
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "del"],
+                       check=True, capture_output=True)
+        result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(result["ok"])
+        self.assertIn("deleted", result["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

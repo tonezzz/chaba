@@ -1424,6 +1424,7 @@ REPO_TESTS = {
               "tests/board/test_kanban_act.py "
               "tests/board/test_wiki_extension.py "
               "tests/board/test_board_api_action_persistence.py "
+              "tests/board/test_runner_tooling_contract.py "
               "tests/test_ssot_validate_refs.py "
               "-x -q",
               "timeout": 240},
@@ -1893,9 +1894,69 @@ def _docs_only_paths(wt: Path, base: str) -> bool:
         DOCS_ONLY_PATH_RE.search(p) for p in paths)
 
 
+PIN_MANIFEST = "scripts/devin/runner-tooling.manifest.json"
+PIN_CONTRACT_TEST = ("python3 -m unittest discover -s tests/board "
+                     "-p test_runner_tooling_contract.py")
+
+
+def pin_contract_gate(wt: Path, base: str) -> dict:
+    """OPS-1326: run the tooling-pin contract test when this merge touched
+    a pinned source or the manifest; hold the merge on failure.
+
+    The 2026-11-24 ops-1036 conflict resolution took sources from one
+    parent and pins from the other — it merged cleanly and the fast test
+    gate does not carry tests/board, so all six hosts drifted before CI
+    noticed. This gate is path-conditional (no cost on unrelated merges)
+    and fail-closed: an unreadable manifest or a missing test holds the
+    merge rather than silently passing.
+
+    {ran, ok, paths?, command?, failed?, error?, skipped?}.
+    Opt out with KANBAN_PIN_GATE=0 (mirrors CHABA_PRECOMMIT_PINS)."""
+    if os.environ.get("KANBAN_PIN_GATE", "1") == "0":
+        return {"ran": False, "ok": True, "skipped": "KANBAN_PIN_GATE=0"}
+    manifest_path = Path(wt) / PIN_MANIFEST
+    if not manifest_path.exists():
+        # Repos without a tooling manifest (test fixtures, other repos)
+        # have nothing to gate — but a merge that DELETES a previously
+        # declared manifest must not slip past the check.
+        had = sh(["git", "-C", str(wt), "cat-file", "-e",
+                  f"{base}:{PIN_MANIFEST}"])
+        if had.returncode == 0:
+            return {"ran": True, "ok": False,
+                    "error": f"{PIN_MANIFEST} deleted by merge — "
+                             "pin gate cannot verify"}
+        return {"ran": False, "ok": True,
+                "skipped": "no tooling manifest in tree"}
+    try:
+        doc = json.loads(manifest_path.read_text())
+        tools = doc.get("tools") if isinstance(doc, dict) else None
+        sources = {val.get("source") for val in (tools or {}).values()
+                   if isinstance(val, dict) and val.get("source")}
+    except Exception as exc:
+        return {"ran": True, "ok": False,
+                "error": f"cannot read {PIN_MANIFEST}: {exc}"}
+    r = sh(["git", "-C", str(wt), "diff", "--name-only", base, "HEAD"])
+    if r.returncode != 0:
+        return {"ran": True, "ok": False,
+                "error": (r.stderr or r.stdout).strip()[:160] or "git diff failed"}
+    changed = {path for path in (r.stdout or "").splitlines() if path.strip()}
+    touched = sorted(changed & (sources | {PIN_MANIFEST}))
+    if not touched:
+        return {"ran": False, "ok": True, "skipped": "no pinned paths"}
+    proc = subprocess.run(["bash", "-c", PIN_CONTRACT_TEST], cwd=str(wt),
+                          capture_output=True, text=True, timeout=120)
+    if proc.returncode != 0:
+        out = f"{proc.stdout or ''}\n{proc.stderr or ''}"
+        failed = _FAILED_SUMMARY_RE.findall(out) or [f"exit {proc.returncode}"]
+        return {"ran": True, "ok": False, "paths": touched,
+                "command": PIN_CONTRACT_TEST, "failed": failed[:10]}
+    return {"ran": True, "ok": True, "paths": touched,
+            "command": PIN_CONTRACT_TEST}
+
+
 def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
                     base: str) -> tuple:
-    """_merge_in + shadow guard + the post-merge test gate ->
+    """_merge_in + shadow guard + pin contract + the post-merge test gate ->
     (ok, conflicts, err, tests, shadows).
 
     tests is the run_test_gate() result ({} when the merge never got
@@ -1907,6 +1968,12 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     shadows = shadow_paths(mwt, base, "HEAD")
     if shadows:
         return False, [], "", {}, shadows
+    pins = pin_contract_gate(mwt, base)
+    if not pins.get("ok"):
+        detail = "; ".join(pins.get("failed") or [])
+        detail = detail or pins.get("error") or "contract test failed"
+        return False, [], (f"runner-tooling pin contract gate blocked: "
+                           f"{detail}"), pins, []
     tests = baseline_aware_test_gate(mwt, repo_name, base)
     if not tests.get("ok") and tests.get("timeout") \
             and _docs_only_paths(mwt, base):

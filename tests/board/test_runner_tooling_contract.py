@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib.util
 import json
 import re
 import unittest
@@ -157,6 +158,98 @@ class ToolingPinTest(unittest.TestCase):
         for key, pin in self.pins.items():
             self.assertRegex(pin["sha256"], r"^[0-9a-f]{64}$",
                              f"{key}: pin must be a full lowercase sha256")
+
+
+class ToolingPinGateMergeTest(unittest.TestCase):
+    """Regression for the ops-1036 conflict-resolution shape (OPS-1326).
+
+    Both parents are individually consistent: master has its source and
+    matching pin, the session branch has its source and matching pin.
+    Taking the SOURCE from one parent and the MANIFEST (pins) from the
+    other merges cleanly but leaves a stale pin that sync-runner-tools.sh
+    refuses to install — all six hosts drift. The husky pre-merge-commit
+    gate and the merge-sweep contract check must catch that committed
+    pair, not either side alone.
+
+    Pure-function tests: no git, network, or systemd.
+    """
+
+    SOURCE = "scripts/board/runner-agent.py"
+    UNRELATED = "docs/readme.md"
+    BRANCH_SHA = hashlib.sha256(b"branch source bytes").hexdigest()
+    MASTER_SHA = hashlib.sha256(b"master source bytes").hexdigest()
+
+    @classmethod
+    def setUpClass(cls):
+        # scripts/board is not on sys.path under pytest; load by path.
+        spec = importlib.util.spec_from_file_location(
+            "chaba_tooling_pin_gate",
+            REPO / "scripts" / "board" / "tooling_pin_gate.py")
+        cls.gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.gate)
+
+    @classmethod
+    def _pins(cls, sha):
+        return {"runner_agent": (cls.SOURCE, sha)}
+
+    def test_source_from_branch_pins_from_master_blocks(self):
+        master_pins = self._pins(self.MASTER_SHA)
+        merged_pins = dict(master_pins)              # manifest from master
+        bad = self.gate.find_mismatches(
+            merged_pins, master_pins,
+            lambda src: self.BRANCH_SHA,             # source from branch
+            {self.SOURCE, self.gate.MANIFEST})
+        self.assertEqual([(k, got) for k, _, got, _ in bad],
+                         [("runner_agent", self.BRANCH_SHA)])
+
+    def test_source_from_master_pins_from_branch_blocks(self):
+        master_pins = self._pins(self.MASTER_SHA)
+        merged_pins = self._pins(self.BRANCH_SHA)    # manifest from branch
+        bad = self.gate.find_mismatches(
+            merged_pins, master_pins,
+            lambda src: self.MASTER_SHA,             # source from master
+            {self.SOURCE, self.gate.MANIFEST})
+        self.assertEqual([key for key, _, _, _ in bad], ["runner_agent"])
+
+    def test_both_sides_from_branch_is_clean(self):
+        master_pins = self._pins(self.MASTER_SHA)
+        merged_pins = self._pins(self.BRANCH_SHA)
+        bad = self.gate.find_mismatches(
+            merged_pins, master_pins,
+            lambda src: self.BRANCH_SHA,
+            {self.SOURCE, self.gate.MANIFEST})
+        self.assertEqual(bad, [])
+
+    def test_untouched_inherited_mismatch_does_not_block(self):
+        # master is already stale and this commit touches only docs —
+        # an inherited mismatch must block unrelated work.
+        master_pins = self._pins("stale-pin-from-master")
+        bad = self.gate.find_mismatches(
+            dict(master_pins), dict(master_pins),
+            lambda src: self.BRANCH_SHA, {self.UNRELATED})
+        self.assertEqual(bad, [])
+
+    def test_source_change_without_pin_bump_blocks(self):
+        head_pins = self._pins(self.MASTER_SHA)
+        bad = self.gate.find_mismatches(
+            dict(head_pins), head_pins,
+            lambda src: self.BRANCH_SHA, {self.SOURCE})
+        self.assertEqual([key for key, _, _, _ in bad], ["runner_agent"])
+
+    def test_pin_change_without_source_change_blocks(self):
+        head_pins = self._pins(self.MASTER_SHA)
+        bad = self.gate.find_mismatches(
+            self._pins(self.BRANCH_SHA), head_pins,
+            lambda src: self.MASTER_SHA, {self.gate.MANIFEST})
+        self.assertEqual([key for key, _, _, _ in bad], ["runner_agent"])
+
+    def test_relevant_paths_covers_manifest_and_sources(self):
+        pins = self._pins(self.MASTER_SHA)
+        self.assertEqual(self.gate.relevant_paths(pins),
+                         {self.gate.MANIFEST, self.SOURCE})
+
+    def test_parse_pins_tolerates_malformed_manifest(self):
+        self.assertEqual(self.gate.parse_pins(b"not json"), {})
 
 
 if __name__ == "__main__":
