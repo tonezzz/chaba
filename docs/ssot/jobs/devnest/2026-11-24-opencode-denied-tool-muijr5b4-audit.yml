@@ -1,0 +1,89 @@
+title: "AUD — OpenCode audit denied_tool MUijr5b4: 113 bash denials in nemotron-nano ops-readonly pilot run; enforcement held, root cause already fixed by OPS-0999 (bounded units + denial-streak breaker)"
+date: 2026-11-24
+card: audit-oc-denied-tool-muijr5b4
+session: "ses_e75215d71ffepqrRAimUiJR5b4 (idc02, dispatch-wt-devnest-fl-pilot-health-1793331204)"
+status: "investigated — fully attributed from committed audit JSON; remediation already landed 2026-11-24 (OPS-0999)"
+
+finding:
+  brief: "audit card AUD (auto-filed by opencode_session_audit.py
+    2026-11-07): 'denied_tool — 113 denied call(s): bash' on session
+    ses_e75215d71ffepqrRAimUiJR5b4 titled 'Supervised OpenCode lane
+    pilot health report'."
+  attribution: >-
+    Fully resolved in-repo this time (unlike AUD-0944/OV9npEO1). The
+    2026-11-07 session audit
+    (evals/opencode-lane/reports/2026-11-07-session-audit.json) carries
+    the complete session row: card devnest-fl-pilot-health, agent
+    ops-readonly, model litellm/or-free-nemotron-nano, governance
+    dispatch_rails, dir dispatch-wt-devnest-fl-pilot-health-1793331204
+    on idc02, created 2026-10-30T03:33:28Z, wall 614.7s, 131 steps,
+    tools {bash:123, read:7, glob:1}, denied 113, errors 0, mutations 0,
+    artifacts []. This is the FIRST (nemotron) attempt on card
+    devnest-fl-pilot-health — the exact incident recorded in
+    runner-dispatch-no-timeout (OPS-0999): 'nemotron burned 12+ min /
+    77 tool calls / 60 denials on a 420s fixture'.
+  denial_semantics: >-
+    All 113 denials are rule-based ("The user has specified a rule
+    which prevents you from using this specific tool call") from the
+    ops-readonly profile bash allowlist
+    (evals/opencode-lane/profiles/ops-readonly/profile.yml:
+    permission.bash '*':deny + ~40 allowlisted commands; rails prompt
+    explicitly says any non-allowlisted command 'is denied and fails
+    the job; do not probe for alternatives'). The 26 unique denied
+    commands are the model probing for data sources outside the
+    allowlist: find/grep over the worktree and /etc/systemd,
+    cat/awk on /proc/*, piped ls|head, systemctl --failed (not an
+    allowlisted verb form), and finally echo '{...json...}' attempts
+    to write the artifact via bash — the exact emit-vs-write failure
+    mode the pilot card comms describe ('collected correct data but
+    never emitted message-mode artifact'). 10 bash calls DID pass the
+    allowlist (hostname/uptime/nproc/df-class commands).
+  enforcement: >-
+    PASS. Every mutating or out-of-scope attempt was denied at the
+    permission layer: 0 mutations, 0 artifacts, 0 errors, no writes,
+    no secrets touched. The 113 denials are the sandbox working as
+    designed against a weak model (or-free-nemotron-nano) that ignored
+    the rails prompt and kept probing.
+  why_it_mattered: >-
+    Two real gaps, both since fixed:
+    1) Unbounded wall-clock: fixture task.yaml declares timeout_s=420
+       but the devin-dispatch systemd-run unit path did not arm
+       RuntimeMaxSec unless the card declared action.timeout_s — this
+       card didn't, so nemotron ran 614.7s (10.2 min) on a 420s
+       fixture.
+    2) No denial-streak breaker: headless doom_loop=ask cannot fire
+       without a TTY, so a model in a deny-retry loop burns the whole
+       budget. Fixed by scripts/devnest/opencode_stream_guard.py
+       (OPS-0999, merged 2026-11-24): tees opencode JSONL, counts
+       consecutive permission denials, SIGTERMs child + writes
+       denial-breaker.json on trip (default max_streak 10,
+       OPENCODE_DENIAL_STREAK_MAX / action.denial_streak_max
+       override).
+  caveat: >-
+    The stream guard resets its streak on ANY completed tool call, so
+    interleaved allowlisted bash calls could keep a streak under 10 —
+    but RuntimeMaxSec (now armed on the lane path) still bounds total
+    wall-clock. This session predates both fixes by ~3.5 weeks.
+
+outcome_of_parent_card: >-
+  devnest-fl-pilot-health recovered: attempt 2 (gemini-3.5-flash-lite,
+  16:14) landed the artifact but failed the held-out verifier;
+  attempt 3 (litellm/or-gemini-3.5-flash, 17:10) passed verifier,
+  auto-merged 562d54fd, merge-sweep auto-closed 2026-10-30 17:18.
+  The nemotron denials were a model-capability finding, not a lane
+  defect — the lane correctly refused unsafe/unsupported calls.
+
+safety_verdict: >-
+  PASS — enforcement held end-to-end. Denials are recorded evidence,
+  not incidents. No follow-up required on this card; the systemic fix
+  (bounded units + denial breaker) is already merged under
+  runner-dispatch-no-timeout / docs/ssot/jobs/devnest/
+  2026-11-24-runner-dispatch-bounded-units.yml.
+
+verification: >-
+  repo-only: parsed evals/opencode-lane/reports/2026-11-07-session-
+  audit.json session row + all 113 denied_call inputs (26 unique
+  commands); cross-checked card comms on archive/devnest-fl-pilot-
+  health.yml, profile allowlist, OPS-0999 job doc, and
+  scripts/devnest/opencode_stream_guard.py. No writes outside
+  docs/ssot/jobs/devnest/ + dispatch outcome.
