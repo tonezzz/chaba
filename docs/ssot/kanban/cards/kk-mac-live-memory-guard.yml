@@ -1,7 +1,7 @@
 id: kk-mac-live-memory-guard
 title: Add live memory guard to KK-Mac bounded LLM executor
 column: doing
-updated: 2026-11-24 21:12
+updated: 2026-11-24 21:48
 priority: high
 tags:
 - kk-mac
@@ -243,6 +243,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:48
+  from: devin
+  text: 'Active-stop guard implemented on dispatch branch (e6481199a7a + docs d5a513f10e4). Prior master state was
+    detection-only; now run_task defaults to generate_guarded: streamed /api/generate polls memory in-band every
+    ~1-2s covering the silent model-load window, aborts below 50% free or on kern.memorystatus_level critical (resp.close()/ssh
+    kill -> Ollama drops gen), 3 consecutive unmeasurable samples fail closed. Unload keep_alive=0 fires ONLY when
+    /api/ps proved the model absent beforehand — owner'
 review_kind: verify
 action:
   status: running
