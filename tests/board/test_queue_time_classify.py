@@ -143,6 +143,37 @@ class QueueClassifyTest(unittest.TestCase):
             with_detail=True)
         self.assertEqual((lane, src), ("manual", "kw:hardware"))
 
+    def test_host_mention_does_not_preempt_cheaper_lane(self):
+        """DEV-0045 reroute: a bare 'host' mention in an ops/report spec
+        must not route a bounded read-only task onto devin ahead of
+        free_lane (devin used to be evaluated first)."""
+        lane, src, conf = self.dr.classify_lane({
+            "title": "report graph: producer metas never reach renderer",
+            "spec": "read-only check of the host's failing report graph",
+            "action": {},
+        }, with_detail=True)
+        self.assertEqual((lane, src), ("free_lane", "kw:report"))
+
+    def test_timer_sentinel_alert_classifies_free_lane(self):
+        """DEV-0045 chosen slice: auto-generated timer-sentinel alerts are
+        bounded diagnoses; the generic 'failing' keyword must not send
+        them to devin."""
+        card = {"id": "timer-alert-idc03-log-shipper",
+                "title": "Timer log-shipper on idc03 failing",
+                "tags": ["timer-alert", "auto", "by:timer-sentinel"],
+                "action": {}}
+        self.assertEqual(self.dr.classify_lane(card, with_detail=True)[:2],
+                         ("free_lane", "timer-alert"))
+        card["action"]["lane"] = "devin"
+        self.assertEqual(self.dr.classify_lane(card, with_detail=True)[:2],
+                         ("devin", "explicit"))
+
+    def test_plain_failing_task_still_devin(self):
+        """The narrow sentinel tag rule must not re-route ordinary
+        multi-step failure work."""
+        card = {"title": "deployment pipeline failing", "action": {}}
+        self.assertEqual(self.dr.classify_lane(card), "devin")
+
 
 class KkMacRouteUnitTest(unittest.TestCase):
     """dr.kk_mac_route — the bounded read-only auto-route rule
