@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
-column: review
-updated: 2026-11-24 20:22
+column: done
+updated: 2026-11-24 20:41
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -304,6 +304,14 @@ comms:
 - at: 2026-11-24 20:22
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 20:41
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261124-200347-ollama-serve-runs-on-kk-mac-un
+    (tip 29a74e4cbf62) was merged into origin/master in this triage as 7ce7eda56111; runner reported finished (ok)
+    with an outcome doc. Work is landed and gate-checked. Closing.'
+- at: 2026-11-24 20:41
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
