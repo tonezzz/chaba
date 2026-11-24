@@ -1,7 +1,7 @@
 id: kk-mac-live-memory-guard
 title: Add live memory guard to KK-Mac bounded LLM executor
-column: doing
-updated: 2026-11-24 21:55
+column: review
+updated: 2026-11-24 22:02
 priority: high
 tags:
 - kk-mac
@@ -276,9 +276,38 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-210151-before-another-kk-mac-local-in on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 22:02
+  from: tony-dell
+  text: 'finished (ok): exit=0 bs/devnest/2026-11-24-kk-mac-memory-guard-active-stop.yml`. | devin-task-20261124-210151-before-another-kk-mac-lo'
+- at: 2026-11-24 22:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-210151-before-another-kk-mac-local-in'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 22:02
+  from: chaba
+  text: banked 477 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:02
+  from: chaba
+  text: pushed dispatch/20261124-210151-before-another-kk-mac-local-in to origin
+- at: 2026-11-24 22:02
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:02
+  from: chaba
+  text: auto-merged 36625617 (dispatch/20261124-210151-before-another-kk-mac-local-in) → origin/master
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 review_kind: verify
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   lane_source: fallback
@@ -287,5 +316,8 @@ action:
   sweep:
     stale_running: 2026-11-24 21:55
     dirty: 1
+  result: 'exit=0 bs/devnest/2026-11-24-kk-mac-memory-guard-active-stop.yml`. | devin-task-20261124-210151-before-another-kk-mac-local-in.service:
+    Consumed 8min 51.860s CPU time over 47min 31.991s wall clock time, 961.7M memory peak, 713.3M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:00
