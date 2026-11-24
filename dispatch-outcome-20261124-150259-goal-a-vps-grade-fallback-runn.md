@@ -82,8 +82,8 @@ fires (audit enumerates `list-units` without `--all`, so dead oneshots
 read as "missing"). My two new declarations (runner-agent.service,
 kanban-dispatch.service) are the same class — armed, loaded, inactive
 between timer/manual fires — correct under declared-or-dead but they
-add two more "missing" lines to an already-red audit. A proper census
-reconcile is follow-up work, not part of this card.
+add two more "missing" lines to an already-red audit. Follow-up card
+filed: AUD-0035 `idc02-audit-census-reconcile` (backlog).
 
 ## Failover usage
 
