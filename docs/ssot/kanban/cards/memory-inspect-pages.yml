@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: doing
-updated: 2026-11-24 14:38
+updated: 2026-11-24 14:44
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -692,6 +692,13 @@ comms:
   from: devin
   text: 'retry dispatch picked up on idc02 — work already merged to origin/master (b70550b9, commits b12887a4b5b+1f496e22609).
     Running verification pass: bank-inspect tests + cms-render tests + dry-run snapshot + timer check on tony-dell.'
+- at: 2026-11-24 14:44
+  from: devin
+  text: 'DONE (verify pass). Feature was already merged (b70550b9 on origin/master) — this retry ran verification
+    + closed the last gap: installed+enabled bank-inspect.timer on tony-dell via render-jobs.py --ids bank-inspect
+    --install (was never installed). Manual service run: Result=success, all 37 lane pages published (tony 15, kk
+    8, kk-dev 9, mn 5). Timer next run 2026-11-25 05:40 +07. Tests: tests/ada 377 passed, merge-gate set 247 passed.
+    Live render /p/memory-inspect + leaves -> 200 with redaction '
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
