@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-24 14:31
+updated: 2026-11-24 14:43
 priority: medium
 tags:
 - merge-sweep
@@ -664,6 +664,13 @@ comms:
     done: gc_worktree guard helper in dispatch_repos (clean +; [merge-sweep-test-gate-fail-open] primer injected
     8 lesson(s): [dispatch-worktre; [merge-sweep-test-gate-fail-open] primer injected 8 lesson(s): [merge-sweep-test;
     `_self_stale_check`/`_claimable` gate every claim on installe'
+- at: 2026-11-24 14:43
+  from: devin
+  text: 'attempt 3: re-landed the still-unmerged attempt-2 branch (dispatch/20261119-165806) onto current master
+    as merge commit 1fc75685fd — resolved _merge_and_gate to keep BOTH card-aware gate + master docs-only timeout_override;
+    excluded assessment churn. Fail-closed design intact: unrunnable hold + repo .venv bootstrap + pytest label
+    + gated merge-sweep. 101/101 focused tests, 247/247 gate set (~78s on tony-omen). Prior holds were the bootstrap
+    trap: the gate always runs pre-merge master code, so th'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
