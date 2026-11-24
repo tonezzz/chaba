@@ -1,8 +1,8 @@
 id: ops-local-conflict-guard
 title: local-conflict reconcile failed
-column: review
+column: done
 review_kind: triage
-updated: 2026-11-24 17:03
+updated: 2026-11-24 20:07
 note: non-card local-conflict docs/ssot/kanban/.render-state-board2.local-conflict-20261123-151549 needs manual
   reconcile — file kept
 ref: OPS-0526
@@ -1676,6 +1676,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:07
+  from: tony
+  text: 'triage: reconciled all 6 stale non-card .local-conflict-* copies on idc03 (2026-11-19 + 2026-11-23). Canonical
+    ssot.dev-system.assessment.yml is newer (last_reviewed 2026-11-24), focus-inbox copy byte-identical, render-state
+    copies stale sync artifacts. Conflict files deleted; reconcile-local-conflicts --dry-run now reports none. Closing.'
+- at: 2026-11-24 20:07
+  from: tony
+  text: closed by tony
 action:
   status: done
 claim: {}
