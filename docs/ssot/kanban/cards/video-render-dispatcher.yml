@@ -1,7 +1,7 @@
 id: video-render-dispatcher
 title: Build canonical video render dispatcher and queue status
 column: doing
-updated: 2026-11-24 19:30
+updated: 2026-11-24 19:43
 brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
   final artifact.
 priority: high
@@ -237,6 +237,13 @@ comms:
     claims. Dispatcher scripts/devnest/video_dispatch.py implemented (plan/apply/verify, video-dispatch/v1 manifests,
     KK-Mac admission gate, complete-staging+input-fetch for Colab). Sacred Father canonical manifest verified live
     (sha256+ffprobe) and artifact paths fixed; canonical-v1.'
+- at: 2026-11-24 19:43
+  from: devin
+  text: 'DONE (dispatch 20261124-185802). Read-only inventory rewritten (all packs both queues, lifecycle states
+    + render/support kind, residual-claim counter) + reports/video-queue-status-2026-11-24.json. Controlled dispatcher
+    scripts/devnest/video_dispatch.py (plan/apply/verify, approved-manifest gate, KK-Mac admission, sha256-verified
+    staging). Sacred Father canonical manifest verified live (v4-clean.mp4 sha256 9a0e3722, artifact root fixed
+    to gdrive:ada-nest/kk-mac-video-pilot). Audit: pilot 14 packs'
 action:
   type: dispatch
   status: running
