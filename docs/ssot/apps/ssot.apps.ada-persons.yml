@@ -463,21 +463,45 @@ lifecycle:
 # into the dev env file. Runbook: docs/kb/ada-idea-bench.md.
 # Data-never-promotes still applies: bench profiles only ever target -dev
 # env files / -dev collections.
+#
+# 2026-11-24 reconciliation (CMS-only re-test, step 2):
+#   persons.kk.tools is the production surface and is the SOURCE OF TRUTH.
+#   kk-parity must be an EXACT copy of it (include AND exclude) — a stale
+#   'restore' profile silently changes the dev lane after a bench run and
+#   invalidates every before/after comparison. Asserted by
+#   tests/ada/test_bench_profile_parity.py.
+#   kk-cms-only = production MINUS the declared experimental drops (memory
+#   tools + web_search), PLUS two test-only seed writers (see below). Any
+#   other delta is drift; the same test pins that delta too.
 # ---------------------------------------------------------------------------
 bench_profiles:
-  # CMS-only memory — the 2026-10-12 idea: Kaewta answers only from CMS
-  # reports; the cms_* tools are her buttons/dials/switches and report
-  # availability honestly. Drops the bank/session-recall surface AND
-  # web_search (a live-search safety net would mask honest misses — flip
-  # it back into include: to test "cms memory + honest search" instead).
+  # CMS-only memory — Kaewta answers from her own CMS reports +
+  # conv_journal; public writes stay on the production wp_*/cpt_post path.
+  # Experimental drops vs persons.kk.tools: the four memory-bank tools and
+  # web_search (a live-search fallback would mask honest misses — add
+  # web_search back to include: to test "cms memory + honest search").
+  #
+  # cms_publish_page is the ONE TEST-ONLY seed writer: prod dropped it
+  # 2026-10-14 (wrong-system trap; wp_post owns member writes). It remains
+  # here only so tests/scenarios-live/kk_cms_only_seeded_recall.yaml can
+  # seed a page (cleanup deletes it via the ZETA-KK-CMS-7741 marker), and
+  # tests/benchmark.yml write_allowed_in restricts it to that scenario.
+  # Every other tool is production-real. Remove this writer here AND
+  # rewrite the scenario together when a production-real arbitrary CMS
+  # writer exists. cms_edit is NOT here — it is unused by the suite.
   kk-cms-only:
     instance: kk-dev
     env_file: ada-kk-dev.env
     host: idc03
+    port: 8009  # health probe after --apply (/api/health)
     include:
+      # --- production surface, minus the five experimental drops ---
       - cms_read
-      - cms_publish_page
-      - cms_edit
+      - conv_journal
+      - wp_post
+      - cpt_post
+      - wp_read
+      - wp_update
       - chat_send
       - calendar_read
       - calendar_write
@@ -490,24 +514,21 @@ bench_profiles:
       - ada_market_quote
       - ada_render_image
       - page_snapshot
-      # conv_journal removed 2026-10-13 — never manifest-enabled in
-      # ada-voice (see persons.kk note); undeclared at runtime.
       - trip_calendar
       - doc_read
-      # place_report (2026-10-13): cms producer — maps link/name ->
-      # public place page; exercises the publish path the bench cares
-      # about. Needs the ada-voice drop installed on the lane.
       - place_report
-      # map_embed (2026-10-27, card map-embed-tool): map snippet builder
-      # for the cms writers this profile exercises. Needs the ada-voice
-      # drop installed on the lane first.
-      - map_embed
+      # --- test-only seed writer (not in prod; see comment above) ---
+      - cms_publish_page
     exclude:
+      # experimental drops
       - ada_memory_search
       - ada_remember
       - ada_forget
       - ada_session_recall
       - web_search
+      # production excludes, minus the test-only writer above
+      - cms_edit
+      - ada_render_video
       - ada_resolve_action
       - vcast_snapshot
       - vcast_gesture
@@ -537,20 +558,26 @@ bench_profiles:
       - ada_ops
       - percussion
 
-  # Parity restore — identical to persons.kk.tools; the standard profile
-  # the dev lane returns to after a bench run.
+  # Parity restore — EXACT copy of persons.kk.tools (2026-11-24). Do not
+  # hand-edit one side; tests/ada/test_bench_profile_parity.py fails on
+  # drift. The dev lane also needs ADA_CMS_PUBLIC_BASE for place_report
+  # public_url — hand-set, outside the managed tool block.
   kk-parity:
     instance: kk-dev
     env_file: ada-kk-dev.env
     host: idc03
+    port: 8009  # health probe after --apply (/api/health)
     include:
       - ada_memory_search
       - ada_remember
       - ada_forget
       - ada_session_recall
       - cms_read
-      - cms_publish_page
-      - cms_edit
+      - conv_journal
+      - wp_post
+      - cpt_post
+      - wp_read
+      - wp_update
       - chat_send
       - calendar_read
       - calendar_write
@@ -563,19 +590,14 @@ bench_profiles:
       - set_facial_expression
       - ada_market_quote
       - ada_render_image
-      # 2026-10-13 drift fix: persons.kk gained page_snapshot +
-      # trip_calendar after kk-parity was written —
-      # parity means identical, so they belong here too. (doc_read
-      # likewise, same day — card line-file-doc-ingest. conv_journal was
-      # dropped same-day — never manifest-enabled, undeclared at runtime.)
       - page_snapshot
       - trip_calendar
       - doc_read
-      # place_report (2026-10-13): persons.kk gained it same-day —
-      # parity means identical, so it belongs here too. The dev lane's
-      # env also needs ADA_CMS_PUBLIC_BASE for public_url to resolve.
       - place_report
     exclude:
+      - cms_publish_page
+      - cms_edit
+      - ada_render_video
       - ada_resolve_action
       - vcast_snapshot
       - vcast_gesture
