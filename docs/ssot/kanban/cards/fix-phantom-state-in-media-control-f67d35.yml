@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
-column: backlog
-updated: 2026-11-24 07:58
+column: doing
+updated: 2026-11-24 07:59
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -309,6 +309,9 @@ comms:
 - at: 2026-11-24 07:58
   from: tony
   text: retry requested
+- at: 2026-11-24 07:59
+  from: idc02
+  text: claimed
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -338,7 +341,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
   sweep:
@@ -347,9 +350,10 @@ action:
     session_gone: 2026-11-23 20:37
   last_failure: 'exit=1 -phantom-state-issue-in.service: Failed with result ''exit-code''. | devin-task-20261123-211558-fix-the-phantom-state-issue-in.service:
     Consumed 53.600s CPU time over 18min 6.376s wall clock time, 1008.9M memory peak, 463.3M memory swap peak.'
-  attempts: 0
+  attempts: 1
+  runner: idc02
 spec: Fix the phantom state issue in the media_player verification protocol within the chaba repository on tony-dell.
   Ensure the fix properly handles protocol verification without phantom states. Verify the fix runs successfully
   with all existing test suites.
 claim:
-  since: 2026-11-23 21:15
+  since: 2026-11-24 07:59
