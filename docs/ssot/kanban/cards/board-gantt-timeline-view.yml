@@ -1,7 +1,7 @@
 id: board-gantt-timeline-view
 title: 'Board: Gantt timeline tab — frappe/gantt over cards.json, activity-span bars grouped by project'
 column: doing
-updated: 2026-11-24 22:18
+updated: 2026-11-24 22:41
 brief: 'Blank /apps/board-gantt/ stub + chaba-admin ''Gantt'' tab are live (2026-11-09). This card builds the real
   view: frappe/gantt timeline of kanban cards grouped by project:<slug>, bars = first-activity to last-activity.'
 priority: medium
@@ -248,6 +248,13 @@ comms:
     Scope update for review: SSOT/code confirm the; [dispatch-worktree-merged-triage] TRIAGE-RUN 2026-11-17 on tony-dell
     fleet (11 w; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard already on idc0; [kanban-retention-archive-done-cards-olde-bba115]
     Extended 20'
+- at: 2026-11-24 22:41
+  from: devin
+  text: 'dispatch 20261124-221840: generalized pilot to spec — all in-scope cards charted, grouped by project:<slug>
+    tag (parent/child slug nests as sub-group), untagged -> unfiled (PROJECT_ALIASES keeps bare adobe-stock tag
+    working). Top bar: project filter + refresh. Verified: node smoke (724 cards -> 726 rows, dates/column styles/fold/popup
+    asserted) + headless-chrome render of real cards.json (726 bar-wrappers, status ok, no JS errors). Commit 7c3cd799fa
+    on dispatch branch; deploys via normal web-sta'
 action:
   type: dispatch
   status: running
