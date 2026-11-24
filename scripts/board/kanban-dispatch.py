@@ -31,6 +31,7 @@ whole step). Session-end notes report leftover dirty/unmerged state.
 Tony reviews then presses Close.
 """
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -139,6 +140,18 @@ RATELIMIT_FILE = Path(os.environ.get(
     f"/tmp/kanban-dispatch-ratelimit-{os.getuid()}-{HOST}.json"))
 RATELIMIT_COOLDOWN_S = int(os.environ.get(
     "KANBAN_RATELIMIT_COOLDOWN_S", "1800"))
+
+# /ready reports are debounced by payload hash; a forced refresh every
+# READY_FORCE_S keeps 'stale' detection honest on quiet boards (same
+# contract as runner-agent's verdict_pass — KNB-1007 follow-up: this
+# lane claims on tony-dell but never posted, so GET /queue omitted the
+# fleet's highest-cap claimer).
+READY_REPORT = Path(os.environ.get(
+    "KANBAN_DISPATCH_READY_FILE",
+    str(Path.home() / ".local/state/kanban-dispatch"
+        / "ready-verdicts.json")))
+READY_FORCE_S = int(os.environ.get("KANBAN_DISPATCH_READY_FORCE_S",
+                                   "900"))
 
 
 def ratelimit_record(unit: str, sig: str) -> None:
@@ -461,6 +474,26 @@ def comms_add(card: dict, frm: str, text: str) -> None:
 def sh(cmd: list, timeout=60, **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True,
                           timeout=timeout, **kw)
+
+
+def api(path: str, body: dict | None = None) -> dict:
+    """Board-api call — read or write. Same shape as runner-agent's api():
+    errors come back as {"error": ...} so advisory paths degrade instead
+    of raising."""
+    url = API + path
+    try:
+        if body is None:
+            with urllib.request.urlopen(url, timeout=20) as r:
+                return json.loads(r.read())
+        req = urllib.request.Request(
+            url, data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=75) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return {"error": e.read().decode()[:300] or str(e)}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 def unit_state(task_id: str) -> str:
@@ -1029,6 +1062,163 @@ def merge_pending_one(path: Path) -> str:
     return _with_lock(apply)
 
 
+def claim_pass_gate(pol: dict, pf_env: dict) -> str:
+    """'' when this pass may claim, else the blocking gate's reason —
+    load, kill switch, quiet hours, waiting-cards preflight, provider
+    rate-limit cooldown, in main()'s order. Shared with verdict_pass()
+    so /ready reports the same pass-level reason a claim would hit."""
+    if overloaded():
+        return f"load gate: load5/cpu > {MAX_LOAD_PC}"
+    kill = Path(pol.get("kill_switch") or "/tmp/no-kanban-dispatch")
+    if kill.exists():
+        return f"kill switch {kill} present"
+    if in_quiet_hours(pol.get("quiet_hours") or ""):
+        return f"quiet hours {pol.get('quiet_hours') or ''}"
+    pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
+    if pf_fails:
+        return "waiting-cards preflight: " + "; ".join(pf_fails)
+    return ratelimit_reason()
+
+
+def _claim_epoch(card: dict) -> int:
+    """claim.since ('%Y-%m-%d %H:%M' ICT) -> epoch for the /ready active
+    list; 0 when absent/unparseable (board-api stamps receipt time)."""
+    c = card.get("claim")
+    s = str(c.get("since") or "") if isinstance(c, dict) else ""
+    try:
+        return int(datetime.strptime(
+            s, "%Y-%m-%d %H:%M")
+            .replace(tzinfo=timezone(timedelta(hours=7))).timestamp())
+    except Exception:
+        return 0
+
+
+def _verdict_reason(card: dict, ctx: dict) -> str:
+    """'' when this dispatcher would claim `card` now, else the gate that
+    stops it. Mirrors the queued-card gate order in main() (pass gates
+    -> autonomy -> retry cap -> pins -> type/lane/executor -> labels ->
+    push guard -> waiting-cards -> foreign claim -> host cap) so /queue's
+    blocked projection matches what a pass would do. Read-only: none of
+    the claim loop's flag/defer/save side effects run here."""
+    a = _act(card)
+    if ctx["pass_reason"]:
+        return ctx["pass_reason"]
+    ctier = TIER_ORDER.get(str(card.get("autonomy") or ""), -1)
+    if ctier > ctx["max_tier"]:
+        return f"autonomy t{ctier} > policy max t{ctx['max_tier']}"
+    attempt_cap = min(ctx["retry_cap"], dr.dispatch_attempt_cap(card))
+    if int(a.get("attempts") or 0) >= attempt_cap:
+        return f"retry cap {attempt_cap} reached"
+    pinned = a.get("host")
+    if pinned and dr.canon_host(pinned) != dr.canon_host(HOST):
+        return f"host-pinned to {pinned}"
+    blocker_id = card.get("blocked_by")
+    if blocker_id and not _blocker_released(blocker_id):
+        return f"blocked_by {blocker_id}"
+    if (a.get("type") or "dispatch") != "dispatch":
+        return f"action.type {a.get('type')!r} not dispatchable"
+    lane = str(a.get("lane") or "").strip()
+    if lane == "manual":
+        return "lane=manual (Tony's hands)"
+    if lane in ("jules", "nlm_batch"):
+        return f"remote lane {lane} — not a devin claim"
+    ex = str(a.get("executor") or "").strip()
+    if ex and ex != "devin":
+        why = ("not a known executor" if ex not in dr.EXECUTORS
+               else "Tony's hands — never claimed" if ex == "manual"
+               else f"routes to the {ex} executor, not devin")
+        return f"executor={ex} ({why})"
+    th = str(a.get("target_host") or "").strip()
+    if th and th != HOST:
+        return f"target_host={th}"
+    needs = set(a.get("labels") or [])
+    if needs and not needs <= MY_LABELS:
+        return f"missing labels {sorted(needs - MY_LABELS)}"
+    repo = str(a.get("repo") or "chaba")
+    if not push_capable(repo):
+        return (f"push guard: cannot push {dr.canon_repo(repo)} "
+                "from this host")
+    env = dict(ctx["pf_env"], claimed=ctx["inflight"], cap=HOST_CAP)
+    wv = wc.evaluate(card, env=env, push_probe=push_capable)
+    if wv["never"] or (WAITING_GATE == "strict" and not wv["eligible"]):
+        return ("waiting-cards gate: "
+                + ("; ".join(wv["reasons"])[:200] or "ineligible"))
+    if a.get("runner") and a["runner"] != HOST:
+        return f"claimed on {a['runner']}"
+    if ctx["inflight"] >= HOST_CAP:
+        return f"host cap {HOST_CAP} ({ctx['inflight']} in flight)"
+    return ""
+
+
+def verdict_pass() -> None:
+    """/ready report — this dispatcher's claimability verdict for every
+    queued card plus its in-flight claims (KNB-1007 follow-up: tony-dell
+    claims via kanban-dispatch, which never posted, so GET /queue's
+    hosts map omitted the fleet's highest-cap claimer and queued cards
+    showed 'unreported'). Runs every pass, even when gates block
+    claiming — the projection needs 'why waiting' exactly then.
+    Debounced by payload hash, forced every READY_FORCE_S; never fails
+    the claim pass."""
+    try:
+        pol = load_policy()
+        pf_env = wc.local_env(host=HOST, path=REPO)
+        pass_reason = claim_pass_gate(pol, pf_env)
+        loaded = load_dispatch_cards()
+        # verdicts cover every queued card — a foreign-runner claim gets
+        # its 'claimed on <host>' reason, matching the claim loop; only
+        # the active list is host-scoped.
+        queued = [(p, c) for p, c in loaded
+                  if _act(c).get("status") == "queued"]
+        active_cards = [(p, c) for p, c in loaded
+                        if _act(c).get("status") in ("starting",
+                                                     "running")
+                        and _act(c).get("runner") in (None, "", HOST)]
+        # fresh unit count — phase A0's active_base predates this pass's
+        # own starts, so it would undercount inflight at verdict time
+        inflight = active_tasks() + sum(
+            1 for _p, c in active_cards
+            if _act(c).get("status") == "starting")
+        ctx = {"pass_reason": pass_reason,
+               "max_tier": TIER_ORDER.get(
+                   str(pol.get("max_autonomy") or "t3"), 3),
+               "retry_cap": int(pol.get("retries_per_card") or 2),
+               "pf_env": pf_env, "inflight": inflight}
+        verdicts = {}
+        for _p, c in queued:
+            cid = c.get("id")
+            if not cid:
+                continue
+            reason = _verdict_reason(c, ctx)
+            verdicts[cid] = {"ok": not reason, "reason": reason}
+        active = [{"id": c.get("id") or p.stem,
+                   "unit": str(_act(c).get("task_id") or ""),
+                   "at": _claim_epoch(c)}
+                  for p, c in active_cards]
+        h = hashlib.sha1(json.dumps(
+            {"v": verdicts,
+             "a": sorted(x["id"] for x in active)},
+            sort_keys=True).encode()).hexdigest()
+        last = {}
+        try:
+            last = json.loads(READY_REPORT.read_text())
+        except Exception:
+            pass
+        if last.get("hash") == h and \
+                time.time() - (last.get("at") or 0) < READY_FORCE_S:
+            return
+        resp = api("/ready",
+                   {"host": HOST, "verdicts": verdicts,
+                    "active": active})
+        if resp.get("error"):
+            print(f"warn: /ready report failed: {resp['error']}")
+            return
+        READY_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        READY_REPORT.write_text(
+            json.dumps({"hash": h, "at": time.time()}))
+    except Exception as e:
+        print(f"warn: verdict_pass failed: {e}")
+
+
 def main() -> int:
     starts, merges, remote = [], [], []
     changed = False
@@ -1038,34 +1228,19 @@ def main() -> int:
     # the >25s holds that 503'd board-api writes (2026-11-17 convoy,
     # OPS-0725). Everything below is read-only on shared state.
     pol = load_policy()
-    kill = Path(pol.get("kill_switch") or "/tmp/no-kanban-dispatch")
     budget = int(pol.get("sessions_per_day") or 0)
     state_file = Path(pol.get("state_file")
                       or "/tmp/kanban-dispatch-state.json")
     max_tier = TIER_ORDER.get(str(pol.get("max_autonomy") or "t3"), 3)
     retry_cap = int(pol.get("retries_per_card") or 2)
-    can_claim = not overloaded()
-    if not can_claim:
-        print(f"load gate: load5/cpu > {MAX_LOAD_PC} — not claiming")
-    if kill.exists():
-        can_claim = False
-        print(f"kill switch {kill} present — not claiming")
-    if in_quiet_hours(pol.get("quiet_hours") or ""):
-        can_claim = False
-        print(f"quiet hours {pol['quiet_hours']} — not claiming")
-    # waiting_cards preflight (KNB-0928): kill switch + deploy lock +
-    # disk headroom are pass-level gates — any failure stops ALL
-    # claims, not just one card.
+    # Pass-level claim gates (load, kill switch, quiet hours,
+    # waiting-cards preflight, provider rate-limit) — shared with
+    # verdict_pass() so /ready reports the same reason.
     pf_env = wc.local_env(host=HOST, path=REPO)
-    pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
-    if pf_fails:
-        can_claim = False
-        print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
-              " — not claiming")
-    rl = ratelimit_reason()
-    if rl:
-        can_claim = False
-        print(f"{rl} — not claiming")
+    pass_reason = claim_pass_gate(pol, pf_env)
+    can_claim = not pass_reason
+    if pass_reason:
+        print(f"{pass_reason} — not claiming")
     # Declared fleet claim surface for the unclaimable flag — parsed
     # once per pass; {} when the SSOT is unreadable (never flags).
     try:
@@ -1306,6 +1481,7 @@ def main() -> int:
         print(f"{p.stem}: {start_pending(p)}")
     for p in merges:
         print(f"{p.stem}: {merge_pending_one(p)}")
+    verdict_pass()
     _flush_notify()
     if changed or starts or merges:
         subprocess.run([sys.executable, str(RENDER)], cwd=REPO, check=False)
