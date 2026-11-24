@@ -1,6 +1,6 @@
 id: audit-hosts-macos-blindspot
 title: audit-hosts.py misses macOS hosts + other-user launchd domains (kk-mac adanest ollama ran undeclared)
-column: backlog
+column: doing
 updated: 2026-11-24 18:42
 spec: 'Evidence 2026-10-30: kk-mac ran ollama serve under the adanest account for days/weeks — fleet didn''t know.
   Three stacked gaps: (1) kk-mac is not in audit-hosts.py HOSTS map (macos_services() exists but is never called
@@ -174,9 +174,16 @@ comms:
 - at: 2026-11-24 18:42
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-24 18:42
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 18:42
