@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
 column: doing
-updated: 2026-11-24 08:33
+updated: 2026-11-24 08:37
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -351,6 +351,11 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:37
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261124-075941-fix-the-phantom-state-issue-in failed: push: remote: error:\
+    \ refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current\
+    \ branch in a non-bare repository        \nremote: is denied, because it will"
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -387,6 +392,7 @@ action:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 20:37
     session_gone: 2026-11-23 20:37
+    merge_err: 2026-11-24 08:37
   last_failure: 'exit=1 -phantom-state-issue-in.service: Failed with result ''exit-code''. | devin-task-20261123-211558-fix-the-phantom-state-issue-in.service:
     Consumed 53.600s CPU time over 18min 6.376s wall clock time, 1008.9M memory peak, 463.3M memory swap peak.'
   attempts: 1
