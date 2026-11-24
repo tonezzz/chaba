@@ -1,7 +1,7 @@
 id: support-german-language-variants-on-cms-69ef23
 title: Support German language variants on CMS pages
-column: doing
-updated: 2026-11-24 15:19
+column: review
+updated: 2026-11-24 15:22
 priority: low
 note: User wants to create a German version of CMS page 'translate-probe', but only EN/TH are supported.
 comms:
@@ -182,13 +182,45 @@ comms:
     chaba-side en/th assumptions: cms_index.index_rows + cms-render index_rows now dedupe one-row-per-key preferring
     en for ANY lang; board-api /report create accepts lang param. Tests added (33+24 pass). reports-index regen
     verified: 1 row, no dupes. Remaining gate is ada-voice tool schem'
+- at: 2026-11-24 15:22
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-150047-support-german-language-varian.service:
+    Failed to ope'
+- at: 2026-11-24 15:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 15:22
+  from: chaba
+  text: banked 291 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:22
+  from: chaba
+  text: pushed dispatch/20261124-150047-support-german-language-varian to origin
+- at: 2026-11-24 15:22
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 61.3s)
+- at: 2026-11-24 15:22
+  from: chaba
+  text: auto-merged 1720aa49 (dispatch/20261124-150047-support-german-language-varian) → origin/master
+- at: 2026-11-24 15:22
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-150047-support-german-language-varian,
+    branch dispatch/20261124-150047-support-german-language-varian'
 ref: KNB-0284
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-150047-support-german-language-varian.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-150047-support-german-language-varian.service:
+    No such file or directory'
+  verified: true
 claim:
   since: 2026-11-24 15:00
+review_kind: verify
