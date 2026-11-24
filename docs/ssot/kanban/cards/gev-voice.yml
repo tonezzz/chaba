@@ -1,6 +1,6 @@
 id: gev-voice
 title: gev voice — mic pcm path, mute gating, playback gap
-column: backlog
+column: doing
 priority: medium
 program: gev
 area: voice
@@ -339,9 +339,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 14:59
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   sweep:
     no_repo: 2026-11-08 16:20
     failed_noted: 2026-11-09 09:49
@@ -350,9 +353,10 @@ action:
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service:
     Failed with result ''exit-code''. | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service: Consumed
     2.505s CPU time.'
-  attempts: 1
+  attempts: 2
   result: 'exit=0 -eye-view-app-work-held-re.md` and a `[verify]` evidence comment posted to the card. | devin-task-20261117-090610-gods-eye-view-app-work-held-re.service:
     Consumed 1min 20.753s CPU time over 7min 37.408s wall clock time, 1021.7M memory peak.'
+  runner: tony-dell
 requests:
 - id: arm-gev-dispatch-approve-deploy-1-add-go-53bf0b
   ask: Arm GEV dispatch + approve deploy? (1) add `gods-eye-view /home/tony/gods-eye-view main` to ~/.local/share/devin-dispatch/repos.conf
@@ -363,6 +367,7 @@ requests:
   from: devin
   answer: approve.
   executed: 2026-11-08 queue
-claim: {}
+claim:
+  since: 2026-11-24 14:59
 ref: ADA-0137
 review_kind: verify
