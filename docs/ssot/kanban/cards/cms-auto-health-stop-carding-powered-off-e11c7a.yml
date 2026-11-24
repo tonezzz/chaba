@@ -1,6 +1,6 @@
 id: cms-auto-health-stop-carding-powered-off-e11c7a
 title: 'cms-auto-health: stop carding powered-off/sleeping hosts'
-column: doing
+column: done
 updated: 2026-11-24 22:54
 brief: cms-auto-* cards reopen every time a portable host (tony-macbook) is powered off > interval+grace. nest-tony-macbook
   alone has auto-recovered 4x (11-18, 11-19, 11-21, 11-23) and each open card can burn a dispatch triage — dispatch
@@ -152,14 +152,23 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261124-222738-recurring-false-positive-class no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-24 22:54
+  from: chaba
+  text: 'merge-sweep: dispatch/20261124-222738-recurring-false-positive-class already in origin/master — marked
+    verified (exit_code=0; 209 file(s) changed vs base) — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-24 22:54
+  verified: true
 claim:
   since: 2026-11-24 22:27
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 22:54
+  note: verified — exit_code=0; 209 file(s) changed vs base
