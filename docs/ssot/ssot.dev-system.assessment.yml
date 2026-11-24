@@ -1,17 +1,17 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-11-24T08:25:24.029181+00:00'
+last_reviewed: '2026-11-24T09:30:37.060318+00:00'
 reviewer: assistant
 score:
-  branches_total: 318
-  branches_ahead_of_master: 108
-  worktrees_total: 110
+  branches_total: 323
+  branches_ahead_of_master: 109
+  worktrees_total: 115
   active_foci: 1
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 0
+  untracked_files: 1
 trend: declining
 pros:
 - label: SSOT-first workflow
@@ -29,10 +29,16 @@ pros:
 cons:
 - label: Branch/worktree sprawl
   severity: high
-  evidence: 108 branches are ahead of master; 110 worktrees active
+  evidence: 109 branches are ahead of master; 115 worktrees active
   owner: tony
   status: open
   improvement: Consolidate long-tail branches into master and archive or delete merged branches
+- label: Uncommitted working tree
+  severity: medium
+  evidence: 1 untracked or modified file(s)
+  owner: tony
+  status: open
+  improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: SSOT quality regression resolved
   source: dev-system.assessment
