@@ -188,6 +188,10 @@ config:
       - infrastructure/ssot.services.yml
       - infrastructure/ssot.tools.yml
       - ssot.mysystem.home.yml
+      # done lab card; 154+ runner defer comms (action.runner=idc01 names no
+      # declared runner) keep re-growing it. Trim is undone by card-union
+      # merge, so grandfather until the stale defer producer is retired.
+      - kanban/cards/lab-cf-kv-claw-channel.yml
     review_threshold:
       - ssot.focus.yml
       - ssot.focus.decisions.yml
