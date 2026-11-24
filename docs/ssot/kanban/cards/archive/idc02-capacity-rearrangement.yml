@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: done
-updated: 2026-11-23 15:58
+updated: 2026-11-24 20:47
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -176,6 +176,13 @@ comms:
     Eliminated causes:
 
     - Freelist rebuil'
+- at: 2026-11-24 20:47
+  from: devin
+  text: 'RETIRED 2026-11-24: mddb-lab permanently disabled + masked. Service file moved to ~/.local/share/mddb-lab-backup-20261120/mddb-lab.service.orig2;
+    timer file moved to ~/.local/share/mddb-lab-backup-20261120/mddb-lab-pull.timer.orig. Data directory (3.5GB)
+    and backup (2.9GB) deleted — 6.4GB freed. mddb-lab-pull.timer disabled+masked (its script restarts mddb-lab).
+    KB note updated (6c3efee276) to remove mddb-lab from standby replica list. Root cause: internal vector trainer
+    (vectorTrainer.run in ve'
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
