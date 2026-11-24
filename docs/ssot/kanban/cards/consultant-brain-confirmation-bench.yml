@@ -1,7 +1,7 @@
 id: consultant-brain-confirmation-bench
 title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
 column: doing
-updated: 2026-11-24 23:13
+updated: 2026-11-24 23:15
 priority: medium
 tags:
 - ada
@@ -183,6 +183,14 @@ comms:
     + score.py --max-tokens ported from stranded audit commit 2ad449c283; job trail + exact resume recipe at docs/ssot/jobs/bench/2026-11-24-consultant-confirmation-bench.yml.
     Series NOT run: kk-mac asleep (shim admission_denied heartbeat_stale ~1.7h, no remote wake); omen fallback saturated
     (load ~55, qwen3:8b never loaded in 12min test). qwen2.5:32b kk-mac-only, equally blocked. Needs Tony: wake'
+- at: 2026-11-24 23:15
+  from: chaba
+  text: 'raised request job-input-consultant-brain-confirmation-bench: Job needs your input: kk-mac is asleep —
+    wake it (or approve a degraded omen run) so the qwen3:8b x3 confirmation series'
+- at: 2026-11-24 23:15
+  from: chaba
+  text: 'needs input: kk-mac is asleep — wake it (or approve a degraded omen run) so the qwen3:8b x3 confirmation
+    series can execute?'
 action:
   type: dispatch
   status: running
@@ -193,3 +201,18 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 22:51
+requests:
+- id: job-input-consultant-brain-confirmation-bench
+  ask: 'Job needs your input: kk-mac is asleep — wake it (or approve a degraded omen run) so the qwen3:8b x3 confirmation
+    series can execute?'
+  status: open
+  at: 2026-11-24 23:15
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
