@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
 column: doing
-updated: 2026-11-24 20:01
+updated: 2026-11-24 20:23
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -206,6 +206,13 @@ comms:
     --days 0 shows gates work: in-flight units kept, no-evidence kept, unpushed heads would salvage-push. Now wiring:
     launchd-aware unit_active + fetch-once-per-repo + widened evidence files in the sweep; throttled wt_sweep_pass
     inside runner-agent (rides the already-declared runner-agent.t'
+- at: 2026-11-24 20:23
+  from: devin
+  text: 'DONE — the bounded reaper already existed (dispatch-wt-sweep.py, Nov 3) but was never scheduled. This session:
+    (1) wired it into runner-agent as wt_sweep_pass — sweep --apply once/day per host, stamp-throttled, warn-only,
+    rides the already-declared runner-agent.timer/LaunchAgent so zero new units (host-hygiene satisfied); (2) hardened
+    the sweep: launchd-aware unit_active for macOS runners, fetch-once-per-repo-root, evidence gate widened to meta/events/usage/verdict/exit_code,
+    DISPATCH_WT_SWEEP=0'
 action:
   type: dispatch
   status: running
