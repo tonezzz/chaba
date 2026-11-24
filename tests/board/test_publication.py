@@ -1301,6 +1301,94 @@ class BoardApiWiringTest(PubTestBase):
         wp_posts = [p for p in posts if p[0] == "/wp/v2/nest_job"]
         self.assertEqual(len(wp_posts), 1)
 
+    # --- OPS-0923: milestones never silently complete a job ---
+
+    def _fake_wp_existing(self, existing):
+        posts = []
+
+        def fake(route, data=None, method=None):
+            if data is None:
+                return existing
+            posts.append((route, data))
+            return {"id": 42}
+        self.ba.wp_api = fake
+        return posts
+
+    def test_milestone_does_not_complete_job(self):
+        """A generic milestone annotates the job — it must NOT write
+        status=done (the pre-OPS-0923 implicit mapping)."""
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench checkpoint",
+             "job": "j1", "source": "q", "visibility": "members",
+             "sinks": ["job", "json"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "delivered")
+        route, payload = posts[-1]
+        self.assertEqual(route, "/wp/v2/nest_job")
+        self.assertNotEqual(payload["meta"].get("status"), "done")
+        self.assertNotIn("status", payload["meta"])
+
+    def test_explicit_done_needs_evidence(self):
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench done", "job": "j1",
+             "source": "q", "visibility": "members",
+             "meta": {"job_status": "done"},
+             "sinks": ["job", "json"]}, "q")
+        # do_job rejects bare done -> the job sink Skips (never retried);
+        # sibling sinks still deliver — honest partial receipt
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("result_ref", res["receipts"]["job"]["reason"])
+        self.assertEqual(res["receipts"]["json"]["status"], "delivered")
+        self.assertEqual(
+            [p for p in posts if p[0] == "/wp/v2/nest_job"], [])
+
+    def test_explicit_done_with_evidence_delivers(self):
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench done", "job": "j1",
+             "source": "q", "visibility": "members",
+             "confidence": "verified",
+             "evidence": ["ada-nest/packs/j1/done"],
+             "meta": {"job_status": "done"},
+             "sinks": ["job"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "delivered")
+        route, payload = posts[-1]
+        meta = payload["meta"]
+        self.assertEqual(meta["status"], "done")
+        self.assertEqual(meta["result_ref"], "ada-nest/packs/j1/done")
+        self.assertEqual(meta["artifact_verified"], "true")
+        self.assertIn("ada-nest/packs/j1/done", meta["evidence"])
+
+    def test_card_scoped_event_never_touches_nest_job(self):
+        """runner-lifecycle events carry `card`, not `job` — they audit
+        via board/telegram sinks and must not mint nest_job posts."""
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "card finish: c-1",
+             "card": "c-1", "source": "runner-lifecycle",
+             "visibility": "members"}, "runner-lifecycle")
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("job ref", res["receipts"]["job"]["reason"])
+        self.assertEqual(
+            [p for p in posts if p[0] == "/wp/v2/nest_job"], [])
+
+    def test_progress_cannot_resurrect_done_job(self):
+        """done is terminal — a late progress/alert write that would
+        regress it is rejected by the transition guard -> Skip."""
+        posts = self._fake_wp_existing(
+            [{"id": 7, "meta": {"status": "done",
+                               "result_ref": "packs/j1/done",
+                               "artifact_verified": "true"}}])
+        res = self.ba.do_publish(
+            {"kind": "progress", "title": "late heartbeat", "job": "j1",
+             "source": "q", "visibility": "members",
+             "sinks": ["job"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("invalid transition", res["receipts"]["job"]["reason"])
+        self.assertEqual(
+            [p for p in posts if "nest_job/7" in p[0]], [])
+
     # --- /lesson source=wiki read path (card
     #     wiki-member-knowledge-surface-migrate-wp-3a1cf2, step 4)
 
