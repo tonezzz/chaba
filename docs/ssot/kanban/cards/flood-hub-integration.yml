@@ -9,7 +9,7 @@ note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30
   HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
   leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
   Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
-updated: 2026-11-24 12:14
+updated: 2026-11-24 12:21
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
@@ -171,6 +171,13 @@ comms:
     w/o FLOODS_API_KEY — news path safe), flood-hub-alert.py watchdog (ABOVE_NORMAL floor, board_notify ha,yomi),
     flood-status.py JSON backend for Ada flood_status tool, flood-hub-check.py area cmd, 16 michael-dev HA REST
     sensors (flood_hub.yaml pkg), runbook docs/ssot/jobs/infras'
+- at: 2026-11-24 12:21
+  from: tony
+  text: 'answered flood-hub-integration-is-code-complete-b-d0108b: approved-tony-dell — approval landed — use tony-dell
+    secret host'
+- at: 2026-11-24 12:21
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist approval
   lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01 IP, storing it in
   ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py, configure HA
@@ -182,7 +189,7 @@ requests:
   ask: 'Flood Hub integration is code-complete but live activation needs two externals: (1) has the Google waitlist
     approval email landed? (2) idc01 is offline ~33d — store FLOODS_API_KEY on tony-dell instead and restrict the
     GCP key to tony-dell+idc02 egress IPs?'
-  status: open
+  status: answered
   at: 2026-11-24 12:14
   from: devin
   options:
@@ -193,3 +200,5 @@ requests:
   - id: not-yet
     label: no approval yet — keep waiting
   suggested: approved-tony-dell
+  answer: approved-tony-dell — approval landed — use tony-dell secret host
+awaiting_action: true
