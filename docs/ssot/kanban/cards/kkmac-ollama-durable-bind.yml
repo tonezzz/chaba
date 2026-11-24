@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: doing
-updated: 2026-11-24 20:19
+updated: 2026-11-24 20:20
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -274,6 +274,13 @@ comms:
   from: devin
   text: 'raised request kk-mac-ollama-binds-0-0-0-0-lan-exposed-6d42d5: kk-mac ollama binds 0.0.0.0 — LAN-exposed
     on BOTH 192.168.0.101:11434 and 192.168.2.90:11434 (verified 2026-11-24). SEC-'
+- at: 2026-11-24 20:20
+  from: devin
+  text: 'attempt 2 done (commits a28407a11f + 29a74e4cbf on dispatch/20261124-200347-ollama-serve-runs-on-kk-mac-un,
+    ff onto master 8e29268558). Carried forward the unmerged ffbd55a36c repo-truth sync + re-verified live: OLLAMA_HOST=0.0.0.0:11434
+    confirmed in /Library/LaunchDaemons/net.adanest.ollama.plist via launchctl print system/ (no adanest needed)
+    — bind survives reboot, card goal MET. New findings: LAN exposure is on BOTH 192.168.0.101 and 192.168.2.90
+    (verified answering); kk-mac-onboard.sh was d'
 action:
   type: dispatch
   status: running
