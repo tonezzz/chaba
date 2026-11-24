@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Twenty drops live here:
+chaba dispatches. Twenty-one drops live here:
 
 **Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
 card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
@@ -76,6 +76,10 @@ re-staging the diff, never by hand-merging hunks.
 20. `gev_pane_honest_fail` extended to every pane type + typed
     `vcast_display` pub/report driver actions — card `gev-map`
     (MED-0135, 2026-11-23)
+21. degraded-mode notices — member lanes answer credit/quota outages
+    with a defined bilingual notice instead of silence — card
+    `kk-ha-degraded-mode-explain-capabilities-000d8b` (2026-11-24);
+    runbook `docs/kb/member-lane-degraded-mode.md`
 
 ---
 
