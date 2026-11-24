@@ -1,14 +1,14 @@
 id: timer-alert-idc02-ada-ocb-eval
 title: Timer ada-ocb-eval on idc02 failing
 column: backlog
-updated: 2026-11-23 20:42
+updated: 2026-11-24 08:11
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-23 18:20) of `ada-ocb-eval.service` on `idc02` result=exit-code — investigate journal:
-  `journalctl --user -u ada-ocb-eval.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-23 18:20) of `ada-ocb-eval.service` on `idc02` result=exit-code — investigate journal: `journalctl
+  --user -u ada-ocb-eval.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: ADA-0042
 comms:
 - at: 2026-11-23 18:22
@@ -20,8 +20,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-23 18:33
   from: devin
-  text: '[still suspicious] Last run (11-23 18:20) of `ada-ocb-eval.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u ada-ocb-eval.service` on the host. See CMS `timer-timeline-idc02`.'
+  text: '[still suspicious] Last run (11-23 18:20) of `ada-ocb-eval.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u ada-ocb-eval.service` on the host. See CMS `timer-timeline-idc02`.'
 - at: 2026-11-23 19:06
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -35,20 +35,24 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-11-23 20:42
   from: tony
-  text: 'answered multiple-runner-agents-across-fa4249: ★ Redeploy runner-agent from repository to all
-    affected hosts via scp and resume timer investigation'
+  text: 'answered multiple-runner-agents-across-fa4249: ★ Redeploy runner-agent from repository to all affected
+    hosts via scp and resume timer investigation'
 - at: 2026-11-23 20:42
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-11-24 01:21
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: multiple-runner-agents-across-fa4249
-  ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because
-    the installed runner-agent script has drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
-    Before the failed timer `ada-ocb-eval.service` on `idc02` can be investigated and resolved, the deployment
-    drift preventing runners from executing tasks must be addressed.
+  ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because the installed
+    runner-agent script has drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
+    Before the failed timer `ada-ocb-eval.service` on `idc02` can be investigated and resolved, the deployment drift
+    preventing runners from executing tasks must be addressed.
   options:
   - ★ Redeploy runner-agent from repository to all affected hosts via scp and resume timer investigation
   - Postpone timer evaluation until the runner-agent deployment pipeline is standardized
@@ -58,7 +62,7 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repository to all affected hosts via scp and resume timer investigation
 awaiting_action: true
-spec: 'Goal: Redeploy runner-agent from repository to idc02 via scp and resume timer investigation for
-  ada-ocb-eval.service. Host: idc02. Repo: chaba. Constraints: Only use the specified host, repository,
-  and paths from the context. Testable done-condition: runner-agent.py is successfully copied to idc02
-  and the system journal for ada-ocb-eval.service is investigated.'
+spec: 'Goal: Redeploy runner-agent from repository to idc02 via scp and resume timer investigation for ada-ocb-eval.service.
+  Host: idc02. Repo: chaba. Constraints: Only use the specified host, repository, and paths from the context. Testable
+  done-condition: runner-agent.py is successfully copied to idc02 and the system journal for ada-ocb-eval.service
+  is investigated.'
