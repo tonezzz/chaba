@@ -7,15 +7,14 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: runner-agent: checkout sha 33a65f615c887eae != pin d9af2b9cd9410faf — chaba clone is stale/divergent;
-  ~/.local/bin/runner-agent sha 33a65f615c887eae != pin d9af2b9cd9410faf — installed build is stale; dispatch-repos:
-  checkout sha 66f88802508179bb != pin 7cf6ed7af12c8877 — chaba clone is stale/divergent. Info: chaba origin is
-  fetch-only (by design — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok — declare
-  push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates); sunsynk-card: push probe ok — declare
-  push:sunsynk-card in RUNNER_LABELS for the fast path (live probe still gates); mddb-fork: push probe ok — declare
-  push:mddb-fork in RUNNER_LABELS for the fast path (live probe still gates); gods-eye-view: push probe fails (fatal:
-  could not read Username for ''https://github.com'': No ) — gods-eye-view dispatches defer to a pushable host;
-  st'
+note: 'Failing: runner-agent: checkout sha 33a65f615c887eae != pin 94ce1cb7c20f2c69 — chaba clone is stale/divergent;
+  ~/.local/bin/runner-agent sha d633fa5261a4c93c != pin 94ce1cb7c20f2c69 — installed build is stale; dispatch-repos:
+  checkout sha 66f88802508179bb != pin fda664ca04d33fd5 — chaba clone is stale/divergent; ~/.local/bin/runner-agent
+  sha d633fa5261a4c93c != repo 94ce1cb7c20f2c69 — installed copy drifted; redeploy. Info: chaba origin is fetch-only
+  (by design — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok — declare push:ada-voice
+  in RUNNER_LABELS for the fast path (live probe still gates); sunsynk-card: push probe ok — declare push:sunsynk-card
+  in RUNNER_LABELS for the fast path (live probe still gates); mddb-fork: push probe ok — declare push:mddb-fork
+  in RUNNER_LABELS for the fast path (live probe still gates); gods-eye-view: push probe fails (fatal: co'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
