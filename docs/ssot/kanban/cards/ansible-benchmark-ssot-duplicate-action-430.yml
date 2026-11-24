@@ -1,7 +1,7 @@
 id: ansible-benchmark-ssot-duplicate-action-430
 title: 'SSOT hygiene: duplicate action key in ssot.audit.hosts.yml (~:430)'
-column: backlog
-updated: 2026-11-24 21:31
+column: doing
+updated: 2026-11-24 21:39
 brief: 'Benchmark finding still live: focus-dispatcher-overnight.service has two action: keys (verify-next-run,
   investigate) in the same list item; YAML keeps the last.'
 priority: medium
@@ -106,9 +106,15 @@ comms:
 - at: 2026-11-24 21:31
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 1.24 > 0.85)'
+- at: 2026-11-24 21:39
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-24 21:39
