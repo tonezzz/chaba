@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
 column: doing
-updated: 2026-11-24 16:23
+updated: 2026-11-24 16:34
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -285,6 +285,13 @@ comms:
     broken fleet-wide (all keys rejected from mn01/omen/dell; no; [ada-ha-dashboard-live-view-drift] answered the-live-ada-ha-chaba-admin-dashboar;
     [merge-sweep-test-gate-fail-open] primer injected 8 lesson(s): [dispatch-worktre; [merge-sweep-test-gate-fail-open]
     primer injected 8 lesson(s)'
+- at: 2026-11-24 16:34
+  from: devin
+  text: 'attempt 2: salvaged attempt-1 runbook + applied Tony''s wind-unit answer LIVE on michael-ha — relabeled
+    sensor.rk600_wind_speed + input_number.shutter_wind_speed_min kn->m/s (also fixed 4 stale /1.94384 template
+    sensors in rika_rk600.yaml). Verified post reload_all: 2.88 m/s etc. Backups *.bak-devin-20261124. Remaining
+    steps still gated on motor repair (manual smoke -> enable drivers -> armed policy). Runbook: docs/ssot/jobs/home-assistant/2026-11-24-rk600-shutter-go-live-runbook.yml;
+    outcome doc'
 action:
   type: dispatch
   status: running
