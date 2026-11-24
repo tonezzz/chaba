@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-24 08:28
+updated: 2026-11-24 08:30
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -38,3 +38,10 @@ comms:
 - at: 2026-11-24 08:28
   from: tony
   text: card captured via board-api
+- at: 2026-11-24 08:30
+  from: devin
+  text: '2026-11-24 investigation update — URGENT: Tier 0 executed (journalctl vacuum freed 0B; journals are active,
+    no archived segments; four 0-byte UNVERIFIED files removed). Disk still 1.3G free. Journal evidence from 11-24
+    02:30-04:30: (1) mddb-ops 70G filecopy FAILED open-verify 3x at 04:26 — genuinely unusable, not a mislabel;
+    (2) native backup for mddb-ops did not produce a file; (3) at 04:28 the cms gz step hit ''No space left on device''
+    and the service exited FAILURE — script logged ''backup ok'' '

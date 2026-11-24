@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
-column: doing
-updated: 2026-11-24 08:24
+column: review
+updated: 2026-11-24 08:31
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -392,6 +392,35 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:31
+  from: tony-dell
+  text: 'finished (ok): exit=0 , and the kk-ha card JS ships with the next chaba stack deploy. | devin-task-20261124-075950-kk-ha-degraded-mode-'
+- at: 2026-11-24 08:31
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:31
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-075950-kk-ha-degraded-mode-explain-ca'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 08:31
+  from: chaba
+  text: banked 251 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:31
+  from: chaba
+  text: pushed dispatch/20261124-075950-kk-ha-degraded-mode-explain-ca to origin
+- at: 2026-11-24 08:31
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 146.8s)
+- at: 2026-11-24 08:31
+  from: chaba
+  text: auto-merged 7e219f5c (dispatch/20261124-075950-kk-ha-degraded-mode-explain-ca) → origin/master
+- at: 2026-11-24 08:31
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -423,7 +452,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
@@ -436,6 +465,10 @@ action:
     54.424s wall clock time, 504.4M memory peak.'
   attempts: 1
   runner: tony-dell
+  result: 'exit=0 , and the kk-ha card JS ships with the next chaba stack deploy. | devin-task-20261124-075950-kk-ha-degraded-mode-explain-ca.service:
+    Consumed 3min 8.805s CPU time over 23min 8.833s wall clock time, 1.5G memory peak, 730.3M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 07:59
 awaiting_action: true
+review_kind: verify
