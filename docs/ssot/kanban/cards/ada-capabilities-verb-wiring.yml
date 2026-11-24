@@ -1,7 +1,7 @@
 id: ada-capabilities-verb-wiring
 title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
 column: review
-updated: 2026-11-24 21:51
+updated: 2026-11-24 21:54
 priority: medium
 tags:
 - ada
@@ -41,6 +41,8 @@ action:
   result: 'exit=0  are uncommitted in the worktree for the dispatcher to checkpoint — no push, no deploy. | devin-task-20261124-212337-repo-work-ada-voice-wire-the-a.service:
     Consumed 2min 4.497s CPU time over 26min 41.180s wall clock time, 1.2G memory peak.'
   verified: false
+  sweep:
+    merge_err: 2026-11-24 21:54
 ref: ADA-0020
 comms:
 - at: 2026-11-23 07:40
@@ -197,6 +199,11 @@ comms:
 - at: 2026-11-24 21:51
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261124-212337-repo-work-ada-voice-wire-the-a failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
 claim:
   since: 2026-11-24 21:22
 review_kind: verify
