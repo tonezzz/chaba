@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: doing
-updated: 2026-11-24 17:31
+updated: 2026-11-24 17:58
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -267,6 +267,13 @@ comms:
     scenes ARE MLX-reproducible — ltx-embeds/*.pt are T5 prompt_embeds in the exact 4-key format the proven preview-mac
     pack injects (T5 skipped, bit-exact conditioning), keyframes extracted post-hoc (t2v confirmed via PSNR=inf
     vs rend'
+- at: 2026-11-24 17:58
+  from: devin
+  text: 'progress: inventory+classification done (job yml docs/ssot/jobs/devnest/2026-11-24-kk-mac-video-library-rerender.yml).
+    Control pack kk-mac-mlx-colab-scene0-control-20261124 (4 shots, bit-identical T5 embeds, t2v 640x384/49f/steps8/seed42)
+    queued on kk-mac-video-pilot. Gated launcher live on kk-mac tmux:mlx-control — polls HID-idle>=10min/AC/mem>=40%/load<8/no-big-models/disk;
+    currently waiting (owner active, idle=0s — gate working as designed). Compare tool kk_mac_video_compare.py ready
+    for old-'
 action:
   type: dispatch
   status: running
