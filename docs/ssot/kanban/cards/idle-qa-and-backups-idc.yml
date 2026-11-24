@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
 column: doing
-updated: 2026-11-24 15:21
+updated: 2026-11-24 15:43
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -186,6 +186,12 @@ comms:
     new file via their chaba checkout sync (chaba-repo-s; after the MEM-0545 mddb split, any long-lived script with
     a hardcoded :11023 def; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
     [done] all '
+- at: 2026-11-24 15:43
+  from: devin
+  text: 'progress: recon done — jobs already off dell (qc-scoreboard idc03, chaba-audit con01, session-audit omen-but-broken:
+    stale unit env, dead board-api 127.0.0.1:8787, stranded inbox files). Plan: move session-audit to idc02 w/ board-api
+    /inbox write path, add fleet single-writer lint + nightly pull-backups (wp dump, mddb tier2, repo mirror) as
+    declared jobs. Implementing now.'
 action:
   type: dispatch
   status: running
