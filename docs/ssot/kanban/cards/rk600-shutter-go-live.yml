@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
-column: backlog
-updated: 2026-11-24 15:14
+column: doing
+updated: 2026-11-24 15:18
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -192,9 +192,16 @@ comms:
 - at: 2026-11-24 15:14
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 15:18
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 15:18
