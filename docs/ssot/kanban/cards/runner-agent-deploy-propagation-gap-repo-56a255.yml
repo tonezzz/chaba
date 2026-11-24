@@ -1,7 +1,7 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
 column: doing
-updated: 2026-11-24 18:43
+updated: 2026-11-24 18:53
 priority: medium
 tags:
 - ops
@@ -183,6 +183,12 @@ comms:
     DONE (attempt on tony-omen). runner; [runner-agent-opencode-lane-profile-bug] primer injected 8 lesson(s): [rebuild-g;
     Prior "no exit record" failures were the lane never running the contract at all;; `~/.local/bin/runner-agent`
     must stay mode 755 (`ExecStart=` '
+- at: 2026-11-24 18:53
+  from: devin
+  text: 'investigating — auto-propagate already exists (_self_update at pass start + sync-runner-tools at git-safe-pull
+    tail) but found live break: master manifest pin d0a103cb != runner-agent.py sha 9a42dc07 (compaction-summary
+    commit 7dc2187b7d changed the tool without pin bump; contract test red). sync-runner-tools refuses installs
+    fleet-wide right now. Fixing pin + pin-gating _self_update + pre-commit guard.'
 action:
   type: dispatch
   status: running
