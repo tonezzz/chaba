@@ -236,6 +236,10 @@ comms:
     to the boards+status(h3) reverse_proxy blocks in idc02 ~/.config/caddy/Caddyfile (backup .bak-dnsresolvers-20261124),
     validated+reloaded caddy-edge, both public surfaces 200. Part2: probed h3 — Plesk Obsidian 18.0.81 live at https://103.99.11.249:8443
     (and :8880); SSH :22 filtere'
+- at: 2026-11-24 22:40
+  from: devin
+  text: 'raised request h3-forensic-access-plesk-panel-is-live-a-fc58e4: h3 forensic access: Plesk panel is live
+    at https://103.99.11.249:8443 (Obsidian 18.0.81, also :8880) but SSH :22 is filt'
 action:
   type: dispatch
   status: running
@@ -246,3 +250,15 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 22:24
+requests:
+- id: h3-forensic-access-plesk-panel-is-live-a-fc58e4
+  ask: 'h3 forensic access: Plesk panel is live at https://103.99.11.249:8443 (Obsidian 18.0.81, also :8880) but
+    SSH :22 is filtered and NO plesk/ssh credential exists in fleet secrets. Please supply the Plesk admin login
+    (or ReadyIDC client-area creds / enable SSH) so it can be stored as ~/.config/secrets/h3-plesk.env per the new
+    ssot.secrets entry h3-plesk-panel.'
+  status: open
+  at: 2026-11-24 22:40
+  from: devin
+  options:
+  - proceed
+  - hold
