@@ -1,7 +1,7 @@
 id: model-efficiency-refresh-deepseek-flint-providers
 title: Refresh model efficiency scorecard across providers
 column: doing
-updated: 2026-11-24 16:46
+updated: 2026-11-24 17:03
 spec: Run a fixed efficiency fixture across local Ollama, Colab burst, OpenRouter pinned free models, Gemini gateway/direct,
   and DeepSeek API when credentials are available. Include warm/cold latency, tokens, error/429 rate, structured/tool
   correctness, vision where supported, cost/quota, license/data policy, and hardware fit. Add DeepSeek V4.1 Flash
@@ -196,6 +196,11 @@ comms:
     allowlists differ: LITELLM_KEY_BENCH is alias-restricted (; expect.facts is a case-insensitive substring check
     on the raw response — facts m; [cms-auto-nest-tony-macbook] cline review verdict (ollama/qwen2.5:7b, task 43d16;
     [colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0] REAL JOB PL'
+- at: 2026-11-24 17:03
+  from: devin
+  text: 'progress: harness scripts/bench/model-efficiency.py written; running fixed fixture on omen Ollama + idc03
+    remote (OR pinned free, deepseek-v4.1-flash via OR, Gemini direct/gateway, Colab probe). No routing changes
+    until verifier review.'
 action:
   type: dispatch
   status: running

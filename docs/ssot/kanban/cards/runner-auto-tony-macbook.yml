@@ -8,13 +8,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: runner-agent: checkout sha 3dc0bb81d66842bb != pin bb371a90911da8ad — chaba clone is stale/divergent;
-  ~/.local/bin/runner-agent sha 3dc0bb81d66842bb != pin bb371a90911da8ad — installed build is stale. Info: chaba
-  origin is push-capable; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card cards; no mddb-fork
-  checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view
-  cards; ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still
-  gates); repos.conf differs from canonical (extra=[] missing=[''ada-pi''] branch-diff=[]) — per-host table, review
-  only; devin: /home/tony/.local/bin/devin (devin 3000.14.30821 (a09cd7f323ee)).'
+note: 'Failing: chaba clone 285 commits behind origin/master (limit 200). Info: chaba origin is push-capable; no
+  sunsynk-card checkout — host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout — host can''t take
+  action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view cards; ada-voice:
+  push probe ok — declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates); repos.conf
+  differs from canonical (extra=[] missing=[''ada-pi''] branch-diff=[]) — per-host table, review only; devin: /home/tony/.local/bin/devin
+  (devin 3000.14.30821 (a09cd7f323ee)).'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
@@ -28,7 +27,7 @@ help: 'Per-check fixes:
   If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
   line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
   as the tool.'
-updated: 2026-11-24 12:08
+updated: 2026-11-24 17:03
 action:
   status: done
 claim: {}
@@ -174,4 +173,8 @@ comms:
 - at: 2026-11-24 12:08
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
