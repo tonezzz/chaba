@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
 column: doing
-updated: 2026-11-24 22:47
+updated: 2026-11-24 22:55
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -238,6 +238,14 @@ comms:
   from: devin
   text: 'raised request phase-1-consumer-map-done-docs-kb-retire-b94876: Phase 1 consumer map done (docs/kb/retired-apps/camwall.md).
     How far should the stop go? (a) full stop — all producers+e'
+- at: 2026-11-24 22:55
+  from: chaba
+  text: 'raised request job-input-camwall-retire-to-wiki: Job needs your input: Camwall retirement Phase 2 is blocked
+    on Tony''s sign-off: full stop vs keep-Ada-snapshot-only (boa'
+- at: 2026-11-24 22:55
+  from: chaba
+  text: 'needs input: Camwall retirement Phase 2 is blocked on Tony''s sign-off: full stop vs keep-Ada-snapshot-only
+    (board request phase-1-consumer-map-done-docs-kb-retire-b94876 on card camwall-retire-to-wiki).'
 action:
   type: dispatch
   status: running
@@ -267,3 +275,17 @@ requests:
     v: stop CMS/edge/route/vcast/roster-audit; keep cam-wall-pull thumbs+zones data on tony-dell for ada_camera_snapshot
       cached/stale path
   suggested: ada-snapshot-only
+- id: job-input-camwall-retire-to-wiki
+  ask: 'Job needs your input: Camwall retirement Phase 2 is blocked on Tony''s sign-off: full stop vs keep-Ada-snapshot-only
+    (board request phase-1-consumer-map-done-docs-kb-retire-b94876 on card camwall-retire-to-wiki).'
+  status: open
+  at: 2026-11-24 22:55
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
