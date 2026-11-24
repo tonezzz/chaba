@@ -1,0 +1,34 @@
+id: idc02-audit-census-reconcile
+title: idc02 audit-hosts census reconcile — expected_services drift red
+column: backlog
+updated: 2026-11-24 16:01
+priority: low
+tags:
+- audit
+- idc02
+- host-hygiene
+spec: 'Found during idc02-second-ada-pi-lane (2026-11-24): scripts/audit-hosts.py --host idc02 is red on master.
+  The idc02 expected_services census predates the 2026-10-26 capacity move and later adds.
+
+
+  Observed deltas (live systemctl --user on idc02):
+
+  - ~8 running user services NOT declared: gpu-queue.service, gpu-queue-processor.service, ollama.service (quadlet,
+  generated), weaviate.service, nest-mgr.service, web.service, opencode-serve.service, gesture-relay.service
+
+  - ~10 declared entries read as missing because units are inactive oneshots/quadlets between fires (audit enumerates
+  list-units without --all): runner-agent.service, kanban-dispatch.service, vcast-real-macbook.service, openchamber-update.service,
+  gev-cmd-relay.service, ada-code.service, ada-code-enroll.service, jack-opencode.service, jack-enroll.service,
+  ada-stt.service — several are not-found quadlet names needing real unit names.
+
+  - Unexpected failed: ada-ocb-eval.service, ada-ocb-smoke.service
+
+
+  Done when: audit-hosts.py --host idc02 reports no unexpected-running/missing deltas (or each residual is whitelisted
+  in allowed_running/known_failed with a reason). Verify each declared unit name against systemctl --user list-unit-files;
+  consider whether audit should use list-units --all or a separate is-enabled probe for oneshot services.'
+ref: AUD-0035
+comms:
+- at: 2026-11-24 16:01
+  from: devin
+  text: card captured via board-api
