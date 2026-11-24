@@ -1,7 +1,7 @@
 id: audit-hosts-macos-blindspot
 title: audit-hosts.py misses macOS hosts + other-user launchd domains (kk-mac adanest ollama ran undeclared)
-column: doing
-updated: 2026-11-24 19:17
+column: review
+updated: 2026-11-24 19:21
 spec: 'Evidence 2026-10-30: kk-mac ran ollama serve under the adanest account for days/weeks — fleet didn''t know.
   Three stacked gaps: (1) kk-mac is not in audit-hosts.py HOSTS map (macos_services() exists but is never called
   for it — SSOT says ''host-loads probe only''); (2) even if it were, `launchctl list` only sees the caller''s domain
@@ -199,13 +199,44 @@ comms:
     LaunchAgents via dscl, caller gui domain, and a fleet-process ps scan; undeclared launchd jobs/processes now
     produce deltas -> audit-auto-kk-mac cards. Verified live: clean vs kk-mac; stripped-SSOT counterfactual reproduces
     the OPS-1018 ollama delta. Also fixed latent BSD-sed bug (sed '
+- at: 2026-11-24 19:21
+  from: tony-omen
+  text: 'finished (ok): exit=0  its chain can probe the host (tony-dell''s `--all --cards` chain already reaches
+    it). | devin-task-20261124-18434'
+- at: 2026-11-24 19:21
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 19:21
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-184348-evidence-2026-10-30-kk-mac-ran'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 19:21
+  from: chaba
+  text: pushed dispatch/20261124-184348-evidence-2026-10-30-kk-mac-ran to origin
+- at: 2026-11-24 19:21
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 84.8s)
+- at: 2026-11-24 19:21
+  from: chaba
+  text: auto-merged bb969ba3 (dispatch/20261124-184348-evidence-2026-10-30-kk-mac-ran) → origin/master
+- at: 2026-11-24 19:21
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0  its chain can probe the host (tony-dell''s `--all --cards` chain already reaches it). | devin-task-20261124-184348-evidence-2026-10-30-kk-mac-ran.service:
+    Consumed 4min 46.075s CPU time over 34min 4.334s wall clock time, 854.1M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 18:42
+review_kind: verify
