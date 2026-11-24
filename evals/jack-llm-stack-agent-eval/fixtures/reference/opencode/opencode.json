@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "jack-litellm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Jack LiteLLM (local)",
+      "options": {
+        "baseURL": "{env:JACK_LITELLM_URL}/v1",
+        "apiKey": "{env:JACK_LITELLM_API_KEY}"
+      },
+      "models": {
+        "jack-chat": {
+          "name": "Jack local chat (qwen2.5:3b via LiteLLM)"
+        }
+      }
+    }
+  },
+  "model": "jack-litellm/jack-chat"
+}
