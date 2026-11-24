@@ -1,7 +1,7 @@
 id: lesson-audit-scheduled
 title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
 column: doing
-updated: 2026-11-24 16:35
+updated: 2026-11-24 16:38
 brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
   pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
   + fixes itself.'
@@ -209,6 +209,10 @@ comms:
     (kanban-commit sweeps), daily comms here, and R1/R3/R4 flags>0 re-arms standing card lesson-polish-run via /card
     on_exists:queue (flag-sig dedup, 20h min interval, >20% get-err skip, LESSON_POLISH_QUEUE=0 off-switch). R2/R5
     never queue spend. '
+- at: 2026-11-24 16:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-160340-wire-lesson-polish-pack-to-a-s no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -216,5 +220,7 @@ action:
   lane_source: kw
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 16:38
 claim:
   since: 2026-11-24 16:02

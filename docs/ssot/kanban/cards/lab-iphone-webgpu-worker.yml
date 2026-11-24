@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
-column: review
-updated: 2026-11-24 16:24
+column: done
+updated: 2026-11-24 16:38
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -336,6 +336,9 @@ comms:
 - at: 2026-11-24 16:24
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 16:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -352,3 +355,7 @@ action:
 claim:
   since: 2026-11-24 15:51
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 16:38
+  note: verified — evidence checks green, closing itself
