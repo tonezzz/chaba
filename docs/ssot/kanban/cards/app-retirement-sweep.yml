@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
 column: doing
-updated: 2026-11-24 22:31
+updated: 2026-11-24 22:36
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -237,6 +237,13 @@ comms:
   text: 'dispatch outcome written: dispatch-outcome-20261124-215700-candidates-verify-each-is-actu.md. Verification
     complete for all 15 candidates; retire/keep request retire-list-signoff open awaiting Tony. No stops executed,
     no files changed — execution gated on sign-off per spec.'
+- at: 2026-11-24 22:36
+  from: chaba
+  text: 'raised request job-input-app-retirement-sweep: Job needs your input: Approve the app-retirement retire/keep
+    list on card app-retirement-sweep?'
+- at: 2026-11-24 22:36
+  from: chaba
+  text: 'needs input: Approve the app-retirement retire/keep list on card app-retirement-sweep?'
 action:
   type: dispatch
   status: running
@@ -261,3 +268,16 @@ requests:
   - keep-dev-v0-revive-backend
   - hold
   suggested: retire-as-proposed
+- id: job-input-app-retirement-sweep
+  ask: 'Job needs your input: Approve the app-retirement retire/keep list on card app-retirement-sweep?'
+  status: open
+  at: 2026-11-24 22:36
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
