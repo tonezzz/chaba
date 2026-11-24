@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: doing
-updated: 2026-11-24 21:59
+updated: 2026-11-24 22:14
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -229,6 +229,12 @@ comms:
     primer injected 8 lesson(s): no chaba-audit.service/ch; [speed-probe] Overnight sweep 2026-11-19: parked in
     backlog. The latest attempt ; Audit live units before writing SSOT: the idc03 cap.conf existed since 2026-10-0;
     [ada-prompt-slim] primer injected 8 lesson(s): [ada-prompt-sl'
+- at: 2026-11-24 22:14
+  from: devin
+  text: 'investigating: all 4 original 11-09 deltas verified resolved in audit reports (11-17 clean; 11-21 reachable
+    shows runner-agent.timer active, runner-agent.service+zram-swap.service no longer failed, vcast-real-macbook
+    declared+active, stick-announce ghost gone). Only live delta = nest-mgr.service undeclared — intentional install
+    (ops-macbook-nestmgr-install SYS-0158, done 11-17). Reconciling SSOT declarations now.'
 action:
   type: dispatch
   status: running
