@@ -9,7 +9,7 @@ note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30
   HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
   leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
   Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
-updated: 2026-11-24 12:24
+updated: 2026-11-24 12:25
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
@@ -211,6 +211,9 @@ comms:
     Dispatch scope: fix scripts/embed/embed-lan; [kk-mac-live-memory-guard] Verification staging update: branch
     fix/kk-mac-memory; [kk-mac-live-memory-guard] [verify-hold] Review pass 2026-11-23 (Tony): 2026-11-; [publish-promote-knowledge-capture-ssot-w-d34a39]
     [2026-11-23'
+- at: 2026-11-24 12:25
+  from: devin
+  text: dispatch picked up — checking whether waitlist approval/key has landed before touching idc01/michael-dev
 spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist approval
   lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01 IP, storing it in
   ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py, configure HA
