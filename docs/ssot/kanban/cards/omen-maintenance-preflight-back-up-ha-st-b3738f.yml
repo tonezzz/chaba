@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
-column: review
-updated: 2026-11-24 17:04
+column: done
+updated: 2026-11-24 20:39
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -321,6 +321,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:39
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261124-161435-verified-loginctl-linger-yes-e
+    (tip 923024dcd2a4) is merged into origin/master; runner reported finished (ok) with an outcome doc. Work is
+    provably landed. Closing.'
+- at: 2026-11-24 20:39
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
