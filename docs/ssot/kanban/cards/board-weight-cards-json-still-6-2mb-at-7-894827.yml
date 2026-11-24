@@ -1,7 +1,7 @@
 id: board-weight-cards-json-still-6-2mb-at-7-894827
 title: 'Board weight: cards.json still 6.2MB at 739 cards after cap archive'
 column: doing
-updated: 2026-11-24 22:23
+updated: 2026-11-24 22:41
 priority: medium
 tags:
 - board
@@ -218,6 +218,12 @@ comms:
     DONE + live-verified 2026-11-0; [timer-alert-cards-auto-close-on-next-gre-723ebc] VERIFIED NOT DONE 2026-11-09:
     ; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [education-lesson-no-th-marker-readback]
     [done] Root cause: c'
+- at: 2026-11-24 22:41
+  from: devin
+  text: 'dispatch picked up — plan: compact board2/cards.json (drop comms/spec/verify/help bulk; keep comms_total+first_at/last_at/last_comm+attachments+open
+    requests+action for active cards; payload.recent feeds ticker), modal fetches full card via GET /apps/board-api/card/<id>
+    on open, adapt board-gantt normalizeCard, update pane-contract test. Doing-column honesty already enforced by
+    merge-sweep reap_stalled_claims — will verify live at end.'
 action:
   type: dispatch
   status: running
