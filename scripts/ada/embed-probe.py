@@ -10,12 +10,15 @@ the OpenRouter key hit its spend limit (403) while the Gemini fallback
 was dead, so nothing noticed until a manual benchmark.
 
 Also runs the embed-queue saturation tripwire each run: reads the
-`queue` block from /v1/vector-stats and emits ops-events when depth
-crosses EMBED_QUEUE_WARN_DEPTH / EMBED_QUEUE_CRIT_DEPTH, when the
-queue drains again, and (rate-limited) whenever droppedTotal grows —
-each dropped job is a doc with no vector until reindexed. Added after
-the 2026-10-05 incident: queue pinned at 4000/4000 for ~15h dropped
-3,160 embed jobs silently (card mddb-embed-queue-recovery).
+`queue` block from /v1/vector-stats on BOTH mddb planes (leader :11023
+and CMS :11027) and emits ops-events when depth crosses
+EMBED_QUEUE_WARN_DEPTH / EMBED_QUEUE_CRIT_DEPTH, when the queue drains
+again, and (rate-limited) whenever droppedTotal grows — each dropped
+job is a doc with no vector until reindexed. The CMS plane got its own
+check after the 2026-11-19 incident: its queue pinned at 4000 while the
+leader-side tripwire only watched :11023. Added after the 2026-10-05
+incident: queue pinned at 4000/4000 for ~15h dropped 3,160 embed jobs
+silently (card mddb-embed-queue-recovery).
 
 State: ~/.local/share/ada/embed-probe.state ("up" | "down"),
        ~/.local/share/ada/embed-queue.state (JSON: level/dropped/alert ts)
@@ -33,6 +36,10 @@ from datetime import datetime, timezone
 # there (mddb-ops is no-embed by design). Ops-event emits go to mddb-ops.
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
+# CMS content plane — separate mddbd instance with its own embed queue
+# (bge-m3 via embed-pool-shim). Empty string disables the second check.
+MDDB_CMS = os.environ.get("MDDB_CMS_URL", "http://100.102.134.91:11027")
+MDDB_CMS = MDDB_CMS.removesuffix("/v1").removesuffix("/")
 MDDB_OPS = os.environ.get("MDDB_OPS_URL", "http://100.123.163.11:11025")
 MDDB_OPS = MDDB_OPS.removesuffix("/v1").removesuffix("/")
 PROBE_COLLECTION = "ada-ha-bank-general"
@@ -57,8 +64,8 @@ def _post(path: str, payload: dict, timeout: int = 30,
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
 
 
-def _get(path: str, timeout: int = 30) -> dict:
-    return json.loads(urllib.request.urlopen(MDDB + path, timeout=timeout).read())
+def _get(path: str, timeout: int = 30, base: str = MDDB) -> dict:
+    return json.loads(urllib.request.urlopen(base + path, timeout=timeout).read())
 
 
 def _emit(ev_type: str, detail: str) -> None:
@@ -88,30 +95,43 @@ def _kick_reindex(why: str) -> None:
         print(f"reindex trigger failed: {exc}", file=sys.stderr)
 
 
-def check_queue() -> str:
-    """Embed-queue saturation tripwire. Returns a short "queue ..." note for
-    the probe event detail; emits ops-events on transitions:
+def check_queue(plane: str = "leader", base: str = MDDB) -> str:
+    """Embed-queue saturation tripwire for one mddb plane. Returns a short
+    "queue ..." note for the probe event detail; emits ops-events on
+    transitions:
       embed_queue_saturated — depth crossed warn/crit threshold (rising edge)
       embed_queue_drops     — droppedTotal grew since last run (rate-limited)
       embed_queue_drained   — depth fell back under the warn threshold
+    Per-plane state lives under "planes" in QUEUE_STATE; the legacy flat
+    keys are read once as the leader plane for backward compatibility.
     """
     try:
-        q = _get("/v1/vector-stats", timeout=15).get("queue") or {}
+        q = _get("/v1/vector-stats", timeout=15, base=base).get("queue") or {}
     except Exception as exc:
-        print(f"queue stats unavailable: {exc}", file=sys.stderr)
+        print(f"{plane} queue stats unavailable: {exc}", file=sys.stderr)
         return ""
     depth = int(q.get("depth", -1))
     dropped = int(q.get("dropped", 0))
     size = int(q.get("size", 0))
-    note = f"queue depth={depth}/{size} dropped={dropped}"
+    note = f"{plane} queue depth={depth}/{size} dropped={dropped}"
     print(note)
     if depth < 0:
         return note
 
     try:
-        prev = json.loads(open(QUEUE_STATE).read())
+        state = json.loads(open(QUEUE_STATE).read())
     except Exception:
-        prev = {}
+        state = {}
+    if not isinstance(state, dict):
+        state = {}
+    planes = state.get("planes")
+    if not isinstance(planes, dict):
+        # Legacy flat schema — {"level","dropped","last_drop_alert"} plus
+        # unrelated top-level keys (proxy_degraded) that must survive.
+        planes = {"leader": {k: state.pop(k) for k in
+                             ("level", "dropped", "last_drop_alert")
+                             if k in state}}
+    prev = planes.get(plane) or {}
     prev_level = prev.get("level", "ok")
     prev_dropped = int(prev.get("dropped", 0))
     last_drop_alert = float(prev.get("last_drop_alert", 0))
@@ -121,25 +141,35 @@ def check_queue() -> str:
         "warn" if depth >= QUEUE_WARN_DEPTH else "ok")
 
     if dropped > prev_dropped and now - last_drop_alert >= QUEUE_DROP_ALERT_MIN_S:
+        # mddb-vector-reindex.service is pinned to the leader (:11023);
+        # the CMS plane needs a manual run with MDDB_BASE_URL=:11027.
+        remedy = (REINDEX_SERVICE if plane == "leader"
+                  else "vector-reindex with MDDB_BASE_URL=" + MDDB_CMS)
         _emit("embed_queue_drops",
-              f"embed queue droppedTotal {prev_dropped}->{dropped} "
+              f"{plane} embed queue droppedTotal {prev_dropped}->{dropped} "
               f"(+{dropped - prev_dropped} docs lost vectors); {note} — "
-              f"run {REINDEX_SERVICE} after the queue drains to backfill")
+              f"run {remedy} after the queue drains to backfill")
         last_drop_alert = now
 
     if level != prev_level:
         if level == "ok":
             _emit("embed_queue_drained",
-                  f"embed queue drained — {note} (was {prev_level})")
+                  f"{plane} embed queue drained — {note} (was {prev_level})")
         else:
             _emit("embed_queue_saturated",
-                  f"embed queue {level.upper()} — {note} "
+                  f"{plane} embed queue {level.upper()} — {note} "
                   f"(warn>={QUEUE_WARN_DEPTH} crit>={QUEUE_CRIT_DEPTH})")
 
     prev.update({"level": level, "dropped": dropped,
                  "last_drop_alert": last_drop_alert})
+    planes[plane] = prev
+    state["planes"] = planes
+    # Keep the legacy flat keys mirroring the leader plane — older readers
+    # (and this file pre-migration) only understand the flat schema.
+    if plane == "leader":
+        state.update(prev)
     os.makedirs(os.path.dirname(QUEUE_STATE), exist_ok=True)
-    open(QUEUE_STATE, "w").write(json.dumps(prev))
+    open(QUEUE_STATE, "w").write(json.dumps(state))
     return note
 
 
@@ -220,7 +250,10 @@ def probe() -> tuple[bool, str, int, bool]:
 
 def main() -> int:
     ok, detail, index_size, wiped = probe()
-    qnote = check_queue()
+    qnotes = [check_queue("leader", MDDB)]
+    if MDDB_CMS:
+        qnotes.append(check_queue("cms", MDDB_CMS))
+    qnote = " | ".join(n for n in qnotes if n)
     pnote, providers_degraded = check_provider_health()
     for n in (qnote, pnote):
         if n:
