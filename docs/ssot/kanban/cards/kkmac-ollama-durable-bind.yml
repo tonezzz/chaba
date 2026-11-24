@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: doing
-updated: 2026-11-24 20:04
+updated: 2026-11-24 20:19
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -270,6 +270,10 @@ comms:
     is the only working choice+noul backend but is an a; idc02''s kanban-dispatch.service was a linked unit running
     a stale scripts/-only ; litellm provider probe needs LITELLM_KEY_BENCH/CHABA env or litellm-keys.env — t; [kk-mac-launchd-runner-followthrough]
     primer injected 8 lesso'
+- at: 2026-11-24 20:19
+  from: devin
+  text: 'raised request kk-mac-ollama-binds-0-0-0-0-lan-exposed-6d42d5: kk-mac ollama binds 0.0.0.0 — LAN-exposed
+    on BOTH 192.168.0.101:11434 and 192.168.2.90:11434 (verified 2026-11-24). SEC-'
 action:
   type: dispatch
   status: running
@@ -300,4 +304,16 @@ requests:
   - hold
   answer: proceed
   executed: 2026-11-24 queue
+- id: kk-mac-ollama-binds-0-0-0-0-lan-exposed-6d42d5
+  ask: 'kk-mac ollama binds 0.0.0.0 — LAN-exposed on BOTH 192.168.0.101:11434 and 192.168.2.90:11434 (verified 2026-11-24).
+    SEC-0985 intent is tailnet-only. Fix needs KK sudo on kk-mac (no fleet path has it): edit OLLAMA_HOST=0.0.0.0:11434
+    -> 100.108.217.17:11434 in /Library/LaunchDaemons/net.adanest.ollama.plist, then sudo launchctl kickstart -k
+    system/net.adanest.ollama. Caveat: single-address bind drops loopback — ssh-tunnel fallback then needs -L target
+    = tailnet IP (noted in unit file). Durability already verified: OLLAMA_HOST is in the plist, survives reboot.'
+  status: open
+  at: 2026-11-24 20:19
+  from: devin
+  options:
+  - proceed
+  - hold
 review_kind: verify
