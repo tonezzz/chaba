@@ -211,6 +211,10 @@ comms:
     off (as designed), covers unknown (Tuya assumed_state, normal). Still blocked on motor repair; cannot smoke-test
     headless. Wrote go-live runbook docs/ssot/jobs/home-assistant/2026-11-24-rk600-shutter-go-live-runbook.yml and
     raised a board request for the wind-unit decision (item 3).'
+- at: 2026-11-24 15:20
+  from: devin
+  text: 'raised request rk600-wind-unit-20261124: Two things for go-live: (1) WIND UNIT — sensor.rk600_wind_speed
+    + input_number.shutter_wind_speed_min are labeled kn but'
 action:
   type: dispatch
   status: running
@@ -221,3 +225,17 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 15:18
+requests:
+- id: rk600-wind-unit-20261124
+  ask: 'Two things for go-live: (1) WIND UNIT — sensor.rk600_wind_speed + input_number.shutter_wind_speed_min are
+    labeled kn but the scaled value is m/s (raw 772 -> 7.72 shown as kn; really ~15kt). Pick the fix. (2) MOTORS
+    — are the shutter motors repaired yet? If yes, next step is the manual smoke (arm helper, flip Shutter Command,
+    watch covers move).'
+  status: open
+  at: 2026-11-24 15:20
+  from: devin
+  options:
+  - Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
+  - Rescale to true knots (displayed numbers x1.944)
+  - Leave mislabeled for now
+  suggested: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
