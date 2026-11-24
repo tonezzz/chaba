@@ -364,8 +364,10 @@ LANE_KW = {
                 "cap", "flag", "inject", "drift", "parallelism",
                 "raise", "schedule", "recurring", "change the"],
     "codemod_body": ["delete old", "copies task tests", "nest job"],
+    # DEV-0045 reroute: lockstep with dispatch_repos.LANE_KW (host
+    # keyword removed — see the rationale there).
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "roster", "protocol", "provision", "host", "feature",
+              "roster", "protocol", "provision", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
@@ -411,6 +413,12 @@ def classify_lane(card: dict) -> str:
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
         return declared
+    # DEV-0045 chosen slice — lockstep with dispatch_repos.classify_lane:
+    # timer-sentinel alerts are bounded diagnoses, pin them to free_lane
+    # before the generic "failing" keyword sends them to devin.
+    tags = {str(t) for t in (card.get("tags") or [])}
+    if {"timer-alert", "by:timer-sentinel"} <= tags:
+        return "free_lane"
     title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
@@ -419,10 +427,11 @@ def classify_lane(card: dict) -> str:
     if re.search(LANE_COMPARE, text):
         return "paid_frontier"
     codemod_kw = _codemod_hit(title, text)
+    # DEV-0045 reroute — lockstep: free_lane before devin.
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
-                      ("devin", LANE_KW["devin"]),
-                      ("free_lane", LANE_KW["free_lane"])):
+                      ("free_lane", LANE_KW["free_lane"]),
+                      ("devin", LANE_KW["devin"])):
         kw = codemod_kw if lane == "codemod" else next(
             (k for k in kws if k in text), None)
         if kw:

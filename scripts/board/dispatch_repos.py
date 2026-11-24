@@ -324,8 +324,15 @@ LANE_KW = {
                 "cap", "flag", "inject", "drift", "parallelism",
                 "raise", "schedule", "recurring", "change the"],
     "codemod_body": ["delete old", "copies task tests", "nest job"],
+    # DEV-0045 reroute (2026-11-23): the broad standalone "host"
+    # keyword was removed. The devin keyword audit found 5 devin-lane
+    # cards routed purely by it (disk/storage/report-graph/render-job/
+    # ansible ops), all with bounded deterministic or read-only surfaces;
+    # because devin was evaluated BEFORE free_lane, one host mention
+    # pre-empted the cheaper lane. Ambiguous host work still fails
+    # through to devin via the jevos fallback.
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "roster", "protocol", "provision", "host", "feature",
+              "roster", "protocol", "provision", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
@@ -380,6 +387,17 @@ def classify_lane(card: dict, with_detail: bool = False):
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
         return (declared, "explicit", 1.0) if with_detail else declared
+    # DEV-0045 chosen slice (Tony 2026-11-23): timer-sentinel alert cards
+    # are bounded, auto-generated ops diagnoses ("investigate journal"),
+    # never mutation work. Pin them to the cheapest lane before keyword
+    # classification — the generic "failing" keyword was sending every
+    # new sentinel alert to devin. Narrow tag match only: an explicitly
+    # declared lane above still wins, and ordinary failing tasks keep
+    # their normal routing.
+    tags = {str(t) for t in (card.get("tags") or [])}
+    if {"timer-alert", "by:timer-sentinel"} <= tags:
+        return ("free_lane", "timer-alert", 1.0) if with_detail \
+            else "free_lane"
     title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
@@ -390,10 +408,14 @@ def classify_lane(card: dict, with_detail: bool = False):
         return ("paid_frontier", "kw:compare", 1.0) if with_detail \
             else "paid_frontier"
     codemod_kw = _codemod_hit(title, text)
+    # DEV-0045 reroute: free_lane is evaluated BEFORE devin, matching
+    # the lane catalog's cheapest-capable-first entry rule. The old
+    # order let one broad devin keyword pre-empt a cheaper lane on
+    # bounded ops/data cards; gate failure still escalates one lane.
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
-                      ("devin", LANE_KW["devin"]),
-                      ("free_lane", LANE_KW["free_lane"])):
+                      ("free_lane", LANE_KW["free_lane"]),
+                      ("devin", LANE_KW["devin"])):
         kw = codemod_kw if lane == "codemod" else next(
             (k for k in kws if k in text), None)
         if kw:
