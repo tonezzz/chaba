@@ -1,7 +1,7 @@
 id: cms-plane-bge-golden-set-eval-measure-re-cad4f4
 title: CMS-plane BGE golden-set eval — measure retrieval quality vs gemini before :11027 migration decision
 column: doing
-updated: 2026-11-24 22:39
+updated: 2026-11-24 23:34
 priority: medium
 tags:
 - mddb
@@ -200,6 +200,13 @@ comms:
   from: devin
   text: dispatch picked up — checking live embed providers on :11027/:11023/:11028/:11029 (per 2026-11-19 comm :11027
     may already be bge; will adapt baseline accordingly), then building golden set + running recall@5/@10 + MRR
+- at: 2026-11-24 23:34
+  from: devin
+  text: 'DONE — golden-set eval complete (69 queries, 14 collections, 3 arms). NOTE: card spec was stale — :11027
+    already migrated to bge-m3 on 2026-11-19; no gemini CMS index exists, so gemini arm = doc-level cosine on identical
+    pools (validated 10-15 methodology). RESULT: bge-m3 ≈ gemini-embedding-2 — r@5 0.911 vs 0.954, r@10 0.952 vs
+    0.957, MRR 0.937 vs 0.942 → GO, migration validated post-hoc. SIDE FINDING: ~250 docs missing vectors (queue
+    dropped=910) + meta-only colls (devin-kb, ssot.focus) can nev'
 action:
   type: dispatch
   status: running
