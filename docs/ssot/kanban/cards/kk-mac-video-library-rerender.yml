@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: doing
-updated: 2026-11-24 17:58
+updated: 2026-11-24 18:01
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -274,6 +274,13 @@ comms:
     queued on kk-mac-video-pilot. Gated launcher live on kk-mac tmux:mlx-control — polls HID-idle>=10min/AC/mem>=40%/load<8/no-big-models/disk;
     currently waiting (owner active, idle=0s — gate working as designed). Compare tool kk_mac_video_compare.py ready
     for old-'
+- at: 2026-11-24 18:01
+  from: devin
+  text: 'dispatch wrap: all deliverables committed on dispatch branch (b6294c261b). Control pack verified claimable
+    on queue (no done/failed markers, needs fit kk-mac caps). Gated launcher still waiting — HID idle 0s, owner
+    active; it polls every 2min for up to 12h and will auto-run nest-worker --once when gates green, then sync out/
+    + done marker to Drive. Compare tool ready + old mp4s pre-staged at /tmp/kk-compare/old/. Follow-on packs (scene1,
+    vimax t2v) authored repo-side only per spec — stage after '
 action:
   type: dispatch
   status: running
