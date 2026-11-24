@@ -1,7 +1,7 @@
 id: rename-educations-cpt-label-to-lessons-w-0014fb
 title: Rename Educations CPT label to Lessons (WP registration)
 column: doing
-updated: 2026-11-24 16:05
+updated: 2026-11-24 16:12
 brief: 'Tony 2026-10-24: the lesson CPT admin label reads ''Educations'' — rename to match real usage (''Lessons''
   — the slug is already lesson). The registration lives in the WP site code (boards.surf-thailand.com, origin behind
   Cloudflare — not in the chaba repo; the origin host is likely the contabo VPS or a Plesk vhost).'
@@ -197,6 +197,11 @@ comms:
 - at: 2026-11-24 16:05
   from: devin
   text: picked up — locating WP origin host + register_post_type(lesson) call
+- at: 2026-11-24 16:12
+  from: devin
+  text: 'located: register_post_type loop in integrations/wp-boards/chaba-boards.php (repo), live plugin on boards
+    WP @ Plesk node 103.99.11.249 (boards.h3.gizmo-thailand.com, edge boards.surf-thailand.com). edited labels ->
+    Lessons/Lesson, slug unchanged, bumped 0.10.0, deploying zip now'
 action:
   type: dispatch
   status: running
