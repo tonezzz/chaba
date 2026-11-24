@@ -1,7 +1,7 @@
 id: wiki-extension-control-plane
 title: Controlled MediaWiki extension management for Ada/OpenCode
 column: doing
-updated: 2026-11-24 20:13
+updated: 2026-11-24 20:31
 brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
   without arbitrary Springboard/API or shell access.
 priority: high
@@ -290,6 +290,13 @@ comms:
     checkpoint failed: commit: ⚠️ single-writer: /hom; [kk-mac-launchd-runner-followthrough] primer injected 8 lesson(s):
     [kk-mac-launc; [ops0790-rollout-idc03] DONE (direct ssh, dispatch was stuck queued): worktree@o; [ssh-access-ansible-standard]
     SLICE 1 DONE — verifier first ('
+- at: 2026-11-24 20:31
+  from: devin
+  text: 'attempt 2 done on tony-omen: cherry-picked attempt-1 work, added idempotent no-op to /wiki/extension (verified
+    end-state via siteinfo, receipt, Springboard skipped — keeps mutations honest while sbname is broken on MW 1.46),
+    added test file to chaba merge gate, 260/260 gate tests pass locally. Live re-verified: list ok, all 7 approved
+    exts installed, test pages + DevNest News 200. Follow-ups: ADA-1324 filed (ada-voice confirm flag); Springboard
+    $wgSpringboardURL still needs the one-line LocalSet'
 action:
   type: dispatch
   status: running
