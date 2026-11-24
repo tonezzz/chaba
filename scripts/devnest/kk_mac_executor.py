@@ -272,11 +272,15 @@ def run_contract(task: dict, *, run_task=None,
     mem["during"] = list(getattr(monitor, "samples", []) or [])[-20:]
     post = sampler(host)
     mem["post"] = post
+    if res.get("memory_guard"):
+        mem["guard"] = res["memory_guard"]
     if not res.get("ok"):
         result["verdict"] = "fallback"
+        why = (res.get("admission") or {}).get("reasons")
+        if not why and res.get("abort_reason"):
+            why = [str(res["abort_reason"])]
         result["reasons"] = [
-            "run_declined:" + ",".join(
-                (res.get("admission") or {}).get("reasons") or ["?"])]
+            "run_declined:" + ",".join(why or ["?"])]
         _persist(result, worktree, taskdir)
         return result
     mem_reasons = list(getattr(monitor, "worst_reasons",

@@ -241,6 +241,44 @@ class RunContractTests(unittest.TestCase):
             (self.wt / "evals/kk-mac-lane/out/c1.json").read_text())
         self.assertIn("memory", saved)
 
+    def test_guard_abort_surfaces_reason_and_persists(self):
+        def run(*a, **k):
+            return {"ok": False, "admission": {"reasons": []},
+                    "abort_reason":
+                        "memory_pressure_abort:45.0%<50.0%",
+                    "memory_guard": {
+                        "resident_before": [],
+                        "loaded_by_task": True,
+                        "min_free_pct": 45.0,
+                        "abort_reason":
+                            "memory_pressure_abort:45.0%<50.0%",
+                        "unloaded": True}}
+        r = self.run_c(run_task=run)
+        self.assertEqual(r["verdict"], "fallback")
+        self.assertIn("memory_pressure_abort", r["reasons"][0])
+        self.assertEqual(r["memory"]["guard"]["min_free_pct"], 45.0)
+        self.assertTrue(r["memory"]["guard"]["unloaded"])
+        saved = json.loads(
+            (self.taskdir / "kk_mac_result.json").read_text())
+        self.assertIn("guard", saved["memory"])
+
+    def test_guard_evidence_persisted_on_pass(self):
+        def run(*a, **k):
+            return {"ok": True, "response": "fine",
+                    "usage": {"eval_count": 2},
+                    "memory_guard": {
+                        "resident_before": ["other:7b"],
+                        "loaded_by_task": True,
+                        "min_free_pct": 71.0,
+                        "abort_reason": None,
+                        "unloaded": True}}
+        r = self.run_c(run_task=run)
+        self.assertEqual(r["verdict"], "pass")
+        self.assertEqual(r["memory"]["guard"]["min_free_pct"], 71.0)
+        saved = json.loads(
+            (self.wt / "evals/kk-mac-lane/out/c1.json").read_text())
+        self.assertEqual(saved["memory"]["guard"]["unloaded"], True)
+
     def test_facts_verified_independently(self):
         r = self.run_c(task=_task(
             task_class="structured_extract",

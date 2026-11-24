@@ -16,10 +16,12 @@ best-effort evidence — a breach still fails the verdict.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
 import threading
+import urllib.request
 from datetime import datetime, timezone
 from typing import Callable
 
@@ -28,6 +30,7 @@ ABORT_FREE_PCT = 50.0
 DEFAULT_HOST = "kk-mac"
 POLL_S = 15.0
 LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})
+OLLAMA_LOCAL_URL = "http://127.0.0.1:11434"
 
 
 def is_local_host(host: str) -> bool:
@@ -67,6 +70,21 @@ def _host_cmd(host: str, shell_cmd: str) -> list[str]:
             host, shell_cmd]
 
 
+_MEMSTATUS_RE = re.compile(r"MEMSTATUS=(\d+(?:\.\d+)?)")
+# One shell round-trip carries both probes: memory_pressure -Q for the
+# approved free-percentage metric and sysctl kern.memorystatus_level —
+# the kernel's own "how much headroom before jetsam" level — as the
+# independent pressure signal the spec's "or on pressure" clause needs.
+_PROBE_CMD = ("memory_pressure -Q 2>/dev/null; "
+              "echo \"MEMSTATUS=$(sysctl -n kern.memorystatus_level "
+              "2>/dev/null)\"; true")
+
+
+def _parse_memstatus(text: str) -> float | None:
+    m = _MEMSTATUS_RE.search(text or "")
+    return float(m.group(1)) if m else None
+
+
 def sample(host: str = DEFAULT_HOST, *,
            ssh_run: Callable = _default_ssh) -> dict:
     """One memory sample from the KK-Mac host ->
@@ -74,8 +92,9 @@ def sample(host: str = DEFAULT_HOST, *,
     could not be taken — callers treat that as fail-closed at pre-load.
     When host is local (the on-host lane worker) the same probes run
     directly instead of over ssh."""
-    out = {"ok": False, "free_pct": None, "level": None, "raw": "",
-           "at": now_iso(), "error": None}
+    out = {"ok": False, "free_pct": None, "level": None,
+           "memstatus_pct": None, "raw": "", "at": now_iso(),
+           "error": None}
     if is_local_host(host) and os.uname().sysname == "Linux":
         pct = _meminfo_free_pct()
         if pct is not None:
@@ -83,7 +102,7 @@ def sample(host: str = DEFAULT_HOST, *,
         else:
             out["error"] = "meminfo_unreadable"
         return out
-    cmd = _host_cmd(host, "memory_pressure -Q 2>/dev/null || true")
+    cmd = _host_cmd(host, _PROBE_CMD)
     try:
         r = ssh_run(cmd, timeout=25)
     except Exception as exc:
@@ -94,6 +113,7 @@ def sample(host: str = DEFAULT_HOST, *,
         out["error"] = "ssh_failed"
         return out
     out["raw"] = text.strip()[:2000]
+    out["memstatus_pct"] = _parse_memstatus(text)
     m = re.search(r"free percentage:\s*(\d+(?:\.\d+)?)\s*%", text)
     if m:
         out["free_pct"] = float(m.group(1))
@@ -142,6 +162,14 @@ def evaluate(snap: dict, *, phase: str) -> list[str]:
     lvl = str(snap.get("level") or "").lower()
     if phase != "pre" and "critical" in lvl:
         reasons.append("memory_pressure_critical")
+    ms = snap.get("memstatus_pct")
+    if ms is not None:
+        try:
+            if float(ms) < ABORT_FREE_PCT:
+                reasons.append(
+                    f"memory_pressure_critical:{float(ms)}%")
+        except (TypeError, ValueError):
+            pass
     return reasons
 
 
@@ -181,3 +209,90 @@ class MemoryMonitor(threading.Thread):
                 if r not in out:
                     out.append(r)
         return out
+
+
+def _default_run(cmd: list[str], data: bytes | None = None,
+                 timeout: int = 30) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, input=data, capture_output=True,
+                          timeout=timeout)
+
+
+def _norm_model(name) -> str:
+    n = str(name or "").strip().lower()
+    return n[:-7] if n.endswith(":latest") else n
+
+
+def _ollama_request(host: str, path: str, payload: dict | None = None,
+                    *, timeout: int = 15,
+                    run: Callable | None = None,
+                    urlopen: Callable | None = None) -> dict | None:
+    """One JSON call against loopback Ollama — urllib when the guard
+    runs on the node itself, ssh+curl otherwise. -> parsed dict or
+    None on any failure; callers treat None as 'unknown', never as
+    permission to unload."""
+    if is_local_host(host):
+        fn = urlopen or urllib.request.urlopen
+        data = None if payload is None else json.dumps(payload).encode()
+        req = urllib.request.Request(
+            OLLAMA_LOCAL_URL.rstrip("/") + path, data=data,
+            headers={"Content-Type": "application/json"},
+            method="GET" if payload is None else "POST")
+        try:
+            with fn(req, timeout=timeout) as r:
+                return json.loads(r.read().decode())
+        except Exception:
+            return None
+    runner = run or _default_run
+    cmd = _host_cmd(
+        host,
+        "curl -fsS --max-time " + str(int(timeout)) +
+        " http://127.0.0.1:11434" + path +
+        (" -H 'Content-Type: application/json' --data-binary @-"
+         if payload is not None else ""))
+    try:
+        data = None if payload is None else json.dumps(payload).encode()
+        r = runner(cmd, data=data, timeout=timeout + 10)
+        if getattr(r, "returncode", 1) != 0:
+            return None
+        return json.loads(
+            (getattr(r, "stdout", b"") or b"").decode())
+    except Exception:
+        return None
+
+
+def resident_models(host: str = DEFAULT_HOST, *,
+                    run: Callable | None = None,
+                    urlopen: Callable | None = None) -> set | None:
+    """Model names currently resident in Ollama (/api/ps), normalized
+    (case-folded, :latest stripped) -> set, or None when the probe
+    failed. None means 'unknown' — the unload policy must treat it as
+    'do not unload'."""
+    ps = _ollama_request(host, "/api/ps", run=run, urlopen=urlopen)
+    if not isinstance(ps, dict):
+        return None
+    names = set()
+    for m in ps.get("models") or []:
+        if not isinstance(m, dict):
+            continue
+        for k in ("name", "model"):
+            v = _norm_model(m.get(k))
+            if v:
+                names.add(v)
+    return names
+
+
+def unload_model(host: str = DEFAULT_HOST, model: str = "", *,
+                 run: Callable | None = None,
+                 urlopen: Callable | None = None) -> bool:
+    """keep_alive=0 drops the model from Ollama memory — the same call
+    the 2026-11-06 smoke used manually. Only ever invoked for a model
+    resident_models() proved absent before this task ran; an
+    owner-resident model is never touched."""
+    if not str(model or "").strip():
+        return False
+    res = _ollama_request(
+        host, "/api/generate",
+        {"model": model, "keep_alive": 0, "prompt": "",
+         "stream": False},
+        timeout=20, run=run, urlopen=urlopen)
+    return res is not None
