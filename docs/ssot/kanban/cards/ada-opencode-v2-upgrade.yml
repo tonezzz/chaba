@@ -1,7 +1,7 @@
 id: ada-opencode-v2-upgrade
 title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
 column: doing
-updated: 2026-11-24 21:39
+updated: 2026-11-24 21:48
 priority: medium
 tags:
 - ada
@@ -230,6 +230,13 @@ comms:
     binary v2.4.1 (/usr/local/bin/opencode -> @opencode/cli npm global, installed today 12:20) served by opencode-serve.service.
     Card was already satisfied on 2026-11-08 (v2.2.5 live) and master Containerfile pins 2.2.6. Verifying ada_mcp.py
     MCP compat under v2.4.1 + running o'
+- at: 2026-11-24 21:48
+  from: devin
+  text: 'DONE (verify-only — spec was stale). Live opencode on idc02 is already v2.4.1 host binary (container stack
+    retired today, backup ~/backups/retired-opencode-20261124; opencode-serve.service + runner-agent OPENCODE_BIN).
+    ada_mcp.py is an MCP server not a plugin — no @opencode-ai/plugin dep exists; `opencode mcp list` under v2.4.1
+    shows 7/7 servers connected incl ada-control. opsread regression: lane S1 quota exhausted so I mirrored the
+    profile run manually — `opencode run --standalone` exit 0, art'
 action:
   type: dispatch
   status: running
