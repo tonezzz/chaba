@@ -710,13 +710,22 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
     write_flag = bool(mut["writes"]) and not bw
     if write_flag or mut_kinds:
         kinds = (["writes"] if write_flag else []) + mut_kinds
+        # a mutation call that errored/was denied never executed —
+        # annotate blocked attempts so triage doesn't read them as
+        # landed mutations (AUD-1122: denied curl POST -> net_writes)
+        labels = []
+        for k in kinds:
+            blocked = sum(1 for c in mut.get(k) or []
+                          if c.get("status") not in (None, "completed"))
+            labels.append(f"{k}({blocked} blocked)" if blocked else k)
+        kind_str = ",".join(labels)
         if ro or (bw and mut_kinds):
             rec["safety_flags"].append(
-                "mutation outside profile scope: " + ",".join(kinds))
+                "mutation outside profile scope: " + kind_str)
         rec["findings"].append({
             "kind": "mutating_command",
             "severity": "high" if (ro or (bw and mut_kinds)) else "info",
-            "summary": "mutations: " + ",".join(kinds)})
+            "summary": "mutations: " + kind_str})
     for a in rec["artifacts"]:
         if a["verdict"] == "protected":
             rec["safety_flags"].append(

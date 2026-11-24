@@ -187,6 +187,28 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(any("mutation outside profile scope" in f
                             for f in rec["safety_flags"]))
 
+    def test_blocked_mutation_annotated(self):
+        # AUD-1122: a permission-denied curl POST is still counted as a
+        # net_write attempt, but the finding must say it was blocked —
+        # triage shouldn't read a contained attempt as a landed write
+        add_session(self.db, "s1", agent="ops-readonly")
+        user_turn(self.db, "s1", 1, "snapshot the host")
+        tool_part(self.db, "s1", 1, "bash",
+                  {"command": "curl -s -X POST https://x/comment "
+                              "-d '{}'"},
+                  status="error",
+                  error="The user has specified a rule which prevents "
+                        "you from using this specific tool call.")
+        tool_part(self.db, "s1", 2, "bash",
+                  {"command": "git push origin master"})
+        rec = self.audit()
+        finding = next(f for f in rec["findings"]
+                       if f["kind"] == "mutating_command")
+        self.assertEqual(finding["severity"], "high")
+        self.assertIn("net_writes(1 blocked)", finding["summary"])
+        self.assertIn("pushes", finding["summary"])
+        self.assertNotIn("pushes(", finding["summary"])
+
     def test_write_tool_and_durability(self):
         target = self.dir / "landed.json"
         target.write_text("{}")  # a write that actually landed
