@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-audit-verify
 title: Ansible audit + verify for ada-ocb pane
-column: doing
-updated: 2026-11-24 07:55
+column: done
+updated: 2026-11-24 07:59
 brief: 'Ground Ansible as the declared-state/verification layer for ada-ocb: two read-only playbooks (surface audit
   + contract verify) plus an ocb_pane inventory group. The npm upgrade path already exists and stays the executor.'
 priority: medium
@@ -47,3 +47,16 @@ comms:
 - at: 2026-11-24 07:55
   from: tony
   text: card captured via board-api
+- at: 2026-11-24 07:59
+  from: devin
+  text: 'Built + verified audit-first scope. Syntax-check passes on both playbooks; live read-only runs completed
+    on idc02 (primary) and tony-dell (fallback) with zero writes on targets. Verify gate proof: -e ocb_bind=127.0.0.1:9999
+    -> exit 2, named assertion, bounded evidence. idc02 fully green (web 2.7.3 / cli 2.3.2 / node v24.14.0, 4 units
+    active, 127.0.0.1:3000, local 200, patch present, startup.env 600, litellm dropin, edge 200 + CSP frame-ancestors).
+    tony-dell fallback drift (web 2.7.0, no patch, 2'
+- at: 2026-11-24 07:59
+  from: devin
+  text: moved doing -> done
+action:
+  status: done
+claim: {}
