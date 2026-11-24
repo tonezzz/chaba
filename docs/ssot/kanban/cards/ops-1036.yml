@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
 column: backlog
-updated: 2026-11-24 18:47
+updated: 2026-11-24 19:07
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -177,6 +177,9 @@ comms:
 - at: 2026-11-24 18:47
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 19:07
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
 action:
   type: dispatch
   status: queued
