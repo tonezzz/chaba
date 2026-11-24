@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 16:13
+updated: 2026-11-24 16:26
 tags:
 - hardware
 - omen
@@ -243,6 +243,10 @@ comms:
   from: devin
   text: attempt 2 picked up — Tony answered A (plug + automation now). Recovering staged automation from 91b39c3;
     checking live tony-ha for a paired plug now.
+- at: 2026-11-24 16:26
+  from: devin
+  text: 'raised request automation-is-deployed-and-live-on-tony-e51f7a: Automation is DEPLOYED and live on tony-ha
+    (automation.omen_plug_charge_band_85_45, managed package, dormant-safe until '
 action:
   type: dispatch
   status: running
@@ -294,4 +298,23 @@ requests:
     label: Hold — leave blocked
     action: hold
   answer: a — A — plug + automation now (recommended)
+- id: automation-is-deployed-and-live-on-tony-e51f7a
+  ask: 'Automation is DEPLOYED and live on tony-ha (automation.omen_plug_charge_band_85_45, managed package, dormant-safe
+    until the plug exists). Last step is physical: buy+pair a smart plug for the Omen AC brick. Which plug? Recommend
+    CozyLife (~THB 250-400, same app as the fan->mac_plug plug): cozylife_local is fully local, has native power-on-state=ON
+    failsafe, zero cloud dependency. Tuya Smart Life also works (coffee/bedside pattern) but needs local-key extraction
+    and tuya-control.py is currently erroring in HA logs. Sonoff/eWeLink is a third option. Once paired, tell me
+    and I wire entity switch.omen_plug + power-on-state + move the brick.'
+  status: open
+  at: 2026-11-24 16:26
+  from: devin
+  options:
+  - id: cozylife
+    label: CozyLife plug (recommended)
+  - id: tuya
+    label: Tuya Smart Life plug
+  - id: sonoff
+    label: Sonoff/eWeLink plug
+  - id: have-one
+    label: Already have a spare — will say which
 awaiting_action: true
