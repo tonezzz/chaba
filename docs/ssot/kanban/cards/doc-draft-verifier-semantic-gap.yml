@@ -1,7 +1,7 @@
 id: doc-draft-verifier-semantic-gap
 title: doc-draft verifier passes off-spec docs — sentinels are mechanical not semantic
 column: doing
-updated: 2026-11-24 19:01
+updated: 2026-11-24 19:04
 spec: 'OPS-1014 evidence: qwen2.5:32b emitted a code-summary of runner-agent.py instead of the specced model-notes
   doc, but verify_contains passed because code names matched sentinels. Options: require verify_contains to include
   at least one string that only appears in a correct deliverable (spec-author duty); add a task-keyword-coverage
@@ -178,6 +178,13 @@ comms:
     so no card could declare sentinels via the write door (OPS-1014 card had none). All 4 verify_* keys now settable
     + shape-validated. Docs updated (task.yaml contracts, prompt.md, profile.yml, PROCEDURE.md, KB note). Tests:
     10 new verifier tests incl OPS-1014 replay + '
+- at: 2026-11-24 19:04
+  from: devin
+  text: 'DONE (dispatch 61b7954d77 on dispatch/20261124-184032-ops-1014-evidence-qwen2-5-32b-). Took the recommended
+    path + found the deeper root cause: the OPS-1014 card declared NO verify contract and could not have — verify_contains/verify_sections
+    were absent from board-api ACTION_KEYS so /card dropped them silently; only structural checks ran. Changes:
+    (1) doc-draft + artifact-write verify.py now honor optional action.verify_regex (all patterns must match, uncompilable
+    fails closed) and action.verif'
 action:
   type: dispatch
   status: running
