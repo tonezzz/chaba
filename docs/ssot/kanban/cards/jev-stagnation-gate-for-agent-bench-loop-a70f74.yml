@@ -1,7 +1,7 @@
 id: jev-stagnation-gate-for-agent-bench-loop-a70f74
 title: Jev stagnation gate for agent/bench loops (ProgressGate pattern)
 column: doing
-updated: 2026-11-24 16:19
+updated: 2026-11-24 16:41
 brief: 'Semantic stagnation detection in agent loops: Jev judges the trajectory (recent actions/state) -> CONTINUE/WARN/REPLAN/HALT.
   Would have caught the 4.4h colibri thinking-grind (2026-10-24). Apply to bench loops (edu-agent-bench, colibri-bench,
   eval-code-lane) + the runner.'
@@ -197,6 +197,13 @@ comms:
     Found the 4.4h stall evidence on tony-omen (colibri-bench pack: 13 tasks x ~930s all 429/timeout + ~75min prep).
     Backend note: arena v2 shows jev-student stag under-detects (0.417) vs jevos 0.917 — will bench both and pick
     the honest default.'
+- at: 2026-11-24 16:41
+  from: devin
+  text: 'DONE. Phase 1 probe scripts/jev/loop-gate.py (noul stagnant->p + choice continue/warn/replan/halt, verdict=max
+    severity, unknown=continue). Phase 2: runner-agent gate_pass (heartbeat+recent outputs -> WARN/REPLAN comms,
+    2x HALT -> SIGTERM, finish result names the gate) + bench-edu-manage --stagnation-gate opt-in. SPEC DEVIATION
+    measured: student noul is dead for this shape (p~0.006 flat on stall AND healthy — OOD collapse); jevos judged
+    correctly, so default order jev-api->jevos->jev-student. RE'
 action:
   type: dispatch
   status: running
