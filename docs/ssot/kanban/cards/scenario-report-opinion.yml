@@ -2,10 +2,10 @@ id: scenario-report-opinion
 title: 'SCENARIO FIXTURE: Ada opinion posts land here (report: dev-kanban)'
 brief: Test fixture, not work. The report_opinion_loop live scenario posts Ada's [opinion] comments here so they
   don't pollute real cards. Nothing needed — leave it alone.
-column: doing
+column: review
 priority: low
 program: ada-tools
-updated: 2026-11-24 15:03
+updated: 2026-11-24 15:05
 tags:
 - report-session-loop
 - scenario-fixture
@@ -263,14 +263,32 @@ comms:
   from: devin
   text: '[done] Fixture verified — comms sink for report_opinion_loop is intact; ~20 prior [opinion] entries present.
     No work needed per card brief. Progress mirrored to dev-kanban report session log; outcome in dispatch-outcome-20261124-150159-scenario-fixture-ada-opinion-p.md.'
+- at: 2026-11-24 15:05
+  from: tony-macbook
+  text: 'finished (ok): exit=0 tched, and even no-op sessions should log to the report session log for an honest
+    timeline. | devin-task-20261124'
+- at: 2026-11-24 15:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 15:05
+  from: chaba
+  text: 'session-end checkpoint 7bfc9d15: 1 leftover file(s) committed'
+- at: 2026-11-24 15:05
+  from: chaba
+  text: banked 8 outcome lesson(s) → devin-handoff bank
 ref: KNB-0371
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 tched, and even no-op sessions should log to the report session log for an honest timeline. |
+    devin-task-20261124-150159-scenario-fixture-ada-opinion-p.service: Consumed 6.745s CPU time over 1min 31.377s
+    wall clock time, 274.3M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 15:01
+review_kind: verify
