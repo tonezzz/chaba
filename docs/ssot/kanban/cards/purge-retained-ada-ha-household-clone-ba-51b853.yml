@@ -1,7 +1,7 @@
 id: purge-retained-ada-ha-household-clone-ba-51b853
 title: Purge retained ada-ha household-clone backups (~1.7GB across omen+dell)
-column: backlog
-updated: 2026-11-24 16:31
+column: doing
+updated: 2026-11-24 16:41
 priority: low
 tags:
 - ha-lanes
@@ -191,9 +191,15 @@ comms:
 - at: 2026-11-24 16:31
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.61 > 1.5)'
+- at: 2026-11-24 16:41
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 16:41
