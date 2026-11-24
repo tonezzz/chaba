@@ -1,7 +1,7 @@
 id: lesson-audit-scheduled
 title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
 column: doing
-updated: 2026-11-24 16:12
+updated: 2026-11-24 16:21
 brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
   pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
   + fixes itself.'
@@ -198,6 +198,10 @@ comms:
   text: 'picked up — plan: extend scripts/lessons-audit.py (parallel fetch to fix the recurring 10m timeout, R1/R3/R4
     -> re-arm standing lesson-polish-run dispatch card via /card on_exists=queue, daily comms + durable artifact
     under docs/reports/lesson-audit/), sweep path in kanban-commit, job doc + ssot.jobs note. No deploy/push.'
+- at: 2026-11-24 16:21
+  from: devin
+  text: 'audit-loop build: dry-run fetch from tony-omen timed out on /lesson op=list (60s, 0 bytes) — checking whether
+    door is saturated vs slow'
 action:
   type: dispatch
   status: running
