@@ -1,7 +1,7 @@
 id: model-route-registration-unify
 title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
 column: doing
-updated: 2026-11-24 18:41
+updated: 2026-11-24 18:42
 spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
   live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
   model.allowed. Four surfaces, zero of them cross-validated — drift is guaranteed. Options: (a) scripts/devnest/sync-opencode-models.py
@@ -179,6 +179,10 @@ comms:
     Jack OpenCode Provider; Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and unt; LiteLLM
     per-key model allowlists differ: LITELLM_KEY_BENCH is alias-restricted (; LiteLLM virtual keys have per-key
     model allowlists — cf-qwen3'
+- at: 2026-11-24 18:42
+  from: devin
+  text: dispatch picked up — exploring opencode-lane profiles, litellm config, and fleet-unit sync pattern before
+    writing sync-opencode-models.py
 action:
   type: dispatch
   status: running
