@@ -1,0 +1,85 @@
+diff --git a/tests/test_line_relay_group.py b/tests/test_line_relay_group.py
+index df56402..c479dc8 100644
+--- a/tests/test_line_relay_group.py
++++ b/tests/test_line_relay_group.py
+@@ -162,6 +162,80 @@ class MentionParseTests(unittest.TestCase):
+                              (None, "random chatter"))
+ 
+ 
++class CallerBackendTests(unittest.TestCase):
++    """LINE_CALLER_BACKENDS — per-caller backend override for split A/B
++    (card persona-ab-split-routing-relay): one sender's turns route to
++    a variant backend while the lane pointer stays on control."""
++
++    def setUp(self):
++        self._p = patch.dict(os.environ, {
++            "LINE_NAME_BACKENDS":
++                "ada:ws://127.0.0.1:8002,kaewta:ws://127.0.0.1:8007,"
++                "chaba:",
++            "LINE_CALLER_BACKENDS":
++                "user-kk=ws://127.0.0.1:8009,nhong@chaba="
++                "ws://127.0.0.1:8011",
++        })
++        self._p.start()
++        self.addCleanup(self._p.stop)
++
++    def test_parse(self):
++        self.assertEqual(line_relay._caller_backends(), {
++            ("kk", None): "ws://127.0.0.1:8009/ws",
++            ("nhong", "chaba"): "ws://127.0.0.1:8011/ws"})
++
++    def test_bare_host_gets_ws_path(self):
++        with patch.dict(os.environ, {
++                "LINE_CALLER_BACKENDS": "kk:ws://h:1"}):
++            pass  # ':' form is not the syntax — '=' required
++        with patch.dict(os.environ, {
++                "LINE_CALLER_BACKENDS": "kk=ws://h:1"}):
++            self.assertEqual(
++                line_relay._caller_backends()[("kk", None)],
++                "ws://h:1/ws")
++
++    def test_backend_url_override_wins(self):
++        b = line_relay._backend_url
++        # kk's bare override covers every persona they address
++        self.assertEqual(b("user-kk", "ada"), "ws://127.0.0.1:8009/ws")
++        self.assertEqual(b("user-kk", "kaewta"),
++                         "ws://127.0.0.1:8009/ws")
++        # 'user-' prefix is optional on the caller key too
++        self.assertEqual(b("kk", "ada"), "ws://127.0.0.1:8009/ws")
++        # nhong is scoped to chaba only — other personas use the lane
++        self.assertEqual(b("user-nhong", "chaba"),
++                         "ws://127.0.0.1:8011/ws")
++        self.assertEqual(b("user-nhong", "kaewta"),
++                         "ws://127.0.0.1:8007/ws")
++        # everyone else rides the whole-lane pointer
++        self.assertEqual(b("user-tony", "ada"), "ws://127.0.0.1:8002/ws")
++        # no caller (unmapped group member) -> lane pointer
++        self.assertEqual(b(None, "kaewta"), "ws://127.0.0.1:8007/ws")
++        # persona-scoped beats lane-wide for the same caller
++        with patch.dict(os.environ, {
++                "LINE_CALLER_BACKENDS":
++                    "kk=ws://127.0.0.1:8009,kk@kaewta="
++                    "ws://127.0.0.1:8012"}):
++            self.assertEqual(b("user-kk", "kaewta"),
++                             "ws://127.0.0.1:8012/ws")
++            self.assertEqual(b("user-kk", "ada"),
++                             "ws://127.0.0.1:8009/ws")
++
++    def test_override_reaches_offline_persona(self):
++        """A caller override resolves even when the persona's lane URL
++        is empty (known-but-offline) — the variant can be the only
++        backend that exists during an eval."""
++        with patch.dict(os.environ, {
++                "LINE_NAME_BACKENDS": "chaba:",
++                "LINE_CALLER_BACKENDS":
++                    "kk@chaba=ws://127.0.0.1:8009"}):
++            self.assertEqual(line_relay._backend_url("user-kk", "chaba"),
++                             "ws://127.0.0.1:8009/ws")
++            # ...but only for the overridden caller
++            self.assertEqual(line_relay._backend_url("user-tony", "chaba"),
++                             "")
++
++
+ class GroupEventTests(unittest.IsolatedAsyncioTestCase):
+ 
+     def setUp(self):

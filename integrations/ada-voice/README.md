@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Twenty-one drops live here:
+chaba dispatches. Twenty-two drops live here:
 
 **Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
 card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
@@ -80,6 +80,18 @@ re-staging the diff, never by hand-merging hunks.
     with a defined bilingual notice instead of silence — card
     `kk-ha-degraded-mode-explain-capabilities-000d8b` (2026-11-24);
     runbook `docs/kb/member-lane-degraded-mode.md`
+22. `LINE_CALLER_BACKENDS` per-caller backend override — split A/B
+    routing in `line_relay.py` (`_caller_backends`/`_backend_url`),
+    caller-scoped or caller@persona, 'user-' prefix-insensitive — card
+    `persona-ab-split-routing-relay` (OPS-0469 optional scope,
+    2026-11-24). Three staged patches, all pending against
+    ada-voice `origin/main` @ `2e9a1eeb`:
+    `backend/line_relay.persona-ab-split.patch`,
+    `backend/test_line_relay_group.persona-ab-split.patch`,
+    `env.example.persona-ab-split.patch`. Verified: `git apply --check`
+    clean on all three; patched tree passes
+    `pytest tests/test_line_relay_group.py` (32 tests, incl. 4 new
+    CallerBackendTests). Runbook: `docs/kb/persona-eval-ab.md` §3.
 
 ---
 
