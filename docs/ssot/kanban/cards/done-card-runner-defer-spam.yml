@@ -1,7 +1,7 @@
 id: done-card-runner-defer-spam
 title: done cards with stale action.runner get defer-spam from every runner
 column: doing
-updated: 2026-11-24 22:53
+updated: 2026-11-24 23:33
 priority: medium
 tags:
 - board
@@ -91,6 +91,13 @@ comms:
     gate every claim on installed==checkout-ref byt; runner-agent claim order is priority high>medium>absent>low
     then oldest updated ; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard already on idc0; [board-api-queue-write-verify-lost-race-f85f2f]
     primer inject'
+- at: 2026-11-24 23:33
+  from: devin
+  text: 'Follow-through on PR #204: found the same off-queue exposure still live — _note_capacity_skip hostgate
+    notes had no column gate (review+queued cards are getting defer notes right now), _claimable/kanban-dispatch
+    claim path never checked column (a done/review card with stale status=queued could actually be claimed), and
+    kanban-dispatch verdict_pass mirrored the gap. Gated all three on column in {backlog,doing}; regression tests
+    added. Suite running.'
 action:
   type: dispatch
   status: running
