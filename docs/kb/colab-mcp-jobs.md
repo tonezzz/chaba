@@ -371,11 +371,19 @@ same bundle runs on Colab today and a fleet host tomorrow.
 - Verified live 2026-10-23: `smoke` pack (lifecycle proof) +
   `thonburian-bench` (Thai voice-clone eval — 10 wavs in 98 s on T4,
   report.md inside the pack dir).
-- **Member-surface mirror** — queue-mgr (dell, watches the Drive store)
-  mirrors job/pack state into WP `nest_job` posts via board-api
+- **Member-surface mirror** — `scripts/ops/queue-mgr.py` (tony-dell,
+  `queue-mgr.timer` every 5m via ssot.jobs.yml) watches the Drive store
+  and mirrors job/pack state into WP `nest_job` posts via board-api
   `POST /job` (upsert by slug, `status`, `comms` append log, `parent`
-  for job trees). Watchers stay read-only on Drive; the door is the
-  only writer — workers and Colab never hold WP creds.
+  for job trees). One root post `ada-nest-queue` (kind=queue) parents
+  every pack (kind=pack) and manifest job (`job-<name>`, kind=sub);
+  root status is derived from children. Writes are delta-only — a
+  per-slug fingerprint in `~/.local/state/queue-mgr.json` means
+  unchanged entities cost zero WP calls, and `comms` lines land only on
+  transitions. Kill switch: `touch ~/.config/queue-mgr.off` on
+  tony-dell; `--dry-run` prints the derived plan with no writes.
+  Watchers stay read-only on Drive; the door is the only writer —
+  workers and Colab never hold WP creds.
   See `docs/kb/board-api-write-door.md`.
 
 ### Gap packs — idle GPU during main-queue prep (2026-10-25)
