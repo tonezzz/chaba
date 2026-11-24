@@ -5,13 +5,13 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." &>/dev/null && pwd)
 HA_DIR="$REPO_ROOT/docs/home-assistant"
 
-DEV_CONFIG="${MICHAEL_DEV_CONFIG:-$HOME/.config/michael-dev}"
-DEV_SERVICE="${MICHAEL_DEV_SERVICE:-michael-dev.service}"
-DEV_PORT="${MICHAEL_DEV_PORT:-8124}"
+DEV_CONFIG="${MN_HA_DEV_CONFIG:-$HOME/.config/mn-ha-dev}"
+DEV_SERVICE="${MN_HA_DEV_SERVICE:-mn-ha-dev.service}"
+DEV_PORT="${MN_HA_DEV_PORT:-8124}"
 DEPLOY_DASHBOARDS="${MICHAEL_DEPLOY_DASHBOARDS:-0}"
-MCP_URL="${MICHAEL_DEV_MCP_URL:-http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw}"
+MCP_URL="${MN_HA_DEV_MCP_URL:-http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw}"
 
-log() { echo "[deploy-michael-dev] $*"; }
+log() { echo "[deploy-mn-ha-dev] $*"; }
 
 HA_MCP_CALL="$REPO_ROOT/scripts/home-assistant/ha-mcp-call.py"
 if [ ! -f "$HA_MCP_CALL" ]; then

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Fetch PV1/PV2/Grid/Battery/Load values from michael-dev and write a tiny
+# Fetch PV1/PV2/Grid/Battery/Load values from mn-ha-dev and write a tiny
 # text file for the ESP32 display.
 # Output format (one value per line):
 #   pv1_power pv1_voltage pv1_current
@@ -7,7 +7,7 @@
 #   grid_power grid_voltage grid_frequency
 #   bat_soc_avg bat_power_sum load_power
 set -eu
-. "$HOME/.config/secrets/ha-michael-dev.env"
+. "$HOME/.config/secrets/ha-mn-ha-dev.env"
 OUT="${1:-$HOME/CascadeProjects/chaba-tony-dell/stacks/web/public/snapshots/pv1.txt}"
 HA="http://127.0.0.1:8124"
 

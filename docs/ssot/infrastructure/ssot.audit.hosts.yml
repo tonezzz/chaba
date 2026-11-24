@@ -84,7 +84,7 @@ hosts:
         critical: true
         verification: pgrep -a devin-desktop
         note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
-      - name: michael-dev.service
+      - name: mn-ha-dev.service
         type: service
         scope: user
         expected_state: absent
@@ -545,7 +545,7 @@ hosts:
         - mcp-rview-oauth-proxy.service
         - mcp-rview.service
         - mha-state-push.service
-        - michael-dev.service
+        - mn-ha-dev.service
         - michael-ha-mcp-tunnel.service
         - mpris-proxy.service
         - ms-playwright-mcp-ram-cache.service
@@ -932,7 +932,7 @@ hosts:
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mcp-health-snapshot.timer, type: timer, scope: user}
-      - {name: michael-dev-parity.timer, type: timer, scope: user}
+      - {name: mn-ha-dev-parity.timer, type: timer, scope: user}
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
@@ -977,7 +977,7 @@ hosts:
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
     expected_absent:
-      - name: michael-dev.service
+      - name: mn-ha-dev.service
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
           copy disabled 2026-10-12 (container running since 2026-07-28)
@@ -1001,7 +1001,7 @@ hosts:
       - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
         reason: Transient session scope with no remaining PIDs
         action: ignore
-      - name: michael-dev-parity.service
+      - name: mn-ha-dev-parity.service
         reason: Michael-dev parity service failing; investigate
         action: investigate
       - name: nvidia-cdi-refresh.service
@@ -1084,8 +1084,8 @@ hosts:
         - gvfs-udisks2-volume-monitor.service
         - mcp-debug-cors.service
         - mddb-tunnel.service
-        - michael-dev-parity.service
-        - michael-dev.service
+        - mn-ha-dev-parity.service
+        - mn-ha-dev.service
         - mpris-proxy.service
         - ms-playwright-ram-cache.service
         - notebooklm-rest-auth-refresh.service
@@ -1117,7 +1117,7 @@ hosts:
         - focus-dispatcher.timer
         - launchpadlib-cache-clean.timer
         - mcp-health-snapshot.timer
-        - michael-dev-parity.timer
+        - mn-ha-dev-parity.timer
         - notebooklm-kb-sync.timer
         - snap.firmware-updater.firmware-notifier.timer
         - ssot-mddb-sync.timer
@@ -1266,7 +1266,7 @@ hosts:
         - yomi-process.timer
       failed_user_services:
         - arp-inventory-scan.service
-        - michael-dev-parity.service
+        - mn-ha-dev-parity.service
         - notebooklm-rest-auth-refresh.service
       failed_system_services:
         - chaba-backup-monitor.service
@@ -2013,7 +2013,7 @@ hosts:
       - {name: kk-ha.service, type: service, scope: user}
       - {name: litellm.service, type: service, scope: user}
       - {name: litellm-db.service, type: service, scope: user}
-      - {name: michael-dev.service, type: service, scope: user, critical: true,
+      - {name: mn-ha-dev.service, type: service, scope: user, critical: true,
          expected_state: inactive,
          note: PARKED 2026-10-26 — moved to idc02 (capacity-move-michael-dev); masked+stopped 24h rollback window. Quadlet file kept. Unmask+start to restore.}
       - {name: nest-mgr.service, type: service, scope: user}
@@ -2052,7 +2052,7 @@ hosts:
       - {name: kanban-sync.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: merge-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: mha-state-push.service, type: service, scope: user, expected_state: inactive,
-         note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with michael-dev (follows the dev instance it feeds); disabled on idc03"}
+         note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with mn-ha-dev (follows the dev instance it feeds); disabled on idc03"}
       - {name: overnight-assessment.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: qc-scoreboard.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: redis.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2215,11 +2215,11 @@ hosts:
           every repo-exec job on the host (audit finding)
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: ada-lab.service, type: service, scope: user}
-      - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/michael-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
-      - {name: michael-dev.service, type: service, scope: user, critical: true,
-         note: "real instance — moved idc03 -> idc02 2026-10-26 (capacity-move-michael-dev), serves :8124 + MCP :9585 tailnet; quadlet stacks/idc02/michael-dev/"}
+      - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/mn-ha-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
+      - {name: mn-ha-dev.service, type: service, scope: user, critical: true,
+         note: "real instance — moved idc03 -> idc02 2026-10-26 (capacity-move-michael-dev), serves :8124 + MCP :9585 tailnet; quadlet stacks/idc02/mn-ha-dev/"}
       - {name: mha-state-push.service, type: service, scope: user,
-         note: "moved idc03 -> idc02 2026-10-26 with the dev instance it feeds (live michael-ha states -> michael-dev /api/states)"}
+         note: "moved idc03 -> idc02 2026-10-26 with the dev instance it feeds (live michael-ha states -> mn-ha-dev /api/states)"}
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---

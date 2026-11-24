@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-set -a; source ~/.config/secrets/ha-michael-dev.env; set +a
+set -a; source ~/.config/secrets/ha-mn-ha-dev.env; set +a
 export SRC_TOKEN="$HASS_TOKEN"
 export DST_TOKEN="$(cat ~/.local/share/home-assistant-michael/ha-token)"
 

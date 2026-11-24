@@ -55,7 +55,7 @@ def load_env_file(path: Path) -> dict:
 # card title names them. Union of ssot.values.yml hosts: + static extras.
 STATIC_HOSTS = {
     "idc02", "idc03", "mn01", "kk-macbook",
-    "tony-dell", "tony-omen", "tony-ha", "tony-dev", "michael-ha", "michael-dev",
+    "tony-dell", "tony-omen", "tony-ha", "tony-dev", "michael-ha", "mn-ha-dev",
     "ada-voice", "homeassistant",
 }
 IPV4_RE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")

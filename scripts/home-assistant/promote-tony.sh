@@ -5,7 +5,7 @@
 # Default scope: dashboards,bundle (card fork + tony-test views).
 #
 # Until tony-dev is provisioned (card ha-dev-instances), source the old lane:
-#   promote-tony.sh --from michael-dev [--views tpl,pfg2] --confirm
+#   promote-tony.sh --from mn-ha-dev [--views tpl,pfg2] --confirm
 #
 # Examples:
 #   promote-tony.sh --dry-run

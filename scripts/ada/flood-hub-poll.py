@@ -5,7 +5,7 @@ Runs on idc01 (the API key in ~/.config/secrets/flood-forecasting.env is
 IP-restricted to idc01's egress, so no other host can call
 floodforecasting.googleapis.com). Consumers — the flood-hub:auto CMS
 block in flood-news-update.py, the severity alerts in flood-alert.py,
-and the michael-dev flood_hub_* sensors — all read the published doc
+and the mn-ha-dev flood_hub_* sensors — all read the published doc
 and never need the key.
 
 Each run:

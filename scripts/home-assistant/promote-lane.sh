@@ -13,7 +13,7 @@
 #   --create-dashboard  register the dashboard on prod if missing
 #   --bundle-base B  bundle filename stem (lane default; required for bundle
 #                    scope on lanes without one)
-#   --from / --to    override lane endpoints (e.g. --from michael-dev while
+#   --from / --to    override lane endpoints (e.g. --from mn-ha-dev while
 #                    tony-dev is not yet provisioned)
 #   --cleanup        bundle: delete stale -vN bundles not referenced
 #   --rollback       bundle: point the resource back at the previous bundle

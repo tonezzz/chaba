@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Guided tour for the mn-weather Shutter Logic Test card on michael-dev.
+"""Guided tour for the mn-weather Shutter Logic Test card on mn-ha-dev.
 
 Drives input_number sliders + toggles through a narrated close/open scenario
 while the user watches the card. Reads HASS_TOKEN and HA_URL from env
-(default http://127.0.0.1:8124; source ~/.config/secrets/ha-michael-dev.env).
+(default http://127.0.0.1:8124; source ~/.config/secrets/ha-mn-ha-dev.env).
 
 Usage:
     python3 dev-shutter-tour.py            # narrated tour, pauses between steps
@@ -20,7 +20,7 @@ import urllib.request
 HA = os.environ.get("HA_URL", "http://127.0.0.1:8124").rstrip("/")
 TOKEN = os.environ.get("HASS_TOKEN") or os.environ.get("HA_LONG_LIVED_TOKEN")
 if not TOKEN:
-    sys.exit("HASS_TOKEN not set — source ~/.config/secrets/ha-michael-dev.env")
+    sys.exit("HASS_TOKEN not set — source ~/.config/secrets/ha-mn-ha-dev.env")
 
 HDRS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
 

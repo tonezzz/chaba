@@ -108,7 +108,7 @@ checklists:
         must: true
       - id: services.stop
         label: Stop non-essential services
-        action: Stop optional services such as playlived, michael-dev, and experimental GPU jobs unless the operator marks them critical.
+        action: Stop optional services such as playlived, mn-ha-dev, and experimental GPU jobs unless the operator marks them critical.
         ssot_ref: docs/ssot/infrastructure/ssot.services.yml
         must: false
       - id: backups.verify
@@ -135,7 +135,7 @@ checklists:
         must: true
       - id: mcp.devin
         label: Verify Devin MCP tools
-        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc02:9585) does not list tools, restart the HA container on that host and retry.
+        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or mn-ha-dev (idc02:9585) does not list tools, restart the HA container on that host and retry.
         ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
         must: true
       - id: services.start
@@ -442,12 +442,12 @@ host_notes:
       - >-
         systemd --user units: mcp-debug-sse, yomi timers, chaba-audit timers,
         mcp-health timer, tony-dell-health-snapshot timer.
-      - Home Assistant + michael-dev reachable; ha-live via Tailscale Serve 8444.
+      - Home Assistant + mn-ha-dev reachable; ha-live via Tailscale Serve 8444.
       - gpu-queue on tony-dell:3001 and Caddy on tony-dell:8080 answer.
       - Re-run mcp-health; compare against pre_shutdown snapshot.
       - >-
         Verify Devin MCP server endpoints; mcp_list_tools for tony-ha (tony-omen:9584),
-        michael-dev (idc02:9585), michael-ha (100.80.105.88:9584), and all other servers.
+        mn-ha-dev (idc02:9585), michael-ha (100.80.105.88:9584), and all other servers.
         Restart the HA container on its current host if the MCP port is not listening.
     post_restart_checks:
       - id: podman-core

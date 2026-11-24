@@ -10,7 +10,7 @@
 # and is applied by scripts/home-assistant/staging-overlay.py.
 #
 # Usage:
-#   --source <id|dir>     instance id (tony-ha|ada-ha|michael-dev) or a path
+#   --source <id|dir>     instance id (tony-ha|ada-ha|mn-ha-dev) or a path
 #   --target <name>       staging name; config lands in ~/.config/<name>
 #   --source-dir DIR      explicit source config dir (overrides --source id)
 #   --target-dir DIR      explicit target config dir (overrides ~/.config/<n>)
@@ -45,14 +45,14 @@ die() { echo "[stage-clone] ERROR: $*" >&2; exit 1; }
 PROD_DIRS=(
   "$HOME/.config/home-assistant"   # tony-ha
   "$HOME/.config/ada-ha"           # ada-ha
-  "$HOME/.config/michael-dev"      # michael-dev (real lane, not a staging toy)
+  "$HOME/.config/mn-ha-dev"      # mn-ha-dev (real lane, not a staging toy)
 )
 
 resolve_source() {
   case "$1" in
     tony-ha)     echo "$HOME/.config/home-assistant" ;;
     ada-ha)      echo "$HOME/.config/ada-ha" ;;
-    michael-dev) echo "$HOME/.config/michael-dev" ;;
+    mn-ha-dev) echo "$HOME/.config/mn-ha-dev" ;;
     michael-ha)  die "michael-ha is remote — clone from a mounted path with --source-dir" ;;
     *)           echo "$1" ;;
   esac

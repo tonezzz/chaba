@@ -1,4 +1,4 @@
-# Dev-only mock entities for michael-dev
+# Dev-only mock entities for mn-ha-dev
 # Use the Data tab on the tony-test dashboard to adjust these live.
 
 input_select:
@@ -19,30 +19,6 @@ input_select:
       - unknown
     initial: discharge
     icon: mdi:battery
-
-  dev_g3_source:
-    name: G3 source
-    options:
-      - sensor.inverters_1_pv_power
-      - sensor.inverters_1_pv_power_1
-      - sensor.inverters_1_pv_power_2
-      - sensor.inverters_1_load_power
-      - sensor.inverters_1_load_power_essential
-      - sensor.inverters_1_grid_power
-      - sensor.totals_battery_power
-      - sensor.batteries_1_power
-      - sensor.batteries_2_power
-      - sensor.batteries_3_power
-      - input_number.dev_pv1_power
-      - input_number.dev_pv2_power
-      - input_number.dev_load_power
-      - input_number.dev_essential_power
-      - input_number.dev_grid_power
-      - input_number.dev_battery_power
-      - input_number.dev_battery2_power
-      - input_number.dev_battery3_power
-    initial: sensor.inverters_1_pv_power
-    icon: mdi:chart-arc
 
 input_number:
   dev_inverter_temperature:
@@ -291,11 +267,7 @@ template:
       unit_of_measurement: "W"
       state_class: measurement
       device_class: power
-    - name: inverters_1_pv_power
-      state: "{{ (states('input_number.dev_pv1_power') | float(4500) + states('input_number.dev_pv2_power') | float(3200)) }}"
-      unit_of_measurement: "W"
-      state_class: measurement
-      device_class: power
+
     - name: inverters_1_inverter_mode
       state: "{{ states('input_select.dev_inverter_mode') }}"
     - name: inverters_1_battery_direction
@@ -1252,6 +1224,20 @@ rest:
         value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
         availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
+  - resource: http://michael-ha:8123/api/states/sensor.inverters_1_pv_power
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 86400
+    timeout: 5
+    sensor:
+      - name: inverters_1_pv_power
+        unique_id: mha_mirror_inverters_1_pv_power
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
 # Generic service relay to michael-ha — lets dev template switches
 # actually toggle the live entity. Read-only mirrors stay read-only;
 # only the 9 template switch wrappers below call this.
@@ -1375,3 +1361,4 @@ automation:
             - sensor.smart_plug_socket_1_2
             - sensor.terrace_switch_switch_1
             - sensor.terrace_switch_switch_2
+            - sensor.inverters_1_pv_power

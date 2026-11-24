@@ -45,7 +45,7 @@ CONSUMERS = {
     "line-bot.env":     "ada-line-relay.service",
     "telegram-ada.env": "ada-tg-relay.service",
     "telegram-kk.env":  "ada-tg-relay-kk.service",
-    "ha-michael-dev.env": "devin/agent HA token (michael-dev)",
+    "ha-mn-ha-dev.env": "devin/agent HA token (mn-ha-dev)",
     "or-next-key":      "rotation input — rotate-or-key.sh",
     "kaewta-paid.env":  "kk-ha lane paid-tier credential (unidentified bare token)",
     "notebooklm-rest-api.env": "ada backends (shared env file)",

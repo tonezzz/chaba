@@ -536,8 +536,8 @@ tony-dell:
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active on tony-omen (verified 2026-10-26)'
     note: 'Container rootless podman, evacuated to tony-omen 2026-10-19/20. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-omen.taila0626a.ts.net:8123 only (loopback bind, no LAN listener; evacuated dell->omen 2026-10-20, OPS-0754). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
-  michael-dev:
-    container: michael-dev
+  mn-ha-dev:
+    container: mn-ha-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
     host: idc02   # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26; entry kept here for anchor stability
@@ -545,9 +545,9 @@ tony-dell:
     port: 8124
     host_port: 127.0.0.1:8124
     quadlet:
-      container_unit: ~/.config/containers/systemd/michael-dev.container
-      service_unit: ~/.config/systemd/user/michael-dev.service
-    config: /home/tony/.config/michael-dev
+      container_unit: ~/.config/containers/systemd/mn-ha-dev.container
+      service_unit: ~/.config/systemd/user/mn-ha-dev.service
+    config: /home/tony/.config/mn-ha-dev
     custom_components:
       - ha_mcp_tools
     mcp_server:
