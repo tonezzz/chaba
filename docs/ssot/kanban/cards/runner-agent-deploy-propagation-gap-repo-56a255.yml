@@ -219,6 +219,14 @@ comms:
 - at: 2026-11-24 19:08
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 19:08
+  from: chaba
+  text: 'merge-sweep: dispatch/20261124-184257-every-fleet-host-s-runner-agen conflicts with origin/master: scripts/devin/runner-tooling.manifest.json
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-24 19:08
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261124-184257-every-fleet-host-s-runner-agen:
+    2 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: done
@@ -228,6 +236,7 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-24 19:08
+    conflict_sig: 83c3e92ffce5|scripts/devin/runner-tooling.manifest.json
   result: 'exit=0 th no manual scp — the fleet-wide check is observable as drift deferrals stopping after one sync
     cycle. | devin-task-20261124-184257-every-fleet-host-s-runner-agen.service: Consumed 52.682s CPU time, 478.0M
     memory peak, 0B memory swap peak.'
@@ -235,3 +244,22 @@ action:
 claim:
   since: 2026-11-24 18:42
 review_kind: verify
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261124-184257-every-fleet-host-s-runner-agen: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/devin/runner-tooling.manifest.json. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261124-184257-every-fleet-host-s-runner-agen
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-24 19:08
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
