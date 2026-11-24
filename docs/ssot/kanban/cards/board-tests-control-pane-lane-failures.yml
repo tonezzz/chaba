@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
 column: doing
-updated: 2026-11-24 22:22
+updated: 2026-11-24 22:47
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -163,6 +163,13 @@ comms:
     DONE (attempt 3, tony-macbook). Fix was alr; [kk-mac-lane-claim-hardening] session produced no commits — the
     branch head is j; [kk-mac-usage-to-lane-savings] [verify-fail] Review pass 2026-11-23 (Tony): 2026; [opencode-retry-stale-worktree]
     DONE (branch dispatch/2026112'
+- at: 2026-11-24 22:47
+  from: devin
+  text: 'triage: all 6 listed failures already fixed on master (lane claim tests by earlier lane-provenance/hermetic
+    commits; control-pane card tests by 9ec3614046 archive-aware path). Fresh failures found on pristine worktree
+    instead: (a) 2 control-pane tests read gitignored render-board2 outputs absent on pristine checkout; (b) 6 test_dispatch_close_out
+    tests need a pytest-capable interpreter the gate can resolve — host python3 lacks pytest. Fixing both sides
+    hermetically.'
 action:
   type: dispatch
   status: running
