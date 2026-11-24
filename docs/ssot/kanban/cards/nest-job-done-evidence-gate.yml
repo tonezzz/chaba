@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: backlog
-updated: 2026-11-24 12:10
+updated: 2026-11-24 16:49
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -153,3 +153,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 16:49
+  from: chaba
+  text: classified as codemod (kw:nest job conf 1.00)
+- at: 2026-11-24 16:49
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: codemod
+  lane_source: kw
+claim: {}
