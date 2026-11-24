@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: review
-updated: 2026-11-24 19:28
+updated: 2026-11-24 19:38
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -300,6 +300,10 @@ comms:
 - at: 2026-11-24 19:28
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 19:38
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-120558-define-and-implement-the-media on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -311,6 +315,8 @@ action:
   result: 'exit=0  outcome doc at `dispatch-outcome-20261124-120558-define-and-implement-the-media.md`. | devin-task-20261124-120558-define-and-implement-the-media.service:
     Consumed 4min 3.552s CPU time over 20min 38.293s wall clock time, 717.4M memory peak.'
   verified: false
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-24 19:05
 review_kind: verify
