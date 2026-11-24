@@ -1,0 +1,70 @@
+# LiteLLM bench-key probing — dead BENCH key no longer shadows CHABA
+title: shadow_eval bench_key() probes candidates, picks first 2xx
+card: litellm-key-bench-dead-shadows-chaba
+date: 2026-11-24
+session: dispatch-wt-20261124-210348-shadow-eval-bench-key-returns- (tony-omen)
+hosts_touched: none (repo change only; verified live against idc03 litellm)
+
+summary: >-
+  Card spec fix (b): shadow_eval.bench_key() used to return the FIRST
+  present env var (LITELLM_KEY_BENCH before LITELLM_KEY_CHABA) with no
+  liveness check, so a dead BENCH virtual key (GET /v1/models -> 422)
+  made probe() report litellm_authed:false and every lane_gate admit
+  fail with failed_provider:litellm. bench_key() now collects ordered
+  candidates and probes each against {LITELLM_BASE}/v1/models,
+  returning the first that returns 2xx.
+
+changes:
+  file: scripts/devnest/shadow_eval.py
+  bench_key_candidates: >-
+    New. Ordered (source-label, key) candidates, deduped by value.
+    Per-variable preference — every BENCH source, then CHABA, then
+    generic LITELLM_KEY — so the dedicated bench key keeps spend
+    attribution whenever it authenticates. Sources per var: process
+    env, ~/.config/secrets/litellm-keys.env, then
+    litellm-chaba.env. Labels are provenance only (env:VAR /
+    file:<name>:<VAR>), never secret material.
+  bench_key: >-
+    Now bench_key(verify=True): probes each candidate with
+    _http_ok(..., want_2xx=True) and returns the first 2xx. Falls back
+    to first-present when nothing verifies (proxy down, all keys dead,
+    verify=False, or SHADOW_OFFLINE=1) — preserves old behavior
+    offline. The generic LITELLM_KEY is now a last-resort candidate,
+    which also fixes hosts that only carry litellm-chaba.env
+    (tony-omen) — previously bench_key() returned "" there.
+  probe: >-
+    Checks /health/liveliness first and only spends candidate probes
+    when the gateway answers (verify=litellm_up); reuses the resolved
+    key for the authed check and the /v1/models fetch (was: second
+    bench_key() call); records secrets.bench_key_src so operators can
+    see which source authenticated.
+  evaluate_rungs: >-
+    L2 DEGRADED secrets check now accepts litellm-chaba.env as well as
+    litellm-keys.env (message: "no litellm secrets file staged").
+
+tests:
+  file: tests/devnest/test_shadow_eval.py
+  added: >-
+    BenchKeySelection — 8 cases: dead-BENCH env/file shadowing,
+    chaba.env-file candidate, first-present fallback, empty candidates,
+    dedup+ordering, SHADOW_OFFLINE/verify=False never probe.
+  result: "369 devnest tests pass (86 in test_shadow_eval+test_lane_gate)"
+
+verification_live_tony_omen_2026-11-24:
+  probe: "litellm_authed:true, bench_key_src:file:litellm-chaba.env:LITELLM_KEY, 44 models"
+  matrix: "L2 PASS (was DEGRADED/BLOCKED without a key)"
+  admit: "synthetic S0 litellm envelope -> admit:true, reasons:[] (was failed_provider:litellm)"
+  dead_key_e2e: "LITELLM_KEY_BENCH=sk-deadbeef -> bench_key() probed it (401), picked litellm-chaba.env LITELLM_KEY (200)"
+  litellm_chaba_key: "/v1/models -> 200, 44 models; bogus key -> 401"
+
+not_done:
+  fix_a_key_rotation: >-
+    Card fix (a) — rotate/re-create the BENCH virtual key in litellm —
+    is a LiteLLM admin/credential change on idc03 (master key,
+    /key/delete+/key/generate), out of scope for a worktree dispatch
+    and needs explicit approval. Fix (b) makes it unnecessary for
+    correctness; rotation remains optional hygiene.
+  deploy_note: >-
+    Change is repo-side; hosts pick it up via the normal exec-checkout
+    sync (chaba-repo-sync.timer). No service restart needed —
+    shadow_eval/lane_gate are invoked per-run.

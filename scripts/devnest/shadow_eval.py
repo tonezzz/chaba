@@ -166,18 +166,66 @@ def _secret_exists(name: str) -> bool:
     return (Path.home() / ".config" / "secrets" / name).is_file()
 
 
-def bench_key() -> str:
-    """LITELLM_KEY_BENCH (fallback LITELLM_KEY_CHABA) for probe/run use."""
-    for var in ("LITELLM_KEY_BENCH", "LITELLM_KEY_CHABA"):
-        if os.environ.get(var):
-            return os.environ[var]
-    env = Path.home() / ".config" / "secrets" / "litellm-keys.env"
-    if env.is_file():
-        for line in env.read_text().splitlines():
-            for var in ("LITELLM_KEY_BENCH", "LITELLM_KEY_CHABA"):
-                if line.startswith(var + "="):
-                    return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return ""
+def bench_key_candidates() -> list:
+    """Ordered (source-label, key) candidates for the LiteLLM probe/run
+    key. Preference is per-variable — every BENCH source, then CHABA,
+    then the generic LITELLM_KEY — so a dedicated bench key keeps
+    spend attribution whenever it authenticates, while a dead BENCH
+    can no longer shadow a working CHABA
+    (litellm-key-bench-dead-shadows-chaba). Sources per var: process
+    env, ~/.config/secrets/litellm-keys.env, then litellm-chaba.env.
+    Values are deduped; labels never contain secret material."""
+    cands, seen = [], set()
+    secrets = Path.home() / ".config" / "secrets"
+    files = {}
+    for name in ("litellm-keys.env", "litellm-chaba.env"):
+        f = secrets / name
+        vals = {}
+        if f.is_file():
+            try:
+                for raw in f.read_text().splitlines():
+                    line = raw.strip()
+                    if line.startswith("export "):
+                        line = line[7:].lstrip()
+                    for var in ("LITELLM_KEY_BENCH", "LITELLM_KEY_CHABA",
+                                "LITELLM_KEY"):
+                        if line.startswith(var + "="):
+                            vals.setdefault(var, line.split("=", 1)[1])
+            except OSError:
+                pass
+        files[name] = vals
+
+    def add(label, raw):
+        key = (raw or "").strip().strip('"').strip("'")
+        if key and key not in seen:
+            seen.add(key)
+            cands.append((label, key))
+
+    for var in ("LITELLM_KEY_BENCH", "LITELLM_KEY_CHABA", "LITELLM_KEY"):
+        add(f"env:{var}", os.environ.get(var))
+        for name in ("litellm-keys.env", "litellm-chaba.env"):
+            add(f"file:{name}:{var}", files[name].get(var))
+    return cands
+
+
+def bench_key(verify: bool = True) -> str:
+    """LiteLLM virtual key for probe/run use.
+
+    Candidates are tried in bench_key_candidates() order; with verify
+    on (default) each is checked against {LITELLM_BASE}/v1/models and
+    the first returning 2xx wins. When nothing verifies — proxy
+    unreachable, every key dead, verify=False, or SHADOW_OFFLINE — the
+    first present candidate is returned, preserving the old
+    first-present behavior."""
+    cands = bench_key_candidates()
+    if not cands:
+        return ""
+    if verify and not os.environ.get("SHADOW_OFFLINE"):
+        url = LITELLM_BASE + "/v1/models"
+        for _label, key in cands:
+            if _http_ok(url, key=key, want_2xx=True):
+                return key
+    return cands[0][1]
 
 
 def probe(offline: str = "") -> dict:
@@ -187,6 +235,7 @@ def probe(offline: str = "") -> dict:
     tools = {t: shutil.which(t) for t in
              ("opencode", "devin", "ollama", "git", "python3")}
     net = {}
+    key = ""
     if force_off:
         for k in ("litellm", "ollama_idc02", "ollama_idc03", "tailnet",
                   "wan", "devin_cloud"):
@@ -196,10 +245,14 @@ def probe(offline: str = "") -> dict:
         if offline == "airgap":
             net["ollama_local"] = False
     else:
-        key = bench_key()
+        litellm_up = _http_ok(LITELLM_BASE + "/health/liveliness",
+                             want_2xx=True)
+        # verify key candidates only when the gateway answers — a dead
+        # proxy fails every candidate anyway and each probe can cost a
+        # full timeout
+        key = bench_key(verify=litellm_up)
         net = {
-            "litellm": _http_ok(LITELLM_BASE + "/health/liveliness",
-                                want_2xx=True),
+            "litellm": litellm_up,
             "litellm_authed": bool(key) and _http_ok(
                 LITELLM_BASE + "/v1/models", key=key, want_2xx=True),
             "ollama_idc02": _http_ok(OLLAMA_IDC02 + "/api/version"),
@@ -214,7 +267,7 @@ def probe(offline: str = "") -> dict:
     if net.get("litellm") and net.get("litellm_authed"):
         try:
             req = urllib.request.Request(LITELLM_BASE + "/v1/models")
-            req.add_header("Authorization", f"Bearer {bench_key()}")
+            req.add_header("Authorization", f"Bearer {key}")
             data = json.loads(urllib.request.urlopen(
                 req, timeout=PROBE_TIMEOUT).read())
             models["litellm"] = sorted(
@@ -237,7 +290,10 @@ def probe(offline: str = "") -> dict:
         "tools": {k: bool(v) for k, v in tools.items()},
         "net": net,
         "secrets": {"litellm_keys_env": _secret_exists("litellm-keys.env"),
-                    "litellm_chaba_env": _secret_exists("litellm-chaba.env")},
+                    "litellm_chaba_env": _secret_exists("litellm-chaba.env"),
+                    "bench_key_src": (
+                        next((l for l, k in bench_key_candidates()
+                              if k == key), None) if key else None)},
         "models": models,
     }
 
@@ -297,9 +353,11 @@ def evaluate_rungs(p: dict, prompt_chars: int = 0,
         if status == "PASS":
             if rid == "L2" and not p["net"].get("litellm_authed"):
                 status, why = "DEGRADED", ["gateway up but auth unproven"]
-            elif rid == "L2" and not p["secrets"].get("litellm_keys_env"):
+            elif rid == "L2" and not (
+                    p["secrets"].get("litellm_keys_env")
+                    or p["secrets"].get("litellm_chaba_env")):
                 status, why = "DEGRADED", [
-                    "gateway+auth ok but no litellm-keys.env staged"]
+                    "gateway+auth ok but no litellm secrets file staged"]
         out.append({"rung": rid, "label": r["label"], "status": status,
                     "why": why or ["ok"]})
     return out
