@@ -1,0 +1,40 @@
+id: jobs/bench/2026-11-23-decision-arena-3way
+title: decision-arena 3-backend run — jev-student / jevos / laya on corpus v2
+card: decision-arena-benchmark-decision-models-72ab92
+ref: BEN-0826
+date: 2026-11-23
+host: idc03 (run), tony-dell (dispatch worktree)
+session: devin-task-20261123-211710-corpus-18-jev-bench-cases-4-pi
+status: delivered
+
+spec_drift_resolved:
+  - "card spec said jev-student idc03:8778 — actually tony-omen:8780 since 2026-11-18; idc03:8778/8779 dead"
+  - "jevos binary+model absent fleet-wide — feder-cr/jev release fetched to idc03:~/jev-bench/, serving 127.0.0.1:8017 via ad-hoc './jev serve' (NOT a declared unit)"
+  - "laya had no env — created idc03:~/.venvs/laya-bench (CPU torch 2.15, laya 0.5.3, transformers 5.24)"
+
+run:
+  corpus: scripts/ops/decision-arena.py corpus v2 — 50 labeled cases (confirm 12 / tool 16 / pipe 10 / stag 12)
+  arms:
+    jev-student: {url: "http://100.75.102.88:8780", model: jev-student-distilmulti}
+    jevos: {url: "http://127.0.0.1:8017", model: jevos-v5-openvino-int8}
+    laya: {model: "convaiinnovations/laya", runtime: "in-process CPU torch"}
+  artifacts:
+    - reports/2026-11-23-decision-arena-50.md
+    - evals/results/jev/decision-arena-50-20261123.json   # 150 per-case records w/ raw answers
+  results:
+    jev-student: {acc: 0.480, confirm: 1.000, tool: 0.062, pipe: 0.600, stag: 0.417, noul_ece: 0.325, lat_p50_ms: 40.5}
+    jevos:       {acc: 0.720, confirm: 0.500, tool: 0.812, pipe: 0.600, stag: 0.917, noul_ece: 0.120, choice_ece: 0.260, lat_p50_ms: 752.5}
+    laya:        {acc: 0.540, confirm: 0.500, tool: 0.625, pipe: 0.400, stag: 0.583, noul_ece: 0.306, choice_ece: 0.211, lat_p50_ms: 2959.5}
+  cost: "$0 — all arms self-hosted; real Jev API arm skipped (no key, KNB-0822)"
+
+verdict: >-
+  jevos is the only usable choice/stag head (tool 0.812, stag 0.917) but
+  fails the confirm-gate (0.500 — under-detects affirmations at p 0.17-0.42).
+  jev-student remains the only correct confirm-gate (1.000) with a dead
+  choice head. laya is middling with mirror-image pipe/stag biases and
+  ~4-40x latency. Per-family routing beats one-backend-fits-all.
+
+followups:
+  - "declare jevos serve as a proper unit/env on idc03 or mark bench-only (host hygiene)"
+  - "jevos confirm-gate threshold sweep before routing use"
+  - "real Jev API arm still blocked on key (KNB-0822)"

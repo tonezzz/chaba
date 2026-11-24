@@ -13,8 +13,9 @@ Flags:
                   calls (the corpus verifier — exits nonzero on malformed
                   corpus: duplicate ids, out-of-criteria labels, class
                   imbalance beyond a single-class type).
-  --out PATH      also write per-case records {id,qtype,expected,got,ms}
-                  per backend for disagreement analysis.
+  --out PATH      also write per-case records {id,qtype,expected,got,ms,
+                  raw} per backend for disagreement + calibration (ECE)
+                  analysis — raw is the backend's full answer object.
 Env: JEV_STUDENT_URL / JEVOS_URL / LAYA_URL override backend bases.
 """
 import json, os, statistics, subprocess, sys, time, urllib.request
@@ -189,6 +190,7 @@ def run_backend(name, base, corpus, records=None):
             records.append({"backend": name, "id": case["id"],
                             "qtype": case["qtype"], "expected": exp,
                             "got": got, "ok": ok, "ms": ms,
+                            "raw": answers.get("q"),
                             "err": answers.get("_err")})
         correct += 1 if ok else 0
         total += 1
@@ -211,7 +213,7 @@ def ask_laya(agent, state, questions, timeout=180):
         return {"_err": str(e)[:80]}, round((time.time() - t0) * 1000)
 
 
-def run_laya(corpus):
+def run_laya(corpus, records=None):
     import laya
     agent = laya.load("convaiinnovations/laya")
     lat, correct, total, per = [], 0, 0, {}
@@ -220,6 +222,12 @@ def run_laya(corpus):
         lat.append(ms)
         got = parse(answers.get("q"), case["qtype"])
         ok = got == case["expected"]
+        if records is not None:
+            records.append({"backend": "laya", "id": case["id"],
+                            "qtype": case["qtype"], "expected": case["expected"],
+                            "got": got, "ok": ok, "ms": ms,
+                            "raw": answers.get("q"),
+                            "err": answers.get("_err")})
         correct += 1 if ok else 0
         total += 1
         per.setdefault(case["qtype"], [0, 0])
@@ -254,7 +262,7 @@ def main():
         backends.append(run_backend(name, base, corpus, records))
     # laya (in-process)
     try:
-        backends.append(run_laya(corpus))
+        backends.append(run_laya(corpus, records))
     except Exception as e:
         print("laya down:", e)
 
