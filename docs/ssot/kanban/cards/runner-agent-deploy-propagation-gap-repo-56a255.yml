@@ -1,6 +1,6 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
-column: backlog
+column: doing
 updated: 2026-11-24 19:55
 priority: medium
 tags:
@@ -236,20 +236,27 @@ comms:
 - at: 2026-11-24 19:55
   from: chaba
   text: 'answer-sweep: executed ''resolve — let devin resolve the conflict and land it'' -> queued for processing'
+- at: 2026-11-24 19:55
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 11.62 > 1.5)'
+- at: 2026-11-24 19:55
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-24 19:09
     conflict_sig: 83c3e92ffce5|scripts/devin/runner-tooling.manifest.json
   result: 'exit=0 th no manual scp — the fleet-wide check is observable as drift deferrals stopping after one sync
     cycle. | devin-task-20261124-184257-every-fleet-host-s-runner-agen.service: Consumed 52.682s CPU time, 478.0M
     memory peak, 0B memory swap peak.'
+  runner: tony-dell
 claim:
-  since: 2026-11-24 18:42
+  since: 2026-11-24 19:55
 review_kind: verify
 requests:
 - id: merge-conflict

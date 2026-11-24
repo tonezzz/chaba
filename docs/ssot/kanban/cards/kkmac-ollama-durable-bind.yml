@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: backlog
-updated: 2026-11-24 19:55
+updated: 2026-11-24 19:56
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -241,6 +241,13 @@ comms:
 - at: 2026-11-24 19:55
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 11.62 > 1.5)'
+- at: 2026-11-24 19:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.11 > 0.85)'
+- at: 2026-11-24 19:56
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: queued
