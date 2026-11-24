@@ -1,7 +1,7 @@
 id: door-read-ops-lesson-op-list-get-educati-6cfed7
 title: 'Door read ops: /lesson op=list|get (education content to agents)'
-column: doing
-updated: 2026-11-24 15:54
+column: done
+updated: 2026-11-24 15:55
 brief: Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review)
   and op=get (full content by slug) so agents + lessons-due can read without WP creds.
 tags:
@@ -193,14 +193,24 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261124-154135-board-api-do-lesson-op-list-pa no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-24 15:55
+  from: chaba
+  text: 'merge-sweep: merged b543fd0f (dispatch/20261124-154135-board-api-do-lesson-op-list-pa from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-154135-board-api-do-lesson-op-list-pa.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-omen
   attempts: 1
   sweep:
     stale_running: 2026-11-24 15:54
+  verified: true
 claim:
   since: 2026-11-24 15:40
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-154135-board-api-do-lesson-op-list-pa.md
