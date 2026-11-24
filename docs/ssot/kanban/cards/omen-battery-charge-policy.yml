@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
-column: doing
-updated: 2026-11-24 16:29
+column: review
+updated: 2026-11-24 16:35
 tags:
 - hardware
 - omen
@@ -254,9 +254,35 @@ comms:
     battery <25/15min + <20 alerts live now. Verified: reload ok, entity on, manual trigger clean, zero log errors.
     Chaba commit 53df4a4 (job doc + ssot inventory) + outcome doc on dispatch branch. Remaining physical step: buy+pair
     plug — board request automation-is-deployed-and-li'
+- at: 2026-11-24 16:35
+  from: tony-dell
+  text: 'finished (ok): exit=0 ended), after which the automation activates automatically. | devin-task-20261124-160901-goal-keep-omen-battery-i'
+- at: 2026-11-24 16:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:35
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-160901-goal-keep-omen-battery-in-40-8'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 16:35
+  from: chaba
+  text: pushed dispatch/20261124-160901-goal-keep-omen-battery-in-40-8 to origin
+- at: 2026-11-24 16:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 69.5s)
+- at: 2026-11-24 16:35
+  from: chaba
+  text: auto-merged 5eb4bc7a (dispatch/20261124-160901-goal-keep-omen-battery-in-40-8) → origin/master
+- at: 2026-11-24 16:35
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: tony-dell
@@ -264,6 +290,9 @@ action:
   sweep:
     stale_running: 2026-11-24 15:39
     dirty: 1
+  result: 'exit=0 ended), after which the automation activates automatically. | devin-task-20261124-160901-goal-keep-omen-battery-in-40-8.service:
+    Consumed 4min 42.815s CPU time over 22min 37.048s wall clock time, 938.9M memory peak, 443.6M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 15:17
 requests:
@@ -325,3 +354,4 @@ requests:
   - id: have-one
     label: Already have a spare — will say which
 awaiting_action: true
+review_kind: verify

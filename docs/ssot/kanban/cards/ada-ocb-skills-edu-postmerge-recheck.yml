@@ -1,0 +1,21 @@
+id: ada-ocb-skills-edu-postmerge-recheck
+title: Recheck ada-ocb-skills lesson after branch merge
+column: backlog
+updated: 2026-11-24 16:35
+brief: 'Post-merge verification for the ADA-0031 wiki education work: clear the two source-gone flags on lesson-d8b6938588d3.'
+priority: medium
+program: ada-ocb
+tags:
+- ada-ocb
+- education
+- skills
+- wiki
+spec: 'After ada/fleet-mcp-inventory-report merges into the idc03 checkout, re-run EDU_SOURCE=wiki python3 scripts/education-report.py
+  and confirm tests/test_agents_skills_explored.py and docs/kb/ada-ocb-skills-education.md resolve. Baseline run
+  2026-11-24: 220 lessons, verify=pass, holds=1, this lesson flagged source-gone only because the branch was not
+  merged. Ref docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml.'
+ref: ADA-0037
+comms:
+- at: 2026-11-24 16:35
+  from: tony
+  text: card captured via board-api
