@@ -1,7 +1,7 @@
 id: opencode-memory-freshness-check
 title: Read-only memory/feed freshness status check (Devin + OpenCode)
-column: doing
-updated: 2026-11-24 23:28
+column: review
+updated: 2026-11-24 23:37
 priority: low
 tags:
 - chaba-memory
@@ -213,14 +213,36 @@ comms:
     probe (ERROR+evidence), parsed render service ActiveState/ExecMainStatus/ExecMainExitTimestamp, feed-input ages
     (events/immediate/recent-events), session-memory.md tail SessionEnd/Compaction marker scan, simplified FRESH/STALE/ERROR.
     Live run: dell+omen FRESH, idc03 STALE ('
+- at: 2026-11-24 23:37
+  from: tony-macbook
+  text: 'finished (ok): exit=0 (not pushed); card comms posted; `--json` output is ready for Phase C harvester/guard
+    use. | devin-task-20261124-'
+- at: 2026-11-24 23:37
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 23:37
+  from: chaba
+  text: banked 178 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:37
+  from: chaba
+  text: pushed dispatch/20261124-232252-goal-provide-a-read-only-comma to origin
+- at: 2026-11-24 23:37
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 23:37
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 (not pushed); card comms posted; `--json` output is ready for Phase C harvester/guard use. | devin-task-20261124-232252-goal-provide-a-read-only-comma.service:
+    Consumed 22.231s CPU time over 6min 50.399s wall clock time, 407.2M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 23:22
 review_kind: verify
