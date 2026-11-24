@@ -164,6 +164,21 @@ job_classes:
   chat:
     chain: [gemini-3.5-flash@paid, gemini-3.5-flash@free, gemini-3.5-flash@openrouter, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: "ada text-mode sessions (ADA_TEXT_MODEL) — full 3.5-flash for voice/text quality parity; lite only as downstream fallback. Added 2026-10-13; virtual keys need 'chat' added to models allowlist."
+  consult-flash:
+    chain: [gemini-3.5-flash@paid]
+    note: >-
+      ADA-1084 isolated consult route. Deliberately no free, OpenRouter, or
+      local fallback; staged in the feature branch, not deployed.
+  consult-pro:
+    chain: [gemini-3.1-pro@paid]
+    note: >-
+      Optional hard-case consult alias with no fallback; staged in the
+      feature branch, not deployed.
+  consult-claude:
+    chain: [or-claude-fable-5.1]
+    note: >-
+      Optional hard-case consult alias with no fallback; staged in the
+      feature branch, not deployed.
   classify:
     chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. kk-mac leg-1 since 2026-11-13 via the admission shim (see summary).
@@ -199,6 +214,23 @@ job_classes:
   embedding:
     chain: [gemini-embedding-2@openrouter, gemini-embedding-2@paid]
     note: "768d gemini space ONLY — OR-Vertex ≡ direct (cosine 1.000). ollama/nomic-embed-text is a different space; never chain it silently (would poison mddb retrieval)."
+
+consult_pilot:
+  status: approved_pending_deployment
+  card: ADA-1084
+  first_instance: ada-dev
+  key_alias: consult
+  key_environment_variable: LITELLM_KEY_CONSULT
+  key_budget: "$5 / 30d (Tony-approved 2026-11-17; not yet minted)"
+  allowed_models: [consult-flash, consult-pro, consult-claude]
+  per_call_estimate_cap: "$0.10 (Tony-approved 2026-11-17)"
+  rate_environment: >-
+    Per-alias input/output USD-per-million-token values are required by
+    ada_consult; missing or invalid rates fail closed. No key, provider
+    smoke, or service deployment has been performed.
+  rollout_gate: >-
+    Merge and verify Ada PR #12, configure only ada-dev, then complete the
+    approved dev soak before exposing the tool to production lanes.
 
 real_name_deployments:
   gemini-2.5-flash: [paid, free, openrouter]   # DEAD upstream 2026-10-11 — Google retired; kept only for stale callers
