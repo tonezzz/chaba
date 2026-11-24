@@ -1,7 +1,7 @@
 id: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
 title: 'Fixture spec bug: ops-readonly artifact expect.required_keys mismatch'
 column: backlog
-updated: 2026-11-24 00:13
+updated: 2026-11-24 08:12
 ref: OPS-1176
 comms:
 - at: 2026-11-08 12:26
@@ -117,6 +117,10 @@ comms:
 - at: 2026-11-24 00:13
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the chaba repository
   on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py

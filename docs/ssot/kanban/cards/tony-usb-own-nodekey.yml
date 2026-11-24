@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-24 08:05
+updated: 2026-11-24 08:12
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -596,6 +596,17 @@ comms:
 - at: 2026-11-24 08:05
   from: tony-omen
   text: claimed
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'primer injected 8 lesson(s): `tailscale logout` on cloned-nodekey media is a footgun: it expires the SHARED
+    n; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/hardware-mn01-tony-usb.md:
+    mn01 — Fujitsu ESPRIMO Q556/2 (real h; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch
+    201613 ; [tony-usb-own-nodekey] merge-sweep: no session/worktree found for devin-task-202; [tony-usb-own-nodekey]
+    primer injected 8 lesson(s): [tony-usb'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity

@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-upgrade
 title: Ansible ada-ocb upgrade playbook (approval-gated)
 column: backlog
-updated: 2026-11-24 07:59
+updated: 2026-11-24 08:12
 brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
   (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
   approval.
@@ -48,3 +48,7 @@ comms:
 - at: 2026-11-24 07:59
   from: tony
   text: card captured via board-api
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
