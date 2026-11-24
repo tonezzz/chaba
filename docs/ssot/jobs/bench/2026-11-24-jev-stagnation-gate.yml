@@ -32,13 +32,9 @@ deliverables:
       data). Thresholds halt_p=0.7 warn_p=0.5 (env
       JEV_GATE_HALT_P/WARN_P).
     state_sources:
-      - normalize_state() — caller dict passthrough, recent clamped
-        to last 20 lines x 200 chars
-      - state_from_taskdir() — devin-dispatch taskdir: heartbeat =
-        freshest mtime among run.*.log/events.jsonl/transcript/
-        exit_code/needs-input/answers; iterations = transcript steps
-        else events rows; recent = newest run.*.log tail
-      - CLI: --state FILE|- , --taskdir DIR, --health, --selftest
+      - "normalize_state() — caller dict passthrough, recent clamped to last 20 lines x 200 chars"
+      - "state_from_taskdir() — devin-dispatch taskdir: heartbeat = freshest mtime among run.*.log/events.jsonl/transcript/exit_code/needs-input/answers; iterations = transcript steps else events rows; recent = newest run.*.log tail"
+      - "CLI: --state FILE|- , --taskdir DIR, --health, --selftest"
   replay:
     path: scripts/jev/loop-gate-replay.py
     what: >-
@@ -78,12 +74,8 @@ deliverables:
       noul, choice, strikes, ran, skipped}. "current" scripted lane
       exempt. Default OFF — bench behavior unchanged unless asked.
   tests:
-    - tests/test_loop_gate.py — normalize/questions/stub/noul-level/
-      gate-verdict matrix/taskdir-state/backends (22 tests)
-    - tests/board/test_runner_agent_gate.py — gate_pass with fake
-      probe: disabled/no-module/probe-error no-ops, type/age filters,
-      warn debounce, halt strikes -> SIGTERM, streak reset, unknown
-      quiet (11 tests)
+    - "tests/test_loop_gate.py — normalize/questions/stub/noul-level/gate-verdict matrix/taskdir-state/backends (22 tests)"
+    - "tests/board/test_runner_agent_gate.py — gate_pass with fake probe: disabled/no-module/probe-error no-ops, type/age filters, warn debounce, halt strikes -> SIGTERM, streak reset, unknown quiet (11 tests)"
 
 bench_replay_20261124:
   artifacts:
