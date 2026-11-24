@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
 column: doing
-updated: 2026-11-24 17:04
+updated: 2026-11-24 17:07
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -198,6 +198,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:07
+  from: devin
+  text: '[progress] Leak verified against real pack code: exec of the actual kk-video embeds run block leaves enc/tok
+    in the shared queue ns holding ~9.5GB fake-CUDA; the preview prologue pops only model/pipe, and real empty_cache
+    cannot free live tensors. Fix: producer-side teardown in all 3 embeds packs + enc/tok added to LTX prologue
+    pops (6 packs) + prologue added to nasa-i2v (had none). nest-worker.py already uses a fresh ns per pack - hazard
+    is Colab queue-runner only. Regression test next.'
 action:
   type: dispatch
   status: running
