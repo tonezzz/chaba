@@ -1,7 +1,7 @@
 id: audit-miss-ada-voice-job-records
 title: ada-voice job record YAMLs missing from origin/main
-column: review
-updated: 2026-11-24 22:11
+column: done
+updated: 2026-11-24 22:23
 brief: 'Session audit 2026-11-20 (AUD-0973): two docs/ssot/jobs/ada records claimed produced are absent from ada-voice
   origin/main.'
 priority: medium
@@ -179,6 +179,11 @@ comms:
 - at: 2026-11-24 22:11
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 22:23
+  from: chaba
+  text: 'merge-sweep: merged fa4d21cf (dispatch/20261124-220336-docs-ssot-jobs-ada-2026-10-10- from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.md)
+    — auto-closed'
 action:
   type: dispatch
   status: done
@@ -190,7 +195,11 @@ action:
   result: 'exit=0 ed, outcome written to `dispatch-outcome-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.md`. |
     devin-task-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.service: Consumed 40.187s CPU time over 5min 29.431s
     wall clock time, 4.3G memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-24 22:02
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 22:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.md
