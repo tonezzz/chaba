@@ -1,7 +1,7 @@
 id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
 title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
-column: backlog
-updated: 2026-11-24 21:24
+column: doing
+updated: 2026-11-24 21:26
 priority: medium
 tags:
 - ada
@@ -62,9 +62,15 @@ comms:
 - at: 2026-11-24 21:24
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 21:26
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 21:26
