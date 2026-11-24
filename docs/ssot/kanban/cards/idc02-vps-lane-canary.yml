@@ -1,7 +1,7 @@
 id: idc02-vps-lane-canary
 title: 'Canary: idc02 vps-label ada-pi dispatch lane'
-column: backlog
-updated: 2026-11-24 15:42
+column: done
+updated: 2026-11-24 15:46
 brief: 'One-shot canary for card idc02-second-ada-pi-lane: prove a vps-labeled ada-pi dispatch claims, runs, merges,
   and passes the test gate on idc02.'
 priority: low
@@ -21,7 +21,7 @@ action:
   - vps
   executor: devin
   lane: free_lane
-  status: queued
+  status: done
 ref: OPS-0029
 comms:
 - at: 2026-11-24 15:16
@@ -65,4 +65,11 @@ comms:
     ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
     ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
     the capability'
-awaiting_action: true
+- at: 2026-11-24 15:46
+  from: devin
+  text: 'superseded: re-queued as idc02-vps-lane-canary-hv at priority:high — the low-priority card kept sinking
+    in claim order (defer comms refresh updated; ~9 cards ahead on idc02). Closing this one; the -hv card carries
+    the same canary spec.'
+- at: 2026-11-24 15:46
+  from: devin
+  text: closed by devin

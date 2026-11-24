@@ -1,0 +1,25 @@
+id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
+title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
+column: backlog
+updated: 2026-11-24 15:46
+priority: medium
+tags:
+- ada
+- infra
+- venv
+spec: 'Found during michael-lane-context-window dispatch 2026-11-24. ~/CascadeProjects/ada-voice/.venv on idc03
+  AND mn01 was created at ~/CascadeProjects/ada-pi/.venv then moved; every console script in .venv/bin had shebang
+  #!.../ada-pi/.venv/bin/python — repaired 2026-11-24 (idc03 41 scripts, mn01 21). ALL currently-running lane processes
+  started while ada-pi/.venv still existed (idc03 fleet restart 2026-11-23 ~19:51; mn01 ada-ha-michael 08:59 UTC)
+  and still execute on its in-memory site-packages. Any lazy import of a not-yet-loaded module now fails FileNotFoundError
+  — observed live on ada-ai-kraut: every ws session died in ConversationMemory->NotebooklmClient->httpx->ssl.create_default_context
+  (certifi.where() pointed into the deleted tree). tony lane showed 0 tracebacks / 59 ws opens since its restart,
+  but the risk is latent fleet-wide. DONE already: shebangs fixed so the NEXT restart of each lane is clean. TODO:
+  restart each lane once at a low-traffic window (ada-ha-tony, ada-ha-ada, ada-kk, ada-chaba on idc03; ada-ha-tony
+  + others on mn01), verify /proc/<pid>/environ + one ws smoke per lane. Do NOT mass-restart — drop active sessions;
+  sequence them.'
+ref: ADA-0033
+comms:
+- at: 2026-11-24 15:46
+  from: devin
+  text: card captured via board-api
