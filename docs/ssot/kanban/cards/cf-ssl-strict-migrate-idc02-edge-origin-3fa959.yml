@@ -1,7 +1,7 @@
 id: cf-ssl-strict-migrate-idc02-edge-origin-3fa959
 title: 'CF SSL=strict: migrate idc02 edge origin certs off tls internal, then flip zone'
-column: doing
-updated: 2026-11-24 23:14
+column: review
+updated: 2026-11-24 23:21
 priority: medium
 spec: 'Make surf-thailand.com zone SSL mode ''strict'' without breaking any proxied hostname.
 
@@ -106,12 +106,37 @@ comms:
     DNS-01 via cfat_ token, certs in /data/certs, cron renewal armed); (2) FOUND+FIXED latent bug: quadlet dir mounts
     used ,Z comma-form -> podman phantom mounts (apex www webroot, /feeds/usage.json, /kk-ha, /tony-ha were silently
     dead for weeks) — switched to :z + restart, all healed; '
+- at: 2026-11-24 23:21
+  from: tony-dell
+  text: 'finished (ok): exit=0 tch branch (`1b4cc04ab84`), final comms posted to the card. | devin-task-20261124-222656-make-surf-thailand-com-z'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-222656-make-surf-thailand-com-zone-ss'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: banked 42 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:21
+  from: chaba
+  text: pushed dispatch/20261124-222656-make-surf-thailand-com-zone-ss to origin
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 tch branch (`1b4cc04ab84`), final comms posted to the card. | devin-task-20261124-222656-make-surf-thailand-com-zone-ss.service:
+    Consumed 3min 46.170s CPU time over 52min 1.591s wall clock time, 1023.6M memory peak, 416.4M memory swap peak.'
 claim:
   since: 2026-11-24 22:26
+review_kind: verify
