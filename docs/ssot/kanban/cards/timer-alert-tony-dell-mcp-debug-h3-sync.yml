@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-mcp-debug-h3-sync
 title: Timer mcp-debug-h3-sync on tony-dell failing
 column: backlog
-updated: 2026-11-24 08:39
+updated: 2026-11-24 08:43
 priority: high
 tags:
 - timer-alert
@@ -580,6 +580,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:43
+  from: devin
+  text: '[still suspicious] Last run (11-24 08:34) of `mcp-debug-h3-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u mcp-debug-h3-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   status: done
 spec: Investigate the recurring failures of mcp-debug-h3-sync.service on tony-dell by examining the systemd user

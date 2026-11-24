@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-mcp-health-snapshot
 title: Timer mcp-health-snapshot on tony-omen failing
 column: backlog
-updated: 2026-11-24 08:39
+updated: 2026-11-24 08:43
 priority: high
 tags:
 - timer-alert
@@ -34,3 +34,7 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:43
+  from: devin
+  text: '[still suspicious] Last run (11-24 08:29) of `mcp-health-snapshot.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u mcp-health-snapshot.service` on the host. See CMS `timer-timeline-tony-omen`.'
