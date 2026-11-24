@@ -2,10 +2,10 @@ id: scenario-report-opinion
 title: 'SCENARIO FIXTURE: Ada opinion posts land here (report: dev-kanban)'
 brief: Test fixture, not work. The report_opinion_loop live scenario posts Ada's [opinion] comments here so they
   don't pollute real cards. Nothing needed — leave it alone.
-column: review
+column: done
 priority: low
 program: ada-tools
-updated: 2026-11-24 15:08
+updated: 2026-11-24 15:23
 tags:
 - report-session-loop
 - scenario-fixture
@@ -288,6 +288,11 @@ comms:
 - at: 2026-11-24 15:08
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-150159-scenario-fixture-ada-opinion-p'
+- at: 2026-11-24 15:23
+  from: chaba
+  text: 'merge-sweep: merged 227e42f1 (dispatch/20261124-150159-scenario-fixture-ada-opinion-p from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-150159-scenario-fixture-ada-opinion-p.md)
+    — auto-closed'
 ref: KNB-0371
 action:
   type: dispatch
@@ -300,9 +305,13 @@ action:
   result: 'exit=0 tched, and even no-op sessions should log to the report session log for an honest timeline. |
     devin-task-20261124-150159-scenario-fixture-ada-opinion-p.service: Consumed 6.745s CPU time over 1min 31.377s
     wall clock time, 274.3M memory peak.'
-  verified: false
+  verified: true
   sweep:
     no_repo: 2026-11-24 15:08
 claim:
   since: 2026-11-24 15:01
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-150159-scenario-fixture-ada-opinion-p.md
