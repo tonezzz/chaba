@@ -465,7 +465,7 @@ servers:
       verified mcp_list_tools.
 
       '
-  michael-dev:
+  mn-ha-dev:
     name: Michael Dev Home Assistant
     description: Development Home Assistant instance MCP bridge on idc03 (container
       migrated tony-dell -> idc03 2026-10-09)
@@ -481,7 +481,7 @@ servers:
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
       Repointed tony-dell -> idc03 2026-10-26 (card ha-mcp-endpoint-repoint); port
-      9585 published on idc02 tailnet IP + loopback via michael-dev quadlet (moved from idc03 2026-10-26).
+      9585 published on idc02 tailnet IP + loopback via mn-ha-dev quadlet (moved from idc03 2026-10-26).
 
       '
   michael-ha:
@@ -692,7 +692,7 @@ decisions:
     card: AUD-0886
     report: devin-kb docs/tools/mcp-fleet-audit.md
     findings:
-    - 'dead at probe: home-assistant(9584), michael-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
+    - 'dead at probe: home-assistant(9584), mn-ha-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
     - 'mcp-llama superseded by LiteLLM gateway (retire/repoint recommended)'
     - 'alphavantage schema ~5.6k lines - allowlist or per-session profile recommended'
     - 'mddb moved to idc03 streamable-HTTP + X-API-Key'

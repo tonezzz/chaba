@@ -3,7 +3,7 @@
 websocket API (no restart required). Usage:
     push-dashboard.py <ha_url> <dashboard_url_path> [--mutate PYFILE]
 
-Reads token from HASS_TOKEN env (source ~/.config/secrets/ha-michael-dev.env).
+Reads token from HASS_TOKEN env (source ~/.config/secrets/ha-mn-ha-dev.env).
 If --mutate is given, it must define `mutate(config)` applied before saving.
 """
 import asyncio, json, os, sys

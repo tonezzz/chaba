@@ -10,10 +10,10 @@ tagged comms line to the release card.
 
 Usage:
     dev-twin-smoke.py --lane tony                 # lane's dev instance
-    dev-twin-smoke.py --inst michael-dev          # ad-hoc registry instance
-    dev-twin-smoke.py --inst michael-dev --dashboard tony-test --views pfg2
-    dev-twin-smoke.py --inst michael-dev --selector sunsynk-power-flow-card
-    dev-twin-smoke.py --inst michael-dev --card release-lifecycle-standard
+    dev-twin-smoke.py --inst mn-ha-dev          # ad-hoc registry instance
+    dev-twin-smoke.py --inst mn-ha-dev --dashboard tony-test --views pfg2
+    dev-twin-smoke.py --inst mn-ha-dev --selector sunsynk-power-flow-card
+    dev-twin-smoke.py --inst mn-ha-dev --card release-lifecycle-standard
 
 Env:
     PLAYLIVED_URL   playlived endpoint (default per playlive-hosts.yml

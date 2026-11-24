@@ -36,17 +36,17 @@ instances:
       status: active               # migrated 2026-10-23 (card per-instance-secret-stores-migration); mn01 keeps standby copies
     status: active
 
-  michael-dev:
-    id: michael-dev
+  mn-ha-dev:
+    id: mn-ha-dev
     base: michael
     host: idc02     # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 (capacity)
     runtime: rootless podman
     network: podman (was host-net on tony-dell)
-    container: michael-dev
+    container: mn-ha-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     port: 8124
     host_port: 127.0.0.1:8124
-    config: /home/tony/.config/michael-dev    # now on idc02
+    config: /home/tony/.config/mn-ha-dev    # now on idc02
     url:
       local: http://127.0.0.1:8124
       tailscale: https://idc02.taila0626a.ts.net:8124
@@ -61,13 +61,13 @@ instances:
       on both hosts (values::paths.podman_bridge_subnet) so trusted_proxies
       carried over unchanged. idc03 quadlet
       masked+stopped — parked 24h for rollback (unmask+start to restore).
-    ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml
-    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.michael_dev
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.mn-ha-dev.yml
+    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.mn_ha_dev
     dashboards:
       tony-test:
         ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
         active_view: PF4
-    service_unit: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
+    service_unit: infrastructure/ssot.services.yml#tony-dell.mn-ha-dev.quadlet.service_unit
     status: active
 
   ada-ha:
@@ -90,7 +90,7 @@ instances:
     url:
       local: http://127.0.0.1:8125
       tailscale: https://tony-omen.taila0626a.ts.net:8125
-      note: 'Dev/lab tier — bottom rung of ada-ha -> michael-dev -> tony-ha
+      note: 'Dev/lab tier — bottom rung of ada-ha -> mn-ha-dev -> tony-ha
         promotion ladder. NOTE (audit 2026-10-10): no longer a fresh config —
         has organically grown to 340 entities/25 integrations incl. TONY-IP +
         Watch mobile_app, TONY-TV remote, sonoff/tuya/xiaomi/cozylife LAN
@@ -288,6 +288,6 @@ status:
   notes: |
     tony-ha HA core container is healthy on port 8123 on tony-omen, bound to 127.0.0.1:8123
     and exposed via Tailscale HTTPS at https://tony-omen.taila0626a.ts.net:8123 (evacuated
-    tony-dell 2026-10-19/20; michael-dev's stale omen container was parked for the :8123 port).
-    michael-dev HA core container is healthy on port 8124 on idc02, exposed via
+    tony-dell 2026-10-19/20; mn-ha-dev's stale omen container was parked for the :8123 port).
+    mn-ha-dev HA core container is healthy on port 8124 on idc02, exposed via
     Tailscale HTTPS at https://idc02.taila0626a.ts.net:8124 (moved from idc03 2026-10-26).
