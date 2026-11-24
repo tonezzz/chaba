@@ -32,7 +32,7 @@ prep: |
   fi
 run: |
   import os, torch, time, datetime, gc
-  for _v in ('model', 'pipe'):
+  for _v in ('model', 'pipe', 'enc', 'tok'):
       globals().pop(_v, None)
   gc.collect(); torch.cuda.empty_cache()
   from diffusers import LTXPipeline

@@ -51,7 +51,7 @@ prep: |
 run: |
   import os, time, datetime, gc, subprocess
   import torch
-  for _v in ('model', 'pipe'):
+  for _v in ('model', 'pipe', 'enc', 'tok'):
       globals().pop(_v, None)
   gc.collect(); torch.cuda.empty_cache()
   from diffusers import LTXPipeline, LTXImageToVideoPipeline
