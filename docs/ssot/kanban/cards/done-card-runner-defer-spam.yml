@@ -1,7 +1,7 @@
 id: done-card-runner-defer-spam
 title: done cards with stale action.runner get defer-spam from every runner
 column: backlog
-updated: 2026-11-24 16:14
+updated: 2026-11-24 16:45
 priority: medium
 tags:
 - board
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-24 16:14
   from: tony
   text: card captured via board-api
+- at: 2026-11-24 16:45
+  from: devin
+  text: 'Fix merged: PR #204 (ab861e4c28) gates all claim_pass() defer comms — fleet-gap, push, executor and drift/stale
+    — on column in {backlog,doing} AND action.status=queued. Verified against the live lab-cf-kv-claw-channel card
+    (173 comms / 122 unclaimable defers): old code writes 1 note, fixed code writes 0. Regression test tests/board/test_runner_defer_spam.py
+    covers done/review/finished-action (no notes) and queued backlog (note kept). Tooling pin sha bumped in runner-tooling.manifest.json
+    in the '
