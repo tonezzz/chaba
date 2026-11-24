@@ -569,6 +569,25 @@ def alloc_ref(cat: str) -> str:
     return f"{cat}-{n:04d}"
 
 
+def note_ref(ref: str) -> None:
+    """Reserve an explicitly assigned ref in .ref-seq (OPS-1037 collision).
+
+    do_create only called alloc_ref() for auto-refs, so a card created
+    with an explicit ref never advanced the counter: the next auto-ref
+    reused the same number (e.g. ops-manual-command-api-mcp-efficiency-
+    followups took OPS-1037 on 10-31, then ops-1037 was auto-minted on
+    11-02 with the same ref). Explicit refs are first-class claims — bump
+    the counter to at least their number, never backwards. Caller holds
+    the write flock; _queue_commit persists .ref-seq with the card.
+    """
+    seq = CARD_DIR / ".ref-seq"
+    n = int(str(ref)[4:])  # REF_RE already guaranteed CAT-NNNN
+    cur = (int(seq.read_text().strip() or 0) if seq.exists()
+           else _ref_seed())
+    if n > cur:
+        seq.write_text(f"{n}\n")
+
+
 def ref_cat(card: dict, body: dict) -> str:
     """Pick the 3-letter category: explicit cat/ref prefix > tag map > OPS."""
     explicit = str(body.get("cat") or "").strip().upper()
@@ -2800,8 +2819,11 @@ def do_create(body: dict, frm: str) -> dict:
     if help_txt:
         card["help"] = help_txt[:4000]
     want_ref = str(body.get("ref") or "").strip().upper()
-    card["ref"] = (want_ref if REF_RE.match(want_ref)
-                   else alloc_ref(ref_cat(card, body)))
+    if REF_RE.match(want_ref):
+        note_ref(want_ref)   # explicit ref reserves its number (OPS-1037)
+        card["ref"] = want_ref
+    else:
+        card["ref"] = alloc_ref(ref_cat(card, body))
     card.setdefault("comms", []).append(  # setdefault — queue-time
         {"at": now(), "from": frm,      # classification notes land
          "text": str(body.get("text") or  # before the first comms entry
