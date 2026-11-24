@@ -34,12 +34,15 @@ Endpoints:
                              keeps /api/tags, /api/ps, /api/version healthy
   GET  /health               pool status + per-upstream win/fail stats
 """
+import http.client
 import json
 import os
+import socket
 import threading
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 UPSTREAMS = [u.strip().rstrip("/") for u in
@@ -96,32 +99,66 @@ def _record(u, ok):
                 st["dead_until"] = time.time() + DEAD_COOLDOWN_S
 
 
-def _call(upstream, path, body, lane=None, stop=None, responses=None):
-    """Call one upstream. `stop`/`responses` let _race abort losing calls
-    as soon as a winner is declared: a thread that has already received
-    response headers registers them, and the winner closes them so the
-    blocked read() raises. Without this, every loser keeps computing for
-    the full TIMEOUT — CPU-bound ollama upstreams (con01 bge-m3) log a
-    400 after ~8s and burn a core for a response nobody uses. A caller
-    that has not yet got headers sees `stop` and closes its own socket."""
+def _call(upstream, path, body, lane=None, stop=None, sockets=None):
+    """Call one upstream. In race mode, register the raw socket at connect
+    time so the winner can shut it down immediately. ollama computes the
+    whole embedding BEFORE sending response headers, so a losing thread is
+    blocked in getresponse() with no response object to close. Shutting
+    down its socket from another thread (a) unblocks the blocked read and
+    (b) makes ollama cancel its in-flight task — visible as "stop: cancel
+    task" in its log — freeing CPU. Without this, every loser burns the
+    full TIMEOUT (~8s) on a response nobody uses, which saturated capped
+    con01's bge-m3 and logged a 400 for each wasted call.
+
+    Returns (status, data, ms, sock) on success, or None if cancelled.
+    `sock` is the identity token the winner uses to skip our own socket."""
     headers = {"Content-Type": "application/json"}
     if lane:
         headers["x-embed-lane"] = lane
-    req = urllib.request.Request(
-        upstream + path, data=body, headers=headers)
+    u = urllib.parse.urlsplit(upstream)
     t0 = time.time()
-    r = urllib.request.urlopen(req, timeout=TIMEOUT)
-    if responses is not None:
+    conn = http.client.HTTPConnection(u.hostname, u.port or 80,
+                                      timeout=TIMEOUT)
+    conn.connect()
+    sock = conn.sock
+    if sockets is not None:
         with _lock:
-            responses.append(r)
-    if stop is not None and stop.is_set():
+            sockets.append((sock, conn))
+    try:
+        # A winner may have been declared between connect() and here.
+        if stop is not None and stop.is_set():
+            return None
+        conn.request("POST", path, body=body, headers=headers)
+        if stop is not None and stop.is_set():
+            return None
+        r = conn.getresponse()
+        data = r.read()
+        return r.status, data, (time.time() - t0) * 1000, sock
+    finally:
+        if sockets is not None:
+            with _lock:
+                try:
+                    sockets.remove((sock, conn))
+                except ValueError:
+                    pass
         try:
-            r.close()
+            conn.close()
         except Exception:
             pass
-        return None
-    data = r.read()
-    return r.status, data, (time.time() - t0) * 1000, r
+
+
+def _abort_inflight(winner_sock, sockets):
+    """Shut down every socket in flight except the winner's own."""
+    if not sockets:
+        return
+    with _lock:
+        for sock, _conn in sockets:
+            if sock is winner_sock:
+                continue
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except Exception:
+                pass
 
 
 def _race(path, body, lane=None):
@@ -130,17 +167,17 @@ def _race(path, body, lane=None):
     calls are cancelled immediately, not left to run into the timeout."""
     q = []
     threads = []
-    responses = []            # in-flight response handles, for cancellation
+    sockets = []              # (socket, conn) registered at connect time
     stop = threading.Event()  # set by the winner to abort the other calls
     defer_fired = [False]
     t0 = time.time()
 
     def worker(u):
         try:
-            result = _call(u, path, body, lane, stop, responses)
-            if result is None:       # cancelled before headers arrived
+            result = _call(u, path, body, lane, stop, sockets)
+            if result is None:       # cancelled before we sent the request
                 return
-            st, data, ms, resp = result
+            st, data, ms, sock = result
             if stop.is_set():        # another upstream already won
                 return
             if 200 <= st < 300:
@@ -148,16 +185,11 @@ def _race(path, body, lane=None):
                 with _lock:
                     _stats[u]["last_ms"] = int(ms)
                 stop.set()
-                # Close the losers' sockets so their blocked read() aborts.
-                # This is NOT a failure of those upstreams — they were
-                # cancelled because a peer won the race.
-                with _lock:
-                    for other in responses:
-                        if other is not resp:
-                            try:
-                                other.close()
-                            except Exception:
-                                pass
+                # Cancel the losers NOW, not at the 8s timeout. Their
+                # exceptions are ignored because stop is set, so a lost
+                # race is not recorded as an upstream failure (that bug
+                # kept con01 in permanent dead-cooldown).
+                _abort_inflight(sock, sockets)
                 q.append((u, st, data))
             else:
                 _record(u, False)
@@ -184,12 +216,7 @@ def _race(path, body, lane=None):
         time.sleep(0.02)
     # No winner: abort everything still in flight before returning 504.
     stop.set()
-    with _lock:
-        for r in responses:
-            try:
-                r.close()
-            except Exception:
-                pass
+    _abort_inflight(None, sockets)
     for t in threads:
         t.join(timeout=0.1)
     return (None, 504, b'{"error":"no upstream answered in time"}')

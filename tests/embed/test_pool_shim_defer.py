@@ -3,6 +3,7 @@ Local stub HTTP servers only — verifies deferred upstreams join the
 /api/embed race after DEFER_AFTER_S and never before."""
 import importlib.util
 import json
+import socket
 import threading
 import time
 import unittest
@@ -124,6 +125,42 @@ class DeferTier(unittest.TestCase):
                          "cancelled loser was counted as an upstream failure")
         self.assertEqual(shim._stats[slow_p2]["consec"], 0)
         self.assertEqual(shim._stats[fast_p]["wins"], 1)
+
+    def test_loser_socket_is_shut_down_at_connect_time(self):
+        """Proves the cancellation is socket-level, not just a response
+        handle close. ollama sends headers only AFTER computing, so a loser
+        has no response object to close — its raw socket must be shut down.
+        This test fails with any fix that only closes urllib responses."""
+        captured = {}
+        real_abort = shim._abort_inflight
+
+        def spy(winner_sock, sockets):
+            captured["winner"] = winner_sock
+            captured["sockets"] = list(sockets)
+            return real_abort(winner_sock, sockets)
+
+        shim._abort_inflight = spy
+        try:
+            fast_p, _ = _stub(0.05, 1)
+            slow_p2, _ = _stub(3.0, 9)
+            self._wire([fast_p, slow_p2], [])
+            u, st, _ = shim._race("/api/embed", b"{}")
+            self.assertEqual(st, 200)
+            self.assertEqual(u, fast_p)
+            time.sleep(0.2)
+            # The winner removes its own socket from the list on completion,
+            # so what remains at cancellation time are the losers.
+            self.assertGreaterEqual(len(captured["sockets"]), 1)
+            losers = [s for s, _ in captured["sockets"]
+                      if s is not captured["winner"]]
+            self.assertTrue(losers, "no losing socket was captured")
+            for s in losers:
+                # A shut-down socket rejects sends immediately; with the
+                # old code the loser's socket stayed open for the full 3s.
+                with self.assertRaises(OSError):
+                    s.send(b"x")
+        finally:
+            shim._abort_inflight = real_abort
 
 
 if __name__ == "__main__":
