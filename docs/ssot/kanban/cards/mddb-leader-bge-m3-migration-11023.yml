@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: doing
-updated: 2026-11-24 21:48
+updated: 2026-11-24 21:57
 priority: high
 tags:
 - mddb
@@ -219,6 +219,13 @@ comms:
     proxy and failed on its caps). Fix applied: flipped default to pre-staged bge-m3-local config, added MDDB_OUTBOUND_ALLOWLIST=100.102.134.91
     to quadlet (API SSRF guard rejects private apiUrl), set apiUrl=http://100.102.134.91:11436, restarted (3rd boot).
     CANARY: force-reindex ada-ha'
+- at: 2026-11-24 21:57
+  from: devin
+  text: '[reindex running] All 63 force-reindex jobs fired 21:50 ICT (async, banks-first order; devin-handoff fired
+    manually after a missing-trailing-newline skip — all 63 confirmed). ~10min in: 30 jobs completed, 20 running,
+    queue ~1.7k/4000. ada-ha-bank-general + personal-tony + note-tony vector-search already returning bge hits.
+    CAVEAT: pool is only idc03+omen primaries — shim 504s under saturation are retrying (maxAttempts=50, dropped=0)
+    but ~46 jobs show early per-chunk failures; plan a non-force cl'
 action:
   type: dispatch
   status: running
