@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-24 20:52
+updated: 2026-11-24 20:58
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -38,3 +38,10 @@ comms:
     watch. gold_decode 10 pass / 4 escalate (mean 0.771); ncm_detail_standin 10 / 4 (0.737, fidelity 0.80-1.00);
     skeleton_template 6 pass / 4 fail / 4 escalate (0.616). Both real commit diff cases escalate: no changed path
     maps to the 152-block catalog (staleness finding). Job record'
+- at: 2026-11-24 20:58
+  from: devin
+  text: 'P1′ CPU reconstruction toy done — pre-registered gate FAIL, verdict stop. 48 real packs; like-for-like
+    diagnostic: coarse conditioning adds NO transferable signal (conditional minus global-prior control: L2 -0.353,
+    L3 -0.006) because every block name is unique, so a held-out block has no training example. Primary held-out
+    L3 F1 0.600 >= 0.30 passed; monotonicity 0.600 < 0.821 at L1 failed. torch is unavailable, so this is a stdlib
+    level-mapping toy, NOT NCM VQ-VAE training. Run 1 was invalidated'
