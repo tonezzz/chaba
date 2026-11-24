@@ -1,0 +1,80 @@
+# Job: ops-remote-read profile — remote-target read-only diagnosis
+# (OPS-1025 / card ops-remote-read-opencode-profile-remote-56a439)
+title: ops-remote-read opencode profile — verifier not host-pinned
+subtitle: >-
+  Sibling of ops-readonly for REMOTE diagnosis targets. Profile, fixture,
+  held-out verifier, lane_gate exception, board-api subject_host contract,
+  and runner-agent S3 admission all landed on origin/master
+  (fbd321aa81, ea828c6cba, d9f3e9c9ec). This dispatch added the missing
+  failure_class contract field and root-caused the live smoke card's
+  exit=2 loop.
+icon: terminal
+date: 2026-11-24
+card: ops-remote-read-opencode-profile-remote-56a439
+session: "dispatch-wt-20261124-184301-ops-1021-exposed-the-gap-ops-r (tony-macbook)"
+status: "profile landed + contract tightened; live verifier pass BLOCKED on
+  lane stage (idc02 lane sits at S1 after the 2026-11-23 manual rollback —
+  the smoke card declares S3 and admit() correctly denies wrong_stage)"
+
+what:
+  landed_already:
+    - "evals/opencode-lane/profiles/ops-remote-read/{profile.yml,fixture/task.yaml,fixture/verify.py}"
+    - "lane_gate.py remote_read_diagnosis admission (S3 + diagnosis +
+      opencode + ops-remote-read + unattended + subject_host != target_host
+      + mcp_debug allowlisted)"
+    - "board-api.py action.subject_host validation + S3 ops-remote-read
+      envelope contract (target_host pinned idc02, matching subject_host)"
+    - "runner-agent.py S3_REMOTE_READ_PROFILES admission + subject_host
+      envelope freeze (prepare_profile_dispatch)"
+    - "tests/board/test_executor_contract.py RemoteReadAdmissionTest +
+      remote_diagnosis_requires_ops_remote_read_s3_contract"
+  changed_this_dispatch:
+    - "fixture/task.yaml contract.required_fields += failure_class (the
+      card spec's 'result names a failure class' was only implied inside
+      findings)"
+    - "fixture/verify.py REQ += failure_class — held-out verifier now
+      enforces it"
+
+live_gate_finding:
+  symptom: >-
+    ops-1025-remote-read-smoke-idc03 claimed ~10x on idc02 since
+    2026-11-23, every run exits 2 in ~60s.
+  root_cause: >-
+    profile-result.json on idc02 shows admit() reasons
+    ["wrong_stage:job=S3 lane=S1", "concurrency_cap:1>=1"]. The opencode
+    lane on idc02 was manually rolled back S3->S2->S0 on 2026-11-23
+    09:12-09:32 UTC and re-qualified only to S1 at 13:15. The smoke
+    envelope declares stage S3 (required by both lane_gate and
+    board-api for the diagnosis class), so admission fails closed until
+    the lane re-earns S3. Simulated admit() at S3 with clean env shows
+    only env_gate:OPENCODE_LANES and stale_heartbeat — both satisfied by
+    the unit's own launch wrapper, so nothing else blocks once the stage
+    matches.
+  not_a_bug: >-
+    The deny is the staged-rollout safety ladder working as designed.
+    Promoting the lane back to S3 is an operator decision (S1 canary ->
+    S2 five-job independent_devin pilot -> S3), not a dispatch fix.
+
+verify:
+  - "python3 scripts/devnest/opencode_profiles.py lint ops-remote-read -> ok"
+  - "python3 -m unittest tests.board.test_executor_contract -> 114 tests OK"
+  - "simulated lane_gate.admit(smoke envelope, host=idc02, stage=S3)
+     -> only env_gate/heartbeat reasons the launcher supplies"
+  - "live: card ops-1025-remote-read-smoke-idc03 stays queued; it will
+     pass its verifier on the first claim after idc02 lane returns to S3"
+
+followups:
+  - "When the lane reaches S3 again, retry ops-1025-remote-read-smoke-idc03
+     (action.max_retries=0 — one shot) and confirm verifier verdict=pass
+     + artifact lands at evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json"
+  - "If the smoke fails the held-out verifier for content reasons
+     (host mismatch, failed_units drift, missing mcp_debug evidence),
+     that is a real profile/model finding — capture run_dir under
+     evals/opencode-lane/runs/ on idc02"
+
+lessons:
+  - "exit=2 from opencode_profiles.py run = admission deny; the reason
+     list is in the taskdir's profile-result.json on the runner host,
+     not the card comms (which truncate the journal line)"
+  - "lane stage is per-host state at ~/.local/state/opencode-lane/stage.json;
+     a manual rollback silently invalidates every queued S3 envelope"

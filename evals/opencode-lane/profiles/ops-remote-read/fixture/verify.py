@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REQ = ("host", "collected_at", "read_only", "failed_units_on_target",
-       "services", "findings", "summary")
+       "services", "failure_class", "findings", "summary")
 FAILED_UNITS_TOL = 2
 COLLECTED_MAX_AGE_S = 6 * 3600
 
