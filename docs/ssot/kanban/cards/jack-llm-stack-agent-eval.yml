@@ -1,7 +1,7 @@
 id: jack-llm-stack-agent-eval
 title: Evaluate OpenCode and Cline for Jack LLM-stack construction
-column: doing
-updated: 2026-11-24 19:19
+column: review
+updated: 2026-11-24 19:22
 brief: Run a matched, gated evaluation of OpenCode and Cline building a disposable Jack LLM stack on a safe host.
 priority: high
 program: devnest
@@ -229,12 +229,36 @@ comms:
     artifact, correct opencode schema, polluting rollback). Both arms PASS independent verifier + own verify.sh
     + idempotent rollback + clean safety scan; both share model-level infra bugs the mock path cannot catch (wrong
     health endpoint, localhost api_base, fixed mock ports) — neithe'
+- at: 2026-11-24 19:22
+  from: tony-macbook
+  text: 'finished (ok): exit=0 outcome doc `ab6224b5aa`; final card comment posted to `jack-llm-stack-agent-eval`.
+    | devin-task-20261124-170743-'
+- at: 2026-11-24 19:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 19:22
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-170743-compare-opencode-and-cline-on-
+    is 367 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 19:22
+  from: chaba
+  text: pushed dispatch/20261124-170743-compare-opencode-and-cline-on- to origin
+- at: 2026-11-24 19:22
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 19:22
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 outcome doc `ab6224b5aa`; final card comment posted to `jack-llm-stack-agent-eval`. | devin-task-20261124-170743-compare-opencode-and-cline-on-.service:
+    Consumed 5min 21.168s CPU time over 2h 12min 30.783s wall clock time, 1.7G memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 17:07
+review_kind: verify
