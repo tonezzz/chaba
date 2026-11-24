@@ -1,7 +1,7 @@
 id: chaba-exec-checkout-idc02-dirty-files
 title: 'idc02 exec checkout: 13 modified + ~227 untracked files with no owner; slows repo-sync'
 column: done
-updated: 2026-11-24 17:03
+updated: 2026-11-24 20:56
 brief: idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash;
   pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.
 priority: medium
@@ -117,5 +117,23 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:56
+  from: devin
+  text: 'DECISION 2026-11-24: all 7 code/WIP files confirmed to stay committed. No reverts needed.
+
+
+    Files committed (d2d648c256 on origin/master):
+
+    1. scripts/board/runner-agent.py — dispatch_verify env var guard (only check artifact snapshot when dispatch_verify=host_snapshot).
+    Manifest pin bumped.
+
+    2. docs/design/kanban-card-cycle-control-pane.md — operational lessons (2026-11-20).
+
+    3. scripts/bench-edu-manage.py — model name updates (gemini-3.5-flash-lite-free).
+
+    4. scripts/bench/card-judgment/distill.py '
+- at: 2026-11-24 20:56
+  from: devin
+  text: closed by devin
 action:
   status: done
