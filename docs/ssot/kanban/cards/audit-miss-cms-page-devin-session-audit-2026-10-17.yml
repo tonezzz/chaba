@@ -1,7 +1,7 @@
 id: audit-miss-cms-page-devin-session-audit-2026-10-17
 title: Published CMS page devin-session-audit-2026-10-17 now 404
-column: doing
-updated: 2026-11-24 21:59
+column: review
+updated: 2026-11-24 22:02
 brief: 'Session audit 2026-11-20 (AUD-0973): ada-cms-pages/devin-session-audit-2026-10-17 was published with a documented
   successful add_document on 2026-10-17 and cited by two later summaries; the key now returns 404 from MDDB.'
 priority: high
@@ -135,12 +135,39 @@ comms:
     scan found this page as the ONLY :11023-parked write in the 10-13..10-23 dead-letterbox window. Definitive :11023-only
     enumeration still in flight: pre-delete filecopy mddb-filecopy-mddb-20261023-0230.db pulled to idc02, mddbd
     -repair-db running (container mddb-repair-20261023,'
+- at: 2026-11-24 22:02
+  from: tony-macbook
+  text: 'finished (ok): exit=0 day) and `backup-mddb-banks.py` now backs up the dead letterbox instead of `:11027`.
+    | devin-task-20261124-205641'
+- at: 2026-11-24 22:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:02
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-205641-determine-how-ada-cms-pages-de
+    is 266 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 22:02
+  from: chaba
+  text: banked 416 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:02
+  from: chaba
+  text: pushed dispatch/20261124-205641-determine-how-ada-cms-pages-de to origin
+- at: 2026-11-24 22:02
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 day) and `backup-mddb-banks.py` now backs up the dead letterbox instead of `:11027`. | devin-task-20261124-205641-determine-how-ada-cms-pages-de.service:
+    Consumed 2min 13.223s CPU time over 1h 3min 13.473s wall clock time, 1.2G memory peak.'
 claim:
   since: 2026-11-24 20:56
+review_kind: verify
