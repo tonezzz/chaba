@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
 column: doing
-updated: 2026-11-24 23:22
+updated: 2026-11-24 23:31
 priority: medium
 tags:
 - devnest
@@ -570,6 +570,13 @@ comms:
     222656, hands-off). All 8 unmerged branches verified content-landed via sibling reruns/alt impls (git-cherry
     + added-line checks vs origin/master). Dirty files audited: assessment.yml = timestamp noise; real uncommitted
     work found in ~12 worktrees (runner-caps staged delta, bank-inspec'
+- at: 2026-11-24 23:31
+  from: devin
+  text: 'TRIAGE COMPLETE 2026-11-24 (idc02 run, tony-dell via ssh). Original 16 from 11-09 confirmed all dropped
+    by the 11-23 run; swept the CURRENT fleet instead: 48 dispatch-wt-* (11-23/24 vintage, chaba+ada-voice), every
+    session dead per task registry + systemctl. RESULT: all 48 removed, 0 remain on tony-dell across all 5 dispatch
+    repos; every dispatch/* branch kept as local ref (68 chaba + 13 ada-voice) — nothing unreachable. Classification:
+    40 merged-equivalent (HEAD ancestor of origin), 8 content-l'
 claim:
   since: 2026-11-24 22:51
 review_kind: verify
