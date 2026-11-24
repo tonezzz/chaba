@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: doing
-updated: 2026-11-24 08:33
+updated: 2026-11-24 08:36
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -216,6 +216,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:36
+  from: devin
+  text: '2026-11-24 DONE (dispatch 080808): (1) landed prior slice — merged origin/fix/devin-lane-reroute ae45a7ac22
+    into this branch (it was pushed+cherry-picked on idc03 served but never reached master; close-out lands it).
+    (2) NEW root cause fixed: claim-time lane stamps carried no lane_source — do_claim persisted body lane verbatim,
+    runner-agent claim body had no source field, kanban-dispatch JEV_LANE path wrote lane bare — so classifier-stamped
+    lanes read as author pins FOREVER and a fixed classifie'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
