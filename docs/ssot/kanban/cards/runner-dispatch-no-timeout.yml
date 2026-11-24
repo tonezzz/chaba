@@ -1,7 +1,7 @@
 id: runner-dispatch-no-timeout
 title: 'runner-agent: dispatch units get RuntimeMaxUSec=infinity — task timeout_s never armed'
 column: backlog
-updated: 2026-11-24 17:06
+updated: 2026-11-24 17:17
 spec: 'Found during devnest-fl-pilot-health (2026-10-30): the dispatch path''s systemd-run units carry no RuntimeMaxSec,
   so an agent in a tool-call loop runs unbounded (nemotron ran 12+ min / 77 calls / 60 denials on a 420s fixture).
   The fixture timeout_s exists in task.yaml but only the synchronous opencode_profiles.run path honors it. Fix:
@@ -178,6 +178,10 @@ comms:
 - at: 2026-11-24 17:06
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 17:17
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
