@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
-column: doing
-updated: 2026-11-24 09:27
+column: review
+updated: 2026-11-24 09:30
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -430,6 +430,35 @@ comms:
     recomputed for merged sources: runner-agent 35d284ec, dispatch_repos ff858dba). Added the missing spec piece
     — tests/devin/test_model_preflight.py, 7 mocked-`devin models list` tests proving litellm/* rejected rc2 before
     systemd-run, paid ids pass w/ billable note, broken CLI rc3, pr'
+- at: 2026-11-24 09:30
+  from: tony-omen
+  text: 'finished (ok): exit=0 0261124-090646-fix-the-executor-model-id-mism.md`; final status posted to the card.
+    | devin-task-20261124-090646-'
+- at: 2026-11-24 09:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 09:30
+  from: chaba
+  text: 'session-end checkpoint e9fcd625: 1 leftover file(s) committed'
+- at: 2026-11-24 09:30
+  from: chaba
+  text: banked 280 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 09:30
+  from: chaba
+  text: pushed dispatch/20261124-090646-fix-the-executor-model-id-mism to origin
+- at: 2026-11-24 09:30
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 82.8s)
+- at: 2026-11-24 09:30
+  from: chaba
+  text: auto-merged 6145b153 (dispatch/20261124-090646-fix-the-executor-model-id-mism) → origin/master
+- at: 2026-11-24 09:30
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -451,7 +480,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
@@ -462,9 +491,10 @@ action:
   last_failure: 'exit=1 61123-202551-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''. |
     devin-task-20261123-202551-fix-the-executor-model-id-mism.service: Consumed 1min 56.432s CPU time over 16min
     58.776s wall clock time, 898.9M memory peak.'
-  result: 'exit=0 full details in `dispatch-outcome-20261124-080849-fix-the-executor-model-id-mism.md`. | devin-task-20261124-080849-fix-the-executor-model-id-mism.service:
-    Consumed 12min 21.705s CPU time over 31min 47.742s wall clock time, 645M memory peak.'
+  result: 'exit=0 0261124-090646-fix-the-executor-model-id-mism.md`; final status posted to the card. | devin-task-20261124-090646-fix-the-executor-model-id-mism.service:
+    Consumed 11min 28.484s CPU time over 20min 33.051s wall clock time, 971.2M memory peak.'
   runner: tony-omen
+  verified: true
 claim:
   since: 2026-11-24 09:05
 review_kind: verify
