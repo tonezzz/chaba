@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-bench-casting
 title: Timer ada-bench-casting on idc03 failing
 column: backlog
-updated: 2026-11-24 09:14
+updated: 2026-11-24 11:42
 priority: high
 tags:
 - timer-alert
@@ -1314,6 +1314,10 @@ comms:
     embed fallback; threshold was written for a 2-core box and is miscalibrated for idc03 current role), (2) embed-probe
     state=down flapped 02:00-08:00 today (Gemini embedding HTTP 400, circuits open, queue depth 3189 — provider-side
     transient, self-recovered 08:00, state=up since). Servi'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `ada-bench-casting.service` on host idc03 which resulted in an exit-code on 11-09
   02:00. Inspect the systemd user journal using `journalctl --user -u ada-bench-casting.service` on idc03 and cross-reference
   the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the service failure is identified

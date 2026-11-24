@@ -1,7 +1,7 @@
 id: ada-ocb-dispatch-parity
 title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
 column: backlog
-updated: 2026-11-24 11:32
+updated: 2026-11-24 11:42
 brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
   no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
   path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
@@ -135,6 +135,10 @@ comms:
     file, 15/15 lifecycle tests pass. CONSUMER CONVERGENCE PENDING (not yet deployed): installed ~/.local/bin/runner-agent
     on idc02 + idc03 still reports old sha 35d284ec; their canonical checkpoints have not yet pulled 0c451dd4c1
     (idc02 chaba @ 9910c10a91, idc03 exec @ 7748481c66, s'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: scope-for-ada-0024-how-far-should-ada-oc-484b93
   ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
