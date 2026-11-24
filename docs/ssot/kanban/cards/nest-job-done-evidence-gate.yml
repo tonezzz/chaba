@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
-column: backlog
-updated: 2026-11-24 19:07
+column: doing
+updated: 2026-11-24 19:25
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -251,19 +251,23 @@ comms:
 - at: 2026-11-24 19:07
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 19:25
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-  attempts: 1
+  attempts: 2
   result: 'exit=0 ice: No such file or directory | devin-task-20261124-165943-review-and-harden-the-runtime-.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261124-165943-review-and-harden-the-runtime-.service:
     No such file or directory'
   sweep:
     conflict_sig: 5033b78e0cb6|docs/kb/board-api-write-door.md
+  runner: tony-macbook
 claim:
-  since: 2026-11-24 16:58
+  since: 2026-11-24 19:25
 review_kind: verify
 requests:
 - id: merge-conflict
