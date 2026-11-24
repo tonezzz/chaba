@@ -1,0 +1,15 @@
+[Unit]
+Description=stick-watch — detect tony-usb stick boot/nodekey theft, alert with fix
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Card tony-usb-own-nodekey (SEC-0303). Detects the stick booting via
+# ops-feed announce / ssh mn01 hostname probe / tailnet roster, then
+# comments the card + HA-pushes the exact fix command. Exit 0 on
+# completed runs (findings travel via comment/push — nonzero = crash,
+# per timer-expectations). Kill switch: ~/.config/stick-watch.off.
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/stick-watch.py
+TimeoutStartSec=180
