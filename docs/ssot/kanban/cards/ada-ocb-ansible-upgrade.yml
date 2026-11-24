@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-upgrade
 title: Ansible ada-ocb upgrade playbook (approval-gated)
 column: review
-updated: 2026-11-24 08:24
+updated: 2026-11-24 08:28
 brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
   (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
   approval.
@@ -87,6 +87,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:28
+  from: devin
+  text: 'LIVE UPGRADE EXECUTED by Tony 2026-11-24 08:25-08:26 +07. Unit finished Result=success/ExecMainStatus=0;
+    patch script logged ''models.status patch applied and syntax-checked''; all 4 units active; local 200; edge
+    200; web 2.7.3. HOWEVER post-gate FAILED (exit 2): @opencode/cli is 2.4.1 vs SSOT pin 2.3.2 — root cause is
+    the host unit installing cli unpinned (flagged before the run). Card stays in review: done-condition (verify
+    green) is unmet. Fix carded as ocb-cli-pin-drift (DEV-0020, backlog) wit'
 action:
   status: done
 claim: {}
