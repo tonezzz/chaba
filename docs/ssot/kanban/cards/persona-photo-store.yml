@@ -1,7 +1,7 @@
 id: persona-photo-store
 title: Persona photo/asset store — bank doc with fetchable URL + tool returning it to relay images
 column: doing
-updated: 2026-11-24 15:04
+updated: 2026-11-24 15:07
 priority: medium
 spec: 'Personas cannot hold or reshow photos: bank docs are text-only and no tool returns a stored image URL to
   the relay _image_msgs path (relay re-hosts any fetchable URL publicly, verified working). Needed: (1) storage
@@ -203,6 +203,13 @@ comms:
 - at: 2026-11-24 15:04
   from: devin
   text: dispatch started — exploring relay _image_msgs + memory-search + LINE image ingestion paths
+- at: 2026-11-24 15:07
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-150359-personas-cannot-hold-or-reshow no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-24 15:07
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-150359-personas-cannot-hold-or-reshow'
 action:
   type: dispatch
   status: running
@@ -210,5 +217,8 @@ action:
   lane_source: fallback
   runner: tony-macbook
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 15:07
+    no_repo: 2026-11-24 15:07
 claim:
   since: 2026-11-24 15:03
