@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: doing
-updated: 2026-11-24 22:25
+updated: 2026-11-24 22:40
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -229,6 +229,13 @@ comms:
     ''%h/.config/secrets/litellm-chaba.env''` supplies; `docs/ssot/infrastructure/ssot.home-assistant.tony.yml`
     is stale (still says hos; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ;
     [ansible-benchmark-ssot-duplicate-action-430] primer injected'
+- at: 2026-11-24 22:40
+  from: devin
+  text: '[progress] Part1 measured: caddy-edge is a user quadlet; 7 DNS i/o-timeout 502s for boards.h3 since 2026-11-10
+    (~0.5/day, chronic confirmed; last 11-23). Hardened live: added transport http { resolvers 1.1.1.1 8.8.8.8 }
+    to the boards+status(h3) reverse_proxy blocks in idc02 ~/.config/caddy/Caddyfile (backup .bak-dnsresolvers-20261124),
+    validated+reloaded caddy-edge, both public surfaces 200. Part2: probed h3 — Plesk Obsidian 18.0.81 live at https://103.99.11.249:8443
+    (and :8880); SSH :22 filtere'
 action:
   type: dispatch
   status: running
