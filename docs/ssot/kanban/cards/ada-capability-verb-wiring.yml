@@ -1,7 +1,7 @@
 id: ada-capability-verb-wiring
 title: Ada what-can-you-do verb — vendor tools snapshot + capability-ask read path
 column: review
-updated: 2026-11-24 21:44
+updated: 2026-11-24 21:54
 priority: medium
 tags:
 - ada
@@ -34,6 +34,8 @@ action:
   result: 'exit=0 log.py` is run and committed in the chaba checkout — by design, but it must happen first. | devin-task-20261124-212846-repo-work-ada-voice-repo-imple.service:
     Consumed 40.005s CPU time over 13min 30.903s wall clock time, 421.1M memory peak.'
   verified: false
+  sweep:
+    merge_err: 2026-11-24 21:54
 ref: ADA-0012
 comms:
 - at: 2026-11-21 19:00
@@ -186,6 +188,11 @@ comms:
 - at: 2026-11-24 21:44
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261124-212846-repo-work-ada-voice-repo-imple failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
 claim:
   since: 2026-11-24 21:28
 review_kind: verify

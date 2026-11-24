@@ -1,7 +1,7 @@
 id: ada-ha-dashboard-live-view-drift
 title: Reconcile Ada HA chaba-admin live-view drift
-column: doing
-updated: 2026-11-24 21:50
+column: review
+updated: 2026-11-24 21:54
 brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
   verify whether this drift is intentional before restoring anything.
 priority: medium
@@ -164,6 +164,28 @@ comms:
     Wiki→Ada Pages→Monitor→Hosts→Services→Events→Log→Obsidian→Gantt. History: Ada Control added 2026-11-04 (43a72beaaf,
     chaba-home/ai iframe), reshaped to native voice/activity cards 2026-11-08; present in snapshots thru fc69519a88
     (2026-11-18, which already had Hosts+Services); '
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-212619-read-only-evidence-from-2026-1 no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-24 21:54
+  from: idc02
+  text: 'finished (ok): exit=0 spatch-outcome-20261124-212619-read-only-evidence-from-2026-1.md`; final comms posted
+    to the card. | devin-task-2'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:54
+  from: chaba
+  text: banked 478 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:54
+  from: chaba
+  text: pushed dispatch/20261124-212619-read-only-evidence-from-2026-1 to origin
+- at: 2026-11-24 21:54
+  from: chaba
+  text: "auto-merge not done: push: To github.com:tonezzz/chaba.git\n ! [rejected]              HEAD -> master (fetch
+    first)\nerror: failed to push some refs to 'github.com:tonezzz/chaba.git'\nhint: Updates were rejected because
+    the remote — close will block until merged"
 requests:
 - id: the-live-ada-ha-chaba-admin-dashboard-co-8567e7
   ask: The live Ada HA chaba-admin dashboard contains Hosts and Services but no Ada Control; the previous repo snapshot
@@ -180,11 +202,17 @@ requests:
     state to the current live view set unless explicitly requested later after card resources are verified.
   executed: 2026-11-20 hold
 action:
-  status: running
+  status: done
   type: dispatch
   lane: codemod
   lane_source: kw
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 21:54
+  result: 'exit=0 spatch-outcome-20261124-212619-read-only-evidence-from-2026-1.md`; final comms posted to the card.
+    | devin-task-20261124-212619-read-only-evidence-from-2026-1.service: Consumed 1min 15.641s CPU time, 577.5M
+    memory peak, 0B memory swap peak.'
 claim:
   since: 2026-11-24 21:25
+review_kind: verify
