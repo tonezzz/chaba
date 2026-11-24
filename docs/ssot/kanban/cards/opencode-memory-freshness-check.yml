@@ -246,6 +246,14 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-232252-goal-provide-a-read-only-comma,
     branch dispatch/20261124-232252-goal-provide-a-read-only-comma on tony-macbook'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'merge-sweep: dispatch/20261124-232252-goal-provide-a-read-only-comma conflicts with origin/master: scripts/devin/runner-tooling.manifest.json
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261124-232252-goal-provide-a-read-only-comma:
+    1 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: done
@@ -264,3 +272,22 @@ auto_close:
   by: merge-sweep
   at: 2026-11-24 23:39
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-232252-goal-provide-a-read-only-comma.md
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261124-232252-goal-provide-a-read-only-comma: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/devin/runner-tooling.manifest.json. Merge tony-macbook:/home/tony/CascadeProjects/dispatch-wt-20261124-232252-goal-provide-a-read-only-comma
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-24 23:39
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
