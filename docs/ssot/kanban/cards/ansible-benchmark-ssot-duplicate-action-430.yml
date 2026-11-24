@@ -1,7 +1,7 @@
 id: ansible-benchmark-ssot-duplicate-action-430
 title: 'SSOT hygiene: duplicate action key in ssot.audit.hosts.yml (~:430)'
 column: doing
-updated: 2026-11-24 21:46
+updated: 2026-11-24 21:50
 brief: 'Benchmark finding still live: focus-dispatcher-overnight.service has two action: keys (verify-next-run,
   investigate) in the same list item; YAML keeps the last.'
 priority: medium
@@ -126,6 +126,12 @@ comms:
     git pull exit 128, manual run clean 2026-10-09), and the tony-omen twin entry for the same unit uses verify-next-run.
     Both dup lines were born in the same bulk commit 962fc698331 — same-edit artifact, not staged intent. Validated:
     file parses, 0 dup keys, ssot-v'
+- at: 2026-11-24 21:50
+  from: devin
+  text: 'DONE on dispatch branch dispatch/20261124-214026-source-docs-reports-ansible-vs (commit 85605ffdcdc). Removed
+    shadowed action: investigate; kept verify-next-run (rationale in job doc). Deliverables: fix in docs/ssot/infrastructure/ssot.audit.hosts.yml,
+    decision trail docs/ssot/jobs/infrastructure/2026-11-24-audit-hosts-duplicate-action-fix.yml, outcome dispatch-outcome-20261124-214026-source-docs-reports-ansible-vs.md.
+    Validated: dup-key loader 0 dups, ssot-validate-all 6282 files 0 errors, ssot'
 action:
   type: dispatch
   status: running
