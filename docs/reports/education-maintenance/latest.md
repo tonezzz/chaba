@@ -1,4 +1,4 @@
-# Education maintenance — 2026-11-23
+# Education maintenance — 2026-11-24
 
 **137 lessons** · 137 flagged · 0 clean · compliance **0.8029** · verify **pass**
 
@@ -30,7 +30,7 @@ Reused components: `lessons-audit.py` (R1–R5), `lessons-drift.py` (source refs
 
 ## Compliance trend
 
-0.8029 now vs 0.8029 on 2026-11-22 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
+0.8029 now vs 0.8029 on 2026-11-23 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
 
 ## Source drift (lessons-drift)
 
@@ -46,15 +46,15 @@ drifted **14** · source-gone **42** · no-repo-source 81
 | `lesson-ad209dd0ef19` | jevteam-jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-20>2026-10-30)` |
 | `lesson-2f962413593c` | NCM plus JEV plus Nest benchmark | `drift:docs/kb/ncm-jev-nest-exploration-procedure.md(2026-11-08>2026-10-28)` |
 | `lesson-549066365c71` | Telegram and LINE messenger control planes | `source-gone:docs/ssot/apps/ssot.messaging-lanes.yml` |
-| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-07>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-20>2026-10-27)` |
-| `lesson-bf6ce090216d` | Cline Kanban vs WordPress board apps | `source-gone:apps/board/index.html`<br>`drift:docs/ssot/apps/ssot.wp-boards.yml(2026-11-07>2026-10-28)` |
+| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-07>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-23>2026-10-27)` |
+| `lesson-bf6ce090216d` | Cline Kanban vs WordPress board apps | `source-gone:apps/board/index.html`<br>`drift:docs/ssot/apps/ssot.wp-boards.yml(2026-11-23>2026-10-28)` |
 | `lesson-cec1225f6869` | DevNest voice readiness and Telegram group policy | `drift:docs/kb/telegram-conversation-standard.md(2026-11-07>2026-10-31)`<br>`source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
 | `lesson-d5f4ea8e2f2d` | devnest-continuous-improvement-standard | `source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
 | `lesson-b8e17de59152` | mcp-fleet-audit-procedure | `source-gone:docs/tools/mcp-fleet-audit.md` |
 | `lesson-fb34c14f3a28` | DevNest performance, caching, tokenization, and pa | `source-gone:docs/tools/inference-provider-market.md`<br>`drift:docs/kb/devnest-performance-and-research-procedure.md(2026-11-07>2026-10-26)` |
 | `lesson-b15cd9f285f6` | AI model efficiency and morning news procedure | `source-gone:docs/hub/release_notes.html`<br>`source-gone:docs/kb/ai-news-to-education-procedure.md` |
-| `lesson-1e4c0dfd3d5c` | devnest-opencode-web-sample | `drift:README.md(2026-10-26>2026-10-25)` |
-| `lesson-33e213efcf13` | self-hosted-llm-inference-homelab | `drift:README.md(2026-10-26>2026-10-25)`<br>`source-gone:docs/function-calling.md` |
+| `lesson-1e4c0dfd3d5c` | devnest-opencode-web-sample | `drift:README.md(2026-11-23>2026-10-25)` |
+| `lesson-33e213efcf13` | self-hosted-llm-inference-homelab | `drift:README.md(2026-11-23>2026-10-25)`<br>`source-gone:docs/function-calling.md` |
 | `lesson-ff5781755354` | ada-nest 2026-10-23/24 wrap — the distributed fact | `source-gone:docs/tools/ai-workforce-eval.md` |
 | `lesson-b45ff3156418` | LLM caching for agent loops — what helps, what doe | `source-gone:docs/tools/ai-workforce-eval.md` |
 | `lesson-c21650c0efda` | claude-fable-5-1 | `source-gone:docs/tools/ai-workforce-eval.md` |
@@ -74,7 +74,7 @@ drifted **14** · source-gone **42** · no-repo-source 81
 | `lesson-0e26056ed2dd` | ada-nest-iphone-webgpu | `source-gone:apps/webgpu-bench/job.json`<br>`source-gone:docs/tools/ai-workforce-eval.md` |
 | `lesson-9091f396bb74` | education-manager-benchmark | `source-gone:docs/tools/ai-workforce-eval.md` |
 | `lesson-7988868998ad` | 3d-models-from-map-data | `source-gone:docs/tools/agentic-ai-coding-ides.md`<br>`source-gone:docs/tools/3d-models-from-map-data.md` |
-| `lesson-9bc73936498c` | Ada Nest — NCM report | `source-gone:docs/tools/ai-workforce-eval.md`<br>`drift:docs/kb/ncm-jev-nest-exploration-procedure.md(2026-11-08>2026-10-30)` |
+| `lesson-9bc73936498c` | Ada Nest — NCM report | `drift:README.md(2026-11-23>2026-10-30)`<br>`source-gone:docs/tools/ai-workforce-eval.md`<br>`drift:docs/kb/ncm-jev-nest-exploration-procedure.md(2026-11-08>2026-10-30)` |
 | `lesson-48e4a2fba780` | rclone vs Drive REST API — storage transport choic | `source-gone:docs/tools/ai-workforce-eval.md` |
 | `lesson-c0dba8521398` | ada-nest-video | `drift:scripts/ops/video-qc.py(2026-11-07>2026-11-02)` |
 | `lesson-feaeaddd9feb` | rogue DHCP server hunt on LAN | `source-gone:docs/devin-macbook-ipv4-outage.md` |
@@ -407,4 +407,4 @@ status **pass** · digest `6418f0873e6bfb62`
 - card: `education-maintenance-consolidated-report` · education-due page: private WP page slug education-due (post 354)
 - member index: https://boards.surf-thailand.com/wp/lesson/
 - runbook: `docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml` · exceptions: `scripts/lesson-thai-exceptions.yml`
-- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-23T00:51:29+00:00
+- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-24T00:51:15+00:00
