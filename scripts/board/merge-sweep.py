@@ -1670,6 +1670,11 @@ def sweep_zombies(host_units: dict, cards_by_tid: dict,
 # runner's session may still be alive and a second claim would
 # double-run it.
 STALLED_CLAIM_S = float(os.environ.get("STALLED_CLAIM_HOURS", "6")) * 3600
+# running+flagged but still no live unit / no fresh heartbeat -> escalate
+# to backlog/failed (never auto-requeue). Covers finish-reported/lost
+# reconciliations that otherwise stay in doing forever.
+STALLED_ESCALATE_S = float(
+    os.environ.get("STALLED_ESCALATE_HOURS", "10")) * 3600
 ORPHAN_DOING_S = float(os.environ.get("ORPHAN_DOING_HOURS", "24")) * 3600
 STARTING_SETTLE_S = float(
     os.environ.get("STARTING_SETTLE_MIN", "30")) * 60
@@ -1757,6 +1762,41 @@ def _reap_move(cid: str, why: str, dry: bool) -> bool:
     return locked_edit(cid, apply)
 
 
+def _reap_escalate_running(cid: str, why: str, dry: bool) -> bool:
+    """Escalate a running/claimed card that has no live unit and no fresh
+    heartbeat. Never auto-requeues: moves to backlog as failed with
+    explicit comms, clears stale claim/session fields, and preserves the
+    double-dispatch guard (no action.status=queued)."""
+    if dry:
+        print(f"  [dry] {cid}: doing/running -> backlog/failed — {why[:110]}")
+        return True
+
+    def apply(c):
+        if terminal(c) or c.get("column") != "doing":
+            return False
+        a = _ensure_act(c)
+        st = a.get("status")
+        if st not in ("running", "claimed"):
+            return False
+        a["status"] = "failed"
+        a["last_failure"] = ("finish/reconcile lost; no live unit, no "
+                             "fresh heartbeat")[:280]
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        claim = _claim(c)
+        claim.pop("session", None)
+        claim.pop("since", None)
+        a.setdefault("sweep", {})["stalled_claim_escalated"] = now()
+        c["column"] = "backlog"
+        c["awaiting_action"] = True
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba",
+             "text": (f"stalled-claim reaper: moved doing/running -> "
+                      f"backlog/failed — {why}. No auto-requeue; "
+                      "inspect/retry manually.")[:500]})
+    return locked_edit(cid, apply)
+
+
 def _reap_flag(cid: str, text: str, dry: bool,
                live_st: bool = True) -> bool:
     """One-shot flag for a stale claim — comms +
@@ -1807,14 +1847,28 @@ def reap_stalled_claims(cards: list, active: dict, live_ids,
                 continue  # settle window — may still be starting
             runner = str(a.get("runner") or _claim(c).get("host")
                          or "?")
-            changed |= _reap_flag(
-                cid,
-                f"stalled-claim reaper: status=running but no live "
-                f"devin-task unit ({tid or 'no task_id'}) and no fresh "
-                f"runner report for "
-                f">{int(STALLED_CLAIM_S / 3600)}h — runner={runner}. "
-                "If the session is dead, requeue via "
-                "/action do=queue.", dry)
+            sw = a.get("sweep") or {}
+            already_flagged = bool(sw.get("stalled_claim"))
+            escalated = bool(sw.get("stalled_claim_escalated"))
+            if already_flagged and not escalated \
+                    and age >= STALLED_ESCALATE_S:
+                changed |= _reap_escalate_running(
+                    cid,
+                    f"status={st} still has no live devin-task unit "
+                    f"({tid or 'no task_id'}) and no fresh runner "
+                    f"report after stalled flag "
+                    f"(>{int(STALLED_ESCALATE_S / 3600)}h, runner="
+                    f"{runner})",
+                    dry)
+            else:
+                changed |= _reap_flag(
+                    cid,
+                    f"stalled-claim reaper: status=running but no live "
+                    f"devin-task unit ({tid or 'no task_id'}) and no fresh "
+                    f"runner report for "
+                    f">{int(STALLED_CLAIM_S / 3600)}h — runner={runner}. "
+                    "If the session is dead, requeue via "
+                    "/action do=queue.", dry)
         elif st == "done":
             changed |= _reap_move(
                 cid,
