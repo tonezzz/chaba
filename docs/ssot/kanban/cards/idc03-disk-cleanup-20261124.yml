@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-24 15:19
+updated: 2026-11-24 15:21
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -99,3 +99,8 @@ comms:
     in this session (task 5d11a591-0a69-4ceb-9521-8fefa07b893c) with explicit re-approval check before any service
     stop. Prerequisites verified: golang:1.23-bookworm present, 129G free, live ops DB 76G, peak disk ~232G/290G,
     rollback via .pre-compact. No service action taken today.'
+- at: 2026-11-24 15:21
+  from: devin
+  text: '2026-11-24 schedule changed per Tony: compact window reminder moved from Sun 2026-11-29 05:00 +07 to TODAY
+    2026-11-24 17:00 +07 (task 5d11a591-0a69-4ceb-9521-8fefa07b893c). The reminder still requires explicit re-approval
+    before stopping mddb-ops; Procedure C + rollback unchanged.'
