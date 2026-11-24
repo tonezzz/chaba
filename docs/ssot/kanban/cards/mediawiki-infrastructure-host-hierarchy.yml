@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: doing
-updated: 2026-11-24 19:06
+updated: 2026-11-24 19:26
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -275,6 +275,12 @@ comms:
     pass DONE + gaps closed: (1) zombie quadlets MASKED o; [idle-qa-and-backups-idc] primer injected 8 lesson(s):
     no chaba-audit.service/ch; [mediawiki-infrastructure-host-hierarchy] BLOCKER 2026-11-05: Ada HA Private Wik;
     [video-render-dispatcher] OPS-1042 v1 implemented and verifie'
+- at: 2026-11-24 19:26
+  from: devin
+  text: 'DONE (code+verified, not published): new scripts/wiki-infra-hosts.py renders Infrastructure:Hosts rollup
+    + 10 registry-driven leaves (idc01 retired stub, idc03/con01/macbook/kk-mac/michael-ha covered) from audit-hosts/host-loads/disk-trend/timer-timeline/ssot.reports.
+    --check gates pass on private+public surfaces; anon-deny probe verified live. host-services-cms HOST_META reconciled
+    to registry; ssot.reports gained missing audit-hosts/idc02+con01 nodes. Did NOT --apply: mn01 cant reach con01/kk-'
 action:
   type: dispatch
   status: running
