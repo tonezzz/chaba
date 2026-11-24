@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
-column: review
-updated: 2026-11-24 08:33
+column: done
+updated: 2026-11-24 08:37
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -483,6 +483,9 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:37
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -522,5 +525,8 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
   test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
 claim:
   since: 2026-11-24 07:59
-awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:37
+  note: verified — evidence checks green, closing itself
