@@ -468,8 +468,23 @@ class TelegramSink(Sink):
         bits = [head]
         if ev["body"]:
             bits.append(ev["body"][:220])
+        refs = []
         if ev["kind"] == "news" and ev["evidence"]:
-            bits.append(str(ev["evidence"][0]))
+            refs.append(str(ev["evidence"][0])[:160])
+        refs.extend(
+            str(r)[:160] for r in (ev.get("media") or [])
+            if str(r).strip())
+        if refs:
+            bits.append("refs: " + " · ".join(refs[:3]))
+        meta = ev.get("meta") or {}
+        detail = []
+        for key in ("job_status", "qc", "sha256", "hash",
+                    "artifact", "drive"):
+            val = meta.get(key)
+            if val not in (None, ""):
+                detail.append(f"{key}={str(val)[:120]}")
+        if detail:
+            bits.append(" · ".join(detail[:4])[:300])
         return "\n".join(bits)[:3800]
 
     def publish(self, ev: dict) -> dict:
@@ -477,6 +492,13 @@ class TelegramSink(Sink):
         thread = (ev.get("meta") or {}).get("tg_thread_id")
         if isinstance(thread, int):
             payload["message_thread_id"] = thread
+        else:
+            for key, field in (("project", "project_id"),
+                               ("card", "card_ref"),
+                               ("job", "job_ref")):
+                value = ev.get(key)
+                if value:
+                    payload[field] = value
         r = self._poster(payload)
         if isinstance(r, dict) and r.get("ok") is False:
             raise DeliveryError(f"telegram relay -> {r.get('error')}")

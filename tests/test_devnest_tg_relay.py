@@ -624,6 +624,43 @@ def test_project_send_routes_to_bound_thread(monkeypatch, tmp_path):
     assert sent == [{"chat": CHAT, "text": "job done", "thread": 9}]
 
 
+def test_project_job_send_routes_to_bound_thread(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay._register_topic(9, {
+        "kind": "project", "name": "PRJ p — t", "lane": "project",
+        "visibility": "project", "project_id": "kk-video-abc123",
+        "card_ref": "OPS-0999", "card_id": "kk-video-abc123"})
+    res = relay.route_send(
+        {"chat_id": CHAT, "text": "pack done",
+         "job_ref": "kk-video-abc123-preview"})
+    assert res["message_thread_id"] == 9
+    assert res["project_id"] == "kk-video-abc123"
+    assert sent == [{"chat": CHAT, "text": "pack done", "thread": 9}]
+
+
+def test_unmatched_job_send_to_general_unchanged(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    res = relay.route_send({"chat_id": CHAT, "text": "bench done",
+                            "job_ref": "thonburian-bench"})
+    assert res["message_thread_id"] is None
+    assert sent == [{"chat": CHAT, "text": "bench done", "thread": None}]
+
+
+def test_find_project_topic_reconciles_manifest(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    project = tmp_path / "projects" / "kk-video-abc123"
+    project.mkdir(parents=True)
+    (project / "project.json").write_text(json.dumps({
+        "project_id": "kk-video-abc123", "card_ref": "OPS-0999",
+        "card_id": "kk-video-abc123",
+        "topic": {"thread_id": 9, "name": "PRJ kk-video-abc123 — Movie",
+                  "status": "active"}}))
+    entry = relay._find_project_topic(project_id="kk-video-abc123")
+    assert entry is not None
+    assert entry["thread_id"] == 9
+    assert entry["project_id"] == "kk-video-abc123"
+
+
 def test_milestone_send_mirrors_to_general(monkeypatch, tmp_path):
     sent, posts = _harness(monkeypatch, tmp_path)
     relay._register_topic(9, {

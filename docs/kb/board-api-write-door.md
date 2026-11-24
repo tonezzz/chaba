@@ -184,7 +184,18 @@ lesson/report/news), `project`/`job`/`card` refs, `parent`,
 `idempotency_key` (auto-derived if absent — identical events dedupe),
 `sinks[]` (explicit subset; else kind defaults), `force`, `meta{}`
 (provider extras: `job_status`, `topic`, `level`, `report_slug`,
-`tg_thread_id`, …).
+`tg_thread_id`, `qc`, `sha256`, …).
+
+Telegram delivery stays private-first and concise: `TelegramSink` sends
+the rendered text plus `project_id`/`card_ref`/`job_ref` to the DevNest
+relay unless `meta.tg_thread_id` explicitly pins a thread. The relay
+resolves those refs through its project topic registry (manifest-backed),
+so bound project events land in the project forum topic instead of
+General; explicit project/card refs with no active binding are refused,
+while unmatched non-project job refs keep the legacy General behavior.
+Artifact-style events should put Drive/file refs in `media[]` or
+`evidence[]` and QC/hash details in `meta` — the Telegram renderer shows
+short refs/metadata, never source binaries.
 
 **Kind → sinks (defaults):**
 

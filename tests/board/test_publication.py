@@ -386,6 +386,59 @@ class NoiseTest(PubTestBase):
         self.assertIn("Flood watch upgraded", text)
         self.assertIn("http://x", text)
 
+    def test_telegram_uses_project_card_and_job_refs_for_topic_routing(self):
+        posted = []
+
+        def poster(payload):
+            posted.append(dict(payload))
+            return {"ok": True, "message_thread_id": 33}
+
+        tg = pub.TelegramSink(poster=poster)
+        e = pub.validate_event(ev(
+            kind="milestone", title="Preview rendered",
+            project="kk-video-c9f99fee6146",
+            job="kk-video-c9f99fee6146-preview",
+            card="kk-video-c9f99fee6146",
+            visibility="members"))
+        tg.publish(e)
+        self.assertEqual(posted[0]["project_id"], "kk-video-c9f99fee6146")
+        self.assertEqual(posted[0]["card_ref"], "kk-video-c9f99fee6146")
+        self.assertEqual(posted[0]["job_ref"],
+                         "kk-video-c9f99fee6146-preview")
+        self.assertNotIn("message_thread_id", posted[0])
+
+    def test_telegram_explicit_thread_overrides_project_refs(self):
+        posted = []
+
+        def poster(payload):
+            posted.append(dict(payload))
+            return {"ok": True, "message_thread_id": 44}
+
+        tg = pub.TelegramSink(poster=poster)
+        e = pub.validate_event(ev(
+            kind="milestone", title="Pinned elsewhere",
+            project="kk-video-c9f99fee6146", card="kk-video-c9f99fee6146",
+            visibility="members", meta={"tg_thread_id": 44}))
+        tg.publish(e)
+        self.assertEqual(posted[0]["message_thread_id"], 44)
+        self.assertNotIn("project_id", posted[0])
+        self.assertNotIn("card_ref", posted[0])
+
+    def test_telegram_render_includes_artifact_refs_and_qc_meta(self):
+        e = pub.validate_event(ev(
+            kind="milestone", title="Preview artifact ready",
+            body="Rendered teaser.",
+            media=["gdrive:ada-nest/projects/kk-video/teaser.mp4"],
+            meta={"qc": "pass", "sha256": "abc123",
+                  "job_status": "done"},
+            visibility="members"))
+        text = pub.TelegramSink.render(e)
+        self.assertIn("refs: gdrive:ada-nest/projects/kk-video/teaser.mp4",
+                      text)
+        self.assertIn("qc=pass", text)
+        self.assertIn("sha256=abc123", text)
+        self.assertIn("job_status=done", text)
+
     def test_mediawiki_sink_login_edit_and_metadata(self):
         calls = []
 
