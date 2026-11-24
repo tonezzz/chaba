@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaba.local/schemas/ada-opencode-review.schema.json",
+  "title": "Ada OpenCode result review (evaluation-only)",
+  "description": "Schema-validated verdict returned by the Ada reviewer path for an allowlisted OpenCode result bundle. The reviewer is read-only: this document is a judgment, never an approval, merge, or deploy decision. Deterministic tests/verifiers remain hard gates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "case_id",
+    "verdict",
+    "confidence",
+    "summary",
+    "findings",
+    "evidence_refs",
+    "reviewer",
+    "latency_ms"
+  ],
+  "properties": {
+    "schema": {"const": "ada-opencode-review/1"},
+    "case_id": {"type": "string", "minLength": 1},
+    "verdict": {"enum": ["pass", "fail", "needs_human"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "summary": {"type": "string", "minLength": 1},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "category", "summary"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["critical", "major", "minor", "info"]},
+          "category": {
+            "enum": [
+              "artifact_integrity",
+              "spec_gap",
+              "false_claim",
+              "missing_evidence",
+              "scope_violation",
+              "test_failure",
+              "tool_audit",
+              "consistency",
+              "other"
+            ]
+          },
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_refs": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/evidenceRef"}
+          }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidenceRef"}
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "model"],
+      "properties": {
+        "backend": {"enum": ["litellm", "ada-ws", "stub", "replay"]},
+        "model": {"type": "string", "minLength": 1},
+        "lane": {"type": "string"},
+        "session_id": {"type": "string"}
+      }
+    },
+    "cost_usd": {"type": ["number", "null"]},
+    "latency_ms": {"type": "number", "minimum": 0},
+    "deterministic_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "verifier_verdict": {"enum": ["pass", "fail", "held", "skipped", "unknown"]},
+        "note": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundle_path"],
+      "properties": {
+        "bundle_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "JSON-path-ish locator into the review bundle, e.g. result.artifacts[0].sha256 or request.acceptance_criteria[1]"
+        },
+        "note": {"type": "string"}
+      }
+    }
+  }
+}

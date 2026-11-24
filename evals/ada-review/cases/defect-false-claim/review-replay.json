@@ -1,0 +1,40 @@
+{
+ "schema": "ada-opencode-review/1",
+ "case_id": "defect-false-claim",
+ "verdict": "fail",
+ "confidence": 0.9,
+ "summary": "claim contradicts deterministic gate",
+ "findings": [
+  {
+   "id": "f1",
+   "severity": "critical",
+   "category": "false_claim",
+   "summary": "claimed_status pass contradicts verifier fail",
+   "evidence_refs": [
+    {
+     "bundle_path": "result.claims.claimed_status",
+     "note": "pass"
+    },
+    {
+     "bundle_path": "result.tests.verifier.verdict",
+     "note": "fail"
+    }
+   ]
+  }
+ ],
+ "evidence_refs": [
+  {
+   "bundle_path": "result.tests.verifier.verdict",
+   "note": "gate output"
+  }
+ ],
+ "deterministic_gate": {
+  "verifier_verdict": "fail"
+ },
+ "reviewer": {
+  "backend": "replay",
+  "model": "oracle"
+ },
+ "latency_ms": 1,
+ "cost_usd": 0.0
+}
