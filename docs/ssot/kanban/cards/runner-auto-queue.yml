@@ -1,5 +1,5 @@
 id: runner-auto-queue
-title: 1 queued card(s) unsatisfiable by the live runner fleet
+title: 2 queued card(s) unsatisfiable by the live runner fleet
 brief: action.labels/action.host are hard requirements — a queued card nothing satisfies starves silently. Fix the
   card's requirements or teach a host the label (RUNNER_LABELS in runner-agent.service + mirror in ssot.kanban.yml
   runner_fleet).
@@ -9,5 +9,10 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: '- kk-mac-devin-decline-smoke: pinned to kk-mac not in live fleet'
+note: '- idc02-vps-lane-canary: labels [''push:ada-voice'', ''vps''] satisfied by no live runner (fleet advertises
+  [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'', ''local-8c'', ''low-mem'',
+  ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'', ''push:sunsynk-card'',
+  ''small'', ''ssd''])
+
+  - kk-mac-devin-decline-smoke: pinned to kk-mac not in live fleet'
 updated: '2026-11-24'
