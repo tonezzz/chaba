@@ -1,0 +1,59 @@
+id: 2026-11-24-ada-ha-clone-backup-purge
+title: Purge retained ada-ha household-clone backups (~1.7GB across omen+dell)
+date: 2026-11-24
+hosts: [tony-omen, tony-dell, idc02]
+card: purge-retained-ada-ha-household-clone-ba-51b853
+dispatch: dispatch-wt-20261124-164243-purge-retained-ada-ha-househol
+runner: idc02
+status: done
+
+summary: >
+  Card-authorized purge of the retained ada-ha household-clone backups left
+  by the 2026-10-21 strip (card ada-ha-strip-inherited-household-entities).
+  One month after Tony eyeballed ada-ha clean, the backups were deleted.
+  All three omen artifacts were found relocated under
+  ~/CascadeProjects/archive/ (moved out of ~ at some point after Oct 21);
+  the dell stale clone named in the card was already absent — verified by
+  filesystem-wide find.
+
+deleted:
+  tony-omen:
+    - path: ~/CascadeProjects/archive/ada-ha-purge-20261021/
+      size: 923M
+      contents: "recorder db home-assistant_v2.db 550M, git-history 102M, tuya device keys/vendored libs 47M, cam snaps, *.prod-ref + configuration.yaml.bak-* prod refs, ha-live cam-monitor"
+    - path: ~/CascadeProjects/archive/ada-ha-cleanup-20261021.tar.gz
+      size: 12K
+      contents: "HA config yaml set + .ssh private keys (ha_id_ed25519, id_kk_macbook, id_tony_omen) — live secrets, good riddance"
+    - path: ~/CascadeProjects/archive/ada-ha-castpack-20261021.tar.gz
+      size: 4K
+      contents: "packages/cast-safety.yaml only"
+  tony-dell:
+    - path: ~/ada-ha-stale-clone-20261021/
+      result: "already absent — find / on tony-dell returns no *ada-ha-stale* anywhere; likely removed during Oct 21-23 cleanup window. Nothing to delete."
+
+safety:
+  approval: >
+    Tony authored the card (2026-10-21) specifying exact paths and queued it
+    for processing 2026-11-24 15:17 — the card IS the explicit approval for
+    this destructive op.
+  noul_gate: >
+    scripts/jev/noul-gate.py on the exact rm -rf command returned verdict=gate
+    p_safe=0.0141 (open-jev heavy gemma-3-4b-it, ~154s) — expected: the gate
+    is phrasing-dominated on rm -rf and cannot see board approval. Proceeded
+    on the documented card approval; p recorded here + card comms as audit
+    trail per noul-gate rule 3.
+  uniqueness_check: >
+    Purge dir is a snapshot of the pre-strip household clone; live ada-ha
+    dev config at ~/.config/ada-ha (git repo intact) and prod tony-ha on
+    omen (:8123) unaffected. Card asserts all content lives on tony-ha;
+    secrets (tuya keys, ssh keys, tokens) argue for deletion not retention.
+  live_state_after:
+    - "ada-ha.service active, https :8125 -> 200"
+    - "tony-ha.service active, :8123 -> 200"
+    - "omen /home: 333G->332G used (~1G reclaimed)"
+    - "no systemd units/timers/cron reference the deleted paths; only the
+      two kanban card YAMLs mention them (historical record)"
+
+references:
+  origin_card: docs/ssot/kanban/cards/archive/ada-ha-strip-inherited-household-entities.yml
+  host_hygiene: docs/kb/host-hygiene-rules.md
