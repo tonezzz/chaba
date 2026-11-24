@@ -259,7 +259,13 @@ producers:
                        also runs the kk lane (cam-wall-cms-kk.timer) with
                        COLLECTION=ada-cms-pages-kk + CAMWALL_ZONE_GROUPS=
                        public; per-lane dedup/notify state files
-                       (_cms-pub-hash-kk.json etc.)
+                       (_cms-pub-hash-kk.json etc.). Shared cross-zone
+                       pages (cctv-walls, dvr-wall) are single-writer —
+                       only a lane whose manifests cover the full
+                       zones.yml roster publishes them;
+                       CAMWALL_PUBLISH_SHARED=1 override (kk unit sets
+                       it; see jobs/infrastructure/
+                       2026-11-24-camwall-shared-pages-single-writer)
     report-distill:    "'-digest' pages, report_role=digest"
     bench-edge-cms:    bench domain
     kanban-cms:        dev-kanban page

@@ -1,0 +1,81 @@
+title: camwall — shared pages (cctv-walls, dvr-wall) are single-writer
+subtitle: >-
+  The 2026-10-04 lane split (idc01 security / idc02 traffic+dohweb /
+  per-host VPS lanes) left cam-wall-cms.py publishing the two
+  cross-zone pages from EVERY lane — each overwrote cctv-walls with its
+  own zone slice (zone_tab flapped Security-only <-> Traffic-only,
+  wall links dropped) and non-dev lanes could mark dvr-wall
+  superseded -> cctv-walls because its meta carried no zone: sources.
+  Fixed by a full-roster publish gate + zone-scoped dvr-wall sources.
+icon: camera
+id: 2026-11-24-camwall-shared-pages-single-writer
+status: done
+owner: devin-dispatch
+project: chaba
+card: cms-security-audit
+started: "2026-11-24"
+completed: "2026-11-24"
+
+context:
+  user_request: >
+    Kanban card cms-security-audit (attempt 2): re-verify the
+    2026-10-03 Pages/Security/Traffic audit against live ada-cms-pages
+    after the lane split, fix reported failure, leave a trail.
+  found: >
+    Live corpus conforms to the audit (Security = 17 cam dossiers —
+    noble-a 5, noble-club 8, tony-house 4 — + 3 camwall pages +
+    dvr-wall; cctv-walls spans both tabs; cctv-* tool docs carry no
+    zone_tab and land in Pages; no wall-*/noble-park leftovers; all
+    generated pages bilingual en+th). But cctv-walls meta was observed
+    flapping: zone_site=['tony-house'] at 05:00:44Z then the full
+    7-site/2-tab union at 05:03:52Z — two lanes with different manifest
+    coverage writing the same key minutes apart.
+
+design:
+  gate: >
+    scripts/cam-wall/cam-wall-cms.py main() computes shared_ok =
+    set(zones) >= set(zone_meta.zones(ZMETA)) — `zones` is the lane's
+    manifest-driven publish set, zones.yml the SSOT roster, so only a
+    lane that sees every wall may publish cctv-walls/dvr-wall.
+    CAMWALL_PUBLISH_SHARED=1 overrides for collections whose intended
+    scope IS a slice — set on the kk unit (cam-wall-cms-kk.service)
+    whose ada-cms-pages-kk is public-only by design.
+  lifecycle: >
+    Every lane still lists the shared keys in `current`, so none can
+    supersede them; partial lanes simply stop overwriting. dvr-wall now
+    carries zone:<zone> sources for every zone contributing a dev cam
+    (vms-noble-a, vms-noble-club), so the existing zone:-source boundary
+    in _successor_for makes foreign lanes skip it — previously a
+    public-only lane returned "cctv-walls" as its successor and marked
+    the DVR wall superseded every run (revived by the next private-lane
+    write — status flapping).
+  unchanged: >
+    Zone-scoped pages (camwall-<zone>, cam-<slug>) are untouched — the
+    zone:-source boundary already isolates them per lane. reports-index
+    regen still runs on every lane (content is deterministic per
+    collection).
+
+verification:
+  tests: >
+    tests/camwall/test_cam_wall_cms.py — 6 passed. New PartialLaneTest:
+    partial lane publishes own-zone pages but writes neither shared
+    page and leaves seeded active cctv-walls/dvr-wall untouched;
+    CAMWALL_PUBLISH_SHARED=1 publishes cctv-walls (dvr-wall still needs
+    dev cams). KkLaneTest sets the env to mirror the unit.
+  live: >
+    Re-pulled ada-cms-pages (1596 docs) on 2026-11-24 ~05:0xZ: all
+    cam-family zone_tab values in {Security, Traffic} or absent;
+    Security docs = 44, Traffic = 100, untagged cctv tool docs = 7.
+
+followups:
+  - >
+    If NO lane ever covers the full zones.yml roster (e.g. a zones.yml
+    zone loses its manifests fleet-wide), cctv-walls/dvr-wall stop
+    updating — detectable via meta.updated staleness (cms-auto-health /
+    cms-audit C2). Escape hatch: CAMWALL_PUBLISH_SHARED=1 on the owner
+    lane's camwall.env.
+  - >
+    tony-omen also runs cam-wall-cms.service (timer-alert card
+    timer-alert-tony-omen-cam-wall-cms) — under the gate it can only
+    publish shared pages if its manifests cover all 8 zones.yml zones;
+    otherwise it is a zone-page-only writer, which is safe.

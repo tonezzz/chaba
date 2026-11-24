@@ -298,6 +298,10 @@ class KkLaneTest(unittest.TestCase):
         os.environ["MDDB_BASE_URL"] = "http://fake-mddb/v1"
         os.environ["COLLECTION"] = "ada-cms-pages-kk"
         os.environ["CAMWALL_ZONE_GROUPS"] = "public"
+        # her collection's intended scope IS the public slice — the unit
+        # sets this so the shared index still publishes (single-writer
+        # gate, cms-security-audit re-check 2026-11-24)
+        os.environ["CAMWALL_PUBLISH_SHARED"] = "1"
         os.environ.pop("ADA_NOTIFY_KEY", None)
 
         sys.path.insert(0, str(SCRIPT.parent))
@@ -316,6 +320,7 @@ class KkLaneTest(unittest.TestCase):
         self.tmp.cleanup()
         os.environ.pop("COLLECTION", None)
         os.environ.pop("CAMWALL_ZONE_GROUPS", None)
+        os.environ.pop("CAMWALL_PUBLISH_SHARED", None)
 
     def test_public_only_publish(self):
         gen = {"generated_by": ["cam-wall-cms"]}
@@ -345,6 +350,93 @@ class KkLaneTest(unittest.TestCase):
         # the foreign-zone page stayed active — never superseded by a
         # lane that doesn't publish its zone
         self.assertEqual(g("cam-noble-a-guard-view")["status"], ["active"])
+
+
+class PartialLaneTest(unittest.TestCase):
+    """Split-lane shared-page gate (cms-security-audit re-check
+    2026-11-24): a lane whose manifests cover only a slice of zones.yml
+    must neither publish nor supersede the shared cross-zone pages —
+    cctv-walls index + dvr-wall belong to the full-roster lane (or
+    CAMWALL_PUBLISH_SHARED=1). Without the gate every lane overwrote
+    the index with its own subset, flapping zone_tab Security<->Traffic,
+    and non-dev lanes marked dvr-wall superseded -> cctv-walls."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        data = Path(self.tmp.name)
+        # public slice only, no dev cams — a partial lane
+        zones = {
+            "rama9": [{"key": "petchaburi-rd", "label": "Petchaburi Rd",
+                       "ok": True, "ts": NOW}],
+            "burapha": [{"key": "bangna-trat-km-0-east",
+                         "label": "Trat km0 E", "ok": True, "ts": NOW}],
+        }
+        for z, cams in zones.items():
+            zd = data / z
+            zd.mkdir()
+            (zd / f"manifest-{z}.json").write_text(json.dumps(
+                {"updated": NOW, "cams": cams}))
+        os.environ["CAMWALL_DATA"] = str(data)
+        os.environ["MDDB_BASE_URL"] = "http://fake-mddb/v1"
+        os.environ.pop("CAMWALL_PUBLISH_SHARED", None)
+        os.environ.pop("ADA_NOTIFY_KEY", None)
+
+        sys.path.insert(0, str(SCRIPT.parent))
+        spec = importlib.util.spec_from_file_location("cam_wall_cms", SCRIPT)
+        self.mod = importlib.util.module_from_spec(spec)
+        sys.modules["cam_wall_cms"] = self.mod
+        spec.loader.exec_module(self.mod)
+
+        self.db = FakeMDDB()
+        self._patch = mock.patch.object(
+            urllib.request, "urlopen", side_effect=self.db.handle)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self.tmp.cleanup()
+        os.environ.pop("CAMWALL_PUBLISH_SHARED", None)
+
+    def _seed_shared(self):
+        gen = {"generated_by": ["cam-wall-cms"]}
+        self.db.seed("cctv-walls",
+                     meta=_meta(sources=["zone:vms-noble-a",
+                                         "zone:traffic"], **gen))
+        self.db.seed("dvr-wall",
+                     meta=_meta(sources=["cam-wall-manifest", "vms-snap",
+                                         "zone:vms-noble-a",
+                                         "zone:vms-noble-club"],
+                                page_role=["wall"], **gen))
+
+    def _adds(self):
+        return {(b["key"], b["lang"]) for n, b in self.db.calls
+                if n == "add"}
+
+    def test_partial_lane_skips_shared_pages(self):
+        self._seed_shared()
+        self.assertEqual(self.mod.main(), 0)
+        # own-zone pages still publish
+        self.assertIn(("camwall-rama9", "en"), self._adds())
+        self.assertIn(("cam-rama9-petchaburi-rd", "en"), self._adds())
+        # shared pages: no writes at all
+        self.assertNotIn(("cctv-walls", "en"), self._adds())
+        self.assertNotIn(("cctv-walls", "th"), self._adds())
+        self.assertNotIn(("dvr-wall", "en"), self._adds())
+        # and the lifecycle pass left them alone — dvr-wall's zone:
+        # sources are disjoint from this lane's zones
+        for k in ("cctv-walls", "dvr-wall"):
+            self.assertEqual(
+                self.db.docs[(k, "en")]["meta"]["status"], ["active"], k)
+            self.assertNotIn("superseded_by",
+                             self.db.docs[(k, "en")]["meta"], k)
+
+    def test_publish_shared_override(self):
+        os.environ["CAMWALL_PUBLISH_SHARED"] = "1"
+        self.assertEqual(self.mod.main(), 0)
+        self.assertIn(("cctv-walls", "en"), self._adds())
+        self.assertIn(("cctv-walls", "th"), self._adds())
+        # dvr-wall still needs dev cams — this lane has none
+        self.assertNotIn(("dvr-wall", "en"), self._adds())
 
 
 class IndexLibTest(unittest.TestCase):

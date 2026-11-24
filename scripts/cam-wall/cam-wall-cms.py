@@ -33,10 +33,24 @@ Lane env knobs (card ada-kk-cms-traffic):
   CAMWALL_ZONE_GROUPS  comma/space allowlist of zones.yml `group:` values
                        — "public" emits only public zones (traffic walls,
                        never private estate footage). Empty = every zone.
+  CAMWALL_PUBLISH_SHARED  "1" forces the shared cross-zone pages
+                       (cctv-walls index, dvr-wall) to publish even when
+                       the lane's manifests don't cover the full
+                       zones.yml roster — for collections whose intended
+                       scope IS a slice (the kk lane).
 A lane is defined by its collection + group filter; the zone:-source
 boundary in the lifecycle pass already keeps it from touching pages
 whose zones it does not publish. Per-lane dedup/notify state files are
 suffixed with the collection tag so lanes can share CAMWALL_DATA.
+
+Shared pages are single-writer (cms-security-audit re-check 2026-11-24):
+split lanes each see a slice of zones.yml, so ungated every lane
+overwrote cctv-walls with its own subset — zone_tab flapped between
+Security-only and Traffic-only and the index dropped the other tab's
+wall links until the next fleet-wide write. Only a lane whose manifests
+cover the whole zones.yml roster publishes them (or
+CAMWALL_PUBLISH_SHARED=1); every lane still lists them in `current` so
+none can supersede them.
 """
 
 from __future__ import annotations
@@ -996,6 +1010,11 @@ def main() -> int:
                  if zone_cls(z)["group"] in GROUP_FILTER}
         print(f"zone group filter {sorted(GROUP_FILTER)} -> "
               f"{sorted(zones)} · collection {COLLECTION}")
+    # Shared cross-zone pages (cctv-walls index, dvr-wall) get exactly
+    # one writer — see the module docstring. `zones` is manifest-driven,
+    # so full zones.yml coverage means this lane sees every wall.
+    shared_ok = (set(zones) >= set(zone_meta.zones(ZMETA))
+                 or os.environ.get("CAMWALL_PUBLISH_SHARED") == "1")
     ok = True
     # group cams by canonical slug — one dossier per physical camera
     cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
@@ -1057,7 +1076,7 @@ def main() -> int:
                if c.get("dev")]
     dvr_cls = _cls_union(dev_cls)
     for lang in ("en", "th"):
-        dvr = dvr_wall_page(cam_groups, lang)
+        dvr = dvr_wall_page(cam_groups, lang) if shared_ok else None
         if dvr:
             ok &= mddb_add(
                 "dvr-wall", dvr,
@@ -1065,7 +1084,14 @@ def main() -> int:
                 lang=lang,
                 summary=_t(lang, "Every DVR channel as a tile grid",
                            "ทุกช่อง DVR เป็นช่องภาพกดได้"),
-                sources=["cam-wall-manifest", "vms-snap"],
+                # zone: sources scope the lifecycle boundary to lanes
+                # that see a dev-cam zone — without them a public-only
+                # lane counted dvr-wall as its own orphan and marked it
+                # superseded -> cctv-walls every run.
+                sources=["cam-wall-manifest", "vms-snap"]
+                + [f"zone:{z}" for z in sorted(
+                    {z for es in cam_groups.values()
+                     for z, c, _ in es if c.get("dev")})],
                 classification=dvr_cls,
                 page_role="wall",
                 supersedes=links.get("dvr-wall"),
@@ -1095,22 +1121,25 @@ def main() -> int:
                 supersedes=links.get(slug_key),
                 force=slug_key in revive)
     if zones:
-        for lang in ("en", "th"):
-            ok &= mddb_add(
-                "cctv-walls", index_page(zones, lang),
-                _t(lang, "CCTV & Traffic Camera Walls",
-                   "กำแพงกล้อง CCTV และจราจร"),
-                lang=lang,
-                summary=_t(lang, "Index of every camera wall — montage, "
-                                 "live counts, shared controls",
-                           "ดัชนีกำแพงกล้องทั้งหมด — ภาพรวม จำนวนออนไลน์ "
-                           "และสวิตช์ควบคุมกลาง"),
-                parent="",
-                sources=[f"zone:{z}" for z in sorted(zones)],
-                classification=_cls_union([zone_cls(z) for z in zones]),
-                page_role="index",
-                supersedes=links.get("cctv-walls"),
-                force="cctv-walls" in revive)
+        if shared_ok:
+            for lang in ("en", "th"):
+                ok &= mddb_add(
+                    "cctv-walls", index_page(zones, lang),
+                    _t(lang, "CCTV & Traffic Camera Walls",
+                       "กำแพงกล้อง CCTV และจราจร"),
+                    lang=lang,
+                    summary=_t(lang, "Index of every camera wall — "
+                                     "montage, live counts, shared "
+                                     "controls",
+                               "ดัชนีกำแพงกล้องทั้งหมด — ภาพรวม "
+                               "จำนวนออนไลน์ และสวิตช์ควบคุมกลาง"),
+                    parent="",
+                    sources=[f"zone:{z}" for z in sorted(zones)],
+                    classification=_cls_union(
+                        [zone_cls(z) for z in zones]),
+                    page_role="index",
+                    supersedes=links.get("cctv-walls"),
+                    force="cctv-walls" in revive)
         notify_transitions(zones)
     if not DRY:
         # lifecycle marks + this run's pages changed the corpus — the
