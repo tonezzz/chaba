@@ -1,0 +1,68 @@
+{"text": "status", "lang": "en", "expect": "status", "note": "bare keyword"}
+{"text": "status?", "lang": "en", "expect": "status"}
+{"text": "what's the status", "lang": "en", "expect": "status", "tier_hint": "t1"}
+{"text": "board status", "lang": "en", "expect": "status", "tier_hint": "t1"}
+{"text": "how are things looking", "lang": "en", "expect": "status", "tier_hint": "t1"}
+{"text": "สถานะ", "lang": "th", "expect": "status", "note": "bare Thai keyword"}
+{"text": "เป็นไงบ้าง", "lang": "th", "expect": "status", "tier_hint": "t1"}
+{"text": "help", "lang": "en", "expect": "help"}
+{"text": "what can you do", "lang": "en", "expect": "help", "tier_hint": "t1"}
+{"text": "show me the commands", "lang": "en", "expect": "help", "tier_hint": "t1"}
+{"text": "ช่วยหน่อย", "lang": "th", "expect": "help", "tier_hint": "t1"}
+{"text": "ใช้ยังไง", "lang": "th", "expect": "help", "tier_hint": "t1"}
+{"text": "stop", "lang": "en", "expect": "stop"}
+{"text": "cancel that", "lang": "en", "expect": "stop", "tier_hint": "t1"}
+{"text": "never mind", "lang": "en", "expect": "stop", "tier_hint": "t1"}
+{"text": "หยุด", "lang": "th", "expect": "stop"}
+{"text": "ยกเลิก", "lang": "th", "expect": "stop", "tier_hint": "t1"}
+{"text": "play", "lang": "en", "expect": "media"}
+{"text": "pause", "lang": "en", "expect": "media"}
+{"text": "next track", "lang": "en", "expect": "media", "tier_hint": "t1"}
+{"text": "volume up", "lang": "en", "expect": "media"}
+{"text": "volume down", "lang": "en", "expect": "media"}
+{"text": "เล่นเพลง", "lang": "th", "expect": "media"}
+{"text": "หยุดเพลง", "lang": "th", "expect": "media", "tier_hint": "t1"}
+{"text": "เพลงต่อไป", "lang": "th", "expect": "media", "tier_hint": "t1"}
+{"text": "turn on the living room light", "lang": "en", "expect": "device", "tier_hint": "t1"}
+{"text": "turn off the AC", "lang": "en", "expect": "device"}
+{"text": "open the TV", "lang": "en", "expect": "device", "tier_hint": "t1"}
+{"text": "ปิดไฟห้องนั่งเล่น", "lang": "th", "expect": "device"}
+{"text": "เปิดแอร์", "lang": "th", "expect": "device"}
+{"text": "what time is it", "lang": "en", "expect": "time"}
+{"text": "what's the date today", "lang": "en", "expect": "time", "tier_hint": "t1"}
+{"text": "กี่โมงแล้ว", "lang": "th", "expect": "time"}
+{"text": "วันนี้วันอะไร", "lang": "th", "expect": "time", "tier_hint": "t1"}
+{"text": "explain OPS-0912", "lang": "en", "expect": "explain", "note": "operand-gated: ref required"}
+{"text": "explain card devin-foo", "lang": "en", "expect": "explain", "tier_hint": "t1"}
+{"text": "status of OPS-0912", "lang": "en", "expect": "explain", "tier_hint": "t1"}
+{"text": "อธิบาย OPS-0912", "lang": "th", "expect": "explain", "tier_hint": "t1"}
+{"text": "approve OPS-0912", "lang": "en", "expect": "board_action"}
+{"text": "reject that request", "lang": "en", "expect": "board_action", "tier_hint": "t1"}
+{"text": "อนุมัติ OPS-0912", "lang": "th", "expect": "board_action", "tier_hint": "t1"}
+{"text": "ok", "lang": "en", "expect": "pass", "note": "ack — trivial-gate territory, not a command"}
+{"text": "thanks", "lang": "en", "expect": "pass"}
+{"text": "lol", "lang": "en", "expect": "pass"}
+{"text": "good morning", "lang": "en", "expect": "pass", "note": "greeting"}
+{"text": "can you write a poem about the sea", "lang": "en", "expect": "pass"}
+{"text": "remind me to call mom tomorrow at 5", "lang": "en", "expect": "pass"}
+{"text": "what do you think about moving to a new house", "lang": "en", "expect": "pass"}
+{"text": "explain how DNS resolution works", "lang": "en", "expect": "pass", "note": "explain WITHOUT card ref must not fire"}
+{"text": "what's the weather tomorrow", "lang": "en", "expect": "pass", "note": "no weather handler"}
+{"text": "why did the deploy fail last night", "lang": "en", "expect": "pass", "note": "diagnostic question, not a command"}
+{"text": "schedule a meeting with the team next week", "lang": "en", "expect": "pass"}
+{"text": "find me a good ramen place nearby", "lang": "en", "expect": "pass"}
+{"text": "ช่วยแปลประโยคนี้ให้หน่อย", "lang": "th", "expect": "pass", "note": "translate request"}
+{"text": "พรุ่งนี้ฝนจะตกไหม", "lang": "th", "expect": "pass", "note": "weather question"}
+{"text": "turn the volume up a bit and dim the lights", "lang": "en", "expect": "t2:device", "note": "compound — needs T2 entity planning, not a single intent"}
+{"text": "hmm let me think about that", "lang": "en", "expect": "pass"}
+{"text": "status of the new router I just bought", "lang": "en", "expect": "pass", "note": "status word but no system referent — wrong-fire trap"}
+{"text": "help me fix my car", "lang": "en", "expect": "pass", "note": "EN analog of ช่วย<verb> task request"}
+{"text": "ปิดเสียงหน่อย", "lang": "th", "expect": "media", "note": "mute — bare ปิด must not claim device", "tier_hint": "t0"}
+{"text": "ปิดพัดลมหน่อย", "lang": "th", "expect": "device", "note": "fan off — operand-gated device noun", "tier_hint": "t0"}
+{"text": "could you dim the lights in here please", "lang": "en", "expect": "t2:device", "note": "real command beyond T0/T1 paraphrase reach — T2's job"}
+{"text": "turn it down a touch", "lang": "en", "expect": "t2:media", "note": "volume-down paraphrase; ambiguous with device — why T2 exists"}
+{"text": "would you check the board for me real quick", "lang": "en", "expect": "t2:status"}
+{"text": "skip to the next one", "lang": "en", "expect": "t2:media"}
+{"text": "make it a bit brighter", "lang": "en", "expect": "t2:device"}
+{"text": "can you pause it for a second", "lang": "en", "expect": "t2:media"}
+{"text": "อันนี้ข้ามได้เลย", "lang": "th", "expect": "t2:media", "note": "skip this one — Thai paraphrase"}

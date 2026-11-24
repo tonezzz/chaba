@@ -1,0 +1,67 @@
+title: Short command recognition research — gated T0/T1/T2 cascade + stdlib prototype
+id: 2026-11-24-short-command-recognition-research
+card: devin-research-short-command-recognition-d948ed
+date: 2026-11-24
+runner: devin-dispatch (attempt 2)
+kind: research+prototype
+
+summary: >
+  Re-ran the short-command-recognition research after attempt 1's
+  artifacts were lost (merge fad1c13f carried only docs/INDEX.md; the
+  9 deliverable files stayed uncommitted in the old worktree). Tony's
+  2026-10-26 placement answer stands: chaba repo, docs/, host-agnostic.
+  Landed the research doc, a stdlib-only tiered recognizer prototype,
+  and this record — all committed on the dispatch branch.
+
+deliverables:
+  research_doc: docs/kb/short-command-recognition-research.md
+  prototype:
+    dir: docs/prototypes/short-command/
+    recognizer: recognizer.py      # T0 phrases/patterns + T1 n-gram TF-IDF
+    corpus: corpus.jsonl           # 68 items EN/TH, 3 expectation classes
+    eval: eval/run_eval.py         # report/--json/--sweep/--accept/--gray/--margin
+  index: docs/INDEX.md line already merged by attempt 1 (now resolves)
+  followup_card: OPS-0919 (scr-calibrate-t1-thresholds-on-real-tg-v)
+    # expects eval/run_eval.py --sweep — layout matched deliberately
+
+attempt1_postmortem:
+  what_happened: >
+    2026-10-27 dispatch finished ok, comms claimed all deliverables,
+    merge-sweep auto-closed the card — but the worktree checkpoint
+    committed only docs/INDEX.md. The 9 real files were left uncommitted
+    ("worktree kept: dirty — 9 uncommitted file(s)") and lost. merge-sweep
+    verified card evidence, not file existence — false-positive close.
+  fix: >
+    attempt 2 commits every artifact explicitly on the dispatch branch;
+    eval layout matches OPS-0919's expected paths (eval/run_eval.py
+    --sweep, accept/gray thresholds).
+  lesson: >
+    dispatch close-out must verify claimed artifact paths exist in the
+    merge, not just that the session exited 0.
+
+findings:
+  - "Commands are the highest-frequency mechanical inputs; every lane pays a provider turn per command today (TG voice->Ada, HA Live tool-call) or has a narrow hardcoded set (devnest router). The missing layer is cheap intent recognition with honest escalation."
+  - "Recommended shape: gated cascade T0 deterministic (phrase table + anchored operand-gated patterns) -> T1 similarity (accept/gray/reject zones + margin gate + operand gates + vetoes) -> T2 local small-LLM route+entity (command_lane/systemone, pending OPS-0605 circuit breaker) -> T3 provider pass-through."
+  - "In-system anchors: devnest-tg-relay is a working production T0 (OPS-0911); tg_relay trivial_gate is the adjacent rung; ada-stt qwen3-asr feeds transcripts to the same text cascade; HA Gemini Live deferred (needs KWS on mic stream)."
+  - "Wrong-fires are specification bugs, not similarity bugs: all four initial corpus wrong-fires were fixed by structure (operand gates, vetoes, Thai device-noun gate) — threshold tuning alone could not reach zero without killing recall."
+  - "Thai has no word boundaries: char n-grams + no-\\b patterns; bare เปิด/ปิด is operand-ambiguous (ปิดเสียง=mute vs ปิดไฟ=device) — same class of bug as English 'status of <non-card>'."
+
+prototype_results:
+  corpus: "68 items — 34 hard commands, 7 soft (t2:) commands, 17 pass-through traps; EN+TH"
+  wrong_fires: 0
+  deflection_pct: 90.2
+  tiers: {T0: 39, T1: 7}
+  zones: {accept: 46, reject: 13, gray: 6, veto: 3}
+  sweep: "accept >= 0.38 = lowest zero-wrong-fire point on synthetic corpus; default 0.42"
+  reproduce: "cd docs/prototypes/short-command && python3 eval/run_eval.py"
+
+open_questions:
+  - "OPS-0919: recalibrate accept/gray on real TG voice transcripts (idc03 ~/.local/share/ada-voice-corpus/tg/) — synthetic corpus is a floor."
+  - "Production T1: swap char n-grams for nomic-embed (already deployed) after OPS-0919 measurement."
+  - "T2 needs OPS-0605 circuit breaker before command_lane is reliable under load."
+
+verify:
+  - "cd docs/prototypes/short-command && python3 eval/run_eval.py  # expect 0 wrong-fires, 90.2% deflection"
+  - "python3 eval/run_eval.py --sweep  # frontier table, recommended accept >=0.38"
+  - "ls docs/kb/short-command-recognition-research.md docs/prototypes/short-command/"
+  - "git log --oneline origin/master -- docs/kb/short-command-recognition-research.md  # after merge"
