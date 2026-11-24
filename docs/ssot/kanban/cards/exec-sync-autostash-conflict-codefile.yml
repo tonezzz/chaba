@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: backlog
-updated: 2026-11-24 19:01
+updated: 2026-11-24 19:38
 priority: medium
 tags:
 - infra
@@ -159,6 +159,13 @@ comms:
     (AA), with staged conflicts also on a focus-inbox entry and stacks/web/public/apps/ha/ssot.ui.ha.yml. Checkout
     runner-agent.py sha 3dc0bb81d66842bb; installed ~/.local/bin/runner-agent sha d0a103cb3439bbdf; canonical source+pin
     now 9a42dc07ec12'
+- at: 2026-11-24 19:38
+  from: devin
+  text: 'Resolved the tony-dell instance 2026-11-24: exec checkout was 425 commits behind with an unmerged ansible
+    AA plus staged/unstaged/untracked work. HEAD had 0 unique commits; origin/master already carried the canonical
+    ipaddr fix (e69a7cb1). Salvaged tracked work to stash@{0} and patch /tmp/chaba-tonydell-exec-salvage-20261124-193141/{stash0.patch,worktree-vs-HEAD.patch};
+    copied the live untracked kk-mac model-status script + systemd units to <backup>/untracked/ (timer still active).
+    git reset --h'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
