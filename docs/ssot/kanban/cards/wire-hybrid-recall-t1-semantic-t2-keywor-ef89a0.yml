@@ -1,7 +1,7 @@
 id: wire-hybrid-recall-t1-semantic-t2-keywor-ef89a0
 title: Wire hybrid recall (T1 semantic + T2 keyword) into notebooklm-recall.sh — prune prerequisite
 column: doing
-updated: 2026-11-24 16:07
+updated: 2026-11-24 16:08
 priority: medium
 spec: 'bench-recall v2 verdict (session-mddb-recall-benchmark): sessions.db prune to T0 is AQ-safe ONLY if recall
   runs BOTH retrievals — T1 semantic (mddb devin-session/* docs, now enriched via --enrich) + T2 keyword over locally
@@ -198,6 +198,14 @@ comms:
     empty recall emits nothing, devin-session/* docs sort first in T1. LIVE VERIFY on tony-dell: bench-recall hybrid_t2
     rerun against corpus rebuilt from surviving cli/summaries T2 dumps (fixture sessions are pruned everywhere)
     = hit@3 91.7% — identical to the v2 verdict; manual rec'
+- at: 2026-11-24 16:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-083038-bench-recall-v2-verdict-sessio no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-24 16:08
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-083038-bench-recall-v2-verdict-sessio on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -205,5 +213,8 @@ action:
   lane_source: kw
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 16:08
+    dirty: 1
 claim:
   since: 2026-11-24 15:29
