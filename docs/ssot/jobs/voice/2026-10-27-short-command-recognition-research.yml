@@ -1,0 +1,61 @@
+# Short command recognition — research program launch (card
+# devin-research-short-command-recognition-d948ed / DEV-0484)
+#
+# Tony asked (TG, reported 2026-10-09) for a short-command-recognition
+# research project added to the existing structure. Placement per his
+# card answer 2026-10-26: chaba repo, research + prototype under docs/,
+# host-agnostic.
+
+title: Short command recognition research program launch
+date: 2026-10-27
+job: short-command-recognition-research
+runner: tony-macbook
+kind: research
+card: devin-research-short-command-recognition-d948ed
+
+deliverables:
+  research_doc: docs/kb/short-command-recognition-research.md
+  prototype: docs/prototypes/short-command/
+  eval: docs/prototypes/short-command/eval/run_eval.py
+
+summary: >
+  Surveyed the short-command-recognition design space (grammar/template
+  matching, exemplar similarity, small router LLM, KWS, e2e SLU) against
+  what the ecosystem already runs: ada-pi command_lane (systemone router,
+  27-45s/call — needs a 1b lane), the tg_relay trivial-gate, devnest's
+  anchored whole-message board commands, and the qwen3-asr local STT
+  lane. Recommended architecture is a gated T0->T1->T2 cascade — same
+  adaptive-depth pattern as cheap-agent-cascade — with a shared
+  per-surface grammar, confidence gates with a gray band, and metrics
+  (deflection, wrong-fire) from day one. Thai/code-switch is a
+  first-class constraint: slot aliases carry Thai, template whitespace
+  compiles to \s* so unspaced Thai matches.
+
+prototype_status:
+  runtime: stdlib Python, host-agnostic, no deps
+  corpus: 51 items (EN/TH/code-switch/negatives)
+  result:
+    accuracy: 1.0
+    wrong_fire_rate: 0.0
+    deflection: 0.882
+    per_tier: {T0: 38, T1: 7}
+    note: synthetic floor — calibrate on the real TG voice corpus
+          before trusting thresholds
+  tiers:
+    T0: hassil-lite template matcher (alternation/optional/slots)
+    T1: char-3gram + token Jaccard exemplar match; SCR_EMBED_URL
+        switches to embedding cosine with lexical fallback
+    T2: optional local router LLM via SCR_ROUTER_URL, schema-validated,
+        silent on timeout (OPS-0605 breaker behavior)
+
+open_questions:
+  - "T1 threshold calibration on the idc03 TG voice corpus (qwen3-asr transliterates EN loans into Thai script — real input is noisier than this corpus)"
+  - "grammar breadth vs wrong-fire rate as intent count grows"
+  - "first surface: tg_relay (cheapest integration, cascade already exists) vs ada-pi command_lane (highest cost reduction)"
+  - "closed-set KWS probe (sherpa-onnx) for stop/cancel-class phrases"
+  - "whether T2 earns its keep if T0+T1 deflect >=80%"
+
+next:
+  - "card: calibrate T1 on real TG corpus"
+  - "card: extract devnest command regexes into shared commands.json"
+  - "card: probe importing home-assistant-intents en+th templates as Hass-intent T0 grammar"
