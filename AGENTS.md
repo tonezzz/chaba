@@ -347,6 +347,11 @@ Source and build: `/home/tony/gods-eye-view`
   - injects `honest-fail.js` into `index.html` + stages it — the
     watchdog that turns a can't-render pane into a visible failure
     instead of a black pane.
+  - voice playback patches on the entry bundle via
+    `stacks/web/scripts/gev-patch-dist.mjs` (node): inbound binary
+    PCM16@24k ws frames -> `playGeminiAudio`, `{type:interrupted}`
+    flush, AudioContext cleanup in `cleanupSession`. `--check` verifies;
+    exit 2 = anchor drift after a rebuild (update the patcher).
   - `--check` verifies a dist is fully patched; `--self-test` runs a
     fixture test.
 - Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`,
@@ -363,7 +368,8 @@ Infrastructure:
 Voice controller (`src/voice/gevGeminiRealtime.js`):
 
 - Connects to `/apps/gev-live/ws`, captures mic audio as 16kHz PCM mono.
-- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough.
+- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough. Regression check: `node stacks/web/input-bridge/gev-voice-check.mjs` (asserts muted => zero outbound PCM frames, incl. a flag-stripped mutation run).
+- Inbound model audio arrives as binary ws frames (24kHz PCM16, forwarded by `bridge.py` from `model_turn` parts); `playGeminiAudio` queues them on a 24kHz AudioContext. `{type:interrupted}` flushes the queue.
 
 Service worker / PWA:
 
@@ -387,7 +393,7 @@ Caveats:
   host frame; the vcast display covers the pane with `.pfail` and
   reports `state=pane-fail` (per-pane: video/img/iframe). Repo-side
   check: `node stacks/web/input-bridge/gev-honest-fail-check.mjs`.
-- Current implementation uses Gemini output transcription text only; no audio playback.
+- Model audio playback ships in the staged bundle's post-build patches (`playGeminiAudio`); `vcast_say` remains the separate non-Latin TTS path.
 
 # Devin on tony-dell — crash/runbook (2026-09-12)
 
