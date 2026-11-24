@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-aahmnvt5
 title: '[audit] mutating_command in opencode session SWoqaahmnVt5'
 column: doing
-updated: 2026-11-24 22:20
+updated: 2026-11-24 22:24
 priority: medium
 program: ai-workforce
 tags:
@@ -222,6 +222,14 @@ comms:
     counted it as a denial → contract violation → merge held; clean retry ...-1793355048 passed, card devnest-fl-pilot-health
     closed done. Shipped: opencode_session_audit.py now annotates blocked attempts (mutations: net_writes(1 blocked))
     + regression test; full record at docs/ss'
+- at: 2026-11-24 22:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-220633-auto-filed-by-opencode-session no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 22:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-220633-auto-filed-by-opencode-session on tony-omen still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -229,5 +237,8 @@ action:
   lane_source: fallback
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 22:24
+    dirty: 2
 claim:
   since: 2026-11-24 22:05

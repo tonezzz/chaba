@@ -1,7 +1,7 @@
 id: audit-miss-remote-eval-results-not-landed
 title: Remote-host eval results never landed in repo
-column: review
-updated: 2026-11-24 22:15
+column: done
+updated: 2026-11-24 22:24
 brief: 'Session audit 2026-11-20 (AUD-0973): eval output files claimed produced on remote hosts; absent from origin/master
   and not found on tony-macbook.'
 priority: medium
@@ -181,6 +181,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-215947-locate-and-land-or-document-as,
     branch dispatch/20261124-215947-locate-and-land-or-document-as'
+- at: 2026-11-24 22:24
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -195,3 +198,7 @@ action:
 claim:
   since: 2026-11-24 21:58
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 22:24
+  note: verified — evidence checks green, closing itself

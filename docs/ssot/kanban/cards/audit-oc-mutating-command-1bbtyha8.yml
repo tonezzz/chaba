@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-1bbtyha8
 title: '[audit] mutating_command in opencode session Hdk31bBtYHA8'
 column: doing
-updated: 2026-11-24 22:17
+updated: 2026-11-24 22:24
 priority: medium
 program: ai-workforce
 tags:
@@ -224,6 +224,14 @@ comms:
     finding; denied-only drops to info. 22/22 unittests pass. Sibling cards 0b3n5bce + aahmnvt5 are the same class
     — safe to close benign. Trail: docs/ssot/jobs/devnest/2026-11-24-opencode-audit-denied-mutations.yml + dispatch-outcome
     doc.'
+- at: 2026-11-24 22:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-220425-auto-filed-by-opencode-session no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 22:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-220425-auto-filed-by-opencode-session on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -231,5 +239,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 22:24
+    dirty: 1
 claim:
   since: 2026-11-24 22:03
