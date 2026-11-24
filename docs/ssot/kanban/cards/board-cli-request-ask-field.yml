@@ -1,7 +1,7 @@
 id: board-cli-request-ask-field
 title: Fix board-cli request subcommand — posts 'text' but API expects 'ask'
-column: doing
-updated: 2026-11-24 22:23
+column: review
+updated: 2026-11-24 22:32
 brief: 'board-cli.py request subcommand POSTs {text: ...} to /request, but do_request() reads body[''ask''] — every
   ''board-cli request'' returns HTTP 400 ''ask required''. Confirmed identical bug in dell and idc03 checkouts (line
   ~168). One-word fix in the payload dict. Requests meanwhile go via curl with ''ask'' — workaround proven 2026-11-09
@@ -257,13 +257,47 @@ comms:
     request landed with ask field (duplicate-id 400 on retry proved first post), respond round-trip ok, comment
     path uses text per do_comment, scratch card closed. Endpoint audit: /comment expects text, /request expects
     ask, /respond accepts answer|text + id/request_id — all match C'
+- at: 2026-11-24 22:32
+  from: tony-omen
+  text: 'finished (ok): exit=0 20261124-222026-scripts-board-board-cli-py-req.md` and a final summary posted to
+    the card. | devin-task-20261124-'
+- at: 2026-11-24 22:32
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 22:32
+  from: chaba
+  text: 'session-end checkpoint c697e545: 1 leftover file(s) committed'
+- at: 2026-11-24 22:32
+  from: chaba
+  text: banked 146 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:32
+  from: chaba
+  text: pushed dispatch/20261124-222026-scripts-board-board-cli-py-req to origin
+- at: 2026-11-24 22:32
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 22:32
+  from: chaba
+  text: auto-merged c0f1872e (dispatch/20261124-222026-scripts-board-board-cli-py-req) → origin/master
+- at: 2026-11-24 22:32
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-222026-scripts-board-board-cli-py-req,
+    branch dispatch/20261124-222026-scripts-board-board-cli-py-req'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: jevos
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 20261124-222026-scripts-board-board-cli-py-req.md` and a final summary posted to the card. | devin-task-20261124-222026-scripts-board-board-cli-py-req.service:
+    Consumed 44.643s CPU time over 4min 15.620s wall clock time, 992.1M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:19
+review_kind: verify
