@@ -1,7 +1,7 @@
 id: ada-scenario-quadlets-exit-contract
 title: Deploy quadlet exit-contract shim (smoke/full) — image rebuild pending
 column: backlog
-updated: 2026-11-24 00:12
+updated: 2026-11-24 08:12
 priority: medium
 tags:
 - ada
@@ -120,6 +120,10 @@ comms:
 - at: 2026-11-24 00:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Deploy the container-suite-run.sh entrypoint shim for the ada-scenario-smoke and ada-scenario-full quadlets
   on idc03 to map scenario-report.py exit-1-with-marker conditions to exit 0. Run stacks/services/ada-scenario-runner/install.sh
