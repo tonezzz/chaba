@@ -811,6 +811,15 @@ jobs:
   persistent: true
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py --enrich
+  note: 'card distiller-enrich-productionize (2026-11-24): --enrich is now
+    on every invocation (this job, systemd/devin-summaries-sync.service,
+    ada-memory-pull.service). The script also dumps grep-able transcript
+    .md to ~/.local/share/devin/transcripts/ (T2 archive for hybrid
+    recall) and preserves any existing ## Artifacts section even when a
+    run cannot re-mine it (sticky enrichment). Recall side:
+    scripts/devin/session/session_recall.py — T1 mddb vector-search +
+    T2 sqlite FTS5 over the transcript/summaries dirs, wired into
+    notebooklm-recall.sh (deploy both to ~/.config/devin/scripts/).'
 - id: session-audit
   name: Ada session audit (transcripts -> friction -> CMS/focus/corpus)
   host: tony_omen
