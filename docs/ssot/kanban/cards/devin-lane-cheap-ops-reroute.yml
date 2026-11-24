@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: doing
-updated: 2026-11-24 09:07
+updated: 2026-11-24 09:18
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -293,6 +293,13 @@ comms:
 - at: 2026-11-24 09:07
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-24 09:18
+  from: devin
+  text: '2026-11-24 slice-3 (proceed): re-measured burn over 339 open cards — free_lane 159 / devin 117 / paid_frontier
+    40 / codemod 21 / manual 2 (sources: kw 183, fallback 96, timer-alert 45, explicit 15); consistent with post-flip
+    steady state. Implemented the watch: kanban-stats.py now emits a lane x lane_source matrix on open cards (15m
+    cadence, system-report) so misroute cohorts stay visible. Also fixed a pre-existing master break: dispatch_repos
+    pin was stale after the 081047 dispatch merge — bump'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
