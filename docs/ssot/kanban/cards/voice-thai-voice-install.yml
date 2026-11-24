@@ -1,7 +1,7 @@
 id: voice-thai-voice-install
 title: 'voice: install Thai Piper voice (th_TH-tsync2) — needs tltk+pandas dep fix'
-column: doing
-updated: 2026-11-24 15:49
+column: review
+updated: 2026-11-24 15:52
 brief: 'Thai replies in the voice mini-app. Voice model downloaded (61MB th_TH-tsync2) but needs tltk+pandas; numpy
   dtype mismatch in ada-whisper venv blocks install (ValueError: numpy.dtype size changed).'
 priority: medium
@@ -200,13 +200,40 @@ comms:
     at risk) + added unicode_rbnf for piper Thai phonemizer. server.py now loads en+th voices, Thai chars in reply
     -> tsync2, Thai transcript -> Thai LLM prompt. Verified live: th-chat-hello.wav -> Thai reply -> 264KB PCM @22050
     non-silent; English fixture still on lessac. Canonical code '
+- at: 2026-11-24 15:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ); full write-up in `dispatch-outcome-20261124-153546-fix-venv-deps-without-breaking.md`.
+    | devin-task-20261124-1'
+- at: 2026-11-24 15:52
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 15:52
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-153546-fix-venv-deps-without-breaking
+    is 51 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 15:52
+  from: chaba
+  text: banked 302 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:52
+  from: chaba
+  text: pushed dispatch/20261124-153546-fix-venv-deps-without-breaking to origin
+- at: 2026-11-24 15:52
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 15:52
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ); full write-up in `dispatch-outcome-20261124-153546-fix-venv-deps-without-breaking.md`. | devin-task-20261124-153546-fix-venv-deps-without-breaking.service:
+    Consumed 42.037s CPU time over 13min 36.218s wall clock time, 467.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 15:35
+review_kind: verify
