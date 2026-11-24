@@ -1,7 +1,7 @@
 id: idc02-vps-lane-canary-hv
 title: 'Canary: idc02 vps-label ada-pi dispatch lane (high-pri re-queue)'
-column: doing
-updated: 2026-11-24 15:54
+column: review
+updated: 2026-11-24 15:56
 brief: High-priority re-queue of idc02-vps-lane-canary (closed) — same one-shot canary for card idc02-second-ada-pi-lane.
 priority: high
 tags:
@@ -20,12 +20,16 @@ action:
   - vps
   executor: devin
   lane: free_lane
-  status: running
+  status: done
   runner: idc02
   attempts: 1
   sweep:
-    stale_running: 2026-11-24 15:53
-    merge_err: 2026-11-24 15:54
+    stale_running: 2026-11-24 15:55
+    merge_err: 2026-11-24 15:55
+  result: 'exit=0 root (left uncommitted as dispatch scratch, per the session rails — verify with `git show HEAD
+    --stat`). | devin-task-20261124-155106-trivial-ada-voice-change-to-ex.service: Consumed 9.529s CPU time, 260.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0034
 comms:
 - at: 2026-11-24 15:46
@@ -100,6 +104,33 @@ comms:
   text: "merge-sweep: landing devin-task-20261124-155106-trivial-ada-voice-change-to-ex failed: push: remote: error:
     refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
     branch in a non-bare repository        \nremote: is denied, because it will"
+- at: 2026-11-24 15:56
+  from: idc02
+  text: 'finished (ok): exit=0 root (left uncommitted as dispatch scratch, per the session rails — verify with `git
+    show HEAD --stat`). | devin-'
+- at: 2026-11-24 15:56
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 15:56
+  from: chaba
+  text: 'session-end checkpoint ba1b3f9b: 1 leftover file(s) committed'
+- at: 2026-11-24 15:56
+  from: chaba
+  text: banked 71 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:56
+  from: chaba
+  text: pushed dispatch/20261124-155106-trivial-ada-voice-change-to-ex to origin
+- at: 2026-11-24 15:56
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 206.1s)
+- at: 2026-11-24 15:56
+  from: chaba
+  text: auto-merged 2e9a1eeb (dispatch/20261124-155106-trivial-ada-voice-change-to-ex) → origin/main
+- at: 2026-11-24 15:56
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-155106-trivial-ada-voice-change-to-ex,
+    branch dispatch/20261124-155106-trivial-ada-voice-change-to-ex'
 claim:
   since: 2026-11-24 15:50
-awaiting_action: true
+review_kind: verify
