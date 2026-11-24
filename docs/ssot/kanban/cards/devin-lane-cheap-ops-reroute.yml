@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: review
-updated: 2026-11-24 08:53
+updated: 2026-11-24 09:02
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -253,6 +253,12 @@ comms:
 - at: 2026-11-24 08:53
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''dev-0045-slice-2-decision-meas''] block close)'
+- at: 2026-11-24 09:02
+  from: tony
+  text: 'answered dev-0045-slice-2-decision-measurement-in-4cbe90: proceed'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -282,12 +288,13 @@ requests:
     rate [recommended — contract cheapest-first, bounded blast radius]; (b) narrow: scope broad free_lane kws (try/plan/install/launch/report/evaluate/probe)
     to TITLE hits like manual/codemod already do; (c) restore devin-before-devin order, keep host-kw removal + timer-alert
     guard only.'
-  status: open
+  status: answered
   at: 2026-11-24 08:24
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   status: done
