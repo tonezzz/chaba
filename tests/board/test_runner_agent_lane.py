@@ -36,7 +36,7 @@ def _card(**action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": "chaba"}
     a.update(action_kw)
     return {"id": "lane-card", "title": "lane test", "spec": "do a thing",
-            "action": a}
+            "column": "backlog", "action": a}
 
 
 class StartTaskLaneTest(unittest.TestCase):

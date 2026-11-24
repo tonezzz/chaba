@@ -1,0 +1,91 @@
+title: claim queue is column-scoped — runner-agent + kanban-dispatch gate on {backlog,doing}
+subtitle: KNB-0036 follow-through — defer notes AND claims gated before any write;
+  stale action.status=queued on done/review cards is off-queue everywhere
+icon: shield
+version: 1
+
+card: done-card-runner-defer-spam
+date: 2026-11-24
+dispatch: 20261124-225256-observed-2026-11-24-on-lab-cf-
+ref: KNB-0036
+
+incident: |
+  2026-11-24: lab-cf-kv-claw-channel.yml (column: done, action.status:
+  done, stale action.runner=idc01) collected 154+ identical 'unclaimable
+  by the declared runner fleet' defer comms from every runner across the
+  day, growing the card past the SSOT CI hard-bloat gate. PR #204
+  (ab861e4c28) gated claim_pass's defer-NOTES block on column in
+  {backlog,doing} + status=queued — but the same off-queue exposure
+  survived on three more surfaces, two of them live the same day:
+
+  - runner-agent._note_capacity_skip wrote hostgate defer notes for any
+    status=queued card with NO column check — review-column cards with a
+    stale queued flag (opencode-handoff-packet-scaffold-save,
+    opencode-memory-freshness-check, moved backlog->review by finish-less
+    close-outs) were collecting 'host overloaded'/'runner at cap' notes
+    on every capacity skip while this dispatch ran.
+  - runner-agent._claimable never checked column — a done/review card
+    with stale status=queued passed every gate and the claim POST
+    stayed reachable (board-api do_claim doesn't check column either).
+  - kanban-dispatch's Phase-A queued filter and _verdict_reason were
+    status-only — same claim + fleet-gap-flag + defer-note exposure on
+    the served side.
+
+decision: |
+  The claim queue is column-scoped: only column in {backlog, doing}
+  with the matching action.status may be claimed or defer-noted.
+  'doing' stays in because a re-queued card can sit there between
+  claim and finish; review/done/lab are off-queue even when a stale
+  action.status=queued survives a finish-less close-out or do_move
+  (do_move never reconciles action.status — that is the producer of
+  the inconsistent state; runners now fail closed on it instead of
+  trusting the flag).
+
+deliverables:
+  - >-
+    scripts/board/runner-agent.py — _claimable() gains a first-gate
+    column check (reason feeds /ready verdicts: 'column <c> — off the
+    claim queue'); _note_capacity_skip() applies the same
+    column+status scope before writing hostgate notes. Every other
+    defer writer (retry-cap, waiting, gpu, push, executor, fleet-gap)
+    is downstream of _claimable or the already-gated defer block.
+  - >-
+    scripts/board/kanban-dispatch.py — Phase-A `queued` list and
+    _verdict_reason() mirror the same column scope, so the served
+    dispatcher neither claims nor flags/notes off-queue cards and
+    /queue's blocked projection tells the truth.
+  - >-
+    scripts/devin/runner-tooling.manifest.json — runner_agent sha256
+    repinned (same-commit rule; test_runner_tooling_contract enforces).
+  - >-
+    tests — test_runner_defer_spam.py gains ClaimQueueColumnGateTest
+    (_claimable rejects done/review/lab, on-queue columns pass through,
+    _note_capacity_skip notes only backlog/doing);
+    test_dispatch_runner_resilience.py gains
+    test_off_queue_column_card_never_claimed; five column-less test
+    fixtures gained column:backlog (executor_contract _card + kanban
+    dispatch _run/_write_card sites, runner_push_guard, runner_agent_
+    lane, runner_agent_primer, runner_agent_launchd, queue_time_
+    classify) — the gate is strict, so fixtures must look like real
+    cards.
+
+verified: |
+  pytest tests/board — full suite green (test_executor_contract 116 +
+  17 subtests; defer-spam/lane/primer/retry/push-guard/launchd/
+  queue-time/dispatch-resilience batches all pass). Live board state at
+  dispatch time: 6 backlog+queued (normal), 2 review+queued (the stale
+  pair — now correctly unclaimable; their action.status=queued is a
+  board-side inconsistency for a human/board-api sweep, not runner
+  work).
+
+not_done: |
+  - board-api do_claim still accepts a claim on any status=queued card
+    regardless of column — deliberate: it is the human/manual override
+    door; automation now gates client-side. If a server-side refusal is
+    wanted it belongs on its own card.
+  - The two live review+queued cards keep action.status=queued — the
+    root producer is do_move/finish-less close-outs not reconciling
+    action.status. Worth a board-hygiene card if it recurs.
+  - Installed runner-agents pick this up via the normal self-update /
+    sync-runner-tools path on next repo-sync; the manifest pin makes
+    drift visible to runner-fleet-health.

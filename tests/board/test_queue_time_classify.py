@@ -289,7 +289,7 @@ class KkMacAutoRouteQueueTest(unittest.TestCase):
         a = {"type": "dispatch"}
         a.update(kw.pop("action", {}))
         card = {"id": "kkq1", "title": kw.pop("title", "t"),
-                "action": a}
+                "column": "backlog", "action": a}
         card.update(kw)
         return card
 

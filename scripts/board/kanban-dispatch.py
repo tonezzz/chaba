@@ -1101,6 +1101,11 @@ def _verdict_reason(card: dict, ctx: dict) -> str:
     blocked projection matches what a pass would do. Read-only: none of
     the claim loop's flag/defer/save side effects run here."""
     a = _act(card)
+    # mirrors the claim loop's column scope (KNB-0036): a stale queued
+    # flag on a done/review card is off-queue, whatever else passes
+    if card.get("column") not in ("backlog", "doing"):
+        return (f"column {card.get('column') or '(unset)'} — "
+                "off the claim queue")
     if ctx["pass_reason"]:
         return ctx["pass_reason"]
     ctier = TIER_ORDER.get(str(card.get("autonomy") or ""), -1)
@@ -1293,9 +1298,13 @@ def main() -> int:
         # gates below still filter per card — order never overrides
         # eligibility.
         loaded = load_dispatch_cards()
+        # KNB-0036 follow-through: the claim queue is column-scoped — a
+        # stale queued/starting flag on a done/review card is off-queue
+        # (no claim, no fleet-gap flag, no defer note). 'doing' stays
+        # in: a re-queued card can sit there between claim and finish.
         queued = [pc for pc in loaded if (
-            (_act(pc[1])).get("status")
-            in ("queued", "starting"))]
+            (_act(pc[1])).get("status") in ("queued", "starting")
+            and pc[1].get("column") in ("backlog", "doing"))]
         queued.sort(key=lambda pc: dr.claim_sort_key(
             pc[1], starve_hours=STARVE_HOURS))
         rest = [pc for pc in loaded if (
