@@ -1,7 +1,7 @@
 id: doc-draft-verifier-semantic-gap
 title: doc-draft verifier passes off-spec docs — sentinels are mechanical not semantic
-column: review
-updated: 2026-11-24 19:06
+column: done
+updated: 2026-11-24 19:08
 spec: 'OPS-1014 evidence: qwen2.5:32b emitted a code-summary of runner-agent.py instead of the specced model-notes
   doc, but verify_contains passed because code names matched sentinels. Options: require verify_contains to include
   at least one string that only appears in a correct deliverable (spec-author duty); add a task-keyword-coverage
@@ -209,6 +209,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-184032-ops-1014-evidence-qwen2-5-32b-,
     branch dispatch/20261124-184032-ops-1014-evidence-qwen2-5-32b-'
+- at: 2026-11-24 19:08
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -223,3 +226,7 @@ action:
 claim:
   since: 2026-11-24 18:39
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 19:08
+  note: verified — evidence checks green, closing itself
