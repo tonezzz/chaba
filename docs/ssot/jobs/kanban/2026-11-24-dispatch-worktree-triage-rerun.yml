@@ -1,0 +1,129 @@
+id: dispatch-worktree-triage-2026-11-24
+title: Dispatch worktree merged/unmerged triage — tony-dell fleet (rerun)
+date: 2026-11-24
+card: dispatch-worktree-merged-triage
+status: done
+
+context: >
+  Fourth triage attempt on this card (prior runs: 11-17 tony-omen exit=1,
+  11-19/11-20 provider rate-limits + exit-code, 11-23 idc02 completed the
+  full sweep then Tony held the card; re-queued 11-24). The card text's
+  "16 worktrees from 2026-11-09" were all dropped by the 11-23 run —
+  verified: zero pre-11-23 dispatch-wt-* dirs remained. This run swept
+  the CURRENT tony-dell fleet instead: 48 dispatch-wt-* dirs (all
+  2026-11-23/24 vintage, chaba + ada-voice repos), every one a dead
+  session per ~/.local/share/devin-dispatch/tasks/<id>/exit_code and
+  systemctl --user (one unit, cf-ssl 222656, finished mid-run and was
+  swept too). Method: per-worktree branch/HEAD/dirty/merge-base vs
+  freshly-fetched origin/<default>, git cherry + added-line-presence
+  checks for the 8 non-ancestor branches, dirty-file diff vs master
+  blobs for uncommitted state.
+
+result: >
+  All 48 worktrees removed; 0 dispatch-wt-* remain on tony-dell across
+  all 5 dispatch repos (chaba, ada-voice, sunsynk-card, mddb-fork,
+  gods-eye-view). Every dispatch/* branch kept as a local ref — 68 on
+  chaba, 13 on ada-voice — so no work is unreachable. 13 dead
+  worktrees held unique UNCOMMITTED state; each was committed onto its
+  own dispatch branch first ("triage salvage: uncommitted worktree
+  state snapshot") so the worktree could be dropped without loss.
+  The recurring dirty file docs/ssot/ssot.dev-system.assessment.yml
+  (timestamp/score auto-bump written by scripts/dev-system-assess.py)
+  was reset, not committed — it is harness noise, same as the 11-23
+  run found.
+
+merged_equivalent: >
+  40 worktrees whose branch HEAD is an ancestor of origin/<default>
+  (chaba master / ada-voice main) — committed content fully landed.
+  Includes all 4 ada-voice worktrees (191536, 202451, 211558, 220709).
+
+content_landed_equivalent: >
+  8 worktrees whose branch is NOT an ancestor but whose content
+  verifiably landed via sibling reruns or alternate implementations
+  (all spawning cards are column=done):
+  - 145907 memory-inspect-pages: checkpoint code 8/8+2/2+18/23 added
+    lines on master via merged sibling 155646; uncommitted bank-inspect
+    variant salvaged to branch.
+  - 155847 kk-mac-usage-to-lane-savings: lane-savings token evidence
+    on master as _usage_fragment/result_extra (runner-agent.py:3226+,
+    tests:1556+) — different impl than the checkpoint; jobs yml
+    salvaged.
+  - 211631 devin-telegram-report: all 9 uncommitted files byte-identical
+    to master; ssot.jobs.yml 18/18 lines on master.
+  - 220626 kk-mac-launchd-runner: _FLEET_HOST_RE on master already
+    includes kk-[\\w-]+ (dispatch_repos.py:937); kk-mac SSOT section
+    rewritten newer on master.
+  - 075428 wiki-talk-watch: wiki-talk-watch.py + systemd units on
+    master via later dispatch (jobs yml at jobs/education/ path);
+    branch holds only this run's outcome doc + older script rev.
+  - 080626 casting-suite-triage: both deliverable files
+    (jobs yml + outcome md) byte-present on master via sibling 090603.
+  - 143023 distiller-enrich-productionize: --enrich/T2 archive on
+    master (sync-devin-summaries.py:285+); session-recall.py itself
+    absent on master — salvaged to branch (13KB, uncommitted).
+  - 151835 omen-battery-charge-policy: jobs yml 36/40 lines on master
+    at jobs/home-assistant/ path via siblings 160901/192853.
+
+salvage_commits: >
+  Unique uncommitted state committed onto the worktree's own dispatch
+  branch before drop (branch = salvage ref):
+  - dispatch/20261124-211725-... (card runner-per-executor-caps,
+    review): 13 files +705/-96 — the REMOTE_CAP/local cap-pool split
+    (runner-agent.py, runner-cap.sh, dispatch_repos.py, ssot.kanban.yml)
+    + new tests/board/test_runner_agent_caps.py (292L) + outcome doc.
+    Committed HEAD was merged but this staged delta never was — the
+    actual per-executor-caps feature may need re-landing; flagged on
+    the card.
+  - dispatch/20261123-191536-... (ada-voice, card
+    ada-tool-consolidation-merge-overlapping): wp_write.py (37KB new
+    tool) + 4 modified backend files — uncommitted in ada-voice repo.
+  - dispatch/20261123-145907-... (memory-inspect-pages): bank-inspect.py
+    divergent variant (613 diff-lines vs master) + test + units.
+  - dispatch/20261124-143023-... (distiller-enrich): session-recall.py
+    13KB — file absent on master entirely.
+  - dispatch/20261123-160101-... (kk-mac-extract-brief-class-eval):
+    scripts/bench/kkmac-classes/ corpus+scorer+3 model run records.
+  - dispatch/20261123-202412-... (tony-usb-own-nodekey): stick-find.sh
+    7.3KB + mn01-stick-standard.md/jobs-yml updates.
+  - dispatch/20261123-155847-... (kk-mac-usage-to-lane-savings):
+    jobs yml record.
+  - dispatch/20261123-211631-... (devin-telegram-report): outcome-era
+    untracked set — all byte-identical to master, committed anyway for
+    completeness.
+  - dispatch/20261123-211710-... (decision-arena): identical-to-master
+    files, committed for completeness.
+  - dispatch-outcome docs only: 150027 gev-voice, 162634 colab-offload,
+    210041 idc03-disk-cleanup (+jobs yml idc03-disk-full-ops-compact),
+    223529 command-polish-before-ai-dispatch.
+
+stranded_branch_landed: >
+  The 11-23 run's own branch origin/dispatch/20261123-144247-triage-
+  2026-11-09-cascadeproje never merged (card was held, so merge-sweep
+  skipped it; action.task_id now points at newer sessions). Its 17
+  files absent from master — 11 dispatch-outcome docs + 6 jobs/ssot
+  records incl. the 11-23 triage matrix itself — were checked out onto
+  this run's branch. The 2 files it shared with master
+  (ssot.apps.ada-engines.yml, jobs/ada/2026-11-17-ai-engine-lines.yml)
+  were NOT taken: master's versions are newer revisions (last_updated
+  11-23, engine_line_naming resolved) that supersede the branch drafts.
+
+drops: >
+  All 48 worktrees removed via git worktree remove after cleanliness
+  re-check (0 remaining dirty). No --force used. Live unit
+  devin-task-20261124-222656 (cf-ssl-strict) was still running at sweep
+  start, finished mid-run (ssl=strict verified live by the session),
+  then its worktree was noise-reset and removed like the rest.
+
+notes: >
+  - idc02 local fleet still holds ~42 dispatch-wt-* dirs — out of this
+    card's tony-dell scope; ops-1036/dispatch-worktree-gc lineage owns
+    it, and this very session is one of them.
+  - Branch refs accumulate: 785 dispatch/* branches on origin plus 68
+    local on tony-dell chaba — devin-dispatch-prune reaps merged+clean
+    weekly; the 13 salvage-commit branches are intentionally unmerged
+    refs now.
+  - Systemic: worktree flood is fast (~49 created in 36h on tony-dell
+    alone) and prune's clean-tree guard means the assessment.yml noise
+    file alone keeps every dead worktree alive until manual triage.
+    Candidate fix: prune treats assessment.yml-only diffs as clean, or
+    dev-system-assess stops writing inside dispatch worktrees.
