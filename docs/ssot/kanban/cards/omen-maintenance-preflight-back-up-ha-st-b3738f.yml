@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
-column: doing
-updated: 2026-11-24 16:39
+column: review
+updated: 2026-11-24 16:40
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -296,9 +296,30 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-161435-verified-loginctl-linger-yes-e on tony-macbook still
     dirty — 7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 16:40
+  from: tony-macbook
+  text: 'finished (ok): exit=0 l`; full details in `dispatch-outcome-20261124-161435-verified-loginctl-linger-yes-e.md`.
+    | devin-task-20261124-1'
+- at: 2026-11-24 16:40
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:40
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-161435-verified-loginctl-linger-yes-e
+    is 72 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 16:40
+  from: chaba
+  text: pushed dispatch/20261124-161435-verified-loginctl-linger-yes-e to origin
+- at: 2026-11-24 16:40
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 16:40
+  from: chaba
+  text: 'worktree kept: dirty — 7 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-macbook
@@ -306,5 +327,8 @@ action:
   sweep:
     stale_running: 2026-11-24 16:38
     dirty: 7
+  result: 'exit=0 l`; full details in `dispatch-outcome-20261124-161435-verified-loginctl-linger-yes-e.md`. | devin-task-20261124-161435-verified-loginctl-linger-yes-e.service:
+    Consumed 54.648s CPU time over 23min 47.807s wall clock time, 393.3M memory peak.'
 claim:
   since: 2026-11-24 16:13
+review_kind: verify
