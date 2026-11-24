@@ -146,17 +146,38 @@ def rate_limit_hit(text: str) -> str:
 # --- lane -> cheapest-executor routing (jev-pilot Phase 2, 2026-10-25) --
 # Canonical home for the lane tables + classifier so a queued card's lane
 # resolves to DISPATCH_MODEL identically whichever claimer wins the race —
-# kanban-dispatch (served host) or runner-agent (a remote host). Model
-# lanes map to `devin --model` ids; codemod -> script executor, manual ->
-# Tony's hands (never dispatched). jev-model-chain-probe found this gap:
-# the wiring originally lived only in kanban-dispatch, so cards claimed
-# by runner-agent always launched on the devin default model.
+# kanban-dispatch (served host) or runner-agent (a remote host). codemod
+# -> script executor, manual -> Tony's hands (never dispatched).
+# jev-model-chain-probe found this gap: the wiring originally lived only
+# in kanban-dispatch, so cards claimed by runner-agent always launched on
+# the devin default model.
+#
+# Executor-aware model ids (devin-executor-model-routing, DEV-0958; Tony
+# answer executor-split-no-paid 2026-10-28): LANE_MODELS holds
+# LiteLLM-proxy aliases — they resolve ONLY on executors that speak
+# provider/model ids (the opencode lane). The devin CLI accepts only ids
+# from `devin models list`; DEVIN_LANE_MODELS holds the devin-native pick
+# per lane and every entry MUST be one (devin-dispatch.sh's model
+# preflight re-validates against the live list before systemd-run). A
+# litellm/* id handed to `devin --model` exits 'Unknown model' inside
+# the unit — the 2026-10-28 tony-macbook Cline/Nest dispatch died that
+# way pre-inference. paid_frontier is deliberately ABSENT from
+# DEVIN_LANE_MODELS: the paid route requires explicit budget approval,
+# so the lane keeps the devin default rather than silently mapping to a
+# billable model. For the Cline pilot the no-token-cost route is local
+# qwen3:4b via the Nest adapter (PR #45), not a dispatch lane.
 LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
     # was litellm/or-claude-fable-5.1 — that alias was never deployed
     # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
     # gemini-3.5-flash is the strongest served non-lite model
     "paid_frontier": "litellm/gemini-2.5-flash",
+}
+# devin-native lane picks — every id MUST appear in `devin models list`
+# (the preflight in devin-dispatch.sh enforces it at launch).
+# paid_frontier has no entry on purpose: see the block comment above.
+DEVIN_LANE_MODELS = {
+    "free_lane": "swe-2-flash-medium",
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None,
                 "nlm_batch": "nlm_batch"}
@@ -265,6 +286,40 @@ def model_provider(model: str) -> str:
     if not m:
         return ""
     return m.split("/", 1)[0] if "/" in m else "devin"
+
+
+def model_valid_for_executor(model: str, executor: str) -> bool:
+    """Provider/executor namespace contract
+    (dispatch-model-pick-executor-mismatch 2026-11-08 +
+    devin-executor-model-routing 2026-11-24): `executor` is the
+    RESOLVED executor ('' resolves to devin). An empty model is always
+    valid — it means the executor default. The opencode lane takes
+    provider/model ids ('litellm/x'); the devin path takes bare devin
+    ids only — a 'litellm/...' pick exits 'Unknown model' inside the
+    unit. claude-dispatch self-validates its own id space, so the
+    bare-id pass-through is safe there."""
+    m = (model or "").strip()
+    if not m:
+        return True
+    if (executor or "devin") == "opencode":
+        return "/" in m
+    return model_provider(m) == "devin"
+
+
+def lane_model(lane: str, executor: str) -> str:
+    """Lane -> model pick for `executor` ('' resolves to devin).
+    opencode/proxy executors take LANE_MODELS (litellm ids); devin
+    takes DEVIN_LANE_MODELS (devin-native ids — free_lane only;
+    paid_frontier has no pick, the paid route stays gated on explicit
+    budget approval). Other executors get '' — their launch path owns
+    model selection (claude-dispatch self-validates, script/nlm run
+    no model)."""
+    ex = executor or "devin"
+    if ex == "opencode":
+        return LANE_MODELS.get(lane or "", "")
+    if ex == "devin":
+        return DEVIN_LANE_MODELS.get(lane or "", "")
+    return ""
 
 
 def executor_blurb(card: dict) -> str:
