@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-24 07:32) of `chaba-nag.service` on `idc03` result=exit-code — investigate journal: `journalctl
-  --user -u chaba-nag.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-24 07:32) of `chaba-nag.service` on `idc03` result=exit-code — investigate journal:
+  `journalctl --user -u chaba-nag.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-0007
 comms:
 - at: 2026-11-24 07:54
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-24 08:03
   from: devin
-  text: '[still suspicious] Last run (11-24 07:32) of `chaba-nag.service` on `idc03` result=exit-code — investigate
-    journal: `journalctl --user -u chaba-nag.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-24 07:32) of `chaba-nag.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-nag.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 08:11
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -46,3 +46,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of chaba-nag.service on host idc03, where the last run resulted in an exit-code
+  failure, by inspecting the journal logs using journalctl --user -u chaba-nag.service and reviewing CMS
+  timer-timeline-idc03. Additionally, redeploy the runner-agent on idc03 by copying the latest script
+  from the repo at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to idc03:~/.local/bin/runner-agent
+  to resolve agent drift. The done-condition is met when chaba-nag.service executes successfully on idc03
+  and the runner-agent is up to date.

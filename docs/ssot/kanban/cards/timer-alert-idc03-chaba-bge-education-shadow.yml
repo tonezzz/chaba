@@ -16,8 +16,9 @@ comms:
   text: card captured via board-api
 - at: 2026-11-24 08:03
   from: devin
-  text: '[still suspicious] Last run (11-24 07:22) of `chaba-bge-education-shadow.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u chaba-bge-education-shadow.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-24 07:22) of `chaba-bge-education-shadow.service` on `idc03`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-bge-education-shadow.service`
+    on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 08:11
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -46,3 +47,21 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 13:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-runner-agent-on-idc03-and-f13918
+  ask: The runner-agent on idc03 (and multiple other hosts) has drifted from the repository version, causing
+    agents to defer execution of the timer alert card for chaba-bge-education-shadow. Before this card
+    can be processed to investigate the systemd service failure, the runner-agent infrastructure itself
+    needs to be updated.
+  options:
+  - ★ Redeploy runner-agent to idc03 using scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py,
+    then proceed with the timer alert investigation
+  - Defer this card until a global maintenance sweep updates the runner-agent across all drifted hosts
+    (idc02, idc03, tony-macbook, con01)
+  - Skip this card as obsolete since multiple hosts are currently blocked by runner-agent drift
+  status: open
+  at: 2026-11-24 13:20
+  from: backlog-spec-enrich
