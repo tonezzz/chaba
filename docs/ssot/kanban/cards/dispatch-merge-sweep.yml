@@ -11,21 +11,21 @@ area: dispatch
 note: 'Evidence 2026-10-08: nest-edge-vision, nest-micro-training (x2 repos), report-loop-bench, yt-voice-dub-qc,
   yt-voice-dub-scenarios, yt-dub-cuefit (32h zombie whose finished work nearly died) all needed manual fetch-over-ssh
   + merge. The merge guard already detects the state — nothing lands it.'
-spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doing/review with action.type=dispatch\
-  \ and a session branch; locate the\n  worktree on the recorded runner (meta.json pattern); verify the runner's\n\
-  \  worktree HEAD is clean + ahead of base; fetch via\n  `git -c core.sshCommand=ssh fetch <runner>:<worktree>\
-  \ HEAD`; merge into\n  the served checkout with conflict policy = stop-and-report (never\n  silently take either\
-  \ side); on clean merge push + post card comms; on\n  conflict post a card request naming the files.\n- Timer\
-  \ on dell (merge-sweep.timer, ~15min) — single-writer safe: merge\n  into chaba-tony-dell for chaba, ~/CascadeProjects/ada-pi\
-  \ for ada-pi.\n- Also sweep zombie tasks: devin-task-* running >6h with no transcript\n  activity -> flag card\
-  \ comms (the 32h cue-fit case), don't auto-kill.\n- Reuse dispatch_repos.guard()/merge_state() — it already computes\
-  \ the\n  merged/unmerged state; the sweep just closes the loop it detects.\nAcceptance:\n- a dispatched branch\
-  \ on mn01/omen merges to master without human touch;\n  conflicted case produces a card request, not a wrong merge;\
-  \ zombie task\n  detected + reported within one sweep.\n"
+spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doing/review with action.type=dispatch
+  and a session branch; locate the\n  worktree on the recorded runner (meta.json pattern); verify the runner's\n
+  \ worktree HEAD is clean + ahead of base; fetch via\n  `git -c core.sshCommand=ssh fetch <runner>:<worktree> HEAD`;
+  merge into\n  the served checkout with conflict policy = stop-and-report (never\n  silently take either side);
+  on clean merge push + post card comms; on\n  conflict post a card request naming the files.\n- Timer on dell (merge-sweep.timer,
+  ~15min) — single-writer safe: merge\n  into chaba-tony-dell for chaba, ~/CascadeProjects/ada-pi for ada-pi.\n-
+  Also sweep zombie tasks: devin-task-* running >6h with no transcript\n  activity -> flag card comms (the 32h cue-fit
+  case), don't auto-kill.\n- Reuse dispatch_repos.guard()/merge_state() — it already computes the\n  merged/unmerged
+  state; the sweep just closes the loop it detects.\nAcceptance:\n- a dispatched branch on mn01/omen merges to master
+  without human touch;\n  conflicted case produces a card request, not a wrong merge; zombie task\n  detected +
+  reported within one sweep.\n"
 help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. Fetch must override the repo''s
   pinned GitHub key: `git -c core.sshCommand=ssh fetch`. Merge guard already in scripts/board/dispatch_repos.py
   — this service is its remedy path.'
-updated: 2026-11-24 08:39
+updated: 2026-11-24 11:42
 action:
   type: dispatch
   status: done
@@ -361,6 +361,10 @@ comms:
 - at: 2026-11-24 08:39
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ownership:
   owner: tony
