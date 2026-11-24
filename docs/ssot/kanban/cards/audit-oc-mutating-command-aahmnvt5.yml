@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-aahmnvt5
 title: '[audit] mutating_command in opencode session SWoqaahmnVt5'
 column: doing
-updated: 2026-11-24 22:18
+updated: 2026-11-24 22:20
 priority: medium
 program: ai-workforce
 tags:
@@ -215,6 +215,13 @@ comms:
   from: devin
   text: 'investigating: flagged net_write was a single curl POST to board-api /comment, status=error (denied by
     profile permissions) — verifying consequence chain'
+- at: 2026-11-24 22:20
+  from: devin
+  text: 'VERDICT: PASS — contained attempt, not an incident. The net_write was a single curl POST to board-api /comment
+    (progress comment) that the ops-readonly permission render DENIED before execution — nothing was sent. Closeout
+    counted it as a denial → contract violation → merge held; clean retry ...-1793355048 passed, card devnest-fl-pilot-health
+    closed done. Shipped: opencode_session_audit.py now annotates blocked attempts (mutations: net_writes(1 blocked))
+    + regression test; full record at docs/ss'
 action:
   type: dispatch
   status: running
