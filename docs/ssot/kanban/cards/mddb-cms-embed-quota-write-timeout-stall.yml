@@ -1,7 +1,7 @@
 id: mddb-cms-embed-quota-write-timeout-stall
 title: mddb-cms /v1/add stalls 30s+ when embed providers quota-capped — fleet-wide write timeouts
-column: backlog
-updated: 2026-11-24 21:02
+column: doing
+updated: 2026-11-24 21:03
 priority: high
 tags:
 - mddb
@@ -150,9 +150,16 @@ comms:
 - at: 2026-11-24 21:02
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:03
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 21:03
