@@ -2494,11 +2494,71 @@ hosts:
       - apple-silicon
       - member-device
       - ada-nest
-    notes: "host-loads probe only — not in audit-hosts.py HOSTS (macOS, no
-      systemctl). SSH: Host kk-mac stanza on tony-dell -> kkkakk +
-      id_ed25519 (dell key seeded into authorized_keys 2026-10-22;
-      remaining fleet keys + adanest user pending KK sign-off per
-      docs/kb/ada-nest-kk-mac-onboarding.md)."
+    expected_services:
+      - name: net.adanest.ollama
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        procs:
+          - "/opt/homebrew/bin/ollama serve*"
+          - "*ollama/llama-server*"
+        note: "LaunchDaemon /Library/LaunchDaemons/net.adanest.ollama.plist
+          running as adanest, loopback :11434 — THE OPS-1018 blind spot:
+          invisible to `launchctl list` as kkkakk. audit-hosts.py now
+          enumerates /Library/LaunchDaemons + prints system/<label>
+          unprivileged, plus a fleet-process ps scan. (Drift: onboard
+          script kk-mac-onboard.sh writes label ai.adanest.ollama —
+          deployed label is net.adanest.ollama.)"
+      - name: net.adanest.heartbeat
+        type: service
+        scope: system
+        expected_state: active
+        procs:
+          - "*ada-nest-heartbeat*"
+        note: "LaunchDaemon net.adanest.heartbeat — member-device
+          phone-home to MDDB ada-nest-heartbeats (300s interval; shows
+          loaded/not-running between ticks, which is normal)."
+      - name: net.adanest.kk-llm-worker
+        type: service
+        scope: user
+        expected_state: active
+        procs:
+          - "*kk_mac_lane_worker*"
+          - "*nest-worker*"
+        note: "LaunchAgent in kkkakk gui domain (gui/501), StartInterval=60
+          — interval agent, 'loaded' between ticks is normal."
+      - name: ai.chaba.runner-agent
+        type: service
+        scope: user
+        expected_state: active
+        procs:
+          - "*runner-agent*"
+        note: "LaunchAgent ai.chaba.runner-agent in kkkakk gui domain —
+          60s dispatch poller (card kk-mac-launchd-runner-port)."
+      - name: sh.brew.tailscale
+        type: service
+        scope: system
+        expected_state: active
+        note: "brew services tailscale LaunchDaemon — the tailnet client
+          the whole fleet reaches this host through."
+    allowed_running:
+      - "Adobe_*"    # Adobe Genuine Integrity etc. — vendor daemons
+    allowed_processes:
+      - "*runner-agent/launchd/*"   # transient dispatch task wrappers
+    notes: "Audited by audit-hosts.py since 2026-11-24 (card
+      audit-hosts-macos-blindspot / OPS-1018): macOS branch enumerates
+      launchd across system domain (/Library/LaunchDaemons + print),
+      /Library/LaunchAgents, every user's ~/Library/LaunchAgents (dscl
+      user list), the caller's gui domain, and a fleet-process ps scan —
+      `launchctl list` alone only sees the caller's domain, which is how
+      adanest's ollama ran undeclared. Other users' gui domains are
+      plist-on-disk state only unless the ssh user has passwordless
+      sudo (kkkakk does not). SSH: Host kk-mac stanza on tony-dell ->
+      kkkakk + id_ed25519 (dell key seeded 2026-10-22; tony-omen key
+      verified working 2026-11-24; con01 still needs ssh-keyscan
+      kk-mac — host key not yet accepted). adanest user exists (uid
+      502, created by kk-mac-onboard.sh)."
     capabilities:
       ollama:
         note: "ollama serve under adanest user (launchd
@@ -2506,9 +2566,10 @@ hosts:
           kkmac-ollama-tunnel.service on idc03 (ssh -L 11445 -> :11434).
           KK approved full fleet use 2026-10-30. Models: qwen2.5:32b,
           qwen3:8b, qwen2.5vl:7b, llama3.2:3b. LiteLLM routes:
-          ollama-*-kkmac. Audit blind spot: services in other users'
-          launchd domains are invisible to launchctl list — adanest
-          ollama ran undeclared until 2026-10-30 (OPS-1018)."
+          ollama-*-kkmac. Audit blind spot CLOSED 2026-11-24
+          (audit-hosts-macos-blindspot): the daemon is declared in
+          expected_services above and the audit enumerates all launchd
+          domains + fleet processes."
         upstream: "http://127.0.0.1:11445 (idc03 tunnel) / 127.0.0.1:11434 (kk-mac)"
       kk_llm_worker:
         note: "net.adanest.kk-llm-worker LaunchAgent (kkkakk domain,

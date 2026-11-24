@@ -245,7 +245,7 @@ jobs:
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook;
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook kk-mac;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
     --consolidate; /bin/bash scripts/report/pull-report-metas.sh; /usr/bin/python3 scripts/report-system.py && scp -q
     stacks/web/public/apps/system-report/data/system-report.yml
@@ -266,7 +266,12 @@ jobs:
     'missing'. The pull step rsyncs meta*.yml (-u newest-wins, recursive) from every producer
     checkout (idc03 served+exec+kanban-sync, idc02, tony-dell x2, tony-omen, mn01, idc01) plus
     tony-dell's ~/var/chaba/health/meta.yml before the render; all soft-fail so an unreachable
-    host never blocks the report.
+    host never blocks the report. kk-mac added 2026-11-24 (audit-hosts-macos-blindspot) —
+    macOS branch of audit-hosts.py; offline_ok absorbs member-device sleep. PREREQ — con01
+    has not yet accepted kk-mac's host key — run `ssh-keyscan kk-mac >> ~/.ssh/known_hosts`
+    on con01 once or the probe reports unreachable (silent, offline_ok). The --cards drift
+    cards come from the tony-dell `audit-hosts.py --all --cards` chain instead, which
+    reaches kk-mac today."
 - id: chaba-host-loads
   name: Host-loads sampler (fleet load/mem/disk -> system-report monitor page)
   host: idc02
