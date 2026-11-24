@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
 column: doing
-updated: 2026-11-24 22:41
+updated: 2026-11-24 22:47
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -227,6 +227,13 @@ comms:
   from: devin
   text: 'Phase 1 in progress: mapping all camwall consumers in-repo (units, stacks, routes, Ada/vcast/CMS touchpoints).
     Will post consumer list + sign-off request when the map is complete.'
+- at: 2026-11-24 22:47
+  from: devin
+  text: 'Phase 1 consumer map complete → docs/kb/retired-apps/camwall.md (full map + stop checklist + restore steps).
+    Producers: cam-wall-pull(.timer) tony-dell, cam-wall-pull-vps(.timer) idc02+idc03, cam-wall-cms(.timer) tony-dell,
+    cam-wall-cms-vps(.timer) idc02+idc03, cam-wall-cms-kk (already dark since OPS-0749), camwall-edge.service idc02+idc03
+    (+masked idc01), cam-wall-roster-audit.timer dell+omen, camwall-render-check.timer idc02. Readers that break:
+    /apps/camwall route+Caddyfile+routes.json, eye.j'
 action:
   type: dispatch
   status: running
