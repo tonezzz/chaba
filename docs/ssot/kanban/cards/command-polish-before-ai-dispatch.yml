@@ -1,7 +1,7 @@
 id: command-polish-before-ai-dispatch
 title: Command-polish layer — improve Tony's English commands before they reach Devin/Ada/OpenCode
 column: doing
-updated: 2026-11-24 22:37
+updated: 2026-11-24 22:55
 priority: medium
 program: ai-workforce
 tags:
@@ -270,6 +270,13 @@ comms:
   text: dispatch picked up on tony-dell worktree. Prior bench branch feat/ada1088-command-polish-20261107 (e82c40e)
     exists on origin but was never merged — porting the micro-bench dispatch_cmd protocol + tony-command fixtures
     onto master first, then assessing the chaba-side dispatch-composition seam.
+- at: 2026-11-24 22:55
+  from: devin
+  text: 'DONE (dispatch tony-dell). Landed the unmerged ADA-1088 bench work: cherry-picked e82c40e (dispatch_cmd
+    protocol + dispatch_spec_v1 prompt + LiteLLM provider + 16 synthetic fixtures) and added dispatch_real — 12
+    fixtures with VERBATIM live card titles as raw input (entity preservation 1.0, gold-sim 0.53-0.93). Decision
+    record: docs/ssot/jobs/ada/2026-11-24-command-polish-dispatch.yml. Verdict restated: per-turn intake polish
+    stays bench-REJECTED; on-demand consult (ada-expert-consult-tool, done)'
 action:
   type: dispatch
   status: running
