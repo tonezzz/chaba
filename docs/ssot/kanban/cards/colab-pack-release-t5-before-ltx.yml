@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
 column: doing
-updated: 2026-11-24 17:07
+updated: 2026-11-24 17:14
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -205,6 +205,13 @@ comms:
     cannot free live tensors. Fix: producer-side teardown in all 3 embeds packs + enc/tok added to LTX prologue
     pops (6 packs) + prologue added to nasa-i2v (had none). nest-worker.py already uses a fresh ns per pack - hazard
     is Colab queue-runner only. Regression test next.'
+- at: 2026-11-24 17:14
+  from: devin
+  text: '[done] Leak verified against real pack code (enc/tok survive the preview prologue with ~9.5GB live; empty_cache
+    cannot free live tensors). Fix landed repo-side: producer teardown in all 3 embeds packs (pop enc/tok/encode
+    + gc + empty_cache) and consumer prologues extended to (''model'',''pipe'',''enc'',''tok'') in 6 LTX packs +
+    prologue added to nasa-i2v which had none. New tests/colab/test_pack_namespace_hygiene.py (5 tests) execs the
+    real run: blocks against a fake live-vs-cached CUDA allocator — the '
 action:
   type: dispatch
   status: running
