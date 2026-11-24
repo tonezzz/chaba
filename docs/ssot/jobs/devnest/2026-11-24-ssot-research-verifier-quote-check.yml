@@ -1,0 +1,82 @@
+title: ssot-research verifier semantic gap — citation quote-verification
+id: ssot-research-verifier-semantic
+date: 2026-11-24
+card: ssot-research-verifier-semantic
+ref: KNB-1029
+parent_ref: OPS-1017
+sibling_card: doc-draft-verifier-semantic-gap
+domain: devnest
+status: done
+summary: >-
+  The ssot-research held-out verifier now requires every citation's
+  `note` to carry a quoted string (>=8 chars, "..." / “...” / `...` /
+  '...') that appears VERBATIM — whitespace-normalized — in the cited
+  file. Path existence alone let the KNB-1029 qwen3:8b artifact pass
+  while asserting /etc/hosts + MCP tools that no cited file supports.
+  Quote-verification was the card's recommended option: fails closed
+  on fabrication with no new infrastructure (no judge model, no extra
+  pass).
+
+context: >-
+  KNB-1029 evidence (qwen3:8b via ollama-qwen38b-kkmac,
+  2026-10-30, archived in evals/opencode-lane/reports/
+  2026-11-07-session-audit.json ses_e72e4865dffeSHpW6C3zDQtnTG):
+  the artifact answered a kk-mac fleet question citing AGENTS.md +
+  docs/ssot/infrastructure/ssot.mcp.yml — both real paths — while
+  claiming the host entry lives in /etc/hosts and LiteLLM routes are
+  "MCP tools". Truth: ssot.audit.hosts.yml (kkmac-ollama-tunnel
+  declaration) + stacks/idc03/litellm/config.yaml. Replaying that
+  artifact through the OLD verifier returns verdict=pass; through the
+  new one it fails with reason "no quote" on both citations.
+
+options_weighed: >-
+  - quote-verification (TAKEN): cheap, deterministic, fails closed on
+    fabricated notes; catches the exact KNB-1029 shape (real path,
+    unsupported claim, unquoted note). Does NOT prove the quote
+    supports the claim — it proves the citation is grounded, which is
+    the checkable floor.
+  - second-model judge pass: stronger semantics but adds a model call,
+    latency, and a new failure surface to every profile run — rejected
+    for this card; remains available as a later S-stage upgrade.
+  - mechanical gate + mandatory human review note: zero code, but
+    leaves the false-pass in the pipeline and relies on reviewer
+    diligence — rejected as insufficient alone.
+
+changes:
+  - file: evals/opencode-lane/profiles/ssot-research/fixture/verify.py
+    notes: >-
+      New check "every citation quote verified": for each resolved
+      citation, _quotes() extracts quoted candidates from `note`
+      (double/curly/backtick/single quotes, whitespace-normalized,
+      >=8 chars) and requires >=1 to appear in the whitespace-
+      normalized file content (4MB cap). No quote or quote-not-in-
+      file -> citation lands in `unverified citations` with reason
+      "no quote" | "quote not in file"; verdict fails. Non-dict /
+      note-less citations fail closed the same way.
+  - file: evals/opencode-lane/profiles/ssot-research/fixture/prompt.md
+    notes: rules + checklist now require a verbatim quote per citation
+      note so agents emit the contract the verifier checks.
+  - file: evals/opencode-lane/profiles/ssot-research/fixture/task.yaml
+    notes: contract.required_fields.citations documents the quote
+      requirement.
+  - file: tests/devnest/test_ssot_research_verify.py
+    notes: >-
+      6 tests: KNB-1029 artifact replay (fail, "no quote"), good
+      citations (pass), fabricated quote (fail, "quote not in file"),
+      short quote rejected, whitespace-normalized cross-line match
+      (pass), missing path still fails.
+
+verify: >-
+  python3 -m pytest tests/devnest/test_ssot_research_verify.py -q ->
+  6 passed. Manual replay: old verify.py on the archived KNB-1029
+  artifact -> verdict pass (bug confirmed); new verify.py -> fail.
+
+notes: >-
+  - Residual gap: a citation can quote real text that does not support
+    the claim (quote exists, semantics wrong). Closing that needs the
+    judge pass or human review — out of scope here, same residual the
+    OPS-1017 fix accepted.
+  - Prompt and contract were updated in lockstep — without the prompt
+    change every profile run would fail closed on missing quotes.
+  - info-find profile has the same citation shape; if it ever gates on
+    citations the same quote check can be lifted from this verifier.

@@ -1,0 +1,87 @@
+title: RK600 shutter go-live runbook — remaining steps once motors are repaired
+subtitle: verified live-state snapshot + ordered checklist for card
+  rk600-shutter-go-live (OPS-0756)
+icon: 🪟
+id: 2026-11-24-rk600-shutter-go-live-runbook
+status: blocked
+owner: devin-dispatch
+project: chaba
+started: "2026-11-24"
+card: rk600-shutter-go-live
+unblocks: rk600-shutter-go-live
+
+context: |
+  Shutter control UI + armed gate shipped and demoed to Michael on
+  2026-10-20. Work remaining is gated on physical repair of the shutter
+  motors (Tuya cloud covers, assumed_state — `unknown` cover state is
+  normal and not a fault signal).
+
+verified_state_2026-11-24: |
+  Read live via michael-ha MCP (all times Asia/Bangkok):
+  - input_boolean.shutter_control_armed = off  (armed gate, correct)
+  - input_boolean.rk600_shutter_state = off    ("Shutter Command" helper)
+  - automation.rk600_shutter_close_actuate = on  (YAML-defined, armed-gated)
+  - automation.rk600_shutter_open_actuate  = on  (YAML-defined, armed-gated)
+  - automation.rk600_shutter_close = off   (wind driver, intentionally disabled)
+  - automation.rk600_shutter_open  = off   (wind driver, intentionally disabled)
+  - cover.roller_shutter_front_door / cover.roller_shutter_kitchen =
+    unknown (expected — Tuya assumed_state)
+  - automation.*_actuate are YAML/package-defined: the HA config API
+    cannot read them (CONFIG_NOT_FOUND); edit in YAML, not UI storage.
+  - ALL shutter/rk600 entities are YAML-defined under
+    /config/packages/ on michael-ha — including
+    input_number.shutter_wind_speed_min (editable:false, no config
+    entry) and sensor.rk600_wind_speed (Modbus YAML sensor, not
+    registry-backed). ha_config_set_helper CANNOT edit them; the only
+    write path is YAML on the host.
+
+wind_unit_relabel_done_2026-11-24: |
+  Tony answered board request rk600-wind-unit-20261124: "Relabel both
+  to m/s". Applied live on michael-ha via the File editor add-on API
+  (core_configurator ingress, /api/file + /api/save — no SSH needed):
+  - packages/rk600_modbus.yaml: RK600 Wind Speed unit "kn" -> "m/s"
+    (Modbus register raw/100 was always m/s; value unchanged)
+  - packages/rk600_shutter.yaml: input_number.shutter_wind_speed_min
+    unit "kn" -> "m/s" (threshold stays 12.0, now = 12 m/s ~ 23 kt)
+  - packages/rika_rk600.yaml: four "Wind Speed Meters"/"Real Wind
+    Speed Meters" template sensors dropped the /1.94384 kn->m/s
+    conversion (raw is already m/s; they now pass raw through) and
+    "RK600 Real Wind Speed" relabeled kn -> m/s
+  - Backups: packages/*.bak-devin-20261124 next to each file
+  - Reloaded via homeassistant.reload_all after config_check=valid;
+    verified live: sensor.rk600_wind_speed=2.88 m/s,
+    input_number.shutter_wind_speed_min=12.0 m/s,
+    sensor.rk600_wind_speed_meters=2.88 m/s (matches raw now)
+  - Dashboard wind-arc dial displays the helper's own unit -> shows
+    m/s automatically, no dashboard change needed.
+
+remaining_steps: |
+  1. MANUAL SMOKE (needs someone at the shutters + repaired motors):
+     - turn on input_boolean.shutter_control_armed (helper, not on any
+       dashboard by design)
+     - flip input_boolean.rk600_shutter_state once
+     - watch cover.roller_shutter_front_door / _kitchen physically move
+     - turn armed back off if keeping the gate manual-only
+  2. If covers respond: enable automation.rk600_shutter_close and
+     automation.rk600_shutter_open (currently off) so wind drives the
+     command. Re-test by simulating wind or waiting for weather.
+  3. ~~WIND UNIT DECISION~~ DONE 2026-11-24 — relabeled to m/s live
+     (see wind_unit_relabel_done_2026-11-24 above).
+  4. OPTIONAL: consolidate second Shutter card on view rk600 to match
+     mn-weather; optional rain threshold (exists on dev, not live).
+  5. POST GO-LIVE: decide whether shutter_control_armed stays on
+     permanently; record the decision on the card.
+
+notes: |
+  - Do NOT enable the driver automations before the manual smoke passes;
+    a dead motor + armed gate + windy day = automations firing into a
+    broken device all night.
+  - mn-weather hosts the wind-arc-editor dashboard dial; the drag-
+    threshold dial writes input_number.shutter_wind_speed_min, so any
+    unit relabel must be reflected there too (it displays the helper's
+    own unit_of_measurement, so a helper relabel propagates automatically).
+  - File editor add-on (core_configurator) is a working YAML write path
+    to /config on michael-ha when SSH keys are absent: GET
+    /api/file?filename=<relative>, POST /api/save with form fields
+    filename+text, POST /api/exec_command for cp/mv (shlex-split, one
+    command per call — duplicate 'command' keys are ignored).
