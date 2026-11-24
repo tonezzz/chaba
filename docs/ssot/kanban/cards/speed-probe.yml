@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: doing
-updated: 2026-11-24 08:03
+column: review
+updated: 2026-11-24 08:05
 brief: probe
 ref: OPS-0812
 comms:
@@ -444,6 +444,13 @@ comms:
     spot-check MATCH). Re-asserted install -m0755 from each host checkout anyway. Post-install journals clean: idc02
     claimed 2 cards 08:01, tony-dell claimed kk-ha-degraded 08:00, macbook claimed this task 07:59, idc03 finishing
     every ~1min (claim pass gated by disk headroom ~1.4GB<2'
+- at: 2026-11-24 08:05
+  from: tony-macbook
+  text: 'finished (ok): exit=0 re the next ~1min self-update tick, so this card may re-fire on future runner-agent
+    changes. | devin-task-2026112'
+- at: 2026-11-24 08:05
+  from: chaba
+  text: ran under executor=devin provider=devin
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -479,7 +486,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
@@ -492,8 +499,13 @@ action:
     wall clock time, 426.1M memory peak.'
   attempts: 1
   runner: tony-macbook
+  result: 'exit=0 re the next ~1min self-update tick, so this card may re-fire on future runner-agent changes. |
+    devin-task-20261124-075921-redeploy-the-drifted-runner-ag.service: Consumed 17.545s CPU time over 4min 16.140s
+    wall clock time, 434M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 07:58
 spec: Redeploy the drifted runner-agent script on all affected hosts (idc03, tony-macbook, idc02, and tony-dell)
   by copying the latest script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py to ~/.local/bin/runner-agent
   on each respective host. Verify that each host successfully runs the updated runner-agent without drift errors.
+review_kind: verify
