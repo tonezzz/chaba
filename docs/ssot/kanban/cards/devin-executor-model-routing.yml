@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: doing
-updated: 2026-11-24 09:06
+updated: 2026-11-24 09:10
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -417,6 +417,12 @@ comms:
     primer injected 8 lesson(s): [devin-executor-mode; [jules-lane-feedback-state-handling] tony-macbook defers:
     executor=jules declare; [ada-expert-consult-tool] tony-macbook defers: executor=jules declared but this ; [ada-prompt-slim]
     tony-macbook defers: executor=jules declare'
+- at: 2026-11-24 09:10
+  from: devin
+  text: 'attempt 4 (tony-omen): prior branch dispatch/20261124-080849 had the full fix but auto-merge conflicted
+    on kanban-dispatch.py + runner-tooling.manifest.json. Merged it into this worktree and resolved both: kept lane_source
+    provenance + dr.lane_model() devin pick; manifest pins recomputed against merged sources. Adding the missing
+    mocked-CLI preflight test, then running suite.'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -455,3 +461,4 @@ action:
 claim:
   since: 2026-11-24 09:05
 review_kind: verify
+awaiting_action: true
