@@ -1,7 +1,7 @@
 id: ada-scenario-quadlets-exit-contract
 title: Deploy quadlet exit-contract shim (smoke/full) — image rebuild pending
-column: doing
-updated: 2026-11-24 21:40
+column: review
+updated: 2026-11-24 21:44
 priority: medium
 tags:
 - ada
@@ -235,6 +235,36 @@ comms:
     with ENTRYPOINT /usr/local/bin/container-suite-run verified in-image; quadlets + all timers armed (smoke next
     22:00 +07). runner-agent.py redeployed to idc03+mn01 ~/.local/bin, sha256 a08451d9 matches repo (was already
     converged). Outcome: dispatch-outcome-20261124-213717-deploy-the-container-suite-run.md'
+- at: 2026-11-24 21:44
+  from: tony-omen
+  text: 'finished (ok): exit=0  with verification steps; no card pipeline field, nothing to commit beyond the outcome
+    file. | devin-task-2026112'
+- at: 2026-11-24 21:44
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 21:44
+  from: chaba
+  text: 'session-end checkpoint d751cf7c: 1 leftover file(s) committed'
+- at: 2026-11-24 21:44
+  from: chaba
+  text: banked 487 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:44
+  from: chaba
+  text: pushed dispatch/20261124-213717-deploy-the-container-suite-run to origin
+- at: 2026-11-24 21:44
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 21:44
+  from: chaba
+  text: auto-merged 57425f83 (dispatch/20261124-213717-deploy-the-container-suite-run) → origin/master
+- at: 2026-11-24 21:44
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-213717-deploy-the-container-suite-run,
+    branch dispatch/20261124-213717-deploy-the-container-suite-run'
 spec: Deploy the container-suite-run.sh entrypoint shim for the ada-scenario-smoke and ada-scenario-full quadlets
   on idc03 to map scenario-report.py exit-1-with-marker conditions to exit 0. Run stacks/services/ada-scenario-runner/install.sh
   on idc03 to rebuild the image and apply the fix. Also redeploy the drifted runner-agent on idc03 and mn01 by copying
@@ -242,11 +272,16 @@ spec: Deploy the container-suite-run.sh entrypoint shim for the ada-scenario-smo
   is verified when running the install script and updating the runner-agents without errors on the target hosts.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0  with verification steps; no card pipeline field, nothing to commit beyond the outcome file. |
+    devin-task-20261124-213717-deploy-the-container-suite-run.service: Consumed 42.551s CPU time over 3min 10.261s
+    wall clock time, 879M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:35
+review_kind: verify

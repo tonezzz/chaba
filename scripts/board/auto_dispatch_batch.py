@@ -128,12 +128,17 @@ def save_ledger(d):
     os.replace(tmp, LEDGER)
 
 
-def skip(d, reason, quiet=False):
+def skip(d, reason, alertable=True):
+    log("SKIP: " + reason)
+    if not alertable:
+        # Full queue / in-flight ceiling is normal backpressure, not a fault.
+        d["skips"] = 0
+        d["alerted"] = None
+        save_ledger(d)
+        return 0
     d["skips"] = d.get("skips", 0) + 1
     d["last_skip"] = reason
     save_ledger(d)
-    if not quiet:
-        log("SKIP: " + reason)
     if d["skips"] >= 3 and d.get("alerted") != reason:
         try:
             post("/comment", {"id": ALERT_CARD, "from": "chaba",
@@ -185,9 +190,9 @@ def main():
     except Exception as e:
         return skip(d, f"queue API unavailable: {e}")
     if queued > QUEUED_TRIGGER:
-        return skip(d, f"queue depth {queued} > {QUEUED_TRIGGER}", quiet=True)
+        return skip(d, f"queue depth {queued} > {QUEUED_TRIGGER}", alertable=False)
     if queued + claimed > MAX_INFLIGHT:
-        return skip(d, f"in flight {queued + claimed} > {MAX_INFLIGHT}")
+        return skip(d, f"in flight {queued + claimed} > {MAX_INFLIGHT}", alertable=False)
     for host, v in (q.get("hosts") or {}).items():
         if isinstance(v, dict) and (v.get("stale") or v.get("age_s", 0) > HEARTBEAT_MAX_S):
             return skip(d, f"stale host {host}")
