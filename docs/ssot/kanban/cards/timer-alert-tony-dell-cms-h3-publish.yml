@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-cms-h3-publish
 title: Timer cms-h3-publish on tony-dell failing
-column: backlog
-updated: 2026-11-24 09:23
+column: done
+updated: 2026-11-24 09:34
 priority: high
 tags:
 - timer-alert
@@ -186,6 +186,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-24 08:53) of `cms-h3-publish.service` on `tony-dell` result=exit-code —
     investigate journal: `journalctl --user -u cms-h3-publish.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-24 09:34
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 09:34
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `cms-h3-publish.service` on `tony-dell` by examining the systemd user journal via
   `journalctl --user -u cms-h3-publish.service` and referencing the CMS `timer-timeline-tony-dell`. Resolve the
   underlying cause of the exit-code failure and ensure the service runs successfully. The done-condition is verified
