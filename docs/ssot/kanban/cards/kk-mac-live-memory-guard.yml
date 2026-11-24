@@ -1,7 +1,7 @@
 id: kk-mac-live-memory-guard
 title: Add live memory guard to KK-Mac bounded LLM executor
 column: doing
-updated: 2026-11-24 21:54
+updated: 2026-11-24 21:55
 priority: high
 tags:
 - kk-mac
@@ -268,6 +268,14 @@ comms:
 - at: 2026-11-24 21:54
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 21:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-210151-before-another-kk-mac-local-in no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 21:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-210151-before-another-kk-mac-local-in on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 review_kind: verify
 action:
   status: running
@@ -276,5 +284,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 21:55
+    dirty: 1
 claim:
   since: 2026-11-24 21:00

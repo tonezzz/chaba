@@ -1,7 +1,7 @@
 id: ada-ha-dashboard-live-view-drift
 title: Reconcile Ada HA chaba-admin live-view drift
-column: review
-updated: 2026-11-24 21:54
+column: done
+updated: 2026-11-24 21:55
 brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
   verify whether this drift is intentional before restoring anything.
 priority: medium
@@ -194,6 +194,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261124-212619-read-only-evidence-from-2026-1 on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-24 21:55
+  from: chaba
+  text: 'merge-sweep: merged 88739240 (dispatch/20261124-212619-read-only-evidence-from-2026-1 from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-212619-read-only-evidence-from-2026-1.md)
+    — auto-closed'
 requests:
 - id: the-live-ada-ha-chaba-admin-dashboard-co-8567e7
   ask: The live Ada HA chaba-admin dashboard contains Hosts and Services but no Ada Control; the previous repo snapshot
@@ -222,6 +227,11 @@ action:
   result: 'exit=0 spatch-outcome-20261124-212619-read-only-evidence-from-2026-1.md`; final comms posted to the card.
     | devin-task-20261124-212619-read-only-evidence-from-2026-1.service: Consumed 1min 15.641s CPU time, 577.5M
     memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:25
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 21:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-212619-read-only-evidence-from-2026-1.md
