@@ -1,7 +1,7 @@
 id: audit-miss-cms-page-devin-session-audit-2026-10-17
 title: Published CMS page devin-session-audit-2026-10-17 now 404
 column: doing
-updated: 2026-11-24 21:12
+updated: 2026-11-24 21:34
 brief: 'Session audit 2026-11-20 (AUD-0973): ada-cms-pages/devin-session-audit-2026-10-17 was published with a documented
   successful add_document on 2026-10-17 and cited by two later summaries; the key now returns 404 from MDDB.'
 priority: high
@@ -121,6 +121,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:34
+  from: devin
+  text: 'ROOT CAUSE found: page was committed 2026-10-17 via MCP :9000 which fronts leader :11023 — i.e. into the
+    PARKED ada-cms-pages residue left by the MEM-0545 split (canonical = mddb-cms :11027). On 2026-10-23 09:26 ICT
+    Tony-approved parked-collection purge deleted all 15 parked collections on :11023 incl ada-cms-pages (529 docs)
+    — the page died there, never having existed on :11027. Page RESTORED to :11027 via board-api /report with verbatim
+    content from transcript history_d3c8499f85ca4e6c.md (veri'
 action:
   type: dispatch
   status: running
