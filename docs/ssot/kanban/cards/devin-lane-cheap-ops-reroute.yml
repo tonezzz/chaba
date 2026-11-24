@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: review
-updated: 2026-11-24 08:41
+updated: 2026-11-24 08:53
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -250,6 +250,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:53
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''dev-0045-slice-2-decision-meas''] block close)'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -295,6 +298,7 @@ action:
   sweep:
     stale_running: 2026-11-24 08:22
     no_repo: 2026-11-24 08:22
+    close_held: 2026-11-24 08:53
   result: 'exit=0 posted the final card comms. No push, no deploy — changes await dispatch close-out. | devin-task-20261124-080808-findings-2026-11-23-from-board.service:
     Consumed 12min 54.168s CPU time over 28min 32.647s wall clock time, 626.5M memory peak.'
   verified: true
