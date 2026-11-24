@@ -1,7 +1,7 @@
 id: ai-video-quality-control-plane
 title: Expand AI video generation quality control plane
 column: doing
-updated: 2026-11-24 16:44
+updated: 2026-11-24 16:50
 spec: 'Extend the existing Ada Nest documentary pipeline with asset identity and continuity control. Implement in
   stages: P0 immutable per-shot manifest + asset IDs + scratch-VO timing + technical QA; P1 character/object/location
   bibles + continuity ledger + DWPose/depth controls; P2 deterministic Blender/stock/space scenes + Gaussian/camera
@@ -214,6 +214,13 @@ comms:
   text: 'dispatch started: P0 video-qc.py already merged (#77). Building the staged control plane as scripts/nest/doc_control.py
     — immutable shot manifest v2 (asset IDs + scratch-VO timing + continuity links + control slots), bibles/continuity-ledger/approved-takes
     schemas, stage verifier, P3 scene-graph eval fixture. Additive only; LTX/VYNCX packs untouched.'
+- at: 2026-11-24 16:50
+  from: devin
+  text: 'Done (commit 6d32968ed7 on dispatch branch). scripts/nest/doc_control.py lands the staged control plane:
+    P0 immutable shot-manifest-v2 (asset IDs, i2v continuity DAG, scratch-VO timing vs render slot, video-qc binding);
+    P1 bibles schema + continuity-ledger.jsonl + approved-takes.json + pose/depth slots; P2 scene/camera (SCoPE)
+    control slots + coverage reporting; P3 scene-graph eval fixture tagged vbench/t2v-compbench/videoscore2. verify
+    -> qc/control-verify.json is the per-stage gate. 7 unittest'
 action:
   type: dispatch
   status: running
