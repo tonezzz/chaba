@@ -694,13 +694,19 @@ class Case(unittest.TestCase):
         commit(self.wt, "code.py", "x=1\n", "code")
         self.assertFalse(dr._docs_only_paths(self.wt, "origin/master"))
 
-    def test_gate_missing_runner_fails_open(self):
+    def test_gate_missing_runner_fails_closed(self):
+        """OPS-1191: a host without pytest must not merge with zero test
+        evidence. "test gate skipped: pytest unavailable — fail-open"
+        was the bug; the gate is now unrunnable and holds the merge."""
         commit(self.wt, "feature.py", "x=1\n", "work")
         self._with_test_gate(
             {"command": "no-such-pytest-bin-ci-test-gate", "timeout": 10})
         res = dr.close_out(self.card)
-        self.assertTrue(res["merged"], res)
-        self.assertIn("fail-open", res["tests"]["skipped"])
+        self.assertFalse(res["merged"], res)
+        self.assertFalse(res["tests"]["ok"], res)
+        self.assertTrue(res["tests"]["unrunnable"], res)
+        self.assertIn("pytest unavailable", res["tests"]["error"])
+        self.assertFalse(self.remote_has("master", "feature.py"))
 
     def test_gate_no_tests_dir_skips(self):
         bare = self.tmp / "no-tests"
@@ -777,7 +783,7 @@ class Case(unittest.TestCase):
 
     def test_gate_skips_venv_without_pytest(self):
         """A venv whose python can't import pytest must not win —
-        otherwise the gate fail-opens and stops testing entirely."""
+        otherwise the gate can't run and the merge is held unrunnable."""
         self._pin_repos_conf()
         commit(self.wt, "feature.py", "x=1\n", "work")
         # -S drops site-packages: the shim runs but `import pytest` fails
