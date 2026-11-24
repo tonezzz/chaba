@@ -1,7 +1,7 @@
 id: consultant-fixture-grow-20-cases
 title: Grow consultant bench fixture to ~20 real consult prompts
 column: doing
-updated: 2026-11-24 21:15
+updated: 2026-11-24 21:24
 priority: high
 program: devnest
 tags:
@@ -198,6 +198,13 @@ comms:
     real knowledge asks incl. lesson-capture topics + gdrive pros/cons comm). Bench candidates: or-claude-fable-5.1
     + or-deepseek-v4-flash live; deepseek-v3.2 no longer routed (v4-flash is current lane); ollama-qwen38b-kkmac
     admission denied load_high, retrying.'
+- at: 2026-11-24 21:24
+  from: devin
+  text: 'DONE: fixture grown to 20 real cases (13 esc/7 ans, src provenance per line) at fixtures/consultant-tasks.jsonl.
+    Bench on live lanes (max_tokens 512): or-deepseek-v4-flash 0.80 acc p50 1.1s > qwen3:8b 0.75 p50 7.1s (direct
+    kk-mac ollama — LiteLLM alias was admission-denied load_high) > or-claude-fable-5.1 0.65 p50 6.1s (under-escalates
+    ops asks — disqualified for first-filter). Caveats: deepseek-v3.2 route retired (v4-flash is current); consult-*
+    aliases still not deployed on live gateway; BENCH'
 action:
   type: dispatch
   status: running
