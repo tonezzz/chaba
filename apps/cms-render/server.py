@@ -419,15 +419,18 @@ SECTION_TITLES = {
 
 def index_rows(collection: str, now: dt.datetime) -> list[dict]:
     docs = LISTING.docs(collection)
-    en_keys = {d.get("key") for d in docs if d.get("lang") == "en"}
+    en_keys = {d.get("key") for d in docs
+               if (d.get("lang") or "en") == "en"}
     rows, seen_keys = [], set()
     for d in docs:
         meta = d.get("meta") or {}
         key = d.get("key", "")
-        # one row per key — prefer en, else first lang seen
+        # one row per key — prefer en, else first lang seen; any non-en
+        # variant (th, de, …) yields to an existing en sibling regardless
+        # of listing order
         if key in seen_keys:
             continue
-        if d.get("lang") == "th" and key in en_keys:
+        if (d.get("lang") or "en") != "en" and key in en_keys:
             continue
         seen_keys.add(key)
         kind = meta1(meta, "kind")

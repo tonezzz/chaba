@@ -383,6 +383,29 @@ class IndexLibTest(unittest.TestCase):
             {"fresh_for": ["600"], "updated": [
                 (now - _dt.timedelta(days=30)).isoformat()]}, now))
 
+    def test_lang_variants_one_row_preferring_en(self):
+        """de/ja/… variants dedupe like th did — one row per key, en wins
+        regardless of listing order; a variant with no en sibling still
+        surfaces (any-lang support, card
+        support-german-language-variants-on-cms-69ef23)."""
+        sys.path.insert(0, str(REPO / "scripts"))
+        from lib import cms_index
+        now = _dt.datetime.now(_dt.timezone.utc)
+
+        def d(key, lang, title):
+            return {"key": key, "lang": lang, "meta": {
+                "kind": ["page"], "status": ["active"], "slug": [key],
+                "title": [title], "updated": [now.isoformat()]}}
+
+        # de listed before en — en must still win the single row
+        docs = [d("pg", "de", "DE"), d("pg", "en", "EN"),
+                d("pg", "th", "TH"), d("de-only", "de", "DE only"),
+                d("th-only", "th", "TH only")]
+        rows = cms_index.index_rows(docs, now)
+        by = {r["slug"]: r for r in rows}
+        self.assertEqual(sorted(by), ["de-only", "pg", "th-only"])
+        self.assertEqual(by["pg"]["title"], "EN")
+
 
 if __name__ == "__main__":
     unittest.main()
