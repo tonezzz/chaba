@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: review
-updated: 2026-11-24 19:43
+updated: 2026-11-24 20:01
 tags:
 - hardware
 - omen
@@ -350,9 +350,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-192853-goal-keep-omen-battery-in-40-8,
     branch dispatch/20261124-192853-goal-keep-omen-battery-in-40-8'
+- at: 2026-11-24 20:01
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
 action:
   type: dispatch
-  status: done
+  status: failed
   lane: devin
   lane_source: kw
   attempts: 2
@@ -364,6 +367,7 @@ action:
     Consumed 49.764s CPU time over 9min 47.606s wall clock time, 901.1M memory peak.'
   runner: tony-omen
   verified: true
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-24 19:27
 requests:
@@ -425,4 +429,3 @@ requests:
   - id: have-one
     label: Already have a spare — will say which
 review_kind: verify
-awaiting_action: true
