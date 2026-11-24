@@ -1,7 +1,7 @@
 id: persona-photo-store
 title: Persona photo/asset store — bank doc with fetchable URL + tool returning it to relay images
 column: doing
-updated: 2026-11-24 16:10
+updated: 2026-11-24 16:11
 priority: medium
 spec: 'Personas cannot hold or reshow photos: bank docs are text-only and no tool returns a stored image URL to
   the relay _image_msgs path (relay re-hosts any fetchable URL publicly, verified working). Needed: (1) storage
@@ -217,6 +217,13 @@ comms:
     ssot.tools memory.asset_save), job trail docs/ssot/jobs/ada/2026-11-24-persona-photo-store.yml, 18/18 drop tests
     pass, tool-lint clean. Remaining: commit dispatch branch + final outcome doc; ada-voice merge+deploy is the
     separate Tony gate.'
+- at: 2026-11-24 16:11
+  from: devin
+  text: '[done] Committed 6749fe66b2 on dispatch/20261124-150359-personas-cannot-hold-or-reshow (14 files). Deliverables:
+    integrations/ada-voice drop 22 — new tools.d asset_save.py + manifest snippet (stores inbound LINE image under
+    media-archive persona-assets/, served via existing /relay-img/arch/ route, upserts assets/<slug> doc with meta.image_url
+    through ada_remember ACL + new pending route asset); patches for memory_ops (_doc_to_hit image_url + asset_remember),
+    tool_runner/memory (ada_memory_search'
 action:
   type: dispatch
   status: running
