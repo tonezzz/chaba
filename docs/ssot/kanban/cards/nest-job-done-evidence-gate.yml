@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
-column: backlog
-updated: 2026-11-24 16:56
+column: doing
+updated: 2026-11-24 16:58
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -181,9 +181,15 @@ comms:
 - at: 2026-11-24 16:56
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 16:58
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 16:58
