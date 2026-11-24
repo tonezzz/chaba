@@ -80,11 +80,16 @@ per-scenario driver uses :8198.
   completed run — detected via the `**Score:` final-report marker);
   findings live in `ada-ha-scenario-reports` + the `auto-report` page
   (docs/kb/timer-expectations.md).
-- Weekly slots sit at `:55` — past the smoke worst case (`:00` start +
-  45 min `TimeoutStartSec` + kill margin ≈ `:47`) and past the daily
-  casting chain (`02:00` + 2 h cap = free by `04:00`). A suite that
-  grabs the lock before the next `:00` makes that hour's smoke skip,
-  which is the correct priority order.
+- Weekly slots sit at `:55` — past the typical smoke window but no
+  longer past the worst case: since 2026-11-24 the smoke
+  `TimeoutStartSec` is 7800s (~2 h) because 47 scenarios no longer fit
+  in 45 min (card `ada-scenario-smoke-timeout-truncation`). A long
+  smoke run can still hold :8199 across a `:55` slot — the weekly's
+  30-min wait queue absorbs that (8 passes), it just starts late. The
+  hourly smoke timer self-throttles: fires that find :8199 held exit 0
+  immediately, so effective smoke cadence ≈ run length (~70-130 min)
+  rather than a truncated hourly. Daily casting chain unchanged
+  (`02:00` + 2 h cap = free by `04:00`).
 
 History: pre-2026-10-09 the weekly timers fired at 03:30 — inside both
 the smoke window (03:00→~03:35) and the hung daily casting run

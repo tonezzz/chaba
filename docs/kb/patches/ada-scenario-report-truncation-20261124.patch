@@ -1,0 +1,111 @@
+From d2331d032b524fba95832b52dff7ebde4b5ed9ab Mon Sep 17 00:00:00 2001
+From: Devin <devin@cognition.local>
+Date: Tue, 24 Nov 2026 21:47:03 +0700
+Subject: [PATCH] scenario-report: worst-first ordering + --budget-s graceful
+ truncation
+
+---
+ scripts/scenario-report.py | 63 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
+
+diff --git a/scripts/scenario-report.py b/scripts/scenario-report.py
+index 46e5104..1c64954 100755
+--- a/scripts/scenario-report.py
++++ b/scripts/scenario-report.py
+@@ -38,6 +38,7 @@ import os
+ import re
+ import subprocess
+ import sys
++import time
+ import urllib.request
+ import yaml
+ 
+@@ -119,6 +120,50 @@ def _post(url: str, payload: dict) -> bool:
+         return False
+ 
+ 
++def _prior_statuses(mddb: str) -> dict[str, str]:
++    """scenario name -> status from its most recent report doc. Used to
++    order the run worst-first so a timeout/budget truncation costs the
++    least signal (2026-11-24: smoke tier outgrew TimeoutStartSec and the
++    a-z tail never ran — card ada-scenario-smoke-timeout-truncation).
++    Any failure returns {} and the run keeps a-z order."""
++    try:
++        req = urllib.request.Request(
++            f"{mddb.rstrip('/')}/search",
++            data=json.dumps({"collection": COLLECTION, "query": "",
++                             "limit": 500}).encode(),
++            headers={"Content-Type": "application/json"})
++        docs = json.loads(urllib.request.urlopen(req, timeout=30).read())
++    except Exception:
++        return {}
++    latest: dict[str, tuple[str, str]] = {}
++    for d in docs:
++        key = d.get("key") or ""
++        if not key.startswith("report/"):
++            continue
++        meta = d.get("meta") or {}
++        scen = (meta.get("scenario") or [""])[0]
++        stat = (meta.get("status") or [""])[0]
++        if scen and stat and key > latest.get(scen, ("", ""))[0]:
++            latest[scen] = (key, stat)
++    return {s: st for s, (_k, st) in latest.items()}
++
++
++_ORDER_RANK = {"fail": 0, "flaky": 1}
++
++
++def _order_key(item: tuple[str, dict],
++               priors: dict[str, str]) -> tuple[int, str]:
++    name = item[1].get("name") or os.path.basename(item[0])
++    prior = priors.get(name)
++    if prior in _ORDER_RANK:
++        rank = _ORDER_RANK[prior]
++    elif prior is None:
++        rank = 2          # never reported — could be a new regression
++    else:
++        rank = 3          # pass/infra/quota/skip — least signal if lost
++    return (rank, name)
++
++
+ def _timeline_md(events: dict | None) -> str:
+     """Render per-turn records from scenario-live --events-json as a
+     markdown table — the human/Ada-readable timeline of what happened."""
+@@ -193,6 +238,11 @@ def main() -> int:
+                     help="force transport for scenarios that don't declare "
+                          "transport: in yaml — per-scenario field wins")
+     ap.add_argument("--dry-run", action="store_true")
++    ap.add_argument("--budget-s", type=float,
++                    default=float(os.environ.get("SCENARIO_BUDGET_S") or 0),
++                    help="stop starting new scenarios after N seconds — "
++                         "graceful truncation under the unit's "
++                         "TimeoutStartSec instead of a mid-scenario SIGTERM")
+     args = ap.parse_args()
+ 
+     # Concurrent scenario runs share the Ada session and vcast screens —
+@@ -229,9 +279,22 @@ def main() -> int:
+             continue
+         selected.append((path, spec))
+ 
++    # Worst-first ordering: prior fail/flaky, then never-reported, then
++    # the rest — a truncated run loses known-good coverage before it
++    # loses signal. MDDB hiccup → a-z fallback inside _prior_statuses.
++    priors = {} if args.dry_run else _prior_statuses(args.mddb)
++    if priors:
++        selected.sort(key=lambda it: _order_key(it, priors))
++
+     outage_streak = 0
+     sentinel = False
++    run_t0 = time.time()
+     for path, spec in selected:
++        if args.budget_s and time.time() - run_t0 > args.budget_s:
++            print(f"== budget {args.budget_s:.0f}s exhausted — "
++                  f"remaining scenarios unrun (worst-first order keeps "
++                  f"the lost tail to known-good coverage)")
++            break
+         name = spec.get("name") or os.path.basename(path)
+         tier = spec.get("tier") or "full"
+         if sentinel:
+-- 
+2.53.0
+
