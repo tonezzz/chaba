@@ -187,6 +187,59 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(any("mutation outside profile scope" in f
                             for f in rec["safety_flags"]))
 
+    def test_denied_mutation_attempt_not_cardable(self):
+        # a permission-denied write attempt never executed — it must
+        # not produce a cardable mutating_command finding (the
+        # denied_tool finding already covers the denial)
+        add_session(self.db, "s1", agent="ops-readonly")
+        user_turn(self.db, "s1", 1, "x")
+        tool_part(self.db, "s1", 1, "bash",
+                  {"command": "python3 -c \"open('/tmp/p','w')"
+                              ".write('x')\""},
+                  status="error",
+                  error="The user has specified a rule which prevents "
+                        "you from using this specific tool call.")
+        tool_part(self.db, "s1", 2, "bash",
+                  {"command": "echo hi > /tmp/denied.txt"},
+                  status="error",
+                  error="The user has specified a rule which prevents "
+                        "you from using this specific tool call.")
+        rec = self.audit()
+        m = rec["mutations"]
+        self.assertGreaterEqual(len(m["writes"]), 2)
+        self.assertTrue(all(e.get("denied") for e in m["writes"]))
+        # denied redirect targets are not artifacts the session made
+        self.assertEqual(rec["artifacts"], [])
+        mc = [f for f in rec["findings"]
+              if f["kind"] == "mutating_command"]
+        self.assertEqual(len(mc), 1)
+        self.assertEqual(mc[0]["severity"], "info")
+        self.assertIn("blocked by permission gate", mc[0]["summary"])
+        self.assertFalse(any("mutation outside profile scope" in f
+                             for f in rec["safety_flags"]))
+        kinds = {f["kind"] for f in rec["findings"]}
+        self.assertIn("denied_tool", kinds)
+
+    def test_mixed_denied_and_completed_mutation(self):
+        # a denied write alongside a completed delete: only the
+        # executed mutation class reaches the cardable finding
+        add_session(self.db, "s1", agent="ops-readonly")
+        user_turn(self.db, "s1", 1, "x")
+        tool_part(self.db, "s1", 1, "bash",
+                  {"command": "echo hi > /tmp/denied.txt"},
+                  status="error",
+                  error="The user has specified a rule which prevents "
+                        "you from using this specific tool call.")
+        tool_part(self.db, "s1", 2, "bash",
+                  {"command": "rm -rf /tmp/junk"})
+        rec = self.audit()
+        mc = [f for f in rec["findings"]
+              if f["kind"] == "mutating_command"]
+        self.assertEqual(len(mc), 1)
+        self.assertEqual(mc[0]["severity"], "high")
+        self.assertIn("deletes", mc[0]["summary"])
+        self.assertNotIn("writes", mc[0]["summary"])
+
     def test_write_tool_and_durability(self):
         target = self.dir / "landed.json"
         target.write_text("{}")  # a write that actually landed
