@@ -1,7 +1,7 @@
 id: ada-ocb-dispatch-parity
 title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
 column: backlog
-updated: 2026-11-24 11:27
+updated: 2026-11-24 11:32
 brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
   no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
   path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
@@ -128,6 +128,13 @@ comms:
     py_compile OK, SHA pin 52cbc072 matches file. Full tests/board suite: 912 passed, 4 failed -- all 4 are pre-existing
     FileNotFoundError in test_control_pane_projection.py for gitignored/generated board2/ artifacts + a KNB-0229
     card file absent in this fresh worktree (they do n'
+- at: 2026-11-24 11:32
+  from: chaba
+  text: 'ADA-0024 PROMOTED TO MASTER: rebased cleanly onto origin/master (none of the 33 upstream commits touched
+    the 3 changed files), pushed origin/master @ 0c451dd4c1 (approved same-session). Post-rebase: pin 52cbc072 matches
+    file, 15/15 lifecycle tests pass. CONSUMER CONVERGENCE PENDING (not yet deployed): installed ~/.local/bin/runner-agent
+    on idc02 + idc03 still reports old sha 35d284ec; their canonical checkpoints have not yet pulled 0c451dd4c1
+    (idc02 chaba @ 9910c10a91, idc03 exec @ 7748481c66, s'
 requests:
 - id: scope-for-ada-0024-how-far-should-ada-oc-484b93
   ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
