@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
 column: doing
-updated: 2026-11-24 08:10
+updated: 2026-11-24 08:12
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -307,6 +307,10 @@ comms:
     (240s smoke set) times out on loaded idc03 even for doc-on; [board-api-queue-write-verify-lost-race-f85f2f]
     finished (failed): exit=1 -pipel; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1
     RE | d; [devnest-queue-consolidation] [verify-fail] Review pass 2026-'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running

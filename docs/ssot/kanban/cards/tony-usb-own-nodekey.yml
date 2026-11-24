@@ -607,6 +607,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: devin
+  text: 'dispatch 080654 (tony-omen): re-verified stick absent — tailnet has no tony-usb/rescue node, ssh mn01 lands
+    on real ESPRIMO Q556/2 (up 34d), LAN port-22 sweep via tony-dell finds only known hosts, ops feed has no stick
+    announce, no USB storage on omen. Physical step still blocked. Adding the missing piece this card kept lacking:
+    scripts/ops/stick-watch.py — a fleet-side detector that alerts (board comment + HA push) the moment the stick
+    boots/steals mn01, with the exact fix command. Commits on t'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
