@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: doing
-updated: 2026-11-24 15:52
+updated: 2026-11-24 16:11
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -289,6 +289,13 @@ comms:
     is unrelated producer snapshots (ssh-canary logs); r; tony-dell has runner-agent-converge.timer (nightly checksum-gated
     ansible redepl; [ada-consultant-tier] worktree triage: wt dispatch-wt-20261117-232247 dropped on; [ansible-vs-legacy-fleet-benchmark]
     MANUAL LANDING (devin ses'
+- at: 2026-11-24 16:11
+  from: devin
+  text: '[iteration 3] bge-compat ANSWERED headlessly: Xenova/bge-m3 q4 via transformers.js vs ollama bge-m3 ref
+    = cosine 0.9664 cls-pooling (mean 0.76 diverges — bge is CLS). Browser bge-m3 IS bank-space compatible; on-device
+    button 6 remains final WebGPU-EP confirm. ALSO: embed-nest-bridge (lane-B pull-worker bridge lost with the 11-14
+    worktree) rebuilt at scripts/nest/embed-nest-bridge.py + shim DEFER tier restored + page gained installable
+    PWA/auto-worker/pool-worker mode + /apps/embed-nest Caddy rou'
 action:
   type: dispatch
   status: running
