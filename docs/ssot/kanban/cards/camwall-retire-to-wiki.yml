@@ -234,6 +234,10 @@ comms:
     cam-wall-cms-vps(.timer) idc02+idc03, cam-wall-cms-kk (already dark since OPS-0749), camwall-edge.service idc02+idc03
     (+masked idc01), cam-wall-roster-audit.timer dell+omen, camwall-render-check.timer idc02. Readers that break:
     /apps/camwall route+Caddyfile+routes.json, eye.j'
+- at: 2026-11-24 22:47
+  from: devin
+  text: 'raised request phase-1-consumer-map-done-docs-kb-retire-b94876: Phase 1 consumer map done (docs/kb/retired-apps/camwall.md).
+    How far should the stop go? (a) full stop — all producers+e'
 action:
   type: dispatch
   status: running
@@ -244,3 +248,22 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 22:33
+requests:
+- id: phase-1-consumer-map-done-docs-kb-retire-b94876
+  ask: Phase 1 consumer map done (docs/kb/retired-apps/camwall.md). How far should the stop go? (a) full stop —
+    all producers+edge+route+CMS; Ada loses cctv_wall, wall casts, and stale_snapshot camwall-thumb fallback (live
+    vms-snap snaps still work). (b) keep-Ada-snapshot-only — stop wall/CMS/edge/vcast surface but keep cam-wall-pull
+    thumbs+data so Ada camera snapshots keep their last-good fallback.
+  status: open
+  at: 2026-11-24 22:47
+  from: devin
+  options:
+  - id: full-stop
+    label: Full stop — retire everything camwall
+    v: stop all producers, edge containers, /apps/camwall route, input-bridge /camwall, dependent checks; ada-voice
+      stale_snapshot/cctv_wall degrade (live snaps unaffected)
+  - id: ada-snapshot-only
+    label: Keep Ada snapshot fallback only
+    v: stop CMS/edge/route/vcast/roster-audit; keep cam-wall-pull thumbs+zones data on tony-dell for ada_camera_snapshot
+      cached/stale path
+  suggested: ada-snapshot-only
