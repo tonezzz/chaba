@@ -99,8 +99,13 @@ providers:
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
   ollama-kkmac: >-
     ollama_chat/* @ http://127.0.0.1:11447 on idc03 —
-    kkmac-admission-shim.service, an Ada Nest admission gate in front of
-    kkmac-ollama-tunnel.service (:11445 -> kk-mac:11434). Reuses
+    kkmac-admission-shim.service, an Ada Nest admission gate proxying
+    directly to kk-mac ollama on the tailnet
+    (http://100.108.217.17:11434 — adanest net.adanest.ollama.plist
+    binds 0.0.0.0 since 2026-11-19; card kkmac-ollama-durable-bind).
+    Fallback: kkmac-ollama-tunnel.service (:11445 ssh -L -> kk-mac:11434)
+    is installed-but-disabled — only for a loopback-bind rollback.
+    Reuses
     scripts/devnest/kk_mac_admission.snapshot(): 503s instantly when the
     heartbeat is stale (>900s), ollama unhealthy, disk <20G, load_1m >4,
     cpu_temp_c >60, or the node is busy (tmux_jobs/load_ok/load1-per-core

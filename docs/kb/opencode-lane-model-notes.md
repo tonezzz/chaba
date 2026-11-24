@@ -40,12 +40,16 @@ model choice. Written from pilot evidence 2026-10-30.
 
 ## kk-mac free lane
 
-`ollama serve` runs on kk-mac under the `adanest` account, bound to
-loopback only. Reachable via `ssh -L 11445:127.0.0.1:11434
-kkkakk@kk-mac` on idc03; registered in LiteLLM as
-`ollama-qwen32b-kkmac`. The tunnel is currently a nohup process —
-needs a declared unit or a real `OLLAMA_HOST` bind on adanest's plist
-before it is durable.
+`ollama serve` runs on kk-mac under the `adanest` account. Since
+2026-11-19 the plist binds `0.0.0.0` — reachable directly on the tailnet
+at `100.108.217.17:11434` (LAN `192.168.0.101:11434` too, until the
+bind is narrowed; both pending adanest access — card
+`kkmac-ollama-durable-bind`). Fleet traffic goes through idc03
+`kkmac-admission-shim.service` (`127.0.0.1:11447`, fail-fast Ada Nest
+gate); LiteLLM routes `ollama-*-kkmac` point at the shim. The old
+`ssh -L 11445` tunnel (`kkmac-ollama-tunnel.service`) is a declared but
+disabled fallback — it flapped ~19k restarts against a sleeping member
+device and nothing consumes :11445 anymore.
 
 ## Verifier weakness found
 

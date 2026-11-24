@@ -1,11 +1,11 @@
 [Unit]
-Description=kkmac-admission-shim — fail-fast Ada Nest admission gate in front of the kk-mac ollama tunnel (:11447 -> :11445)
-After=network-online.target kkmac-ollama-tunnel.service
+Description=kkmac-admission-shim — fail-fast Ada Nest admission gate in front of kk-mac ollama (:11447 -> 100.108.217.17:11434 tailnet)
+After=network-online.target
 Wants=network-online.target
 
 [Service]
 Environment=KK_SHIM_ADDR=127.0.0.1:11447
-Environment=KK_SHIM_UPSTREAM=http://127.0.0.1:11445
+Environment=KK_SHIM_UPSTREAM=http://100.108.217.17:11434
 Environment=KK_SHIM_CACHE_S=10
 # drain switch: `touch $XDG_RUNTIME_DIR/kkmac-admission-shim.deny` -> instant 503s
 Environment=KK_ADMISSION_FORCE_DENY=%t/kkmac-admission-shim.deny
