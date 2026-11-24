@@ -1,7 +1,7 @@
 id: tg-relay-turn-ok-unbound
 title: 'tg_relay forwarded-media path: UnboundLocalError(turn_ok) reds 2 chaba tests on master'
-column: review
-updated: 2026-11-24 17:03
+column: done
+updated: 2026-11-24 17:08
 priority: medium
 program: chaba-ci
 tags:
@@ -220,6 +220,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:08
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -234,3 +237,7 @@ action:
 claim:
   since: 2026-11-24 16:50
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 17:08
+  note: verified — evidence checks green, closing itself
