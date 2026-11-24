@@ -1,7 +1,7 @@
 id: ada-wiki-extension-confirm-flag
 title: ada-voice wiki_extension tool must pass confirm=true on mutations
-column: backlog
-updated: 2026-11-24 21:02
+column: doing
+updated: 2026-11-24 21:05
 brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
   ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
   door deploys.'
@@ -63,9 +63,16 @@ comms:
 - at: 2026-11-24 21:02
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:05
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 21:05
