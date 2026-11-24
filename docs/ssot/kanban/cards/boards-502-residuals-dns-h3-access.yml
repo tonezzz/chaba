@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: doing
-updated: 2026-11-24 22:40
+updated: 2026-11-24 22:48
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -240,6 +240,13 @@ comms:
   from: devin
   text: 'raised request h3-forensic-access-plesk-panel-is-live-a-fc58e4: h3 forensic access: Plesk panel is live
     at https://103.99.11.249:8443 (Obsidian 18.0.81, also :8880) but SSH :22 is filt'
+- at: 2026-11-24 22:48
+  from: devin
+  text: '[done] Part1 DEPLOYED: idc02 caddy-edge now resolves h3 upstreams via resolvers 1.1.1.1/8.8.8.8 (bypasses
+    flaky systemd-resolved) for both boards.h3 and chaba.h3 blocks; validated+reloaded, public surfaces 200. Baseline
+    was 7 DNS-timeout 502s/14d (~0.5/day) — recheck in ~7d expect ~0. Part2: Plesk Obsidian 18.0.81 verified at
+    https://103.99.11.249:8443 (+:8880); SSH closed; NO plesk/ssh cred in fleet secrets — registered h3-plesk-panel
+    in ssot.secrets.yml and raised request h3-forensic-access-pl'
 action:
   type: dispatch
   status: running
