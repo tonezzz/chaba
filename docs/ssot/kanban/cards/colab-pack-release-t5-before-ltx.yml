@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
 column: review
-updated: 2026-11-24 17:15
+updated: 2026-11-24 17:23
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -232,6 +232,10 @@ comms:
 - at: 2026-11-24 17:15
   from: chaba
   text: 'worktree kept: dirty — 3 uncommitted file(s)'
+- at: 2026-11-24 17:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-165350-investigate-the-active-sacred- on tony-macbook still
+    dirty — 3 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -242,6 +246,8 @@ action:
   result: 'exit=0 hing was pushed — the fixes take effect on the next pack release to `ada-nest/packs/`. | devin-task-20261124-165350-investigate-the-active-sacred-.service:
     Consumed 2min 58.329s CPU time over 20min 32.582s wall clock time, 775M memory peak.'
   verified: false
+  sweep:
+    dirty: 3
 claim:
   since: 2026-11-24 16:53
 review_kind: verify
