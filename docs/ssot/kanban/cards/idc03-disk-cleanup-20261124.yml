@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-24 17:23
+updated: 2026-11-24 20:55
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -115,3 +115,15 @@ comms:
     device-telemetry and host-logs both return real documents from the compacted DB (statsPending is just slow stats
     computation on a fresh file). Rollback file removed via podman unshare after verification. idc03 disk now 93G
     used / 197G free (32%), down from 100% at the st'
+- at: 2026-11-24 20:55
+  from: chaba
+  text: classified as devin (fallback conf 0.43)
+- at: 2026-11-24 20:55
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
