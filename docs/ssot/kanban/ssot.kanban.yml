@@ -518,10 +518,16 @@ execution:
                desktop,cpu,push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,
                push:gods-eye-view (dispatch+script — unit restored
                2026-11-13 after OPS-0725 parked it; claims via 60s timer); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
-               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small,push:chaba (dispatch
+               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small,push:chaba,push:ada-voice,vps (dispatch
                +container+script — push:chaba added via runner-agent.service.d/ada-pilot.conf
                2026-11-04, push creds verified 2026-11-08; prose was stale and
-               starved OPS-1039); idc03: cap 3 gate 0.85 labels
+               starved OPS-1039; push:ada-voice+vps added via
+               runner-agent.service.d/vps-lane.conf 2026-11-24, card
+               idc02-second-ada-pi-lane — VPS-grade ada-pi/ada-voice
+               failover lane so tony-dell isn't single-point; 'vps' is the
+               fleet-unique opt-in label, dell stays canonical edit point;
+               kanban-dispatch.service.d/vps-lane.conf mirrors the set via
+               KANBAN_HOST_LABELS for manual drains); idc03: cap 3 gate 0.85 labels
                ssd,always-on,ada,cpu,small (dispatch+container+script);
                mn01: cap 1
                labels low-mem,edge,small (dispatch+container+script — devin CLI
