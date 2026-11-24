@@ -1,7 +1,7 @@
 id: ada-scenario-quadlets-exit-contract
 title: Deploy quadlet exit-contract shim (smoke/full) — image rebuild pending
 column: doing
-updated: 2026-11-24 21:37
+updated: 2026-11-24 21:38
 priority: medium
 tags:
 - ada
@@ -225,6 +225,10 @@ comms:
     [verify] OPS-0790 close-out (T; [rebuild-gesture-controls-using-yolo-190356] DONE (attempt on tony-omen). runner;
     The chaba merge test gate runs a FIXED file list in dispatch_repos.py REPO_TESTS; Deploy note: hosts need the
     new file via their chaba checkout'
+- at: 2026-11-24 21:38
+  from: devin
+  text: 'dispatch started: idc03 checkout has shim fix (1f3b48b); runner-agent sha256 already converged on idc03+mn01
+    — will re-install anyway per spec, then run install.sh'
 spec: Deploy the container-suite-run.sh entrypoint shim for the ada-scenario-smoke and ada-scenario-full quadlets
   on idc03 to map scenario-report.py exit-1-with-marker conditions to exit 0. Run stacks/services/ada-scenario-runner/install.sh
   on idc03 to rebuild the image and apply the fix. Also redeploy the drifted runner-agent on idc03 and mn01 by copying
