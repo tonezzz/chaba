@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-upgrade
 title: Ansible ada-ocb upgrade playbook (approval-gated)
-column: doing
-updated: 2026-11-24 08:18
+column: done
+updated: 2026-11-24 08:22
 brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
   (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
   approval.
@@ -65,3 +65,16 @@ comms:
     is Type=oneshot, RemainAfterExit=no, ExecStart pins only @openchamber/web@2.7.3 (@opencode/cli is unpinned in
     the unit despite the SSOT 2.3.2 pin), ExecStartPost re-applies patch then restarts. Noting the cli pin gap for
     a separate decision; not changing a host unit in this pass.'
+- at: 2026-11-24 08:22
+  from: devin
+  text: 'Built + safety-tested; NO prod write executed. Commit 63c6ed0b73 on branch ada-ocb. Playbook starts idc02''s
+    existing openchamber-update.service (oneshot, fail-loud patch re-apply, restart) only with -e ocb_change_approved=true.
+    Safety matrix (all changed=0): --check --diff -> exit 0, skipped; no approval -> exit 0, skipped; approved +
+    --check -> exit 0, skipped (check mode beats approval); verify drift override -> exit 2 named assertion. Rollback
+    printed before write; post-gate reuses the exact '
+- at: 2026-11-24 08:22
+  from: devin
+  text: moved doing -> done
+action:
+  status: done
+claim: {}

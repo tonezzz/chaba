@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
 column: done
-updated: 2026-11-24 08:13
+updated: 2026-11-24 08:22
 priority: high
 tags:
 - timer-alert
@@ -1951,6 +1951,10 @@ comms:
 - at: 2026-11-24 08:13
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
