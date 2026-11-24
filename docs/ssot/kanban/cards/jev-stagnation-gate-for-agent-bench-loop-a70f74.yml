@@ -1,7 +1,7 @@
 id: jev-stagnation-gate-for-agent-bench-loop-a70f74
 title: Jev stagnation gate for agent/bench loops (ProgressGate pattern)
 column: doing
-updated: 2026-11-24 16:06
+updated: 2026-11-24 16:19
 brief: 'Semantic stagnation detection in agent loops: Jev judges the trajectory (recent actions/state) -> CONTINUE/WARN/REPLAN/HALT.
   Would have caught the 4.4h colibri thinking-grind (2026-10-24). Apply to bench loops (edu-agent-bench, colibri-bench,
   eval-code-lane) + the runner.'
@@ -191,6 +191,12 @@ comms:
     First real Ada -> OpenCode dispatch attempted on; A chaba-worktree dispatch CAN land the canonical writer +
     CLI that ada-voice too; Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and unt; Prior
     "no exit record" failures were the lane never running t'
+- at: 2026-11-24 16:19
+  from: devin
+  text: '[progress] Phase 1 starting: loop-gate probe (noul stagnant + choice CONTINUE/WARN/REPLAN/HALT over /v1/systemone).
+    Found the 4.4h stall evidence on tony-omen (colibri-bench pack: 13 tasks x ~930s all 429/timeout + ~75min prep).
+    Backend note: arena v2 shows jev-student stag under-detects (0.417) vs jevos 0.917 — will bench both and pick
+    the honest default.'
 action:
   type: dispatch
   status: running
