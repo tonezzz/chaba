@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
-column: doing
-updated: 2026-11-24 14:45
+column: review
+updated: 2026-11-24 14:47
 priority: medium
 tags:
 - merge-sweep
@@ -678,6 +678,29 @@ comms:
     docs/ssot/jobs/kanban/2026-11-19-merge-test-gate-fail-closed.yml (landings trail). Verified: 255/255 gate-set
     tests green in ~91s on merged tree — clears even the old 240s budget. Remaining ops (not code): routine runner-agent
     fleet redeploy activates the pytest label auto-advertise; s'
+- at: 2026-11-24 14:47
+  from: tony-omen
+  text: 'finished (ok): exit=0  idc03''s served checkout picks up the gated merge-sweep on its next kanban-commit
+    pull. | devin-task-20261124-143'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'session-end checkpoint cf73f230: 1 leftover file(s) committed'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: banked 299 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 14:47
+  from: chaba
+  text: pushed dispatch/20261124-143145-observed-on-hands-off-waiting- to origin
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/dispatch_repos.py, tests/board/test_dispatch_close_out.py — card stays
+    in review for manual resolution'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -694,7 +717,7 @@ requests:
   executed: 2026-11-19 queue
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   attempts: 1
   sweep:
@@ -705,6 +728,9 @@ action:
   last_failure: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
     Consumed 12min 53.877s CPU time over 17min 33.927s wall clock time, 938.1M memory peak.'
   runner: tony-omen
+  result: 'exit=0  idc03''s served checkout picks up the gated merge-sweep on its next kanban-commit pull. | devin-task-20261124-143145-observed-on-hands-off-waiting-.service:
+    Consumed 5min 9.440s CPU time over 14min 15.551s wall clock time, 1.4G memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 14:30
 review_kind: verify
