@@ -1,7 +1,7 @@
 id: purge-retained-ada-ha-household-clone-ba-51b853
 title: Purge retained ada-ha household-clone backups (~1.7GB across omen+dell)
 column: doing
-updated: 2026-11-24 16:52
+updated: 2026-11-24 17:00
 priority: low
 tags:
 - ha-lanes
@@ -211,6 +211,13 @@ comms:
     prod-refs — matches card), plus ada-ha-cleanup-20261021.tar.gz (12K) + ada-ha-castpack-20261021.tar.gz (4K).
     dell ~/ada-ha-stale-clone-20261021 NOT FOUND — filesystem-wide find on tony-dell returns nothing; likely already
     removed during Oct 21-23 cleanup. Running noul-gate then '
+- at: 2026-11-24 17:00
+  from: devin
+  text: 'DONE. tony-omen: deleted ~/CascadeProjects/archive/ada-ha-purge-20261021/ (923M — recorder db 550M, git-history
+    102M, tuya keys 47M, cam snaps, prod-refs) + ada-ha-cleanup-20261021.tar.gz (12K, contained .ssh private keys)
+    + ada-ha-castpack-20261021.tar.gz (4K). Note: artifacts had been moved from ~ to ~/CascadeProjects/archive/
+    — card paths were stale. tony-dell: ~/ada-ha-stale-clone-20261021 verified ALREADY ABSENT (filesystem-wide find,
+    zero hits — likely removed in Oct 21-23 cleanup window).'
 action:
   type: dispatch
   status: running
