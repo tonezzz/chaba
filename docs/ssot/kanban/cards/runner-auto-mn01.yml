@@ -7,11 +7,9 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: runner-agent: checkout sha 3dc0bb81d66842bb != pin bb371a90911da8ad — chaba clone is stale/divergent;
-  ~/.local/bin/runner-agent sha 52cbc072f2695ad9 != pin bb371a90911da8ad — installed build is stale; ~/.local/bin/runner-agent
-  sha 52cbc072f2695ad9 != repo 3dc0bb81d66842bb — installed copy drifted; redeploy. Info: chaba origin is push-capable;
-  ada-voice: push probe fails (fatal: could not read Username for ''https://github.com'': No ) — ada-voice dispatches
-  defer to a pushable host; stranded work relays via board-api; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card
+note: 'Failing: chaba clone 285 commits behind origin/master (limit 200). Info: chaba origin is push-capable; ada-voice:
+  push probe fails (fatal: could not read Username for ''https://github.com'': No ) — ada-voice dispatches defer
+  to a pushable host; stranded work relays via board-api; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card
   cards; no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
   can''t take action.repo=gods-eye-view cards; repos.conf missing — devin-dispatch builtin repo table in use; devin:
   /home/tony/.local/bin/devin (devin 3000.14.30821 (a09cd7f323ee)).'
@@ -31,7 +29,7 @@ help: 'Per-check fixes:
 
   - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
   scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-11-24'
+updated: 2026-11-24 17:00
 review_kind: triage
 action:
   status: done
@@ -185,6 +183,10 @@ comms:
 - at: 2026-11-24 12:07
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:00
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-0301
 claim: {}
