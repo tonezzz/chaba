@@ -276,6 +276,28 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
+  - id: audit-hosts/idc02
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (public edge / offload VPS)
+    generator: scripts/audit-hosts.py --host idc02
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "idc02-*.yml"
+    meta: reports/audit-hosts/meta.idc02.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/con01
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (DR/absorber VPS, runs the report chain)
+    generator: scripts/audit-hosts.py --host con01
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "con01-*.yml"
+    meta: reports/audit-hosts/meta.con01.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
   # audit-hosts/idc01 retired 2026-10-07 — host retired; its residual rot
   # (missing timers, dead ada-* services) is a decommission checklist,
   # not standing signal. Re-add the node if idc01 returns to service.
@@ -533,7 +555,9 @@ nodes:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
       - audit-hosts/mn01
+      - audit-hosts/idc02
       - audit-hosts/idc03
+      - audit-hosts/con01
       - audit-hosts/macbook
       - health-monitor
       - host-loads

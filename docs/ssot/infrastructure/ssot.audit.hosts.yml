@@ -142,8 +142,10 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host + 6
-          leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
+        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host +
+          per-host leaf pages (one per ssot.audit.hosts.yml registry entry,
+          incl. retired idc01 stub) via scripts/ada/host-services-cms.py;
+          OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
       - name: chaba-jobs.timer
