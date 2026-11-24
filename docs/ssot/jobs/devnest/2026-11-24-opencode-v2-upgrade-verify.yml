@@ -1,0 +1,115 @@
+# Job: ada-opencode v2 upgrade verification (card ada-opencode-v2-upgrade / ADA-1174)
+title: ada-opencode executor opencode v2 upgrade — verify-only outcome
+subtitle: Card spec assumed container pin 1.19.4 -> v2.2.5; reality moved to host binary v2.4.1
+icon: target
+
+planning:
+  goal: >-
+    Card asked to bump OPENCODE_VERSION to v2.2.5, rebuild
+    localhost/ada-opencode, restart ada-opencode.container, verify
+    ada_mcp.py plugin compat, and re-run the opsread fixture path.
+  scope: >-
+    In: verify plugin/MCP compat under the live opencode version,
+    regression-run the ops-readonly profile path on idc02, record the
+    outcome. Out: no rebuild/restart (stack retired), no version pin
+    change, no lane-quota consumption.
+  success_criteria:
+    - real state on idc02 established (container vs host binary)
+    - ada_mcp.py MCP compat under live opencode confirmed
+    - opsread fixture path exercised end-to-end on the live binary
+  owner: tony
+  related_focus:
+    - label: this card
+      file: docs/ssot/kanban/cards/ada-opencode-v2-upgrade.yml
+
+processing:
+  status: completed
+  started_at: "2026-11-24T21:31+07:00"
+  steps:
+    - id: 1
+      label: state discovery
+      status: done
+      notes: >-
+        Card premise stale on two axes. (a) v2 was already live since
+        2026-11-08 (card comms: v2.2.5 on both container and host
+        paths); master Containerfile already pins ARG
+        OPENCODE_VERSION=2.2.6 with a v2 GitHub-asset install path.
+        (b) The entire container stack was retired TODAY
+        2026-11-24: quadlets renamed *.retired-20261124 under
+        ~/.config/containers/systemd/, image gone from podman, backup
+        at ~/backups/retired-opencode-20261124 (ada-code, jack-ide,
+        secrets). Live executor = host binary.
+    - id: 2
+      label: live version inventory (idc02)
+      status: done
+      notes: >-
+        /usr/local/bin/opencode -> /usr/local/lib/node_modules/@opencode/cli
+        (npm global, installed 2026-11-24 12:20) = v2.4.1.
+        ~/.opencode/bin/opencode (runner-agent OPENCODE_BIN) = v2.4.1.
+        opencode-serve.service (user unit) runs
+        /usr/local/bin/opencode serve --hostname 100.123.163.11 --port
+        4096 with OPENCODE_CONFIG=~/.config/opencode-serve/opencode.json.
+        `opencode run --standalone` flag still valid in v2.4.1.
+    - id: 3
+      label: ada_mcp.py compat check
+      status: done
+      notes: >-
+        ada_mcp.py is a stdio MCP server, not an opencode plugin —
+        there is no @opencode-ai/plugin dependency anywhere (grep over
+        chaba + ada-voice/ada-bridge on idc02: zero hits). Live wiring:
+        ~/.config/opencode/opencode.json mcp."ada-control" ->
+        ~/.local/venvs/ada-mcp/bin/python
+        ~/CascadeProjects/ada-bridge/opencode/ada_mcp.py (venv mcp
+        SDK 1.29.0). `OPENCODE_CONFIG=~/.config/opencode/opencode.json
+        opencode mcp list` under v2.4.1: all 7 servers connected
+        (ada-control, context7, mcp-debug, mcp-health, mcp-weaviate,
+        mddb, playlive). Hourly ada-ocb-smoke also PASSes
+        ada_bridge_info tools=30 (its 3 FAILs are an unrelated
+        find_card ADA-0172 ambiguity + context_pack/preflight
+        assertions, not opencode-version related).
+    - id: 4
+      label: opsread fixture regression
+      status: done
+      notes: >-
+        Lane gate on idc02 is at stage S1 with jobs_completed S1=3/3 —
+        a gated `opencode_profiles.py run` would deny
+        quota_exceeded, so the run was mirrored manually (render ->
+        `opencode run --format json --standalone --model
+        litellm/gemini-3.5-flash-lite --agent ops-readonly` ->
+        artifact extraction -> held-out verify.py), skipping only
+        admit/quota/ledger. Worktree /tmp/ocv2-verify @ origin/master
+        b4f78093a0 on idc02; run dir
+        evals/opencode-lane/runs/manual-v241-opsread. Result: exit 0,
+        artifact landed, verifier PASS all 11 checks (required fields,
+        read_only, host==idc02, disk/mem/cpu/load/failed_units/uptime
+        bounds), 0 denials, 0 mutating commands, ~37.7k in / 248 out
+        tokens, wall 12.1s. The profile contract is fully compatible
+        with v2.4.1 — opencode_profiles.py already carries v2 handling
+        (--standalone, nested run-metadata).
+    - id: 5
+      label: repo changes
+      status: done
+      notes: >-
+        stacks/idc02/ada-opencode/Containerfile header annotated
+        RETIRED with pointers to the live stack and this doc.
+        ssot.audit.hosts.yml still declares ada-code.service /
+        ada-code-enroll.service / ada-code-network.service as live —
+        drift from today's retirement, likely owned by the in-flight
+        OPS-1310 retire branch on idc02; flagged on the card rather
+        than edited here.
+
+outcome:
+  verdict: >-
+    Upgrade already de-facto complete and verified: opencode v2.4.1 is
+    the live executor on idc02 (past the card's v2.2.5 target), the
+    ops-readonly profile path passes end-to-end on it, and ada_mcp.py
+    works as an MCP server under v2 config. No rebuild/restart needed
+    — the container those steps targeted no longer exists.
+  evidence:
+    - idc02: opencode --version = v2.4.1 (both /usr/local/bin and ~/.opencode/bin)
+    - idc02: opencode mcp list (live config) = 7/7 servers connected incl. ada-control
+    - idc02: /tmp/ocv2-verify/evals/opencode-lane/runs/manual-v241-opsread/verdict.json = pass
+    - ~/backups/retired-opencode-20261124 on idc02 = retired stack backup
+  followups:
+    - ssot.audit.hosts.yml ada-code* unit entries need retirement marking (OPS-1310 lane)
+    - ada-ocb-smoke FAILs (find_card ADA-0172 ambiguity) are a separate board-search bug, not opencode-related

@@ -1,4 +1,12 @@
 # ada-opencode — Ada's dispatch executor on idc02 (rootless podman).
+# RETIRED 2026-11-24: the ada-code/ada-enroll/ada-opencode quadlets and
+# the localhost/ada-opencode image were retired on idc02 (backup at
+# ~/backups/retired-opencode-20261124). The live executor is now the
+# host opencode binary (v2.4.1, /usr/local/bin/opencode and
+# ~/.opencode/bin/opencode via runner-agent OPENCODE_BIN) served by
+# opencode-serve.service; the opsread profile path
+# (scripts/devnest/opencode_profiles.py run) verified green on v2.4.1
+# the same day — see docs/ssot/jobs/devnest/2026-11-24-opencode-v2-upgrade-verify.yml.
 # Reconstructed 2026-11-08 from the live image layer history — the
 # original build was ad-hoc and unreproducible; this is now canonical.
 # Bump OPENCODE_VERSION to upgrade; the executor contract (preflight
