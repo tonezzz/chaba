@@ -1,7 +1,7 @@
 id: audit-miss-remote-eval-results-not-landed
 title: Remote-host eval results never landed in repo
-column: doing
-updated: 2026-11-24 22:12
+column: review
+updated: 2026-11-24 22:15
 brief: 'Session audit 2026-11-20 (AUD-0973): eval output files claimed produced on remote hosts; absent from origin/master
   and not found on tony-macbook.'
 priority: medium
@@ -151,12 +151,47 @@ comms:
     batch. kk-mac-live-jev-probe artifact recovered from idc03 patch-inbox bundle, cherry-picked 1f16965029 (verdict=pass
     retry). Commits 872de9664c + c6b7c252cb; job record docs/ssot/jobs/devnest/2026-11-24-remote-eval-results-recovery.yml.
     Root cause: ~/evals untracked o'
+- at: 2026-11-24 22:15
+  from: idc02
+  text: 'finished (ok): exit=0 hable and tony-dell still holds unrelated unlanded `~/evals/results/` outputs noted
+    for the audit. | devin-task-2'
+- at: 2026-11-24 22:15
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:15
+  from: chaba
+  text: 'session-end checkpoint 3fbb537d: 1 leftover file(s) committed'
+- at: 2026-11-24 22:15
+  from: chaba
+  text: banked 53 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:15
+  from: chaba
+  text: pushed dispatch/20261124-215947-locate-and-land-or-document-as to origin
+- at: 2026-11-24 22:15
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:15
+  from: chaba
+  text: auto-merged 38a23b3e (dispatch/20261124-215947-locate-and-land-or-document-as) → origin/master
+- at: 2026-11-24 22:15
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-215947-locate-and-land-or-document-as,
+    branch dispatch/20261124-215947-locate-and-land-or-document-as'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 hable and tony-dell still holds unrelated unlanded `~/evals/results/` outputs noted for the audit.
+    | devin-task-20261124-215947-locate-and-land-or-document-as.service: Consumed 2min 31.091s CPU time, 650.7M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:58
+review_kind: verify
