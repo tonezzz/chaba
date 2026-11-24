@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-24 08:06
+updated: 2026-11-24 08:12
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -397,6 +397,14 @@ comms:
     DONE (attempt on tony-omen). runner; [ada-scenario-casting-service-failed-on-i-340465] finished (failed): exit=1
     oces; [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; [ada-scenario-casting-service-failed-on-i-340465]
     primer inje'
+- at: 2026-11-24 08:07
+  from: devin
+  text: 'attempt 4 on tony-dell: prior run cleared ProviderCapLatched and started the suite at 20:27 but session
+    died on rate-limit before verifying. Checking idc03 service result + runner-agent drift now.'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
@@ -438,3 +446,4 @@ spec: Investigate and resolve the failure of ada-scenario-casting.service on hos
   The done-condition is verified when ada-scenario-casting.service runs successfully on idc03 without failure logs.
 claim:
   since: 2026-11-24 08:05
+awaiting_action: true
