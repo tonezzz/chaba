@@ -1,7 +1,7 @@
 id: support-german-language-variants-on-cms-69ef23
 title: Support German language variants on CMS pages
 column: doing
-updated: 2026-11-24 15:07
+updated: 2026-11-24 15:19
 priority: low
 note: User wants to create a German version of CMS page 'translate-probe', but only EN/TH are supported.
 comms:
@@ -175,6 +175,13 @@ comms:
     assumptions (cms_index dedup, cms-render index dedup, board-api /report create lang), then creating the translate-probe
     de variant live to verify end-to-end. ada-voice cms_publish_page schema enum is the remaining gate — will card
     it.'
+- at: 2026-11-24 15:19
+  from: devin
+  text: 'DONE (chaba scope): MDDB never restricted lang — wrote ada-cms-pages/translate-probe lang=de live (German
+    text from the 2026-10-05 voice note); cms-render ?lang=de verified serving it with en/th/de switcher. Fixed
+    chaba-side en/th assumptions: cms_index.index_rows + cms-render index_rows now dedupe one-row-per-key preferring
+    en for ANY lang; board-api /report create accepts lang param. Tests added (33+24 pass). reports-index regen
+    verified: 1 row, no dupes. Remaining gate is ada-voice tool schem'
 ref: KNB-0284
 action:
   type: dispatch
