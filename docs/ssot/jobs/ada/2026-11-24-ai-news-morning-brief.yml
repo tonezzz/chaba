@@ -1,0 +1,108 @@
+title: AI news -> Education morning brief — daily private WP page + lesson updates
+subtitle: >-
+  The ai-news-to-education procedure implemented as wp-news-morning-brief:
+  reads the existing news CPT (no parallel store), publishes a fixed-section
+  private page, appends dated News-watch blocks to matched Education
+  lessons, and answers on-demand news+lesson queries.
+icon: newspaper
+id: 2026-11-24-ai-news-morning-brief
+status: implemented in dispatch worktree — pending merge + idc03 unit install
+owner: devin-dispatch
+project: chaba
+card: ai-news-education-morning-brief
+ref: OPS-0877
+started: "2026-11-24"
+
+context:
+  trigger: >
+    Card spec: define and implement the daily AI/model/provider news
+    procedure; integrate with wp-news-fetch/wp-news-digest/wp-news-situation
+    rather than a parallel raw-news store; private morning brief with fixed
+    sections; durable comparisons update existing Education lessons by
+    topic; on-demand query path; verify the private page consumer URL;
+    non-blocking generator with deterministic fallback.
+  procedure_source: >
+    docs/kb/ai-news-to-education-procedure.md was committed on branch
+    feat/gaussian-splat-edu-poc (39f5f77c2d) but never reached master —
+    carried into this change so the registry entry and the code agree.
+
+what_landed:
+  - >-
+    scripts/ada/news-feeds.json — 6 new feeds (gn-ai-models, gn-ai-video,
+    gn-ai-3d, gn-ai-local, gn-ai-chip Google-News queries + hf-blog
+    Hugging Face blog Atom). Hourly wp-news-fetch ingests them into the
+    news CPT with tag ai; source_feed provenance drives brief filtering.
+  - >-
+    scripts/ada/news-morning-brief.py — subcommands: brief (daily run;
+    collects AI-relevant digest parents + unparented items over a 30h
+    window, synthesizes the fixed-section brief via chat-local LiteLLM
+    -> gemini-3.5-flash-lite -> deterministic fallback, upserts private
+    page slug ai-morning-brief, appends dated News-watch blocks to
+    matched existing lessons via board-api /lesson — max 2/run,
+    update-only, idempotent per day); ask (on-demand query — embeds the
+    ask via nomic/LiteLLM with trigram fallback, ranks recent news
+    titles + lesson topics); verify (confirms the private page and
+    prints the consumer URL); lesson-update (manual append of a dated
+    News-watch block to one existing lesson — the same path the daily
+    job uses).
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — job wp-news-morning-brief,
+    host idc03, on_calendar *-*-* 08:00:00 ICT, timeout 10m.
+  - >-
+    systemd/generated/idc03/wp-news-morning-brief.{service,timer} —
+    rendered via scripts/render-jobs.py (install on idc03 after merge:
+    render-jobs.py --host idc03 --install).
+  - >-
+    docs/kb/ai-news-to-education-procedure.md + ssot.procedures.yml
+    registry entry + ssot.wp-boards.yml producer notes.
+
+key_decisions:
+  store: >-
+    No new CPT and no parallel raw store — AI feeds ride the existing
+    news CPT; the brief is a reader/summarizer over digest parents plus
+    unparented items (children of in-window digests are covered by the
+    parent and skipped).
+  lesson_writes: >-
+    Only EXISTING lessons are updated (op:get must resolve the topic
+    slug; the job never creates lessons). Live read source is wiki
+    (WIKI_EDUCATION_WRITE=wiki) so op:get returns wikitext — the appended
+    block is written in wikitext and rides the /lesson door's
+    html->wikitext pass (wikitext text survives that converter). The
+    door stays the only write path so the MDDB chaba-lessons mirror and
+    provenance/review-state preservation keep working. no_th is passed
+    for wiki rows to skip a full-content Thai re-translate; existing
+    Thai sections are preserved in the body.
+  consumer_url: >-
+    Private WP pages require an editor login; the canonical consumer URL
+    is https://boards.surf-thailand.com/wp/ai-morning-brief/ (edge
+    rewrites /wp/<path> to index.php/<path>; same pattern as the
+    situations index). verify subcommand re-checks after each run.
+  non_blocking: >-
+    LLM lanes are timeout-bounded (chat-local 300s, gemini 180s); total
+    job timeout 10m. Any LLM failure renders the deterministic page —
+    raw titles/links only, marked 'Deterministic fallback'.
+
+verify:
+  - >-
+    python3 scripts/render-jobs.py --check — 120 jobs OK.
+  - >-
+    news-fetch --feed hf-blog|gn-ai-models --dry-run — both feeds return
+    relevant AI items (HF blog kept 10 of 916; gn-ai-models kept 3 of
+    42 — the require regex is intentionally strict).
+  - >-
+    lesson_update dry-run against live board-api op:get — wiki-source
+    lesson resolves, wikitext block formed correctly.
+  - >-
+    render_brief + fallback paths unit-checked locally.
+  - >-
+    NOT yet verified live: WP page write + consumer URL (needs
+    wp-boards.env — runs on idc03 after merge; first timer run 08:00 ICT,
+    or manual: news-morning-brief.py brief --dry-run then verify).
+
+open:
+  - >-
+    First live run may need feed tuning (gn-ai-models kept only 3 of 42
+    — the query+require pair is strict; widen require or add feeds if
+    the brief is thin).
+  - >-
+    ask embeds ~300 texts in one call — fine on idc03, slow elsewhere.
