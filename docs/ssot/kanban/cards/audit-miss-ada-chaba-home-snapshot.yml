@@ -1,7 +1,7 @@
 id: audit-miss-ada-chaba-home-snapshot
 title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
 column: doing
-updated: 2026-11-24 17:10
+updated: 2026-11-24 17:18
 brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
 priority: medium
 program: home-assistant
@@ -195,6 +195,13 @@ comms:
     answered the-live-ada-ha-chaba-admin-dashboar; idc02''s kanban-dispatch.service was a linked unit running a
     stale scripts/-only ; no chaba-audit.service/chaba-audit-full.service entries exist in ssot.audit.host; [audit-miss-unlanded-oct06-dispatch-artifacts]
     PR #196 CI upd'
+- at: 2026-11-24 17:18
+  from: devin
+  text: 'Done (dispatch 20261124-170951, commit 702c18d10c0 on dispatch branch). Regenerated docs/home-assistant/dashboards/ada-ha-chaba-home-current.json
+    via the supported read-only path — sync-ada-ha-chaba-admin.py read .storage/lovelace.chaba_home on tony-omen;
+    live dashboard untouched, snapshot == live config (views ai/chat/calendar/gesture/report/nobito). The 86ae90671
+    deletion premise (dashboard gone) was wrong — SSOT note updated with rationale. Also: --instance ada-ha in sync-ssot-from-live.sh
+    no'
 action:
   type: dispatch
   status: running
