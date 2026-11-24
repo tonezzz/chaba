@@ -264,6 +264,25 @@ DISPATCH = os.environ.get(
 CLAUDE_DISPATCH = os.environ.get(
     "CLAUDE_DISPATCH", str(Path.home() / ".local/bin/claude-dispatch"))
 
+# --- ADA-0024: dispatch job-lifecycle parity -------------------------
+# The board runner is the ada-ocb pane's remote executor. Devin-console
+# jobs emit a job/<id> doc into the shared MDDB bank so Ada's devin_pending
+# can surface them by voice and the Report Dispatch layer can render them.
+# The runner never had that emitter, nor a needs-input terminal state:
+# a task that stopped to ask Tony was either reported as a crash (retry
+# burn / auto-requeue) or vanished from the ledger. These knobs add an
+# ADVISORY lifecycle layer — every write is best-effort and warn-only,
+# so a dead MDDB/board-api can never stop claim or finish (the unattended
+# lane standard: advisory components degrade, never block).
+JOB_LIFECYCLE_ON = os.environ.get("RUNNER_JOB_LIFECYCLE", "1") != "0"
+DISPATCH_JOB_MDDB = os.environ.get(
+    "DISPATCH_JOB_MDDB_URL",
+    "http://100.102.134.91:11023/v1").rstrip("/")
+DISPATCH_JOB_COLLECTION = os.environ.get(
+    "DISPATCH_JOBS_COLLECTION", "ada-ha-bank-devin-handoff")
+NEEDS_INPUT_EXIT = 42
+NEEDS_INPUT_MARK = "NEEDS-INPUT:"
+
 # Lane -> cheapest model (jev-pilot Phase 2). Mirrors kanban-dispatch.
 # Executor-aware split (devin-executor-model-routing, DEV-0958):
 # LANE_MODELS ids are LiteLLM-proxy aliases — they resolve ONLY on the
@@ -761,6 +780,9 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
 - Do NOT call board-api or any network endpoint — the runner records
   progress and verdicts itself. Emit only what the task contract asks
   as your final message.
+- If {answerfile} exists, its newest line with kind:"answer" is Tony's
+  authoritative reply to a question you previously raised — read it
+  locally before you start and act on it.
 """.strip()
 
 
@@ -2327,6 +2349,261 @@ def note_defer(card: dict, kind: str, reason: str,
         pass
 
 
+# --- ADA-0024: needs-input / job-ledger helpers -----------------------
+# Kept beside note_defer because both are the runner's "human must act"
+# surface. None of these raise into the lane: MDDB and board-api are
+# advisory here (warn-only), so a dead dependency never stops a claim or
+# a finish.
+
+def _job_taskdir(ent: dict) -> Path:
+    return (Path.home() / ".local/share/devin-dispatch/tasks"
+            / str(ent.get("tid") or ""))
+
+
+def _task_exit_code(ent: dict) -> int | None:
+    try:
+        return int((_job_taskdir(ent) / "exit_code").read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def needs_input_question(ent: dict, unit: str = "") -> str:
+    """The one-line question when a finished dispatch task stopped to ask
+    Tony, else ''. job-run.sh precedence: needs-input.txt first, then the
+    last NEEDS-INPUT: line in events.jsonl / output.log, then exit 42.
+    An ordinary non-zero exit is never treated as needs-input."""
+    td = _job_taskdir(ent)
+    marker = td / "needs-input.txt"
+    if marker.is_file():
+        try:
+            line = marker.read_text(errors="replace").splitlines()[0].strip()
+            if line:
+                return line[:300]
+        except OSError:
+            pass
+    for name in ("events.jsonl", "output.log"):
+        try:
+            lines = (td / name).read_text(errors="replace").splitlines()
+        except OSError:
+            continue
+        hits = []
+        for ln in lines:
+            text = ln
+            if ln.lstrip().startswith("{"):
+                try:
+                    ev = json.loads(ln)
+                except json.JSONDecodeError:
+                    ev = {}
+                if isinstance(ev, dict):
+                    text = str(ev.get("text") or ev.get("content")
+                               or ev.get("message") or "")
+            if NEEDS_INPUT_MARK in text:
+                hits.append(text.split(NEEDS_INPUT_MARK, 1)[1].strip())
+        if hits:
+            q = hits[-1][:300]
+            # Persist it so Ada and answer delivery see the same text as
+            # job-run.sh's _needs_input (which writes needs-input.txt).
+            try:
+                td.mkdir(parents=True, exist_ok=True)
+                marker.write_text(q + "\n")
+            except OSError:
+                pass
+            return q
+    if _task_exit_code(ent) == NEEDS_INPUT_EXIT:
+        return "Job needs direction — reply with the next step."
+    return ""
+
+
+def _job_doc(job_id: str, status: str, question: str = "",
+             detail: str = "") -> dict:
+    """MDDB /add payload — mirrors scripts/devin/job-run.sh exactly
+    (every meta value is a list; the bank's schema expects that shape)."""
+    now = datetime.now(timezone.utc).isoformat()
+    meta = {"kind": ["job"], "status": [status], "job_id": [job_id],
+            "host": [HOST], "ts": [now], "subject": ["job-" + job_id],
+            "source": ["runner-agent"], "written_by": ["runner-agent"],
+            "scope": ["tony"], "bank": ["devin-handoff"]}
+    if question:
+        meta["question"] = [question]
+    body = f"Job {job_id} on {HOST}: {status}."
+    if question:
+        body += f"\n\nNeeds input: {question}"
+    if detail:
+        body += f"\n\n{detail[:2000]}"
+    return {"collection": DISPATCH_JOB_COLLECTION, "key": "job/" + job_id,
+            "lang": "en", "contentMd": body, "meta": meta}
+
+
+def job_ledger_write(job_id: str, status: str, question: str = "",
+                     detail: str = "") -> bool:
+    """Best-effort upsert of job/<id> in the dispatch bank. Returns False
+    on failure — never raises, never blocks the lane."""
+    if not JOB_LIFECYCLE_ON or not job_id:
+        return False
+    try:
+        payload = json.dumps(
+            _job_doc(job_id, status, question, detail)).encode()
+        req = urllib.request.Request(
+            DISPATCH_JOB_MDDB + "/add", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return 200 <= resp.status < 300
+    except Exception as e:
+        print(f"{job_id}: job ledger {status} write failed: {e}")
+        return False
+
+
+def _last_answer(ent: dict) -> str:
+    """Newest authoritative answer delivered by board-api /respond to
+    the task dir (kind:answer wins over review kind:comment lines)."""
+    try:
+        lines = (_job_taskdir(ent) / "answers.jsonl").read_text(
+            errors="replace").splitlines()
+    except OSError:
+        return ""
+    for raw in reversed(lines):
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if row.get("kind") == "answer" and \
+                str(row.get("answer") or "").strip():
+            return str(row["answer"]).strip()[:1000]
+    return ""
+
+
+def _request_answer(card: dict, cid: str) -> str:
+    """Answer recorded on the board request we raised. Runner claims
+    don't carry action.task_id, so board-api's answers.jsonl delivery
+    can't reach these task dirs — the card's own requests[] is the
+    authoritative board-side channel."""
+    for r in card.get("requests") or []:
+        if not isinstance(r, dict) or r.get("id") != f"job-input-{cid}":
+            continue
+        if r.get("status") == "answered":
+            answer = str(r.get("answer") or "").strip()
+            if answer:
+                return answer[:1000]
+    return ""
+
+
+def _mddb_answer(cid: str) -> str:
+    """Ada voice answers (devin_answer) land as answer/<id> in the same
+    bank; they never touch the board request. Read the doc by key so the
+    voice channel works without a task_id/answers.jsonl path."""
+    if not JOB_LIFECYCLE_ON:
+        return ""
+    try:
+        payload = json.dumps({
+            "collection": DISPATCH_JOB_COLLECTION,
+            "key": f"answer/{cid}", "lang": "en"}).encode()
+        req = urllib.request.Request(
+            DISPATCH_JOB_MDDB + "/get", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            doc = json.loads(resp.read())
+        txt = str((doc or {}).get("contentMd") or "")
+        # devin_answer writes "Answer for job <id> (<ts>):\n\n<message>"
+        answer = txt.partition(":\n\n")[2].strip()
+        return answer[:1000]
+    except Exception:
+        return ""
+
+
+def _raise_input_request(cid: str, question: str) -> None:
+    """Ask on the card so the normal answer path (board /respond, or a
+    voice reply written into the requests[] entry) reaches the blocked
+    task. Stable request id dedupes re-observation; a duplicate reply is
+    expected and ignored."""
+    try:
+        resp = api("/request", {
+            "id": cid, "from": "chaba",
+            "request_id": f"job-input-{cid}",
+            "ask": f"Job needs your input: {question}",
+            "options": [
+                {"id": "answer", "label": "Answer — reply in chat",
+                 "action": "none"},
+                {"id": "hold", "label": "Hold — leave blocked",
+                 "action": "hold"}]})
+        err = str((resp or {}).get("error") or "")
+        if err and "duplicate" not in err.lower():
+            print(f"{cid}: board input request failed: {err}")
+    except Exception as e:
+        print(f"{cid}: board input request failed: {e}")
+
+
+def _enter_awaiting(cid: str, ent: dict, question: str,
+                    detail: str = "") -> None:
+    """Park a finished task on Tony. Deliberately does NOT post
+    /action finish — do_finish(ok=False) burns retries and auto-requeues,
+    and a blocked job is not a failed job."""
+    ent["job_awaiting"] = {
+        "question": question,
+        "at": datetime.now(timezone.utc).isoformat(),
+        "tid": ent.get("tid") or "", "unit": ent.get("unit") or ""}
+    job_ledger_write(cid, "awaiting-user", question=question, detail=detail)
+    _raise_input_request(cid, question)
+    api("/comment", {"id": cid, "from": "chaba",
+                     "text": f"needs input: {question}",
+                     "awaiting_action": True})
+    _notify(cid, "needs-input", question[:160])
+
+
+def _job_answer_tick(cid: str, ent: dict, cards_get) -> bool:
+    """If Tony answered a blocked job, record it and resume the task.
+    Returns True when a new unit is running on ent."""
+    aw = ent.get("job_awaiting") or {}
+    if aw.get("resume_failed"):
+        return False  # a failed resume holds for a human — no silent loop
+    card = cards_get().get(cid) or {}
+    # Three answer channels, in authority order: a live answers.jsonl
+    # (if a task_id was stamped), the board request we raised, or Ada's
+    # voice-written MDDB answer doc.
+    answer = (_last_answer(ent) or _request_answer(card, cid)
+              or _mddb_answer(cid))
+    if not answer:
+        return False
+    job_ledger_write(cid, "answered", question=aw.get("question", ""),
+                     detail=answer)
+    api("/comment", {"id": cid, "from": "ada",
+                     "text": f"answer received — resuming: {answer[:200]}"})
+    if not card:
+        aw["resume_failed"] = True
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": "answer recorded but card vanished — "
+                                 "cannot resume; job holds for a human",
+                         "awaiting_action": True})
+        return False
+    try:
+        (_ensure_act(card))["last_answer"] = answer
+    except Exception:
+        pass
+    u2, t2, e2 = start_task(card, "dispatch")
+    if e2 or not u2:
+        aw["resume_failed"] = True
+        job_ledger_write(cid, "failed", detail=f"resume failed: {e2 or 'no unit'}")
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"resume failed: {e2 or 'no unit'} — "
+                                 "job holds for a human",
+                         "awaiting_action": True})
+        return False
+    # The resumed lane reads a fresh task dir; carry the authoritative
+    # answer across so RAILS_OPENCODE's answers.jsonl line is actionable.
+    try:
+        newtd = _job_taskdir({"tid": t2})
+        newtd.mkdir(parents=True, exist_ok=True)
+        with (newtd / "answers.jsonl").open("a") as fh:
+            fh.write(json.dumps({
+                "at": datetime.now(timezone.utc).isoformat(),
+                "card": cid, "from": "ada", "kind": "answer",
+                "answer": answer}) + "\n")
+    except OSError:
+        pass
+    ent.pop("job_awaiting", None)
+    ent.update({"unit": u2, "tid": t2})
+    return True
+
+
 def note_gpu_defer(card: dict, reason: str) -> None:
     note_defer(card, "gpu", f"gpu preflight: {reason}")
 
@@ -3260,7 +3537,8 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     spec = (card.get("spec") or "").strip() or \
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
     task = spec + "\n\n" + RAILS_OPENCODE.format(
-        id=card["id"], host=HOST, api=API)
+        id=card["id"], host=HOST, api=API,
+        answerfile=str(_job_taskdir({"tid": tid}) / "answers.jsonl"))
     # Render the task-scoped profile into a worktree-local opencode
     # config: profile agent only, builtin agents disabled, MCP surface
     # minimal (proxy-only, only when present), permission rules from
@@ -3801,11 +4079,49 @@ def finish_pass(st: dict) -> bool:
     """Report claimed tasks whose units exited. Returns state changed."""
     changed = False
     cards = None  # lazy /cards fetch — only the close-out needs it
+
+    def _cards_map():
+        nonlocal cards
+        if cards is None:
+            cards = {c.get("id"): c for c in
+                     (api("/cards") or {}).get("cards") or []}
+        return cards
+
     for cid, ent in list(st.items()):
+        # ADA-0024: a job parked on Tony stays claimed but is NEVER
+        # finished — do_finish(ok=False) burns retries and auto-requeues.
+        if ent.get("job_awaiting"):
+            card_now = _cards_map().get(cid) or {}
+            if card_now and _act(card_now).get("status") != "running":
+                # A human moved the card on (hold/retry/close) — release
+                # the local claim instead of polling a stale answer.
+                ent.pop("job_awaiting", None)
+                del st[cid]
+                changed = True
+                continue
+            if _job_answer_tick(cid, ent, _cards_map):
+                changed = True
+            continue
         unit = ent.get("unit") or ""
         if not unit or unit_active(unit):
+            # Emit the running ledger doc once, on first observation.
+            if (JOB_LIFECYCLE_ON and unit and ent.get("type") == "dispatch"
+                    and not ent.get("job_started_emitted")):
+                ent["job_started_emitted"] = True
+                job_ledger_write(cid, "running",
+                                 detail=f"claimed on {HOST} as {unit}")
+                changed = True
             continue
         ok, result = collect(unit)
+        # ADA-0024: needs-input is a blocked state, not a failure. This
+        # runs before the rate-limit scan and the executor merge gates so
+        # "stopped to ask" never turns into a crash/retry or a bogus merge.
+        if JOB_LIFECYCLE_ON and ent.get("type") == "dispatch":
+            question = needs_input_question(ent, unit)
+            if question:
+                _enter_awaiting(cid, ent, question, result[:400])
+                changed = True
+                continue
         # `systemd-run --collect` can remove the transient unit before the
         # next runner pass observes it. The kk_mac executor persists its
         # exit code and verifier evidence in the task directory, so use that
@@ -3920,6 +4236,14 @@ def finish_pass(st: dict) -> bool:
                 "ok": ok, "result": extra + result}
         if verified is not None:
             body["verified"] = verified
+        if JOB_LIFECYCLE_ON and ent.get("type") == "dispatch":
+            # Close the ledger too — otherwise the Report Dispatch layer
+            # and Ada's devin_jobs show a stale 'running' doc forever.
+            # verified=False (held merge) is a checked-and-failed job,
+            # never a 'done'.
+            job_ledger_write(cid,
+                             "done" if (ok and verified is not False)
+                             else "failed", detail=result[:400])
         resp = api("/action", body)
         for n in notes:
             api("/comment", {"id": cid, "from": "chaba", "text": n})
