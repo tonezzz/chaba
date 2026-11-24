@@ -1,7 +1,7 @@
 id: mn-dev-rename
 title: Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)
-column: doing
-updated: 2026-11-24 18:13
+column: review
+updated: 2026-11-24 18:19
 brief: 'Public hostname renamed to mn-ha.surf-thailand.com (2026-10-16) and system-map now calls the dev twin mn-dev.
   Physical rename pending: michael-dev.service, podman container michael-dev, ~/.config/michael-dev, ~/.config/secrets/ha-michael-dev.env,
   plus ~119 references across docs/ssot, AGENTS.md, scripts. All must move together or scripts break.'
@@ -269,18 +269,40 @@ comms:
     w/ compat symlink left fleet-wide. Parked copies renamed on idc03/tony-dell/tony-omen (parity timer re-armed).
     Live edges updated: /apps/ha/mn-ha-dev on idc02 web-srv + mn01 caddy (michael-dev kept as legacy alias). Repo
     sweep: 81 files, lanes.instances.mn-ha-dev, syst'
+- at: 2026-11-24 18:19
+  from: tony-dell
+  text: 'finished (ok): exit=0 3-stop-disable-michael-d.md`; final comms posted to the card. | devin-task-20261124-172357-1-idc03-stop-disable-m'
+- at: 2026-11-24 18:19
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 18:19
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-172357-1-idc03-stop-disable-michael-d'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 18:19
+  from: chaba
+  text: pushed dispatch/20261124-172357-1-idc03-stop-disable-michael-d to origin
+- at: 2026-11-24 18:19
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 51.0s)
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   attempts: 2
   sweep:
     stale_running: 2026-11-24 17:08
     zero_commit: 2026-11-24 17:08
-  verified: false
+  verified: true
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
   runner: tony-dell
+  result: 'exit=0 3-stop-disable-michael-d.md`; final comms posted to the card. | devin-task-20261124-172357-1-idc03-stop-disable-michael-d.service:
+    Consumed 4min 19.192s CPU time over 50min 39.939s wall clock time, 1.5G memory peak, 581.4M memory swap peak.'
 claim:
   since: 2026-11-24 17:23
 requests:
@@ -296,3 +318,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
