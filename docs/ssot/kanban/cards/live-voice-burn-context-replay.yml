@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: doing
-updated: 2026-11-24 08:08
+updated: 2026-11-24 08:12
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -410,6 +410,12 @@ comms:
     44/47 text). TEST-POLLUTION recurred via non-pytest runner (t-ctx daily 10-17..11-09, ~4.36M) — FIXED: usage_tracker
     implicit default now persists only with ADA_INSTANCE_ID lane + env pin in test_context_budget.py + new gate
     test; full pytest 1927 pass; direct-run repro writes zero fi'
+- at: 2026-11-24 08:12
+  from: devin
+  text: 'analysis done: Live API has NO prompt/context caching (Google-confirmed, cachedContentTokenCount always
+    0) — static prefix measured ~19.3K tok (8K instr + 11.3K decls) re-billed EVERY turn. Shipped: tests/__init__.py
+    closes unittest-path t-ctx pollution; ADA_PRIME_AS_CONTEXT=1 opt-in makes session prime a turn_complete=False
+    context note (~19K+greeting saved per fresh connect, ~13% of fleet in at dig rates). SSOT doc: docs/ssot/jobs/ada/2026-11-24-live-voice-token-burn.yml'
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
