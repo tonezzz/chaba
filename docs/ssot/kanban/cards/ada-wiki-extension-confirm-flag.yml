@@ -1,0 +1,22 @@
+id: ada-wiki-extension-confirm-flag
+title: ada-voice wiki_extension tool must pass confirm=true on mutations
+column: backlog
+updated: 2026-11-24 20:26
+brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
+  ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
+  door deploys.'
+priority: high
+program: devnest
+tags:
+- ada-voice
+- mediawiki
+- wiki-extension-control-plane
+spec: 'In ada-voice repo (edit point: tony-dell ~/CascadeProjects/ada-voice, deploy via deploy-ada.sh): update backend/tools.d/wiki_extension.py
+  run() to include confirm:true in the POST /wiki/extension body for action install|enable|disable (list stays confirm-free).
+  Mirror the same fix in the ada-ocb bridge path if it calls the door directly (opencode/ada_mcp.py ada_wiki_extension(s)).
+  Add/adjust a scenario or unit test covering the confirm flag. Deploy gates: tool-lint + pytest must pass.'
+ref: ADA-1324
+comms:
+- at: 2026-11-24 20:26
+  from: devin
+  text: card captured via board-api
