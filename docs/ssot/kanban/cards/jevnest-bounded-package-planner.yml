@@ -1,7 +1,7 @@
 id: jevnest-bounded-package-planner
 title: Bounded JevNest package planner for real-work fanout
 column: doing
-updated: 2026-11-24 18:44
+updated: 2026-11-24 18:49
 brief: Evaluate a bounded planner that proposes additional real task packages from existing evidence without allowing
   KK-Mac to mutate or recursively feed its own queue.
 priority: medium
@@ -198,6 +198,13 @@ comms:
     refactor validator into offline-testable validate_artifact() with full check list (evidence, class, bounds,
     lane, dedupe, secrets, self-ref), add held-out fixture suite under fixtures/devnest-planner/, record design
     in docs/ssot/jobs/devnest/.'
+- at: 2026-11-24 18:49
+  from: devin
+  text: DONE (design + fixture gate). kk_mac_plan_validator.py refactored into pure validate_artifact() with the
+    full check list (verified artifact, source evidence + verbatim quotes, admitted classes, kk_mac_local lane,
+    prompt/fact bounds, artifact root gdrive:ada-nest/kk-llm/packs/, inbox dedupe, secret patterns, planner self-reference);
+    remote mode gained --fixture (offline) and --dry-run (shadow, ledger-only, no inbox writes); every run ledgers
+    to devnest/planner/ledger/. Held-out suite fixtures/dev
 action:
   type: dispatch
   status: running
