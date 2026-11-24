@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 15:48
+updated: 2026-11-24 16:07
 tags:
 - hardware
 - omen
@@ -227,6 +227,12 @@ comms:
 - at: 2026-11-24 15:48
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-24 16:07
+  from: tony
+  text: 'answered job-input-omen-battery-charge-policy: a — A — plug + automation now (recommended)'
+- at: 2026-11-24 16:07
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
@@ -267,7 +273,7 @@ requests:
   ask: 'Job needs your input: Which charge-limit path for tony-omen — A (Tuya smart plug + staged HA 85/45 automation,
     needs a plug ~THB 250) or B (check BIOS Battery Health Manager at next F10 reboot, likely absent on 2018 Omen
     15-BC)? Board request omen-charge-policy-a-vs-b is open on the card with options A/B/A+B (suggested A'
-  status: open
+  status: answered
   at: 2026-11-24 15:40
   from: chaba
   options:
@@ -277,4 +283,5 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+  answer: a — A — plug + automation now (recommended)
 awaiting_action: true
