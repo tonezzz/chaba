@@ -1,7 +1,7 @@
 id: wiki-extension-control-plane
 title: Controlled MediaWiki extension management for Ada/OpenCode
-column: doing
-updated: 2026-11-24 19:43
+column: review
+updated: 2026-11-24 19:46
 brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
   without arbitrary Springboard/API or shell access.
 priority: high
@@ -229,14 +229,37 @@ comms:
     Live: list verified, CategoryTree+Mermaid already installed, test pages + DevNest News render. Blocker: Springboard
     rejects all sbname on MW 1.46 — $wgSpringboardURL needs LocalSettings fix (request raised on card). Not pushed/deployed
     per dispatch rules.'
+- at: 2026-11-24 19:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ted on the dispatch branch (3d8e721d4f + outcome doc), not pushed, per dispatch rules.
+    | devin-task-20261124-1924'
+- at: 2026-11-24 19:46
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 19:46
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-192442-create-a-controlled-wiki-exten
+    is 28 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 19:46
+  from: chaba
+  text: pushed dispatch/20261124-192442-create-a-controlled-wiki-exten to origin
+- at: 2026-11-24 19:46
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 19:46
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ted on the dispatch branch (3d8e721d4f + outcome doc), not pushed, per dispatch rules. | devin-task-20261124-192442-create-a-controlled-wiki-exten.service:
+    Consumed 2min 50.454s CPU time over 19min 12.405s wall clock time, 615M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 19:23
 requests:
@@ -253,3 +276,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
