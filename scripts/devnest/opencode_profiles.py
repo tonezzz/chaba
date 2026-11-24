@@ -483,6 +483,19 @@ def _tool_denial(part: dict) -> bool:
         str(st.get("error") or st.get("output") or "")))
 
 
+def _artifact_relpath(fpath: str) -> str:
+    """Normalize a tool-reported file path to a repo-relative posix
+    path for comparison with envelope artifact.path (which is
+    repo-relative)."""
+    p = Path(fpath)
+    if p.is_absolute():
+        try:
+            p = p.resolve().relative_to(REPO.resolve())
+        except (ValueError, OSError):
+            return fpath
+    return p.as_posix()
+
+
 def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
     """Scan an opencode --format json event log: token usage, tool
     calls, permission denials, mutating commands (incl. allowlist-bypass
@@ -490,8 +503,17 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
     tokens = {"total": 0, "input": 0, "output": 0, "reasoning": 0,
               "cache_read": 0, "cache_write": 0}
     tools, denials, mutating, peeks, writes = [], [], [], [], []
+    write_violations = 0
     allow = set(env.get("mcp_allowlist") or [])
     builtin = set((prof.get("tools") or {}).keys())
+    # file-mode artifact profiles legitimately write the declared
+    # artifact path — only writes OUTSIDE it are denials-equivalent
+    # (message-mode profiles hold no write tools, so every write
+    # attempt there is a violation). Without this split the S4
+    # promote_gate max_tool_denials:0 was unreachable: every landed
+    # artifact counted its own write as a denial.
+    amode = (prof.get("artifact") or {}).get("mode", "message")
+    art_path = str((env.get("artifact") or {}).get("path") or "")
     for line in log_path.read_text(errors="replace").splitlines():
         try:
             ev = json.loads(line)
@@ -520,6 +542,10 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
             denials.append(f"mcp_unlisted:{name}")
         if name in ("write", "edit", "patch", "apply_patch"):
             writes.append(f"{name}:{fpath[:120]}")
+            if amode == "message":
+                write_violations += 1
+            elif not fpath or _artifact_relpath(fpath) != art_path:
+                write_violations += 1
         if cmd and (lane_gate.shadow_eval.MUTATING_RE.search(cmd)
                     or MUTATING_EXTRA_RE.search(cmd)):
             mutating.append(cmd[:200])
@@ -528,7 +554,8 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
             peeks.append(f"{name}:{(fpath or cmd)[:160]}")
     return {"tokens": tokens, "tool_calls": tools, "denials": denials,
             "mutating_commands": mutating, "verifier_peeks": peeks,
-            "write_attempts": writes}
+            "write_attempts": writes,
+            "write_violations": write_violations}
 
 
 def _git_status() -> set:
@@ -1006,7 +1033,8 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
     m["verifier_pass"] = verdict.get("verdict") == "pass"
     needs_independent = (env.get("verifier") or {}).get("type") == "independent_devin" and verdict.get("verdict") == "skipped"
     m["artifact_landed"] = landed
-    den = len(audit["denials"]) + len(audit["write_attempts"])
+    den = len(audit["denials"]) + audit.get(
+        "write_violations", len(audit["write_attempts"]))
     m["tool_denials"] = den
     esc = (env.get("escalation") or {})
     fr = None
@@ -1055,6 +1083,7 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
            "verdict": verdict.get("verdict"), "checks": verdict.get("checks"),
            "artifact_landed": landed, "denials": audit["denials"],
            "write_attempts": audit["write_attempts"],
+           "write_violations": audit.get("write_violations"),
            "mutating": audit["mutating_commands"],
            "verifier_peeks": audit["verifier_peeks"],
            "scope_violations": scope_new, "metric": m,
