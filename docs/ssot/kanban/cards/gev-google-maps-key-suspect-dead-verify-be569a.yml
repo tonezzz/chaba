@@ -1,7 +1,7 @@
 id: gev-google-maps-key-suspect-dead-verify-be569a
 title: gev-google-maps key suspect dead — verify GEV Google layers + renew
-column: doing
-updated: 2026-11-24 17:48
+column: review
+updated: 2026-11-24 17:50
 priority: low
 tags:
 - gev
@@ -223,14 +223,37 @@ comms:
     in .env on tony-dell+idc02 but only feeds server-side Places/StreetView calls. NEW finding: tile.googleapis.com
     3D Tiles is OAuth2-only — rejects ALL API keys (upstream issue #59), so a fresh Maps key cannot restore GEV
     photoreal; needs ion token or OAuth tiles-token impl. GCP '
+- at: 2026-11-24 17:50
+  from: tony-macbook
+  text: 'finished (ok): exit=0 il; full details in `dispatch-outcome-20261124-173838-found-via-card-map-embed-tool-.md`.
+    | devin-task-20261124-1'
+- at: 2026-11-24 17:50
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 17:50
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-173838-found-via-card-map-embed-tool-
+    is 76 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 17:50
+  from: chaba
+  text: pushed dispatch/20261124-173838-found-via-card-map-embed-tool- to origin
+- at: 2026-11-24 17:50
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 17:50
+  from: chaba
+  text: 'worktree kept: dirty — 3 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 il; full details in `dispatch-outcome-20261124-173838-found-via-card-map-embed-tool-.md`. | devin-task-20261124-173838-found-via-card-map-embed-tool-.service:
+    Consumed 39.400s CPU time over 10min 24.577s wall clock time, 412.8M memory peak.'
 claim:
   since: 2026-11-24 17:37
 requests:
@@ -247,3 +270,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
