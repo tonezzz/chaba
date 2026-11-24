@@ -9,8 +9,11 @@ sources that must be present today: the card record, the envelope contract
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 from scripts.board.ada_job_envelope import (
@@ -29,6 +32,19 @@ def _card_path() -> Path:
     # still reads the same card record, now in the archive. Keep the live
     # path first so the test also works if the card is ever re-opened.
     return CARD_PATH if CARD_PATH.exists() else ARCHIVED_CARD_PATH
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _board2_render_outputs():
+    """board2/index.html + cards.json are gitignored render-board2.py
+    outputs — absent on a pristine checkout. Render once when missing so
+    the pane contract tests read real generated payloads on any host."""
+    app = REPO / "stacks/web/public/apps/board2"
+    if (app / "index.html").exists() and (app / "cards.json").exists():
+        return
+    subprocess.run(
+        [sys.executable, str(REPO / "scripts/render-board2.py")],
+        check=True, cwd=REPO)
 
 # Example envelope + result bundle per the ada_job_envelope contracts — the
 # shape the pane's lifecycle/attempts/escalation and artifact/verifier

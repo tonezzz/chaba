@@ -105,6 +105,14 @@ class Case(unittest.TestCase):
         self.card = {"id": "test-card",
                      "action": {"type": "dispatch", "task_id": TID,
                                 "repo": "chaba"}}
+        # The real REPO_TESTS["chaba"] gate resolves a pytest-capable
+        # interpreter from <checkout>/.venv before falling back to
+        # system python3 — give the fixture's canonical checkout a shim
+        # so close_out's merge gate is hermetic on hosts where python3
+        # itself lacks pytest.
+        self._make_venv(
+            self.main,
+            f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
 
     def tearDown(self) -> None:
         if self._old_dir is None:
@@ -756,7 +764,11 @@ class Case(unittest.TestCase):
                "dep test")
         # the held-merge half: with no venv resolvable, system python3
         # cannot import the dep — the suite is red, exactly what held
-        # the line-multihome merge
+        # the line-multihome merge. setUp's pytest-capable shim must not
+        # win this phase — shadow it with a pytest-less venv so the
+        # probe skips it and resolution falls through to python3.
+        self._make_venv(self.main,
+                        "#!/bin/sh\nexec python3 -S \"$@\"\n")
         r = dr.run_test_gate(self.wt, "chaba")
         self.assertFalse(r["ok"], r)
         self.assertTrue(r["command"].startswith("python3 "), r)
@@ -781,6 +793,10 @@ class Case(unittest.TestCase):
         self.assertTrue(
             self.remote_has("master", "tests/test_venvdep.py"))
 
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
     def test_gate_skips_venv_without_pytest(self):
         """A venv whose python can't import pytest must not win —
         otherwise the gate can't run and the merge is held unrunnable."""

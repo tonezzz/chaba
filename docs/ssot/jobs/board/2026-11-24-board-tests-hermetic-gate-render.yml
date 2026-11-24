@@ -1,0 +1,77 @@
+id: board-tests-control-pane-lane-hermetic
+title: tests/board green on pristine worktree — render outputs + pytest-capable gate interpreter
+date: 2026-11-24
+card: board-tests-control-pane-lane-failures
+host: tony-macbook (dispatch worktree)
+status: implemented
+
+goal: >
+  Card reported 6 pre-existing tests/board failures (3 control-pane
+  projection, 3 ClaimPassLaneTest lane). Done-condition: tests/board
+  passes clean on a pristine origin/master worktree, asserts intact.
+
+finding: >
+  All 6 listed failures were already fixed on master before this
+  dispatch: the lane claim tests by the lane-provenance/hermetic
+  commits (33553f1168, a84dab8234) and the control-pane card tests by
+  9ec3614046 (archive-aware KNB-0229 card path). The REAL remaining
+  failures on a pristine worktree were different and environmental:
+
+  (a) test_control_pane_projection.py::test_pane_implemented_on_board_page
+      and ::test_pane_data_contract_on_board_payload read
+      stacks/web/public/apps/board2/{index.html,cards.json} — gitignored
+      render-board2.py outputs absent on any pristine checkout
+      (FileNotFoundError). The 2026-11-20 observation ran where the
+      render had already happened.
+
+  (b) 6 tests/board/test_dispatch_close_out.py::Case tests exercise
+      close_out's REAL REPO_TESTS["chaba"] merge gate, which resolves a
+      pytest-capable interpreter via <wt>/.venv -> <repo-root>/.venv ->
+      <repos.conf path>/.venv -> system python3 (dispatch_repos.py
+      gate_python). tony-macbook's python3 (3.14) has no pytest and
+      ~/CascadeProjects/chaba has no .venv, so the gate went
+      unrunnable (OPS-1191 fail-closed) and held every merge —
+      assertTrue(res["merged"]) failed. Dispatch-capable hosts are
+      expected to carry pytest (2026-10-09-ci-test-gate operator note);
+      tony-macbook does not.
+
+fix:
+  test_control_pane_projection.py: >
+    Module-scoped autouse fixture renders scripts/render-board2.py
+    once when index.html/cards.json are missing. Asserts unchanged —
+    they still validate the real generated payload; the fixture only
+    guarantees the input exists. Plain render (no --if-changed) so the
+    tracked .render-state-board2 is not touched.
+  test_dispatch_close_out.py Case.setUp: >
+    Creates <main>/.venv/bin/python shim -> sys.executable in the
+    fixture's canonical checkout, so gate_python resolves a
+    pytest-capable interpreter hermetically on any host. Untracked
+    dir; no test does `git add -A` on main.
+  test_gate_venv_python_unholds_merge: >
+    Shadows the setUp shim with a pytest-less .venv before its
+    no-venv-resolvable phase (the test's subject IS the
+    system-python3 fallback; skip-guarded to pytest hosts as before).
+  test_gate_skips_venv_without_pytest: >
+    Gains the file's existing skipUnless(python3 imports pytest)
+    guard — its contract requires a pytest-capable system python3;
+    asserts unchanged.
+
+verified: >
+  pytest tests/board/test_control_pane_projection.py
+  tests/board/test_dispatch_close_out.py with board2 outputs deleted
+  (pristine simulation): 53 passed, 7 skipped. The 7 skips are the
+  file's pre-existing pytest-dependent guards plus the newly guarded
+  test — expected on a python3-without-pytest host. Under a
+  pytest-capable python3 shim (PATH override), all 7 run green
+  including test_gate_venv_python_unholds_merge and
+  test_gate_skips_venv_without_pytest. Full tests/board suite result
+  recorded on the dispatch card / outcome doc.
+
+followups:
+  - tony-macbook still lacks pytest for system python3 — the merge
+    gate itself (not just tests) is unrunnable here per OPS-1191;
+    either install python3-pytest or keep dispatching test-gated
+    merges to pytest-capable hosts. Host change, not repo.
+  - Other pytest-less-host skips remain by design (baseline-aware
+    gate tests, venv-resolution e2e) — they verify real-host gate
+    behavior and skip honestly.
