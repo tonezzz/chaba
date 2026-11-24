@@ -1,7 +1,7 @@
 id: door-read-ops-lesson-op-list-get-educati-6cfed7
 title: 'Door read ops: /lesson op=list|get (education content to agents)'
 column: doing
-updated: 2026-11-24 15:41
+updated: 2026-11-24 15:53
 brief: Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review)
   and op=get (full content by slug) so agents + lessons-due can read without WP creds.
 tags:
@@ -182,6 +182,13 @@ comms:
     Control-surface review (2026-10-27):; [education-maintenance-consolidated-report] SHIPPED on dispatch branch:
     scripts/; [education-store] Spaced-review layer shipped: lesson-add.py defaults next_revie; append its slug
     + page list to scripts/lesson-drift-map.yml ('
+- at: 2026-11-24 15:53
+  from: devin
+  text: 'Done on dispatch branch (6e7306e85c). Read ops already shipped 2026-10-24 (6a452479, OPS-0821) + source=wiki
+    2026-11-06; verified live: op=list 220 lessons all spec fields, op=get returns content+meta, op=topics 220.
+    Closed the two literal-spec gaps: op=list now takes optional limit/offset (GET /cards convention, cap 500, total/truncated
+    fields; no params = full list so consumers unaffected) and op=get returns top-level topic on wp/mddb/wiki. Write
+    path untouched. Selftest +80 lines covering all'
 action:
   type: dispatch
   status: running
