@@ -94,14 +94,15 @@ model_list:
   # idc02 ollama removed from LiteLLM routing 2026-11-07 (SYS-1082):
   # chat-local/qwen7b -> tony-dell tunnel, nomic-embed LB leg ->
   # tony-dell; idc02 ollama stays up for direct/local consumers only.
-  # kk-mac ollama via declared ssh tunnel unit on idc03
-  # (kkmac-ollama-tunnel.service: 127.0.0.1:11445 -> kk-mac:11434,
-  # loopback-bound adanest ollama; free local compute, member device —
-  # route dies with the host). api_base points at
-  # kkmac-admission-shim.service (:11447) — an Ada Nest healthcheck gate
-  # that 503s instantly when kk-mac is stale/hot/busy so the router
+  # kk-mac ollama binds 0.0.0.0 on the tailnet (100.108.217.17:11434)
+  # since 2026-11-19 — adanest net.adanest.ollama.plist; free local
+  # compute, member device — route dies with the host. api_base points
+  # at kkmac-admission-shim.service (:11447) — an Ada Nest healthcheck
+  # gate that 503s instantly when kk-mac is stale/hot/busy so the router
   # fails fast to the paid leg instead of queueing on a busy member
-  # device (card kk-mac-gateway-admission-shim, 2026-11-14).
+  # device (card kk-mac-gateway-admission-shim, 2026-11-14). Fallback:
+  # kkmac-ollama-tunnel.service (:11445 ssh -L -> kk-mac:11434) stays
+  # installed-but-disabled — only for a loopback-bind rollback.
   - model_name: ollama-qwen32b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5:32b
