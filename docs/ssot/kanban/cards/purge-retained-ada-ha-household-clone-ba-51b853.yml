@@ -1,6 +1,6 @@
 id: purge-retained-ada-ha-household-clone-ba-51b853
 title: Purge retained ada-ha household-clone backups (~1.7GB across omen+dell)
-column: doing
+column: review
 updated: 2026-11-24 17:04
 priority: low
 tags:
@@ -222,12 +222,44 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-164243-purge-retained-ada-ha-househol.service:
+    Failed to ope'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:04
+  from: chaba
+  text: banked 28 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 17:04
+  from: chaba
+  text: pushed dispatch/20261124-164243-purge-retained-ada-ha-househol to origin
+- at: 2026-11-24 17:04
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 54.4s)
+- at: 2026-11-24 17:04
+  from: chaba
+  text: auto-merged f40255bf (dispatch/20261124-164243-purge-retained-ada-ha-househol) → origin/master
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-164243-purge-retained-ada-ha-househol,
+    branch dispatch/20261124-164243-purge-retained-ada-ha-househol'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-164243-purge-retained-ada-ha-househol.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-164243-purge-retained-ada-ha-househol.service:
+    No such file or directory'
+  verified: true
 claim:
   since: 2026-11-24 16:41
+review_kind: verify
