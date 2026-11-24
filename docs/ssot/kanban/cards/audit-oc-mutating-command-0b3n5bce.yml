@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-0b3n5bce
 title: '[audit] mutating_command in opencode session 5pQF0B3N5BcE'
 column: doing
-updated: 2026-11-24 22:08
+updated: 2026-11-24 22:09
 priority: medium
 program: ai-workforce
 tags:
@@ -214,6 +214,13 @@ comms:
     python urllib POST to board-api /comment, DENIED by ops-readonly profile (no bytes sent). Root cause = devin
     RAILS prompt injected into opencode lane; already fixed by cb2d2f2c2d (RAILS_OPENCODE). Writing verdict trail
     now.'
+- at: 2026-11-24 22:09
+  from: devin
+  text: 'DONE — verdict: verified + contained + already fixed, recommend close. The net_writes flag was an ATTEMPTED
+    python urllib POST to board-api /comment (card devnest-fl-pilot-health) that the ops-readonly profile DENIED
+    — zero bytes sent, session completed its fixture. Root cause: devin-executor RAILS (curl /comment instructions)
+    was injected into the opencode lane prompt; fixed same-day by cb2d2f2c2d -> RAILS_OPENCODE. Verified: idc02
+    runner-agent md5-matches repo, all profile prompt paths avoid d'
 action:
   type: dispatch
   status: running
