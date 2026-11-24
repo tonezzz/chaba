@@ -146,81 +146,16 @@ if [ "${CHABA_PRECOMMIT_TESTS:-1}" != "0" ]; then
     fi
 fi
 
-# --- Runner-tooling pin gate (card runner-agent-deploy-propagation-gap) ----
-# A pinned tool source may only change in the same commit that bumps its
-# sha256 in scripts/devin/runner-tooling.manifest.json — sync-runner-tools.sh
-# refuses unpinned sources, so a missed bump leaves the whole fleet on the
-# old build while the contract test only fires in CI (the 15s pytest gate
-# above swallows tests/board). Compares STAGED blobs (git show :path) so
-# partial staging can't slip a worktree-only pin through. Only pairs the
-# commit actually touches are checked — pre-existing breakage on master
-# must not block unrelated commits. Opt out: CHABA_PRECOMMIT_PINS=0.
+# --- Runner-tooling pin gate (OPS-1326) ----------------------------------
+# Shared with pre-merge-commit via scripts/board/tooling_pin_gate.py: a
+# pinned source may only change in the same commit that bumps its sha256
+# in the manifest. Compares STAGED blobs (git show :path) so partial
+# staging can't slip a worktree-only pin through; only pairs THIS commit
+# touches are checked (inherited master breakage must not block).
+# Opt out: CHABA_PRECOMMIT_PINS=0 (or git commit --no-verify).
 if [ "${CHABA_PRECOMMIT_PINS:-1}" != "0" ] \
-   && git diff --cached --name-only --diff-filter=ACM \
-      | grep -qE '^(scripts/devin/runner-tooling\.manifest\.json|scripts/board/runner-agent\.py|scripts/board/dispatch_repos\.py|scripts/devin/devin-dispatch\.sh|scripts/devin/claude-dispatch\.sh|scripts/devin/devin-dispatch-prune\.sh|scripts/devin/dispatch-queue\.sh)$'; then
-    if ! python3 - <<'PINCHECK'
-import hashlib, json, subprocess, sys
-
-MANIFEST = "scripts/devin/runner-tooling.manifest.json"
-
-def show(spec):
-    r = subprocess.run(["git", "show", spec], capture_output=True)
-    return r.stdout if r.returncode == 0 else None
-
-staged = set(subprocess.run(
-    ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
-    capture_output=True, text=True).stdout.split())
-
-# Manifest pins as they will be committed (staged blob, else HEAD's) and
-# as HEAD has them — the diff decides which pairs this commit touched.
-mblob = show(":" + MANIFEST) or show("HEAD:" + MANIFEST)
-hblob = show("HEAD:" + MANIFEST)
-if mblob is None:
-    sys.exit(0)
-
-# A pair is only this commit's problem when the commit touched it: the
-# source staged, or THIS tool's pin value changed in the staged manifest.
-# An inherited master-side mismatch must not block unrelated commits.
-staged_pins = {}
-head_pins = {}
-for blob, dest in ((mblob, staged_pins), (hblob, head_pins)):
-    if blob is None:
-        continue
-    try:
-        for k, v in (json.loads(blob).get("tools") or {}).items():
-            dest[k] = (v.get("source") or "", v.get("sha256") or "")
-    except Exception:
-        pass
-
-bad = []
-for key, (src, want) in staged_pins.items():
-    if not src or not want:
-        continue
-    pin_changed = head_pins.get(key) != (src, want)
-    if src not in staged and not pin_changed:
-        continue          # this pin pair is untouched by the commit
-    # Source as it will be committed: staged blob, else HEAD's.
-    sblob = show(":" + src)
-    if sblob is None:
-        sblob = show("HEAD:" + src)
-    if sblob is None:
-        continue
-    got = hashlib.sha256(sblob).hexdigest()
-    if got != want:
-        bad.append(f"{key}: {src}\n"
-                   f"    committed sha256 {got}\n"
-                   f"    manifest pin     {want}")
-if bad:
-    print("❌ BLOCKED: runner-tooling pin mismatch —", file=sys.stderr)
-    for b in bad:
-        print("   " + b, file=sys.stderr)
-    print("   Bump the sha256 in scripts/devin/runner-tooling.manifest.json"
-          " in the SAME commit", file=sys.stderr)
-    print("   (sync-runner-tools.sh refuses unpinned sources; the fleet"
-          " stays on the old build).", file=sys.stderr)
-    sys.exit(1)
-PINCHECK
-    then
+   && git diff --cached --name-only --diff-filter=ACM | grep -q '^scripts/'; then
+    if ! python3 scripts/board/tooling_pin_gate.py; then
         echo "❌ runner-tooling pin check failed — see above." >&2
         echo "   Bypass: git commit --no-verify (or CHABA_PRECOMMIT_PINS=0)." >&2
         exit 1
