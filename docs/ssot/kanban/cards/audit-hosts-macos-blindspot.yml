@@ -1,7 +1,7 @@
 id: audit-hosts-macos-blindspot
 title: audit-hosts.py misses macOS hosts + other-user launchd domains (kk-mac adanest ollama ran undeclared)
 column: doing
-updated: 2026-11-24 18:51
+updated: 2026-11-24 19:17
 spec: 'Evidence 2026-10-30: kk-mac ran ollama serve under the adanest account for days/weeks — fleet didn''t know.
   Three stacked gaps: (1) kk-mac is not in audit-hosts.py HOSTS map (macos_services() exists but is never called
   for it — SSOT says ''host-loads probe only''); (2) even if it were, `launchctl list` only sees the caller''s domain
@@ -192,6 +192,13 @@ comms:
   text: 'probe verified on kk-mac: launchctl list sees only kkkakk gui domain; system daemon net.adanest.ollama
     IS visible via `launchctl print system/<label>` unprivileged; adanest procs visible via ps; no passwordless
     sudo; gui/502 denied. Implementing HOSTS entry + all-domain launchd inventory + fleet-process diff.'
+- at: 2026-11-24 19:17
+  from: devin
+  text: 'DONE (commit 859065f379 on dispatch branch). audit-hosts.py now audits kk-mac: HOSTS entry + macOS branch
+    enumerates launchd across system domain (/Library/LaunchDaemons + unprivileged launchctl print), all users''
+    LaunchAgents via dscl, caller gui domain, and a fleet-process ps scan; undeclared launchd jobs/processes now
+    produce deltas -> audit-auto-kk-mac cards. Verified live: clean vs kk-mac; stripped-SSOT counterfactual reproduces
+    the OPS-1018 ollama delta. Also fixed latent BSD-sed bug (sed '
 action:
   type: dispatch
   status: running
