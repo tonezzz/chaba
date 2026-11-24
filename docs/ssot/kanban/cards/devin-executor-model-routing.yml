@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: doing
-updated: 2026-11-24 09:10
+updated: 2026-11-24 09:27
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -383,8 +383,8 @@ comms:
   text: ran under executor=devin provider=devin
 - at: 2026-11-24 08:44
   from: chaba
-  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-080849-fix-the-executor-model-id-mism\
-    \ is 143 commits behind origin/master —\n   run 'git pull"
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-080849-fix-the-executor-model-id-mism
+    is 143 commits behind origin/master —\n   run 'git pull"
 - at: 2026-11-24 08:44
   from: chaba
   text: banked 264 outcome lesson(s) → devin-handoff bank
@@ -423,6 +423,13 @@ comms:
     on kanban-dispatch.py + runner-tooling.manifest.json. Merged it into this worktree and resolved both: kept lane_source
     provenance + dr.lane_model() devin pick; manifest pins recomputed against merged sources. Adding the missing
     mocked-CLI preflight test, then running suite.'
+- at: 2026-11-24 09:27
+  from: devin
+  text: 'DONE (attempt 4, tony-omen). Salvage-merged prior branch dispatch/20261124-080849 into current master:
+    resolved kanban-dispatch.py (kept lane_source + dr.lane_model devin pick) and runner-tooling.manifest.json (pins
+    recomputed for merged sources: runner-agent 35d284ec, dispatch_repos ff858dba). Added the missing spec piece
+    — tests/devin/test_model_preflight.py, 7 mocked-`devin models list` tests proving litellm/* rejected rc2 before
+    systemd-run, paid ids pass w/ billable note, broken CLI rc3, pr'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
