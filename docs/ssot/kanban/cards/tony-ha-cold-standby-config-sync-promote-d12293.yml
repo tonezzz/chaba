@@ -1,7 +1,7 @@
 id: tony-ha-cold-standby-config-sync-promote-d12293
 title: tony-ha cold standby — config sync + promote runbook
-column: doing
-updated: 2026-11-24 16:45
+column: review
+updated: 2026-11-24 16:46
 ref: HOM-0855
 comms:
 - at: 2026-10-25 13:55
@@ -205,16 +205,40 @@ comms:
     (sync+promote procedure, status:partial), scripts/home-assistant/ha-standby-sync.sh (standby-side rsync pull
     of ~/.config/home-assistant, split-brain+first-run guards, optional sqlite DB snapshot, image digest manifest),
     registered in ssot.runbooks.yml + cold_standby: block on the tony-ha instance entry, job record docs/ssot/jobs/home-assistant/2026-11-24-tony-ha-cold-'
+- at: 2026-11-24 16:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0 stall once Tony picks the host. Card comms posted; outcome doc written with lessons.
+    | devin-task-20261124-162119'
+- at: 2026-11-24 16:46
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:46
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-162119-goal-is-to-create-a-cold-stand
+    is 115 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 16:46
+  from: chaba
+  text: pushed dispatch/20261124-162119-goal-is-to-create-a-cold-stand to origin
+- at: 2026-11-24 16:46
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 16:46
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba repository.
   Constraints include adhering to existing infrastructure patterns without inventing hostnames or paths beyond what
   is established in the chaba repo. The testable done-condition is a documented and committed runbook in the repository
   detailing the exact config sync and promotion steps for the cold standby setup.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 stall once Tony picks the host. Card comms posted; outcome doc written with lessons. | devin-task-20261124-162119-goal-is-to-create-a-cold-stand.service:
+    Consumed 1min 13.240s CPU time over 24min 30.818s wall clock time, 357.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 16:20
+review_kind: verify
