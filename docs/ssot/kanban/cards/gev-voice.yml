@@ -15,7 +15,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-d
   document the iOS constraint (mic works in Safari, not standalone PWA — apple-mobile-web-app-capable=no), and close
   the playback gap: Gemini output is currently transcription-text only, no audio playback path exists in the GEV
   page (vcast_say covers non-Latin TTS separately).'
-updated: 2026-11-24 15:06
+updated: 2026-11-24 15:13
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -358,6 +358,13 @@ comms:
     + checkpoints, merge held only by test-gate timeout). Porting it onto current master — conflicts with gev-map
     honest-fail work resolved by patching index-Bd5DfCi5.js in place (no -v1 fork) and wiring voice patches into
     patch-gev-dist.sh.'
+- at: 2026-11-24 15:13
+  from: devin
+  text: '[verify] DONE repo-side, commit 005ad570486 on dispatch/20261124-150027. Ported the stranded Nov-17 work
+    (8c3d05b288/18ab149f260) onto current master WITHOUT the -v1 fork — voice playback patches applied in place
+    to index-Bd5DfCi5.js, honest-fail.js preserved, patch-gev-dist.sh now runs gev-patch-dist.mjs so rebuilds keep
+    playback. Evidence: gev-voice-check.mjs 21/21 (muted => 0 outbound PCM frames, flag-stripped mutation still
+    silent — GainNode carries invariant; pre-patch bundle 17/21 fails on'
 action:
   type: dispatch
   status: running
