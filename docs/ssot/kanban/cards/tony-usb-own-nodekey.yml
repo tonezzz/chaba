@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:15
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -622,6 +622,13 @@ comms:
   from: devin
   text: 'raised request approve-installing-stick-watch-timer-on-cb8082: Approve installing stick-watch.timer on
     tony-dell? New 5-min user timer runs scripts/ops/stick-watch.py — detects the st'
+- at: 2026-11-24 08:15
+  from: devin
+  text: 'final: committed 7d4cf43f8d + aa09ce3804 on dispatch/20261124-080654-the-goal-is-to-stop-the-tony-u. Stick
+    re-verified absent (tailnet/LAN/ops-feed/local-USB all clean; mn01 = real ESPRIMO up 34d). NEW: scripts/ops/stick-watch.py
+    detector + systemd/stick-watch.timer (5min, tony-dell) — alerts card+HA-push with the exact fix the moment the
+    stick boots or steals mn01s session. Runbook + jobs trail updated. Board request raised: approve timer install
+    on tony-dell. Physical step still needs a real s'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
