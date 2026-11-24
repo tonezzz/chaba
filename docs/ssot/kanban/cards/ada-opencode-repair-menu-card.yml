@@ -1,7 +1,7 @@
 id: ada-opencode-repair-menu-card
 title: 'Ada/OpenCode repair-menu card: QC buttons + picker integration'
 column: doing
-updated: 2026-11-24 21:41
+updated: 2026-11-24 21:51
 brief: 'Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair
   opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision
   endpoint -> SESSION/QC, deploy idc03.'
@@ -261,6 +261,13 @@ comms:
   text: 'dispatch picked up — building card QC panel on existing picker APIs (/api/session + /api/qc-decision already
     live). Plan: card polls SESSION.json for undecided last_landed candidate, renders thumb + Keep/Reject/Revise/Repair-region;
     picker-server gets CORS for cross-origin card fetches; verify via tests/ha/ada-chat-card harness.'
+- at: 2026-11-24 21:51
+  from: devin
+  text: 'DONE (dispatch e177d70249, worktree branch, not pushed/deployed). ada-chat-card.js (ada-ha + tony-ha copies,
+    identical) gained a QC panel: polls picker-server /api/session, shows candidate thumb + asset/lane + note +
+    Keep/Reject/Revise/Repair buttons; decisions POST /api/qc-decision (SESSION.json + 40-qc-review.md + new board
+    audit comment); Repair opens mask-picker ?img=<asset> whose submit already auto-lands a repair render. picker-server
+    gained CORS+OPTIONS+no-store; mask-picker accepts bare '
 review_kind: verify
 action:
   type: dispatch
