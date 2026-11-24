@@ -1,7 +1,7 @@
 id: inference-provider-watch
 title: Inference-provider market watch — iterate the living research + eval new brains on the dev-AI fleet
 column: backlog
-updated: 2026-11-24 12:06
+updated: 2026-11-24 15:54
 brief: 'Living doc: devin-kb/docs/tools/inference-provider-market.md (iter 1, 2026-10-25). Each iteration: refresh
   prices/free tiers, add providers, and — per Tony — try candidates on the dev-AI fleet itself: eval-bed (new LiteLLM
   model group + config.<name>.yaml + cli-compare run vs bench baseline) AND live-task trials (route real chores/dispatch
@@ -234,15 +234,22 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:54
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-24 15:54
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
-  runner: tony-macbook
+  status: queued
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-142254-queued-experiments-from-iter-1.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261027-142254-queued-experiments-from-iter-1.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-27 14:32
     no_repo: 2026-10-31 13:50
+  lane: paid_frontier
+  lane_source: kw
 review_kind: verify
 claim: {}
