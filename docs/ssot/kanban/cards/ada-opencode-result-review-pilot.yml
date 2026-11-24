@@ -1,7 +1,7 @@
 id: ada-opencode-result-review-pilot
 title: Pilot Ada as a read-only OpenCode result reviewer
-column: doing
-updated: 2026-11-24 20:13
+column: review
+updated: 2026-11-24 20:17
 brief: Evaluate Ada as an independent review-plane QA/QC stage for OpenCode-generated result bundles. Ada reviews;
   she does not execute or approve deployment.
 priority: medium
@@ -227,13 +227,44 @@ comms:
     runs, 1 real FAIL run, 5 seeded defects) + shadow eval metrics. First numbers: gemini-3.5-flash-lite recall
     0.5 (missed subtle defects); chat/gemini-3.5-flash 8/8 expected match, recall 1.0, FP 0, citations 1.0, p50
     ~9s. result_ref: evals/ada-review/reports/20261124-'
+- at: 2026-11-24 20:17
+  from: tony-omen
+  text: 'finished (ok): exit=0 is preserved — reviews are evidence only, and `ada` remains absent from `EXECUTORS`.
+    | devin-task-20261124-192642'
+- at: 2026-11-24 20:17
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 20:17
+  from: chaba
+  text: banked 387 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 20:17
+  from: chaba
+  text: pushed dispatch/20261124-192642-related-to-ada-1010-canonical- to origin
+- at: 2026-11-24 20:17
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 77.0s)
+- at: 2026-11-24 20:17
+  from: chaba
+  text: auto-merged e445afed (dispatch/20261124-192642-related-to-ada-1010-canonical-) → origin/master
+- at: 2026-11-24 20:17
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-192642-related-to-ada-1010-canonical-,
+    branch dispatch/20261124-192642-related-to-ada-1010-canonical-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 is preserved — reviews are evidence only, and `ada` remains absent from `EXECUTORS`. | devin-task-20261124-192642-related-to-ada-1010-canonical-.service:
+    Consumed 5min 30.643s CPU time over 47min 37.539s wall clock time, 921.1M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 19:24
+review_kind: verify
