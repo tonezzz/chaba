@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
-column: doing
-updated: 2026-11-24 22:48
+column: review
+updated: 2026-11-24 22:50
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -247,14 +247,39 @@ comms:
     was 7 DNS-timeout 502s/14d (~0.5/day) — recheck in ~7d expect ~0. Part2: Plesk Obsidian 18.0.81 verified at
     https://103.99.11.249:8443 (+:8880); SSH closed; NO plesk/ssh cred in fleet secrets — registered h3-plesk-panel
     in ssot.secrets.yml and raised request h3-forensic-access-pl'
+- at: 2026-11-24 22:50
+  from: mn01
+  text: 'finished (ok): exit=0 `dispatch-outcome-20261124-152510-see-rca-doc-part-1-harden-idc0.md` at the worktree
+    root. | devin-task-20261124-'
+- at: 2026-11-24 22:50
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 22:50
+  from: chaba
+  text: 'session-end checkpoint b7b2299b: 1 leftover file(s) committed'
+- at: 2026-11-24 22:50
+  from: chaba
+  text: banked 1 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:50
+  from: chaba
+  text: pushed dispatch/20261124-152510-see-rca-doc-part-1-harden-idc0 to origin
+- at: 2026-11-24 22:50
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 22:50
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0 `dispatch-outcome-20261124-152510-see-rca-doc-part-1-harden-idc0.md` at the worktree root. | devin-task-20261124-152510-see-rca-doc-part-1-harden-idc0.service:
+    Consumed 50.016s CPU time over 23min 8.302s wall clock time, 433.1M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 22:24
 requests:
@@ -269,3 +294,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
