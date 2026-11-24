@@ -1,7 +1,7 @@
 id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
 title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
 column: doing
-updated: 2026-11-24 21:27
+updated: 2026-11-24 21:31
 priority: medium
 tags:
 - ada
@@ -75,6 +75,12 @@ comms:
     ada-ha-michael standby — "the lane moved t; tony-macbook SSH is broken fleet-wide (all keys rejected from mn01/omen/dell;
     no; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] [verify] OPS-0790 close-out (T; [gev-google-maps-key-suspect-dead-verify-be569a]
     [done] Attem'
+- at: 2026-11-24 21:31
+  from: devin
+  text: 'dispatch started on idc02. Verified via /proc cmdline: dirty lanes on idc03 = ada-chaba, ada-ha-ada, ada-ha-tony,
+    ada-kk (argv0 still ada-pi/.venv). Already clean: ada-ai-kraut + ada-kk-dev (post-repair restarts), all relays
+    (explicit ada-voice python -m), bankq (open-jev venv). mn01 both lanes already on ada-voice path — likely no
+    restart needed there; confirming no stray ada-pi procs.'
 action:
   type: dispatch
   status: running
