@@ -1,7 +1,7 @@
 id: devin-usage-reduction
 title: Devin usage reduction roadmap (post-assessment follow-up)
-column: doing
-updated: 2026-11-24 23:00
+column: review
+updated: 2026-11-24 23:04
 brief: 'Reduce Devin dispatch token/allowance burn: 148 sessions / ~657M prompt tokens over the last 30 days, all
   swe-2-high free tier, 97% cached; devin still the lane fallback for many multi-step shapes despite free-lane routing
   existing (OPS-0869/0885).'
@@ -177,12 +177,44 @@ comms:
     (backlog, armed dispatch, unqueued for triage): DEV-1332 allowance-visibility, DEV-1333 taskdir-gc fleet (idc02
     verified: 917 dirs, no timer), DEV-1334 prompt-budget measurement, DEV-1335 classifier audit-class rule. Lever
     2 already covered (envelope hold + attempt caps + retry-storm c'
+- at: 2026-11-24 23:04
+  from: idc02
+  text: 'finished (ok): exit=0 oy, no push, no card-YAML edits; the lane-routing contract remains a draft awaiting
+    Tony''s review. | devin-task-2'
+- at: 2026-11-24 23:04
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 23:04
+  from: chaba
+  text: banked 67 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:04
+  from: chaba
+  text: pushed dispatch/20261124-224339-assessment-2026-11-23-delivere to origin
+- at: 2026-11-24 23:04
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 23:04
+  from: chaba
+  text: auto-merged c99985d1 (dispatch/20261124-224339-assessment-2026-11-23-delivere) → origin/master
+- at: 2026-11-24 23:04
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-224339-assessment-2026-11-23-delivere,
+    branch dispatch/20261124-224339-assessment-2026-11-23-delivere'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: jevos
   runner: idc02
   attempts: 1
+  result: 'exit=0 oy, no push, no card-YAML edits; the lane-routing contract remains a draft awaiting Tony''s review.
+    | devin-task-20261124-224339-assessment-2026-11-23-delivere.service: Consumed 1min 52.791s CPU time, 512.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:42
+review_kind: verify
