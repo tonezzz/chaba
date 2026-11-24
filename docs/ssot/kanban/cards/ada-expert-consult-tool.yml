@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 18:43
 priority: medium
 program: ai-workforce
 tags:
@@ -1144,19 +1144,21 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   sweep:
     failed_noted: 2026-11-11 23:36
     stale_running: 2026-11-17 09:25
     session_gone: 2026-11-17 09:25
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
-  attempts: 2
-  result: 'journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
+  last_failure: 'journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-ada-expert-consult-tool-1794881640.service:
     Failed with result ''exit-code''.'
+  attempts: 0
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -1197,4 +1199,3 @@ requests:
   suggested: cap-010-call
   answer: cap-010-call — $0.10 / call — recommended
 claim: {}
-awaiting_action: true
