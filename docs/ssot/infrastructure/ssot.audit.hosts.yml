@@ -936,6 +936,8 @@ hosts:
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: runner-agent.service, type: service, scope: user,
+         note: "oneshot claim+execute, cap 3, labels gpu,desktop,cpu (no push:* — live probe at claim). Drop-ins: api.conf (tailnet board-api), claude.conf (CLAUDE_LANES=1), jev-lane.conf (JEV_LANE=1; OPENCODE_LANES commented out 2026-11-09 — intentionally OFF pending fleet lane enablement per ssot.devnest-lanes), kk-mac.conf, nlm.conf. opencode v2.4.1 installed ~/.npm-global/bin/opencode 2026-11-24 (npm i -g @opencode/cli) — binary present, lane flag stays off until the savings-pilot gate opens; drift now probed via ssot.host-software opencode capability"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}

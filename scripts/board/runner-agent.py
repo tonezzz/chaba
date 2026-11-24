@@ -2135,10 +2135,11 @@ def shutil_which(name: str) -> bool:
 
 
 def opencode_bin() -> str:
-    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the two
+    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the
     install locations the systemd user manager PATH never carries
-    (~/.opencode/bin only enters PATH via ~/.bashrc, so shutil_which
-    alone misses it under the timer unit)."""
+    (~/.opencode/bin only enters PATH via ~/.bashrc, ~/.npm-global/bin
+    only via per-unit drop-ins, so shutil_which alone misses both
+    under the timer unit)."""
     env = os.environ.get("OPENCODE_BIN") or ""
     if env and Path(env).is_file():
         return env
@@ -2147,7 +2148,8 @@ def opencode_bin() -> str:
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     for c in (Path.home() / ".opencode/bin/opencode",
-              Path.home() / ".local/bin/opencode"):
+              Path.home() / ".local/bin/opencode",
+              Path.home() / ".npm-global/bin/opencode"):
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     return ""
