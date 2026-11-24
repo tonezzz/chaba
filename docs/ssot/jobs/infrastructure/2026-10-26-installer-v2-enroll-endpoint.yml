@@ -81,3 +81,16 @@ processing:
       stick-announce meta shape (verified)"
     - "GET https://api.surf-thailand.com/install serves the v2 script"
     - "idc03: cat ~/.local/share/input-bridge/nodes.json"
+
+reverification:
+  at: "2026-11-24"
+  by: devin-dispatch (stale re-run on the archived card — no code change)
+  result: still-live
+  evidence:
+    - "POST https://api.surf-thailand.com/enroll -> 200 {ok,event:true};
+      doc ops-host-enroll-dispatch-verify-20261124-* confirmed in
+      ada-ha-events-tony (written_by=input-bridge-enroll)"
+    - "POST https://app.surf-thailand.com/enroll -> 200 {ok,deduped:true}
+      (registry enrolls=2 — dedupe window working as designed)"
+    - "GET /install -> 200 v2 script on both edges; app./api. resolve via
+      CF proxy; GET /nodes stays un-routed publicly (404 via edge)"
