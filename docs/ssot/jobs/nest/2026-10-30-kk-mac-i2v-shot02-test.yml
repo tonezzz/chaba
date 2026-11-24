@@ -1,0 +1,142 @@
+title: KK-Mac storyboard shot02 MPS render test
+subtitle: One private mapped I2V shot after the full-settings shot01 pass
+icon: video
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+date: 2026-10-30
+
+planning:
+  goal: >-
+    Test one additional approved storyboard-mapped render on KK-Mac MPS to
+    validate the isolated Nest dispatch procedure and scene-2 inputs.
+  scope: >-
+    Render only shot02 at 640x384, 73 frames, 40 steps, 24 fps using v1_01
+    page12/image-007, the existing shot02 embedding, and the pinned local LTX
+    cache. Keep inputs and output in ada-nest-kk-mac-video-pilot. Do not
+    render other shots, generate narration, run Qwen, install software,
+    download weights, unload owner models, or publish.
+  approval: >-
+    Tony asked to test one render job on KK-Mac. This is a single private
+    shot-level test; no public release or broader batch is authorized here.
+  success_criteria:
+    - Short shot01 I2V probe and full-settings shot01 prerequisite are DONE.
+    - AC, memory-pressure, resident-model, and owner-app prep gates pass immediately before inference.
+    - Page12 image and shot02 embedding hashes match the audit and scene map.
+    - Output is H.264 640x384, 73 frames, fully decodes, and passes black-frame QC.
+    - All declared artifacts are non-empty and independently read back from the Mac pilot root.
+  risks:
+    - The owner workstation may become busy between preflight and generation; keep per-pack prep gates.
+    - Unified memory is shared; stop at the first MPS pressure/OOM or owner workload.
+    - A technical media pass is not creative-quality approval.
+  resources:
+    - KK-Mac M4 Max on AC with pinned LTX revision 8984fa25007f376c1a299016d0957a37a2f797bb.
+    - Audited v1_01 page12 image-007 and existing shot02 prompt embedding.
+    - Trusted tony-dell -> kk-mac one-shot Nest worker.
+  owner: tony
+  estimated_duration: 1 shot
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: completed
+  started_at: '2026-10-30'
+  steps:
+    - id: 1
+      label: Build and verify isolated shot02 pack
+      status: completed
+      notes: >-
+        Added a versioned offline MPS pack. Local tests bind shot02 to page12,
+        image-007 and shot02.pt; `nest-pack-submit --dry-run` passes.
+    - id: 2
+      label: Stage and read back the private pack
+      status: completed
+      notes: >-
+        The pack was already staged by the parallel session. Remote rclone
+        check reports 0 differences across seven files; manifest and staged
+        scene/image/embedding hashes match the local package.
+    - id: 3
+      label: Wait for the current Mac worker to drain and recheck idle gates
+      status: completed
+      notes: >-
+        The unrelated queue-stall-sim pack completed and no worker is active.
+        Fresh preflight: AC power, 65% free memory, no resident Ollama model,
+        and no matching video/compute owner processes.
+    - id: 4
+      label: Run the one-shot worker for shot02
+      status: completed
+      notes: >-
+        Worker KKs-Mac-Studio.local-22648 ran only the isolated Mac video-pilot
+        root. Shot02 rendered at 73 frames/40 steps in 90.27s; no other GPU job
+        was launched.
+    - id: 5
+      label: Independently verify output and hashes
+      status: completed
+      notes: >-
+        Probe report confirms H.264 640x384, 73 frames, 3.04s, no detected
+        black duration, and full decode. Mac-side rclone check on out/ found
+        0 differences across three artifacts; done marker is present.
+  decisions:
+    - label: Run shot02 only as a bounded user-requested test
+      rationale: >-
+        The full-settings shot01 technical pass already completed. Tony
+        explicitly requested one additional render test, not the remaining
+        scene batch.
+      alternatives_considered: Stage all remaining scene packs at once.
+  changes:
+    - file: scripts/colab/packs/kk-mac-storyboard-i2v-shot02-20261030/
+      summary: Added a versioned offline shot02 MPS I2V pack with audited input hashes and owner-idle gates.
+    - file: tests/colab/test_kk_mac_storyboard_i2v_shot02.py
+      summary: Added pack-contract and page/image/embedding mapping tests.
+
+followup:
+  verification:
+    - Recheck Mac idle gates immediately before the worker launch.
+    - Verify source image, prompt embedding and output hashes; H.264 metadata; full decode; and remote read-back.
+    - Keep shots 3-10 un-staged until shot02 results are reviewed.
+  rollback_plan:
+    - If preflight fails, leave the pack staged and do not unload owner models or retry automatically.
+    - Preserve any partial artifacts privately; do not clear model caches.
+  handoff:
+    - Review shot02 before deciding whether to stage subsequent scenes.
+  deferred:
+    - Shots 3-10, voice-cloned narration, assembly, Colab V2 resume, and public release.
+
+report:
+  status: completed
+  completed_at: '2026-10-30'
+  summary: >-
+    One private shot02 render passed the full-settings MPS technical checks.
+    It used the audited v1_01 page-12 image and approved shot02 embedding.
+    Only this shot was run; no narration, full assembly, or public release.
+  metrics:
+    - metric: model
+      value: Lightricks/LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb, MPS BF16
+    - metric: generation_s
+      value: 90.27
+    - metric: output
+      value: H.264 640x384, 73 frames, 3.04s, 335885 bytes
+    - metric: output_sha256
+      value: 3197e30d4699a3529df26ea0602ebf7b7d3245d8cb168a2de54692ba411d3f37
+    - metric: input_image
+      value: v1_01 page 12 image-007, SHA-256 9a03bb4bec1d991cfbca80539497c140b90d46c1f89259400fb37588b129de3a
+    - metric: embedding
+      value: shot02.pt, SHA-256 bd13a0ddb690152384dd43c4981fb43986f528736fcf806682c35ccf20aef0ff
+    - metric: worker
+      value: KKs-Mac-Studio.local-22648, done marker and rclone check passed
+    - metric: visibility
+      value: private; public_release=false
+  links:
+    - title: Shot02 private pilot package
+      url: gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-i2v-shot02-20261030
+    - title: Full-settings shot01 prerequisite
+      url: gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-i2v-fullshot01-20261030/out/
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-30
+  last_updated: 2026-10-30
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

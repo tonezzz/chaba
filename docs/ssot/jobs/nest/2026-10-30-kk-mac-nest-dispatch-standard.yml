@@ -1,0 +1,126 @@
+title: Standard KK-Mac Nest / DevNest package dispatch
+subtitle: Safe, isolated, resumable jobs for the member Mac
+icon: workflow
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+date: 2026-10-30
+
+planning:
+  goal: >-
+    Define a repeatable procedure for designing, staging, dispatching, and
+    independently verifying approved Nest/DevNest jobs on KK-Mac.
+  scope: >-
+    Extend the existing Colab/Nest pack guide with the KK-Mac isolated member
+    lane, add its procedure index entry, and apply the gates to the current
+    Sacred Father full-settings probe. Do not change Mac services, unload
+    owner models, run Qwen inference, or publish private project media.
+  success_criteria:
+    - Existing Nest/Colab and member-device procedures are reviewed and integrated rather than duplicated.
+    - The Mac-specific SOP defines admission, pack contract, isolated-root staging, one-shot launch, and independent verification.
+    - The procedure is indexed in ssot.procedures.yml.
+    - Current package state and Mac preflight blockers are recorded accurately.
+  risks:
+    - KK-Mac is an owner workstation; the owner has priority and may start work after a preflight.
+    - Apple MPS unified memory is shared across applications; `gpu_gb` is not a useful Mac capability field.
+    - The model-only Mac pilot contains a partial Qwen3:8B result while the local card records deterministic-only.
+  resources:
+    - docs/kb/colab-mcp-jobs.md
+    - docs/kb/ada-nest-kk-mac-onboarding.md
+    - scripts/ada/nest-worker.py
+    - "Isolated stores: gdrive:ada-nest-kk-mac-video-pilot and gdrive:ada-nest-kk-mac-pilot"
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+    - label: OPS-0966 KK-Mac local LLM lane
+      file: docs/ssot/kanban/cards/kk-mac-local-llm-lane.yml
+
+processing:
+  status: completed
+  started_at: '2026-10-30'
+  steps:
+    - id: 1
+      label: Reconcile existing pack and member-device procedures
+      status: completed
+      notes: >-
+        Reused `docs/kb/colab-mcp-jobs.md` pack contract and the
+        `member-device-heavy-job` idle-window rules. Mac lacks a persistent
+        queue heartbeat; dispatch is a trusted-host one-shot worker.
+    - id: 2
+      label: Add Mac isolated-worker SOP and procedure index entry
+      status: completed
+      notes: >-
+        Added a Mac-specific procedure covering isolated roots, explicit
+        admission/prep gates, versioned one-shot packs, staging/read-back,
+        Qwen separation, and per-shot V2 sequencing.
+    - id: 3
+      label: Recheck current Mac and package state
+      status: completed
+      notes: >-
+        Mac is reachable and on AC, but an Ollama model is resident (73% free
+        memory). The full-settings I2V pack is staged but unclaimed; do not
+        launch until a fresh idle preflight passes.
+    - id: 4
+      label: Validate procedure and report status
+      status: completed
+      notes: >-
+        `ssot-validate-all.mjs` checked 3,264 SSOT YAML files: 0 errors,
+        46 warnings. The new index entry and lifecycle parse successfully;
+        `git diff --check` is clean.
+  decisions:
+    - label: Use isolated roots and explicit one-shot dispatch
+      rationale: >-
+        The generic worker scans every pack in its selected root, and its
+        capability matcher does not pin Apple MPS hosts. Root separation and
+        the trusted KK-Mac worker command are the safe placement controls.
+      alternatives_considered: Use the shared Colab queue or install a persistent Mac worker.
+  changes:
+    - file: docs/kb/colab-mcp-jobs.md
+      summary: Added the KK-Mac isolated Nest/DevNest job procedure.
+    - file: docs/ssot/ssot.procedures.yml
+      summary: Indexed the KK-Mac isolated Nest package procedure.
+
+followup:
+  verification:
+    - Parse the edited SSOT YAML and run whitespace/diff checks.
+    - Keep the current fullshot pack staged; run only after Mac idle gates pass.
+    - Reconcile the Qwen3:8B partial result against the deterministic-only card decision before any further model lane job.
+  rollback_plan:
+    - Revert only the new procedure subsection/index entry if review finds duplication; preserve unrelated edits.
+  handoff:
+    - Use the SOP for subsequent approved KK-Mac packs and update existing OPS-0967/OPS-0966 cards through board-api when reachable.
+  deferred:
+    - Launching the full-settings Mac I2V pack while an Ollama model is resident.
+    - Reopening the Colab V2 resume gate.
+    - Any new local-model inference.
+
+report:
+  status: completed
+  completed_at: '2026-10-30'
+  summary: >-
+    Added and indexed a repeatable KK-Mac isolated Nest/DevNest package
+    procedure. It makes the Mac-specific idle checks, isolated roots, offline
+    inputs, host-pinned one-shot dispatch, and remote artifact verification
+    explicit. No package was launched because an Ollama model is resident.
+  metrics:
+    - metric: ssot_files_validated
+      value: 3264
+    - metric: validation_errors
+      value: 0
+    - metric: validation_warnings
+      value: 46
+  links:
+    - title: KK-Mac Nest dispatch SOP
+      file: docs/kb/colab-mcp-jobs.md
+    - title: Procedures index
+      file: docs/ssot/ssot.procedures.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-30
+  last_updated: 2026-10-30
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
