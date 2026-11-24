@@ -6,10 +6,10 @@ column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'Recovering: where-things-go healthy for 1/2 ticks — auto-closes when the streak holds.'
+note: 'last_run 75m overdue (interval 60m). last_run=2026-11-24T02:00:03+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/where-things-go'
 help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or POST /api/cms/pages/where-things-go/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-24 11:42
+updated: 2026-11-24 12:05
 comms:
 - at: 2026-11-07 16:49
   from: devin
@@ -137,6 +137,10 @@ comms:
 - at: 2026-11-24 11:42
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
