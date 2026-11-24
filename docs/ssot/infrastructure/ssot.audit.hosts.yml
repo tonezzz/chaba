@@ -2233,7 +2233,12 @@ hosts:
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mddb-lab-pull.timer, type: timer, scope: user}
       - {name: mddb-watchdog.timer, type: timer, scope: user}
-      - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user,
+         note: "60s claim timer — RUNNER_LABELS=ssd,always-on,cpu,small,push:chaba,push:ada-voice,vps via runner-agent.service.d/vps-lane.conf (2026-11-24, card idc02-second-ada-pi-lane): 'vps' is the fleet-unique ada-pi/ada-voice failover opt-in, push:ada-voice declared after live push --dry-run (github-ada-pi ssh -> GitHub rename-redirect to ada-voice). 29 prior ada-pi/ada-voice dispatch tasks on this host."}
+      - {name: runner-agent.service, type: service, scope: user,
+         note: "oneshot claim+execute, cap 3, RUNNER_MAX_LOAD_PC=1.5 (load-gate.conf), JEV_LANE=1+OPENCODE_LANES=1 (jev-lane.conf), OPENCODE_BIN pinned ~/.opencode/bin/opencode (opencode-v2.conf), RUNNER_API=tailnet board-api (api.conf)"}
+      - {name: kanban-dispatch.service, type: service, scope: user,
+         note: "manual drain only (no timer) — drop-in vps-lane.conf (2026-11-24) repointed ExecStart off the stale chaba-tony-dell scripts/-only scaffold onto exec checkout ~/CascadeProjects/chaba/scripts/board/kanban-dispatch.py, set BOARD_API=tailnet route (script default 127.0.0.1:8787 has no listener here) + KANBAN_HOST_LABELS mirroring runner-agent. Linked unit file lives in runner-agent scratch clone ~/.local/share/runner-agent/repos/chaba/systemd/ — do not edit it there, it resets on script claims."}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
