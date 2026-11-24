@@ -3,7 +3,7 @@ title: MDDB /v1/search hangs — all queries timeout
 column: done
 note: Resolved 2026-10-03 — search 7ms again after mddb restart; ada-memory-sync Result=success at 11:00, backlog
   draining hourly.
-updated: 2026-11-24 12:10
+updated: 2026-11-24 15:45
 ref: MEM-0008
 comms:
 - at: 2026-10-11 08:35
@@ -141,3 +141,9 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:45
+  from: devin
+  text: '[verify] dispatch attempt-2 (untracked launch — no action block on card, meta.card empty): /v1/search healthy
+    again — leader idc03:11023 ada-cms-pages 30ms, infrastructure-ssot 32ms; cms plane :11027 152ms w/ hits; idc02
+    follower :11023 20ms; /health 200/5ms; vector-search 1.8s (embed call). Card stays done — no regression since
+    2026-10-03 resolution.'
