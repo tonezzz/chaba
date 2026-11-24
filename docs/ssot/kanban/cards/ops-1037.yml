@@ -1,7 +1,7 @@
 id: ops-1037
 title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
 column: doing
-updated: 2026-11-24 19:33
+updated: 2026-11-24 19:34
 spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
   LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
   Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
@@ -194,6 +194,16 @@ comms:
 - at: 2026-11-24 19:33
   from: tony-dell
   text: claimed
+- at: 2026-11-24 19:34
+  from: chaba
+  text: started devin-task-20261124-193403-backlog-spec-enrich-idc03-4x-d on tony-dell (dispatch)
+- at: 2026-11-24 19:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): LiteLLM per-key model allowlists differ: LITELLM_KEY_BENCH is alias-restricted
+    (; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Additional read-only preflight; KK-Mac free memory oscillates
+    (80%↔30%) as external consumers load/unload models; LiteLLM virtual keys have per-key model allowlists — cf-qwen38-27b
+    403s on the C; [gemini-live-cap-rekey] STATE CHANGE 2026-11-23 ~19:30 (from card ada-scenario-c; [gemini-proxy-paid-last-resort-leg]
+    DONE 2026-11-13: paid-Gem'
 action:
   type: dispatch
   status: running
