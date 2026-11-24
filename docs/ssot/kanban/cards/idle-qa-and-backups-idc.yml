@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
-column: doing
-updated: 2026-11-24 16:11
+column: review
+updated: 2026-11-24 16:12
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -199,12 +199,36 @@ comms:
     moved omen->idc02 (omen install was broken — stale env, dead board-api, stranded inbox); NEW jobs on idc02:
     single-writer-fleet-audit, chaba-repo-mirror, wp-backup-pull, mddb-tier2-pull + mddb-lab-pull declared. WP side:
     chaba-boards 0.9.1 deployed to Plesk — db+uploads dumps v'
+- at: 2026-11-24 16:12
+  from: tony-macbook
+  text: 'finished (ok): exit=0  Full details in `dispatch-outcome-20261124-152133-move-recurring-qa-backups-to-i.md`.
+    | devin-task-20261124-1521'
+- at: 2026-11-24 16:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:12
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-152133-move-recurring-qa-backups-to-i
+    is 259 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 16:12
+  from: chaba
+  text: pushed dispatch/20261124-152133-move-recurring-qa-backups-to-i to origin
+- at: 2026-11-24 16:12
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 16:12
+  from: chaba
+  text: 'worktree kept: dirty — 32 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0  Full details in `dispatch-outcome-20261124-152133-move-recurring-qa-backups-to-i.md`. | devin-task-20261124-152133-move-recurring-qa-backups-to-i.service:
+    Consumed 1min 58.309s CPU time over 50min 11.110s wall clock time, 3.5G memory peak.'
 claim:
   since: 2026-11-24 15:20
+review_kind: verify
