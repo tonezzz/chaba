@@ -1,7 +1,7 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
-column: review
-updated: 2026-11-24 19:41
+column: backlog
+updated: 2026-11-24 19:55
 priority: medium
 tags:
 - ops
@@ -233,12 +233,14 @@ comms:
 - at: 2026-11-24 19:41
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 19:55
+  from: chaba
+  text: 'answer-sweep: executed ''resolve — let devin resolve the conflict and land it'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-24 19:09
@@ -246,7 +248,6 @@ action:
   result: 'exit=0 th no manual scp — the fleet-wide check is observable as drift deferrals stopping after one sync
     cycle. | devin-task-20261124-184257-every-fleet-host-s-runner-agen.service: Consumed 52.682s CPU time, 478.0M
     memory peak, 0B memory swap peak.'
-  verified: false
 claim:
   since: 2026-11-24 18:42
 review_kind: verify
@@ -270,4 +271,4 @@ requests:
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
   answer: resolve — let devin resolve the conflict and land it ★
-awaiting_action: true
+  executed: 2026-11-24 queue
