@@ -71,6 +71,20 @@ shared dispatch queue with verified push creds.
 - `git -C ~/CascadeProjects/ada-voice show origin/main:docs/canary/idc02-vps-lane-hv.md`
 - Card comms on `idc02-second-ada-pi-lane` + `idc02-vps-lane-canary-hv`.
 
+## Audit note (pre-existing drift, not introduced here)
+
+`scripts/audit-hosts.py --host idc02` is already red on master: the
+idc02 census predates the 2026-10-26 capacity move and several later
+adds — ~8 undeclared running user services (gpu-queue, ollama,
+weaviate, nest-mgr, web, opencode-serve, gesture-relay) and ~10
+declared entries whose units are inactive quadlets/oneshots between
+fires (audit enumerates `list-units` without `--all`, so dead oneshots
+read as "missing"). My two new declarations (runner-agent.service,
+kanban-dispatch.service) are the same class — armed, loaded, inactive
+between timer/manual fires — correct under declared-or-dead but they
+add two more "missing" lines to an already-red audit. A proper census
+reconcile is follow-up work, not part of this card.
+
 ## Failover usage
 
 Queue an ada-pi/ada-voice dispatch card with `action.labels: [vps]` to
