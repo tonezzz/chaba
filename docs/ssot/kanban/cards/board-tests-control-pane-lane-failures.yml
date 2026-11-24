@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
 column: doing
-updated: 2026-11-24 22:47
+updated: 2026-11-24 23:12
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -170,6 +170,13 @@ comms:
     instead: (a) 2 control-pane tests read gitignored render-board2 outputs absent on pristine checkout; (b) 6 test_dispatch_close_out
     tests need a pytest-capable interpreter the gate can resolve — host python3 lacks pytest. Fixing both sides
     hermetically.'
+- at: 2026-11-24 23:12
+  from: devin
+  text: 'DONE — commit 36f762530c (+ outcome doc commit) on dispatch/20261124-222204-observed-2026-11-20-while-ship.
+    Finding: all 6 card-listed failures were already fixed on master (9ec3614046 archive-aware card path; lane claim
+    provenance/hermetic commits). Real pristine-worktree failures were environmental: (a) 2 control-pane tests read
+    gitignored board2 render outputs — added module fixture that runs render-board2.py when missing, asserts intact;
+    (b) 6 test_dispatch_close_out tests need a pytest-capa'
 action:
   type: dispatch
   status: running
