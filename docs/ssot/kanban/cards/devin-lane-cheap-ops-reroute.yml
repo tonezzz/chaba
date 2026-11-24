@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: doing
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:16
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -170,6 +170,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:16
+  from: devin
+  text: '2026-11-24 Mac sync verification: SSH from idc02, tony-dell, tony-omen and idc03 to tony-macbook ALL still
+    denied (publickey/password), so remote checksum verification is impossible from the fleet. The handed command
+    has set -e + sha256 assertion, so its ''tony-macbook runner tools FIXED'' output is the verification proof;
+    ask Tony to confirm that line. Ansible path for future: ansible/playbooks/agent-runner.yml already deploys ~/.local/bin/runner-agent
+    with backup:true + version stamp to the agen'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
