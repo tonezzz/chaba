@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: doing
-updated: 2026-11-24 22:04
+updated: 2026-11-24 22:13
 priority: medium
 tags:
 - ops
@@ -215,6 +215,13 @@ comms:
     mn01 mirrors via caddy public dir. Plan: retarget all 47 stale host_url entries (42 host:tony-dell + 5 host:yomi)
     to host:idc02/https://idc02.taila0626a.ts.net, repoint producer defaults (apps-yml-generate, apps-health-sync,
     ssot.apps.yml apps-hosts), regen ssot.health.home.apps.yml, add idc02:apps-index grep to consumer-canary GREPS.'
+- at: 2026-11-24 22:13
+  from: devin
+  text: '[done] apps.yml: 0 refs to tony-dell.taila0626a.ts.net (was 47 — 42 host:tony-dell + 5 host:yomi all ->
+    host:idc02/https://idc02.taila0626a.ts.net). Producer defaults repointed (apps-yml-generate, apps-health-sync,
+    ssot.apps.yml apps-hosts, regenerated ssot.health.home.apps.yml). Canary: added idc02:apps-index grep for deployed
+    ~/web-srv/public/apps/{apps.yml,index.html} — verified end-to-end on idc03 (exit 0; currently reports the 47
+    stale DEPLOYED refs, expected until merge+web-srv-sync 15min)'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
