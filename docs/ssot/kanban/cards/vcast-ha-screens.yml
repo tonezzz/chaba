@@ -1,6 +1,6 @@
 id: vcast-ha-screens
 title: vcast HA screens card — tony-ha/www/vcast-screens-card.js
-column: doing
+column: review
 priority: medium
 program: vcast
 area: ha-screens
@@ -14,11 +14,11 @@ spec: 'Sync tony-ha/www/vcast-screens-card.js screen list with the real cast-tar
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: Sync vcast-screens-card.js target list with the real cast registry per card spec; stage+verify on michael-dev,
     no live deploy.
-  result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-071151-sync-tony-ha-www-vcast-screens.service:
-    Consumed 1min 14.766s CPU time over 7min 16.552s wall clock time, 811M memory peak.'
+  result: 'exit=0 g separately: redeploy `input-bridge` on idc03 — that''s the root cause of the zombies. | devin-task-20261124-150148-sync-tony-ha-www-vcast-screens.service:
+    Consumed 4min 45.416s CPU time over 23min 53.908s wall clock time, 1.3G memory peak.'
   sweep:
     session_gone: 2026-11-08 16:22
   lane: free_lane
@@ -26,7 +26,8 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
-updated: 2026-11-24 15:24
+  verified: true
+updated: 2026-11-24 15:31
 comms:
 - at: 2026-10-06 06:58
   from: tony
@@ -267,6 +268,22 @@ comms:
     relay (targets: screens 6/7 only; dead headless-2/4 collapsed offline) and staged on michael-dev www. NOT deployed
     to tony-ha — promotion needs your approval. Follow-up worth carding: redeploy input-bridge server.mjs on idc03
     (live relay predates ux-flow rework — that is why zombie entries exist).'
+- at: 2026-11-24 15:31
+  from: tony-omen
+  text: 'finished (ok): exit=0 g separately: redeploy `input-bridge` on idc03 — that''s the root cause of the zombies.
+    | devin-task-20261124-1501'
+- at: 2026-11-24 15:31
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 15:31
+  from: chaba
+  text: 'session-end checkpoint fe78d0f8: 1 leftover file(s) committed'
+- at: 2026-11-24 15:31
+  from: chaba
+  text: banked 298 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:31
+  from: chaba
+  text: pushed dispatch/20261124-150148-sync-tony-ha-www-vcast-screens to origin
 claim:
   since: 2026-11-24 15:00
 ref: HOM-0112
