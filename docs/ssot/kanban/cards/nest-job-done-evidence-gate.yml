@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: review
-updated: 2026-11-24 17:48
+updated: 2026-11-24 17:54
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -227,6 +227,14 @@ comms:
 - at: 2026-11-24 17:48
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 17:54
+  from: chaba
+  text: 'merge-sweep: dispatch/20261124-165943-review-and-harden-the-runtime- conflicts with origin/master: docs/kb/board-api-write-door.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-24 17:54
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261124-165943-review-and-harden-the-runtime-:
+    2 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: done
@@ -238,6 +246,27 @@ action:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261124-165943-review-and-harden-the-runtime-.service:
     No such file or directory'
   verified: false
+  sweep:
+    conflict_sig: 5033b78e0cb6|docs/kb/board-api-write-door.md
 claim:
   since: 2026-11-24 16:58
 review_kind: verify
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261124-165943-review-and-harden-the-runtime-: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/kb/board-api-write-door.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261124-165943-review-and-harden-the-runtime-
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-24 17:54
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
