@@ -7,13 +7,16 @@ description: >-
   Produce a markdown document grounded in the checkout. The agent reads
   the repo with read-only tools and emits the document as its final
   message; the runner writes it. The card spec carries the task, the
-  target path, and optionally action.verify_contains — sentinel strings
-  the held-out verifier requires in the emitted text.
+  target path, and optionally the action.verify_* contract — sentinel
+  strings / regexes / term coverage the held-out verifier requires in
+  the emitted text.
 contract:
   required_fields:
     artifact_path: "markdown file under docs/kb/, docs/reports/, or evals/opencode-lane/out/"
     min_bytes: "int >= 300 — emitted document minimum size"
-    verify_contains: "optional list of sentinel strings (from action.verify_contains)"
+    verify_contains: "optional list of sentinel strings (from action.verify_contains / verify_sections) — pick strings ONLY a correct deliverable contains; mechanical sentinels alone cannot catch an off-spec doc (OPS-1014)"
+    verify_regex: "optional list of regex patterns (from action.verify_regex) — every pattern must match the emitted text"
+    verify_min_terms: "optional {terms: [...], at_least: N} or bare term list (from action.verify_min_terms) — at least N distinct terms must appear case-insensitively; bare list requires all"
   forbidden:
     - "TODO/TBD/placeholder markers"
     - "echoing the rails block"

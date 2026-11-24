@@ -1073,6 +1073,58 @@ class BoardApiContractTest(unittest.TestCase):
                       "deploy": {}},
                      "deploy.target")
 
+    def test_create_preserves_verify_contract(self):
+        # card doc-draft-verifier-semantic-gap: action.verify_* is the
+        # held-out verifier contract — the write door must persist it
+        # (it was silently dropped before, leaving sentinel checks
+        # unreachable — the OPS-1014 miss).
+        self.mod.do_create(
+            {"id": "c-ver", "title": "t",
+             "action": {"type": "dispatch",
+                        "verify_contains": ["sentinel-a"],
+                        "verify_sections": ["legacy-b"],
+                        "verify_regex": [r"## Verified working"],
+                        "verify_min_terms": {"terms": ["alpha", "beta"],
+                                             "at_least": 1}}},
+            "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-ver.yml")
+        a = saved["action"]
+        self.assertEqual(a["verify_contains"], ["sentinel-a"])
+        self.assertEqual(a["verify_sections"], ["legacy-b"])
+        self.assertEqual(a["verify_regex"], [r"## Verified working"])
+        self.assertEqual(a["verify_min_terms"],
+                         {"terms": ["alpha", "beta"], "at_least": 1})
+
+    def test_create_validates_verify_contract(self):
+        def body(**action_kw):
+            return {"id": "c-bad", "title": "t",
+                    "action": {"type": "dispatch", **action_kw}}
+        self.rejects(body(verify_contains={"a": 1}),
+                     "action.verify_contains")
+        self.rejects(body(verify_contains=["ok", 3]),
+                     "action.verify_contains")
+        self.rejects(body(verify_regex=["([unclosed"]),
+                     "does not compile")
+        self.rejects(body(verify_min_terms=42),
+                     "action.verify_min_terms")
+        self.rejects(body(verify_min_terms={"at_least": 1}),
+                     "verify_min_terms.terms")
+        self.rejects(body(verify_min_terms={"terms": ["a"],
+                                            "at_least": 5}),
+                     "at_least")
+        self.rejects(body(verify_min_terms={"terms": ["a"],
+                                            "at_least": True}),
+                     "at_least")
+        # accepted shapes: bare string sentinels, bare term list
+        self.mod.do_create(body(verify_contains="one-sentinel",
+                                verify_min_terms=["alpha", "beta"]),
+                           "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-bad.yml")
+        self.assertEqual(saved["action"]["verify_contains"],
+                         "one-sentinel")
+        self.assertEqual(saved["action"]["verify_min_terms"],
+                         ["alpha", "beta"])
+
     def test_queue_refuses_manual_executor(self):
         card = {"id": "c-em", "column": "backlog",
                 "action": {"type": "dispatch", "executor": "manual"}}
