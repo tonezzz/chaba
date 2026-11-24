@@ -1,6 +1,6 @@
 id: rotate-or-key-restart-openclaw-gateway
 title: 'rotate-or-key.sh: always restart openclaw-gateway after key swap'
-column: backlog
+column: review
 updated: 2026-11-24 20:31
 brief: 'During the 2026-11-23 OR rotation, all 4 stores were updated correctly but a live OpenClaw agent turn STILL
   returned 401. The script only restarts openclaw-gateway if the unit has EnvironmentFile.*openrouter — it does
@@ -87,3 +87,7 @@ comms:
     no credential change): EXIT=0 — all 4 stores updated, openclaw-gateway restarted unconditionally, 127.0.0.1:18789
     listener ready, 0 401s in gateway log afterwards. e2e/gateway probe DEFERRED, not false-failed: all 5 :free
     models returned account-wide 429 free-models-per-day-high-b'
+- at: 2026-11-24 20:31
+  from: tony
+  text: moved backlog -> review
+review_kind: verify
