@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
-column: doing
-updated: 2026-11-24 08:41
+column: review
+updated: 2026-11-24 08:44
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -374,6 +374,30 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:44
+  from: tony-macbook
+  text: 'finished (ok): exit=0 full details in `dispatch-outcome-20261124-080849-fix-the-executor-model-id-mism.md`.
+    | devin-task-20261124-08084'
+- at: 2026-11-24 08:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:44
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-080849-fix-the-executor-model-id-mism\
+    \ is 143 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-24 08:44
+  from: chaba
+  text: banked 264 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:44
+  from: chaba
+  text: pushed dispatch/20261124-080849-fix-the-executor-model-id-mism to origin
+- at: 2026-11-24 08:44
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/kanban-dispatch.py, scripts/devin/runner-tooling.manifest.json — card
+    stays in review for manual resolution'
+- at: 2026-11-24 08:44
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -395,7 +419,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
@@ -407,6 +431,10 @@ action:
     devin-task-20261123-202551-fix-the-executor-model-id-mism.service: Consumed 1min 56.432s CPU time over 16min
     58.776s wall clock time, 898.9M memory peak.'
   runner: tony-macbook
+  result: 'exit=0 full details in `dispatch-outcome-20261124-080849-fix-the-executor-model-id-mism.md`. | devin-task-20261124-080849-fix-the-executor-model-id-mism.service:
+    Consumed 12min 21.705s CPU time over 31min 47.742s wall clock time, 645M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 08:08
 awaiting_action: true
+review_kind: verify
