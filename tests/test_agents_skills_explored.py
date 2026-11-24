@@ -55,8 +55,9 @@ def test_explored_session_skills_exist():
 
 def test_each_skill_has_name_and_description():
     skills = export.collect_skills(REPO)
-    assert {s["name"] for s in skills} == (
-        EXPLORED_SKILLS | EXPLORED_SESSION_SKILLS)
+    # Pin the skills explored in session history; newer skills may be added.
+    assert (EXPLORED_SKILLS | EXPLORED_SESSION_SKILLS) <= {
+        s["name"] for s in skills}
     for skill in skills:
         assert (REPO / skill["location"]).exists(), skill
         assert len(skill["description"]) > 10, skill

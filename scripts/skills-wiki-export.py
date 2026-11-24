@@ -32,6 +32,7 @@ SKILL_DIRS = (".agents/skills", ".opencode/skills")
 # Recorded from the session history: when to invoke each skill in ada-ocb.
 USAGE = {
     "auto-kb": "Session-end capture of verified findings into docs/kb (MDDB-indexed); not for hypotheses.",
+    "code-decision": "Jev decision door before applying a change with a construct/template/library/replacement choice; skip mechanical edits.",
     "docker-restart": "Restart the chaba web stack, with confirmation; verify localhost:8080/8081 after.",
     "git-status": "Quick branch / dirty-tree / diff / recent-commit summary when editing ada-ocb.",
     "health-check": "Deprecated: use the MCP health tools (check_health, get_alerts, restart_service) instead.",
