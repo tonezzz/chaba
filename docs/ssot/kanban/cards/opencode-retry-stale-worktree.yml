@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: review
-updated: 2026-11-24 00:13
+column: backlog
+updated: 2026-11-24 07:52
 priority: low
 tags:
 - opencode
@@ -736,6 +736,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 07:52
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
@@ -751,7 +754,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: done
+  status: queued
   labels:
   - push:chaba
   sweep:
@@ -764,7 +767,6 @@ action:
   llm_key_alias: ada
   button: test-key-alias
   attempts: 1
-  runner: idc02
   result: 'exit=0 84e` on `dispatch/20261123-233259-ops-1021-proved-it-when-an-ope` — not pushed per dispatch rails.
     | devin-task-20261123-233259-ops-1021-proved-it-when-an-ope.service: Consumed 4min 50.992s CPU time, 525.7M
     memory peak, 0B memory swap peak.'
@@ -810,5 +812,4 @@ requests:
   executed: 2026-11-06 queue
 claim:
   since: 2026-11-23 23:32
-awaiting_action: true
 review_kind: verify
