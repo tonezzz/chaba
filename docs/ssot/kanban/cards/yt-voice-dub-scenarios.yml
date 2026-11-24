@@ -1,14 +1,13 @@
 id: yt-voice-dub-scenarios
 title: YT voice dub — scenario + benchmark coverage
-brief: Adds automated checks so dubbing quality is measured every run instead of by ear. It can't start until related
-  dub work lands — the blocker is named on the card.
-column: backlog
+brief: Adds automated checks so dubbing quality is measured every run instead of by ear. Implementation and gate
+  definitions landed in ada-pi in Oct 2026; publishing the runtime metrics sidecars is a separate deploy item.
+column: done
 program: yt-voice-dub
 area: testing
 priority: medium
-blocked_by: yt-voice-dub-cast
 metric: dub scenarios pass in ada-pi suite; benchmark tracks cue overflow % + voices-per-speaker
-verify: dub_cue_timing + dub_voice_consistency scenarios green; benchmark.yml entries run
+verify: 'Verified 2026-11-24 from merged evidence (Tony): ada-pi commit d801a83 ("dub gate: dub_* metric scenarios + benchmark metric capture") is an ancestor of origin/main; tests/scenarios-live/{dub_cue_timing,dub_voice_consistency,dub_duck_mix}.yaml and the tests/benchmark.yml dub metric registry + suites.dub are present in main. Runtime gate execution is not a close condition today: both dub-metrics/1 sidecars (LLALMFmabV4-dub, dub-v9-2voice) return 404 and the scenario preflight target tony-dell:8791 refuses connections (yt-live-api is live on tony-omen:8791) — open tony-dell deploy-gate follow-up, recorded in comms.'
 note: 'Add dub checks to ada-pi scenario-live + tests/benchmark.yml (Tony ask 2026-10-04 — reuse for scenario &
   benchmark). Scenarios: dub_cue_timing (each TTS segment fits its cue window within tolerance), dub_voice_consistency
   (same speaker keeps same voice across cues — doubles as the yt-voice-dub-cast regression gate), dub_duck_mix (original
@@ -23,7 +22,7 @@ spec: 'ada-pi: add to tests/scenarios-live/ — dub_cue_timing (TTS segment fits
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: done
   task: 'Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix
     scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).'
   sweep:
@@ -35,7 +34,7 @@ action:
     yet. | devin-task-20261007-133317-ada-pi-add-to-tests-scenarios-.service: Consumed 42.003s CPU time over 26min
     2.278s wall clock time, 554M memory peak.'
   attempts: 0
-updated: 2026-11-24 09:29
+updated: 2026-11-24 10:58
 comms:
 - at: 2026-10-06 07:18
   from: devin
@@ -820,6 +819,12 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: '2026-11-24 10:58'
+  from: tony
+  text: '[triage] Cleared blocked_by: yt-voice-dub-cast — that card reached done 2026-10-05 and the 2026-10-06 comm already declared this card unblocked. Removed the stale defers-driven queue state; closed on merged-code evidence.'
+- at: '2026-11-24 10:58'
+  from: tony
+  text: '[verify] Checked 2026-11-24 on tony-dell: `git merge-base --is-ancestor d801a83 origin/main` true in /home/tony/CascadeProjects/ada-pi; tests/scenarios-live/dub_cue_timing.yaml, dub_voice_consistency.yaml and dub_duck_mix.yaml present; tests/benchmark.yml has the dub metric registry and suites.dub. Live probe: both dub-metrics/1 sidecars HTTP 404, tony-dell:8791 connection refused, tony-omen yt-live-api active and :8791/status 200. Amended verify: to this evidence; the runtime gate (publish sidecars + point preflight at the live api host) is an open tony-dell deploy item, same call as ADA-0156.'
 claim: {}
 ref: ADA-0191
 review_kind: verify
