@@ -1,7 +1,7 @@
 id: board-weight-cards-json-still-6-2mb-at-7-894827
 title: 'Board weight: cards.json still 6.2MB at 739 cards after cap archive'
 column: doing
-updated: 2026-11-24 22:41
+updated: 2026-11-24 23:10
 priority: medium
 tags:
 - board
@@ -224,6 +224,13 @@ comms:
     requests+action for active cards; payload.recent feeds ticker), modal fetches full card via GET /apps/board-api/card/<id>
     on open, adapt board-gantt normalizeCard, update pane-contract test. Doing-column honesty already enforced by
     merge-sweep reap_stalled_claims — will verify live at end.'
+- at: 2026-11-24 23:10
+  from: devin
+  text: 'DONE (worktree, unpushed): board2/cards.json now 881KB at 726 cards (was ~13.2MB — comms bulk moved to
+    per-card GET /card/<id> on modal open; active-cycle cards keep 5-entry comms tail, top-level recent[] feeds
+    ticker). board-gantt/diagram compat via normalizeCard precomputed span fields. Doing invariant verified: all
+    12 doing cards have action.status=running; merge-sweep reaper already enforces. tests/board 959 passed. Trail:
+    docs/ssot/jobs/board/2026-11-24-board2-compact-cards-payload.yml; out'
 action:
   type: dispatch
   status: running
