@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-24 12:54
+updated: 2026-11-24 14:48
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -79,3 +79,10 @@ comms:
     document as live (device-telemetry|192/1794879893|en) — valid backup confirmed (statsPending on a fresh instance
     is just slow stats computation, not empty data). Valid 12G gz stored durably at idc02:~/mddb-backups/ops-offhost-20261124.db.gz;
     raw 70G temp copies removed. idc03 containe'
+- at: 2026-11-24 14:48
+  from: devin
+  text: '2026-11-24 recurrence-fix check: idc03:~/mddb-backup.sh was already replaced today at 14:42 with the guarded
+    script (pre-flight headroom check, gzip -t before rename, UNVERIFIED retention cap, board alerts) — so the failure
+    that produced the 127G of invalid copies is addressed in the deployed version. The only drift from repo canonical
+    stacks/idc03/mddb/mddb-backup.sh was a missing umask 077; synced on branch fix/mddb-backup-canonical-sync (commit
+    d84ae90c94, PR #200), now byte-identical to depl'
