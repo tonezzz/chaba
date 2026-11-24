@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-deploy
 title: Deploy ada-voice CMS-only bench harness
 column: done
-updated: 2026-11-24 21:42
+updated: 2026-11-24 21:44
 spec: Merged PR bench/kk-cms-only-seed-20261124. deploy-ada.sh on idc03; verify http://127.0.0.1:8002/api/health.
 action:
   type: manual
@@ -39,6 +39,9 @@ comms:
 - at: 2026-11-24 21:42
   from: chaba
   text: 'deploy gate: preflight done — approval request deploy-kk-cms-only-memory-deploy raised (default hold)'
+- at: 2026-11-24 21:44
+  from: tony
+  text: 'answered deploy-kk-cms-only-memory-deploy: approve — run the deploy now'
 requests:
 - id: deploy-kk-cms-only-memory-deploy
   ask: 'Deploy kk-cms-only-memory-deploy to ada-voice-prod?
@@ -53,7 +56,7 @@ requests:
 
 
     Preflight: merge=? files=? tests=see card comms (close-out gate)'
-  status: open
+  status: answered
   at: 2026-11-24 21:42
   from: chaba
   options:
@@ -61,3 +64,4 @@ requests:
   - hold — keep merged, do not deploy
   - abort — do not deploy
   suggested: hold — keep merged, do not deploy
+  answer: approve — run the deploy now
