@@ -53,6 +53,16 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 
 Run: `python3 -m pytest tests/test_agents_skills_explored.py -q` (6 passed at creation).
 
+## Repositories explored
+
+Recorded alongside the skills in the same session history; the wiki page carries the same table.
+
+| Repository | Role | How we used it |
+| ---------- | ---- | -------------- |
+| `tonezzz/chaba` (ada-ocb worktree, https://github.com/tonezzz/chaba) | Ada-OCB control plane: SSOT, kanban, skills, board-api, wiki-education door | Holds the 11 `SKILL.md` files, inventory test, `scripts/skills-wiki-export.py`, this entry and the job trail; source of `Education:Ada-Ocb-Skills`. |
+| `tonezzz/mddb` (mddb-fork, https://github.com/tonezzz/mddb) | Markdown database with full-text/vector/hybrid search over MCP | The `mddb` agent skill (search-tool choice, chunk projections, `memory_*`); `chaba-lessons` / KB indexing. Local lag snapshots: `~/var/tmp/mddb-lag-base` and `-fix`. |
+| `anthropics/claude-plugins-official` (https://github.com/anthropics/claude-plugins-official) | Anthropic's official Claude Code plugin marketplace (`plugins/`, `external_plugins/`) | Installed `skill-creator` from `plugins/skill-creator/skills/` into `~/.claude/skills/skill-creator` with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin `LICENSE`. |
+
 ## Wiki education record
 
 The generated page is `Education:Ada-Ocb-Skills` (`pub.lesson_wiki_title("ada-ocb-skills")`), carrying the standard `แม่แบบ:Education` call with `topic=ada-ocb-skills`, `source=session-history`, `learned_at=2026-11-24`, `next_review=2026-12-08`, and `[[Category:Education]]`. Publish is a separate, card-gated step:

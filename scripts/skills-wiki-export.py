@@ -44,6 +44,28 @@ USAGE = {
     "track4-smoke-test": "Quick navigation to the Track4 test page for smoke testing.",
 }
 
+# Repositories explored in the same session history (plus their role here).
+REPOS = [
+    {
+        "name": "tonezzz/chaba — ada-ocb worktree",
+        "ref": "https://github.com/tonezzz/chaba",
+        "role": "Ada-OCB control plane: SSOT, kanban, skills, board-api, wiki-education door",
+        "use": "Holds the 11 SKILL.md files, inventory test, this exporter, the docs/kb entry and job trail; source of Education:Ada-Ocb-Skills",
+    },
+    {
+        "name": "tonezzz/mddb — mddb-fork",
+        "ref": "https://github.com/tonezzz/mddb",
+        "role": "Markdown database with full-text/vector/hybrid search exposed over MCP",
+        "use": "The mddb agent skill (search-tool choice, chunk projections, memory_*); chaba-lessons and KB indexing. Local lag snapshots: ~/var/tmp/mddb-lag-base and -fix",
+    },
+    {
+        "name": "anthropics/claude-plugins-official",
+        "ref": "https://github.com/anthropics/claude-plugins-official",
+        "role": "Anthropic's official Claude Code plugin marketplace (plugins/, external_plugins/)",
+        "use": "Installed skill-creator from plugins/skill-creator/skills/ into ~/.claude/skills with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin LICENSE",
+    },
+]
+
 
 def _fm_block(text: str) -> str:
     if not text.startswith("---\n"):
@@ -164,11 +186,26 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "* After SSOT edits → ''ssot-validate''. At handoff → ''session-capture'' (durable sinks + handoff packet) and, for verified findings, ''auto-kb''.",
         "* Health questions use the MCP health tools directly — ''health-check'' is deprecated; ''docker-restart'' needs confirmation; ''track4-smoke-test'' and ''overnight-assessment'' are the smoke/overnight checks.",
         "",
+        "== Repositories explored ==",
+        "",
+        "The same session history also explored these repositories (in addition to OpenCode's own documentation):",
+        "",
+        '{| class="wikitable"',
+        "! Repository !! Reference !! Role !! How we used it",
+    ]
+    for repo in REPOS:
+        tail.extend([
+            "|-",
+            f"| {_cell(repo['name'])} || {_cell(repo['ref'])} || "
+            f"{_cell(repo['role'])} || {_cell(repo['use'])}",
+        ])
+    tail.extend([
+        "|}", "",
         "[[Category:Education]]",
         "[[Category:Education/Level/intro]]",
         "[[Category:Education/Status/open]]",
         f"[[Category:Education/Topics/{pub._topic_slug(TOPIC)}]]",
-    ]
+    ])
     return "\n".join(header + rows + tail) + "\n"
 
 

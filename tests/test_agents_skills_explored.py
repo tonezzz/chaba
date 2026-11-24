@@ -93,7 +93,11 @@ def test_wiki_export_shape_with_fixtures():
                   "|next_review=2026-12-08", "|event_id=test-event"):
         assert param in page, param
     assert "== Inventory ==" in page
-    assert page.count("\n|-") == len(fixtures)
+    assert "== Repositories explored ==" in page
+    assert page.count("\n|-") == len(fixtures) + len(export.REPOS)
+    for repo in export.REPOS:
+        assert repo["name"] in page, repo["name"]
+        assert repo["ref"] in page, repo["name"]
     assert "[[Category:Education]]" in page
     assert "[[Category:Education/Topics/ada-ocb-skills]]" in page
     assert "Use first." in page and "Use second." in page
@@ -106,4 +110,4 @@ def test_wiki_export_covers_all_explored_skills():
     for skill in skills:
         assert skill["name"] in page, skill["name"]
         assert skill["usage"] in page, skill["name"]
-    assert page.count("\n|-") == len(skills)
+    assert page.count("\n|-") == len(skills) + len(export.REPOS)
