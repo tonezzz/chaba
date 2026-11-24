@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: doing
-updated: 2026-11-24 22:24
+updated: 2026-11-24 22:25
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -219,6 +219,16 @@ comms:
 - at: 2026-11-24 22:24
   from: mn01
   text: claimed
+- at: 2026-11-24 22:25
+  from: chaba
+  text: started devin-task-20261124-152510-see-rca-doc-part-1-harden-idc0 on mn01 (dispatch)
+- at: 2026-11-24 22:25
+  from: chaba
+  text: 'primer injected 8 lesson(s): ReadyIDC/Plesk hosts (wiki.h3, boards.h3) have no ops SSH path — LocalSettings.p;
+    [rename-educations-cpt-label-to-lessons-w-0014fb] located: register_post_type lo; Job secrets pattern: `env_file:
+    ''%h/.config/secrets/litellm-chaba.env''` supplies; `docs/ssot/infrastructure/ssot.home-assistant.tony.yml`
+    is stale (still says hos; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ;
+    [ansible-benchmark-ssot-duplicate-action-430] primer injected'
 action:
   type: dispatch
   status: running
