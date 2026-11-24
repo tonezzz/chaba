@@ -1,0 +1,42 @@
+title: "kanban-dispatch /ready verdicts: the local claim lane now
+        reports to GET /queue like runner-agent (KNB-1007 follow-up)"
+summary: >
+  runner-agent hosts all POST /ready verdicts, but tony-dell's local
+  cap-3 lane claims via kanban-dispatch (kanban-dispatch.timer), which
+  never posted — so GET /queue 'hosts' omitted tony-dell entirely and
+  queued cards showed 'unreported' instead of a real verdict from the
+  fleet's highest-cap claimer. kanban-dispatch.py now runs
+  verdict_pass() at the end of every pass: it evaluates each queued
+  card against the same gate order the claim loop uses (pass gates ->
+  autonomy -> retry cap -> pins -> type/lane/executor -> labels ->
+  push guard -> waiting-cards -> foreign claim -> host cap) and POSTs
+  {host, verdicts, active} to board-api /ready, debounced by payload
+  hash with a forced refresh every KANBAN_DISPATCH_READY_FORCE_S
+  (default 900s). State lives off-repo at
+  ~/.local/state/kanban-dispatch/ready-verdicts.json.
+card: kanban-dispatch-lane-doesn-t-report-read-1ee640
+verify:
+  - "python3 -m unittest tests.board.test_kanban_dispatch_card_index
+    test_kanban_dispatch_rails test_dispatch_runner_resilience
+    test_stalled_claim_lifecycle test_claim_order test_queue_starvation
+    — 103/103 ok"
+  - "stub board-api e2e: verdict_pass POSTs /ready with host verdicts
+    for queued cards, host-scoped active list, and payload-hash
+    debounce (second identical pass does not repost)"
+  - "live: after the served checkout picks this up, GET /queue hosts
+    includes tony-dell with fresh age_s and a verdict per queued card"
+method_notes: >
+  The per-card gate order is duplicated in _verdict_reason() rather
+  than refactored out of the claim loop — the claim path's gates are
+  interleaved with flag/defer/save side effects, and a pure read-only
+  mirror is safer than restructuring a flocked hot path for an
+  advisory projection. Pass-level gates (load/kill/quiet/preflight/
+  rate-limit) ARE shared via claim_pass_gate() so /ready can never
+  disagree with main() about why the pass itself is closed. Inflight
+  capacity is re-surveyed with a fresh active_tasks() at verdict time
+  because phase A0's count predates the pass's own starts.
+  Deployment note: tony-dell runs the script from the pull-only
+  chaba-tony-dell mirror (hourly chaba-served-mirror-sync), so the
+  report starts flowing on the next sync — no unit change needed.
+  idc03's manual-drain kanban-dispatch unit will report under its own
+  HOST when it runs; that is correct (it is a real claimer there).
