@@ -1,0 +1,57 @@
+# roster-shim lane registry — one ws endpoint per roster contact that has
+# no ada-voice lane. Path route: /<lane>/ws (mount /apps/roster-shim on
+# idc03 tailscale-serve strips the prefix, so the card's {lane}/ws lands
+# here as /<lane>/ws).
+#
+# api_keys are secrets — do NOT put them here. Set ROSTER_SHIM_KEYS
+# (comma-separated) via ~/.config/secrets/roster-shim.env
+# (EnvironmentFile in roster-shim.service), or per-lane `keys:` only for
+# throwaway dev. Key format the card accepts: ada-<token>.
+bind: 127.0.0.1
+port: 8796
+state_dir: "${HOME}/.local/share/roster-shim"
+keys: []
+
+lanes:
+  devin:
+    # Devin CLI session — `devin -p` prints the reply and exits.
+    # first argv creates the session; argv continues it (`-c` = most
+    # recent session in the per-chat workspace dir).
+    backend:
+      type: exec
+      cwd_template: "{state_dir}/workspaces/devin/{chat_id}"
+      timeout_s: 900
+      first:
+        - "${HOME}/.local/bin/devin"
+        - --respect-workspace-trust
+        - "false"
+        - -p
+        - "{text}"
+      argv:
+        - "${HOME}/.local/bin/devin"
+        - --respect-workspace-trust
+        - "false"
+        - -c
+        - -p
+        - "{text}"
+
+  nest:
+    # Nest orchestrator chat entry — nest-ask.py fronts NEST_ORCHESTRATOR_URL
+    # when set, else answers on the litellm chat-local lane with the Nest
+    # persona. Repoint by editing this backend, not the shim.
+    backend:
+      type: exec
+      cwd_template: "{state_dir}/workspaces/nest/{chat_id}"
+      timeout_s: 180
+      argv:
+        - python3
+        - "{here}/nest-ask.py"
+        - "{text}"
+
+  # Example http backend (uncomment to front an existing chat endpoint):
+  # nest-http:
+  #   backend:
+  #     type: http
+  #     url: "${NEST_ORCHESTRATOR_URL}"
+  #     reply_path: reply_text
+  #     timeout_s: 120
