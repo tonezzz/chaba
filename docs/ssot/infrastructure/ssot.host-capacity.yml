@@ -79,13 +79,15 @@ hosts:
     role: primary-desktop + portable-dev   # became Tony's main desktop 2026-10-12 (omen-dedicate-nest)
     cpu_cores: 4
     mem_gb: 16        # i7-6700HQ, MacBookPro13,3
-    disk_gb: {total: 234, free: 203}
+    disk_gb: {total: 234, free: 96}   # 228G nvme0n1p2, 56% used — verified 2026-11-24
     gpu: none         # Radeon Pro 450 2GB — Vulkan only, no CUDA/ROCm/OpenCL
     note: >-
       Tony's main desktop + travel workstation (Ubuntu 26.04 since 2026-10-10;
       took over the desktop role from tony-omen 2026-10-12). Laptop —
-      sleeps/off-net is normal; never a hard dependency. Runner lane cap 2
-      labels cpu,dev,portable (enrolled 2026-10-11).
+      sleeps/off-net is normal; never a hard dependency. Runner lane cap 3
+      gate 0.8 labels macbook,local-8c,always-home (enrolled 2026-10-11 cap 2
+      cpu,dev,portable; raised 2->3 2026-11-24 via card tony-macbook-cap-raise;
+      runner-agent verified converged with origin/master 52cbc072 same day).
   idc01:
     role: retired    # permanently retired 2026-11-14 (OPS-0096); per ada-voice rules: mddb masked, never unmask
     note: do not place anything — retired, not warm DR. Host dead since 2026-10-12; references purged from jobs/cleanup/mcp SSOT.
