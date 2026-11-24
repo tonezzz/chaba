@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
 column: doing
-updated: 2026-11-24 08:41
+updated: 2026-11-24 08:43
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -333,6 +333,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:43
+  from: devin
+  text: 'done — both robustness fixes landed in worktree dispatch/20261124-081047-two-dispatch-pipeline-robustne.
+    (1) /action do:queue|retry|close|hold is now verify-or-loud: post-flock commit flush + card re-read fingerprint;
+    proven revert re-applies once under flock, unproven answers 503 verified:false (BOARD_API_ACTION_VERIFY_S=8
+    default, 0 disables). git-safe-pull also preserves stage-3 of card autostash-pop conflicts as .local-conflict-*
+    so reconcile folds raced writes back (covers modify/delete + d'
 action:
   type: dispatch
   status: running
