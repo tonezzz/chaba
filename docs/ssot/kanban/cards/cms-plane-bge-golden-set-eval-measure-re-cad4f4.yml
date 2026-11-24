@@ -1,7 +1,7 @@
 id: cms-plane-bge-golden-set-eval-measure-re-cad4f4
 title: CMS-plane BGE golden-set eval — measure retrieval quality vs gemini before :11027 migration decision
 column: doing
-updated: 2026-11-24 23:34
+updated: 2026-11-24 23:38
 priority: medium
 tags:
 - mddb
@@ -207,6 +207,10 @@ comms:
     pools (validated 10-15 methodology). RESULT: bge-m3 ≈ gemini-embedding-2 — r@5 0.911 vs 0.954, r@10 0.952 vs
     0.957, MRR 0.937 vs 0.942 → GO, migration validated post-hoc. SIDE FINDING: ~250 docs missing vectors (queue
     dropped=910) + meta-only colls (devin-kb, ssot.focus) can nev'
+- at: 2026-11-24 23:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-223607-follow-up-to-mem-0193-spike-pr no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -215,5 +219,7 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 23:38
 claim:
   since: 2026-11-24 22:34
