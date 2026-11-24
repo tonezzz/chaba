@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 16:26
+updated: 2026-11-24 16:29
 tags:
 - hardware
 - omen
@@ -247,6 +247,13 @@ comms:
   from: devin
   text: 'raised request automation-is-deployed-and-live-on-tony-e51f7a: Automation is DEPLOYED and live on tony-ha
     (automation.omen_plug_charge_band_85_45, managed package, dormant-safe until '
+- at: 2026-11-24 16:29
+  from: devin
+  text: 'DONE (automation half). Tony picked A. Deployed automation.omen_plug_charge_band_85_45 on tony-ha — managed
+    package system-managed.yaml (HA git bd17c99), dormant-safe entity-exists guards until switch.omen_plug is paired;
+    battery <25/15min + <20 alerts live now. Verified: reload ok, entity on, manual trigger clean, zero log errors.
+    Chaba commit 53df4a4 (job doc + ssot inventory) + outcome doc on dispatch branch. Remaining physical step: buy+pair
+    plug — board request automation-is-deployed-and-li'
 action:
   type: dispatch
   status: running
