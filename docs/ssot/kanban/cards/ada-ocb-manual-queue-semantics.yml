@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
 column: backlog
-updated: 2026-11-24 20:32
+updated: 2026-11-24 20:50
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -166,6 +166,13 @@ comms:
     chaba KB commit carrying the two verified findings was rebased onto current master and pushed (df8180908e);
     the stale runner-auto-*.yml producer drift in this worktree was discarded because origin/master already holds
     the authoritative triaged versions (Tony''s 19:44 triage). NOT DONE an'
+- at: 2026-11-24 20:50
+  from: devin
+  text: 'DEPLOY VERIFIED 2026-11-24 (explicit same-session approval). Fix commit 92f2355 is live via origin/main
+    c9d0f30 on all three ada-voice hosts. idc02 (primary ada-ocb pane): mcp.ada-control repointed from the stale
+    52-behind edit checkout to the stable ~/CascadeProjects/ada-bridge worktree (clean, detached, kept current by
+    ada-ocb-bridge-sync.timer). Fresh MCP child reports bridge git-c9d0f30 / 30 tools / ada_card_pick present; live
+    queue pick returned ok=true, strategy=queue, mutations_performed='
 review_kind: verify
 action:
   status: idle
