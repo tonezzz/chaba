@@ -53,6 +53,7 @@ edges:
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
       /apps/ha/ada-ha: http://127.0.0.1:8006      # ada-ha-ada backend (Ada lab lane, added 2026-10-23)
       /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
+      /apps/roster-shim: http://127.0.0.1:8796    # roster lane shim — /<lane>/ws per agent (devin, nest); card roster-devin-nest-shims, 2026-11-24
       # :8447 mount = vcast display front (2026-10-17): whole port proxies to
       # caddy-edge http://127.0.0.1:8749, which serves /srv/public static
       # (apps/vcast/, pair, remote) + strips /api/input-bridge/* ->
@@ -117,6 +118,7 @@ services:
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
   ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-ha-ada:     {host: idc03, listen: "127.0.0.1:8006", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-ha"}
+  roster-shim:    {host: idc03, listen: "127.0.0.1:8796", tailnet: "https://idc03.taila0626a.ts.net/apps/roster-shim", note: "ada-lane ws shim for roster devin+nest contacts — stacks/services/roster-shim, card roster-devin-nest-shims"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/", status: "PWA surface alias served by ada-ha-tony; separate :8001 service removed 2026-11-17"}
   tony-ha:        {host: tony-omen, listen: "127.0.0.1:8123", tailnet: "https://tony-omen.taila0626a.ts.net:8123"}   # evacuated dell 2026-10-19/20 (ph5)
   michael-dev:    {host: idc02,     listen: "127.0.0.1:8124", tailnet: "https://idc02.taila0626a.ts.net:8124"}     # migrated 2026-10-09 -> idc02 2026-10-26
