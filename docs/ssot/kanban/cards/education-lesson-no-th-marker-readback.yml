@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
 column: doing
-updated: 2026-11-24 17:17
+updated: 2026-11-24 17:21
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -197,6 +197,11 @@ comms:
     persist write-time flags — `no_th`; [door-read-ops-lesson-op-list-get-educati-6cfed7] primer injected 8 lesson(s):
     R; [education-maintenance-consolidated-report] Control-surface review (2026-10-27):; [education-store] Spaced-review
     layer shipped: lesson-add.py defaults next_rev'
+- at: 2026-11-24 17:21
+  from: devin
+  text: '[progress] Root cause found in repo: chaba-boards.php registers lesson REST meta as topic/level/source/learned_at/next_review/status/updated
+    — no_th is NOT registered, so WP REST silently drops meta.no_th on write. Verifying live via board-api repro
+    next.'
 action:
   type: dispatch
   status: running
