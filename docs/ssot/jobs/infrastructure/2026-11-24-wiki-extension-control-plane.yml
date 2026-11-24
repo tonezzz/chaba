@@ -1,0 +1,100 @@
+id: 2026-11-24-wiki-extension-control-plane
+title: Controlled MediaWiki extension management door hardening
+card: wiki-extension-control-plane
+date: "2026-11-24"
+domain: infrastructure
+status: implemented
+summary: >
+  Tightened POST /wiki/extension (board-api) into the spec'd control
+  plane: mutations now require confirm=true, every attempt records
+  before/after Special:Version + the siteinfo extension table, a
+  durable JSON receipt lands under
+  ~/.local/state/board-api-wiki-ext/ on the service host, and any
+  Springboard/API/verification failure raises instead of claiming
+  success.
+
+context: >
+  The door shipped 2026-11-04 (be124ba312) driving the wiki-side
+  Springboard extension over WIKI_EXTENSION_ALLOWLIST
+  (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
+  + Lockdown added by Tony 2026-11-05 c69a256028 for the PrivateNews
+  boundary). Card wiki-extension-control-plane then spec'd the
+  confirm gate, Special:Version evidence, and receipts — this change
+  closes that gap. Agent surfaces were already registered:
+  ssot.tools.yml wiki.extensions (ada-voice tools.d wiki_extension,
+  ada-ocb ada_wiki_extensions/ada_wiki_extension via ada_mcp), and the
+  ada-voice offline scenario suite covers the wiki_extension gate.
+
+contract:
+  actions: "list|install|enable|disable — anything else 400"
+  names: "allowlist only; Graph/Drawio/arbitrary repos/branches/commits
+    are refused before any wiki call"
+  cardinality: "one extension per request (single `name`)"
+  confirm: "install|enable|disable require body.confirm is True —
+    same gate shape as /opencode-command; list is confirm-free"
+  springboard: "server-side only — sbaction/sbtype/sbname/token; callers
+    never see repo/branch/commit/delete parameters"
+  evidence: "before/after = siteinfo siprop=extensions name list +
+    Special:Version capture (index.php/Special:Version — the pretty
+    /wiki/ path 404s on this host; localized redirect resolves)"
+  verify: "install|enable require name present after; disable requires
+    it gone; mismatch -> UpstreamError (502), never a claimed install.
+    Idempotent no-op (attempt 2): when siteinfo already shows the
+    requested end-state the door returns verified:true, no_op:true
+    with a receipt and skips Springboard entirely — keeps the door
+    honest while Springboard sbname validation is broken on MW 1.46"
+  receipts: "one JSON per attempt (ok AND failed) at
+    $BOARD_API_WIKI_EXT_STATE (default ~/.local/state/board-api-wiki-ext/),
+    schema wiki-extension-receipt/1: actor, action, name, before/after
+    snapshots, springboard response echo, verified, status, error"
+
+creds: "WIKI_HOST/WIKI_USER/WIKI_PASSWORD stay in
+  ~/.config/secrets/wiki-h3-gizmo.env on idc03 — never exposed to
+  Ada/OpenCode; agents reach the door over tailnet HTTPS only."
+
+verify:
+  - "python3 -m unittest tests.board.test_wiki_extension — 11 tests:
+    action/name allowlist, confirm gate, list, install+disable happy
+    paths with receipt assertions, idempotent no-op paths, springboard
+    error, unverified mutation, login failure"
+  - "python3 scripts/board/board-api.py --selftest"
+  - "live: POST /wiki/extension {action:list} returns installed +
+    approved; CategoryTree+Mermaid already installed (verified
+    2026-11-24 via siteinfo: all 7 allowlisted names present)"
+
+live_finding_2026_11_24: >
+  Probing the deployed door shows Springboard currently rejects EVERY
+  sbname with "Unrecognized value for parameter sbname" — install and
+  enable both fail for CategoryTree/Mermaid. Root cause (verified
+  against wikimedia/mediawiki-extensions-Springboard source): sbname
+  is validated against the YAML fetched from $wgSpringboardURL; the
+  extension.json default is an array keyed by MW version with only a
+  "1.43" entry, and CanastaWiki/RecommendedRevisions ships 1.39/1.43/
+  1.44/1.47 — no 1.46 — while the wiki runs MediaWiki 1.46.2. Unless
+  LocalSettings overrides $wgSpringboardURL, the accepted-names list
+  is empty on this host. Minimal fix (Plesk/LocalSettings, admin path):
+  set $wgSpringboardURL to the plain-string URL
+  https://raw.githubusercontent.com/CanastaWiki/RecommendedRevisions/master/1.44.yaml
+  — string form skips the version-key lookup and that YAML contains
+  all seven approved names (Mermaid via its SemanticMediaWiki repo
+  override). Until then mutations fail honestly at the door; list is
+  unaffected. This also means the 2026-11-06 "installed via the door"
+  claim in ssot.mediawiki-news.yml was actually the manual
+  bundle+LocalSettings path — Springboard has likely never worked on
+  MW 1.46 here.
+
+followups:
+  - "ada-voice tools.d wiki_extension must pass confirm=true on
+    mutations for the tightened door (cross-repo; registry policy is
+    already 'confirmed') — carded separately; without it Ada-side
+    install/enable/disable 400s once this deploys"
+  - "deploy: lands on idc03 served checkout via normal merge +
+    chaba-repo-sync, then `systemctl --user restart chaba-board-api`
+    on idc03 (user unit, ExecStart=.../chaba-tony-dell/scripts/board/
+    board-api.py) — until then the live door accepts mutations
+    without confirm (pre-hardening build)"
+  - "wiki-side: fix $wgSpringboardURL in LocalSettings.php (see
+    live_finding) before any REAL install/enable/disable can succeed;
+    no ops SSH/Plesk path to the ReadyIDC host exists — Plesk panel
+    edit by Tony. Until then only no-op mutations verify; a genuinely
+    absent extension still fails honestly at the door"
