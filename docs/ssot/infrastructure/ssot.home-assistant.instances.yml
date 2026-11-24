@@ -34,6 +34,12 @@ instances:
       household: "/home/tony/.config/home-assistant/household.yml  # canonical, in HA config dir — people/rooms/roles of this home"
       native: "/home/tony/.config/home-assistant/secrets.yaml      # HA !secret store — stays native per instance"
       status: active               # migrated 2026-10-23 (card per-instance-secret-stores-migration); mn01 keeps standby copies
+    cold_standby:
+      status: documented-not-armed # runbook 2026-11-24 (HOM-0855); no sync timer installed yet
+      runbook: docs/runbooks/tony-ha-cold-standby.md
+      sync: "standby-side pull via scripts/home-assistant/ha-standby-sync.sh (rsync ~/.config/home-assistant mirror + optional sqlite DB snapshot; split-brain guarded)"
+      candidates: [mn01, idc02, tony-dell]   # mn01 recommended (home LAN); idc02 = degraded no-LAN mode
+      pending: "tony-ha-prod-placement-26f033 may retarget standby to the loser of the prod decision"
     status: active
 
   michael-dev:

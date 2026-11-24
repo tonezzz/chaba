@@ -1,0 +1,85 @@
+id: 2026-11-24-tony-ha-cold-standby-runbook
+title: tony-ha cold standby — config sync + promote runbook (HOM-0855)
+date: 2026-11-24
+hosts: [tony-omen, mn01, idc02, tony-dell]
+card: tony-ha-cold-standby-config-sync-promote-d12293
+ref: HOM-0855
+dispatch: dispatch-wt-20261124-162119-goal-is-to-create-a-cold-stand
+status: runbook-committed   # documented; sync timer not yet installed on any host
+
+summary: >
+  Delivered the card's done-condition: a committed runbook detailing the
+  exact config-sync and promotion steps for a tony-ha cold standby, plus
+  the sync script it references. Design follows existing fleet patterns —
+  standby-side pull (same shape as chaba-repo-sync / the "idc02 remote
+  pull" note already in ssot.jobs.yml), quadlet + tailscale-serve promote
+  (same shape as the 2026-10-19/20 dell->omen evacuation), and consumer
+  repointing through the idc02 tailnet-front shadow + public edge (the
+  OPS-0725 flexibility layer built for exactly this).
+
+deliverables:
+  - docs/runbooks/tony-ha-cold-standby.md          # the runbook (status: partial)
+  - scripts/home-assistant/ha-standby-sync.sh      # standby-side pull sync
+  - docs/ssot/ssot.runbooks.yml                    # tier-1 registry entry
+  - docs/ssot/infrastructure/ssot.home-assistant.instances.yml  # cold_standby: block on tony-ha
+  - this file
+
+decisions:
+  sync_direction: >-
+    Pull, not push — the standby host fetches over ssh (chaba-repo-sync /
+    mddb-standby-pull precedent). The driver lives on the standby so an
+    omen outage just means "nothing new to pull"; no push creds or timers
+    needed on the flaky host.
+  mirror_target: >-
+    ~/.config/home-assistant on the standby — the canonical config path,
+    so promotion needs no copy step. Script guards: refuses on the source
+    host, while a tony-ha/ada-ha unit or container is active locally
+    (split-brain), and into a non-empty unmarked dest without --force.
+  db_policy: >-
+    home-assistant_v2.db* excluded from periodic rsync (live sqlite);
+    --db flag takes a consistent online snapshot via the SQLite backup API
+    executed on the source over ssh. Opt-in because it can be GBs —
+    recommended at install and at promote time.
+  standby_host: >-
+    mn01 recommended (verified on home LAN 192.168.2.0/24 2026-10-26 —
+    promotion preserves LAN device control; already runs ada-standby-sync
+    timers). idc02 documented as degraded no-LAN alternative (the host
+    ssot.jobs.yml literally names for the remote pull). tony-dell possible
+    but least preferred post-drain. FINAL CHOICE PENDING the
+    tony-ha-prod-placement-26f033 decision — runbook is host-parameterized
+    and says to retarget to the loser.
+  image_pinning: >-
+    Quadlet uses floating :stable but patches/* mounts are
+    HA-version-pinned (frontend JS filenames like 52451.*) — promote pins
+    Image= to the repo digest. The sync script captures ref+image-id+
+    digest into last-sync.txt every run so a promote never depends on
+    reaching omen for image identity; save|load is the documented
+    fallback (proven on michael-dev/bserver/trade-api moves).
+  scope_boundary: >-
+    tony-ha only. ada-ha shares the omen failure domain and the identical
+    pattern is noted but not duplicated; michael-ha (Nabu Casa) and kk-ha
+    (idc03) are out of scope.
+
+verified_facts_used:
+  - "tony-ha: omen, rootless podman host-net, 127.0.0.1:8123, tailscale serve :8123"
+  - "idc02 tailnet-front.caddy :8123 shadow -> https://tony-omen...:8123; public edge tony-ha.surf-thailand.com (CF Access 70aa9fe3)"
+  - "secrets already host-independent: idc03:~/.config/secrets/tony-ha/; secrets.yaml+household.yml inside config dir sync with tree"
+  - "existing backup = omen-local git snapshots (ha-config-backup.timer 03:30) + one-time verified mn01 copy 2026-10-25 — neither is a recurring off-host mirror"
+  - "consumers to repoint: idc02 front+edge, stacks/web /apps/ha/tony-ha* redirect, idc03 ada-ha-tony HOME_ASSISTANT_URL, ha_mcp_tools :9584 endpoint, live dashboards, go2rtc/ha-live host-coupled refs"
+
+found_drift:
+  - "docs/ssot/infrastructure/ssot.home-assistant.tony.yml still says host: tony_dell / subtitle 'tony-dell runtime configuration' — predates the 10-19/20 evacuation; instances.yml is correct. Left for a dedicated SSOT hygiene pass (file has other stale bits: node-red/go2rtc/ha-live sections)."
+  - "mn01 wired .75 DHCP reservation still pending (noted in placement job followups) — matters if mn01 becomes standby/prod."
+
+not_done:
+  - "No standby host armed: no timer installed, no ssot.jobs.yml entry rendered — host choice pending Tony's prod-placement answer. Runbook Part 1 is the install procedure."
+  - "No live sync or promote drill exercised — status: partial until first install."
+
+followups:
+  - "When prod-placement lands: pick standby host, run runbook Part 1 (~15 min), declare job+audit entries, then schedule a promote drill."
+  - "Optional: weekly --db variant timer if recorder history should stay fresher than promote-time."
+  - "Optional: ada-ha second sync target (same script shape, ~/.config/ada-ha)."
+
+lessons:
+  - "The quadlet's floating :stable tag is a trap: patches/* bind-mounts are HA-version-pinned, so any HA move must pin Image= by digest — the sync manifest now records it every run."
+  - "Cold-standby sync belongs on the STANDBY host (pull), not omen (push) — the flaky host shouldn't hold the sync driver."
