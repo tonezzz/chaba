@@ -1,7 +1,7 @@
 id: helm-retire-leftovers
 title: Finish helm retirement — remove idc02:3003 service, /apps/helm static+route, stale SSOT
 column: done
-updated: 2026-11-24 08:13
+updated: 2026-11-24 08:14
 brief: 'helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml,
   static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed
   retire.'
@@ -139,6 +139,10 @@ comms:
 - at: 2026-11-24 08:13
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
