@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: backlog
-updated: 2026-11-24 19:56
+updated: 2026-11-24 19:57
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -251,6 +251,9 @@ comms:
 - at: 2026-11-24 19:56
   from: chaba
   text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 19:57
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
 action:
   type: dispatch
   status: queued
