@@ -3,10 +3,10 @@ title: get_rk600_weather returns ok:true with empty sensors — retry storm bait
 brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned {sensors: {}, ok: True} ~10x in
   a row. Model retried indefinitely because the result looked successful. Same silent-miss class as the cms_read
   None→ok:true bug fixed 2026-10-08.'
-column: backlog
+column: doing
 priority: medium
 program: ada-tools
-updated: 2026-11-24 14:59
+updated: 2026-11-24 15:00
 tags:
 - tool-contract
 - audit-2026-10-08
@@ -170,6 +170,9 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 15:00
+  from: tony-macbook
+  text: claimed
 ref: OPS-0222
 spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and station offline/unreachable when
   the sensors dictionary is empty, following the fix pattern seen in backend/tool_runner/cms.py get on miss. Host/repo:
@@ -178,7 +181,11 @@ spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and s
   yields ok:false and the specified offline message instead of ok:true.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 15:00
