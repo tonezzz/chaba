@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
-column: doing
-updated: 2026-11-24 17:23
+column: done
+updated: 2026-11-24 17:24
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -271,6 +271,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261124-165802-use-the-existing-devnestha-top no longer active on tony-macbook
     but card still says running — sweeping its branch'
+- at: 2026-11-24 17:24
+  from: chaba
+  text: 'merge-sweep: merged cd1d264a (dispatch/20261124-165802-use-the-existing-devnestha-top from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-165802-use-the-existing-devnestha-top.md)
+    — auto-closed'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
@@ -293,7 +298,7 @@ requests:
     reconciled; do not use direct /send as a workaround.
   executed: 2026-10-27 hold
 action:
-  status: running
+  status: done
   type: dispatch
   lane: free_lane
   lane_source: kw
@@ -302,5 +307,10 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-24 17:23
+  verified: true
 claim:
   since: 2026-11-24 16:57
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 17:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-165802-use-the-existing-devnestha-top.md
