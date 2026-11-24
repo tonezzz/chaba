@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-24 14:07
+updated: 2026-11-24 14:09
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -484,16 +484,17 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: failed
   lane: devin
   lane_source: fallback
   attempts: 2
-  last_failure: 'exit=1 20261123-211458-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
-    | devin-task-20261123-211458-ada-tool-consolidation-merge-o.service: Consumed 1min 1.076s CPU time over 17min
-    35.240s wall clock time, 1.3G memory peak.'
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
   sweep:
     stale_running: 2026-11-23 19:48
     dirty: 5

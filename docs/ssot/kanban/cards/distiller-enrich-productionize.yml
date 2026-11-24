@@ -1,7 +1,7 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
 column: backlog
-updated: 2026-11-24 14:00
+updated: 2026-11-24 14:09
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
   pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
@@ -413,6 +413,9 @@ comms:
 - at: 2026-11-24 14:00
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 3.01 > 1.0)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
@@ -428,7 +431,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -436,9 +439,7 @@ action:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 21:22
     session_gone: 2026-11-23 21:22
-  last_failure: 'exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
-    | devin-task-20261123-220531-productionize-the-enriched-t1-.service: Consumed 1min 29.487s CPU time over 25min
-    18.901s wall clock time, 1.7G memory peak.'
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
   attempts: 2
   result: 'exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''. | devin-task-20261123-220531-productionize-the-enriched-t1-.service:
     Consumed 1min 29.487s CPU time over 25min 18.901s wall clock time, 1.7G memory peak.'
