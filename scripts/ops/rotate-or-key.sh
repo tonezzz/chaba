@@ -93,7 +93,7 @@ say "✓ store 4: omen openclaw sqlite"
 #    Sweep only files still holding the OLD fleet key so per-lane keys
 #    (e.g. kaewta-daily in ada-kk.env) survive rotations. ─────────────
 if [ -n "$OLDKEY" ]; then
-  { printf 'OLDKEY=%q\nNEWKEY=%q\n' "$OLDKEY" "$NEWKEY"; cat <<'SWEEP'
+  { printf 'OLDKEY=%q\nNEWKEY=%q\n' "$OLDKEY" "$KEY"; cat <<'SWEEP'
 for F in ~/.config/secrets/ada-*.env; do
   [ -f "$F" ] || continue
   if grep -qF "$OLDKEY" "$F"; then
