@@ -390,6 +390,20 @@ class ClaimPassLaneTest(unittest.TestCase):
         self.assertEqual(bodies[0]["model"],
                          "litellm/gemini-2.5-flash")
         self.assertEqual(self.classified, ["lane-card"])
+        # devin-lane-cheap-ops-reroute: a claim-time classify is
+        # classifier output — flag provenance so board-api stamps
+        # lane_source and the next queue re-evaluates the lane.
+        self.assertEqual(bodies[0].get("lane_source"), "claim")
+
+    def test_pinned_lane_sends_no_lane_source(self):
+        # An author-pinned lane re-sent in the claim must NOT carry
+        # classifier provenance — board-api would ignore it anyway, but
+        # the claim should not pretend the pin was classified.
+        self.cards = [_card(lane="free_lane")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(bodies[0]["lane"], "free_lane")
+        self.assertNotIn("lane_source", bodies[0])
 
 
 class ClaimPassScriptOnlyTest(unittest.TestCase):

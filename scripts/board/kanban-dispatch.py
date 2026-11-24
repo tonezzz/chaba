@@ -843,9 +843,13 @@ def start_pending(path: Path) -> str:
     # classification stays out (executor=devin pins the devin path and
     # keeps action.model as the native devin id it declared).
     if not lane and JEV_LANE and not ex:
-        lane = classify_lane(card)
+        lane, lsrc, _conf = classify_lane(card, with_detail=True)
         if lane:
             a["lane"] = lane
+            # classifier output carries provenance so a re-queue
+            # re-evaluates it — a bare stamp reads as an author pin
+            # forever (devin-lane-cheap-ops-reroute)
+            a["lane_source"] = str(lsrc or "").split(":", 1)[0] or "claim"
             # Persist the cheapest model too, so ANY claimer (runner-agent
             # reads action.model) routes to the right lane — the env-only
             # path never reached remote runner-agents (model-chain probe

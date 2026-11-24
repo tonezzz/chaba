@@ -20,6 +20,7 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import yaml
@@ -147,6 +148,46 @@ class BoardApiLifecycleTest(unittest.TestCase):
             self.assertIn("attempt cap reached (1/1)", str(e))
             return
         raise AssertionError("claim at lane-envelope cap should be refused")
+
+    # -- claim lane provenance (devin-lane-cheap-ops-reroute) ---------
+    def _queued(self, cid, **action):
+        a = {"type": "dispatch", "status": "queued"}
+        a.update(action)
+        return {"id": cid, "column": "backlog", "comms": [],
+                "action": a}
+
+    def test_claim_lane_stamp_gets_lane_source(self):
+        # A claim-time lane is classifier output — it must persist
+        # lane_source so the next queue re-evaluates it. A bare stamp
+        # reads as an author pin forever (the audit's explicit bucket).
+        c = self._queued("lc-lane-stamp")
+        self.api.do_claim(c, {"host": "mn01", "lane": "free_lane",
+                              "model": "litellm/gemini-3.5-flash-lite"})
+        self.assertEqual(c["action"]["lane"], "free_lane")
+        self.assertEqual(c["action"]["lane_source"], "claim")
+
+    def test_claim_lane_source_from_body_wins(self):
+        c = self._queued("lc-lane-src")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin",
+                              "lane_source": "kw"})
+        self.assertEqual(c["action"]["lane_source"], "kw")
+
+    def test_claim_preserves_existing_lane_source(self):
+        # Queue-time classify already stamped provenance — a bare claim
+        # lane must not downgrade it to the generic 'claim' marker.
+        c = self._queued("lc-lane-keep", lane="devin",
+                         lane_source="kw")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin"})
+        self.assertEqual(c["action"]["lane_source"], "kw")
+
+    def test_claim_never_provenances_author_pin(self):
+        # An author-set lane (no lane_source on the card) is explicit
+        # routing — even a claim carrying lane_source must not stamp it.
+        c = self._queued("lc-lane-pin", lane="devin")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin",
+                              "lane_source": "claim"})
+        self.assertEqual(c["action"]["lane"], "devin")
+        self.assertNotIn("lane_source", c["action"])
 
     # -- verbs --------------------------------------------------------
     def test_retry_resets_attempts_and_column(self):
