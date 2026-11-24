@@ -1,7 +1,7 @@
 id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
 title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
 column: backlog
-updated: 2026-11-24 22:19
+updated: 2026-11-24 22:20
 spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
   (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
   tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
@@ -18,3 +18,23 @@ comms:
 - at: 2026-11-24 22:19
   from: devin
   text: card captured via board-api
+- at: 2026-11-24 22:20
+  from: devin
+  text: 'raised request how-should-the-dirty-in-flight-work-on-i-11feb4: How should the dirty in-flight work on
+    idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox files'
+requests:
+- id: how-should-the-dirty-in-flight-work-on-i-11feb4
+  ask: How should the dirty in-flight work on idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox
+    files) be handled so their chaba exec checkouts can be brought current? Tool pins are already converged; only
+    the stale checkout code remains.
+  status: open
+  at: 2026-11-24 22:20
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for owner to
+    pop (recommended, reversible)
+  - commit-wip — commit the dirty work on each host branch, then rebase/merge origin/master; preserves work in history
+  - leave — accept stale checkout code on these two hosts; exclude them from clone-stale audit
+  - abandon — discard the dirty work then hard-reset to origin/master (destructive, needs explicit approval)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for
+    owner to pop (recommended, reversible)
