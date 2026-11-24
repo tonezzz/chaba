@@ -1,7 +1,7 @@
 id: video-render-dispatcher
 title: Build canonical video render dispatcher and queue status
 column: doing
-updated: 2026-11-24 18:58
+updated: 2026-11-24 19:30
 brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
   final artifact.
 priority: high
@@ -230,6 +230,13 @@ comms:
   text: 'dispatch started (2026-11-24 ~19:00 ICT): auditing existing OPS-1042 artifacts — video_queue_status.py
     v1, claim lifecycle doc, Sacred Father canonical manifest — then refreshing the queue report and assessing the
     controlled-dispatcher gap.'
+- at: 2026-11-24 19:30
+  from: devin
+  text: 'progress: inventory layer extended (all packs both roots, render/support + lifecycle states, residual-claim
+    separation) — fresh audit: pilot 14 packs (11 done/1 queued/2 failed), ada-nest 79 (60 done/19 queued), 0 live
+    claims. Dispatcher scripts/devnest/video_dispatch.py implemented (plan/apply/verify, video-dispatch/v1 manifests,
+    KK-Mac admission gate, complete-staging+input-fetch for Colab). Sacred Father canonical manifest verified live
+    (sha256+ffprobe) and artifact paths fixed; canonical-v1.'
 action:
   type: dispatch
   status: running
