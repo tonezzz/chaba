@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: done
-updated: 2026-11-24 20:29
+updated: 2026-11-24 21:19
 priority: medium
 tags:
 - ssot
@@ -236,6 +236,20 @@ comms:
     diff): docs/ssot/jobs/voice/2026-11-24-scr-t1-threshold-calibration.yml wrong_fire_real_ref=''0/28'' -> ssot-validate-refs.py
     missing file docs/ssot/0/28. Repo lint syntax+tooling-contracts PASS. PR diff only touches session-capture/focus-parity/commands/freshness-check
     files. Awaiting maintainer decision on merge despite pre-existing CI break or fix on master.'
+- at: 2026-11-24 21:10
+  from: devin
+  text: '[2026-11-24 devin] Rebased PR #207 onto current origin/master (head 65c9bd901561). Pre-existing SSOT ref
+    break (wrong_fire_real_ref in 2026-11-24-scr-t1-threshold-calibration.yml) is resolved by master fix; PR diff
+    unchanged (3 session-capture commits). CI checks re-queued. Awaiting governed review/merge.'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:19
+  from: devin
+  text: '[2026-11-24 devin] PR #207 CI fix: SSOT optimize-gate failed on 3 warnings not in baseline (knowledge-capture
+    46 items from our PR; two kanban card bloat warnings pre-existing master drift). Refreshed reports/SSOT_OPTIMIZATION_WARNINGS.json
+    per gate instructions and pushed (head 66976abfac). CI rerunning; awaiting governed review/merge after green.'
 requests:
 - id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
   ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==

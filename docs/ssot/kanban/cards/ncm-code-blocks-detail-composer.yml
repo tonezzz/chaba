@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-24 20:58
+updated: 2026-11-24 21:13
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -45,3 +45,14 @@ comms:
     L3 -0.006) because every block name is unique, so a held-out block has no training example. Primary held-out
     L3 F1 0.600 >= 0.30 passed; monotonicity 0.600 < 0.821 at L1 failed. torch is unavailable, so this is a stdlib
     level-mapping toy, NOT NCM VQ-VAE training. Run 1 was invalidated'
+- at: 2026-11-24 21:06
+  from: devin
+  text: 'P1′ v2 revision done — gate also FAIL, verdict stays stop. Chosen revision: L0 = 24 functional block roles
+    over 54 real packs (repeated examples) + like-for-like gate pre-registered before run. Result: held-out L3 F1
+    0.541 (>= 0.30 floor), L1 conditional - control +0.056 (coarse signal now real), but L2 -0.169 and L3 -0.074
+    vs global-prior control, so the like-for-like conditions failed. v1 packet preserved in packet/, v2 in packet-v2/.
+    Honest limitation: the toy generates levels sequentially, c'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

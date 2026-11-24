@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
-column: doing
-updated: 2026-11-24 21:00
+column: review
+updated: 2026-11-24 21:16
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -160,12 +160,49 @@ comms:
     MDDB backup + binlog retention; [kanban-card-torn-write-investigation-b4034e] ROOT CAUSE NAMED: idc03 disk hit
     E; runbook docs/kb/mddb-prune-compact.md: MDDB prune / distill / compact — standard; [dispatch-worktree-merged-triage]
     TRIAGE-RUN 2026-11-17 on to'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: devin
+  text: '2026-11-24 evidence pass (dispatch 210041): re-verified on-host ~21:05 — / at 95G/195G free (33%, was 100%/1.3G
+    this morning); mddb-ops DB 6.6G post-compact, /v1/health healthy+durable; ~/mddb-backups 5.4G only, both native
+    gz re-verified gzip -t OK (mddb 1.1G, cms 2.7G manual 14:24). Offsite ops restore point confirmed on idc02 (ops-offhost-20261124.db.gz
+    12G). Full trail written to docs/ssot/jobs/mddb/2026-11-24-idc03-disk-full-ops-compact.yml. OPEN GATE: tonight
+    02:30 is the first guarded-scr'
+- at: 2026-11-24 21:16
+  from: tony-dell
+  text: 'finished (ok): exit=0 atch-outcome-20261124-210041-evidence-2026-11-24-config-89g.md`. | devin-task-20261124-210041-evidence-2026-11-24'
+- at: 2026-11-24 21:16
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:16
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-210041-evidence-2026-11-24-config-89g'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 21:16
+  from: chaba
+  text: banked 473 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:16
+  from: chaba
+  text: pushed dispatch/20261124-210041-evidence-2026-11-24-config-89g to origin
+- at: 2026-11-24 21:16
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 21:16
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 atch-outcome-20261124-210041-evidence-2026-11-24-config-89g.md`. | devin-task-20261124-210041-evidence-2026-11-24-config-89g.service:
+    Consumed 35.730s CPU time over 13min 11.428s wall clock time, 925.8M memory peak, 677.3M memory swap peak.'
 claim:
   since: 2026-11-24 20:59
+review_kind: verify

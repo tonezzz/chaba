@@ -1,7 +1,7 @@
 id: litellm-key-bench-dead-shadows-chaba
 title: LITELLM_KEY_BENCH returns 422 — dead virtual key shadows working CHABA in lane_gate probe
 column: doing
-updated: 2026-11-24 21:03
+updated: 2026-11-24 21:20
 priority: high
 program: devnest
 tags:
@@ -194,6 +194,22 @@ comms:
     have per-key model allowlists — cf-qwen38-27b 403s on the C; Job secrets pattern: `env_file: ''%h/.config/secrets/litellm-chaba.env''`
     supplies; LiteLLM virtual keys return per-key-filtered /v1/models — config.yaml model_list; Paid-lane gating
     pattern that worked: keep the lane in LANE_M'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:14
+  from: devin
+  text: 'picked up: implementing fix (b) — bench_key() will probe each candidate key against /v1/models and pick
+    first 2xx. Verified live on tony-omen: litellm-chaba.env LITELLM_KEY returns 200/44 models, bogus key 401. Fix
+    (a) key rotation is a litellm-admin credential change — out of scope for this worktree; (b) makes it unnecessary.'
+- at: 2026-11-24 21:20
+  from: devin
+  text: 'DONE (fix b). shadow_eval.bench_key() now collects ordered candidates (BENCH→CHABA→generic LITELLM_KEY
+    across env + litellm-keys.env + litellm-chaba.env) and probes each against /v1/models, returning first 2xx;
+    falls back to first-present when unverifiable. probe() reuses the resolved key, records secrets.bench_key_src;
+    L2 secrets check accepts litellm-chaba.env. Verified live on tony-omen: litellm_authed:true via file:litellm-chaba.env:LITELLM_KEY,
+    lane_gate admit clean (no failed_provider:lite'
 action:
   type: dispatch
   status: running

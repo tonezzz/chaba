@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-1bbtyha8
 title: '[audit] mutating_command in opencode session Hdk31bBtYHA8'
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 21:19
 priority: medium
 program: ai-workforce
 tags:
@@ -148,3 +148,38 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:17
+  from: chaba
+  text: classified as devin (fallback conf 0.16)
+- at: 2026-11-24 21:17
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.42 > 0.85)'
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.26 > 1.0)'
+- at: 2026-11-24 21:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}

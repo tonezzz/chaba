@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
 column: backlog
-updated: 2026-11-24 20:50
+updated: 2026-11-24 21:13
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -173,6 +173,10 @@ comms:
     52-behind edit checkout to the stable ~/CascadeProjects/ada-bridge worktree (clean, detached, kept current by
     ada-ocb-bridge-sync.timer). Fresh MCP child reports bridge git-c9d0f30 / 30 tools / ada_card_pick present; live
     queue pick returned ok=true, strategy=queue, mutations_performed='
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
   status: idle

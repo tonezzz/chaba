@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: doing
-updated: 2026-11-24 20:59
+updated: 2026-11-24 21:17
 priority: high
 tags:
 - devin
@@ -226,6 +226,17 @@ comms:
     primer injected 8 lesson(s): [ansible-vs-legacy-f; [devin-session-audit-2026-10-29] AUD-0973 independent re-check
     (dispatch 201613 ; [disk-guard-ssot-enforce] primer injected 8 lesson(s): [ansible-vs-legacy-fleet-; [idle-qa-and-backups-idc]
     primer injected 8 lesson(s): no cha'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:17
+  from: devin
+  text: 'diagnosis found: split-brain single-instance. Watchdog (cron, no XDG_RUNTIME_DIR) launches put the Electron
+    singleton socket at ~/.config/Devin/1.14-main.sock; interactive launches use /run/user/1000/vscode-*-main.sock
+    — the two never see each other, so every launch spawns a parallel instance fighting over profile locks (LevelDB
+    LOCK errors observed). Affects both hosts: dell stale pre-upgrade instance PID 3271309 (deleted exe) since Nov-23
+    16:10; omen watchdog instance PID 47209 since Nov-23 19'
 action:
   type: dispatch
   status: running

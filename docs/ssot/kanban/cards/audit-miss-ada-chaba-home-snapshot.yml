@@ -1,7 +1,7 @@
 id: audit-miss-ada-chaba-home-snapshot
 title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
 column: done
-updated: 2026-11-24 17:23
+updated: 2026-11-24 21:13
 brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
 priority: medium
 program: home-assistant
@@ -239,6 +239,10 @@ comms:
 - at: 2026-11-24 17:23
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done

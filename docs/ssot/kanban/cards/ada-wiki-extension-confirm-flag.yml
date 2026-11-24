@@ -1,7 +1,7 @@
 id: ada-wiki-extension-confirm-flag
 title: ada-voice wiki_extension tool must pass confirm=true on mutations
 column: doing
-updated: 2026-11-24 21:05
+updated: 2026-11-24 21:20
 brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
   ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
   door deploys.'
@@ -66,6 +66,27 @@ comms:
 - at: 2026-11-24 21:05
   from: tony-macbook
   text: claimed
+- at: 2026-11-24 21:06
+  from: chaba
+  text: started devin-task-20261124-210549-in-ada-voice-repo-edit-point-t on tony-macbook (dispatch)
+- at: 2026-11-24 21:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [gev-voice] primer injected 8 lesson(s): "The render_job writer" is NOT in
+    chaba; missing-path QC must gate on the card''s declared action.repo — ada-voice/ada-pi ; [board-api-wiki-read-search-doors]
+    spec (chaba repo, scripts/board/board-api.py); [fix-cms-publish-page-slug-argument-missi-96152a] primer injected
+    8 lesson(s): [; [mediawiki-infrastructure-host-hierarchy] Blocker update: extension bundle was u; The chaba
+    merge test gate runs a FIXED file list in dispatch_'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:20
+  from: devin
+  text: 'done: confirm=true added to POST /wiki/extension body for install|enable|disable in backend/tools.d/wiki_extension.py
+    and mirrored in opencode/ada_mcp.py ada_wiki_extension; list stays confirm-free. Fakeboard now enforces the
+    door gate; scenario audit asserts the flag; unit test pins list confirm-free. Gates: tool-lint clean, pytest
+    1977 passed/4 skipped. Branch dispatch/wiki-extension-confirm-flag (e12c641+d5c9132) in worktree ~/CascadeProjects/ada-voice-wt-wiki-confirm-flag
+    — not pushed, no de'
 action:
   type: dispatch
   status: running

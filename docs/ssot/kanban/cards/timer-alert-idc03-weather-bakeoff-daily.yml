@@ -1,7 +1,7 @@
 id: timer-alert-idc03-weather-bakeoff-daily
 title: Timer weather-bakeoff-daily on idc03 failing
 column: backlog
-updated: 2026-11-24 19:58
+updated: 2026-11-24 21:12
 priority: high
 tags:
 - timer-alert
@@ -58,6 +58,10 @@ comms:
   text: 'Ref reassigned OPS-0017 -> OPS-1320 in the active-card duplicate ref sweep: timer-alert-idc03-rika-wx-alert
     keeps OPS-0017 (earliest claim among non-done cards). Slug id and all workflow fields unchanged; historical
     done cards are intentionally untouched.'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate why the weather-bakeoff-daily.service failed with an exit-code on host idc03 by checking its journal
   via `journalctl --user -u weather-bakeoff-daily.service` and referencing CMS timer-timeline-idc03. Prior to running
   diagnostics, redeploy the drifted runner-agent on idc03 by copying the repo script from `/home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py`
