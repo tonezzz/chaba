@@ -1,7 +1,7 @@
 id: branch-code-s4-evidence-ladder
 title: 'branch-code S5 graduation: accumulate S4 artifact_write evidence + rollback drills'
 column: doing
-updated: 2026-11-24 19:06
+updated: 2026-11-24 19:15
 spec: 'lane_gate S5 admit branch_code requires promote_gate evidence: min_jobs 5 verified artifact_write jobs at
   1.0 rate, 0 tool denials, rollback drills recorded. Today: ops-readonly + doc-draft + ssot-research proven at
   report/read_only class; NOTHING has run artifact_write class. Plan: (1) create an artifact-write profile (file-mode
@@ -199,6 +199,10 @@ comms:
   text: 'dispatch started: verified lane state on idc02 — current_stage=S1 (rolled back from S3 on 2026-11-23, re-climbing).
     S4 artifact_write jobs cannot admit until lane reaches S4; preparing envelopes + profile smoke + drill protocol
     now, branch_code stays disabled.'
+- at: 2026-11-24 19:15
+  from: devin
+  text: 'raised request s4-rollback-drill-sequencing-pick-one-a-3a2c07: S4 rollback-drill sequencing — pick one:
+    (A) run both drills against a scratch lane state now + one production drill in '
 action:
   type: dispatch
   status: running
@@ -209,3 +213,15 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 18:44
+requests:
+- id: s4-rollback-drill-sequencing-pick-one-a-3a2c07
+  ask: 'S4 rollback-drill sequencing — pick one: (A) run both drills against a scratch lane state now + one production
+    drill in the first S5 window [recommended — proves gate mechanics at zero ladder cost]; (B) drills first on
+    the production ledger, accept rollback+OPS-1255 requalify and re-climb S0->S4; (C) bank 5 verified jobs, promote
+    to S5, then run drills as S5-stage jobs (rollback S5->S4 by design). Full analysis: docs/ssot/jobs/devnest/2026-11-24-s4-artifact-write-evidence-plan.yml'
+  status: open
+  at: 2026-11-24 19:15
+  from: devin
+  options:
+  - proceed
+  - hold
