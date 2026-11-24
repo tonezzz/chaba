@@ -1,0 +1,30 @@
+id: runner-pin-contract-merge-gate
+title: Block merges that leave runner tooling pins stale
+column: backlog
+updated: 2026-11-24 21:05
+brief: ops-1036 conflict resolution (da9798df42c) took source files from one side and runner-tooling.manifest.json
+  pins from the other. The contract test failed and all 6 hosts showed tool drift. Pins were realigned in f13edd01d0d
+  and tools resynced; add a gate so this cannot merge silently.
+priority: medium
+tags:
+- fleet
+- tooling
+- pin-gate
+- merge
+spec: 'Evidence 2026-11-24: commit da9798df42c (board: resolve conflicts for ops-1036) changed scripts/board/runner-agent.py,
+  scripts/board/dispatch_repos.py, scripts/devin/devin-dispatch.sh and claude-dispatch.sh, but the manifest kept
+  the pre-merge sha256 pins (runner_agent 88f66bda vs source a08451d98; devin_dispatch 384680d4 vs c5fa3947; claude_dispatch
+  ea483733 vs 70b6709d; dispatch_repos a11db483 vs cc9ad393). tests/board/test_runner_tooling_contract.py failed
+  1/7, and runner-fleet-health.py reported 6 hosts failing / 0 ok. Fix f13edd01d0d recomputed all pins from source;
+  after chaba-repo-sync.service on all six hosts, contract tests 7/7 OK and fleet health 0 failing / 6 ok.
+
+
+  Done condition: any merge or sweep that touches a pinned source OR the manifest must run `python3 -m unittest
+  discover -s tests/board -p test_runner_tooling_contract.py` and refuse to land on failure. Add a regression test
+  for the conflict-resolution shape (source from one parent, pins from the other). No host changes for this card;
+  it is a CI/merge guard only.'
+ref: OPS-1326
+comms:
+- at: 2026-11-24 21:05
+  from: devin
+  text: card captured via board-api

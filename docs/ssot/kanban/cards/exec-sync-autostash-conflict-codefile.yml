@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: backlog
-updated: 2026-11-24 19:38
+updated: 2026-11-24 21:05
 priority: medium
 tags:
 - infra
@@ -166,6 +166,11 @@ comms:
     ipaddr fix (e69a7cb1). Salvaged tracked work to stash@{0} and patch /tmp/chaba-tonydell-exec-salvage-20261124-193141/{stash0.patch,worktree-vs-HEAD.patch};
     copied the live untracked kk-mac model-status script + systemd units to <backup>/untracked/ (timer still active).
     git reset --h'
+- at: 2026-11-24 21:05
+  from: devin
+  text: 'Related 2026-11-24 drift class: the ops-1036 conflict resolution mixed tool sources with stale pins (manifest/source
+    mismatch), distinct from the earlier autostash conflict. Fixed with pin realignment f13edd01d0d + repo/tool
+    sync on all six hosts; fleet health back to 0 failing / 6 ok. Systemic gate carded as runner-pin-contract-merge-gate.'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd

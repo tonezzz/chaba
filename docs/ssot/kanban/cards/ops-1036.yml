@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
 column: done
-updated: 2026-11-24 20:44
+updated: 2026-11-24 21:05
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -244,6 +244,13 @@ comms:
 - at: 2026-11-24 20:44
   from: tony
   text: closed by tony
+- at: 2026-11-24 21:05
+  from: devin
+  text: 'Follow-up: the conflict resolution landing this card (da9798df42c) took runner-agent.py/dispatch_repos.py/dispatch/claude-dispatch
+    sources from the branch but kept the pre-merge manifest pins. The contract test failed 1/7 and fleet health
+    dropped to 6 hosts failing / 0 ok. Realigned pins in f13edd01d0d, ran chaba-repo-sync.service on all six hosts,
+    and reconfirmed 7/7 contract tests plus 0 failing / 6 ok. Filed runner-pin-contract-merge-gate so a merge cannot
+    land this shape silently.'
 action:
   type: dispatch
   status: done
