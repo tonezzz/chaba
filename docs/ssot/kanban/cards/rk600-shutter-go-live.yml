@@ -1,6 +1,6 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
-column: review
+column: backlog
 updated: 2026-11-24 19:41
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
@@ -327,21 +327,22 @@ comms:
 - at: 2026-11-24 19:41
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 19:41
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 2
-  result: 'exit=0  remain physically gated on shutter-motor repair, with `shutter_control_armed` still off. | devin-task-20261124-161757-shutter-control-ui-armed-gate-.service:
-    Consumed 49.727s CPU time over 16min 32.784s wall clock time, 373.4M memory peak.'
+  attempts: 0
   sweep:
     dirty: 2
     failed_noted: 2026-11-24 18:54
-  runner: tony-macbook
-  verified: false
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+  last_failure: 'exit=0  remain physically gated on shutter-motor repair, with `shutter_control_armed` still off.
+    | devin-task-20261124-161757-shutter-control-ui-armed-gate-.service: Consumed 49.727s CPU time over 16min 32.784s
+    wall clock time, 373.4M memory peak.'
 claim:
   since: 2026-11-24 16:17
 requests:
