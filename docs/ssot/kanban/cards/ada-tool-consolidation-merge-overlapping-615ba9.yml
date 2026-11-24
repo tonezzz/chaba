@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-24 14:28
+updated: 2026-11-24 14:29
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -490,20 +490,23 @@ comms:
 - at: 2026-11-24 14:28
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:29
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: fallback
-  attempts: 2
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+  attempts: 0
+  last_failure: 'exit=1 20261123-211458-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''.
+    | devin-task-20261123-211458-ada-tool-consolidation-merge-o.service: Consumed 1min 1.076s CPU time over 17min
+    35.240s wall clock time, 1.3G memory peak.'
   sweep:
     stale_running: 2026-11-23 19:48
     dirty: 5
     session_gone: 2026-11-23 21:22
-  result: 'exit=1 20261123-211458-ada-tool-consolidation-merge-o.service: Failed with result ''exit-code''. | devin-task-20261123-211458-ada-tool-consolidation-merge-o.service:
-    Consumed 1min 1.076s CPU time over 17min 35.240s wall clock time, 1.3G memory peak.'
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
