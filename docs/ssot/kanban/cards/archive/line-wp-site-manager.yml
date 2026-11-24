@@ -1,7 +1,7 @@
 id: line-wp-site-manager
 title: LINE-driven WordPress site maintenance (customer via LINE chat)
 column: done
-updated: 2026-11-23 13:34
+updated: 2026-11-24 11:58
 brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
   drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
   WP itself not serving yet — Plesk default page).'
@@ -1036,6 +1036,13 @@ comms:
 - at: 2026-11-23 13:34
   from: tony
   text: archived (1d in done, verified)
+- at: 2026-11-24 11:58
+  from: devin
+  text: '[re-dispatch 2026-11-24, attempt 2] Card already column=done + archived 2026-11-23 — this run was a stale
+    re-queue, no new work needed. Re-verified live anyway: boards.surf-thailand.com/wp/ = 200, /wp-json/ = 200 (219
+    routes, pretty style), application-passwords auth advertised, users/me anon = 401. site-preflight.py anonymous
+    run = OK. wp_read/wp_update drops in tree, 18/18 drop tests pass. Open-Q answer (proceed) already implemented:
+    customer_onboarding in ssot.wp-boards.yml + docs/kb/wp-custo'
 action:
   type: dispatch
   status: done
