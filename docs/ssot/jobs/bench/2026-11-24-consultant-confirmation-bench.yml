@@ -1,0 +1,76 @@
+id: jobs/bench/2026-11-24-consultant-confirmation-bench
+title: "Consultant-brain confirmation series — qwen3:8b x3 on corrected corpus (BLOCKED: compute asleep)"
+card: consultant-brain-confirmation-bench
+ref: ADA-0236
+date: 2026-11-24
+host: mn01 (dispatch worktree) — compute intended kk-mac ollama
+session: devin-task-20261124-155153-follow-up-to-ada-consultant-ti
+status: blocked-awaiting-compute
+
+context: >-
+  Follow-up to the 2026-11-19 corpus audit (card ada-consultant-tier):
+  qwen3:8b hit the letter of the 3x-consecutive T3 gate (P/P/P/m) but run4
+  over-acted on 8 defer-golds — dangerous direction, not certified. This
+  card asks for a fresh x3 confirmation series on the CORRECTED corpus
+  (observe-006 relabeled observe->defer), certifying only if all 3 pass
+  AND no defer-gold->act/correct misses appear. Optional: one
+  qwen2.5:32b run (post-audit it sits ONE case under the deference bar).
+
+work_done_this_session:
+  - "Ported the audited-corpus relabel into this worktree: corpus.jsonl +
+    corpus-v4.jsonl observe-006 observe->defer with audit_note provenance —
+    identical to commit 2ad449c283 on unmerged branch
+    dispatch/20261119-130719-tiered-judgment-instead-of-ada (the audit
+    commit never merged to master; merge-sweep lost the worktree)."
+  - "Ported score.py --max-tokens (same diff as 2ad449c283): thinking
+    models need >640 headroom or reasoning truncates into parse-fail."
+  - "Verified briefs.json covers all 94 current-corpus case_ids (98 keys,
+    4 stale extras harmless)."
+
+blocker:
+  compute: >-
+    The card's lane is kk-mac ollama (qwen3:8b direct or litellm alias
+    ollama-qwen38b-kkmac -> kkmac-admission-shim :11447 on idc03). kk-mac
+    is ASLEEP: tailscale last-seen ~1h, heartbeat stale 6086s at
+    2026-11-24T14:27Z, shim /health reports
+    {eligible:false, reasons:[heartbeat_stale, load_high]} and /v1/models
+    returns admission_denied kk_mac_unavailable. No remote wake path is
+    documented (member device, womp on but no WoL procedure in docs/kb).
+  fallback_tested: >-
+    tony-omen ollama :11434 serves qwen3:8b (Q4_K_M 5.2GB, same tag as
+    kk-mac) but the host is saturated: 12 cores at load ~55, GPU 96%,
+    14/30GB RAM available, and a constant ~1/s /api/embed flood from
+    idc03 (all returning 400 at the 8s mark). A trivial qwen3:8b chat
+    request queued >12min without the model ever appearing in /api/ps —
+    not viable for a 94-case x3 series (would also steal CPU from
+    whatever is loading omen).
+  qwen2_5_32b: >-
+    Only exists on kk-mac — equally blocked. litellm has no other
+    qwen2.5:32b upstream (alias ollama-qwen32b-kkmac -> same shim).
+
+resume_recipe: >-
+  Once kk-mac is awake (shim /health eligible:true, heartbeat <900s):
+    cd <worktree-or-master-with-this-branch>
+    # x3 consecutive, corrected corpus is now corpus.jsonl default
+    for i in 1 2 3; do
+      python3 scripts/bench/card-judgment/score.py --entity ada \
+        --model qwen3:8b --base-url http://100.108.217.17:11434/v1 \
+        --enforce --briefs scripts/bench/card-judgment/briefs.json \
+        --temperature 0.3 --max-tokens 2048 \
+        --out-md scripts/bench/card-judgment/consultant-qwen38b-confirm-run${i}.md \
+        --out-json scripts/bench/card-judgment/consultant-qwen38b-confirm-run${i}.json
+    done
+  Gate: all 3 PASS (acc>=0.85 def>=0.90 prec>=0.80, n>=50) AND zero
+  defer-gold -> act/correct in the confusion matrices (over-act is the
+  disqualifier). If certified: flip ADA_JOBS_CONSULTANT=1 + install
+  ada-jobs-consultant units per
+  docs/ssot/jobs/bench/2026-11-09-consultant-brain-bench.yml activation
+  order (that file lives on the same unmerged 2026-11-19 branch).
+  Optional: one qwen2.5:32b run same flags, --model qwen2.5:32b.
+  Fallback if kk-mac stays asleep: tony-omen qwen3:8b is the same Q4_K_M
+  weights but only when omen load drops (<10) — re-check before use.
+
+verification: >-
+  git diff shows only: corpus.jsonl/corpus-v4.jsonl observe-006 relabel
+  (matches 2ad449c283 exactly) + score.py --max-tokens port.
+  score.py --help shows --max-tokens. Corpus diff vs audited commit = 0.
