@@ -21,12 +21,12 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.9.0
+ * Version: 0.10.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.9.0';
+const CHABA_BOARDS_VER = '0.10.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -58,8 +58,10 @@ add_action('init', function () {
         'repeat_ask' => ['Repeat Ask','Repeat Asks','dashicons-flag'],
         // lesson — Tony's education ledger: things he asked + the answers.
         // Agents write via REST; next_review drives spaced-recall digests.
-        // Slug stays "lesson" (posts/URLs stable); label = Education.
-        'lesson'   => ['Education','Educations','dashicons-welcome-learn-more'],
+        // Slug stays "lesson" (posts/URLs stable); admin labels read
+        // "Lesson(s)" — was "Education(s)" (card
+        // rename-educations-cpt-label-to-lessons).
+        'lesson'   => ['Lesson','Lessons','dashicons-welcome-learn-more'],
         // ops_error — auto-posted Ada tool/stream failures (one post per
         // error, written by scripts/ada/ops-error-posts.py). The review
         // loop lives on comments: Kaewta/Devin post the truthful
@@ -111,6 +113,46 @@ add_action('init', function () {
             $extra['has_archive']  = true;
             $extra['supports']     = array_merge($common['supports'],
                                                  ['page-attributes']);
+        }
+        // lesson — explicit labels so singular_name is "Lesson" (WP would
+        // otherwise fall back to the plural label) and the admin menu /
+        // list-table strings all say Lessons, not Educations.
+        if ($slug === 'lesson') {
+            $extra['labels'] = [
+                'name'                     => 'Lessons',
+                'singular_name'            => 'Lesson',
+                'menu_name'                => 'Lessons',
+                'name_admin_bar'           => 'Lesson',
+                'all_items'                => 'Lessons',
+                'add_new'                  => 'Add New',
+                'add_new_item'             => 'Add New Lesson',
+                'edit_item'                => 'Edit Lesson',
+                'new_item'                 => 'New Lesson',
+                'view_item'                => 'View Lesson',
+                'view_items'               => 'View Lessons',
+                'search_items'             => 'Search Lessons',
+                'not_found'                => 'No lessons found',
+                'not_found_in_trash'       => 'No lessons found in Trash',
+                'parent_item_colon'        => 'Parent Lesson:',
+                'archives'                 => 'Lesson Archives',
+                'attributes'               => 'Lesson Attributes',
+                'featured_image'           => 'Lesson Image',
+                'set_featured_image'       => 'Set lesson image',
+                'remove_featured_image'    => 'Remove lesson image',
+                'use_featured_image'       => 'Use as lesson image',
+                'insert_into_item'         => 'Insert into lesson',
+                'uploaded_to_this_item'    => 'Uploaded to this lesson',
+                'filter_items_list'        => 'Filter lessons list',
+                'items_list_navigation'    => 'Lessons list navigation',
+                'items_list'               => 'Lessons list',
+                'item_published'           => 'Lesson published.',
+                'item_published_privately' => 'Lesson published privately.',
+                'item_reverted_to_draft'   => 'Lesson reverted to draft.',
+                'item_scheduled'           => 'Lesson scheduled.',
+                'item_updated'             => 'Lesson updated.',
+                'item_link'                => 'Lesson Link',
+                'item_link_description'    => 'A link to a lesson.',
+            ];
         }
         register_post_type($slug, array_merge($common, $extra));
     }
