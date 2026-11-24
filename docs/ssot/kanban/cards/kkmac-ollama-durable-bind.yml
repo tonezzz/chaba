@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: doing
-updated: 2026-11-24 18:50
+updated: 2026-11-24 18:54
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -199,6 +199,10 @@ comms:
     tunnel disabled (nothing consumes it — option (a) was moot). Shipped repo-truth sync instead: declared the disabled
     tunnel unit in stacks/idc03/litellm/ (deploy.sh installs, never enables), fixed shim unit/config drift, updated
     ssot.llm-gateway + ssot.audit.hosts (tunnel expected_s'
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-184115-ollama-serve-runs-on-kk-mac-un no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -207,6 +211,8 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 18:54
 claim:
   since: 2026-11-24 18:40
 requests:
