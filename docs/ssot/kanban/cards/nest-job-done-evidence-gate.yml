@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: doing
-updated: 2026-11-24 17:00
+updated: 2026-11-24 17:04
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -194,6 +194,10 @@ comms:
     DONE+verified live. nest-queue-health.py extende; [video-render-dispatcher] Defined the standard claim lifecycle
     in docs/kb/video-; [kk-mac-usage-to-lane-savings] [verify-fail] Review pass 2026-11-23 (Tony): 2026; [memory-inspect-pages]
     stalled-claim reaper: moved doing -> b'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running

@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
 column: doing
-updated: 2026-11-24 16:54
+updated: 2026-11-24 17:04
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -194,6 +194,10 @@ comms:
     The guard/status-only v1 is no; "The render_job writer" is NOT in chaba — writers are ada-voice tools; chaba
     onl; Zombie restarts (OPS-1071) produce duplicate sessions — before doing work, check; idc02 under load ~26/4
     cores makes board-api save_ms hit 5-22'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running
