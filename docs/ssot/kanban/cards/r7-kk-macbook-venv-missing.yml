@@ -1,7 +1,7 @@
 id: r7-kk-macbook-venv-missing
 title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 19:44
 brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
   package missing.'
 priority: medium
@@ -67,3 +67,25 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:44
+  from: devin
+  text: 'Verified live 2026-11-24 19:42: tony-macbook is Linux (not macOS); python3 3.14.4 at /usr/bin/python3;
+    python3 -m venv fails with ensurepip unavailable; apt-cache policy shows python3.14-venv 3.14.4-1ubuntu0.2 available;
+    sudo -n true -> interactive authentication required, so an unattended install is not possible. Failed probe
+    dir cleaned. Blocker narrowed to sudo, not package availability.'
+- at: 2026-11-24 19:44
+  from: devin
+  text: 'raised request install-python3-14-venv-on-tony-macbook-e29487: Install python3.14-venv on tony-macbook
+    (requires your sudo), or leave the R7 venv probe blocked?'
+requests:
+- id: install-python3-14-venv-on-tony-macbook-e29487
+  ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
+  status: open
+  at: 2026-11-24 19:44
+  from: devin
+  options:
+  - Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
+  - Leave blocked; I will handle the install offline
+  suggested: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
