@@ -1,6 +1,6 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
-column: backlog
+column: doing
 updated: 2026-11-24 07:59
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
@@ -347,6 +347,9 @@ comms:
 - at: 2026-11-24 07:59
   from: chaba
   text: 'idc03 defers: disk headroom 1387MB < 2048MB floor'
+- at: 2026-11-24 07:59
+  from: tony-dell
+  text: claimed
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -378,7 +381,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -388,6 +391,7 @@ action:
   last_failure: 'exit=1 61123-220607-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. |
     devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca.service: Consumed 1min 29.696s CPU time over 26min
     54.424s wall clock time, 504.4M memory peak.'
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 claim:
-  since: 2026-11-23 22:05
+  since: 2026-11-24 07:59
