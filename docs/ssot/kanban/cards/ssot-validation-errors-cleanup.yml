@@ -1,0 +1,22 @@
+id: ssot-validation-errors-cleanup
+title: Fix 5 pre-existing SSOT validation errors
+column: backlog
+updated: 2026-11-24 16:35
+brief: 'ssot-validate-all.mjs reports 5 errors unrelated to the skills/wiki work: missing title in 4 cards and a
+  YAML syntax error in ssot.devnest-lanes.yml.'
+priority: medium
+program: chaba-ci
+tags:
+- ssot
+- validation
+- cleanup
+spec: 'Errors: focus-inbox/2026-11-19-022605-report-watch-fleet-jobs-report.yml, focus-inbox/2026-11-19-032606-report-watch-kanban.yml,
+  jobs/devnest/2026-11-19-kkmac-vision-qa-bench.yml, jobs/devnest/2026-11-20-kk-mac-llm-lane-bench.yml (missing
+  required field: title); infrastructure/ssot.devnest-lanes.yml line 262 column 177 (mapping values are not allowed
+  here). Do not sweep unrelated uncommitted worktree files (ansible, SSOT, scripts/tests) without their owners;
+  fix only the validation errors. Verify: node scripts/ssot-validate-all.mjs -> 0 errors.'
+ref: KNB-0039
+comms:
+- at: 2026-11-24 16:35
+  from: tony
+  text: card captured via board-api
