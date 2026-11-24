@@ -1,7 +1,7 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
-column: doing
-updated: 2026-11-24 20:11
+column: review
+updated: 2026-11-24 20:14
 priority: medium
 tags:
 - ops
@@ -267,19 +267,45 @@ comms:
     of merged runner-agent.py). Merge commit 0b9a1e86836 + outcome ed3b4f06800; worktree clean. Verified: 13/13
     pin+self-update contract tests, 214/214 runner-related tests. Master moved to 558640d999d — zero file overlap
     with this branch, merge will be clean. Fleet already converged on 9a4'
+- at: 2026-11-24 20:14
+  from: tony-dell
+  text: 'finished (ok): exit=0 deploy-propagation.yml`; final status posted to card comms. | devin-task-20261124-195638-every-fleet-host-s-runne'
+- at: 2026-11-24 20:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 20:14
+  from: chaba
+  text: banked 389 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 20:14
+  from: chaba
+  text: pushed dispatch/20261124-195638-every-fleet-host-s-runner-agen to origin
+- at: 2026-11-24 20:14
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 54.8s)
+- at: 2026-11-24 20:14
+  from: chaba
+  text: auto-merged 8e292685 (dispatch/20261124-195638-every-fleet-host-s-runner-agen) → origin/master
+- at: 2026-11-24 20:14
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-195638-every-fleet-host-s-runner-agen,
+    branch dispatch/20261124-195638-every-fleet-host-s-runner-agen'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
   sweep:
     stale_running: 2026-11-24 19:09
     conflict_sig: 83c3e92ffce5|scripts/devin/runner-tooling.manifest.json
-  result: 'exit=0 th no manual scp — the fleet-wide check is observable as drift deferrals stopping after one sync
-    cycle. | devin-task-20261124-184257-every-fleet-host-s-runner-agen.service: Consumed 52.682s CPU time, 478.0M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=0 deploy-propagation.yml`; final status posted to card comms. | devin-task-20261124-195638-every-fleet-host-s-runner-agen.service:
+    Consumed 2min 56.778s CPU time over 15min 23.872s wall clock time, 963.4M memory peak, 612.9M memory swap peak.'
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-24 19:55
 review_kind: verify
