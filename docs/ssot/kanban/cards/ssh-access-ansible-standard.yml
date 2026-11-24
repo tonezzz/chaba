@@ -1,6 +1,6 @@
 id: ssh-access-ansible-standard
 title: Standardize host SSH access with Ansible
-column: backlog
+column: done
 updated: 2026-11-24 16:17
 brief: 'Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per
   controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap,
@@ -81,6 +81,9 @@ comms:
     tailnet IPs gated, LAN aliases best-effort, idc01 never scanned), ssh-config-render.yml + templates/ssh-config-stanzas.j2;
     README + onboarding §2 now use playbooks instead of manual ssh-keyscan. Live proof: generator applied on tony-omen
     with backup config.bak-20261124'
+- at: 2026-11-24 16:17
+  from: chaba
+  text: moved backlog -> done
 requests:
 - id: scope-decision-how-far-should-the-first-f6a3bd
   ask: SCOPE DECISION — how far should the first slice go? (★ = recommended default; answer here or in chat; I proceed
@@ -93,4 +96,6 @@ requests:
   - 'Full stack: declare + generate ~/.ssh/config + bootstrap known_hosts + verifier'
   - 'Docs only: consolidate README + onboarding §2 into one standard procedure (no playbooks)'
   answer: Declare ssh_* in inventory + read-only ssh-mesh-verify.yml (verifier first) ★
-awaiting_action: true
+action:
+  status: done
+claim: {}
