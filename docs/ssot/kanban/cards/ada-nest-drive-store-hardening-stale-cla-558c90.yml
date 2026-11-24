@@ -1,7 +1,7 @@
 id: ada-nest-drive-store-hardening-stale-cla-558c90
 title: 'ada-nest drive-store hardening: stale-claim release + packs-index'
 column: doing
-updated: 2026-11-24 15:38
+updated: 2026-11-24 15:45
 brief: 'Drive-FUSE lessons from 2026-10-23 cost hours (3 runner self-exits from lease read-back, lost-race claim
   poisoning, slow fleet scans). Ranked fixes:'
 tags:
@@ -235,6 +235,12 @@ comms:
     was a hard fail with no liveness/evidence check — lane; `test -d /content` in prep is the cheap way to pin a
     pack to the Colab lane; fle; [colab-runtime-identity-and-duplicate-ses-11a426] The guard/status-only v1 is no;
     [dispatch-worktree-gc] done: gc_worktree guard helper in disp'
+- at: 2026-11-24 15:45
+  from: devin
+  text: 'dispatch started — mapped the 5 items: (1) claim-release partially landed in 8f2e01ffe1, fence-exit os._exit
+    path still leaks claims; (2) packs-index write side exists for claim/done only, no fail events, no fleet read
+    side; (3) hf-hub.tar.zst monolith in JOBS.py; (4) flush-settle exists as blind 120s sleep; (5) heartbeat+lease
+    still two files. Implementing now.'
 action:
   type: dispatch
   status: running
