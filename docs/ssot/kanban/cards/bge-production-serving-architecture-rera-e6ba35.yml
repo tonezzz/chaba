@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: doing
-updated: 2026-11-24 22:24
+updated: 2026-11-24 22:27
 priority: medium
 tags:
 - embedding
@@ -244,6 +244,10 @@ comms:
     shadow lane deployed+validated since Nov 19, prereq cards done, :11023 bge-m3 migration in review. Found a decision-critical
     correction: live shadow rerank_ms was 1.1-1.4s for top-10 vs the 565ms eval estimate — sync top-10 lands ~1.3-1.8s
     added, over the ~500ms voice budget. Building decision brief + board request.'
+- at: 2026-11-24 22:27
+  from: devin
+  text: 'raised request bge-serving-cutover-pick-the-architectur-3728d5: BGE serving cutover — pick the architecture
+    (quality gate PASSED; this is your UX latency-budget call). Verified 2026-11'
 action:
   type: dispatch
   status: running
@@ -253,3 +257,25 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 22:17
+requests:
+- id: bge-serving-cutover-pick-the-architectur-3728d5
+  ask: 'BGE serving cutover — pick the architecture (quality gate PASSED; this is your UX latency-budget call).
+    Verified 2026-11-24: rerank endpoint live on omen :11555 (health ok/cuda/auth on), shadow lane deployed+validated
+    since Nov 19, prereq cards done, :11023 bge-m3 migration in review. DECISION-CRITICAL CORRECTION: live shadow
+    rerank_ms was 1.1-1.4s for top-10 vs the 565ms eval estimate — sync top-10 lands ~1.4-1.7s added, ~3x over the
+    ~500ms voice budget. Dense-only BGE is worse than Gemini (MRR .767 vs .893) so async-refine alone cannot fix
+    the current turn. Full brief: docs/ssot/jobs/ada/2026-11-24-bge-serving-cutover-decision.yml'
+  status: open
+  at: 2026-11-24 22:27
+  from: devin
+  options:
+  - id: probes-first
+    label: Probes first (recommended) — idle-GPU rerank re-measure + lighter-reranker eval, then re-ask with real
+      numbers
+  - id: sync-top10
+    label: Sync top-10 now — accept ~1.4-1.7s added latency, promote shadow path to sync
+  - id: async-hybrid
+    label: Async/hybrid — dense sync ~300ms now, rerank refines in background (current turn stays dense-quality)
+  - id: stay-gemini
+    label: Stay on current sync path + keep shadow soaking; revisit with data
+  suggested: probes-first
