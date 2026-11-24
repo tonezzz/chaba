@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
 column: doing
-updated: 2026-11-24 16:43
+updated: 2026-11-24 16:50
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -197,6 +197,13 @@ comms:
     loopback /send (ack {ok,chat_id}) + optional board_notify ha channel. Building scripts/ada/news-brief-tg.py
     with dry-run default, dedup cursor, rate limit, ~/.config kill switch; job stays dry-run until consumer confirms
     probe per telegram-conversation-standard.'
+- at: 2026-11-24 16:50
+  from: devin
+  text: 'done (worktree, unmerged): scripts/ada/news-brief-tg.py projects the morning brief from News CPT digest
+    parents (pinned>watching>top sources) to ada-tg-relay /send chat -5410424865 with verified {ok,chat_id} ack,
+    dedup cursor, 20h rate limit, kill switch, NEWS_BRIEF_HA=1 Tony-HA mirror, dry-run default + --probe consumer
+    test. wp-news-brief job registered idc03 07:50 DRY-RUN (no --send) per telegram-conversation-standard — arm
+    after probe confirmed. Units rendered; 9 unit tests pass; trail doc d'
 action:
   type: dispatch
   status: running
