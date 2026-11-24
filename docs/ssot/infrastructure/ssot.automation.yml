@@ -261,7 +261,8 @@ automation:
       host-services-cms.py:
         status: scheduled
         scheduler: chaba-services-regen.timer — Sun 05:30 tony-dell
-        outputs: ada-cms-pages services-by-host + services-{6 hosts}
+        outputs: ada-cms-pages services-by-host + services-<host> leaves
+          (registry-driven — one per ssot.audit.hosts.yml host)
         on_failure: chaba-services-regen-fail.service (precedent unit)
       flood-news-update.py:
         status: scheduled

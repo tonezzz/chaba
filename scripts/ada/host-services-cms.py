@@ -5,9 +5,16 @@ Collects a fresh inventory (audit-hosts.py snapshots for linux hosts in
 HOSTS, direct ssh probes for idc02/michael-ha, podman/docker ps for
 containers) and rewrites the ada-cms-pages docs:
 
-    services-tony-dell  services-tony-omen  services-idc01
+    services-tony-dell  services-tony-omen  services-idc03
     services-idc02      services-mn01       services-michael-ha
-    services-by-host    (index, children = the six leaf pages)
+    services-con01      services-macbook    services-kk-mac
+    services-idc01      (retired stub — idc01 left the fleet 2026-11-14)
+    services-by-host    (index, children = the leaf pages)
+
+Host coverage mirrors docs/ssot/infrastructure/ssot.audit.hosts.yml —
+the placement contract — not a hardcoded list (card
+mediawiki-infrastructure-host-hierarchy). Retired hosts render a stub
+page instead of being probed.
 
 Runs wherever ssh reachability is broadest — tony-dell reaches every
 host except michael-ha; unreachable hosts render a stale-data note.
@@ -36,9 +43,12 @@ ICT = timezone(timedelta(hours=7))
 SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
 
 # Hosts audit-hosts.py supports (linux) — fresh snapshot per run.
-AUDIT_HOSTS = ["tony-dell", "tony-omen", "mn01", "idc01", "idc03"]
+# idc01 is gone from audit-hosts' HOSTS map (retired) — it is probed by
+# nobody and renders a retired stub via HOST_META["retired"].
+AUDIT_HOSTS = ["tony-dell", "tony-omen", "mn01", "idc03", "idc02",
+               "con01", "macbook"]
 # Probed directly (audit-hosts has no entry or ssh is one-way).
-PROBE_HOSTS = ["idc02", "michael-ha"]
+PROBE_HOSTS = ["idc02", "michael-ha", "kk-mac"]
 
 HOST_META = {
     "tony-dell":  {"role": "HA + apps workstation", "ts": "tony-dell.taila0626a.ts.net",
@@ -53,10 +63,18 @@ HOST_META = {
                    ]},
     "tony-omen":  {"role": "dev / GPU desktop", "ts": "tony-omen.taila0626a.ts.net",
                    "ip": "100.75.102.88"},
-    "idc01":      {"role": "public VPS · warm-DR (mddb follower, standby edge)", "ts": "idc01.taila0626a.ts.net",
-                   "ip": "", "public": "157.85.110.99",
-                   "urls": [("standby edge", "https://idc01.surf-thailand.com",
-                             "warm-DR only")]},
+    "idc01":      {"role": "retired public VPS", "ts": "idc01.taila0626a.ts.net",
+                   "ip": "", "public": "157.85.110.99", "retired": True,
+                   "unreachable_body": (
+                       "## Retirement\n\n"
+                       "idc01 was permanently retired 2026-11-14 "
+                       "(OPS-0096/OPS-0520 teardown) after ssh died "
+                       "2026-10-12. It was the warm-DR node — mddb "
+                       "follower + standby edge — during the "
+                       "2026-10-05/06 idc03 migration; con01 absorbed "
+                       "the DR/absorber tier (OPS-0763). Nothing may "
+                       "run here; the leaf stays so history and "
+                       "rollups remain whole.")},
     "idc03":      {"role": "public VPS · mddb leader · Ada", "ts": "idc03.taila0626a.ts.net",
                    "ip": "100.102.134.91", "public": "157.85.102.125",
                    "urls": [("Ada API", "https://api.surf-thailand.com", "")]},
@@ -66,6 +84,12 @@ HOST_META = {
                              "CNAME target for *-ha/monitor")]},
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",
                    "ip": "100.106.196.22"},
+    "con01":      {"role": "public VPS · DR/absorber", "ts": "con01.taila0626a.ts.net",
+                   "ip": "100.72.146.39"},
+    "macbook":    {"role": "portable Linux lab", "ts": "tony-macbook.taila0626a.ts.net",
+                   "ip": "100.77.76.112"},
+    "kk-mac":     {"role": "member device · KK Mac Studio", "ts": "kk-mac.taila0626a.ts.net",
+                   "ip": "100.108.217.17"},
     "michael-ha": {"role": "HAOS appliance", "ts": "michael-ha.taila0626a.ts.net",
                    "ip": "100.80.105.88", "jump": "tony-omen",
                    "urls": [("mn-ha", "https://mn-ha.surf-thailand.com",
@@ -247,7 +271,10 @@ def page_for(host, d, now_07):
     meta = HOST_META[host]
     slug = f"services-{host}"
     title = f"Services — {host} ({meta['role']})"
-    if d.get("unreachable"):
+    if meta.get("retired"):
+        status = "retired — out of the placement contract; page is a stub."
+        body = meta.get("unreachable_body", "")
+    elif d.get("unreachable"):
         status = (f"unreachable from the collector at {now_07:%Y-%m-%d %H:%M} +07 — "
                   "page shows last known layout; verify manually.")
         body = meta.get("unreachable_body", "")
@@ -303,10 +330,14 @@ def page_for(host, d, now_07):
         else:
             secs.append("## Failed units\n\nNone.")
         body = "\n\n".join(secs)
+    latest_note = ("retired stub — host out of the placement contract; "
+                   "not probed."
+                   if meta.get("retired") else
+                   f"**{now_07:%Y-%m-%d}** — regenerated from live "
+                   f"inventory (`audit-hosts` + ssh/podman probes).")
     content = (f"# {title}\n\n**Status: {status}**\n\n"
                f"Parent index: [services-by-host](#/services-by-host)\n\n"
-               f"## Latest\n\n- **{now_07:%Y-%m-%d}** — regenerated from live "
-               f"inventory (`audit-hosts` + ssh/podman probes).\n\n{body}\n\n"
+               f"## Latest\n\n- {latest_note}\n\n{body}\n\n"
                f"*Generated by host-services-cms.py · "
                f"{now_07.isoformat(timespec='seconds')} · sources: audit-hosts "
                "dumps, systemctl, podman/docker ps, ssot.services.yml*")
@@ -320,6 +351,10 @@ def index_page(datas, now_07):
     for host, d in datas.items():
         meta = HOST_META[host]
         slug = f"services-{host}"
+        if meta.get("retired") or d.get("retired"):
+            rows.append(f"| {host} | {meta['role']} | retired | — | — | — "
+                        f"| [services-{host}](#/{slug}) |")
+            continue
         if d.get("unreachable"):
             rows.append(f"| {host} | {meta['role']} | unreachable | — | — | — "
                         f"| [services-{host}](#/{slug}) |")
@@ -397,6 +432,10 @@ def main():
     for host in HOST_META:
         if host not in targets:
             datas[host] = {"unreachable": False, "_skip": True}
+            continue
+        if HOST_META[host].get("retired"):
+            datas[host] = {"retired": True, "unreachable": False,
+                           "containers": []}
             continue
         print(f"== {host}: collecting…", file=sys.stderr)
         if host in AUDIT_HOSTS:
