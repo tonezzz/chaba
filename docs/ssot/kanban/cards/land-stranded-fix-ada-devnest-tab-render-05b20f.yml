@@ -1,0 +1,30 @@
+id: land-stranded-fix-ada-devnest-tab-render-05b20f
+title: Land stranded fix/ada-devnest-tab-render artifacts — missed-job-sweep runbook + devnest-tab mutate script
+  never reached master
+column: backlog
+updated: 2026-11-24 17:31
+brief: 'Commit dd8a1684d2 (2026-10-29, ''fix(ha): render DevNest report and audit missed jobs'') exists only on
+  origin/fix/ada-devnest-tab-render — it never merged to master. Verified 2026-11-24 during audit-miss-education-lesson-write-timeout:
+  master lacks docs/kb/missed-job-sweep.md, the ssot.procedures.yml missed-job-sweep entry, ssot.repeat-asks.yml
+  updates, the frustration-procedure.md multi-job section, both job SSOT records, scripts/home-assistant/mutate-ada-ha-devnest-tab.py
+  and tests/test_ada_ha_devnest_dashboard.py. The LIVE fix did land: master snapshot docs/home-assistant/dashboards/ada-ha-c'
+priority: medium
+program: audit
+tags:
+- audit
+- merge-debt
+- ssot
+- education
+spec: 'Reconcile origin/fix/ada-devnest-tab-render with master. The branch mixes the wanted dd8a1684d2 file set
+  with unrelated board-api noise and cline-tab work that already landed separately (mutate-ada-ha-cline-tab.py,
+  2026-10-29-cline-ada-ha-tab.yml are on master). Preferred: cherry-pick or re-apply dd8a1684d2''s doc/script/test
+  hunks onto master rather than merging the stale branch wholesale (merge-base is ~530 commits behind; later dashboard
+  mutations may conflict). After landing: verify ssot-prose-smell lint, run tests/test_ada_ha_devnest_dashboard.py,
+  and confirm docs/kb/missed-job-sweep.md + procedures entry are reachable from master. The Education lesson for
+  topic missed-job-sweep-and-safe-opencode-ha-tabs is already filed (lesson-4dd48148b1be) and points at these paths
+  — landing them makes the lesson pointers valid on master.'
+ref: AUD-0044
+comms:
+- at: 2026-11-24 17:31
+  from: devin
+  text: card captured via board-api
