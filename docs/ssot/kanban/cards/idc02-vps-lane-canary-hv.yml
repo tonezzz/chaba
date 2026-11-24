@@ -1,7 +1,7 @@
 id: idc02-vps-lane-canary-hv
 title: 'Canary: idc02 vps-label ada-pi dispatch lane (high-pri re-queue)'
-column: backlog
-updated: 2026-11-24 15:47
+column: doing
+updated: 2026-11-24 15:50
 brief: High-priority re-queue of idc02-vps-lane-canary (closed) — same one-shot canary for card idc02-second-ada-pi-lane.
 priority: high
 tags:
@@ -20,7 +20,9 @@ action:
   - vps
   executor: devin
   lane: free_lane
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-0034
 comms:
 - at: 2026-11-24 15:46
@@ -50,4 +52,8 @@ comms:
     ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
     ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
     the capability'
-awaiting_action: true
+- at: 2026-11-24 15:50
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-24 15:50
