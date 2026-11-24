@@ -11,6 +11,13 @@ queries on a saturated idc03).
 
 Config (env):
   EMBED_POOL_UPSTREAMS  comma list, e.g. http://idc03:11434,http://idc02:11434
+  EMBED_POOL_DEFER_UPSTREAMS  comma list of deferred-tier upstreams —
+                        join the /api/embed race only after
+                        EMBED_POOL_DEFER_AFTER_MS (default 1500) with no
+                        primary winner; for opportunistic workers like
+                        browser/WebGPU nest workers behind
+                        embed-nest-bridge. Also tried last by pass-
+                        through GETs/POSTs.
   EMBED_POOL_ADDR       listen addr           (default 127.0.0.1:11436)
   EMBED_POOL_TIMEOUT_S  per-upstream timeout  (default 8 — must stay under
                         mddb's internal embed deadline ~10s)
@@ -37,6 +44,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 UPSTREAMS = [u.strip().rstrip("/") for u in
              os.environ.get("EMBED_POOL_UPSTREAMS", "").split(",") if u.strip()]
+# Deferred tier (MEM-0805 lane B): upstreams that join the /api/embed race
+# only after DEFER_AFTER_MS with no primary winner — browser/nest workers
+# (e.g. the iPhone WebGPU page via embed-nest-bridge) burn phone cycles
+# only when the fleet can't answer fast.
+DEFER_UPSTREAMS = [u.strip().rstrip("/") for u in
+                   os.environ.get("EMBED_POOL_DEFER_UPSTREAMS", "")
+                   .split(",") if u.strip()]
+DEFER_AFTER_S = float(os.environ.get("EMBED_POOL_DEFER_AFTER_MS", "1500")) / 1000
 ADDR = os.environ.get("EMBED_POOL_ADDR", "127.0.0.1:11436")
 TIMEOUT = float(os.environ.get("EMBED_POOL_TIMEOUT_S", "8"))
 RACED = {"/api/embed", "/api/embeddings"}
@@ -47,16 +62,24 @@ DEAD_COOLDOWN_S = float(os.environ.get("EMBED_POOL_DEAD_COOLDOWN_S", "60"))
 LANE = os.environ.get("EMBED_POOL_LANE", "").strip() or None
 
 _stats = {u: {"wins": 0, "fails": 0, "last_ms": 0, "consec": 0,
-              "dead_until": 0.0} for u in UPSTREAMS}
+              "dead_until": 0.0} for u in UPSTREAMS + DEFER_UPSTREAMS}
 _lock = threading.Lock()
 
 
-def _alive_upstreams():
+def _alive(urls):
     """Upstreams not currently in dead cooldown; all if all are dead."""
     now = time.time()
     with _lock:
-        live = [u for u in UPSTREAMS if _stats[u]["dead_until"] <= now]
-    return live or list(UPSTREAMS)
+        live = [u for u in urls if _stats[u]["dead_until"] <= now]
+    return live or list(urls)
+
+
+def _alive_upstreams():
+    return _alive(UPSTREAMS)
+
+
+def _alive_deferred():
+    return _alive(DEFER_UPSTREAMS)
 
 
 def _record(u, ok):
@@ -86,8 +109,12 @@ def _call(upstream, path, body, lane=None):
 
 
 def _race(path, body, lane=None):
-    """Fan out to all upstreams; return the first 2xx result."""
+    """Fan out to primary upstreams; deferred upstreams join the race
+    only after DEFER_AFTER_S with no winner yet. First 2xx wins."""
     q = []
+    threads = []
+    defer_fired = [False]
+    t0 = time.time()
 
     def worker(u):
         try:
@@ -102,23 +129,32 @@ def _race(path, body, lane=None):
         except Exception:
             _record(u, False)
 
-    ts = [threading.Thread(target=worker, args=(u,), daemon=True)
-          for u in _alive_upstreams()]
-    for t in ts:
+    def spawn(u):
+        t = threading.Thread(target=worker, args=(u,), daemon=True)
         t.start()
-    deadline = time.time() + TIMEOUT
+        threads.append(t)
+
+    for u in _alive(UPSTREAMS):
+        spawn(u)
+    deadline = t0 + TIMEOUT
     while time.time() < deadline:
         if q:
             return q[0]
+        if (DEFER_UPSTREAMS and not defer_fired[0]
+                and time.time() - t0 >= DEFER_AFTER_S):
+            defer_fired[0] = True
+            for u in _alive_deferred():
+                spawn(u)
         time.sleep(0.02)
-    for t in ts:
+    for t in threads:
         t.join(timeout=0.1)
     return (None, 504, b'{"error":"no upstream answered in time"}')
 
 
 def _first(path, body, lane=None):
-    """Non-raced proxy: try each upstream in order until one answers."""
-    for u in _alive_upstreams():
+    """Non-raced proxy: try each upstream in order (primaries, then
+    deferred) until one answers."""
+    for u in _alive_upstreams() + _alive_deferred():
         try:
             st, data, _ = _call(u, path, body, lane)
             if 200 <= st < 400:
@@ -151,6 +187,8 @@ class H(BaseHTTPRequestHandler):
                 st = {u: dict(s) for u, s in _stats.items()}
             return self._send(200, json.dumps(
                 {"ok": True, "upstreams": UPSTREAMS,
+                 "defer_upstreams": DEFER_UPSTREAMS,
+                 "defer_after_ms": int(DEFER_AFTER_S * 1000),
                  "timeout_s": TIMEOUT, "lane": LANE,
                  "stats": st}).encode())
         # pass-through GETs (e.g. /api/tags, /api/ps, /api/version)
@@ -167,12 +205,13 @@ class H(BaseHTTPRequestHandler):
 
 
 def main():
-    if not UPSTREAMS:
-        raise SystemExit("EMBED_POOL_UPSTREAMS is empty — "
-                         "set a comma list of ollama base URLs")
+    if not UPSTREAMS and not DEFER_UPSTREAMS:
+        raise SystemExit("EMBED_POOL_UPSTREAMS and EMBED_POOL_DEFER_UPSTREAMS "
+                         "are both empty — set at least one upstream")
     host, port = ADDR.rsplit(":", 1)
     srv = ThreadingHTTPServer((host, int(port)), H)
-    print(f"embed-pool-shim on {ADDR} racing {len(UPSTREAMS)} upstreams, "
+    print(f"embed-pool-shim on {ADDR} racing {len(UPSTREAMS)} primaries + "
+          f"{len(DEFER_UPSTREAMS)} deferred (after {DEFER_AFTER_S}s), "
           f"timeout {TIMEOUT}s")
     srv.serve_forever()
 

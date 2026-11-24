@@ -55,6 +55,7 @@ def main():
     job = {
         "id": "mddb-rerank-" + datetime.now().strftime("%Y%m%d-%H%M%S"),
         "status": "pending",
+        "created": datetime.now().isoformat(timespec="seconds"),
         "query": query,
         "docs": [{"key": d["key"],
                   "text": d["contentMd"][:480]} for d in picks],
