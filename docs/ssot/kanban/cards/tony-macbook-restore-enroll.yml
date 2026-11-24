@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: doing
-updated: 2026-11-24 15:24
+updated: 2026-11-24 15:25
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -246,6 +246,27 @@ comms:
     == origin/master 52cbc072, cap3/gate0.8/labels macbook,local-8c,always-home, claiming cards now (drift defer
     healed). KK files BLOCKED: ubuntu-usb stick with macbook-backup-2026-10-10 not attached to any reachable host
     — raising request.'
+- at: 2026-11-24 15:25
+  from: devin
+  text: 'raised request kk-files-restore-is-blocked-on-the-backu-27b870: KK-files restore is blocked on the backup
+    media: the ubuntu-usb stick holding home/tony/macbook-backup-2026-10-10 (23G k'
 ref: SYS-0452
 claim:
   since: 2026-11-24 15:04
+requests:
+- id: kk-files-restore-is-blocked-on-the-backu-27b870
+  ask: 'KK-files restore is blocked on the backup media: the ubuntu-usb stick holding home/tony/macbook-backup-2026-10-10
+    (23G kkkakk home + 211M Shared, per the rejoin job record) is not attached to tony-macbook or any fleet host
+    — checked lsblk/lsusb on macbook, tony-dell, tony-omen, mn01, idc02, idc03 and diskutil on kk-mac; no ~/backup*
+    copy exists on the macbook disk either. Please plug the stick into the macbook (or any fleet host — I can pull
+    from there). Also confirm restore scope: (a) RECOMMENDED — rsync the backup tree into ~/ preserving its top-level
+    structure as stored (e.g. lands as ~/kkkakk/... + ~/Shared/ or whatever the stick layout is), never overwriting
+    existing ~ files; (b) merge the kkkakk home contents directly into ~ — risks clobbering tony''s .ssh/.config,
+    not recommended; (c) user dirs only (Documents/Desktop/Pictures/Music/Movies/Downloads). Redis stays skipped
+    per spec (no backup exists).'
+  status: open
+  at: 2026-11-24 15:25
+  from: devin
+  options:
+  - proceed
+  - hold
