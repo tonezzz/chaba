@@ -1660,7 +1660,12 @@ jobs:
     con01/idc03, live HA dashboards via websocket — for RETIRED_HOSTS
     (default tony-dell.taila0626a.ts.net). Findings post to the canary card
     via board-api; clean runs are stdout-only. ssh''s out from idc03.
-    Added 2026-10-20.'
+    Added 2026-10-20. 2026-11-24: surfaces that can''t be audited (dead ssh,
+    grep error, dashboard SKIP) report as UNAUDITABLE findings — a blind grep
+    no longer reads as clean. Exit 0 on completed audits incl. findings
+    (board-api comms are the alert channel; exit-1-on-findings used to trip
+    timer-sentinel — see jobs/monitoring/2026-11-08-consumer-canary-timer-alert.yml);
+    exit 1 only when findings exist but the board-api post failed.'
 - id: jevnest-kk-mac-capacity-producer
   name: JevNest KK-Mac capacity producer
   host: tony_dell
