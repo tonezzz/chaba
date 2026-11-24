@@ -420,9 +420,10 @@ def _create_forum_topic(chat_id: int, name: str) -> int:
 
 
 def _find_project_topic(project_id: str | None = None,
-                        ref: str | None = None) -> dict | None:
-    """Active project binding by project_id or card ref/id."""
-    for entry in _load_topics()["topics"].values():
+                        ref: str | None = None,
+                        job_ref: str | None = None) -> dict | None:
+    """Active project binding by project_id, card ref/id, or project job."""
+    for entry in _reconcile_topics()["topics"].values():
         if entry.get("kind") != "project":
             continue
         if entry.get("status") in ("rolled_back", "closed"):
@@ -432,6 +433,10 @@ def _find_project_topic(project_id: str | None = None,
         if ref and ref.upper() in (
                 str(entry.get("card_ref") or "").upper(),
                 str(entry.get("card_id") or "").upper()):
+            return entry
+        pid = str(entry.get("project_id") or "")
+        if job_ref and pid and (
+                job_ref == pid or job_ref.startswith(pid + "-")):
             return entry
     return None
 
@@ -1600,24 +1605,30 @@ def handle_update(update: dict) -> None:
 def route_send(body: dict) -> dict:
     """Outbound send with project-topic routing and opt-in General mirror.
 
-    thread resolution: explicit message_thread_id wins; else project_id or
-    card_ref/card_id resolves through the registry — unbound projects are an
-    error, never a silent post to General. milestone=true (or
-    mirror='general') additionally mirrors the text to General."""
+    thread resolution: explicit message_thread_id wins; else project_id,
+    card_ref/card_id, or a project-prefixed job_ref resolves through the
+    registry. Explicit project/card refs that are unbound are an error,
+    never a silent post to General; unmatched non-project job refs keep the
+    legacy General behavior. milestone=true (or mirror='general')
+    additionally mirrors the text to General."""
     chat_id = int(body.get("chat_id") or next(iter(CHAT_IDS)))
     text = str(body["text"])
     thread_id = body.get("message_thread_id")
     project_id = str(body.get("project_id") or "").strip() or None
     ref = str(body.get("card_ref") or body.get("card_id") or "") \
         .strip() or None
+    job_ref = str(body.get("job_ref") or body.get("job_id") or "") \
+        .strip() or None
     entry = None
-    if thread_id is None and (project_id or ref):
-        entry = _find_project_topic(project_id=project_id, ref=ref)
-        if entry is None:
+    if thread_id is None and (project_id or ref or job_ref):
+        entry = _find_project_topic(project_id=project_id, ref=ref,
+                                    job_ref=job_ref)
+        if entry is None and (project_id or ref):
             raise LookupError(
                 f"no active topic bound for project={project_id or '-'} "
-                f"card={ref or '-'}")
-        thread_id = entry.get("thread_id")
+                f"card={ref or '-'} job={job_ref or '-'}")
+        if entry is not None:
+            thread_id = entry.get("thread_id")
     if thread_id is not None:
         thread_id = int(thread_id)
     _send_text(chat_id, text, thread_id)
