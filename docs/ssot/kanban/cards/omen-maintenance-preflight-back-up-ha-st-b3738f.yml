@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: doing
-updated: 2026-11-24 16:22
+updated: 2026-11-24 16:38
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -281,6 +281,13 @@ comms:
     real recurring-backup gap. Plan: extend fleet-restic PATHS with consistent sqlite3 .backup snapshots of both
     HA DBs + config trees, run once to verify; reconcile audit drift in ssot.audit.hosts.yml (11 retired expected
     units, 10 undeclared running services, 4 unexplained failed units, cha'
+- at: 2026-11-24 16:38
+  from: devin
+  text: 'DONE (dispatch on tony-macbook). HA backup gap closed: fleet-restic-backup.sh on omen now carries ~/.config/{home-assistant,ada-ha}
+    + .storage + secrets + consistent sqlite3 .backup snapshots of both live DBs (staged ~/.local/share/ha-snapshots/,
+    live db files excluded). First snapshot f52d710d (4.365GiB) verified on tony-dell:/dell-backup — household.yml
+    + .storage + both DBs present, quick_check ok. snapshot-config.sh extended to commit ada-ha nightly too (household.yml
+    now tracked; secrets.ya'
 action:
   type: dispatch
   status: running
