@@ -1,7 +1,7 @@
 id: chaba-board-quadlet
 title: Package board-api + render + kanban-sync as one quadlet on idc03
 column: doing
-updated: 2026-11-24 16:25
+updated: 2026-11-24 16:45
 brief: 'Post-migration consolidation: once OPS-0725 (dell-off) lands and edge service names exist, the board stack
   can become a single podman quadlet — repo checkout as volume, ssh keys via mounted secrets. Assessed 2026-10-22:
   real fragility is topology assumptions in probes, not process management; container adds little until the host
@@ -200,6 +200,13 @@ comms:
     (2026-10-25): chaba-lessons-audit.timer installed+; [ops-manual-command-api-mcp-efficiency-followups] One design
     constraint: board-a; Check `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip; Drift
     flags flap transiently: chaba-repo-sync updates the che'
+- at: 2026-11-24 16:45
+  from: devin
+  text: 'packaged (not deployed): stacks/idc03/chaba-board/ — one image localhost/chaba-board + 4 quadlet units
+    (api daemon, render 60s, sync 15m, commit 15m). /home/tony+/tmp bind mounts preserve repo paths, ~/.ssh and
+    the /tmp/board-api*.lock flock domain; Network=host keeps 127.0.0.1:8787. install.sh --cutover is the switch
+    (needs approval). Deltas + runbook: docs/ssot/jobs/board/2026-11-24-board-quadlet-packaging.yml. Branch dispatch/20261124-162438
+    committed f6f28a7.'
 action:
   type: dispatch
   status: running
