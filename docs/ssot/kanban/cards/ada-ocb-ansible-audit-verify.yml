@@ -1,0 +1,49 @@
+id: ada-ocb-ansible-audit-verify
+title: Ansible audit + verify for ada-ocb pane
+column: doing
+updated: 2026-11-24 07:55
+brief: 'Ground Ansible as the declared-state/verification layer for ada-ocb: two read-only playbooks (surface audit
+  + contract verify) plus an ocb_pane inventory group. The npm upgrade path already exists and stays the executor.'
+priority: medium
+tags:
+- ada-ocb,ansible,idc02,audit
+spec: 'Goal (Tony 2026-11-24): suggest how we use Ansible for ada-ocb maintenance (upgrade/update/audit).
+
+
+  Verified premise: upgrade already exists on idc02 — openchamber-update.service + monthly timer (1st 06:30) does
+  npm i -g @openchamber/web @opencode/cli, then ExecStartPost re-applies the models.status patch fail-loud, then
+  restarts. Pins: @openchamber/web@2.7.3, @opencode/cli@2.3.2, node v24.14.0. Public edge ada-ocb.surf-thailand.com
+  -> local 127.0.0.1:3000; tony-dell is soak fallback. Ansible must NOT duplicate the installer.
+
+
+  This pass (audit-first scope):
+
+  1. Inventory: add ocb_pane group (idc02 primary, tony-dell fallback) + host role vars.
+
+  2. ansible/playbooks/tasks/ada-ocb-probe.yml: one read-only JSON probe per host (versions, unit/timer states,
+  next fire, bind, local health, patch marker, startup.env mode, litellm drop-in).
+
+  3. ansible/playbooks/ada-ocb-audit.yml: probe + controller-rendered artifact under reports/ada-ocb/<host>.yml.
+
+  4. ansible/playbooks/ada-ocb-verify.yml: standalone assert of the declared contract from ssot.audit.hosts.yml;
+  producer proof + consumer proof (edge 200 with frame-ancestors); exit nonzero on drift with a clear reason.
+
+  5. Docs: README section + report of the first live read-only run.
+
+
+  Done when: --syntax-check passes on both playbooks; audit runs on idc02 without writing on any host; verify reports
+  the live contract accurately (2.7.3/2.3.2, units active, 127.0.0.1:3000, patch present, startup.env 600, local+edge
+  200); no secrets in playbooks/artifacts.
+
+
+  Out of scope: ada-ocb-upgrade.yml (prod writes need explicit same-session approval); board card writes from Ansible
+  (board-api only); replacing disk-trend state/trend/alerting.
+
+
+  Refs: docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md; docs/ssot/infrastructure/ssot.audit.hosts.yml:2242-2279;
+  stacks/idc02/openchamber/; dispatch outcomes 20261118-144015, 20261120-171843, 20261120-172937, 20261121-061106.'
+ref: AUD-0014
+comms:
+- at: 2026-11-24 07:55
+  from: tony
+  text: card captured via board-api
