@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
 column: doing
-updated: 2026-11-24 15:43
+updated: 2026-11-24 16:11
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -192,6 +192,13 @@ comms:
     stale unit env, dead board-api 127.0.0.1:8787, stranded inbox files). Plan: move session-audit to idc02 w/ board-api
     /inbox write path, add fleet single-writer lint + nightly pull-backups (wp dump, mddb tier2, repo mirror) as
     declared jobs. Implementing now.'
+- at: 2026-11-24 16:11
+  from: devin
+  text: 'DONE. Premise was stale: qc-scoreboard already on idc03 (served-checkout+loopback deps), ssot-validate
+    lives inside chaba-audit on con01 (idc02 has no node), check-single-writer was never a timer. Real work: session-audit
+    moved omen->idc02 (omen install was broken — stale env, dead board-api, stranded inbox); NEW jobs on idc02:
+    single-writer-fleet-audit, chaba-repo-mirror, wp-backup-pull, mddb-tier2-pull + mddb-lab-pull declared. WP side:
+    chaba-boards 0.9.1 deployed to Plesk — db+uploads dumps v'
 action:
   type: dispatch
   status: running
