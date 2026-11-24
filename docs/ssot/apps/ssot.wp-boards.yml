@@ -1,7 +1,7 @@
 title: WP Boards — Member Info Surface
 subtitle: boards.surf-thailand.com — post types, taxonomy axes, title standard, watchdog topology
 version: 1
-last_updated: "2026-10-27"
+last_updated: "2026-11-24"
 
 # ssot.wp-boards — WordPress member-info surface (boards.surf-thailand.com)
 #
@@ -79,6 +79,42 @@ customer_onboarding:
     (ssot.line-groups.yml); the customer's LINE userId gets a
     LINE_USER_CALLERS entry.
   runbook: docs/kb/wp-customer-site-onboarding.md
+
+theme:
+  # Member-facing theme — the cms-lab-eval "Ghost gap" close
+  # (card boards-member-theme-pick-tune / KNB-0687). Selection + config,
+  # no custom build. Verified live 2026-11-24 (dispatch attempt 2).
+  active: blocksy 2.1.62     # wordpress.org free BLOCK theme — polished
+                           # archive cards out of the box; closest to
+                           # Ghost's default output without a build.
+  evaluated: >-
+    2026-11-24 live-compared wp.org candidates on the site itself:
+    Astra (classic/lightweight — serviceable, plainer), GeneratePress,
+    Kadence, Spectra One (rejected: demo nav menu shipped dead links —
+    Boards/KK/Nhong/Tony absent). Blocksy won on archive card layout
+    (category chip + title + excerpt + meta) and block-editor fit.
+    Previously twentytwentyfive.
+  deploy: >-
+    wp-admin theme-upload flow — scripts/wp-boards/deploy-theme-zip.sh
+    <theme.zip> [--activate]; runs on tony-omen (holds
+    ~/.config/secrets/boards-surf-thailand-com-wp-admin-credential).
+    Plesk host has no SSH/WP-CLI — wp-admin scraping is the only door.
+    Reversible: wp-admin themes.php -> twentytwentyfive.
+    Blocksy is a wp.org theme — core updates arrive via wp-admin.
+  archives: >-
+    CPT archives render as Blocksy entry-card lists + pagination.
+    Verified 200/readable 2026-11-24: /news/ /place/ /trip/
+    /render_job/ /activity/ /nest_job/ + /author/admin/ (member posts).
+    has_archive=false by design — no index, singles only: cam
+    (per-camera directory posts are the browse surface), asset,
+    expense, contact, reminder, bench, report, xlate, repeat_ask,
+    ops_error, score, ops-event, timeline_block. /lesson/ 301s to
+    wiki Education (lesson_cpt_cutover above). /wp/cam/ 404 is
+    expected, not a regression.
+  privacy: >-
+    Theme does not touch status gating — private posts/pages still
+    anon-404 (verified /chat/line/ -> 404 logged-out 2026-11-24);
+    member landing pages /kk/ /tony/ /nhong/ stay public-by-design.
 
 post_types:
   post:          member posts from LINE asks (wp_post) — free-form human titles

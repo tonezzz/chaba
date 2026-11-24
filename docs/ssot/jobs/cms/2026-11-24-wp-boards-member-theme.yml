@@ -1,0 +1,66 @@
+title: WP Boards member-facing theme — Blocksy pick + live verification
+subtitle: cms-lab-eval Ghost gap closed on boards.surf-thailand.com WP
+icon: paintbrush
+job: wp-boards-member-theme
+date: 2026-11-24
+host: idc02 (dispatch) — live site is Plesk-hosted WP, admin via wp-admin on tony-omen
+card: boards-member-theme-pick-tune (KNB-0687)
+type: selection + config (no custom build, per card spec)
+result: complete — Blocksy 2.1.62 active, CPT archives verified readable
+
+context: >-
+  cms-lab-eval (2026-10-14) found Ghost's only win over the WP boards
+  surface was polished public output out of the box. This card closes
+  that gap by picking a lightweight theme and tuning it for the CPT
+  archives — explicitly NOT a theme project.
+
+decision:
+  active: blocksy 2.1.62
+  why: >-
+    Block theme (block-editor native), free on wp.org, archive cards
+    (category chip + title + excerpt + author/date meta) render well
+    out of the box — closest to Ghost's default polish without custom
+    code. Previously twentytwentyfive.
+  evaluated_live_2026-11-24:
+    - "astra: classic/lightweight, serviceable but plainer — passed over"
+    - "generatepress: downloaded, not previewed"
+    - "kadence: downloaded, not previewed"
+    - "spectra-one: REJECTED — demo nav menu shipped dead links (Boards/KK/Nhong/Tony absent)"
+    - "blocksy: selected — archive + home checked live"
+  note: >-
+    Attempt 1 (15:20-15:34 ICT) did the live compare and activated
+    Blocksy as its last act before the session cut off; the branch
+    auto-merged (deploy-theme-zip.sh) and merge-sweep closed the card
+    done at 15:38. Attempt 2 (this run) verified the end state and
+    wrote the missing SSOT trail — no further live changes needed.
+
+deploy_tool:
+  script: scripts/wp-boards/deploy-theme-zip.sh <theme.zip> [--activate]
+  runs_on: tony-omen (holds ~/.config/secrets/boards-surf-thailand-com-wp-admin-credential)
+  door: >-
+    wp-admin upload flow (theme-install.php?tab=upload ->
+    update.php?action=upload-theme -> overwrite confirm -> optional
+    activate link). Plesk host has no SSH/WP-CLI; wp-admin scraping is
+    the only write door for themes. Same pattern as
+    deploy-plugin-zip.sh for plugins.
+  rollback: wp-admin themes.php -> switch to twentytwentyfive
+
+verification_2026-11-24:
+  theme_active: "wp-content/themes/blocksy assets + style.css Version: 2.1.62 on all surfaces"
+  nav_menu: "Boards / KK / Nhong / Tony renders in header"
+  archives_200_readable:
+    - /wp/news/        (entry-cards, pagination to /news/page/2/)
+    - /wp/place/
+    - /wp/trip/
+    - /wp/render_job/
+    - /wp/activity/
+    - /wp/nest_job/
+    - /wp/author/admin/ (member post type=post index)
+  singles: "/wp/news/<slug>/ renders full entry-content"
+  by_design_non_archives:
+    cam: "has_archive=false — per-camera directory posts are the browse surface; /wp/cam/ 404 expected"
+    lesson: "301 -> wiki Education (lesson_cpt_cutover)"
+    others: "asset/expense/contact/reminder/bench/report/xlate/repeat_ask/ops_error/score/ops-event/timeline_block all has_archive=false"
+  privacy: "/wp/chat/line/ anon -> 404 (status gating untouched by theme); /kk/ /tony/ /nhong/ public-by-design"
+
+ssot: docs/ssot/apps/ssot.wp-boards.yml#theme
