@@ -1,6 +1,7 @@
 title: ADA_TEXT_MODEL promotion gate — bench-evidence path from flash-lite
 subtitle: education-manager bench gate status, challenger ledger, and the
-  exact re-run procedure; qwen2.5:7b (omen ollama) fresh rep 2026-11-23
+  exact re-run procedure; qwen2.5:7b (omen ollama) rep 2026-11-23,
+  paid gemini-3.5-flash clawbot rep committed 2026-11-24
 icon: flask
 version: 1
 
@@ -45,13 +46,14 @@ challenger_ledger: |
   clawbot or-free-nemotron-35 (3.5-lightning)     2026-11-20 1.0   4/5     ?     3/3     4.55     9.3s     best free; draft-Q < 5.0
   local-qwen3:8b (kk-mac ollama)                 2026-11-12 1.0   4/5     5/5   1/3     4.45     17.9s    recall+latency fail
   clawbot deepseek/deepseek-v3.2 (OR paid)       2026-11-12 1.0   5/5     5/5   3/3     4.67     11.1s    CLEARS operational gate; draft-Q < 5.0
-  clawbot gemini-3.5-flash (paid)                2026-11-20 ?     ?       ?     ?       4.80     ?        draft-Q < 5.0
-  clawbot gemini-3.1-pro (paid)                  2026-11-20 ?     ?       ?     ?       4.77     ?        draft-Q < 5.0
+  clawbot gemini-3.5-flash (paid, litellm)         2026-11-24 1.0   4/5     5/5   3/3     4.89(n=7) 5.7s     CLEARS operational gate; draft-Q < 5.0
+  clawbot gemini-3.1-pro (paid)                  2026-11-20 ?     ?       ?     ?       4.77     ?        draft-Q < 5.0 (comms only)
   clawbot qwen2.5:7b (omen ollama, CPU)          2026-11-24 0.75  3/5     2/5   1/3     4.27     61.7s    FAIL all axes
   Raw artifacts: reports/bench-edu-manage-*.{json,md} per row date;
-  the 2026-11-20 rows (nemotron-35, paid gemini pair, clawbot judged
-  re-score mean 4.52 n=21) exist only as card comms — no committed
-  JSON/MD. Re-run to make them auditable (procedure below).
+  the 2026-11-20 rows (nemotron-35, gemini-3.1-pro, clawbot judged
+  re-score mean 4.52 n=21) still exist only as card comms — no
+  committed JSON/MD. The 2026-11-20 gemini-3.5-flash row was re-run
+  with committed artifacts 2026-11-24 (see run_2026-11-24-dup).
 
 run_2026-11-24: |
   Attempt 1 (tony-omen, litellm/gemini-2.5-flash) died exit=1 after
@@ -101,18 +103,78 @@ verdict_detail: |
   Incumbent re-measured same-judge same-day: current F1 1.0, dedupe
   3/5, ops 5/5, recall 3/3, draft-Q 5.0 — unchanged, stays.
 
+run_2026-11-24-dup: |
+  Dispatch 20261124-152748 (idc02) was a duplicate claim — attempt 2
+  had already merged (910c473a) and merge-sweep auto-closed the card.
+  Probing live upstreams found the OR :free daily cap STILL exhausted
+  (X-RateLimit-Reset = 2026-11-25T00:00Z — the "~07:00 ICT" reset noted
+  below was wrong; the cap window is UTC-midnight anchored and had
+  already been re-spent by other fleet traffic), CF neuron allocation
+  also exhausted (10k neurons/day). The paid gemini-3.5-flash clawbot
+  row from 2026-11-20 existed only in card comms, so this run
+  re-measured it with committed artifacts — the exact gap this file
+  flagged. LITELLM_KEY_BENCH DOES reach gemini-3.5-flash on
+  /v1/chat/completions (verified live; the earlier "403s on bare model
+  names" note applies to other aliases, not this one).
+
+  Config:
+    GEMINI_BASE_URL=http://100.102.134.91:4000
+    GEMINI_API_KEY=$LITELLM_KEY_CHABA   # /v1beta gemini-3.5-flash-lite OK
+    python3 scripts/bench-edu-manage.py --lanes current clawbot \
+      --or-model gemini-3.5-flash \
+      --out reports/bench-edu-manage-2026-11-24-gemini35flash-gate
+  Wall time ~6min total (current ~1min + clawbot ~4min + judge ~1min).
+
+measured_2026-11-24-dup: |
+  lane      F1    dedupe  sched/ops  recall  draft-Q       completed  p50    tokens-in/out
+  current   1.0   3/5     5/5        3/3     5.00 (n=5)    13/13      0.0s   889/211
+  clawbot   1.0   4/5     5/5        3/3     4.89 (n=7)    13/13      5.7s   74950/10170
+  clawbot per-task: t1 ok 10s, t2 ok 4s, t3 ok 10s (upd),
+  t4 ok 11s, t5 ok 14s, t6 ok 16s, t7 ok 6s, o1 ok 5s (upd),
+  o2 ok 6s (upd), o3 ok 4s, r1 ok 5s, r2 ok 5s, r3 ok 6s.
+  Fidelity: arg_repairs=0 arg_errors=0 json_retries=0 json_mode=on.
+  Raw: reports/bench-edu-manage-2026-11-24-gemini35flash-gate.{json,md}
+
+verdict_2026-11-24-dup: challenger-clears-operational-gate
+verdict_detail_dup: |
+  clawbot gemini-3.5-flash (paid, via LiteLLM gateway chat/completions,
+  OpenClaw-shaped tool loop) CLEARS every operational axis: F1 1.0,
+  dedupe 4/5 (>= 4/5 — beats incumbent's 3/5), ops 5/5, recall 3/3,
+  p50 5.7s (<= 15s). It is the SECOND model ever to clear the
+  operational gate (deepseek-v3.2 was first, 2026-11-12) and the
+  fastest. draft-Q 4.89 (n=7) is the highest challenger score on
+  record — consistent with the comms-only 4.80 from 2026-11-20 — but
+  still below the incumbent's 5.0, so the ORIGINAL AQ is NOT cleared.
+  Reading: gemini-3.5-flash in the tool-loop shape is operationally
+  shippable for the edu-manager surface and near-parity on draft
+  quality; whether that justifies touching ADA_TEXT_MODEL is Tony's
+  call — production 'chat' class ALREADY runs gemini-3.5-flash paid
+  with lite/free fallbacks, so this bench evidences the edu-manager
+  surface only, per promotion_path step 4. No promotion attempted.
+
 rerun_procedure: |
   # incumbent + judge need a Gemini path; on hosts without a Google AI
   # key, ride the LiteLLM gateway (any key allowed to call
   # gemini-3.5-flash-lite on /v1beta — verified: LITELLM_KEY_CHABA/ADA/
   # KK/MDDB/MICHAEL; LITELLM_KEY_BENCH is alias-restricted and 403s on
-  # the bare model name):
+  # most bare model names BUT does reach gemini-3.5-flash and the
+  # or-free-* aliases — verified 2026-11-24):
   source ~/.config/secrets/litellm-keys.env
   export GEMINI_BASE_URL=http://100.102.134.91:4000
   export GEMINI_API_KEY="$LITELLM_KEY_CHABA"
 
-  # free OR challenger (after the daily reset; needs the gateway's OR
-  # key budget — or-free-* aliases are on LITELLM_KEY_BENCH's list):
+  # paid gemini-3.5-flash clawbot lane (CLEARS operational gate —
+  # committed rep 2026-11-24): same env as above, no extra key needed
+  # (clawbot lane auto-uses LITELLM_KEY_BENCH from litellm-keys.env):
+  python3 scripts/bench-edu-manage.py --lanes current clawbot \
+    --or-model gemini-3.5-flash \
+    --out reports/bench-edu-manage-<date>-<slug>
+
+  # free OR challenger (OR :free daily cap is account-wide across all
+  # or-free-* aliases, UTC-midnight anchored — check the
+  # X-RateLimit-Reset header on a probe call before committing to a
+  # run; as of 2026-11-24 08:30Z it was still exhausted until
+  # 2026-11-25T00:00Z):
   python3 scripts/bench-edu-manage.py --lanes clawbot \
     --or-model or-free-nemotron-35 \
     --out reports/bench-edu-manage-<date>-<slug>
