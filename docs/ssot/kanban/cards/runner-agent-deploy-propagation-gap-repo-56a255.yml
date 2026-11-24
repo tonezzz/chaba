@@ -1,7 +1,7 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
 column: doing
-updated: 2026-11-24 18:53
+updated: 2026-11-24 19:06
 priority: medium
 tags:
 - ops
@@ -189,6 +189,13 @@ comms:
     tail) but found live break: master manifest pin d0a103cb != runner-agent.py sha 9a42dc07 (compaction-summary
     commit 7dc2187b7d changed the tool without pin bump; contract test red). sync-runner-tools refuses installs
     fleet-wide right now. Fixing pin + pin-gating _self_update + pre-commit guard.'
+- at: 2026-11-24 19:06
+  from: devin
+  text: 'DONE on dispatch branch (b72a53d32a). Auto-propagate already existed twice (_self_update at pass start
+    + sync-runner-tools at git-safe-pull tail) — the live break was master''s stale runner_agent pin (d0a103cb vs
+    source 9a42dc07, missed by compaction-summary commit 7dc2187b7d): sync-runner-tools refused installs fleet-wide
+    while _self_update bypassed the pin. Fix: _self_update now pin-gates installs, manifest pin bumped to b879b47f
+    (heals master NOW), .husky/pre-commit gained a staged-blob pin ch'
 action:
   type: dispatch
   status: running
