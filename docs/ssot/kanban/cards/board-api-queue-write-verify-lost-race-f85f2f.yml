@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
 column: backlog
-updated: 2026-11-24 00:13
+updated: 2026-11-24 08:05
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -273,20 +273,20 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: codemod
   lane_source: kw
-  attempts: 2
+  attempts: 0
   last_failure: 'exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''. |
     devin-task-20261123-202449-two-dispatch-pipeline-robustne.service: Consumed 2min 15.433s CPU time over 18min
     32.614s wall clock time, 901.3M memory peak.'
   sweep:
     stale_running: 2026-11-23 19:18
     no_repo: 2026-11-23 19:18
-  result: 'exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-202449-two-dispatch-pipeline-robustne.service:
-    Consumed 2min 15.433s CPU time over 18min 32.614s wall clock time, 901.3M memory peak.'
-  runner: tony-omen
 claim:
   since: 2026-11-23 20:23
