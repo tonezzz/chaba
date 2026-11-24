@@ -8,15 +8,15 @@ program: chaba-ci
 area: dispatch
 priority: high
 note: 'Failing: chaba clone 382 commits behind origin/master (limit 200); runner-agent: checkout sha 3dc0bb81d66842bb
-  != pin 9a42dc07ec126ea1 — chaba clone is stale/divergent. Info: chaba origin is fetch-only (by design — no push
-  creds); merge-sweep salvage path verified; sunsynk-card: push probe fails (?) — sunsynk-card dispatches defer
-  to a pushable host; stranded work relays via board-api; mddb-fork: push probe fails (remote: Permission to tradik/mddb.git
-  denied to tonezzz.
+  != pin 9a42dc07ec126ea1 — chaba clone is stale/divergent; ~/.local/bin/runner-agent sha d0a103cb3439bbdf != pin
+  9a42dc07ec126ea1 — installed build is stale; ~/.local/bin/runner-agent sha d0a103cb3439bbdf != repo 9a42dc07ec126ea1
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design — no push creds); merge-sweep
+  salvage path verified; sunsynk-card: push probe fails (?) — sunsynk-card dispatches defer to a pushable host;
+  stranded work relays via board-api; mddb-fork: push probe fails (remote: Permission to tradik/mddb.git denied
+  to tonezzz.
 
   fat) — mddb-fork dispatches defer to a pushable host; stranded work relays via board-api; gods-eye-view: push
-  probe fails (?) — gods-eye-view dispatches defer to a pushable host; stranded work relays via board-api; ada-voice:
-  push probe fails (?) — ada-voice dispatches defer to a pushable host; stranded work relays via board-api; repos.conf
-  differs from canonical (extra=[] missing=[''ada-pi''] branch-diff=[]) — per-host tab'
+  probe fails (?) — gods-eye-view dispatches defer to a pushable host; stranded work relays via board-api; ada'
 help: 'Per-check fixes:
 
   - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
