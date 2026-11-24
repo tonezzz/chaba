@@ -8,6 +8,10 @@ if [[ "${1:-}" == "--instance" && "${2:-}" == "ada-ha" ]]; then
     python3 "${REPO}/scripts/home-assistant/sync-ada-ha-chaba-admin.py" \
         --host tony-omen \
         --output "${REPO}/docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json"
+    python3 "${REPO}/scripts/home-assistant/sync-ada-ha-chaba-admin.py" \
+        --host tony-omen \
+        --remote-path /home/tony/.config/ada-ha/.storage/lovelace.chaba_home \
+        --output "${REPO}/docs/home-assistant/dashboards/ada-ha-chaba-home-current.json"
     python3 - "${REPO}/docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml" "${TODAY}" <<'PY'
 import re
 import sys
@@ -31,7 +35,7 @@ PY
             docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml >/dev/null
         python3 scripts/ssot-validate-refs.py >/dev/null
     )
-    echo "Done. Ada HA chaba-admin snapshot synced with sensitive values redacted."
+    echo "Done. Ada HA chaba-admin + chaba-home snapshots synced with sensitive values redacted."
     exit 0
 fi
 if [[ "${1:-}" == "--instance" && "${2:-}" == "tony-ha" ]]; then
