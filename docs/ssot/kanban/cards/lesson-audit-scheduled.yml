@@ -1,7 +1,7 @@
 id: lesson-audit-scheduled
 title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
-column: backlog
-updated: 2026-11-24 15:58
+column: doing
+updated: 2026-11-24 16:02
 brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
   pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
   + fixes itself.'
@@ -177,9 +177,15 @@ comms:
 - at: 2026-11-24 15:58
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 16:02
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 16:02
