@@ -1871,6 +1871,13 @@ def _claimable(card: dict) -> tuple:
     The gate order IS claimable(); the reason feeds /ready verdicts so
     the board can say *why* a card waits instead of silently starving."""
     a = _act(card)
+    # KNB-0036 follow-through: the claim queue is column-scoped. A stale
+    # action.status=queued on a done/review/lab card (finish-less
+    # close-outs and do_move leave exactly that) is off-queue — never
+    # claimed; claim_pass's defer-note gate already skips it too.
+    if card.get("column") not in ("backlog", "doing"):
+        return "", (f"column {card.get('column') or '(unset)'} — "
+                    "off the claim queue")
     if a.get("status") != "queued":
         return "", "not queued"
     stale = self_stale_reason()
@@ -4788,7 +4795,11 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
         return
     for card in cards:
         a = _act(card)
-        if a.get("status") != "queued":
+        # same claim-queue scope as claim_pass's defer block (KNB-0036):
+        # a stale queued flag on a done/review card earns no hostgate
+        # note either — otherwise capacity skips re-create the spam.
+        if card.get("column") not in ("backlog", "doing") \
+                or a.get("status") != "queued":
             continue
         if exempt and str(a.get("type") or "dispatch") in exempt:
             continue

@@ -447,6 +447,27 @@ class KanbanDispatchGuardTest(unittest.TestCase):
             kd.MY_LABELS = saved_labels
             kd.dr.push_probe = saved_probe
 
+    def test_off_queue_column_card_never_claimed(self):
+        """KNB-0036 follow-through: the claim queue is column-scoped —
+        a stale action.status=queued on a done/review card (finish-less
+        close-outs and do_move leave exactly that) is off-queue: no
+        claim, no fleet-gap flag, no defer comms."""
+        kd = self.kd
+        for col in ("done", "review"):
+            (self.cards / "ada-card.yml").write_text(
+                f"id: ada-card\ntitle: ada voice work\ncolumn: {col}\n"
+                "action:\n  type: dispatch\n  status: queued\n"
+                "  repo: ada-voice\n")
+            kd.INDEX_FILE.unlink(missing_ok=True)
+            out = self._run()
+            card = self._card()
+            self.assertEqual(card["action"]["status"], "queued", col)
+            self.assertNotIn("claimed", out)
+            comms = " ".join(c.get("text", "")
+                             for c in card.get("comms") or [])
+            self.assertNotIn("unclaimable", comms)
+            self.assertNotIn("defers", comms)
+
     def test_ratelimit_cooldown_defers_claims(self):
         kd = self.kd
         kd.ratelimit_record("devin-task-dead", "429")

@@ -108,5 +108,74 @@ class DoneCardDeferSpamTest(unittest.TestCase):
         self.assertIn("names no declared runner", reason)
 
 
+class ClaimQueueColumnGateTest(unittest.TestCase):
+    """KNB-0036 follow-through: the claim queue itself is column-scoped.
+
+    PR #204 gated the defer-NOTES block, but _claimable() still returned
+    a type for a done/review card carrying a stale action.status=queued
+    (finish-less close-outs and do_move leave exactly that) — the claim
+    POST stayed reachable, and _note_capacity_skip kept writing hostgate
+    defer notes on the same off-queue cards. Both now gate on
+    column in {backlog, doing} before any write."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._saved_fn = {k: getattr(m, k) for k in (
+            "api", "note_defer")}
+        self.cards = []
+        self.posts = []
+        self.defers = []
+        m.api = lambda path, body=None: (
+            self.posts.append((path, dict(body or {})))
+            or ({"cards": self.cards} if path == "/cards" else {}))
+        m.note_defer = lambda card, kind, reason, **kw: \
+            self.defers.append((card.get("id"), kind, reason, kw))
+        signal.alarm(10)
+
+    def tearDown(self):
+        signal.alarm(0)
+        for k, v in self._saved_fn.items():
+            setattr(self.mod, k, v)
+
+    def _queued(self, column):
+        return {"id": f"c-{column}", "column": column,
+                "title": "t",
+                "action": {"type": "dispatch", "status": "queued"}}
+
+    def test_claimable_rejects_off_queue_columns(self):
+        for col in ("done", "review", "lab"):
+            typ, reason = self.mod._claimable(self._queued(col))
+            self.assertEqual(typ, "", col)
+            self.assertIn("claim queue", reason, col)
+
+    def test_claimable_column_gate_comes_first(self):
+        # an on-queue column passes the column gate and reaches the
+        # status gate — proof the gate didn't swallow real cards
+        typ, reason = self.mod._claimable(
+            {"id": "c-b", "column": "backlog",
+             "action": {"type": "dispatch", "status": "done"}})
+        self.assertEqual((typ, reason), ("", "not queued"))
+        # doing+queued gets PAST the column gate (deeper env-dependent
+        # gates decide) — the reason is never the column refusal
+        _typ, reason = self.mod._claimable(self._queued("doing"))
+        self.assertNotIn("claim queue", reason)
+
+    def test_capacity_skip_notes_only_on_queue_columns(self):
+        # _note_capacity_skip writes hostgate defer comms during
+        # capacity skips — it must honor the same column scope or the
+        # spam just moves gate.
+        self.cards = [self._queued(c) for c in
+                      ("backlog", "doing", "review", "done")]
+        self.mod._note_capacity_skip("host overloaded (test)")
+        noted = {d[0] for d in self.defers}
+        self.assertEqual(noted, {"c-backlog", "c-doing"})
+        for _cid, kind, _reason, _kw in self.defers:
+            self.assertEqual(kind, "hostgate")
+
+
 if __name__ == "__main__":
     unittest.main()

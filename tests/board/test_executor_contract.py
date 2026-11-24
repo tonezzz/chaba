@@ -50,7 +50,7 @@ def _card(**action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": "chaba"}
     a.update(action_kw)
     return {"id": "ex-card", "title": "executor test", "spec": "do a thing",
-            "action": a}
+            "column": "backlog", "action": a}
 
 
 def _write_card(d: Path, cid: str, **fields) -> Path:
@@ -1189,7 +1189,8 @@ class KanbanDispatchContractTest(unittest.TestCase):
             noop.write_text("")
             m.RENDER = noop
             for cid, fields in cards:
-                _write_card(Path(td), cid, **fields)
+                _write_card(Path(td), cid,
+                            **{"column": "backlog", **fields})
             saved = (m.load_policy, m.overloaded, m.active_tasks,
                      m.push_capable, m.start_pending)
             self.started = []
@@ -1867,7 +1868,7 @@ class KkMacBoardApiTest(unittest.TestCase):
             noop = Path(td) / "_render_noop.py"
             noop.write_text("")
             kd.RENDER = noop
-            _write_card(Path(td), "c-kkq",
+            _write_card(Path(td), "c-kkq", column="backlog",
                         action={"status": "queued",
                                 "executor": "kk_mac_local",
                                 "task_class": "summary"})

@@ -56,7 +56,7 @@ def _card(**action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": "chaba"}
     a.update(action_kw)
     return {"id": "primer-card", "title": "primer test",
-            "spec": "do a thing", "action": a}
+            "spec": "do a thing", "column": "backlog", "action": a}
 
 
 class DevinPathPrimerTest(unittest.TestCase):
