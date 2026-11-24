@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
 column: doing
-updated: 2026-11-24 08:24
+updated: 2026-11-24 08:28
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -340,6 +340,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:28
+  from: devin
+  text: '[done] Phantom state fixed: media_player state verbs (turn_on/turn_off/media_play/media_pause/media_stop)
+    now verify post-call state via new state_set kind in control_entity/_control_verify — swallowed calls return
+    ok:false + verify block instead of phantom ok:true. Per-verb target sets + longer poll windows for wake/stream
+    lag; unknown state stays inconclusive. Tests: 12 new unit cases + new offline scenario control_entity_media_state.yaml;
+    full pytest tests/ = 1937 passed/7 skipped, tool-lint '
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
