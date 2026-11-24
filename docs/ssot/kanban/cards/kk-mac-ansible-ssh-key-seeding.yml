@@ -71,3 +71,18 @@ comms:
     kk-mac -m ping authenticated using the inventory key). The original Permission denied (publickey) blocker is
     resolved. The verifier now stops later at become: Missing sudo password on kk-mac. Card stays open with a narrowed
     ask: sudo/become path for verify-host-software --limit kk-mac. No host changes made.'
+- at: 2026-11-24 19:44
+  from: devin
+  text: 'raised request ssh-seeding-is-done-the-r7-verifier-now-956a74: SSH seeding is done; the R7 verifier now
+    needs sudo/become on kk-mac. How should I proceed?'
+requests:
+- id: ssh-seeding-is-done-the-r7-verifier-now-956a74
+  ask: SSH seeding is done; the R7 verifier now needs sudo/become on kk-mac. How should I proceed?
+  status: open
+  at: 2026-11-24 19:44
+  from: devin
+  options:
+  - You run the verifier with --ask-become-pass on tony-omen (recommended)
+  - Approve a dedicated NOPASSWD sudo path for the ansible user on kk-mac (host change)
+  - Leave blocked until KK is available
+  suggested: You run the verifier with --ask-become-pass on tony-omen (recommended)
