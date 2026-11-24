@@ -1,7 +1,7 @@
 id: runner-dispatch-no-timeout
 title: 'runner-agent: dispatch units get RuntimeMaxUSec=infinity — task timeout_s never armed'
-column: backlog
-updated: 2026-11-24 17:23
+column: doing
+updated: 2026-11-24 17:26
 spec: 'Found during devnest-fl-pilot-health (2026-10-30): the dispatch path''s systemd-run units carry no RuntimeMaxSec,
   so an agent in a tool-call loop runs unbounded (nemotron ran 12+ min / 77 calls / 60 denials on a 420s fixture).
   The fixture timeout_s exists in task.yaml but only the synchronous opencode_profiles.run path honors it. Fix:
@@ -185,9 +185,16 @@ comms:
 - at: 2026-11-24 17:23
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.26 > 1.0)'
+- at: 2026-11-24 17:26
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 17:26
