@@ -48,6 +48,14 @@ class ActionPersistenceTest(unittest.TestCase):
         self.mod.render_async = lambda: None
         self.commit_patch = patch.dict("os.environ", {"BOARD_API_COMMIT": "0"})
         self.commit_patch.start()
+        # keep do_action deterministic — no lane classification, no
+        # fleet/probe warnings leaking into the fingerprint surface
+        self._cls_patch = patch.object(
+            self.mod, "BOARD_CLASSIFY_AT_QUEUE", False)
+        self._warn_patch = patch.object(
+            self.mod, "queue_unclaimable_warn", lambda c: "")
+        self._cls_patch.start()
+        self._warn_patch.start()
 
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), self.mod.H)
         self.thread = threading.Thread(
@@ -60,6 +68,8 @@ class ActionPersistenceTest(unittest.TestCase):
         self.server.server_close()
         self.thread.join(timeout=2)
         self.commit_patch.stop()
+        self._cls_patch.stop()
+        self._warn_patch.stop()
         self.mod.CARD_DIR = self._old_card_dir
         self.mod.LOCK = self._old_lock
         self.mod.render_async = self._old_render
@@ -143,3 +153,92 @@ class ActionPersistenceTest(unittest.TestCase):
         self.assertEqual(status, 200)
         moved = yaml.safe_load(path.read_text())
         self.assertEqual(moved["column"], "review")
+
+    # ------------------------------------------- verify-or-loud
+    # Card board-api-queue-write-verify-lost-race-f85f2f: /action
+    # answers used to fire before the queued commit proved the write
+    # durable — an autostash pop could already have reverted the card
+    # (the OPS-0200 'queued' that never persisted). do:queue|retry|
+    # close|hold now flush + re-read + fingerprint before answering;
+    # a proven revert re-applies once, anything unproven answers 503.
+
+    def test_queue_verified_in_response(self):
+        path = self.write_card({
+            "id": "queue-verify",
+            "title": "Queue verify",
+            "column": "backlog",
+            "action": {"type": "dispatch", "status": "idle"},
+        })
+
+        status, body = self.post_action({"id": "queue-verify",
+                                         "do": "queue"})
+
+        self.assertEqual(status, 200, body)
+        self.assertTrue(body.get("verified"), body)
+        card = yaml.safe_load(path.read_text())
+        self.assertEqual(card["action"]["status"], "queued")
+
+    def test_verify_reapply_after_lost_write(self):
+        # the autostash-pop loss shape: disk still shows the PRE-write
+        # fingerprint while `after` expects the queued mutation —
+        # verify re-applies once under the flock and proves it landed
+        path = self.write_card({
+            "id": "queue-lost",
+            "title": "Queue lost",
+            "column": "backlog",
+            "action": {"type": "dispatch", "status": "idle"},
+        })
+        card = yaml.safe_load(path.read_text())
+        before = self.mod._action_fp(card)
+        self.mod.do_action(card, "queue", "tony")   # in-memory only
+        after = self.mod._action_fp(card)
+        self.assertNotEqual(before, after)
+        # disk untouched = the "eaten" write the pop left behind
+        v = {"path": path, "verb": "queue", "frm": "tony",
+             "before": before, "after": after}
+        res = self.mod.verify_action_write(v)
+        self.assertTrue(res["ok"], res)
+        self.assertTrue(res["reapplied"], res)
+        disk = yaml.safe_load(path.read_text())
+        self.assertEqual(disk["action"]["status"], "queued")
+
+    def test_verify_reports_unverified_on_concurrent_state(self):
+        # a third state (concurrent writer) must NOT be stomped and must
+        # surface as failure — the HTTP layer answers 503 for it
+        path = self.write_card({
+            "id": "queue-raced",
+            "title": "Queue raced",
+            "column": "backlog",
+            "action": {"type": "dispatch", "status": "idle"},
+        })
+        card = yaml.safe_load(path.read_text())
+        before = self.mod._action_fp(card)
+        self.mod.do_action(card, "queue", "tony")
+        after = self.mod._action_fp(card)
+        # a concurrent writer moved the card somewhere else entirely
+        other = yaml.safe_load(path.read_text())
+        other["column"] = "review"
+        other["action"]["status"] = "running"
+        path.write_text(yaml.safe_dump(other, sort_keys=False))
+        v = {"path": path, "verb": "queue", "frm": "tony",
+             "before": before, "after": after}
+        res = self.mod.verify_action_write(v)
+        self.assertFalse(res["ok"], res)
+        disk = yaml.safe_load(path.read_text())
+        self.assertEqual(disk["action"]["status"], "running")
+        self.assertEqual(disk["column"], "review")
+
+    def test_action_verify_failure_answers_503(self):
+        self.write_card({
+            "id": "queue-loud",
+            "title": "Queue loud",
+            "column": "backlog",
+            "action": {"type": "dispatch", "status": "idle"},
+        })
+        with patch.object(self.mod, "verify_action_write",
+                          lambda v: {"ok": False, "error": "boom"}):
+            status, body = self.post_action({"id": "queue-loud",
+                                             "do": "queue"})
+        self.assertEqual(status, 503, body)
+        self.assertFalse(body.get("verified"))
+        self.assertIn("boom", body["error"])

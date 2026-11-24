@@ -82,6 +82,30 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   reason; `GET /queue` reports those separately under `human_waiting`
   (`kind: human|unserved`, `owner`, `next_action`) instead of mixing them
   into claimable `queued` (KNB-0013).
+- **`/action do:queue|retry|close|hold` — verify-or-loud** (card
+  `board-api-queue-write-verify-lost-race-f85f2f`, 2026-11-24): the
+  response no longer fires on write-and-hope. After the flock releases,
+  board-api flushes the queued commit (bounded
+  `BOARD_API_ACTION_VERIFY_S`, default 8s), re-reads the card, and
+  compares a fingerprint of the mutated fields (`column`,
+  `awaiting_action`, `action`, `claim.session`) against both the
+  written state and the pre-write state. Written-state + porcelain-clean
+  → `200 {"verified": true}`. Pre-write state → an autostash pop (or
+  equivalent) already reverted the write: the verb is re-applied once
+  under the flock and re-verified (response notes
+  `write re-applied after pull race`). Anything else — still dirty, a
+  concurrent writer's third state, a failed re-read — answers `503`
+  with `verified:false` so the caller retries instead of believing a
+  `queued` that isn't there. `BOARD_API_ACTION_VERIFY_S=0` restores the
+  old fire-and-forget. Belt-and-suspenders on the git side:
+  `git-safe-pull.sh` now preserves the stash side (stage 3) of card
+  autostash-pop conflicts as `<card>.local-conflict-<ts>` before
+  resolving upstream-wins, and `reconcile-local-conflicts.py` folds it
+  back — modify/modify card conflicts still union-merge inline via the
+  card-union driver; the sidecar covers modify/delete and driver
+  failures. Ops note: a `503` from `/action` means "mutation may or may
+  not have landed — retry"; `queue`/`retry` are idempotent so a retry
+  converges (`already queued` verifies trivially).
 - **`/attach`** — card file/photo evidence
   (`board-attachments-photo-image-evidence`, 2026-11-17). `payload` is
   base64 (a `data:` URI prefix is stripped); `filename` is sanitized to

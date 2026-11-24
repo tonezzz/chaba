@@ -1315,6 +1315,14 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # are left untouched.
 DEFAULT_TEST_CMD = "python3 -m pytest tests -x -q"
 DEFAULT_TEST_TIMEOUT = 240
+# A suite timeout is infra flake, not a test verdict — the 240s smoke
+# set times out on a loaded merge host even for doc-only diffs
+# (OPS-0200/ADA-0201/KNB-0212 held merges, card
+# board-api-queue-write-verify-lost-race-f85f2f). The gate retries a
+# timed-out run once before reporting; a second timeout is reported
+# with timeout:true so callers can tell flake from a red suite.
+TEST_TIMEOUT_RETRIES = int(
+    os.environ.get("KANBAN_TESTGATE_TIMEOUT_RETRIES", "1"))
 VENV_DIRS = (".venv", "venv")  # checkout venv conventions in use
 REPO_TESTS = {
     # chaba's full suite (1549 tests) runs ~1h — it can never fit the
@@ -1477,13 +1485,25 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     interp = py or ("python3" if _PY_LEAD_RE.match(cmd) else None)
     timeout = int(cfg["timeout"])
     t0 = time.time()
-    try:
-        r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
-                           capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return {"ran": True, "ok": False, "command": cmd, "python": interp,
-                "failed": [f"suite timeout ({timeout}s)"],
-                "error": f"test gate timed out after {timeout}s"}
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
+                               capture_output=True, text=True,
+                               timeout=timeout)
+            break
+        except subprocess.TimeoutExpired:
+            if attempts > TEST_TIMEOUT_RETRIES:
+                return {"ran": True, "ok": False, "command": cmd,
+                        "python": interp,
+                        "failed": [f"suite timeout ({timeout}s)"],
+                        "error": f"test gate timed out after {timeout}s",
+                        "timeout": True, "attempts": attempts}
+            print(f"test gate attempt {attempts}/{TEST_TIMEOUT_RETRIES + 1} "
+                  f"timed out after {timeout}s — retrying "
+                  f"({repo_name or '?'} merge gate)", file=sys.stderr)
+            time.sleep(2)
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
     if r.returncode != 0 and re.search(
             r"No module named .?pytest|command not found", out):
@@ -1493,12 +1513,18 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
         return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "no tests collected"}
     if r.returncode == 0:
-        return {"ran": True, "ok": True, "command": cmd, "python": interp,
-                "elapsed": round(time.time() - t0, 1)}
+        res = {"ran": True, "ok": True, "command": cmd, "python": interp,
+               "elapsed": round(time.time() - t0, 1)}
+        if attempts > 1:
+            res["attempts"] = attempts   # recovered after a timeout
+        return res
     failed = _FAILED_SUMMARY_RE.findall(out) or _FAILED_HEADER_RE.findall(out)
     tail = [ln for ln in out.splitlines() if ln.strip()][-2:]
-    return {"ran": True, "ok": False, "command": cmd, "python": interp,
-            "failed": failed[:8] or tail or ["pytest exited nonzero"]}
+    res = {"ran": True, "ok": False, "command": cmd, "python": interp,
+           "failed": failed[:8] or tail or ["pytest exited nonzero"]}
+    if attempts > 1:
+        res["attempts"] = attempts
+    return res
 
 
 def _gate_failfast_strip(cmd: str) -> str:
@@ -1601,6 +1627,11 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    if branch.get("timeout"):
+        # a suite that can't finish can't enumerate a failure set
+        # either — the baseline compare would just burn another full
+        # timeout and return None anyway
         return branch
     enum, meta = _gate_failures(wt, repo_name)
     if not enum:
@@ -1756,6 +1787,27 @@ def _merge_in(wt: Path, ref: str) -> tuple:
     return False, [], "commit after conflict resolution failed"
 
 
+# Docs-only allowlist for the test-gate timeout override (card
+# board-api-queue-write-verify-lost-race-f85f2f): a diff touching only
+# docs/, stacks/, or *.md files cannot change pytest outcomes, so a
+# suite TIMEOUT on it is infra flake — merge anyway, flagged. Assertion
+# failures still hold regardless of paths.
+DOCS_ONLY_PATH_RE = re.compile(r"^(?:docs/|stacks/)|\.md$")
+
+
+def _docs_only_paths(wt: Path, base: str) -> bool:
+    """True when every path the merge adds vs `base` is docs/, stacks/,
+    or *.md. Conservative: an unreadable diff or an empty path list is
+    NOT docs-only."""
+    r = sh(["git", "-C", str(wt), "diff", "--name-only", base, "HEAD"],
+           timeout=30)
+    if r.returncode != 0:
+        return False
+    paths = [p for p in (r.stdout or "").splitlines() if p.strip()]
+    return bool(paths) and all(
+        DOCS_ONLY_PATH_RE.search(p) for p in paths)
+
+
 def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
                     base: str) -> tuple:
     """_merge_in + shadow guard + the post-merge test gate ->
@@ -1771,6 +1823,11 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     if shadows:
         return False, [], "", {}, shadows
     tests = baseline_aware_test_gate(mwt, repo_name, base)
+    if not tests.get("ok") and tests.get("timeout") \
+            and _docs_only_paths(mwt, base):
+        # suite-timeout flake on a docs-only diff — land it flagged
+        # (gate: timeout-override) instead of holding for a human
+        tests = dict(tests, ok=True, timeout_override=True)
     if not tests.get("ok"):
         return False, [], "", tests, []
     return True, [], "", tests, []
@@ -2113,7 +2170,10 @@ def close_out_notes(res: dict) -> list:
     if tests.get("skipped"):
         notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
-        if tests.get("baseline_failed"):
+        if tests.get("timeout_override"):
+            notes.append("test gate timed out — docs-only diff merged "
+                         "anyway (gate: timeout-override)")
+        elif tests.get("baseline_failed"):
             notes.append("test gate: failure(s) identical to base "
                          "(pre-existing) — not blocking: "
                          + ", ".join(tests["baseline_failed"][:6]))
