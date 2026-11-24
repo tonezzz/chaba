@@ -1,0 +1,149 @@
+# Scene-to-VO alignment with Thai soft subtitles and NASA-fact-checked lines.
+name: 05-doc-align-v4
+needs:
+  gpu_gb: 0
+  disk_gb: 5
+venv: true
+timeout_s: 1800
+fetch:
+  - doc-pilot/script.yml
+  - doc-pilot/shots/
+  - doc-pilot/vo/
+  - doc-pilot/vo-v2/
+  - doc-pilot/vo-v4/
+artifacts:
+  - packs/05-doc-align-v4/final/ss1-polish-v4.mp4
+  - packs/05-doc-align-v4/final/subtitles-th-v4.srt
+  - packs/05-doc-align-v4/align-report-v4.md
+publish:
+  final: doc-pilot/final-v4
+  align-report-v4.md: doc-pilot/final-v4
+prep: |
+  command -v ffmpeg >/dev/null || (apt-get update -qq && apt-get install -y -qq ffmpeg)
+  pip install -q soundfile numpy pyyaml
+run: |
+  import os, subprocess
+  import numpy as np
+  import soundfile as sf
+  import yaml
+
+  ROOT = NEST_ROOT
+  SHOTS = f'{ROOT}/doc-pilot/shots'
+  VO = f'{ROOT}/doc-pilot/vo'
+  VO_V2 = f'{ROOT}/doc-pilot/vo-v2'
+  VO_V4 = f'{ROOT}/doc-pilot/vo-v4'
+  SCRIPT = yaml.safe_load(open(f'{ROOT}/doc-pilot/script.yml',
+                               encoding='utf-8'))
+  SCRIPT_LINES = {int(s['shot']): s['th'] for s in SCRIPT['shots']}
+  TMP = f'{PACK_DIR}/tmp'
+  OUT = f'{PACK_DIR}/final'
+  os.makedirs(TMP, exist_ok=True)
+  os.makedirs(OUT, exist_ok=True)
+  GAP_S = 0.3
+  videos, audio_parts, missing, invalid = [], [], [], []
+  rows = ['# Fact-checked documentary assembly v4', '',
+          '| shot | VO source | video_s | vo_s | hold_s | silence_s | finite |',
+          '|---:|---|---:|---:|---:|---:|---|']
+  srt_rows = []
+  cursor = 0.0
+
+  def probe_duration(path):
+      return float(subprocess.run(
+          ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+           '-of', 'csv=p=0', path], capture_output=True, text=True,
+          check=True).stdout.strip())
+
+  def srt_time(seconds):
+      ms = int(round(seconds * 1000))
+      h, ms = divmod(ms, 3_600_000)
+      m, ms = divmod(ms, 60_000)
+      s, ms = divmod(ms, 1000)
+      return f'{h:02d}:{m:02d}:{s:02d},{ms:03d}'
+
+  for n in range(1, 19):
+      video = f'{SHOTS}/ss1-shot{n:02d}.mp4'
+      if n in (4, 8):
+          voice = f'{VO_V2}/ss1-vo-{n:02d}-v2.wav'
+      elif n in (6, 7, 15):
+          voice = f'{VO_V4}/ss1-vo-{n:02d}-v4.wav'
+      else:
+          voice = f'{VO}/ss1-vo-{n:02d}.wav'
+      if not (os.path.isfile(video) and os.path.isfile(voice)):
+          missing.append(n)
+          continue
+      wav, sr = sf.read(voice, dtype='float32')
+      finite = sr == 24000 and bool(np.isfinite(wav).all())
+      if not finite:
+          invalid.append(n)
+          rows.append(f'| {n} | {os.path.basename(voice)} | - | - | - | - | no |')
+          continue
+      dur_v, dur_a = probe_duration(video), len(wav) / sr
+      hold = max(0.0, dur_a - dur_v)
+      silence = max(0.0, dur_v - dur_a)
+      gap = GAP_S if n < 18 else 0.0
+      segment = f'{TMP}/scene-{n:02d}.mp4'
+      vf = f'tpad=stop_mode=clone:stop_duration={hold + gap:.3f}' \
+          if hold + gap > 0.01 else 'null'
+      subprocess.run(
+          ['ffmpeg', '-y', '-i', video, '-vf', vf, '-an',
+           '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+           '-pix_fmt', 'yuv420p', '-r', '24', segment],
+          check=True, capture_output=True)
+      videos.append(segment)
+      target = max(dur_v, dur_a)
+      if silence + gap > 0:
+          wav = np.concatenate((wav, np.zeros(
+              int(round((silence + gap) * sr)), dtype='float32')))
+      audio_parts.append(wav)
+      caption = SCRIPT_LINES[n]
+      srt_rows += [str(n), f'{srt_time(cursor)} --> {srt_time(cursor + dur_a)}',
+                   caption, '']
+      rows.append(f'| {n} | {os.path.basename(voice)} | {dur_v:.2f} | '
+                  f'{dur_a:.2f} | {hold:.2f} | {silence:.2f} | yes |')
+      cursor += target + gap
+
+  if missing or invalid:
+      open(f'{PACK_DIR}/align-report-v4.md', 'w').write(
+          '\n'.join(rows + ['', f'missing={missing}', f'invalid_vo={invalid}']) + '\n')
+      raise SystemExit(f'missing={missing}, invalid_vo={invalid}')
+
+  srt_path = f'{OUT}/subtitles-th-v4.srt'
+  open(srt_path, 'w', encoding='utf-8').write('\n'.join(srt_rows) + '\n')
+  concat = f'{TMP}/scenes-v4.txt'
+  open(concat, 'w').write(''.join(f"file '{v}'\n" for v in videos))
+  video = f'{TMP}/video-v4.mp4'
+  subprocess.run(['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i',
+                  concat, '-c:v', 'copy', video],
+                 check=True, capture_output=True)
+  audio = np.concatenate(audio_parts)
+  audio_path = f'{TMP}/audio-v4.wav'
+  sf.write(audio_path, audio, 24000)
+  dur_audio = len(audio) / 24000
+
+  final = f'{OUT}/ss1-polish-v4.mp4'
+  subprocess.run(
+      ['ffmpeg', '-y', '-i', video, '-i', audio_path, '-i', srt_path,
+       '-map', '0:v:0', '-map', '1:a:0', '-map', '2:s:0',
+       '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-c:s', 'mov_text',
+       '-metadata:s:s:0', 'language=tha', '-metadata:s:s:0', 'title=Thai',
+       '-disposition:s:0', 'default', '-t', f'{dur_audio:.3f}', final],
+      check=True, capture_output=True)
+  dur_final = probe_duration(final)
+  if dur_final < dur_audio - 0.75:
+      raise RuntimeError(f'v4 mux truncated audio: '
+                         f'final={dur_final:.2f}s audio={dur_audio:.2f}s')
+  decoded = subprocess.run(
+      ['ffmpeg', '-v', 'error', '-i', final, '-map', '0:a:0',
+       '-f', 'f32le', '-'], capture_output=True, check=True).stdout
+  samples = np.frombuffer(decoded, dtype='<f4')
+  if not np.isfinite(samples).all():
+      raise RuntimeError('v4 AAC decode contains non-finite samples')
+
+  rows += ['', f'audio_track={dur_audio:.3f}s', f'final={dur_final:.3f}s',
+           f'file_bytes={os.path.getsize(final)}',
+           f'decoded_audio_samples={len(samples)}',
+           'subtitles=Thai soft track (mov_text) + SRT sidecar',
+           'verdict=PASS: finite narration, per-scene timing, Thai subtitles']
+  open(f'{PACK_DIR}/align-report-v4.md', 'w').write('\n'.join(rows) + '\n')
+  print(f'alignment v4 PASS: {dur_final:.3f}s, '
+        f'{os.path.getsize(final)} bytes', flush=True)

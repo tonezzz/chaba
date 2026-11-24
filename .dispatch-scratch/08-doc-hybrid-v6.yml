@@ -1,0 +1,174 @@
+# Hybrid v6: NASA still composites for Earth/Saturn, LTX for the rest,
+# and the shortened fact-checked Kuiper beat.
+name: 08-doc-hybrid-v6
+needs:
+  gpu_gb: 0
+  disk_gb: 5
+venv: true
+timeout_s: 1500
+fetch:
+  - doc-pilot/script.yml
+  - doc-pilot/shots/
+  - doc-pilot/vo/
+  - doc-pilot/vo-v2/
+  - doc-pilot/vo-v4/
+  - doc-pilot/vo-v5/
+  - doc-pilot/alternatives/nasa-2p5d-v1/nasa-2p5d-earth-saturn-v1.mp4
+artifacts:
+  - packs/08-doc-hybrid-v6/final/ss1-hybrid-v6.mp4
+  - packs/08-doc-hybrid-v6/final/subtitles-th-v6.srt
+  - packs/08-doc-hybrid-v6/align-report-v6.md
+publish:
+  final: doc-pilot/final-v6
+  align-report-v6.md: doc-pilot/final-v6
+prep: |
+  command -v ffmpeg >/dev/null || (apt-get update -qq && apt-get install -y -qq ffmpeg)
+  pip install -q soundfile numpy pyyaml
+run: |
+  import os, subprocess
+  import numpy as np
+  import soundfile as sf
+  import yaml
+
+  ROOT = NEST_ROOT
+  SHOTS = f'{ROOT}/doc-pilot/shots'
+  VO = f'{ROOT}/doc-pilot/vo'
+  VO_V2 = f'{ROOT}/doc-pilot/vo-v2'
+  VO_V4 = f'{ROOT}/doc-pilot/vo-v4'
+  VO_V5 = f'{ROOT}/doc-pilot/vo-v5'
+  NASA_POC = f'{ROOT}/doc-pilot/alternatives/nasa-2p5d-v1/nasa-2p5d-earth-saturn-v1.mp4'
+  SCRIPT = yaml.safe_load(open(f'{ROOT}/doc-pilot/script.yml',
+                               encoding='utf-8'))
+  SCRIPT_LINES = {int(s['shot']): s['th'] for s in SCRIPT['shots']}
+  TMP = f'{PACK_DIR}/tmp'
+  OUT = f'{PACK_DIR}/final'
+  os.makedirs(TMP, exist_ok=True)
+  os.makedirs(OUT, exist_ok=True)
+  GAP_S = 0.3
+  rows = ['# Hybrid review cut v6', '',
+          '| shot | visual | VO | video_s | vo_s | hold_s | silence_s |',
+          '|---:|---|---|---:|---:|---:|---:|']
+  videos, audio_parts, missing, invalid = [], [], [], []
+  srt_rows = []
+  cursor = 0.0
+
+  def probe_duration(path):
+      return float(subprocess.run(
+          ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+           '-of', 'csv=p=0', path], capture_output=True, text=True,
+          check=True).stdout.strip())
+
+  def srt_time(seconds):
+      ms = int(round(seconds * 1000))
+      h, ms = divmod(ms, 3_600_000)
+      m, ms = divmod(ms, 60_000)
+      s, ms = divmod(ms, 1000)
+      return f'{h:02d}:{m:02d}:{s:02d},{ms:03d}'
+
+  nasa_scenes = {
+      1: (0, 73, f'{TMP}/nasa-earth-v6.mp4'),
+      11: (80, 153, f'{TMP}/nasa-saturn-v6.mp4'),
+  }
+  for start, end, out in nasa_scenes.values():
+      subprocess.run(
+          ['ffmpeg', '-y', '-i', NASA_POC, '-vf',
+           f'trim=start_frame={start}:end_frame={end},setpts=PTS-STARTPTS',
+           '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+           '-pix_fmt', 'yuv420p', '-r', '24', out],
+          check=True, capture_output=True)
+
+  for n in range(1, 19):
+      if n in nasa_scenes:
+          video = nasa_scenes[n][2]
+          visual = 'NASA 2.5D still, caption+credit burned in'
+      else:
+          video = f'{SHOTS}/ss1-shot{n:02d}.mp4'
+          visual = 'LTX'
+      if n in (4, 8):
+          voice = f'{VO_V2}/ss1-vo-{n:02d}-v2.wav'
+      elif n in (6, 7):
+          voice = f'{VO_V4}/ss1-vo-{n:02d}-v4.wav'
+      elif n == 15:
+          voice = f'{VO_V5}/ss1-vo-15-v5.wav'
+      else:
+          voice = f'{VO}/ss1-vo-{n:02d}.wav'
+      if not (os.path.isfile(video) and os.path.isfile(voice)):
+          missing.append(n)
+          continue
+      wav, sr = sf.read(voice, dtype='float32')
+      finite = sr == 24000 and bool(np.isfinite(wav).all())
+      if not finite:
+          invalid.append(n)
+          continue
+      dur_v, dur_a = probe_duration(video), len(wav) / sr
+      hold = max(0.0, dur_a - dur_v)
+      silence = max(0.0, dur_v - dur_a)
+      gap = GAP_S if n < 18 else 0.0
+      segment = f'{TMP}/scene-{n:02d}.mp4'
+      vf = f'tpad=stop_mode=clone:stop_duration={hold + gap:.3f}' \
+          if hold + gap > 0.01 else 'null'
+      subprocess.run(
+          ['ffmpeg', '-y', '-i', video, '-vf', vf, '-an',
+           '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20',
+           '-pix_fmt', 'yuv420p', '-r', '24', segment],
+          check=True, capture_output=True)
+      videos.append(segment)
+      target = max(dur_v, dur_a)
+      if silence + gap > 0:
+          wav = np.concatenate((wav, np.zeros(
+              int(round((silence + gap) * sr)), dtype='float32')))
+      audio_parts.append(wav)
+      rows.append(f'| {n} | {visual} | {os.path.basename(voice)} | '
+                  f'{dur_v:.2f} | {dur_a:.2f} | {hold:.2f} | '
+                  f'{silence:.2f} |')
+      # NASA shots have their Thai narration/captions burned into the plate.
+      if n not in nasa_scenes:
+          srt_rows += [str(n), f'{srt_time(cursor)} --> {srt_time(cursor + dur_a)}',
+                       SCRIPT_LINES[n], '']
+      cursor += target + gap
+
+  if missing or invalid:
+      open(f'{PACK_DIR}/align-report-v6.md', 'w').write(
+          '\n'.join(rows + ['', f'missing={missing}', f'invalid_vo={invalid}']) + '\n')
+      raise SystemExit(f'missing={missing}, invalid_vo={invalid}')
+
+  srt_path = f'{OUT}/subtitles-th-v6.srt'
+  open(srt_path, 'w', encoding='utf-8').write('\n'.join(srt_rows) + '\n')
+  concat = f'{TMP}/scenes-v6.txt'
+  open(concat, 'w').write(''.join(f"file '{v}'\n" for v in videos))
+  video = f'{TMP}/video-v6.mp4'
+  subprocess.run(['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i',
+                  concat, '-c:v', 'copy', video],
+                 check=True, capture_output=True)
+  audio = np.concatenate(audio_parts)
+  audio_path = f'{TMP}/audio-v6.wav'
+  sf.write(audio_path, audio, 24000)
+  dur_audio = len(audio) / 24000
+  final = f'{OUT}/ss1-hybrid-v6.mp4'
+  subprocess.run(
+      ['ffmpeg', '-y', '-i', video, '-i', audio_path, '-i', srt_path,
+       '-map', '0:v:0', '-map', '1:a:0', '-map', '2:s:0',
+       '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-c:s', 'mov_text',
+       '-metadata:s:s:0', 'language=tha', '-metadata:s:s:0', 'title=Thai',
+       '-disposition:s:0', 'default', '-t', f'{dur_audio:.3f}', final],
+      check=True, capture_output=True)
+  dur_final = probe_duration(final)
+  if dur_final < dur_audio - 0.75:
+      raise RuntimeError(f'hybrid v6 mux truncated audio: '
+                         f'final={dur_final:.2f}s audio={dur_audio:.2f}s')
+  decoded = subprocess.run(
+      ['ffmpeg', '-v', 'error', '-i', final, '-map', '0:a:0',
+       '-f', 'f32le', '-'], capture_output=True, check=True).stdout
+  samples = np.frombuffer(decoded, dtype='<f4')
+  if not np.isfinite(samples).all():
+      raise RuntimeError('hybrid v6 AAC decode contains non-finite samples')
+  rows += ['', f'audio_track={dur_audio:.3f}s', f'final={dur_final:.3f}s',
+           f'file_bytes={os.path.getsize(final)}',
+           f'decoded_audio_samples={len(samples)}',
+           'NASA visuals: shots 1 and 11; LTX visuals: all other shots',
+           'shot 15 uses shortened fact-checked line; NASA scenes have burned captions/credits',
+           'soft Thai subtitle track covers the LTX scenes',
+           'verdict=PASS: hybrid sources, per-scene timing, finite audio, Thai captions']
+  open(f'{PACK_DIR}/align-report-v6.md', 'w').write('\n'.join(rows) + '\n')
+  print(f'hybrid v6 PASS: {dur_final:.3f}s, '
+        f'{os.path.getsize(final)} bytes', flush=True)
