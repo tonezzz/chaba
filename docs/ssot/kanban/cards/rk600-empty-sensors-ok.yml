@@ -3,10 +3,10 @@ title: get_rk600_weather returns ok:true with empty sensors — retry storm bait
 brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned {sensors: {}, ok: True} ~10x in
   a row. Model retried indefinitely because the result looked successful. Same silent-miss class as the cms_read
   None→ok:true bug fixed 2026-10-08.'
-column: review
+column: done
 priority: medium
 program: ada-tools
-updated: 2026-11-24 15:11
+updated: 2026-11-24 15:23
 tags:
 - tool-contract
 - audit-2026-10-08
@@ -218,6 +218,11 @@ comms:
 - at: 2026-11-24 15:11
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 15:23
+  from: chaba
+  text: 'merge-sweep: merged e05637f0 (dispatch/20261124-150105-goal-update-get-rk600-weather- from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-150105-goal-update-get-rk600-weather-.md)
+    — auto-closed'
 ref: OPS-0222
 spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and station offline/unreachable when
   the sensors dictionary is empty, following the fix pattern seen in backend/tool_runner/cms.py get on miss. Host/repo:
@@ -237,7 +242,11 @@ action:
     no_repo: 2026-11-24 15:08
   result: 'exit=0 1124-150105-goal-update-get-rk600-weather-.md`; the card is ready to move to review/close. | devin-task-20261124-150105-goal-update-get-rk600-weather-.service:
     Consumed 18.542s CPU time over 7min 29.405s wall clock time, 384.2M memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-24 15:00
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-150105-goal-update-get-rk600-weather-.md
