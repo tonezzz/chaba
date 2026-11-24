@@ -218,6 +218,10 @@ comms:
     fails honestly on unverified results. 9 new tests green + selftest ok. LIVE FINDING: deployed Springboard rejects
     every sbname (Unrecognized value) — $wgSpringboardURL has no MW 1.46 recommended YAML (CanastaWiki ships 1.39/1.43/1.44/1.47
     only); needs LocalSettings fix (point to 1.'
+- at: 2026-11-24 19:42
+  from: devin
+  text: 'raised request springboard-is-unusable-on-the-wiki-mw-1-2aa6f8: Springboard is unusable on the wiki (MW
+    1.46.2): it validates sbname against $wgSpringboardURL YAML and the default conf'
 action:
   type: dispatch
   status: running
@@ -228,3 +232,17 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 19:23
+requests:
+- id: springboard-is-unusable-on-the-wiki-mw-1-2aa6f8
+  ask: 'Springboard is unusable on the wiki (MW 1.46.2): it validates sbname against $wgSpringboardURL YAML and
+    the default config only has a 1.43 key while RecommendedRevisions ships no 1.46 file — every install/enable/disable
+    returns Unrecognized value. Fix needs LocalSettings.php (Plesk/admin): set $wgSpringboardURL to the plain-string
+    URL https://raw.githubusercontent.com/CanastaWiki/RecommendedRevisions/master/1.44.yaml (contains all 7 approved
+    names incl. Mermaid repo override). Who applies it, or should this go to a new card? Meanwhile all approved
+    extensions are already installed and the hardened door is in the dispatch branch.'
+  status: open
+  at: 2026-11-24 19:42
+  from: devin
+  options:
+  - proceed
+  - hold
