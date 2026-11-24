@@ -1,0 +1,126 @@
+title: "cloudflare-setup verify + SSL=strict blocker audit"
+subtitle: "Stale re-dispatch of a done card; live state verified, strict flip blocked on idc02 tls internal certs"
+icon: cloud
+
+planning:
+  goal: >-
+    Dispatch attempt-2 for kanban card cloudflare-setup (done since
+    2026-10-03). Verify the recorded DONE state still holds by surface,
+    and assess the card's optional item: zone SSL Full -> Strict.
+  scope: >-
+    In: public DNS/HTTPS verification of surf-thailand.com zone,
+    read-only Cloudflare API probes, origin cert checks. Out: any DNS
+    or caddy mutation, SSL mode change (found unsafe — see findings).
+  success_criteria:
+    - "api.surf-thailand.com 200 via CF edge"
+    - "proxied-vs-grey map of the zone recorded"
+    - "SSL=strict readiness determined per origin"
+  risks:
+    - "zone-wide SSL=strict would 526 ~20 idc02-fronted names — NOT flipped"
+  resources:
+    - "zone 4feb4a3682e44e38cce3feed65dba7f3 (active)"
+    - "idc02 ~/.config/secrets/cloudflare.env CF_API_TOKEN (zone DNS r/w +
+      zone settings READ confirmed; settings WRITE unverified)"
+    - "idc02 ~/.config/caddy/Caddyfile (caddy-edge quadlet)"
+  owner: devin (dispatch)
+  related_focus: [cloudflare-setup]
+
+processing:
+  status: done
+  started_at: "2026-11-24T05:00:00Z"
+  steps:
+    - id: 1
+      label: Verify recorded DONE state
+      status: done
+      notes: >-
+        api.surf-thailand.com -> CF anycast, HTTP 200, <title>Ada</title>,
+        cf-ray present. NOTE: api A record now points at idc03
+        157.85.102.125 (repointed after idc01 retirement) — card note's
+        'idc01 caddy' wording is stale but outcome equivalent.
+        edge.surf-thailand.com DNS-only -> 45.136.236.190 (idc02) as
+        recorded; it is a CNAME anchor for the *-ha family, direct TLS
+        to edge. SNI fails by design (no site block). Zone NS =
+        noor/viddy.ns.cloudflare.com.
+    - id: 2
+      label: Map zone + consumer-proof every surface
+      status: done
+      notes: >-
+        27 records. Proxied: apex, www, api, app, idc01, idc03, claw
+        (AAAA 100:: placeholder), ada-code, ada-ocb, cline, netdata,
+        opencode-ada, opencode-jack (A->idc02), and CNAME->edge family:
+        ada-ha, boards, cms, kk-ha, michael-dev, michael-dev,
+        michael-ha, mn-ha, monitor, status, tony-ha. Live curls:
+        tony-ha/kk-ha/michael-dev/cms/monitor 302 (CF Access),
+        boards/status/apex 200, www 308, api 200.
+    - id: 3
+      label: SSL=strict readiness per origin
+      status: done
+      notes: >-
+        GET /zones/<z>/settings/ssl -> value=full, editable=true (token
+        has at least Zone Settings read). Origin certs via openssl
+        s_client: idc03 api.+app. = valid LE (YE2) OK; idc03. = NO cert
+        at SNI (stale/unused record); idc01. = origin 157.85.110.99 not
+        answering (idc01 retired — record stale, already broken under
+        full); wiki./wiki-internal CNAME->wiki.h3.gizmo-thailand.com
+        serves LE cert whose SANs cover only *.h3.gizmo-thailand.com —
+        strict outcome depends on which SNI CF sends for proxied
+        CNAMEs, needs check; idc02 edge = 'tls internal' on EVERY
+        Caddyfile site block -> Caddy Local Authority certs, untrusted
+        -> strict would 526 all ~20 names. DECISION: do not flip.
+  decisions:
+    - label: "SSL=strict deferred — needs edge cert migration first"
+      rationale: >-
+        Card called it optional with assumption 'origin cert is valid
+        LE' — true only for the Oct-3 surface (api on idc01). The edge
+        has since grown ~20 proxied names on idc02 caddy-edge, all on
+        tls internal. Flipping zone-wide would take down every public
+        site. Follow-up card cf-ssl-strict-migrate-idc02-edge-origin-3fa959
+        (OPS-0027) filed with migration paths (CF Origin Cert vs LE
+        http-01-only).
+      alternatives_considered: >-
+        flip anyway + fix forwards (rejected: guaranteed outage);
+        per-record strict (does not exist in CF — zone-wide only).
+  changes:
+    - { file: "docs/ssot/jobs/infrastructure/2026-11-24-cloudflare-ssl-strict-audit.yml", summary: "this trail" }
+
+followup:
+  verification:
+    - "OPS-0027: after cert migration, PATCH settings/ssl=strict then curl all proxied names for non-526"
+  deferred:
+    - "stale DNS records worth pruning in OPS-0027 scope: idc01. (dead origin), possibly idc03., claw. AAAA 100:: placeholder"
+    - "cloudflare.env token drift across hosts (secrets.yml notes cfat_/cfut_ copies diverge)"
+
+report:
+  status: done
+  completed_at: "2026-11-24T05:20:00Z"
+  summary: >-
+    cloudflare-setup re-verified live: all recorded surfaces healthy.
+    Optional SSL=strict audited and found blocked — idc02 edge serves
+    internal-CA certs on all site blocks; follow-up card OPS-0027
+    filed. No infra changed.
+  metrics:
+    proxied_names: 25
+    dns_only_names: 2
+    origins_blocking_strict: "idc02 (tls internal, ~20 names)"
+    origins_strict_ready: "idc03 api+app (LE)"
+  kb_review:
+    - "proxied CNAME -> DNS-only anchor (edge.) is the *-ha pattern; the
+      anchor itself has no TLS vhost and that's expected"
+    - "GET zone settings proves read scope only — 'editable:true' is a
+      plan flag, not token permission; never probe writes on prod"
+  lessons_learned:
+    - "board-api is not on localhost on job hosts — use
+      https://idc03.taila0626a.ts.net:10000 (dispatch prompt's
+      127.0.0.1:8787 only works on idc03)"
+    - "zone SSL mode is all-or-nothing: one tls-internal origin blocks
+      strict for every hostname in the zone"
+
+config:
+  version: 1
+  created_at: 2026-11-24
+  last_updated: 2026-11-24
+  maintainer: devin
+  related_files:
+    - docs/ssot/kanban/cards/cloudflare-setup.yml
+    - docs/ssot/kanban/cards/cf-ssl-strict-migrate-idc02-edge-origin-3fa959.yml
+    - scripts/ops/cf-dns-upsert.sh
