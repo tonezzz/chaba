@@ -1,7 +1,7 @@
 id: lesson-audit-scheduled
 title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
-column: doing
-updated: 2026-11-24 16:40
+column: review
+updated: 2026-11-24 16:43
 brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
   pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
   + fixes itself.'
@@ -232,9 +232,29 @@ comms:
 - at: 2026-11-24 16:40
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 16:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 n the audit falls back to slow per-slug gets and may time out without queueing wrong
+    work. | devin-task-20261124-'
+- at: 2026-11-24 16:43
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:43
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-160340-wire-lesson-polish-pack-to-a-s'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 16:43
+  from: chaba
+  text: pushed dispatch/20261124-160340-wire-lesson-polish-pack-to-a-s to origin
+- at: 2026-11-24 16:43
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-24 16:43
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-omen
@@ -242,5 +262,8 @@ action:
   sweep:
     stale_running: 2026-11-24 16:38
     dirty: 2
+  result: 'exit=0 n the audit falls back to slow per-slug gets and may time out without queueing wrong work. | devin-task-20261124-160340-wire-lesson-polish-pack-to-a-s.service:
+    Consumed 3min 5.630s CPU time over 32min 1.334s wall clock time, 1G memory peak.'
 claim:
   since: 2026-11-24 16:02
+review_kind: verify
