@@ -1,7 +1,7 @@
 id: model-route-registration-unify
 title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
 column: backlog
-updated: 2026-11-24 18:39
+updated: 2026-11-24 18:40
 spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
   live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
   model.allowed. Four surfaces, zero of them cross-validated — drift is guaranteed. Options: (a) scripts/devnest/sync-opencode-models.py
@@ -155,6 +155,9 @@ comms:
 - at: 2026-11-24 18:39
   from: tony
   text: queued for processing
+- at: 2026-11-24 18:40
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.85 > 0.85)'
 action:
   type: dispatch
   status: queued
