@@ -1,0 +1,77 @@
+title: iPhone WebGPU worker — pool lane rebuilt + bge-m3 compat proven headlessly
+date: 2026-11-24
+card: lab-iphone-webgpu-worker
+session: dispatch-wt-20261124-155201-lab-iphone-15-as-opportunistic (tony-dell)
+refs: [OPS-0779, MEM-0805]
+
+what: >-
+  Iteration 3 on the iPhone-as-opportunistic-worker lab. Two findings
+  and one rebuild:
+
+  1. bge-compat answered WITHOUT the phone: Xenova/bge-m3 q4 via
+     transformers.js (node, onnxruntime-node CPU EP — vector space is
+     device-independent) vs the ollama bge-m3 reference vector in
+     stacks/web/public/apps/webgpu-bench/bge-ref.json:
+       pooling=cls  cosine=0.9664  COMPATIBLE (dims 1024)
+       pooling=mean cosine=0.7598  divergent (bge is a CLS model)
+     => browser bge-m3 CAN feed the :11028 bank's vector space. The
+     on-device button 6 remains the final WebGPU-EP confirmation, but
+     the space question is settled. Repro script committed:
+     scripts/nest/webgpu-bge-compat.mjs (needs a dir with
+     `npm i @huggingface/transformers@3.7.6`).
+
+  2. embed-nest-bridge REBUILT — the lane-B pull->push bridge from card
+     embed-pool-fleet-nest-workers was lost with its dirty worktree
+     (2026-11-14, never committed). Reimplemented per the comms spec:
+     scripts/nest/embed-nest-bridge.py — POST /api/embed enqueues+blocks
+     (ollama-shaped {embeddings}), workers long-poll GET /v1/job +
+     POST /v1/result; instant 503 when no worker in 45s; 7s job TTL under
+     the pool's 8s upstream timeout; 20s claim lease requeues once.
+     JobStore core unit-tested (tests/nest/test_embed_nest_bridge.py,
+     8 tests) + live smoke verified claim->embed->result->200.
+
+  3. embed-pool-shim gained the DEFER tier it lost with the same
+     worktree: EMBED_POOL_DEFER_UPSTREAMS join the /api/embed race only
+     after EMBED_POOL_DEFER_AFTER_MS (default 1500) with no primary
+     winner — opportunistic workers burn device cycles only on fleet
+     slack. Pass-through GETs/POSTs try deferred last. Tested:
+     tests/embed/test_pool_shim_defer.py (3 tests, stub servers).
+
+  4. Page iteration: /apps/webgpu-bench is now installable —
+     manifest.webgpu.json (start_url ?pool=1), apple-touch metas, auto
+     probe+worker boot, job.json TTL (12h, `created` stamped by
+     webgpu-mddb-job.py), poll-error backoff, worker/pool status lines,
+     and button 7 pool-worker mode: long-polls /apps/embed-nest/v1/job
+     (bge-m3 cls), posts /v1/result. Caddyfile gained /apps/embed-nest/
+     -> http://idc03.taila0626a.ts.net:11440 same-origin proxy with the
+     board-api-style tailnet-identity write guard (avoids Safari
+     mixed-content).
+
+deploy_pending: >-
+  NOT deployed (dispatch scope). To light the lane up:
+    1. idc03: NEST_BRIDGE_ADDR=100.102.134.91:11440 python3
+       scripts/nest/embed-nest-bridge.py as a user unit (tailnet bind —
+       never 0.0.0.0 on the VPS).
+    2. idc03 embed-pool-shim.unit: add
+       EMBED_POOL_DEFER_UPSTREAMS=http://100.102.134.91:11440 and
+       redeploy scripts/nest/embed-pool-shim.py (defer tier is new code).
+    3. tony-dell web stack: reload Caddy for the /apps/embed-nest route.
+    4. iPhone: open /apps/webgpu-bench/ -> Share -> Add to Home Screen;
+       button 7 (or ?pool=1) joins the pool as bge-m3 worker.
+  Rollback: remove the defer upstream env + Caddy block; bridge unit
+  stop/disable. Shim without DEFER_UPSTREAMS behaves exactly as before.
+
+verified:
+  - pytest tests/nest/test_embed_nest_bridge.py tests/embed/test_pool_shim_defer.py: 11 passed
+  - bridge live smoke: claim->result->{embeddings} 200; no-worker 503 instant
+  - node --check on page script; manifest JSON parses; py_compile clean
+  - bge compat: cosine 0.9664 cls / 0.7598 mean vs ollama bge-m3 ref
+
+notes: >-
+  - iOS Safari suspends the tab in background — foreground-only worker,
+    matches the card's stated constraint. No battery API on iOS; keep
+    the phone on charger per the lab brief.
+  - bge-m3 q4 (~300MB) fits the ~1-1.5GB tab budget alongside MiniLM;
+    both pipes can coexist (lazy-loaded).
+  - Pool job budget: /api/embed caller waits <=6.5s; a worker must
+    embed its batch inside that — mddb sends single texts, fine.

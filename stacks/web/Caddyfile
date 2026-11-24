@@ -111,6 +111,21 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	# MEM-0805 lane B — nest-worker bridge (browser/WebGPU workers join the
+	# embed pool). Same-origin proxy so the https page avoids Safari
+	# mixed-content; writes still need a tailnet identity like board-api.
+	handle /apps/embed-nest {
+		redir * /apps/embed-nest/ 308
+	}
+	handle_path /apps/embed-nest/* {
+		@anon_write_embed-nest {
+			not method GET HEAD
+			not header Tailscale-User-Login *
+		}
+		respond @anon_write_embed-nest "forbidden: embed-nest writes need a tailnet identity" 403
+		reverse_proxy http://idc03.taila0626a.ts.net:11440
+	}
+
 	handle /apps/gev-cmd {
 		redir * /apps/gev-cmd/ 308
 	}
