@@ -1,7 +1,7 @@
 id: runner-dispatch-no-timeout
 title: 'runner-agent: dispatch units get RuntimeMaxUSec=infinity — task timeout_s never armed'
 column: doing
-updated: 2026-11-24 17:27
+updated: 2026-11-24 18:16
 spec: 'Found during devnest-fl-pilot-health (2026-10-30): the dispatch path''s systemd-run units carry no RuntimeMaxSec,
   so an agent in a tool-call loop runs unbounded (nemotron ran 12+ min / 77 calls / 60 denials on a 420s fixture).
   The fixture timeout_s exists in task.yaml but only the synchronous opencode_profiles.run path honors it. Fix:
@@ -198,6 +198,13 @@ comms:
     dispatch on idc02: repo-side consolidation landed ; [dispatch-worktree-gc] done: gc_worktree guard helper in
     dispatch_repos (clean +; [kk-mac-launchd-runner-followthrough] raised request verified-kk-mac-only-runs-n; [opencode-retry-stale-worktree]
     DONE (branch dispatch/2026112'
+- at: 2026-11-24 18:16
+  from: devin
+  text: 'DONE: all headless dispatch lanes now wall-clock bounded — kk_mac RuntimeMaxSec=action.timeout_s|900s,
+    nlm=action.timeout_s|1800s, devin-dispatch gets RuntimeMaxSec only when card declares action.timeout_s (opt-in).
+    opencode lane already had fixture timeout_s (77d8d9b); added opencode_stream_guard.py denial-streak breaker
+    (default 10 consecutive denials -> kill + denial-breaker.json marker). Tests: 145 passed. Deliverables: dispatch-outcome
+    md + docs/ssot/jobs/devnest/2026-11-24-runner-dispatch-'
 action:
   type: dispatch
   status: running
