@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
-column: backlog
-updated: 2026-11-24 22:19
+column: doing
+updated: 2026-11-24 22:21
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -150,9 +150,15 @@ comms:
 - at: 2026-11-24 22:19
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:21
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 22:21
