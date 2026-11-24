@@ -2,8 +2,9 @@
 
 Cards: `nest-manager-node` (v1), `nest-mgr-v2-actuation` (v2 actuation
 plane). One `nest-mgr.service` per host; deployed fleet is
-**idc02, idc03, con01, mn01, tony-omen, tony-dell** (tony-macbook pending
-— host was offline at install attempt).
+**idc02, idc03, con01, mn01, tony-omen, tony-macbook** (tony-dell retired
+to omen in the 2026-10-19/20 phase-5 LAN migration; tony-macbook
+installed 2026-11-17 via card ops-macbook-nestmgr-install / SYS-0158).
 
 A *governor mind* for the host's Nest fleet (the Asher pattern from
 `docs/kb/nest-asher-polity-inspiration.md`): it discovers every nest node
