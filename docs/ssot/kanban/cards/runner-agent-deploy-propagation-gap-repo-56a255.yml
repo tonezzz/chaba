@@ -1,7 +1,7 @@
 id: runner-agent-deploy-propagation-gap-repo-56a255
 title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 18:39
 priority: medium
 tags:
 - ops
@@ -150,3 +150,15 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:39
+  from: chaba
+  text: classified as devin (fallback conf 0.24)
+- at: 2026-11-24 18:39
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
