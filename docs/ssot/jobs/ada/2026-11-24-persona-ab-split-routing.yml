@@ -1,0 +1,80 @@
+id: 2026-11-24-persona-ab-split-routing
+title: LINE_CALLER_BACKENDS — per-caller split A/B routing in ada-line-relay
+date: '2026-11-24'
+card: persona-ab-split-routing-relay
+ref: OPS-0469 (persona-ab-lane optional scope, promoted to real work)
+kind: feature-implementation
+runner: devin-dispatch (worktree dispatch-wt-20261124-173912)
+
+summary: >-
+  True concurrent persona A/B needs per-sender routing, not the
+  whole-lane LINE_NAME_BACKENDS pointer flip. Implemented
+  LINE_CALLER_BACKENDS in ada-voice backend/line_relay.py as staged
+  drop #22 (three patches under integrations/ada-voice/), verified
+  against origin/main @ 2e9a1eeb; docs/kb/persona-eval-ab.md §3 now
+  documents the split config. NOT yet merged/deployed — until then the
+  toggle + alternating windows remains the live procedure.
+
+mechanism:
+  env: LINE_CALLER_BACKENDS
+  format: >-
+    "caller=url[,caller@persona=url]" — comma list; bare caller covers
+    every persona that caller addresses, caller@persona scopes to one
+    lane; 'user-' prefixes ignored on both sides; bare host:port gets
+    /ws appended (same rule as LINE_NAME_BACKENDS).
+  code:
+    - "_caller_backends() — parses env into {(caller, persona|None): url}"
+    - "_backend_url(caller, persona) — persona-scoped override, then
+      lane-wide override, then _name_backends() pointer; returns '' for
+      unknown/offline persona (callers keep the 'isn't home yet' reply)"
+    - "Both turn paths route through it: _handle_audio (voice) and
+      handle_event text/image/media — one resolution point per path"
+  semantics:
+    - "Override beats the lane pointer per (caller, persona); removing
+      entries restores whole-lane routing on relay restart"
+    - "An override resolves even when the persona's lane URL is empty
+      (known-but-offline) — variant can be the only backend up"
+    - "Unmapped group members (caller=None) always ride the lane
+      pointer — no way to target them, by design"
+    - "Session reuse is safe: ChatSession._session already recreates
+      the ws session when ws_url changes, so flipping an override
+      mid-conversation just opens a fresh backend session"
+
+example_split_config: |
+  # kk -> variant A (:8009); everyone else incl. nhong -> control
+  LINE_NAME_BACKENDS=ada:ws://127.0.0.1:8002,kaewta:ws://127.0.0.1:8007,chaba:ws://127.0.0.1:8004
+  LINE_CALLER_BACKENDS=user-kk=ws://127.0.0.1:8009
+  # scoped: only kk's chaba-lane turns -> variant
+  LINE_CALLER_BACKENDS=user-kk@chaba=ws://127.0.0.1:8009
+
+deliverables:
+  - integrations/ada-voice/backend/line_relay.persona-ab-split.patch
+  - integrations/ada-voice/backend/test_line_relay_group.persona-ab-split.patch
+  - integrations/ada-voice/env.example.persona-ab-split.patch
+  - integrations/ada-voice/README.md — drop #22 entry
+  - docs/kb/persona-eval-ab.md — §3 split A/B section rewritten
+
+verification:
+  - "git apply --check clean on all three patches vs ada-voice
+    origin/main @ 2e9a1eeb (line_relay.py + test file byte-identical
+    to origin/main in the local checkout)"
+  - "patched tree: pytest tests/test_line_relay_group.py — 32 passed
+    (4 new CallerBackendTests: env parse, /ws append, override
+    precedence — persona-scoped beats lane-wide, offline-persona
+    reach)"
+
+deploy_path: >-
+  Apply the three patches on tony-dell ~/CascadeProjects/ada-voice
+  (edit point per ada-voice AGENTS.md), commit+push main, then
+  deploy-ada.sh on idc03 (restarts ada-line-relay after drain).
+  Env goes in the relay's env file (line-bot.env / secrets store per
+  ssot.jobs.yml ada-line-relay unit). Production deploy needs explicit
+  approval — not done in this dispatch.
+
+notes:
+  - "chaba holds ada-voice changes as staged .patch drops, not commits
+    — this dispatch stayed inside the chaba worktree per dispatch
+    rules; the ada-voice checkout was only read/tested and restored"
+  - "caller keys come from LINE_USER_CALLERS names (user-kk etc.);
+    overrides only affect callers with issued keys — same trust
+    boundary as the rest of the relay"

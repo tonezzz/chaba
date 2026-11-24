@@ -1,0 +1,90 @@
+diff --git a/backend/line_relay.py b/backend/line_relay.py
+index e4ca8dd..4157dc3 100644
+--- a/backend/line_relay.py
++++ b/backend/line_relay.py
+@@ -25,6 +25,18 @@ Env:
+                                  ws://127.0.0.1:8007"); empty URL ("chaba:")
+                                  = known-but-offline persona. 'ada' defaults
+                                  to ADA_WS_URL when unlisted.
++    LINE_CALLER_BACKENDS       — "<caller>=<ws-base>[,<caller>@<persona>=
++                                 <ws-base>],..." per-caller backend
++                                 override for split A/B (card
++                                 persona-ab-split-routing-relay): the
++                                 named caller's turns go to that backend
++                                 while everyone else stays on the lane
++                                 pointer — e.g. "user-kk=ws://127.0.0.1:
++                                 8009" sends kk to variant A. A bare
++                                 caller entry covers every persona they
++                                 address; "caller@persona" scopes the
++                                 override to one lane. 'user-' prefixes
++                                 are ignored on both sides.
+     LINE_DEFAULT_PERSONA       — persona for unaddressed group messages
+                                  (unset = ignore them)
+     LINE_GROUP_PERSONA         — "<groupId>:<persona>,..." hard lane pin:
+@@ -472,6 +484,48 @@ def _name_backends() -> dict[str, str]:
+     return out
+ 
+ 
++def _caller_backends() -> dict[tuple[str, str | None], str]:
++    """LINE_CALLER_BACKENDS -> {(caller, persona|None): ws_url}.
++    Per-caller backend overrides — the split-A/B mechanism (card
++    persona-ab-split-routing-relay): route one sender's turns to a
++    variant backend while the rest of the lane stays on the
++    LINE_NAME_BACKENDS pointer. 'caller=url' applies to every persona
++    that caller addresses; 'caller@persona=url' scopes the override
++    to one lane. Caller keys are LINE_USER_CALLERS names; a leading
++    'user-' is stripped on both sides so 'kk' and 'user-kk' match."""
++    out: dict[tuple[str, str | None], str] = {}
++    for part in os.environ.get("LINE_CALLER_BACKENDS", "").split(","):
++        part = part.strip()
++        if "=" not in part:
++            continue
++        who, _, url = part.partition("=")
++        who, url = who.strip().lower(), url.strip()
++        if not who or not url:
++            continue
++        caller, _, persona = who.partition("@")
++        caller = re.sub(r"^user-", "", caller.strip())
++        if not caller:
++            continue
++        if re.match(r"^wss?://[^/]+$", url):
++            url += "/ws"
++        out[(caller, persona.strip() or None)] = url
++    return out
++
++
++def _backend_url(caller: str | None, persona: str) -> str:
++    """Backend ws url for a turn. A LINE_CALLER_BACKENDS override for
++    this caller — persona-scoped first, then lane-wide — beats the
++    whole-lane LINE_NAME_BACKENDS pointer. Returns "" when the persona
++    is unknown or known-but-offline, same as _name_backends().get."""
++    if caller:
++        key = re.sub(r"^user-", "", caller).strip().lower()
++        ov = _caller_backends()
++        url = ov.get((key, persona)) or ov.get((key, None))
++        if url:
++            return url
++    return _name_backends().get(persona) or ""
++
++
+ def _lane_env_map(name: str) -> dict[str, str]:
+     """LINE_LANE_*="kk:C822..,kk-dev:C822.." -> {instance: chat_id}."""
+     out: dict[str, str] = {}
+@@ -2064,7 +2118,7 @@ class LineRelay:
+                          f"lane — {hdisp} is home here.")
+             return
+         disp = _display_name(persona, transcript)
+-        persona_url = _name_backends().get(persona)
++        persona_url = _backend_url(caller, persona)
+         if not persona_url:
+             await self.send_text(
+                 chat_id, f"[{disp}->{label}] {disp} isn't home "
+@@ -2177,7 +2231,7 @@ class LineRelay:
+         if is_group and caller is None:
+             await self._refuse_group_member(chat_id, user_id, reply_token)
+             return
+-        persona_url = _name_backends().get(persona)
++        persona_url = _backend_url(caller, persona)
+         label = await self._sender_label(
+             user_id, group_id if is_group else None, caller,
+             kind=src_type)
