@@ -2,7 +2,7 @@ id: dispatch-lane-classifier-codemod-keyword-false-positive
 title: 'lane classifier: generic codemod keywords (lock, config, cap, flag...) misroute judgment work to the codemod
   lane'
 column: done
-updated: 2026-11-24 17:03
+updated: 2026-11-24 21:03
 brief: 'LANE_KW[''codemod''] in scripts/board/dispatch_repos.py (and the vendored copy in runner-agent.py) matches
   bare substrings such as ''lock'', ''config'', ''cap'', ''flag'', ''script''. 2026-11-20: ADA-1285 (ada-tools-command-reference,
   a generator script + verb design needing judgment) classified lane=codemod via ''kw:lock'' conf 1.00. Same bug
@@ -259,5 +259,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:03
+  from: chaba
+  text: 'dispatch-wt-sweep salvaged unpushed commits before reap: dispatch-wt-20261120-194516-repo-work-chaba-scripts-board-
+    head 7bbb8224 → origin refs/heads/wip/dispatch/20261120-194516-repo-work-chaba-scripts-board-'
 claim:
   since: 2026-11-20 19:42
