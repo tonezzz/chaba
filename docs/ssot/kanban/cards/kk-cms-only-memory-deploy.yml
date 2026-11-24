@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-deploy
 title: Deploy ada-voice CMS-only bench harness
 column: done
-updated: 2026-11-24 21:47
+updated: 2026-11-24 21:50
 spec: Merged PR bench/kk-cms-only-seed-20261124. deploy-ada.sh on idc03; verify http://127.0.0.1:8002/api/health.
 action:
   type: manual
@@ -9,7 +9,7 @@ action:
 deploy:
   target: ada-voice-prod
   note: Deterministic seed + lane-gate-aware assertions; verify /api/health
-  status: preflight
+  status: failed
   preflight:
     at: 2026-11-24 21:42
     merge_sha: null
@@ -19,6 +19,12 @@ deploy:
     - card captured via board-api
     - closed by tony
   request_id: deploy-kk-cms-only-memory-deploy
+  deployed_at: 2026-11-24 21:50
+  failed_at: 2026-11-24 21:50
+  deploy_rc: 7
+  verify:
+    ok: false
+    skipped: deploy failed
 ref: MEM-1327
 comms:
 - at: 2026-11-24 21:38
@@ -45,6 +51,12 @@ comms:
 - at: 2026-11-24 21:47
   from: chaba
   text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
+- at: 2026-11-24 21:50
+  from: chaba
+  text: "deploy gate: FAILED — rc=7 verify=False\n   File \"/home/tony/CascadeProjects/ada-voice/backend/tool_runner/devin.py\",
+    line 280, in devin_job_report\n      pub = await self.cms_publish_page(\n    File \"/home/tony/CascadeProjects/ada-voice/backend/tool_runner/cms.py\",
+    line 559, in cms_publish_page\n      stored_md = ((stored or {}).get(\"contentMd\")\n    File \"/usr/lib/python3.12/unittest/mock.py\",
+    line 1134, in __call__\n      return self._mock_call(*args, **kwargs)\n    File \"/usr/lib/python3.12/unittes"
 requests:
 - id: deploy-kk-cms-only-memory-deploy
   ask: 'Deploy kk-cms-only-memory-deploy to ada-voice-prod?
