@@ -1,0 +1,61 @@
+title: map_embed drop 17 landed to ada-voice PR — key drop verified absent
+id: 2026-11-24-map-embed-drop17-landing
+card: map-embed-tool
+ref: DEV-0571
+date: 2026-11-24
+status: pr-open   # ada-voice PR #22 awaits human merge; deploy + env are gated steps
+summary: |
+  Attempt-2 dispatch on card map-embed-tool (card itself was done +
+  archived 2026-11-08 — the re-dispatch surfaced a real gap the
+  merge-sweep close missed).
+
+  Verified state:
+  - Chaba side complete: drop 17 files merged to chaba master
+    2026-10-27 (4c1af59d + 8b3abeef) — tools.d/map_embed.py,
+    manifest/tool_guide fragments, smoke scenario, persons.tony +
+    kk-cms-only include lines, key-gate job note.
+  - ada-voice side NEVER landed: map_embed absent from origin/main
+    as of 1c94657 (2026-11-24) — no tools.d module, no manifest or
+    tool_guide entry. Drops 16 (cms-slug-derivation) and
+    wp_read/wp_update are likewise still pending; drop 19
+    (host_status) leapfrogged via PR #21.
+  - GOOGLE_MAPS_API_KEY: Tony's 2026-10-27 answer claimed he minted
+    a key into ~/.config/secrets/tony-ha/backend.env on idc03 —
+    verified ABSENT 2026-11-24 (all four persona backend.env files
+    grepped; only the dead gev copy exists under secrets/). The key
+    still needs dropping for interactive embeds / Google static /
+    Routes polylines. Keyless paths (OSM static image, open_url,
+    honest needs_key) work without it.
+
+  Done this run (idc02):
+  - Worktree ~/CascadeProjects/ada-voice-wt-map-embed, branch
+    feat/map-embed-drop-17 off origin/main 1c94657.
+  - Applied the staged drop verbatim; count_cap bumped 115->116
+    (staged patch's 112->113 base was stale — applied manually per
+    the README's own fallback instruction).
+  - Gates: tool-lint clean (74 declared, cap 116); pytest tests/
+    -x -q = 1942 passed, 7 skipped; tools_loader registry picks up
+    map_embed (read, secondary_allowed, 60s); keyless smoke of
+    static/interactive/route/error paths all correct.
+  - Pushed branch, opened https://github.com/tonezzz/ada-voice/pull/22
+    (gh authed on idc02).
+
+verify: |
+  - ada-voice PR #22 files: backend/tools.d/map_embed.py,
+    manifest.yml +5, tool_guide.yml +21, ssot.tool-surface.yml
+    count_cap 116, tests/scenarios-live/map_embed.yaml.
+  - chaba tests/ada/test_map_embed_drop.py still passes on master
+    (21 tests, drop-time record).
+
+next: |
+  - Human: merge PR #22 -> deploy-ada.sh on idc03 (deploy gate reruns
+    tool-lint + pytest) -> render-tool-profiles.py --host idc03
+    --apply so ADA_INCLUDED_TOOLS picks up the chaba persons.tony /
+    kk-cms-only includes -> systemctl restart covered by deploy.
+  - Human: re-drop GOOGLE_MAPS_API_KEY into
+    ~/.config/secrets/tony-ha/backend.env on idc03 (the 2026-10-27
+    drop never landed) + restart ada-ha-tony — or accept keyless
+    operation (OSM static + open_url).
+  - Tracking card filed for the merge+env+restart steps.
+  - Still pending from the original queue: drops 16 and
+    wp_read/wp_update have no landing card either — same gap.
