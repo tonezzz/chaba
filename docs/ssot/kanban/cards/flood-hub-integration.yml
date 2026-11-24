@@ -2,14 +2,14 @@ id: flood-hub-integration
 title: Flood Hub API integration (blocked on waitlist)
 brief: Waiting on Google's waitlist for the flood-forecast API, which reportedly takes months. Nothing to do until
   the approval email arrives.
-column: review
+column: done
 note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30, reportedly months). When it lands:
   reply with GCP project flood-watch-510211, enable floodforecasting.googleapis.com, key restricted to API + idc01
   IP, store in ~/.config/secrets/flood- forecasting.env. Then in order: verify with scripts/ada/flood-hub- check.py;
   HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
   leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
   Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
-updated: 2026-11-24 12:59
+updated: 2026-11-24 13:07
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
@@ -250,6 +250,9 @@ comms:
 - at: 2026-11-24 12:59
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 13:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist approval
   lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01 IP, storing it in
   ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py, configure HA
@@ -288,3 +291,7 @@ action:
 claim:
   since: 2026-11-24 12:23
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 13:07
+  note: verified — evidence checks green, closing itself
