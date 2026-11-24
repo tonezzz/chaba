@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-24 19:05
+updated: 2026-11-24 20:51
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -275,6 +275,13 @@ comms:
     SLICE 1 DONE — verifier first (per answered scope ; idc02''s kanban-dispatch.service was a linked unit running
     a stale scripts/-only ; [education-maintenance-consolidated-report] SHIPPED on dispatch branch: scripts/; [keywatch-absolute-spend-floor]
     DONE (aa8399e4ef9) — implemen'
+- at: 2026-11-24 20:51
+  from: devin
+  text: 'progress: all 3 items implemented+verified locally. (1) claim-poll projection env-gated RUNNER_CARDS_PROJECTION
+    default-off; 17 parity tests + live soak 12/12 polls clean (~12.7MB->projection). (2) host-snapshot preset restored
+    via ssot.mcp-debug.presets.yml — live mcp_preset_run verified all 4 hosts, no tool-surface expansion (12 tests).
+    (3) storage_probe.py S2 job-pack + deterministic verify subcommand; profile allowlist+fast-path wired; 17 tests.
+    devnest suite 353 pass (1 pre-existing lane_ga'
 action:
   type: dispatch
   status: running
