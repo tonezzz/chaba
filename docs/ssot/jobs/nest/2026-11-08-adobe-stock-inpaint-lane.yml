@@ -39,6 +39,9 @@ pipeline:
     - "scripts/adobe-stock/inpaint-mask.py — box/polygon -> feathered mask PNG"
     - "scripts/adobe-stock/omen-inpaint.py — ssh driver: scp inputs,
       sd-cli on tony-omen, scp result, land via local-file"
+    - "scripts/adobe-stock/inpaint-composite.py — paste an inpaint patch
+      back inside the feathered mask (restores outside-mask pixels
+      bit-exact; blends the seam)"
     - "scripts/adobe-stock/land-render.py — +--lane local-file (lands a
       finished PNG/JPEG path through the normal verify+manifest path);
       cf-inpaint lane pre-existed (image+mask as u8 int arrays)"
@@ -120,7 +123,13 @@ runbook:
     set -a; . cloudflare.env; set +a; python3 land-render.py \
       --lane cf-inpaint --job @cf/runwayml/stable-diffusion-v1-5-inpainting \
       --init-image cand.png --mask mask.png --prompt "..." \
-      --campaign AS-... --asset-id cand-cf-inpaint
+      --campaign AS-... --asset-id cand-cf-inpaint-raw   # lands 512x512
+    # then upscale 512->source-res, composite inside the mask, re-land:
+    python3 scripts/adobe-stock/inpaint-composite.py cand.png \
+      cf-out.png X0 Y0 W H mask.png cand-cf-inpaint.png
+    python3 land-render.py --lane local-file \
+      --job cand-cf-inpaint.png --campaign AS-... \
+      --asset-id cand-cf-inpaint
   omen_full_frame: >-
     python3 scripts/adobe-stock/omen-inpaint.py --image cand.png \
       --mask mask.png --prompt "..." --model sdxl-lightning \
