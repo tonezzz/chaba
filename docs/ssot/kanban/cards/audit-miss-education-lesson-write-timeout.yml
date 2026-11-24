@@ -1,7 +1,7 @@
 id: audit-miss-education-lesson-write-timeout
 title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
-column: backlog
-updated: 2026-11-24 17:06
+column: doing
+updated: 2026-11-24 17:14
 brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
   the supported board-api writer.
 priority: medium
@@ -182,9 +182,15 @@ comms:
 - at: 2026-11-24 17:06
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 17:14
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 17:14
