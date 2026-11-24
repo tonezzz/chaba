@@ -1,7 +1,7 @@
 id: ada-scenario-smoke-timeout-truncation
 title: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
-column: doing
-updated: 2026-11-24 21:55
+column: review
+updated: 2026-11-24 22:01
 priority: medium
 tags:
 - ada
@@ -240,13 +240,46 @@ comms:
     (worst-first fail/flaky/never-seen ordering + --budget-s graceful stop) — apply in ada-voice repo then re-run
     install.sh on idc03 to activate. Rejected parallelism (shared session/vcast contamination + :8199 lock by design);
     tier-split deferred. Job doc: docs/'
+- at: 2026-11-24 22:01
+  from: tony-omen
+  text: 'finished (ok): exit=0 8d30` + `1fd37c8` on the dispatch branch; card comms posted. | devin-task-20261124-214140-44-smoke-scenarios-at-6'
+- at: 2026-11-24 22:01
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 22:01
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-214140-44-smoke-scenarios-at-60-150s-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 22:01
+  from: chaba
+  text: banked 490 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:01
+  from: chaba
+  text: pushed dispatch/20261124-214140-44-smoke-scenarios-at-60-150s- to origin
+- at: 2026-11-24 22:01
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 22:01
+  from: chaba
+  text: auto-merged 7f1f2af1 (dispatch/20261124-214140-44-smoke-scenarios-at-60-150s-) → origin/master
+- at: 2026-11-24 22:01
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 8d30` + `1fd37c8` on the dispatch branch; card comms posted. | devin-task-20261124-214140-44-smoke-scenarios-at-60-150s-.service:
+    Consumed 4min 34.310s CPU time over 13min 56.235s wall clock time, 903.5M memory peak, 28.8M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:40
+review_kind: verify
