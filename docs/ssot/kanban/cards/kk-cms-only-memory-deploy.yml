@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-deploy
 title: Deploy ada-voice CMS-only bench harness
 column: done
-updated: 2026-11-24 21:50
+updated: 2026-11-24 22:09
 spec: Merged PR bench/kk-cms-only-seed-20261124. deploy-ada.sh on idc03; verify http://127.0.0.1:8002/api/health.
 action:
   type: manual
@@ -57,6 +57,14 @@ comms:
     line 280, in devin_job_report\n      pub = await self.cms_publish_page(\n    File \"/home/tony/CascadeProjects/ada-voice/backend/tool_runner/cms.py\",
     line 559, in cms_publish_page\n      stored_md = ((stored or {}).get(\"contentMd\")\n    File \"/usr/lib/python3.12/unittest/mock.py\",
     line 1134, in __call__\n      return self._mock_call(*args, **kwargs)\n    File \"/usr/lib/python3.12/unittes"
+- at: 2026-11-24 22:09
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 22:09
+  from: devin
+  text: 'deploy completed manually with ADA_DRAIN_S=0 after deploy-ada.sh failed at drain (curl rc=7 on a non-listening
+    service health endpoint); code at 678b960, all ada units active, health 200 on 8002/8007/8009, dev bench profile
+    matches. Deploy gate card outcome: SUCCESS.'
 requests:
 - id: deploy-kk-cms-only-memory-deploy
   ask: 'Deploy kk-cms-only-memory-deploy to ada-voice-prod?
