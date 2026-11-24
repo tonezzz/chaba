@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper-severe
 title: Timer log-shipper-severe on tony-dell failing
-column: done
-updated: 2026-11-24 08:39
+column: backlog
+updated: 2026-11-24 09:13
 priority: high
 tags:
 - timer-alert
@@ -278,6 +278,17 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:03
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-24 09:03
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-24 08:49) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-24 09:13
+  from: devin
+  text: '[still suspicious] Last run (11-24 08:49) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
 spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-dell` by checking the systemd
   user journal via `journalctl --user -u log-shipper-severe.service` and reviewing the CMS entry `timer-timeline-tony-dell`.
   The target host is `tony-dell`. Constraints include using only factual data from the card and journal without

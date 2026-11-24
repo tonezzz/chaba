@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
-column: review
-updated: 2026-11-24 08:44
+column: doing
+updated: 2026-11-24 09:10
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -398,6 +398,31 @@ comms:
 - at: 2026-11-24 08:44
   from: chaba
   text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-24 09:05
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-24 09:05
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 09:05
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 09:06
+  from: chaba
+  text: started devin-task-20261124-090646-fix-the-executor-model-id-mism on tony-omen (dispatch)
+- at: 2026-11-24 09:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [devin-executor-model-routing] MacBook evidence: the dispatched unit reached
+    Dev; [devin-executor-model-routing] merge-sweep: no session/worktree found for devin-; [devin-executor-model-routing]
+    primer injected 8 lesson(s): [devin-executor-mode; [jules-lane-feedback-state-handling] tony-macbook defers:
+    executor=jules declare; [ada-expert-consult-tool] tony-macbook defers: executor=jules declared but this ; [ada-prompt-slim]
+    tony-macbook defers: executor=jules declare'
+- at: 2026-11-24 09:10
+  from: devin
+  text: 'attempt 4 (tony-omen): prior branch dispatch/20261124-080849 had the full fix but auto-merge conflicted
+    on kanban-dispatch.py + runner-tooling.manifest.json. Merged it into this worktree and resolved both: kept lane_source
+    provenance + dr.lane_model() devin pick; manifest pins recomputed against merged sources. Adding the missing
+    mocked-CLI preflight test, then running suite.'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -419,22 +444,21 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-24 08:22
     session_gone: 2026-11-24 08:22
-  attempts: 1
+  attempts: 2
   last_failure: 'exit=1 61123-202551-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''. |
     devin-task-20261123-202551-fix-the-executor-model-id-mism.service: Consumed 1min 56.432s CPU time over 16min
     58.776s wall clock time, 898.9M memory peak.'
-  runner: tony-macbook
   result: 'exit=0 full details in `dispatch-outcome-20261124-080849-fix-the-executor-model-id-mism.md`. | devin-task-20261124-080849-fix-the-executor-model-id-mism.service:
     Consumed 12min 21.705s CPU time over 31min 47.742s wall clock time, 645M memory peak.'
-  verified: false
+  runner: tony-omen
 claim:
-  since: 2026-11-24 08:08
-awaiting_action: true
+  since: 2026-11-24 09:05
 review_kind: verify
+awaiting_action: true

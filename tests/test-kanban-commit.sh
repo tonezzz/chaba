@@ -43,6 +43,11 @@ git clone -q "$TMP/origin.git" "$TMP/seed"
            stacks/web/public/apps/board; do : > "$d/.gitkeep"; done
   echo "title: kanban" > docs/ssot/kanban/ssot.kanban.yml
   cp "$ROOT/.husky/pre-commit" .husky/pre-commit
+  # kanban-commit.sh's alert_card() does sys.path.insert(REPO/scripts/board)
+  # + import card_io — the real served checkout ships it, so the fixture
+  # must too or the ops-guard card write silently no-ops (880df7caf4).
+  mkdir -p scripts/board
+  cp "$ROOT/scripts/board/card_io.py" scripts/board/card_io.py
   git add -A; git commit -qm seed
   git push -q origin master
 )

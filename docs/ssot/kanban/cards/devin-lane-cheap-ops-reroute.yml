@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
-column: review
-updated: 2026-11-24 08:53
+column: doing
+updated: 2026-11-24 09:18
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -253,6 +253,53 @@ comms:
 - at: 2026-11-24 08:53
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''dev-0045-slice-2-decision-meas''] block close)'
+- at: 2026-11-24 09:02
+  from: tony
+  text: 'answered dev-0045-slice-2-decision-measurement-in-4cbe90: proceed'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 09:02
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-24 09:02
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 09:03
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 09:04
+  from: chaba
+  text: started devin-task-20261124-090439-findings-2026-11-23-from-board on tony-omen (dispatch)
+- at: 2026-11-24 09:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [devin-lane-cheap-ops-reroute] primer injected 8 lesson(s): [disk-guard-ssot-enf;
+    [disk-guard-ssot-enforce] primer injected 8 lesson(s): [ansible-vs-legacy-fleet-; [jev-pilot-decision-layer-for-card-triage-d47b53]
+    CLASSIFIER ITERATION DONE (202; [kk-mac-usage-to-lane-savings] [verify-fail] Review pass 2026-11-23 (Tony):
+    2026; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin ses'
+- at: 2026-11-24 09:07
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-24 09:18
+  from: devin
+  text: '2026-11-24 slice-3 (proceed): re-measured burn over 339 open cards — free_lane 159 / devin 117 / paid_frontier
+    40 / codemod 21 / manual 2 (sources: kw 183, fallback 96, timer-alert 45, explicit 15); consistent with post-flip
+    steady state. Implemented the watch: kanban-stats.py now emits a lane x lane_source matrix on open cards (15m
+    cadence, system-report) so misroute cohorts stay visible. Also fixed a pre-existing master break: dispatch_repos
+    pin was stale after the 081047 dispatch merge — bump'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -282,27 +329,29 @@ requests:
     rate [recommended — contract cheapest-first, bounded blast radius]; (b) narrow: scope broad free_lane kws (try/plan/install/launch/report/evaluate/probe)
     to TITLE hits like manual/codemod already do; (c) restore devin-before-devin order, keep host-kw removal + timer-alert
     guard only.'
-  status: open
+  status: answered
   at: 2026-11-24 08:24
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
+  executed: 2026-11-24 queue (already running)
 action:
   type: dispatch
-  status: done
-  lane: devin
+  status: running
+  lane: free_lane
   lane_source: kw
-  runner: tony-macbook
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-24 08:22
     no_repo: 2026-11-24 08:22
     close_held: 2026-11-24 08:53
   result: 'exit=0 posted the final card comms. No push, no deploy — changes await dispatch close-out. | devin-task-20261124-080808-findings-2026-11-23-from-board.service:
     Consumed 12min 54.168s CPU time over 28min 32.647s wall clock time, 626.5M memory peak.'
-  verified: true
+  model: litellm/gemini-3.5-flash-lite
+  runner: tony-omen
 claim:
-  since: 2026-11-24 08:07
-awaiting_action: true
+  since: 2026-11-24 09:03
 review_kind: verify
+awaiting_action: true
