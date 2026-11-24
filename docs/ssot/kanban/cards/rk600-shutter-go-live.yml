@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
 column: doing
-updated: 2026-11-24 19:56
+updated: 2026-11-24 20:01
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -349,6 +349,13 @@ comms:
     injected 8 lesson(s): ssot.devnest-lanes.yml was ; [rk600-shutter-go-live] test gate failed — merge held: pytest
     unavailable — no t; ssot.devnest-lanes.yml was invalid YAML (unquoted colon in jules status) until u; [ada-ha-dashboard-live-view-drift]
     answered the-live-ada-ha-c'
+- at: 2026-11-24 20:01
+  from: devin
+  text: 'attempt 3: salvaged attempt-2 artifacts onto a fresh branch and committed (checkpoint failed last run —
+    worktree was 63 commits behind, so the live m/s relabel + runbook never merged). Landed: docs/ssot/jobs/home-assistant/2026-11-24-rk600-shutter-go-live-runbook.yml
+    + dev-shutter-tour.py kn->m/s strings. No live HA mutation this run (attempt 2 verified relabel live at 16:34;
+    HA MCP unreachable from tony-omen now). Card stays blocked on motor repair — steps 1-2 (manual smoke, re-enable
+    wind driv'
 action:
   type: dispatch
   status: running
