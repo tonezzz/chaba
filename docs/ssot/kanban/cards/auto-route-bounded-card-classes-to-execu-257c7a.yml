@@ -1,7 +1,7 @@
 id: auto-route-bounded-card-classes-to-execu-257c7a
 title: Auto-route bounded card classes to executor=claude (classifier policy)
 column: doing
-updated: 2026-11-24 22:41
+updated: 2026-11-24 23:37
 priority: medium
 tags:
 - claude-lane
@@ -192,5 +192,12 @@ comms:
   from: devin
   text: 'picked up: design settled — claim-time auto-route mirroring kk_mac_route (per-host gate CLAUDE_LANES+claude-dispatch+auth
     probe), classifier vendored in runner-agent + canonical in dispatch_repos; implementing now'
+- at: 2026-11-24 23:37
+  from: devin
+  text: Done (uncommitted in dispatch worktree, per card constraints). Bounded classes verify_only/repo_fix/report_triage
+    now auto-route to executor=claude at claim time on CLAUDE_LANES=1 hosts via dr.claude_route + claude_lane_ready
+    gate (wrapper+binary+auth probe+systemd); un-pinned cards fall back to normal lanes, declared executor=claude
+    stays fail-closed. Also fixed latent start_task lane-hijack for claude on OPENCODE_LANES hosts; board-api do_claim/do_create
+    doors accept the claude task_class pair
 claim:
   since: 2026-11-24 22:11
