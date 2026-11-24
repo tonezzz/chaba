@@ -1,7 +1,7 @@
 id: rotate-or-key-restart-openclaw-gateway
 title: 'rotate-or-key.sh: always restart openclaw-gateway after key swap'
-column: review
-updated: 2026-11-24 20:31
+column: done
+updated: 2026-11-24 20:44
 brief: 'During the 2026-11-23 OR rotation, all 4 stores were updated correctly but a live OpenClaw agent turn STILL
   returned 401. The script only restarts openclaw-gateway if the unit has EnvironmentFile.*openrouter — it does
   not; the gateway caches the authProfiles.store key at startup, so it keeps using the old key until restarted.
@@ -90,4 +90,16 @@ comms:
 - at: 2026-11-24 20:31
   from: tony
   text: moved backlog -> review
+- at: 2026-11-24 20:44
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): SEC-0027 shipped — unconditional openclaw-gateway restart
+    + readiness wait is in origin/master (dd4dccdca89, f2325857380); installed ~/.local/bin/rotate-or-key on tony-dell
+    has a matching repo sha256. Idempotent self-test 2026-11-24 20:30 exited 0: 4 stores updated, gateway restarted,
+    :18789 listener ready, 0 401s afterwards. The live e2e probe was deferred only because all :free models returned
+    an account-wide 429, not a regression. Closing.'
+- at: 2026-11-24 20:44
+  from: tony
+  text: closed by tony
 review_kind: verify
+action:
+  status: done
