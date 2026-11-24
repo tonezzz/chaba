@@ -1,7 +1,7 @@
 id: ssh-access-ansible-standard
 title: Standardize host SSH access with Ansible
 column: backlog
-updated: 2026-11-24 15:30
+updated: 2026-11-24 16:03
 brief: 'Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per
   controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap,
   with read-only verification first.'
@@ -67,6 +67,13 @@ comms:
 - at: 2026-11-24 15:30
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 16:03
+  from: chaba
+  text: 'SLICE 1 DONE — verifier first (per answered scope request). Commit 77aad51414 on origin/master. Declared
+    ssh_* vars in ansible inventory + added read-only ansible/playbooks/ssh-mesh-verify.yml (reachability, authorized
+    pubkey, push --dry-run, user consistency; config drift warn-only). Gate from tony-omen 2026-11-24: PLAY RECAP
+    ok=12 failed=0. reach/auth/push=OK on idc02, idc03, tony-omen, tony-dell, mn01; push=n/a on tony-macbook/con01
+    (not declared). kk-mac ssh_config user=tony vs inventory=kkk'
 requests:
 - id: scope-decision-how-far-should-the-first-f6a3bd
   ask: SCOPE DECISION — how far should the first slice go? (★ = recommended default; answer here or in chat; I proceed
