@@ -228,6 +228,10 @@ comms:
     fail-closed), public edge cline.surf-thailand.com answers 302→CF Access. cline-intake.timer fires every 15m
     and exits "no backlog cards tagged cline" (idle, not broken); cline-board-mirror.timer active 2m. Both jobs
     declared in ssot.jobs.yml + con01 expected_services. cline-card-review-lane card DONE today 21:12; cline-nes'
+- at: 2026-11-24 22:18
+  from: devin
+  text: 'raised request retire-list-signoff: Retire/keep sign-off (evidence in previous comment). RETIRE: node-red
+    (stop omen user unit, drop proxy route+apps.yml+HA'
 action:
   type: dispatch
   status: running
@@ -237,3 +241,18 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 21:55
+requests:
+- id: retire-list-signoff
+  ask: 'Retire/keep sign-off (evidence in previous comment). RETIRE: node-red (stop omen user unit, drop proxy route+apps.yml+HA
+    iframe tab), temp-graph, charts3d, pegion, thai-legal, notebooklm+notebooklm-v0, tailscale-funnel, raj, figma-gallery,
+    dance2energy, gemini-mic-test, neo-chat, chatlocal, chatllama, dev-v0 surface, test-carplay main-stack ghosts.
+    KEEP: cline (active lane — card done today, timers cycling). Per app: stop/disable, remove route+apps.yml+HA
+    tab, docs/kb/retired-apps/<app>.md, status:retired.'
+  status: open
+  at: 2026-11-24 22:18
+  from: devin
+  options:
+  - retire-as-proposed
+  - keep-dev-v0-revive-backend
+  - hold
+  suggested: retire-as-proposed
