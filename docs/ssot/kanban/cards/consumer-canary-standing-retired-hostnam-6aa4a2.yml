@@ -1,7 +1,7 @@
 id: consumer-canary-standing-retired-hostnam-6aa4a2
 title: 'consumer-canary: standing retired-hostname audit across live surfaces'
 column: backlog
-updated: 2026-11-24 12:11
+updated: 2026-11-24 15:12
 priority: low
 tags:
 - ops
@@ -544,3 +544,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:12
+  from: chaba
+  text: classified as devin (fallback conf 0.15)
+- at: 2026-11-24 15:12
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
