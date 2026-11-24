@@ -333,7 +333,9 @@ extensions:
       2026-11-24 (card wiki-extension-control-plane): mutations require
       confirm=true, one extension per call, before/after Special:Version
       + extension-table capture, durable receipt per attempt, honest
-      failure on unverified results. New custom
+      failure on unverified results, idempotent no-op when the
+      requested end-state already holds (verified via siteinfo,
+      Springboard skipped). New custom
       namespaces and Lockdown rules (e.g. Education:/Reports: per
       docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml)
       still require a LocalSettings.php edit via the admin/Plesk path —

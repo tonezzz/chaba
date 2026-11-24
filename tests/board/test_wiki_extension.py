@@ -193,6 +193,36 @@ class WikiExtensionTest(unittest.TestCase):
         self.assertTrue(out["verified"])
         self.assertNotIn("Mermaid", out["after"])
 
+    # --- idempotent no-op -----------------------------------------------
+
+    def test_install_already_present_is_verified_noop(self):
+        self.fake.installed = ["Vector", "CategoryTree"]
+        out = self.mod.do_wiki_extension(
+            {"action": "install", "name": "CategoryTree",
+             "confirm": True}, "opencode-ada")
+        self.assertTrue(out["verified"])
+        self.assertTrue(out["no_op"])
+        self.assertIn("CategoryTree", out["after"])
+        # desired state already held — Springboard never invoked
+        self.assertEqual(self.fake.springboard_calls(), [])
+        rec = json.loads(self.receipts()[0].read_text())
+        self.assertEqual(rec["status"], "ok")
+        self.assertTrue(rec["verified"])
+        self.assertIn("no-op", rec["note"])
+
+    def test_enable_already_present_and_disable_already_absent(self):
+        self.fake.installed = ["Vector", "Mermaid"]
+        out = self.mod.do_wiki_extension(
+            {"action": "enable", "name": "Mermaid", "confirm": True},
+            "devin")
+        self.assertTrue(out["verified"] and out["no_op"])
+        out = self.mod.do_wiki_extension(
+            {"action": "disable", "name": "Cargo", "confirm": True},
+            "devin")
+        self.assertTrue(out["verified"] and out["no_op"])
+        self.assertEqual(self.fake.springboard_calls(), [])
+        self.assertEqual(len(self.receipts()), 2)
+
     # --- honest failures -------------------------------------------------
 
     def test_springboard_error_is_honest_failure(self):

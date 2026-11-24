@@ -38,7 +38,11 @@ contract:
     Special:Version capture (index.php/Special:Version — the pretty
     /wiki/ path 404s on this host; localized redirect resolves)"
   verify: "install|enable require name present after; disable requires
-    it gone; mismatch -> UpstreamError (502), never a claimed install"
+    it gone; mismatch -> UpstreamError (502), never a claimed install.
+    Idempotent no-op (attempt 2): when siteinfo already shows the
+    requested end-state the door returns verified:true, no_op:true
+    with a receipt and skips Springboard entirely — keeps the door
+    honest while Springboard sbname validation is broken on MW 1.46"
   receipts: "one JSON per attempt (ok AND failed) at
     $BOARD_API_WIKI_EXT_STATE (default ~/.local/state/board-api-wiki-ext/),
     schema wiki-extension-receipt/1: actor, action, name, before/after
@@ -49,10 +53,10 @@ creds: "WIKI_HOST/WIKI_USER/WIKI_PASSWORD stay in
   Ada/OpenCode; agents reach the door over tailnet HTTPS only."
 
 verify:
-  - "python3 -m unittest tests.board.test_wiki_extension — 9 tests:
+  - "python3 -m unittest tests.board.test_wiki_extension — 11 tests:
     action/name allowlist, confirm gate, list, install+disable happy
-    paths with receipt assertions, springboard error, unverified
-    mutation, login failure"
+    paths with receipt assertions, idempotent no-op paths, springboard
+    error, unverified mutation, login failure"
   - "python3 scripts/board/board-api.py --selftest"
   - "live: POST /wiki/extension {action:list} returns installed +
     approved; CategoryTree+Mermaid already installed (verified
@@ -82,9 +86,15 @@ live_finding_2026_11_24: >
 followups:
   - "ada-voice tools.d wiki_extension must pass confirm=true on
     mutations for the tightened door (cross-repo; registry policy is
-    already 'confirmed')"
+    already 'confirmed') — carded separately; without it Ada-side
+    install/enable/disable 400s once this deploys"
   - "deploy: lands on idc03 served checkout via normal merge +
-    chaba-repo-sync; until then the live door accepts mutations
+    chaba-repo-sync, then `systemctl --user restart chaba-board-api`
+    on idc03 (user unit, ExecStart=.../chaba-tony-dell/scripts/board/
+    board-api.py) — until then the live door accepts mutations
     without confirm (pre-hardening build)"
   - "wiki-side: fix $wgSpringboardURL in LocalSettings.php (see
-    live_finding) before any install/enable/disable can succeed"
+    live_finding) before any REAL install/enable/disable can succeed;
+    no ops SSH/Plesk path to the ReadyIDC host exists — Plesk panel
+    edit by Tony. Until then only no-op mutations verify; a genuinely
+    absent extension still fails honestly at the door"

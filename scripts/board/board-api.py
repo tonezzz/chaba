@@ -3343,6 +3343,26 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
                       "special_version": _wiki_special_version(
                           api_url, opener)},
            "status": "failed"}
+    # Idempotent no-op: siteinfo lists enabled extensions, so a name
+    # already present satisfies install|enable and an absent name
+    # satisfies disable. Verify the end-state directly instead of
+    # calling Springboard — this also keeps the door honest while
+    # Springboard's sbname validation is broken on this MW version.
+    already = (name in before_ext) if action in ("install", "enable") \
+        else (name not in before_ext)
+    if already:
+        rec["verified"] = True
+        rec["status"] = "ok"
+        rec["note"] = "no-op: extension already in requested state"
+        rec["after"] = {"extensions": before_ext,
+                        "special_version": rec["before"]
+                        ["special_version"]}
+        rid = _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+        return {"action": action, "name": name, "before": before_ext,
+                "after": before_ext, "verified": True, "no_op": True,
+                "receipt": rid, "actor": frm,
+                "message": f"wiki extension {action}: {name} "
+                           "(already in requested state)"}
     try:
         login = _wiki_api_call(
             api_url, opener,

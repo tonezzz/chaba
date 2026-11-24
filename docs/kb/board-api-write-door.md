@@ -187,9 +187,14 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   Special:Version + the extension table before/after, verifies the
   change is reflected, and writes a receipt to
   `~/.local/state/board-api-wiki-ext/` on the service host
-  (`BOARD_API_WIKI_EXT_STATE` overrides). Springboard errors or an
-  unverified result surface as 502 — the door never claims an install
-  that didn't happen. Wiki credentials stay in
+  (`BOARD_API_WIKI_EXT_STATE` overrides). Mutations are idempotent:
+  when the extension is already in the requested state (present for
+  install/enable, absent for disable — siteinfo lists enabled
+  extensions only) the door verifies the end-state and returns
+  `verified:true, no_op:true` with a receipt without calling
+  Springboard. Otherwise Springboard errors or an unverified result
+  surface as 502 — the door never claims an install that didn't
+  happen. Wiki credentials stay in
   `~/.config/secrets/wiki-h3-gizmo.env` on idc03; agents (Ada voice,
   ada-ocb `ada_wiki_extension(s)`, OpenCode) reach it only through this
   endpoint.
