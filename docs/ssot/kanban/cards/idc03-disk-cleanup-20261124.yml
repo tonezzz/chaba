@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-24 17:02
+updated: 2026-11-24 17:23
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -108,3 +108,10 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:23
+  from: devin
+  text: '2026-11-24 17:22 Tier 2 COMPLETE (Tony approved at the 17:00 window): bbolt compact of mddb-ops ran 17:01-17:21;
+    DB 76G -> 6.2G. Swap via podman unshare with .pre-compact rollback; service restarted 17:21, health 200. VERIFY_OK:
+    device-telemetry and host-logs both return real documents from the compacted DB (statsPending is just slow stats
+    computation on a fresh file). Rollback file removed via podman unshare after verification. idc03 disk now 93G
+    used / 197G free (32%), down from 100% at the st'
