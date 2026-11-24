@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 19:01
 priority: medium
 tags:
 - infra
@@ -152,6 +152,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:01
+  from: devin
+  text: 'Fresh evidence 2026-11-24 18:58 +07: tony-dell exec checkout ~/CascadeProjects/chaba is 382 commits behind
+    origin/master and chaba-repo-sync.service failed (git-safe-pull.sh exit 1). autostash-pop conflict on ansible/playbooks/verify-runner-tools-sync.yml
+    (AA), with staged conflicts also on a focus-inbox entry and stacks/web/public/apps/ha/ssot.ui.ha.yml. Checkout
+    runner-agent.py sha 3dc0bb81d66842bb; installed ~/.local/bin/runner-agent sha d0a103cb3439bbdf; canonical source+pin
+    now 9a42dc07ec12'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
