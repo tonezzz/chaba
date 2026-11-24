@@ -1,7 +1,7 @@
 id: jevnest-bounded-package-planner
 title: Bounded JevNest package planner for real-work fanout
 column: backlog
-updated: 2026-11-24 17:03
+updated: 2026-11-24 18:39
 brief: Evaluate a bounded planner that proposes additional real task packages from existing evidence without allowing
   KK-Mac to mutate or recursively feed its own queue.
 priority: medium
@@ -163,3 +163,15 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:39
+  from: chaba
+  text: auto-routed to executor=kk_mac_local (task_class=summary)
+- at: 2026-11-24 18:39
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  task_class: summary
+  executor: kk_mac_local
+claim: {}
