@@ -1,7 +1,7 @@
 id: ada-ocb-dispatch-parity
 title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
 column: backlog
-updated: 2026-11-24 10:00
+updated: 2026-11-24 10:48
 brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
   no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
   path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
@@ -97,6 +97,16 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 10:43
+  from: tony
+  text: a
+- at: 2026-11-24 10:48
+  from: chaba
+  text: 'RESUME SPIKE (read-only, 2026-11-24) — VERDICT: runner-agent CAN capture and resume an opencode session
+    id. Evidence: (1) runner already tees ''opencode run --format json'' to events.jsonl; every JSON event carries
+    a top-level sessionID field (e.g. ses_df9276983ffegRkH0YIemdUAzL) — capture = read first line, zero launch-command
+    change. (2) Despite runner''s --standalone flag (v2, needed for LITELLM_KEY), sessions persist in the global
+    DB ~/.local/share/opencode/opencode.db, table session_v2 (23 ses'
 requests:
 - id: scope-for-ada-0024-how-far-should-ada-oc-484b93
   ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
