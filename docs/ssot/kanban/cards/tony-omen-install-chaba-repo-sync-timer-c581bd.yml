@@ -1,7 +1,7 @@
 id: tony-omen-install-chaba-repo-sync-timer-c581bd
 title: 'tony-omen: install chaba-repo-sync.timer — exec checkout has no periodic pull'
 column: backlog
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:24
 tags:
 - tony-omen
 - ops
@@ -130,6 +130,10 @@ comms:
 - at: 2026-11-24 08:14
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
   Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,

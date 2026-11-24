@@ -1,7 +1,7 @@
 id: ops0790-rollout-idc02
 title: 'OPS-0790 rollout: install migrated timer on idc02'
 column: done
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:24
 priority: high
 tags:
 - systemd
@@ -609,3 +609,8 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''exec''] — fix action.labels/host
+    pins or teach a runner the capability'
+awaiting_action: true

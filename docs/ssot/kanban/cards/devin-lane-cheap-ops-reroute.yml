@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: doing
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:24
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -198,6 +198,20 @@ comms:
 - at: 2026-11-24 08:22
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-080808-findings-2026-11-23-from-board'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: devin
+  text: 'raised request dev-0045-slice-2-decision-measurement-in-4cbe90: DEV-0045 slice-2 decision (measurement
+    inside): claim-time lane stamps now carry lane_source (this dispatch, tests green'
+- at: 2026-11-24 08:24
+  from: devin
+  text: '2026-11-24 upstream: PR tonezzz/chaba#199 opened (fix/devin-lane-reroute -> master) with verification summary;
+    linked to this session. origin/master does not yet contain the fix, so keep using the -e runner_agent_controller_src
+    override in the Ansible command until PR #199 merges. Once merged, rerun normal repo sync and the plain playbook
+    path works.'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -216,6 +230,23 @@ requests:
   - keep devin pins, target broad keywords
   - hold until runner-timer resume
   answer: re-pin 7 timer-alert cards to free_lane (recommended)
+- id: dev-0045-slice-2-decision-measurement-in-4cbe90
+  ask: 'DEV-0045 slice-2 decision (measurement inside): claim-time lane stamps now carry lane_source (this dispatch,
+    tests green) so classifier-routed lanes re-evaluate on re-queue instead of reading as author pins forever. Re-measure
+    over 350 open cards: new classifier flips devin 220->126, free_lane 64->161. ~50 flips are backlog timer-alert-*
+    cards (tag guard, intended). ~44 flips are free_lane-before-devin ordering hits — spot-check shows false-cheaps
+    (ai-video-quality-control-plane multi-stage epic -> free_lane via stray kw; ops-retry-storm-detection; mddb-cms-embed-quota-stall).
+    Mitigation: free_lane only saves burn on OPENCODE_LANES hosts; unstaged-envelope cards hold at claim; non-opencode
+    hosts strip litellm model and burn devin anyway. Which next? (a) keep free_lane-first as deployed, watch misroute
+    rate [recommended — contract cheapest-first, bounded blast radius]; (b) narrow: scope broad free_lane kws (try/plan/install/launch/report/evaluate/probe)
+    to TITLE hits like manual/codemod already do; (c) restore devin-before-devin order, keep host-kw removal + timer-alert
+    guard only.'
+  status: open
+  at: 2026-11-24 08:24
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running

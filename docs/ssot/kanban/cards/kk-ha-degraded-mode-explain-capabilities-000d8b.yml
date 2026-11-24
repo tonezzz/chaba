@@ -1,7 +1,7 @@
 id: kk-ha-degraded-mode-explain-capabilities-000d8b
 title: kk-ha degraded mode — explain capabilities when credits die (learning pilot for future users)
 column: doing
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:24
 note: 'Tony 2026-10-15: use KK''s live depletion as the learning case'
 ref: HOM-0700
 comms:
@@ -384,6 +384,14 @@ comms:
     @ ca2c998c6f3. Deliverables: integrations/ada-voice/{backend/degraded_mode.degraded-mode,backend/openrouter_provider.degraded-mode,pwa_server.degraded-mode}.patch
     (verified vs ada-voice origin/main @ fcb38ee), ada-voice-card.js degraded/live_budget_hold/notify_voice cases
     in all 3 www copies, tests/ada/test_kk_degraded_mode.py (28 tests; full tests/ada suite 339 passed), docs/k'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-075950-kk-ha-degraded-mode-explain-ca on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: devin-noted-that-kk-hit-credit-3c0d1b
   ask: Devin noted that KK hit credit exhaustion on 2026-10-14 and currently responds with silence or errors when
@@ -422,6 +430,7 @@ action:
     failed_noted: 2026-11-17 23:40
     stale_running: 2026-11-23 22:07
     session_gone: 2026-11-23 22:07
+    dirty: 1
   last_failure: 'exit=1 61123-220607-kk-ha-degraded-mode-explain-ca.service: Failed with result ''exit-code''. |
     devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca.service: Consumed 1min 29.696s CPU time over 26min
     54.424s wall clock time, 504.4M memory peak.'
