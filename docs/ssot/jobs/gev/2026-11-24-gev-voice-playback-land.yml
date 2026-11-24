@@ -1,0 +1,185 @@
+title: GEV voice — land mute/playback work in place on bundle Bd5DfCi5
+subtitle: >
+  Attempt-2 dispatch of kanban card gev-voice. The 2026-11-17 session
+  (job 2026-11-17-gev-voice-mute-playback-rebase.yml, commit 8c3d05b288 on
+  dispatch/20261117-090610) completed and verified the work but merge-sweep
+  held it on a 240s test-gate timeout; the branch sat unmerged on origin.
+  Meanwhile gev-map (2026-11-23) moved the staged bundle to in-place
+  patching + honest-fail.js, conflicting with the -v1 fork approach. This
+  session re-lands the same deliverables on current master WITHOUT the -v1
+  bundle fork: voice playback patches applied in place to
+  index-Bd5DfCi5.js, patch-gev-dist.sh extended so rebuilds keep them.
+icon: target
+
+planning:
+  goal: >
+    Get the gev-voice deliverables mergeable on current master: GainNode
+    mute-invariant regression check, iOS standalone-PWA mic constraint
+    documentation, and the end-to-end playback path (bridge model_turn
+    forward + client playGeminiAudio) — without regressing gev-map's
+    honest-fail work.
+  scope: >
+    Same file set as the Nov-17 job, re-anchored to in-place patching:
+    bridge.py audio forward, audio-forward-check.py, gev-patch-dist.mjs,
+    gev-voice-check.mjs, staged index-Bd5DfCi5.js patched in place,
+    patch-gev-dist.sh voice step, SSOT/AGENTS.md/index.html docs,
+    job trails.
+  success_criteria:
+    - "gev-voice-check 21/21 PASS on the in-place patched index-Bd5DfCi5.js"
+    - "pre-patch index-Bd5DfCi5.js fails only the 4 playback checks
+      (17/21) — the check discriminates"
+    - "audio-forward-check 7/7 PASS"
+    - "patch-gev-dist.sh --check on the staged dir rc 0; --self-test OK"
+  owner: devin (dispatch)
+  related_focus:
+    - label: gev-voice
+      file: docs/ssot/kanban/cards/gev-voice.yml
+    - label: prior attempt
+      file: docs/ssot/jobs/gev/2026-11-17-gev-voice-mute-playback-rebase.yml
+
+processing:
+  status: done
+  started_at: "2026-11-24 15:00 +07"
+  steps:
+    - id: 1
+      label: Recover stranded branch state
+      status: done
+      notes: >
+        origin/dispatch/20261117-090610 still holds the verified work
+        (18ab149f260 = 8c3d05b288 + checkpoints). Chose port-over-merge:
+        master had since gained honest-fail.js + in-place patching, so the
+        branch's -v1.js fork + index.html retarget would have regressed
+        gev-map. Extracted the four new files via git checkout FETCH_HEAD
+        and re-applied the bridge.py hunk by hand; skipped the
+        ssot.dev-system.assessment.yml checkpoint churn (unrelated,
+        per known lesson).
+    - id: 2
+      label: Deterministic bundle resolution
+      status: done
+      notes: >
+        assets/ holds two index-*.js (entry index-Bd5DfCi5.js + vendor
+        chunk index-Co_JcaX9.js). Both gev-patch-dist.mjs resolveBundle
+        and gev-voice-check.mjs repoBundle now prefer the bundle the
+        sibling/parent index.html actually loads; -vN sort remains only
+        as fallback.
+    - id: 3
+      label: Patch in place + verify
+      status: done
+      notes: >
+        gev-patch-dist.mjs applied the 4 voice patches to
+        index-Bd5DfCi5.js in place (api/models/msaa already present from
+        patch-gev-dist.sh — reported 'already', idempotent). index.html
+        keeps pointing at the bare filename + honest-fail.js. Checks:
+        gev-voice-check 21/21; audio-forward-check 7/7;
+        patch-gev-dist.sh --check staged dir rc 0; --self-test OK;
+        discrimination run on the pre-patch bundle 17/21 (only the 4
+        playback checks FAIL).
+    - id: 4
+      label: Codify into the dist pipeline
+      status: done
+      notes: >
+        patch-gev-dist.sh gained a voice step: apply mode runs
+        gev-patch-dist.mjs on dist/assets after the sed patches +
+        honest-fail inject; check mode runs it --check and counts
+        missing/anchor-drift as unpatched, missing node/script as
+        UNVERIFIED->bad. A rebuild can no longer silently drop playback.
+    - id: 5
+      label: Docs
+      status: done
+      notes: >
+        AGENTS.md GEV section: voice patch bullet, regression-check
+        command, playback-path note, stale 'no audio playback' caveat
+        replaced. ssot.apps.gev.yml: bundle label -> index-Bd5DfCi5.js,
+        bridge binary-forward text, Testing gains both checks, Known
+        Issues gains the iOS mic constraint + updated patcher text.
+        index.html: comment at the capable metas explaining WHY they
+        stay no.
+
+decisions:
+  - label: In-place patching over the -v1 bundle fork
+    rationale: >
+      gev-map established patch-gev-dist.sh + in-place staged patches as
+      the convention and index.html now also loads honest-fail.js. A -v1
+      copy would fork the bundle (two patched variants to keep in sync)
+      and the branch's index.html predated honest-fail. Patching
+      index-Bd5DfCi5.js in place keeps ONE bundle, ONE index.html, and
+      matches how the dist pipeline already works.
+  - label: Voice patches delegated to gev-patch-dist.mjs inside patch-gev-dist.sh
+    rationale: >
+      The playback patches need regex capture of minifier-renamed
+      identifiers — bash/sed can't express that safely. The node script
+      is already the tested, idempotent implementation; the shell script
+      stays the single entry point operators run after npm run build.
+  - label: Port files, don't merge the branch
+    rationale: >
+      The branch carried unrelated AGENTS.md/ssot.dev-system churn and
+      conflicted on index.html + bundle strategy. git checkout of the
+      four new paths + a hand-applied bridge hunk + fresh docs edits
+      produces a clean, reviewable diff on current master.
+
+changes:
+  - file: stacks/tony-dell/gev-gemini/bridge.py
+    summary: pump_responses forwards server_content.model_turn inline_data audio as binary ws frames (ported from 8c3d05b288).
+  - file: stacks/tony-dell/gev-gemini/audio-forward-check.py
+    summary: Stubbed-genai unit check for the binary forward — 7/7 PASS.
+  - file: stacks/web/scripts/gev-patch-dist.mjs
+    summary: Codified post-build patcher — api/models/msaa + 4 voice playback patches; resolveBundle prefers the index.html-referenced entry bundle.
+  - file: stacks/web/public/apps/gev/assets/index-Bd5DfCi5.js
+    summary: Voice playback patches applied in place (binary listener, playGeminiAudio/stopGeminiAudio, interrupted flush, cleanupSession close).
+  - file: stacks/web/input-bridge/gev-voice-check.mjs
+    summary: Mute-invariant + playback regression check — 21 assertions incl. behavioral sim and flag-stripped mutation; repoBundle prefers index.html entry.
+  - file: scripts/gev/patch-gev-dist.sh
+    summary: Apply/check modes now run gev-patch-dist.mjs for the voice patches so rebuilds keep them.
+  - file: stacks/web/public/apps/gev/index.html
+    summary: iOS mic constraint documented at the capable metas.
+  - file: docs/ssot/apps/ssot.apps.gev.yml
+    summary: Current bundle name, binary audio path, both checks under Testing, iOS constraint under Known Issues.
+  - file: AGENTS.md
+    summary: GEV section — voice patch step, mute-check command, playback path, corrected caveat.
+  - file: docs/ssot/jobs/gev/2026-10-06-gev-voice-mute-playback.yml
+    summary: Ported job trail (original Oct-6 session).
+  - file: docs/ssot/jobs/gev/2026-11-17-gev-voice-mute-playback-rebase.yml
+    summary: Ported job trail (Nov-17 rebase session).
+
+followup:
+  verification:
+    - "node stacks/web/input-bridge/gev-voice-check.mjs -> 21/21 PASS"
+    - "node stacks/web/input-bridge/gev-voice-check.mjs --bundle=/tmp/gev-unpatched-Bd5DfCi5.js -> 17/21, only the 4 playback checks FAIL"
+    - "python3 stacks/tony-dell/gev-gemini/audio-forward-check.py -> 7/7 PASS"
+    - "bash scripts/gev/patch-gev-dist.sh --check stacks/web/public/apps/gev/ -> rc 0"
+    - "bash scripts/gev/patch-gev-dist.sh --self-test -> SELFTEST-OK"
+  rollback_plan: >
+    Revert the commit; the staged bundle returns to api/models/msaa +
+    honest-fail patches only. bridge.py change is additive (old clients
+    ignore binary frames; new bundle without patches ignores them too).
+  handoff:
+    - "Deploy still gated: tony-dell chaba pull (served-checkout sync) +
+      stacks/web serve + gev-gemini container rebuild/restart; then
+      gev-voice-check --live verifies the deployed bundle."
+    - "origin/dispatch/20261117-090610 can be deleted once this lands —
+      its content is superseded by this port."
+    - "Tony's 2026-10-06 approval (arm GEV dispatch + deploy) is recorded
+      on the card; dispatch-repos.conf arming is tracked by
+      gev-program-design."
+  deferred:
+    - "Real-device iOS Safari mic test — meta + docs verified only."
+    - "Live audio playback on a real Gemini session — needs deploy +
+      mic; repo-side checks cover the wire format and client path."
+    - "vcast_say remains the separate non-Latin TTS path; untouched."
+
+report:
+  status: done
+  completed_at: "2026-11-24 15:40 +07"
+  summary: >
+    gev-voice landed in-repo on current master. Recovered the verified
+    but unmerged Nov-17 work and re-anchored it onto the in-place
+    patching convention gev-map established — no -v1 bundle fork, no
+    honest-fail regression. All three card deliverables are in:
+    mute-invariant regression check (muted => zero outbound PCM frames,
+    proven behaviorally incl. flag-stripped mutation), iOS
+    apple-mobile-web-app-capable=no documented at meta + SSOT + AGENTS,
+    and the playback gap closed end-to-end (bridge forwards model_turn
+    audio as binary frames; bundle plays via playGeminiAudio; patches
+    codified in patch-gev-dist.sh so rebuilds keep them). Checks green:
+    21/21, 7/7, patch-verify rc 0, self-test OK. Not deployed per
+    dispatch rules.

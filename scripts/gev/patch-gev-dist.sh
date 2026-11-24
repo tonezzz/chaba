@@ -15,8 +15,13 @@
 #   2. "/models/…" → "/apps/gev/models/…" (glTF models under the app path)
 #   3. msaaSamples:4 → iPad/iPhone/iPod UA ternary ?1:4 — iPad WebGL
 #      crashes at msaa 4; DO NOT drop this patch (card gev-map).
+#   4. voice playback patches (card gev-voice) — delegated to
+#      stacks/web/scripts/gev-patch-dist.mjs (node): binary PCM16@24k ws
+#      frames -> playGeminiAudio, {type:interrupted} flush, AudioContext
+#      cleanup. bridge.py forwards model_turn audio as binary frames;
+#      without this the page drops them.
 # And to dist/index.html:
-#   4. inject <script src="/apps/gev/honest-fail.js" defer></script> —
+#   5. inject <script src="/apps/gev/honest-fail.js" defer></script> —
 #      the watchdog that turns a can't-render pane into a visible failure
 #      state instead of a black pane; honest-fail.js is copied into dist/.
 #
@@ -33,6 +38,7 @@ DIST="${1:-$HOME/gods-eye-view/dist}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 HONEST_FAIL_SRC="${GEV_HONEST_FAIL:-$REPO_ROOT/stacks/web/public/apps/gev/honest-fail.js}"
+VOICE_PATCH="${GEV_VOICE_PATCH:-$REPO_ROOT/stacks/web/scripts/gev-patch-dist.mjs}"
 
 die() { echo "patch-gev-dist: $*" >&2; exit 1; }
 
@@ -88,6 +94,21 @@ check_honest_fail() {
   return $bad
 }
 
+# check_voice <dist> — the entry bundle must carry the playback patches.
+# gev-patch-dist.mjs --check exits 1 on missing patches, 2 on anchor drift
+# (bundle changed -> update the patcher). No node/script => unverifiable.
+check_voice() {
+  local dist="$1" bad=0
+  if [ -f "$VOICE_PATCH" ] && command -v node >/dev/null 2>&1; then
+    node "$VOICE_PATCH" --check "$dist/assets" >/dev/null 2>&1 \
+      || { echo "  UNPATCHED: voice playback patches missing/anchor-drift (gev-patch-dist.mjs)"; bad=1; }
+  else
+    echo "  UNVERIFIED: node or gev-patch-dist.mjs unavailable — voice patches unchecked"
+    bad=1
+  fi
+  return $bad
+}
+
 self_test() {
   local tmp
   tmp="$(mktemp -d)"
@@ -137,6 +158,7 @@ main() {
       for f in "${bundles[@]}"; do check_js "$f" || bad=1; done
       [ -f "$DIST/index.html" ] || die "no index.html in $DIST"
       check_honest_fail "$DIST/index.html" || bad=1
+      check_voice "$DIST" || bad=1
       [ $bad -eq 0 ] && echo "patch-gev-dist: dist is fully patched"
       return $bad ;;
     apply)
@@ -152,6 +174,12 @@ main() {
       [ -f "$DIST/index.html" ] || die "no index.html in $DIST"
       inject_honest_fail "$DIST/index.html" "$HONEST_FAIL_SRC"
       echo "honest-fail.js injected + staged"
+      # voice playback patches on the entry bundle — exits 2 on anchor
+      # drift (upstream rebuild changed the code -> update gev-patch-dist.mjs)
+      [ -f "$VOICE_PATCH" ] || die "gev-patch-dist.mjs not found at $VOICE_PATCH"
+      command -v node >/dev/null 2>&1 \
+        || die "node required for the voice playback patches"
+      node "$VOICE_PATCH" "$DIST/assets"
       # re-run the checks so a no-op patch run still proves the end state
       MODE=check DIST="$DIST" main ;;
   esac

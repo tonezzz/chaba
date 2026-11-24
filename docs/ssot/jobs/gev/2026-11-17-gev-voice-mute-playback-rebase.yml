@@ -1,0 +1,149 @@
+title: GEV voice — rebase of mute/playback work onto rebuilt bundle Bd5DfCi5
+subtitle: >
+  Retry dispatch of kanban card gev-voice. The 2026-10-06 session (job
+  2026-10-06-gev-voice-mute-playback.yml, commit 0da7f3d8 on
+  dispatch/20261006-174428-gods-eye-view-app-work-held-re) finished this
+  work but the branch was never landed and the vendored bundle has since
+  been rebuilt (index-D8kXv0di -> index-Bd5DfCi5). This session ported the
+  work onto the current bundle and hardened the patch/check tooling
+  against minifier variable renaming.
+icon: target
+
+planning:
+  goal: >
+    Land the gev-voice deliverables on the CURRENT staged bundle:
+    GainNode mute-invariant regression check, iOS standalone-PWA mic
+    constraint documentation, and the end-to-end playback path (bridge
+    model_turn forward + client playGeminiAudio).
+  scope: >
+    Same file set as the Oct-6 job, re-anchored to index-Bd5DfCi5:
+    bridge.py audio forward, audio-forward-check.py, gev-patch-dist.mjs,
+    gev-voice-check.mjs, staged -v1 bundle + index.html tag, SSOT/AGENTS
+    docs.
+  success_criteria:
+    - "gev-voice-check 21/21 PASS on index-Bd5DfCi5-v1.js"
+    - "unpatched index-Bd5DfCi5.js fails only the 4 playback checks (check
+      discriminates)"
+    - "audio-forward-check 7/7 PASS"
+    - "gev-patch-dist --check rc 0 on the staged -v1 (idempotent)"
+  owner: devin (dispatch)
+  related_focus:
+    - label: gev-voice
+      file: docs/ssot/kanban/cards/gev-voice.yml
+    - label: prior attempt
+      file: docs/ssot/jobs/gev/2026-10-06-gev-voice-mute-playback.yml
+
+processing:
+  status: done
+  started_at: "2026-11-17 09:10 +07"
+  steps:
+    - id: 1
+      label: Recover prior work
+      status: done
+      notes: >
+        Commit 0da7f3d8 on the unmerged Oct-6 dispatch branch held the
+        complete implementation (merge-sweep never landed it — 'no served
+        checkout for repo ?'). Restored the four new files via git
+        checkout and re-applied the bridge.py hunk by hand.
+    - id: 2
+      label: Re-anchor bundle patches to Bd5DfCi5
+      status: done
+      notes: >
+        6/7 patches applied as-is. 'voice binary listener' was a NOOP: the
+        minifier renamed the JSON temp var (s -> o) inside the listener
+        body the patch replaced literally. Rewrote the patch as a regex
+        that captures the temp name, so it survives renaming on future
+        rebuilds. Patched copy staged as index-Bd5DfCi5-v1.js; index.html
+        script tag updated.
+    - id: 3
+      label: Harden gev-voice-check for renamed params
+      status: done
+      notes: >
+        Behavioral harness crashed ('s is not defined'): the rebuild
+        renamed onaudioprocess's param r->s and setMicrophoneEnabled's
+        stayed t — the harness had both hardcoded. It now captures param
+        names via signature regexes and passes them into the Function
+        ctor; mutation regexes generalized (\w+ instead of literal t).
+    - id: 4
+      label: resolveBundle multi-file fix
+      status: done
+      notes: >
+        assets/ now holds Bd5DfCi5.js + Bd5DfCi5-v1.js + Co_JcaX9.js;
+        dir-mode resolution required exactly one. Now prefers the highest
+        -vN copy, matching gev-voice-check's repoBundle rule.
+    - id: 5
+      label: Verify + docs
+      status: done
+      notes: >
+        21/21 PASS on the staged -v1; unpatched bundle fails only the 4
+        playback checks (17/21) — the check still discriminates. SSOT +
+        AGENTS.md updated to name index-Bd5DfCi5-v1.js and document the
+        iOS constraint.
+
+decisions:
+  - label: Port the Oct-6 commit rather than redo the work
+    rationale: >
+      The prior session solved the same card; its branch was stranded by a
+      merge-sweep gap, not by bad work. Reusing it preserves the test
+      design decisions (extracted-body behavioral sim, binary-frame
+      playback, idempotent patcher) already documented in the Oct-6 job
+      record.
+  - label: Regex-based listener patch + dynamic param capture
+    rationale: >
+      Both breakages on the new bundle were minifier renames (listener
+      temp var, onaudioprocess param). Anchoring on property names and
+      capturing renamed identifiers makes the tooling survive the next
+      rebuild instead of silently NOOPing.
+
+changes:
+  - file: stacks/tony-dell/gev-gemini/bridge.py
+    summary: pump_responses forwards server_content.model_turn inline_data audio as binary ws frames (re-applied from 0da7f3d8).
+  - file: stacks/tony-dell/gev-gemini/audio-forward-check.py
+    summary: Restored from 0da7f3d8 — stubbed-deps unit check, 7/7 PASS.
+  - file: stacks/web/scripts/gev-patch-dist.mjs
+    summary: Restored + hardened — binary-listener patch is now regex-based (captures minified temp var); resolveBundle prefers highest -vN when a dir holds several bundles.
+  - file: stacks/web/public/apps/gev/assets/index-Bd5DfCi5-v1.js
+    summary: index-Bd5DfCi5.js + all 7 gev-patch-dist patches (incl. voice playback).
+  - file: stacks/web/public/apps/gev/index.html
+    summary: Script tag -> index-Bd5DfCi5-v1.js.
+  - file: stacks/web/input-bridge/gev-voice-check.mjs
+    summary: Restored + hardened — captures minified param names for the behavioral harness; generalized mutation regexes.
+  - file: docs/ssot/apps/ssot.apps.gev.yml
+    summary: Bundle label -> index-Bd5DfCi5-v1.js; iOS mic constraint; both checks under Testing.
+  - file: AGENTS.md
+    summary: GEV section — patcher reference, playback path, iOS caveat, mute check command.
+
+followup:
+  verification:
+    - "node stacks/web/input-bridge/gev-voice-check.mjs -> 21/21 PASS (staged -v1)"
+    - "node stacks/web/input-bridge/gev-voice-check.mjs --bundle=stacks/web/public/apps/gev/assets/index-Bd5DfCi5.js -> 17/21, only playback checks FAIL"
+    - "python3 stacks/tony-dell/gev-gemini/audio-forward-check.py -> 7/7 PASS"
+    - "node stacks/web/scripts/gev-patch-dist.mjs stacks/web/public/apps/gev/assets --check -> rc 0"
+  rollback_plan: >
+    Revert the commit; point index.html back at index-Bd5DfCi5.js.
+    bridge.py change is additive (old clients ignore binary frames).
+  handoff:
+    - "Deploy still gated: tony-dell chaba pull (single-writer path) +
+      gev-gemini container rebuild/restart; then --live mode verifies the
+      deployed bundle."
+    - "Tony approved arming GEV dispatch on 2026-10-06 (request
+      arm-gev-dispatch-approve-deploy-53bf0b) but dispatch-repos.conf was
+      never updated — card gev-program-design still tracks that."
+  deferred:
+    - "Real-device iOS Safari mic test — code/meta verified only."
+    - "vcast_say remains the separate non-Latin TTS path; untouched."
+
+report:
+  status: done
+  completed_at: "2026-11-17 09:45 +07"
+  summary: >
+    gev-voice work landed in-repo on the current bundle. Prior Oct-6
+    implementation recovered from its stranded dispatch branch and
+    rebased onto index-Bd5DfCi5 (staged as -v1). Tooling hardened against
+    the failure modes this rebuild exposed: regex listener patch and
+    dynamically captured param names. All checks green: mute invariant
+    proven behaviorally (muted => zero outbound PCM frames; flag-stripped
+    mutation still silent — the GainNode carries the invariant), bridge
+    forwards model_turn audio, client playback path present, iOS
+    apple-mobile-web-app-capable=no documented. Not deployed per dispatch
+    rules.
