@@ -1,7 +1,7 @@
 id: ada-capabilities-verb-wiring
 title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
-column: backlog
-updated: 2026-11-24 21:13
+column: doing
+updated: 2026-11-24 21:22
 priority: medium
 tags:
 - ada
@@ -35,7 +35,9 @@ action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: queued
+  status: running
+  runner: tony-macbook
+  attempts: 1
 ref: ADA-0020
 comms:
 - at: 2026-11-23 07:40
@@ -144,4 +146,8 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-claim: {}
+- at: 2026-11-24 21:22
+  from: tony-macbook
+  text: claimed
+claim:
+  since: 2026-11-24 21:22
