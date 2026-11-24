@@ -1,7 +1,7 @@
 id: ada-wiki-extension-confirm-flag
 title: ada-voice wiki_extension tool must pass confirm=true on mutations
-column: doing
-updated: 2026-11-24 21:20
+column: review
+updated: 2026-11-24 21:22
 brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
   ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
   door deploys.'
@@ -87,13 +87,36 @@ comms:
     door gate; scenario audit asserts the flag; unit test pins list confirm-free. Gates: tool-lint clean, pytest
     1977 passed/4 skipped. Branch dispatch/wiki-extension-confirm-flag (e12c641+d5c9132) in worktree ~/CascadeProjects/ada-voice-wt-wiki-confirm-flag
     — not pushed, no de'
+- at: 2026-11-24 21:22
+  from: tony-macbook
+  text: 'finished (ok): exit=0 a final comms entry posted to the card; next step is merge + `deploy-ada.sh` on idc03.
+    | devin-task-20261124-2105'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'session-end checkpoint 25907b64: 1 leftover file(s) committed'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: banked 477 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:22
+  from: chaba
+  text: pushed dispatch/20261124-210549-in-ada-voice-repo-edit-point-t to origin
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 a final comms entry posted to the card; next step is merge + `deploy-ada.sh` on idc03. | devin-task-20261124-210549-in-ada-voice-repo-edit-point-t.service:
+    Consumed 2min 11.742s CPU time over 15min 25.256s wall clock time, 1.6G memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 21:05
+review_kind: verify
