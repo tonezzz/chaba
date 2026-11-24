@@ -1,3 +1,8 @@
+---
+name: auto-kb
+description: Create KB entries from verified findings at session end and sync them to MDDB
+---
+
 # Auto KB Creation Skill
 
 Creates KB entries from KB review sections — for **stabilized, verified
