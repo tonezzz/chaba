@@ -1,0 +1,68 @@
+id: dispatch-worktree-triage-2026-11-23
+title: Dispatch worktree merged/unmerged triage — idc02 + tony-dell fleets
+date: 2026-11-23
+card: dispatch-worktree-merged-triage
+status: done
+
+context: >
+  Third triage attempt (prior runs died on provider rate-limits, not
+  logic). Card text named tony-dell's fleet of ~16 unmerged
+  dispatch-wt-*; the run claimed on idc02, so both fleets were swept —
+  idc02 had 11 worktrees (10 zombies + this session) and tony-dell had
+  14 (12 zombies + 2 live reruns). Classification used
+  git rev-list/cherry vs origin/master plus task meta
+  (~/.local/share/devin-dispatch/tasks/<slug>/meta.json) to map each
+  worktree to its spawning card.
+
+artifacts_landed: >
+  Commit 94f51a5410 on dispatch/20261123-144247-triage-2026-11-09-cascadeproje
+  salvages 17 record artifacts absent from master: 8 dead-session
+  dispatch-outcome docs, 6 jobs ymls (incl. devin-cli-fleet-update
+  verify, arbiter-label-pass 11-19, stalled-claim-lifecycle 11-17,
+  ai-engine-lines spec) and ssot.apps.ada-engines.yml (card
+  ai-engine-lines, backlog/failed — its spec deliverable).
+
+drops:
+  idc02_merged_equivalent:
+    - dispatch-wt-20261123-113415-use-the-existing-ada-document- (ada-voice; HEAD 05ba2b36 already in origin/main via b006cb64; card ada-printer-diagnostics-safe-repair done)
+    - dispatch-wt-20261120-211038-approved-strategy-b-per-the-bo (empty, rate-limit death, 0 commits; card rerun live on tony-omen)
+    - dispatch-wt-20261120-211214-fix-the-cms-publish-page-call- (empty; rerun live on tony-dell)
+    - dispatch-wt-20261120-211338-two-lane-comparison-on-kk-mac- (empty; card kk-mac-video-render-lane backlog/failed)
+  idc02_abandoned_partial:
+    - wt 194810 cline-card-review-lane — branch dispatch/20261120-194810-goal-drain-the-review-column-s @34b41338 kept: cline-review-feed.py 509L + kb + jobs yml unpushed; card rerun live on tony-dell
+    - wt 194941 dispatch-triage-arbiter-label-pass — branch @57b4500e kept: COMPLETED label pass, 6.5k lines (scripts/bench/dispatch-triage/) unpushed; card rerun live on tony-omen rebuilding
+    - wt 195108 this card's prior run — branch @bb3734ec kept: board-api /wiki/page Infrastructure-prefix commit c039ad5f (card wiki-page-door-infrastructure-namespace, review — merge held by test-gate timeout) + full salvage set incl. scripts/ada/bge-shadow-drive.py (765L, card ada-bge-memory-search-shadow, off-board)
+    - wt 201723 fleet-jobs-report-and-ada-verb — superseded by dispatch/20261121-164519 merge; staged older iteration committed to branch @408cb07c before drop
+    - wt 060957 devin-session-audit-2026-10-29 — 2 outcome-doc commits unpushed (branch kept); outcome doc landed via 94f51a5410; card done
+    - wt llm-provider-verification — clean except untracked evals run dir; run verdict=pass already on card (review/done)
+  tonydell_merged_equivalent:
+    - dispatch-wt-20261002-132426 feat/card-run-lifecycle — patch-equivalent upstream (cherry=0, landed as f7b7c83); card-runner-lifecycle-test done
+    - dispatch-wt-20261117-203754-run-ada-live-kanban-authority- — empty (harness artifact file only); card ada-real-card-sweep-scenario-20261108 off-board
+    - dispatch-wt-20261120-knb-0013-queue-truth — clean, 0 ahead (manual fix/ worktree)
+  tonydell_abandoned_partial:
+    - wt 092521 devin-cli-fleet-update-20261108 — 2 unpushed commits (outcome+verify yml landed via 94f51a5410; branch kept); card off-board
+    - wt 203758 idc03-gemini-ollama-proxy-paid-fallback — staged outcome md landed via 94f51a5410; card off-board
+    - wt 221304 board-api-compact-cards — branch @e2a860e6 kept: board-api.py +56 + tests +77 unpushed; card off-board
+    - wt 232247 ada-consultant-tier — 40-file staged deliverable committed to branch @213785ca before drop (consultant_worker.py, bench corpus+runs, units); card review/done
+    - wt control-pane feat/kanban-card-cycle-control-pane — 2 unpushed commits (render-board2 run-evidence 163L); likely feeds board-tests-control-pane-lane-failures (backlog)
+    - wt 200209 fleet-jobs-report-and-ada-verb — superseded by 164519 merge (branch version 505 diff-lines older iteration); branch kept
+    - wt 200415 ada-ocb-bridge-version — 1 unpushed evidence-doc commit, redundant (card done via 113051 merge); ada-voice branch kept
+    - wt 200526 ada-opencode-command-publisher-20261108 — 1 checkpoint commit (jobs-yml tweak + render-state noise); card done
+    - wt 201948 embed-lane-banks-search-pagination — branch @b88598fc kept: test_embed_lane.py +61; card rerun live on tony-macbook (fix d317c76f already on master)
+    - wt 215246 rebuild-gesture-controls-using-yolo-190356 — ada-voice branch @5307864b kept: feat gestures on shared YOLO stream, real unmerged work; card backlog/failed; outcome md landed via 94f51a5410
+  live_kept:
+    - dispatch-wt-20261123-144258-fix-the-cms-publish-page-call- (tony-dell, card fix-cms-publish running)
+    - dispatch-wt-20261123-144943-goal-drain-the-review-column-s (tony-dell, card cline-card-review-lane running)
+    - dispatch-wt-20261123-144247-triage-2026-11-09-cascadeproje (idc02, this session)
+
+notes: >
+  Recurring "dirty" file in every worktree is a harness artifact, not
+  work — idc02: docs/ssot/kanban/cards/ada-text-model-promotion-path.yml,
+  tony-dell: docs/ssot/ssot.dev-system.assessment.yml — identical stale
+  snapshots written across all worktrees; ignored for classification.
+  Branch refs were kept on every drop, so unpushed partial work remains
+  reachable by branch name in the shared .git of each repo; the risk
+  noted in prior lessons stands — unpushed branches are invisible to
+  runners on other hosts (tony-omen's arbiter rerun is already
+  rebuilding work that exists only on idc02's local
+  dispatch/20261120-194941-*).

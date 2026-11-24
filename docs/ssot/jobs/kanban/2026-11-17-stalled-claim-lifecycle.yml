@@ -1,0 +1,88 @@
+title: stalled-claim lifecycle — doing means a live claim exists
+subtitle: dead-claim resolution, per-pass reaper, honest columns
+icon: kanban
+version: 1
+
+card: dispatch-failed-cards-park-in-doing
+date: 2026-11-17
+dispatch: dispatch-wt-20261117-184815-decide-implement-the-stalled-c
+ops: OPS-0146
+
+summary: |
+  2026-11-17 sweep found 31+ cards in doing with zero live claims
+  fleet-wide: 16 action.status=failed (Nov-14 runner-drift/push-guard
+  defer wave), 12 manual/no-action squatters, 2 queued, 1 done. No
+  write path ever moved a card out of doing once its claim died —
+  do_finish(ok:false) and kanban-dispatch finish_one stamped
+  status=failed and left the column, so the board overstated active
+  work and real pending dispatches looked invisible.
+
+decision: |
+  (a) On defer/fail with no live runner the card returns to an honest
+  column. Chosen: auto-retry with backoff+cap (the spec's second
+  option) — a failed claim requeues while attempts <
+  action.max_attempts|KANBAN_MAX_ATTEMPTS(2) with action.not_before
+  backoff (KANBAN_RETRY_BACKOFF_MIN=30min per attempt, 4h cap); at cap
+  it parks status=failed in backlog + awaiting_action for human triage.
+  Rationale: transient failures (runner drift, load) recover without a
+  human; the cap makes crash-loops bounded; last_failure rides
+  RETRY_RAILS into the next session. attempts now bumps at claim time
+  on BOTH claim paths (kanban-dispatch mark_start AND board-api
+  do_claim) — remote claims were previously uncounted, so the cap
+  never fired for them.
+  (b) The periodic reaper is kanban-dispatch.sweep_stalled_claims —
+  inside the existing 2-min phase-A lock on the served host, not a new
+  timer: it already scans every card, holds the write flock, and owns
+  the lifecycle. Per-card rules in doing: failed->resolve_dead_claim
+  (requeue storm-capped at KANBAN_REAPER_REQUEUE_CAP=3/pass); done->
+  review; queued/held->backlog; remote 'running' that the owning
+  runner's fresh /ready heartbeat no longer lists -> resolve once
+  quiet >KANBAN_UNREPORTED_MIN(60m); remote 'running' with no fresh
+  heartbeat at all -> resolve past the doing SLA
+  KANBAN_STALE_CLAIM_H(72h, matching ssot.kanban.yml column_sla);
+  claimless/manual squatters -> flag-free grace until 72h quiet, then
+  backlog (a human's WIP signal is not stomped inside the SLA).
+  (c) Honest columns are now enforced on write AND read: mark_start
+  and do_claim move backlog->doing on claim; do_action queue/retry,
+  requeue_dead, _defer_note, _flag_unclaimable and merge-sweep's
+  fail_attempt all normalize unclaimed cards out of doing; the reaper
+  is the convergence layer for everything missed.
+
+files:
+  - scripts/board/dispatch_repos.py — card_ts/card_now/claim_backoff_s/
+    resolve_dead_claim (shared requeue-or-park resolver)
+  - scripts/board/board-api.py — do_finish ok:false -> resolve; do_claim
+    not_before gate + attempts++ + claim.since/host; do_action
+    queue/retry normalize doing->backlog + drop dead claim.session +
+    clear not_before; /queue action projection gains not_before/attempts
+  - scripts/board/kanban-dispatch.py — mark_start takes doing + stamps
+    claim.since; finish_one fail paths -> resolve_dead_claim; queued
+    claim gate honors action.not_before; _defer_note/_flag_unclaimable/
+    requeue_dead normalize column; NEW sweep_stalled_claims reaper
+  - scripts/board/runner-agent.py — _claimable honors action.not_before
+    (truthful /ready verdicts; do_claim is the hard gate)
+  - scripts/board/merge-sweep.py — fail_attempt normalizes doing->
+    backlog on requeue/park
+  - tests/board/test_stalled_claims.py — 28 tests over the lifecycle
+  - docs/ssot/kanban/ssot.kanban.yml — column_sla.doing documents it
+
+verify: |
+  - pytest tests/board/: 622 passed (incl. updated close-out tests)
+  - deferred card -> backlog + claimable: a queued card in doing is
+    normalized by the reaper/next queue; status=queued is claimable.
+  - board doing-count matches /queue claimed+active: post-deploy the
+    reaper converges doing to live claims only; cross-check with
+    `curl .../queue` vs `column=doing` cards.
+
+deploy: |
+  Served-side scripts (kanban-dispatch, board-api, merge-sweep,
+  dispatch_repos) live in the repo and run from idc03's
+  ~/CascadeProjects/chaba-tony-dell checkout — landing the merge is
+  the deploy (chaba-repo-sync pulls). runner-agent.py deploys as a
+  snapshot to ~/.local/bin/runner-agent per host — _self_update picks
+  it up once a host's repo checkout is newer than the snapshot
+  (drifted hosts may need a manual scp, per existing ops notes).
+  On first pass after landing, the reaper resolves the ~31 parked
+  doing cards — expect a bounded burst of auto-requeues
+  (REAPER_REQUEUE_CAP=3 per 2-min pass drains gradually) plus
+  backlog/review moves, then doing == live claims.
