@@ -8,6 +8,7 @@ SSOT = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.yml"
 BASELINES = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.baselines.yml"
 FILES_SSOT = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.files.yml"
 REPORTS_SSOT = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.reports.yml"
+PRESETS_SSOT = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.presets.yml"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -22,6 +23,19 @@ if FILES_SSOT.exists():
 
 RAW_COMMANDS_SSOT = REPO_DIR / (CONFIG.get("raw_commands_source") or "docs/ssot/infrastructure/ssot.mcp-debug.raw-commands.yml")
 RAW_COMMANDS = (yaml.safe_load(open(RAW_COMMANDS_SSOT)) or {}) if RAW_COMMANDS_SSOT.exists() else {}
+
+def _load_presets(cfg: dict) -> dict:
+    """Preset table: inline `presets:` in ssot.mcp-debug.yml plus the
+    split ssot.mcp-debug.presets.yml — the 2026-08 refactor's intended
+    home, restored for AUD-1033 follow-ups. The split file wins on name
+    collisions."""
+    presets = dict(cfg.get("presets") or {})
+    if PRESETS_SSOT.exists():
+        with open(PRESETS_SSOT) as f:
+            doc = yaml.safe_load(f) or {}
+        presets.update(doc.get("presets") or {})
+    return presets
+
 
 def _load_log_units():
     units = []
@@ -50,7 +64,7 @@ HOSTS = CONFIG.get("hosts", {})
 DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
 RAW_PREFIXES = RAW_COMMANDS.get("raw_commands", {}).get("allowed_prefixes", [])
 RAW_CATEGORIES = RAW_COMMANDS.get("raw_commands", {}).get("categories", {})
-PRESETS = CONFIG.get("presets", {})
+PRESETS = _load_presets(CONFIG)
 LOG_UNITS = _load_log_units()
 PRESET_DESCRIPTIONS = {name: data.get("description", "") for name, data in PRESETS.items()}
 TABLE_SCHEMAS = CONFIG.get("output_formats", {}).get("table_schemas", {})
@@ -75,5 +89,5 @@ def reload_config():
     DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
     RAW_PREFIXES = RAW_COMMANDS.get("raw_commands", {}).get("allowed_prefixes", [])
     RAW_CATEGORIES = RAW_COMMANDS.get("raw_commands", {}).get("categories", {})
-    PRESETS = CONFIG.get("presets", {})
+    PRESETS = _load_presets(CONFIG)
     PRESET_DESCRIPTIONS = {name: data.get("description", "") for name, data in PRESETS.items()}

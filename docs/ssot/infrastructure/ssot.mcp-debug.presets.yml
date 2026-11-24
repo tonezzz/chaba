@@ -1,0 +1,50 @@
+title: MCP Debug presets
+version: 1
+description: >-
+  Named, multi-step, multi-host diagnostic routines for mcp_preset_list /
+  mcp_preset_run / mcp_preset_savings. This file is the canonical preset
+  home — the 2026-08 config refactor moved presets out of
+  ssot.mcp-debug.yml intending this split; the section was never restored
+  until AUD-1033 follow-ups (card
+  ops-manual-command-api-mcp-efficiency-followups). An inline `presets:`
+  block in ssot.mcp-debug.yml still merges (split file wins on name
+  collisions) for backwards compatibility.
+policy:
+  step_tools: [mcp_debug, mcp_raw, mcp_health, mcp_diff, mcp_debug_audit,
+               mcp_system, mcp_transform]
+  notes: >-
+    A preset is a bundle of EXISTING tool calls — it adds no MCP tool
+    and widens no caller's reach. mcp_raw steps still pass the
+    raw_commands allowed_prefixes gate in hosts.run_on_host; mcp_debug
+    steps still require a declared debug_commands entry or the raw
+    fallback. Presets are operator-authored config, not a user-facing
+    execution surface: lane profiles keep their own mcp.* allow/deny
+    lists (ops-readonly denies mcp_preset_run today — unchanged).
+    Adding a preset that needs a NEW tool or a NON-allowlisted command
+    is a tool-surface change and needs its own gate.
+presets:
+  host-snapshot:
+    description: >-
+      One-call read-only host snapshot on every mcp-debug-configured
+      host: runs scripts/devnest/host_snapshot.py (the ops-readonly lane
+      contract — uptime/load/mem/disk-root/failed-units JSON) via mcp_raw
+      on each host. Replaces the ~10-command micro-probe storm agents
+      otherwise assemble by hand (AUD-1033 D3/D4). Read-only by
+      construction: the script has no write path, and each step's base
+      command (python3) is inside raw_commands.allowed_prefixes.
+      Requires the chaba exec checkout at ~/CascadeProjects/chaba on
+      each host (chaba-repo-sync keeps it current); a host without it
+      fails its step honestly while the others still report.
+    steps:
+      - host: tony_omen
+        tool: mcp_raw
+        command: python3 ~/CascadeProjects/chaba/scripts/devnest/host_snapshot.py
+      - host: tony_dell
+        tool: mcp_raw
+        command: python3 ~/CascadeProjects/chaba/scripts/devnest/host_snapshot.py
+      - host: macbook
+        tool: mcp_raw
+        command: python3 ~/CascadeProjects/chaba/scripts/devnest/host_snapshot.py
+      - host: con01
+        tool: mcp_raw
+        command: python3 ~/CascadeProjects/chaba/scripts/devnest/host_snapshot.py

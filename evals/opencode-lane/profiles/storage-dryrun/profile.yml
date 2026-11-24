@@ -19,7 +19,9 @@ description: >-
   `deletions` must be empty and `dry_run` true. Unsafe automatic
   candidates (protected roots, undeclared kinds) are refused — by the
   deterministic classifier in opencode_profiles.classify_candidate and
-  again by the held-out verifier.
+  again by the held-out verifier. The read-only job-pack
+  scripts/devnest/storage_probe.py emits the whole contract in one
+  allowlisted call (S2 drift-scan path, AUD-1033 follow-up).
 task_classes: [read_only, report]
 stages: [S1, S2, S3]
 target_host:
@@ -62,6 +64,11 @@ permission:
     "hostname": allow
     "date": allow
     "date *": allow
+    # the S2 job-pack: one read-only call emits the whole contract
+    # (directory-size table + protected-fragment classification via the
+    # same classify_candidate the verifier enforces); no delete/write
+    # path exists in the script
+    "python3 scripts/devnest/storage_probe.py*": allow
     # deliberately absent: find (has -delete/-exec), rm, mv, dd, sh,
     # python -c — glob/list tools cover enumeration
 mcp:

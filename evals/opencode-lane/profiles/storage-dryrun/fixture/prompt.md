@@ -1,6 +1,14 @@
 # Task: storage inventory + candidate classification — {{HOST}}
 (dry-run only)
 
+FAST PATH (preferred): run
+`python3 scripts/devnest/storage_probe.py scan` — ONE read-only call
+walks the declared roots, sizes every candidate, classifies each
+through the same policy the verifier enforces, and prints the contract
+JSON. Emit that JSON as your final message (check `host` matches
+{{HOST}} first — patch it if the probe's hostname differs). The manual
+enumeration path below remains the fallback if the probe errors.
+
 Inventory the declared scan roots and classify cleanup candidates.
 This is a DRY RUN: you list and classify, you delete nothing.
 

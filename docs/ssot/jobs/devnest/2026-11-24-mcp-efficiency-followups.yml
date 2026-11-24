@@ -1,0 +1,148 @@
+title: "AUD-1033 gated follow-ups — runner claim-poll projection
+  (env-gated, parity-proven), host_snapshot mcp preset (live-verified,
+  no surface expansion), storage_probe.py S2 job-pack + deterministic
+  verifier"
+date: 2026-11-24
+card: ops-manual-command-api-mcp-efficiency-followups
+parent: ops-manual-command-api-mcp-efficiency-audit (AUD-1033)
+session: "devin-dispatch dispatch-wt-20261124-190507 (idc02)"
+status: "implemented + verified — no production rollout; enablement
+  stays behind each item's normal gate"
+
+gate_answer: >-
+  Tony answered all three gated follow-ups on the parent audit request
+  (gated-follow-ups-from-aud-1033-which-to-8d37ba): implement all,
+  independent tests, no production rollout without its normal gate.
+
+items:
+
+  1_runner_claim_poll_projection:
+    what: >-
+      runner-agent claim_pass + verdict_pass were the only two /cards
+      readers switched to the board-api field projection
+      (GET /cards?fields=<claim set>&limit=1000). All other passes keep
+      the legacy full read — the switchover is exactly the pair the
+      audit measured (~7.5 GB/day/host of comms-heavy dump for a
+      claim-poll that needs none of it).
+    fields: >-
+      CARDS_FIELDS = id,title,column,updated,priority,tags,brief,spec,
+      note,blocked_by,recoverability,report,auto_done_when,requests,
+      ask,pipeline,action — everything the claim/verdict path touches;
+      comms deliberately excluded (retry_gate's re-arm count is the one
+      heavy field, fetched lazily per claimed card via
+      /card/<id>?fields=comms, memoized, and treated as UNKNOWN —
+      blocking forgive AND re-baseline writes — when the fetch fails).
+    gate: "RUNNER_CARDS_PROJECTION env flag, default OFF — flip in the
+      runner unit env after this lands; unset = byte-identical legacy
+      path (rollback = unset)"
+    proof:
+      - "tests/board/test_runner_agent_projection.py — 17 tests: URL
+        shape, no comms in fields, unknown-comms blocks forgive +
+        re-baseline, static audit that claim-path functions read no
+        card keys outside CARDS_FIELDS, and a real-corpus parity run
+        (projected vs full through one claim+verdict cycle)"
+      - "scripts/board/cards_projection_soak.py — live poller diffing
+        full vs projected /cards with fresh /card/<id> confirm on
+        mismatch (distinguishes board churn from projection bugs)"
+      - "soak result 2026-11-24: 12/12 polls parity-clean, 0 bad —
+        ~12.74 MB full dump per poll vs the projected field set;
+        live churn (719->720 cards mid-soak) confirmed non-issue"
+    files: [scripts/board/runner-agent.py,
+            scripts/board/cards_projection_soak.py,
+            tests/board/test_runner_agent_projection.py]
+
+  2_host_snapshot_mcp_preset:
+    what: >-
+      The Aug config refactor dropped the inline presets: block and the
+      split ssot.mcp-debug.presets.yml was never created — PRESETS has
+      been empty since. Restored the intended split file and added the
+      scoped host-snapshot preset: one mcp_preset_run returns the
+      ops-readonly contract (host_snapshot.py) on all 4 configured
+      hosts via mcp_raw steps — replacing the ~10-command probe storm.
+    policy: >-
+      presets SSOT carries an explicit policy block (step_tools ⊆
+      mcp_preset_run's dispatch set); presets are bundles of EXISTING
+      tool calls — no new MCP tool, no widened caller reach. mcp_raw
+      steps still pass raw_commands.allowed_prefixes (python3 base);
+      lane profile mcp.* policy unchanged (every profile still denies
+      mcp_preset_run — presets serve full-surface clients: Ada, ad-hoc
+      agents).
+    proof:
+      - "live run 2026-11-24: mcp_preset_run('host-snapshot') -> ok:true,
+        all 4 hosts (tony_omen/tony_dell/macbook/con01) returned valid
+        contract JSON, read_only:true"
+      - "tests/test_mcp_debug_presets.py — 12 tests: SSOT loads + split
+        wins over inline, step tools dispatchable+declared, hosts
+        configured, mcp_raw bases in allowlist, mcp_debug commands
+        declared, host coverage == HOSTS, per-step failure honesty,
+        advertised tool list unchanged, no lane profile allows
+        mcp_preset_run"
+    files: [docs/ssot/infrastructure/ssot.mcp-debug.presets.yml,
+            scripts/mcp_debug/config.py,
+            docs/ssot/infrastructure/ssot.mcp-debug.yml,
+            docs/ssot/ssot.registry.ssot-infrastructure.yml,
+            docs/ssot/ssot.token-tools.yml,
+            tests/test_mcp_debug_presets.py]
+
+  3_storage_probe_s2_job_pack:
+    what: >-
+      scripts/devnest/storage_probe.py — read-only job-pack emitting
+      the storage-dryrun contract: walks declared scan_roots (bounded
+      by --max-entries), sizes every cleanup candidate (directory-size
+      table: per-root bytes + per-candidate bytes + summary rollup),
+      classifies each through the SAME
+      opencode_profiles.classify_candidate + profile policy the
+      held-out verifier enforces — protected-fragment checks are
+      structural, not model goodwill. deletions always [], dry_run
+      always true; no unlink/rename/write path exists in the script.
+    verify: >-
+      `storage_probe.py verify ARTIFACT.json` — deterministic
+      re-checker porting the held-out fixture/verify.py rules
+      (required fields, dry_run, deletions, root coverage, no
+      automatic_ok under protected/undeclared, all unsafe proposals
+      refused-or-non-auto, kinds declared, candidates-on-disk) —
+      policy re-derived from the profile, never trusting artifact
+      claims. Same {verdict, checks} shape, exit 0/1.
+    wiring:
+      - "storage-dryrun profile.yml: python3
+        scripts/devnest/storage_probe.py* added to bash allowlist +
+        description notes the job-pack"
+      - "fixture/prompt.md: FAST PATH note — one probe call preferred,
+        manual enumeration remains fallback"
+    proof:
+      - "live run vs committed fixture manifest: 11 candidates / 7
+        refused, verify pass (all 10 checks); real bytes measured —
+        1.6 MB automatic_ok vs 625 MB refused (go/pkg/mod, gods-eye-view
+        etc.)"
+      - "tests/devnest/test_storage_probe.py — 17 tests: seeded-tree
+        discovery (pycache/pyc/dsstore/empty_dir), .git prune,
+        protected refusal, proposal/discovery dedup, verify pass +
+        5 tamper-fail cases, source+functional read-only proofs, CLI
+        exit codes"
+    files: [scripts/devnest/storage_probe.py,
+            tests/devnest/test_storage_probe.py,
+            evals/opencode-lane/profiles/storage-dryrun/profile.yml,
+            evals/opencode-lane/profiles/storage-dryrun/fixture/prompt.md]
+
+tests_run:
+  - "tests/board/test_runner_agent_projection.py — 17 pass"
+  - "tests/test_mcp_debug_presets.py — 12 pass"
+  - "tests/devnest/test_storage_probe.py — 17 pass"
+  - "tests/devnest suite — 353 pass, 1 pre-existing failure
+    (test_lane_gate Admit.test_s1_requires_opencode_lanes_env — fails
+    identically at HEAD, unrelated)"
+  - "tests/board + preset suite — see dispatch outcome for final count"
+
+rollback:
+  item1: "unset RUNNER_CARDS_PROJECTION (default already off) — legacy
+    /cards reads resume byte-identically"
+  item2: "delete ssot.mcp-debug.presets.yml (or the host-snapshot
+    preset block) — PRESETS returns to empty; config.py merge is
+    additive-only"
+  item3: "remove the bash allowlist line + prompt fast-path — probe
+    script is inert without callers; profile policy/verifier untouched"
+
+related:
+  - docs/ssot/jobs/devnest/2026-10-31-manual-command-efficiency-audit.yml
+  - docs/reports/board-read-bench-2026-10-31.md
+  - evals/opencode-lane/PROCEDURE.md (S2 stage definition)

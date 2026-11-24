@@ -845,6 +845,79 @@ def save_state(st: dict) -> None:
     STATE_FILE.write_text(json.dumps(st, indent=1))
 
 
+# --- projected /cards read (AUD-1033 claim-poll efficiency) -----------
+# claim_pass + verdict_pass re-read the whole board every pass; the
+# projected endpoint returns the same cards minus comms (~12x smaller
+# on a comms-heavy board — 12.7MB -> ~1MB at 719 cards). Opt-in via
+# RUNNER_CARDS_PROJECTION=1; unset keeps the legacy dump so rollback is
+# env-only — no code revert, no deploy.
+CARDS_PROJECTION = os.environ.get("RUNNER_CARDS_PROJECTION", "0") == "1"
+# Top-level keys the claim/verdict passes and their card helpers read.
+# `action` stays whole — the executor/lane/envelope contract lives
+# inside it — and comms is deliberately absent: it is the bulk of the
+# dump and only retry_gate's re-arm count touches it, resolved lazily
+# per ledger-held card by _card_comms().
+CARDS_FIELDS = ("id", "title", "column", "updated", "priority", "tags",
+                "brief", "spec", "note", "blocked_by", "recoverability",
+                "report", "auto_done_when", "requests", "ask", "pipeline",
+                "action")
+CARDS_PAGE_LIMIT = 1000  # board-api CARDS_MAX_LIMIT
+
+
+def _cards_read() -> list:
+    """The /cards read shared by claim_pass and verdict_pass.
+
+    Legacy (default): GET /cards — the full dump, byte-identical to the
+    pre-projection behavior. RUNNER_CARDS_PROJECTION=1 pages
+    GET /cards?fields=…&limit=…&offset=… until the board-api
+    `truncated` flag clears. Any page that doesn't answer with a cards
+    list fails the whole read to [] — the same empty-board semantics
+    the legacy path has on error, so a flaky projection can never make
+    a pass see a partial board and claim on it."""
+    if not CARDS_PROJECTION:
+        return (api("/cards") or {}).get("cards") or []
+    out = []
+    off = 0
+    while True:
+        resp = api(f"/cards?fields={','.join(CARDS_FIELDS)}"
+                   f"&limit={CARDS_PAGE_LIMIT}&offset={off}")
+        page = (resp or {}).get("cards")
+        if not isinstance(page, list):
+            return []
+        out.extend(page)
+        if not (resp or {}).get("truncated") or not page:
+            return out
+        off += len(page)
+
+
+def _card_comms(card: dict):
+    """card['comms'] for the retry re-arm count — None when unknown.
+
+    Legacy reads carry the list inline. The projected read omits comms
+    (the dump's bulk), so a card that reaches _rearm_count pays ONE
+    /card/<id>?fields=comms fetch; only retry-ledger-held cards ever
+    get here, and the result caches on the card dict for the pass.
+    None (not []) on fetch failure: retry_gate must not mistake 'could
+    not read' for 'no re-arms' — a false 0 would forge a re-arm delta
+    and could forgive a ledger that should still hold."""
+    comms = card.get("comms")
+    if isinstance(comms, list):
+        return comms
+    cid = str(card.get("id") or "")
+    if not cid or card.get("_comms_tried"):
+        return None
+    card["_comms_tried"] = True
+    resp = api(f"/card/{cid}?fields=comms")
+    if not isinstance(resp, dict) or resp.get("error"):
+        return None
+    cc = resp.get("card")
+    if not isinstance(cc, dict):
+        return None
+    comms = cc.get("comms")
+    card["comms"] = comms if isinstance(comms, list) else []
+    return card["comms"]
+
+
 # --- task runtime seam (kk-mac-launchd-runner-port) -------------------
 # systemd-run on Linux, launchctl bootstrap/kickstart/print on macOS.
 # Every task unit — devin-task-* and runner-* alike — starts through
@@ -2727,10 +2800,15 @@ def _retry_save(log: dict) -> None:
         pass
 
 
-def _rearm_count(card: dict) -> int:
+def _rearm_count(card: dict):
     """Deliberate re-arms visible in comms — timestamp-free, so board
-    clock skew never enters the compare."""
-    return sum(1 for c in (card.get("comms") or [])
+    clock skew never enters the compare. None when comms can't be read
+    (projected read + failed lazy fetch) — callers must not treat
+    unknown as zero."""
+    comms = _card_comms(card)
+    if comms is None:
+        return None
+    return sum(1 for c in comms
                if str((c or {}).get("text") or "") in RETRY_REARM_TEXTS)
 
 
@@ -2749,7 +2827,9 @@ def retry_record_failure(cid: str, card: dict | None = None) -> None:
     ent["next_ok"] = int(now + min(RETRY_MAX_S,
                                   RETRY_BASE_S * (2 ** (fails - 1))))
     if card is not None:
-        ent["rearms"] = _rearm_count(card)
+        rearms = _rearm_count(card)
+        if rearms is not None:
+            ent["rearms"] = rearms
     log[cid] = ent
     _retry_save(log)
     if fails >= RETRY_MAX:
@@ -2792,7 +2872,9 @@ def retry_gate(card: dict) -> str:
     # A missing baseline means the entry was recorded before the card
     # was visible — establish it below without forgiving (an old
     # 'queued for processing' comms must not count as a fresh re-arm).
-    if erms is not None and rearms > int(erms):
+    # rearms=None means comms unreadable (projected read, lazy fetch
+    # failed) — unknown is never a forgive signal nor a baseline write.
+    if rearms is not None and erms is not None and rearms > int(erms):
         log = _retry_ledger()
         log.pop(cid, None)
         _retry_save(log)
@@ -2811,7 +2893,7 @@ def retry_gate(card: dict) -> str:
                 f"(fail {fails}/{RETRY_MAX})")
     # eligible again — establish/refresh the re-arm baseline so the
     # NEXT forgive still needs a re-arm after this point
-    if erms != rearms:
+    if rearms is not None and erms != rearms:
         log = _retry_ledger()
         e2 = log.get(cid)
         if e2 is not None:
@@ -4770,7 +4852,7 @@ def claim_pass(st: dict) -> bool:
             print(f"claim pass skipped: {cap}")
             _note_capacity_skip(cap)
             return False
-    cards = _claim_order((api("/cards") or {}).get("cards") or [])
+    cards = _claim_order(_cards_read())
     by_id = {c.get("id"): c for c in cards}
     changed = False
     for card in cards:
@@ -5115,7 +5197,7 @@ def verdict_pass(st: dict) -> None:
     host is busiest. Debounced by payload hash, forced every
     READY_FORCE_S; never fails the claim pass."""
     try:
-        cards = (api("/cards") or {}).get("cards") or []
+        cards = _cards_read()
         by_id = {c.get("id"): c for c in cards}
         verdicts = {}
         for c in cards:

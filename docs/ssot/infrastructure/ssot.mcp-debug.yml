@@ -586,13 +586,18 @@ suggested_extensions:
   - id: presets
     name: MCP Debug presets
     description:
-      "Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list and mcp_preset_run. First presets:
-      quick-health, top-cpu-both, service-diff. New: mcp-savings-audit preset, mcp_debug_audit single-call audit, and mcp_preset_savings
-      scoring for message and payload savings."
+      "Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list and mcp_preset_run. Presets live in
+      ssot.mcp-debug.presets.yml (restored 2026-11-24, AUD-1033 follow-ups — the Aug refactor dropped the inline block and
+      the split file was never created). First preset: host-snapshot (read-only host_snapshot.py sweep across all
+      configured hosts). Legacy presets (quick-health, top-cpu-both, service-diff, mcp-savings-audit) were dropped in the
+      refactor and not restored."
     priority: high
     status: completed
-    updated: "2026-08-19"
-    notes: Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.
+    updated: "2026-11-24"
+    notes: >-
+      Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.
+      2026-11-24 — presets SSOT split file created; host-snapshot preset added (one mcp_preset_run replaces the
+      ~10-command host probe storm).
   - id: containers
     name: Unified container list
     description: One `containers` command that auto-detects podman then docker and returns a compact, runtime-labeled JSON list.
@@ -632,4 +637,5 @@ related_files:
   - docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
   - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
   - docs/ssot/infrastructure/ssot.mcp-debug.files.yml
+  - docs/ssot/infrastructure/ssot.mcp-debug.presets.yml
   - docs/ssot/infrastructure/ssot.mcp-debug.reports.yml

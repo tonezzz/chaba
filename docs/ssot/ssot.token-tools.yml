@@ -301,8 +301,13 @@ sections:
         savings: "95.8-99.97% response bytes, identical evidence"
         benchmark: docs/reports/board-read-bench-2026-10-31.md
         status: implemented
-        pending_tests: "runner-agent switchover to
-          action_status=queued&fields=… after soak (carded follow-up)"
+        pending_tests: "runner-agent claim/verdict reads switch to the
+          projection via RUNNER_CARDS_PROJECTION=1 (env-gated, default
+          off) — field-parity proven in
+          tests/board/test_runner_agent_projection.py + live soak
+          scripts/board/cards_projection_soak.py; enablement is the
+          normal runner deploy gate (card
+          ops-manual-command-api-mcp-efficiency-followups)"
         pros:
           - zero capability regression (bare /cards untouched)
           - claim-poll 5.2 MB -> 1.7 KB at equal evidence
@@ -333,9 +338,13 @@ sections:
           mcp-debug presets, not bespoke ssh chains."
         type: mcp-optimization
         status: operational
-        recommended_action: "design-ready follow-ups: host_snapshot mcp
-          preset (MCP surface change — explicit gate), storage_probe.py
-          job-pack for drift scans"
+        recommended_action: "follow-ups landed 2026-11-24 (card
+          ops-manual-command-api-mcp-efficiency-followups): host-snapshot
+          preset in ssot.mcp-debug.presets.yml — one mcp_preset_run
+          returns the ops-readonly contract on all 4 configured hosts,
+          verified live; storage_probe.py job-pack + deterministic
+          verifier for the storage-dryrun contract. Presets add no MCP
+          tool and no global surface — lane mcp.* policy unchanged."
 
       - label: "/opencode-command publisher (ADA-1224)"
         text: "Allowlisted OpenCode command-file publisher — the manual
