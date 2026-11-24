@@ -1,7 +1,7 @@
 id: runner-pin-contract-merge-gate
 title: Block merges that leave runner tooling pins stale
 column: backlog
-updated: 2026-11-24 21:13
+updated: 2026-11-24 22:27
 brief: ops-1036 conflict resolution (da9798df42c) took source files from one side and runner-tooling.manifest.json
   pins from the other. The contract test failed and all 6 hosts showed tool drift. Pins were realigned in f13edd01d0d
   and tools resynced; add a gate so this cannot merge silently.
@@ -32,3 +32,10 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 22:27
+  from: devin
+  text: OPS-1326 implemented and landed on origin/master c653352ac4 (merge of pin-gate/OPS-1326 @ 134b11c7c5). Shared
+    scripts/board/tooling_pin_gate.py (pure find_mismatches + git-blob gathering) backs both .husky/pre-commit and
+    the new .husky/pre-merge-commit; the hook reads git blobs so it catches the ops-1036 conflict shape (source
+    from one parent, pins from the other) that a clean text merge lets through. scripts/board/dispatch_repos.pin_contract_gate
+    runs tests/board/test_runner_tooling_contract.py
