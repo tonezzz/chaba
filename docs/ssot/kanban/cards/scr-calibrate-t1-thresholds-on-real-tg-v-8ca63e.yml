@@ -1,7 +1,7 @@
 id: scr-calibrate-t1-thresholds-on-real-tg-v-8ca63e
 title: 'SCR: calibrate T1 thresholds on real TG voice corpus'
-column: doing
-updated: 2026-11-24 17:09
+column: review
+updated: 2026-11-24 17:14
 priority: medium
 spec: 'Context: research doc docs/kb/short-command-recognition-research.md, prototype docs/prototypes/short-command/
   (stdlib, host-agnostic). Work: (1) build a corpus.jsonl from the TG voice refs labeling short-command vs non-command
@@ -197,13 +197,43 @@ comms:
     Wrong-fire 0/28 real, 0/51 synthetic; non-command ceiling 0.216 vs true-command floor 0.615. Recommend accept=0.40
     gray_lo=0.25 (defaults updated) + tg_relay as first surface. Full writeup in docs/kb/short-command-recognition-research.md
     §Real-corpus calibration; trail in docs/s'
+- at: 2026-11-24 17:14
+  from: tony-omen
+  text: 'finished (ok): exit=0 atch-outcome-20261124-165210-context-research-doc-docs-kb-s.md`. | devin-task-20261124-165210-context-research-do'
+- at: 2026-11-24 17:14
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 17:14
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-165210-context-research-doc-docs-kb-s'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 17:14
+  from: chaba
+  text: pushed dispatch/20261124-165210-context-research-doc-docs-kb-s to origin
+- at: 2026-11-24 17:14
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 95.4s)
+- at: 2026-11-24 17:14
+  from: chaba
+  text: auto-merged c8cb0eb0 (dispatch/20261124-165210-context-research-doc-docs-kb-s) → origin/master
+- at: 2026-11-24 17:14
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 atch-outcome-20261124-165210-context-research-doc-docs-kb-s.md`. | devin-task-20261124-165210-context-research-doc-docs-kb-s.service:
+    Consumed 6min 53.791s CPU time over 17min 39.060s wall clock time, 1G memory peak, 32.2M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 16:50
+review_kind: verify
