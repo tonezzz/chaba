@@ -1,7 +1,7 @@
 id: audit-miss-uncommitted-worktree-job-artifacts
 title: Job records and eval artifacts uncommitted in live dispatch worktrees
-column: doing
-updated: 2026-11-24 22:43
+column: review
+updated: 2026-11-24 22:49
 brief: 'Session audit 2026-11-20 (AUD-0973): produced artifacts found only as uncommitted or local-branch files
   in still-existing worktrees; never reached origin/master.'
 priority: medium
@@ -156,12 +156,44 @@ comms:
     KB section; pdf-image-audit: report + 3 jobs + 5 packs + merged preview pack.yml/test; sacred-father: panel-to-cut
     procedure docs; opencode eval: job record + compile_proposal + 10 jobs + 2 profiles + 3 reports + shadow/task
     + devnest lane merges). TRAIL: docs/ssot/jobs/board/2026-11-24-w'
+- at: 2026-11-24 22:49
+  from: idc02
+  text: 'finished (ok): exit=0  outcome in `dispatch-outcome-20261124-220107-land-or-consciously-discard-th.md`,
+    card comms posted. | devin-task'
+- at: 2026-11-24 22:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:49
+  from: chaba
+  text: banked 341 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:49
+  from: chaba
+  text: pushed dispatch/20261124-220107-land-or-consciously-discard-th to origin
+- at: 2026-11-24 22:49
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:49
+  from: chaba
+  text: auto-merged 82051760 (dispatch/20261124-220107-land-or-consciously-discard-th) → origin/master
+- at: 2026-11-24 22:49
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-220107-land-or-consciously-discard-th,
+    branch dispatch/20261124-220107-land-or-consciously-discard-th'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0  outcome in `dispatch-outcome-20261124-220107-land-or-consciously-discard-th.md`, card comms posted.
+    | devin-task-20261124-220107-land-or-consciously-discard-th.service: Consumed 1min 16.528s CPU time, 1.0G memory
+    peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:59
+review_kind: verify
