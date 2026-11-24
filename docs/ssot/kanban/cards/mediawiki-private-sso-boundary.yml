@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-24 08:30
+updated: 2026-11-24 08:39
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -222,6 +222,10 @@ comms:
 - at: 2026-11-24 08:30
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: oidc-provider-choice
