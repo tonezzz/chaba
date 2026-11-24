@@ -1,0 +1,71 @@
+title: /ada sweep menu regression — restore ada-code workspace on idc02
+date: 2026-11-24
+card: ada-sweep-menu-regression-20261108
+dispatch: dispatch-wt-20261124-214603-find-why-the-previously-availa
+status: shipped-live   # workspace restored; publisher verify match:true
+
+summary: |
+  The `/ada sweep` menu entry is not a separate registration — it is a
+  bullet inside the `/ada` OpenCode custom command defined in
+  `.opencode/commands/ada.md` of the ada-code workspace on idc02
+  (`~/.local/share/ada-code/workspace`). That directory is the project
+  root the ada-ocb OpenChamber pane opens (proven by ADA-0186 smoke
+  sessions, directory=/home/tony/.local/share/ada-code/workspace) and the
+  deploy target of the governed opencode-command publisher
+  (POST /opencode-command on board-api; canonical
+  stacks/idc02/ada-code/commands/ada.md, sha 077aaff3).
+
+  On 2026-11-24 ~10:38 +07 the ada-code / ada-code-enroll / jack-ide
+  quadlets were retired (`*.container.retired-20261124` in
+  ~/.config/containers/systemd/) and the whole `~/.local/share/ada-code`
+  tree — including `workspace/` with `.opencode/commands/ada.md`,
+  `.opencode/opencode.json` (ada-control MCP →
+  ~/CascadeProjects/ada-bridge/opencode/ada_mcp.py via
+  ~/.local/venvs/ada-mcp) — was moved to
+  `~/backups/retired-opencode-20261124/`. Public routes
+  ada-code.surf-thailand.com / opencode-ada.surf-thailand.com were also
+  removed from the Caddyfile (backup Caddyfile.bak-retired-opencode-20261124).
+  Live opencode on idc02 is now host `opencode-serve.service`
+  (v2.4.1) + OpenChamber at ada-ocb.surf-thailand.com.
+
+  The ada_sweep backend was never wrong: idc03 ada-dev /api/tools lists
+  it, and the restored ada.md still carries the `/ada sweep [n]` bullet
+  (verified sha 077aaff3 = publisher canonical, `verify` op returns
+  match:true).
+
+changes:
+  - host: idc02
+    op: mv ~/backups/retired-opencode-20261124/ada-code/workspace
+        -> ~/.local/share/ada-code/workspace
+    notes: >-
+      Only `workspace/` was moved back — it is the OpenChamber project
+      dir and needs no quadlet. `home/`, `state/`, `gdrive/`,
+      `devin-summaries/` remain in the backup (container-only mounts).
+      The retired quadlets, Caddy routes, and enroll units stay retired.
+
+verification:
+  - >-
+    `POST /opencode-command {op:verify}` on board-api →
+    `{match:true, canonical_sha:077aaff3…, deployed_sha:077aaff3…}`.
+  - >-
+    `.opencode/commands/ada.md` contains the `/ada sweep [n]` bullet
+    (line ~64) plus `/ada attention`, `/ada stuck`.
+  - >-
+    MCP bridge smoke: `~/.local/venvs/ada-mcp/bin/python
+    ~/CascadeProjects/ada-bridge/opencode/ada_mcp.py` starts and prints
+    "ada-control bridge git-678b960 starting (tools=30)".
+  - >-
+    Residual: OpenChamber/opencode reads `.opencode/commands/` at session
+    start — an already-open session may need a reload/new session before
+    the `/ada` menu reappears in the slash picker.
+
+followups:
+  - >-
+    If the intent was to retire the Ada OpenCode responder entirely
+    (not just the container), the durable fix is re-homing
+    `.opencode/commands/ada.md` + the ada-control MCP stanza into the
+    ada-ocb workspace (`~/CascadeProjects/ada-ocb/.opencode/`) — card it
+    rather than letting two surfaces drift again.
+  - >-
+    The opencode-command publisher allowlist still targets the restored
+    path — no change needed; `verify`/`sync` work again.
