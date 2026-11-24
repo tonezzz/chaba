@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
-column: doing
-updated: 2026-11-24 22:30
+column: review
+updated: 2026-11-24 22:35
 priority: medium
 tags:
 - embedding
@@ -255,13 +255,44 @@ comms:
     was 1.1-1.4s top-10 vs 565ms eval estimate -> sync top-10 ~1.4-1.7s added, ~3x over the ~500ms voice budget;
     dense-only BGE < Gemini so async-refine alone cannot fix the current turn. Raised board request bge-serving-cutover-pick-the-architectur-3728d5
     with 4 options, sugge'
+- at: 2026-11-24 22:35
+  from: idc02
+  text: 'finished (ok): exit=0 ce serving-path implementation, async-hybrid → plumbing design, stay-gemini → park
+    until soak data. | devin-task-'
+- at: 2026-11-24 22:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:35
+  from: chaba
+  text: banked 42 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:35
+  from: chaba
+  text: pushed dispatch/20261124-221747-quality-gate-is-passed-local-b to origin
+- at: 2026-11-24 22:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:35
+  from: chaba
+  text: auto-merged 19c0c6e7 (dispatch/20261124-221747-quality-gate-is-passed-local-b) → origin/master
+- at: 2026-11-24 22:35
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-221747-quality-gate-is-passed-local-b,
+    branch dispatch/20261124-221747-quality-gate-is-passed-local-b'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 ce serving-path implementation, async-hybrid → plumbing design, stay-gemini → park until soak
+    data. | devin-task-20261124-221747-quality-gate-is-passed-local-b.service: Consumed 1min 5.483s CPU time, 485.8M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:17
 requests:
@@ -286,3 +317,4 @@ requests:
   - id: stay-gemini
     label: Stay on current sync path + keep shadow soaking; revisit with data
   suggested: probes-first
+review_kind: verify
