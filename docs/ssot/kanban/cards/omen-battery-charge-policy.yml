@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
-column: review
-updated: 2026-11-24 17:04
+column: backlog
+updated: 2026-11-24 18:44
 tags:
 - hardware
 - omen
@@ -287,12 +287,17 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: classified as devin (kw:automation conf 1.00)
+- at: 2026-11-24 18:44
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: devin
   lane_source: kw
-  runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-24 15:39
@@ -300,7 +305,6 @@ action:
     close_held: 2026-11-24 16:38
   result: 'exit=0 ended), after which the automation activates automatically. | devin-task-20261124-160901-goal-keep-omen-battery-in-40-8.service:
     Consumed 4min 42.815s CPU time over 22min 37.048s wall clock time, 938.9M memory peak, 443.6M memory swap peak.'
-  verified: true
 claim:
   since: 2026-11-24 15:17
 requests:
@@ -361,5 +365,4 @@ requests:
     label: Sonoff/eWeLink plug
   - id: have-one
     label: Already have a spare — will say which
-awaiting_action: true
 review_kind: verify
