@@ -61,6 +61,7 @@ verify:
   - "DONE 2026-11-24: POST /publish -> wiki-education=delivered, wiki:Education:Ada-Ocb-Skills pageid 333 revid 480 (event skills-wiki-export-2026-11-24)"
   - "DONE 2026-11-24: POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row (slug lesson-d8b6938588d3, next_review 2026-12-08)"
   - "DONE 2026-11-24: card ADA-0031 closed (column done via board-api /action)."
+  - "DONE 2026-11-24: EDU_SOURCE=wiki education-report on idc03 -> 220 lessons, 205 flagged, compliance 0.7390, drift 16/40, due 164, verify=pass, holds=1; lesson-d8b6938588d3 (ada-ocb-skills) present in latest.md/json. Its source-gone flags for tests/test_agents_skills_explored.py and docs/kb/ada-ocb-skills-education.md are expected until this branch merges into the idc03 checkout."
 
 polish_attempt:
   date: 2026-11-24
@@ -80,6 +81,6 @@ polish_attempt:
     left behind.
 
 remaining:
-  - "Verify EDU_SOURCE=wiki education-report counts the new lesson (in progress)."
+  - "After merge to the idc03 checkout, re-run EDU_SOURCE=wiki education-report to clear the two source-gone flags on lesson-d8b6938588d3."
   - "Refresh the hub inventory when a skill is added/removed; the test will fail first."
   - "Cargo query polish blocked: wiki host needs Cargo table setup/maintenance first (see polish_attempt); retry the declare/store only after the table exists."
