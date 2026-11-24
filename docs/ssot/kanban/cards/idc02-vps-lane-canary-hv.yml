@@ -1,7 +1,7 @@
 id: idc02-vps-lane-canary-hv
 title: 'Canary: idc02 vps-label ada-pi dispatch lane (high-pri re-queue)'
 column: doing
-updated: 2026-11-24 15:53
+updated: 2026-11-24 15:54
 brief: High-priority re-queue of idc02-vps-lane-canary (closed) — same one-shot canary for card idc02-second-ada-pi-lane.
 priority: high
 tags:
@@ -23,6 +23,9 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 15:53
+    merge_err: 2026-11-24 15:54
 ref: OPS-0034
 comms:
 - at: 2026-11-24 15:46
@@ -88,6 +91,15 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''vps''] — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-24 15:53
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-155106-trivial-ada-voice-change-to-ex no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-24 15:54
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261124-155106-trivial-ada-voice-change-to-ex failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
 claim:
   since: 2026-11-24 15:50
 awaiting_action: true
