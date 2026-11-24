@@ -1,7 +1,7 @@
 id: consultant-brain-confirmation-bench
 title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
 column: doing
-updated: 2026-11-24 23:15
+updated: 2026-11-24 23:23
 priority: medium
 tags:
 - ada
@@ -191,6 +191,10 @@ comms:
   from: chaba
   text: 'needs input: kk-mac is asleep — wake it (or approve a degraded omen run) so the qwen3:8b x3 confirmation
     series can execute?'
+- at: 2026-11-24 23:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-155153-follow-up-to-ada-consultant-ti no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -199,6 +203,8 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 23:23
 claim:
   since: 2026-11-24 22:51
 requests:

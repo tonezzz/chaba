@@ -1,7 +1,7 @@
 id: cf-ssl-strict-migrate-idc02-edge-origin-3fa959
 title: 'CF SSL=strict: migrate idc02 edge origin certs off tls internal, then flip zone'
 column: review
-updated: 2026-11-24 23:21
+updated: 2026-11-24 23:23
 priority: medium
 spec: 'Make surf-thailand.com zone SSL mode ''strict'' without breaking any proxied hostname.
 
@@ -128,6 +128,9 @@ comms:
 - at: 2026-11-24 23:21
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 23:23
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-222656-make-surf-thailand-com-z'
 action:
   type: dispatch
   status: done
@@ -137,6 +140,8 @@ action:
   attempts: 1
   result: 'exit=0 tch branch (`1b4cc04ab84`), final comms posted to the card. | devin-task-20261124-222656-make-surf-thailand-com-zone-ss.service:
     Consumed 3min 46.170s CPU time over 52min 1.591s wall clock time, 1023.6M memory peak, 416.4M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-24 23:23
 claim:
   since: 2026-11-24 22:26
 review_kind: verify
