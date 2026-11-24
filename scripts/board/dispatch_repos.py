@@ -82,10 +82,6 @@ except Exception:  # executor optional — a declared goal set then blocks
 BUILTIN_REPOS = {
     "chaba": ("~/CascadeProjects/chaba", "master"),
     "ada-voice": ("~/CascadeProjects/ada-voice", "main"),
-    # legacy alias for cards/dispatches still naming the pre-rename repo
-    # (kanban ada-pi-rename-ada-voice, 2026-10-14) — retire once no card
-    # carries action.repo: ada-pi
-    "ada-pi": ("~/CascadeProjects/ada-voice", "main"),
     "sunsynk-card": ("~/CascadeProjects/sunsynk-power-flow-card", "main"),
     "mddb-fork": ("~/CascadeProjects/mddb-fork", "main"),
     "gods-eye-view": ("~/gods-eye-view", "main"),
@@ -1431,9 +1427,6 @@ REPO_TESTS = {
               "-x -q",
               "timeout": 240},
     "ada-voice": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
-               "timeout": 300},
-    # legacy alias — same suite for cards still saying repo: ada-pi
-    "ada-pi": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
                "timeout": 300},
     # Unlisted repos get the default command — but only when the merged
     # tree actually carries a tests/ dir (run_test_gate skips otherwise),

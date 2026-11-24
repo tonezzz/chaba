@@ -178,13 +178,11 @@ _load_repos() {
     REPOS=(
       [chaba]="$HOME/CascadeProjects/chaba"
       [ada-voice]="$HOME/CascadeProjects/ada-voice"
-      # legacy alias — cards still naming the pre-rename repo resolve here
-      [ada-pi]="$HOME/CascadeProjects/ada-voice"
       [sunsynk-card]="$HOME/CascadeProjects/sunsynk-power-flow-card"
       [mddb-fork]="$HOME/CascadeProjects/mddb-fork"
     )
     REPO_DEFAULT_BRANCH=(
-      [chaba]="master" [ada-voice]="main" [ada-pi]="main"
+      [chaba]="master" [ada-voice]="main"
       [sunsynk-card]="main" [mddb-fork]="main"
     )
   fi
