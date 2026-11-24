@@ -60,8 +60,26 @@ verify:
   - "DONE 2026-11-24: python3 scripts/render-jobs.py --check -> OK 116 jobs, 8 hosts"
   - "DONE 2026-11-24: POST /publish -> wiki-education=delivered, wiki:Education:Ada-Ocb-Skills pageid 333 revid 480 (event skills-wiki-export-2026-11-24)"
   - "DONE 2026-11-24: POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row (slug lesson-d8b6938588d3, next_review 2026-12-08)"
+  - "DONE 2026-11-24: card ADA-0031 closed (column done via board-api /action)."
+
+polish_attempt:
+  date: 2026-11-24
+  status: blocked_by_host_setup
+  attempted: >
+    Cargo declare/store added to แม่แบบ:Education (revid 481) plus a
+    dedicated Education:Cargo-Education declaration page (revid 482).
+  finding: >
+    Cargo is installed and approved on wiki.h3, but action=cargotables
+    returns [] — page saves and action=purge did not create the Education
+    table. Table creation needs host-level Cargo maintenance, which the
+    board-api /wiki/page door cannot perform.
+  reverted: >
+    แม่แบบ:Education restored byte-identical to its pre-edit wikitext
+    (revid 483, verified against backup); Education:Cargo-Education
+    reduced to a pointer note (revid 484). No half-configured template
+    left behind.
 
 remaining:
-  - "Optional (Tony): run EDU_SOURCE=wiki education-report and confirm the new lesson in the daily audit."
+  - "Verify EDU_SOURCE=wiki education-report counts the new lesson (in progress)."
   - "Refresh the hub inventory when a skill is added/removed; the test will fail first."
-  - "Optional on-wiki polish: {{#cargo_declare}} on แม่แบบ:Education for queryable next_review/status."
+  - "Cargo query polish blocked: wiki host needs Cargo table setup/maintenance first (see polish_attempt); retry the declare/store only after the table exists."
