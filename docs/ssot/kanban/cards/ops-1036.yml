@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
-column: review
-updated: 2026-11-24 20:31
+column: done
+updated: 2026-11-24 20:44
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -235,6 +235,15 @@ comms:
 - at: 2026-11-24 20:31
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-193310-idc02-has-68-stale-dis'
+- at: 2026-11-24 20:44
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261124-193310-idc02-has-68-stale-dispatch-wt
+    (tip d243512d942b) merged into origin/master as da9798df42cc after resolving the stale regenerated-SSOT snapshot
+    conflict (kept the newer master snapshot; substantive branch changes kept). Runner reported finished (ok) with
+    an outcome doc. Closing.'
+- at: 2026-11-24 20:44
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
