@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: doing
-updated: 2026-11-24 16:38
+updated: 2026-11-24 16:39
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -288,6 +288,14 @@ comms:
     live db files excluded). First snapshot f52d710d (4.365GiB) verified on tony-dell:/dell-backup — household.yml
     + .storage + both DBs present, quick_check ok. snapshot-config.sh extended to commit ada-ha nightly too (household.yml
     now tracked; secrets.ya'
+- at: 2026-11-24 16:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-161435-verified-loginctl-linger-yes-e no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-24 16:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-161435-verified-loginctl-linger-yes-e on tony-macbook still
+    dirty — 7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -295,5 +303,8 @@ action:
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 16:38
+    dirty: 7
 claim:
   since: 2026-11-24 16:13
