@@ -11,8 +11,47 @@ ansible.cfg               # inventory + become defaults
 inventory/hosts.yml       # all hosts, groups, tailscale IPs (SSOT-linked)
 inventory/group_vars/all.yml   # common_packages, unattended-upgrades policy
 inventory/host_vars/<host>.yml  # per-host opt-ins (e.g. docker_enabled)
+inventory/group_vars/ocb_pane.yml   # declared ada-ocb pane contract (pins, units, edge)
 playbooks/site.yml        # baseline: packages, security updates, docker check
+playbooks/ada-ocb-audit.yml   # read-only pane surface probe + durable artifact
+playbooks/ada-ocb-verify.yml  # contract gate (producer + consumer), nonzero on drift
+playbooks/tasks/ada-ocb-{probe,edge-probe}.yml  # shared one-round-trip probes
+playbooks/templates/ada-ocb-audit.j2       # audit report renderer
 ```
+
+## ada-ocb pane audit + verify (read-only)
+
+The OpenChamber pane already has its own upgrade executor on idc02
+(`openchamber-update.service` + monthly timer — npm install, fail-loud
+`models.status` patch re-apply, restart). Ansible does **not** duplicate that
+installer. These two playbooks make the declared state inspectable and gateable:
+
+```bash
+cd ansible
+ansible-playbook playbooks/ada-ocb-audit.yml              # probe both pane hosts + public edge
+ansible-playbook playbooks/ada-ocb-audit.yml --limit idc02
+ansible-playbook playbooks/ada-ocb-verify.yml             # gate: exit 2 on drift
+ansible-playbook playbooks/ada-ocb-verify.yml --limit idc02
+```
+
+- `ocb_pane` group = **idc02 (primary)** + **tony-dell (soak fallback)**.
+  Only `primary` is held to the declared version pins + models.status patch;
+  the pre-migration fallback's drift is reported as INFO, not a gate failure.
+- Pins live in `inventory/group_vars/ocb_pane.yml` **and** are cross-checked
+  against `ssot.audit.hosts.yml` at runtime — a stale pin fails the gate rather
+  than blessing the wrong version.
+- Both playbooks are read-only on every target; probes carry `check_mode: no`
+  so `--check` still yields genuine evidence. Artifacts land in
+  `reports/ada-ocb/<host>.yml` (gitignored).
+- **Producer proof** (unit/timer active, loopback bind, local 200, patch marker,
+  startup.env 600, litellm drop-in) and **consumer proof** (public edge 200 +
+  CSP `frame-ancestors`) are both required — a healthy service behind a broken
+  edge is a failure.
+- No secrets are read into Ansible; the probe only checks that `startup.env`
+  is mode 600 and that the drop-in references `litellm-ada.env`.
+- Prod writes (an `ada-ocb-upgrade.yml`) remain out of scope until explicitly
+  approved in-session; when added it must start the host's existing update
+  unit, not reimplement `npm i -g`.
 
 ## Install ansible (once, on the controller — any tailnet host)
 

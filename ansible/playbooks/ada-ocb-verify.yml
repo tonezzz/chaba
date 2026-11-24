@@ -1,0 +1,102 @@
+---
+# ada-ocb-verify.yml — contract gate for the OpenChamber pane.
+#
+# Standalone (does not depend on a prior audit run): probes each pane host,
+# probes the public edge, then asserts the declared contract from
+# inventory/group_vars/ocb_pane.yml, cross-checked against the pins in
+# ssot.audit.hosts.yml. A stale pin here fails loudly instead of silently
+# blessing the wrong version. Nonzero exit = drift, with the failing
+# assertion named in output — never a silent "ok".
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ada-ocb-verify.yml
+#   ansible-playbook playbooks/ada-ocb-verify.yml --limit idc02
+#   ansible-playbook playbooks/ada-ocb-verify.yml -e ocb_web_version=2.7.4
+
+- name: Probe ada-ocb pane hosts (read-only)
+  hosts: ocb_pane:!disabled
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Include the shared pane probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-probe.yml
+
+- name: Assert the declared contract (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    ocb_ssot_raw: "{{ lookup('file', playbook_dir ~ '/../../docs/ssot/infrastructure/ssot.audit.hosts.yml') }}"
+
+  tasks:
+    - name: Load the declared pane contract
+      ansible.builtin.include_vars: ../inventory/group_vars/ocb_pane.yml
+
+    - name: Include the public-edge probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-edge-probe.yml
+
+    - name: Pins agree with the SSOT declaration
+      ansible.builtin.assert:
+        that:
+          - "'@openchamber/web@' ~ ocb_web_version in ocb_ssot_raw"
+          - "'@opencode/cli@' ~ ocb_cli_version in ocb_ssot_raw"
+        success_msg: "Pins {{ ocb_web_version }} / {{ ocb_cli_version }} are declared in ssot.audit.hosts.yml"
+        fail_msg: >-
+          Pins in inventory/group_vars/ocb_pane.yml are stale — update them
+          together with ssot.audit.hosts.yml (single source of truth).
+
+    - name: Producer contract on each pane host
+      ansible.builtin.assert:
+        that:
+          - "p.web_version == ocb_web_version or ocb_role_val not in ocb_strict_roles"
+          - "p.cli_version == ocb_cli_version or ocb_role_val not in ocb_strict_roles"
+          - "(required_units | difference(p.units.keys() | list)) | length == 0"
+          - "(required_units | map('extract', p.units) | reject('equalto', 'active') | list) | length == 0"
+          - "p.bind_3000 == ocb_bind"
+          - "p.local_http == '200'"
+          - "p.patch_present | bool or ocb_role_val not in ocb_strict_roles"
+          - "p.startup_env_mode == '600'"
+          - "p.litellm_dropin | bool"
+        success_msg: "{{ target }} ({{ ocb_role_val }}) producer contract OK"
+        fail_msg: >-
+          {{ target }} ({{ ocb_role_val }}) producer drift: web={{ p.web_version }}
+          cli={{ p.cli_version }} required_units={{ required_units }}
+          units={{ p.units }} bind={{ p.bind_3000 }} local={{ p.local_http }}
+          patch={{ p.patch_present }} startup_mode={{ p.startup_env_mode }}
+          litellm={{ p.litellm_dropin }}
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: target
+      vars:
+        p: "{{ hostvars[target].ocb_probe }}"
+        ocb_role_val: "{{ hostvars[target].ocb_role | default('fallback') }}"
+        required_units: "{{ ocb_required_units + (ocb_primary_extra_units if ocb_role_val == 'primary' else []) }}"
+
+    - name: Report (non-fatal) drift on the soak fallback
+      ansible.builtin.debug:
+        msg: >-
+          INFO {{ target }} is role={{ hostvars[target].ocb_role | default('fallback') }}
+          (not strict): observed web={{ hostvars[target].ocb_probe.web_version }}
+          cli={{ hostvars[target].ocb_probe.cli_version }}
+          patch={{ hostvars[target].ocb_probe.patch_present }} — reported,
+          not a gate failure (pre-migration soak copy pending Tony's retire
+          decision).
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: target
+      when: hostvars[target].ocb_role | default('fallback') not in ocb_strict_roles
+
+    - name: Consumer contract (public edge a user actually touches)
+      ansible.builtin.assert:
+        that:
+          - "ocb_edge.http == '200'"
+          - "ocb_edge_csp_must_contain in ocb_edge.csp"
+        success_msg: "Edge 200 with CSP containing {{ ocb_edge_csp_must_contain }}"
+        fail_msg: "Public edge drift: http={{ ocb_edge.http }} csp={{ ocb_edge.csp }}"
+
+    - name: Verdict
+      ansible.builtin.debug:
+        msg: >-
+          PASS — ada-ocb producer + consumer contract verified on
+          {{ groups['ocb_pane'] | join(', ') }}

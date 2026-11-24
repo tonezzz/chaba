@@ -1,0 +1,25 @@
+---
+# Declared ada-ocb pane contract — mirrors ssot.audit.hosts.yml (idc02 block).
+# verify asserts these strings are present in that SSOT file, so a stale pin
+# here fails loudly instead of silently passing against outdated expectations.
+
+ocb_web_version: "2.7.3"
+ocb_cli_version: "2.3.2"
+ocb_bind: "127.0.0.1:3000"
+ocb_edge_url: "https://ada-ocb.surf-thailand.com/"
+# Force the public edge to the known front IP rather than controller DNS.
+ocb_edge_resolve: "ada-ocb.surf-thailand.com:443:45.136.236.190"
+ocb_edge_csp_must_contain: "frame-ancestors"
+# Required on both hosts (declared for tony-dell too in ssot.audit.hosts.yml).
+ocb_required_units:
+  - openchamber.service
+  - openchamber-update.timer
+# idc02-only: the smoke timer and bridge-sync timer are declared/canonical
+# on the primary pane; the tony-dell soak copy predates both.
+ocb_primary_extra_units:
+  - ada-ocb-smoke.timer
+  - ada-ocb-bridge-sync.timer
+# Only the primary is held to the declared version pins + models.status patch.
+# The fallback is a pre-migration soak copy; drift there is reported, not fatal.
+ocb_strict_roles:
+  - primary

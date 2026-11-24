@@ -1,0 +1,39 @@
+---
+# Consumer proof for ada-ocb: the public edge a user actually touches, not
+# just the local service. Runs on the controller; forces the known front IP
+# via --resolve so DNS drift cannot make this check pass against a stale pane.
+
+- name: Probe public edge and CSP (controller-side)
+  ansible.builtin.shell: |
+    python3 - <<'PYEOF'
+    import json, subprocess
+
+    def sh(cmd):
+        try:
+            p = subprocess.run(["bash", "-c", cmd], capture_output=True,
+                               text=True, timeout=20)
+            return p.stdout.strip()
+        except Exception:
+            return ""
+
+    resolve = "{{ ocb_edge_resolve }}"
+    url = "{{ ocb_edge_url }}"
+    out = {
+        "http": sh("curl -sk --resolve '%s' -o /dev/null -w '%%{http_code}' '%s'"
+                   % (resolve, url)),
+        "csp": sh("curl -skI --resolve '%s' '%s' "
+                  "| grep -i '^content-security-policy:' | head -1"
+                  % (resolve, url)),
+    }
+    print(json.dumps(out))
+    PYEOF
+  args:
+    executable: /bin/bash
+  register: ocb_edge_raw
+  changed_when: false
+  failed_when: false
+  check_mode: no
+
+- name: Store edge probe as a fact
+  ansible.builtin.set_fact:
+    ocb_edge: "{{ ocb_edge_raw.stdout | from_json }}"
