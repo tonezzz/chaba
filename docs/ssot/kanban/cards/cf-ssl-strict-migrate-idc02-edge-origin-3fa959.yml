@@ -1,7 +1,7 @@
 id: cf-ssl-strict-migrate-idc02-edge-origin-3fa959
 title: 'CF SSL=strict: migrate idc02 edge origin certs off tls internal, then flip zone'
 column: doing
-updated: 2026-11-24 22:27
+updated: 2026-11-24 22:32
 priority: medium
 spec: 'Make surf-thailand.com zone SSL mode ''strict'' without breaking any proxied hostname.
 
@@ -93,6 +93,12 @@ comms:
     LIVE UPGRADE EXECUTED by Tony 2026-11-24 08:25-08:26 +; [boards-member-theme-pick-tune] [attempt2] live state
     verified: Blocksy 2.1.62 a; [idc01-return-role] standby-edge gap closed: the "cert sync" referenced in Caddy;
     [rebuild-gesture-controls-using-yolo-190356] DONE (attempt on'
+- at: 2026-11-24 22:32
+  from: devin
+  text: 'attempt-1 starting on tony-dell. Inventory done: zone has 25 proxied names — 17 hit idc02 caddy-edge (tls
+    internal), api+app+idc03 hit idc03 (LE ok), idc01 unreachable, wiki+wiki-internal CNAME->Plesk 103.99.11.249
+    (gizmo cert, no surf SANs), claw=CF worker no origin, edge=dns-only. CF token on idc03 has DNS+zone-settings
+    scope. Next: inspect live caddy configs on idc02/idc03, then Origin-CA cert plan.'
 action:
   type: dispatch
   status: running
