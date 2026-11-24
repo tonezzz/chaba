@@ -1,7 +1,7 @@
 id: mddb-cms-embed-quota-write-timeout-stall
 title: mddb-cms /v1/add stalls 30s+ when embed providers quota-capped — fleet-wide write timeouts
 column: doing
-updated: 2026-11-24 21:12
+updated: 2026-11-24 21:23
 priority: high
 tags:
 - mddb
@@ -171,6 +171,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:23
+  from: devin
+  text: 'DONE (dispatch 210507). Verified live: write path clean (0 timeouts/2h), leader queue draining 2919->1479,
+    but CMS bge-m3 lane still degraded (shim 504s, kk-mac admission 503s; droppedTotal=910 needs :11027 reindex
+    after recovery). Gap fixed: embed-probe now watches BOTH mddb planes queues (was leader-only — the 11-19 blind
+    spot). Commit 86c3cfec on dispatch branch; job record docs/ssot/jobs/mddb/2026-11-24-embed-quota-write-timeout-verify.yml.
+    Options (b) QUEUE_WAIT/timeout tuning left for Tony'
 action:
   type: dispatch
   status: running
