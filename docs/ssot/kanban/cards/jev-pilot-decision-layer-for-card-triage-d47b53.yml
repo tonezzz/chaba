@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: doing
-updated: 2026-11-24 16:02
+updated: 2026-11-24 16:30
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -246,6 +246,13 @@ comms:
     live at tony-omen:8780 (distilmulti, choice head still dead per probe); idc03:8778/8779 dead post-reboot (SSOT
     audit drift); openjev gemma-3-1b students live on omen:8778/8779 with full choice/score/noul. Running 10-card
     triage vs student + 1b arms.'
+- at: 2026-11-24 16:30
+  from: devin
+  text: 'DONE (2026-11-24, commit 4587aadbdf5 on dispatch branch). PHASE 1: scripts/jev/card-triage.py ran 10 real
+    backlog cards x 2 live arms -> docs/reports/jev-card-triage-2026-11-24.md + evals/results/jev/card-triage-2026-11-24.json.
+    FINDINGS: jev-student choice/score still dead (answer@0.0 x10, noul-collapsed score); student-1b (omen:8778
+    gemma-3-1b) choice works but argmax collapses to devin 9/10; priority score degenerate; prod kw classifier false-positived
+    3 cards to free_lane on broad substring '
 action:
   type: dispatch
   status: running
