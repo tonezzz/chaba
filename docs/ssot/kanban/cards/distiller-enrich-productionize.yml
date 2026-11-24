@@ -1,6 +1,6 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
-column: backlog
+column: doing
 updated: 2026-11-24 14:50
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
@@ -449,6 +449,9 @@ comms:
 - at: 2026-11-24 14:50
   from: chaba
   text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-24 15:20'
+- at: 2026-11-24 14:50
+  from: idc02
+  text: claimed
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
@@ -464,7 +467,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -474,13 +477,13 @@ action:
     session_gone: 2026-11-23 21:22
   last_failure: 'journal=oom-kill ctionize-the-enriched-t1-.service: Failed with result ''oom-kill''. | devin-task-20261124-143023-productionize-the-enriched-t1-.service:
     Consumed 1min 40.225s CPU time over 18min 57.927s wall clock time, 4G memory peak, 1.4G memory swap peak.'
-  attempts: 1
+  attempts: 2
   result: 'journal=oom-kill ctionize-the-enriched-t1-.service: Failed with result ''oom-kill''. | devin-task-20261124-143023-productionize-the-enriched-t1-.service:
     Consumed 1min 40.225s CPU time over 18min 57.927s wall clock time, 4G memory peak, 1.4G memory swap peak.'
+  runner: idc02
 spec: Productionize the enriched T1 distiller by enabling the --enrich hook and setting up the hybrid T1/T2 recall
   path in the chaba repository on idc02. The implementation must integrate the enrichment flag into the distiller
   pipeline and verify hybrid recall operations. The done-condition is verified when running the distiller with --enrich
   successfully executes without error and exercises the hybrid T1/T2 recall path.
 claim:
-  since: 2026-11-24 14:29
-awaiting_action: true
+  since: 2026-11-24 14:50
