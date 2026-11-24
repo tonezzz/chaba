@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-11-24 17:16
+updated: 2026-11-24 17:23
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -260,6 +260,13 @@ comms:
     forwards refs (explicit tg_thread_id still wins), relay resolves project-prefixed job_ref via manifest-backed
     registry, and Telegram text carries short artifact/QC/hash refs only. Mocked end-to-end routed to thread 33;
     publication tests 75/75, relay tests 58/58, board-api selftest ok. No Telegram test post.'
+- at: 2026-11-24 17:23
+  from: devin
+  text: '[done 2026-11-24] Committed on dispatch branch: e4bf0d6096 (routing) + 8e1f12db61 (outcome). TelegramSink
+    now forwards project_id/card_ref/job_ref unless meta.tg_thread_id pins a thread; relay resolves project-prefixed
+    job_ref through the manifest-backed registry and fails closed for unbound project/card refs. Artifact milestones
+    render short Drive/hash/QC refs only. Verified: publication tests 75/75, relay tests 58/58, board-api selftest
+    ok, mocked end-to-end routed to thread 33, live board-api'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
