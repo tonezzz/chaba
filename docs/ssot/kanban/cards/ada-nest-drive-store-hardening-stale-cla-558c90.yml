@@ -1,7 +1,7 @@
 id: ada-nest-drive-store-hardening-stale-cla-558c90
 title: 'ada-nest drive-store hardening: stale-claim release + packs-index'
 column: doing
-updated: 2026-11-24 15:45
+updated: 2026-11-24 16:43
 brief: 'Drive-FUSE lessons from 2026-10-23 cost hours (3 runner self-exits from lease read-back, lost-race claim
   poisoning, slow fleet scans). Ranked fixes:'
 tags:
@@ -241,6 +241,13 @@ comms:
     path still leaks claims; (2) packs-index write side exists for claim/done only, no fail events, no fleet read
     side; (3) hf-hub.tar.zst monolith in JOBS.py; (4) flush-settle exists as blind 120s sleep; (5) heartbeat+lease
     still two files. Implementing now.'
+- at: 2026-11-24 16:43
+  from: devin
+  text: 'ADA-0806 all 5 items landed in worktree (no push/deploy per rails). (1) queue-runner releases own claim
+    on every FAIL path + fence-exit (pre-os._exit) + on done. (2) packs-index: immutable event files queue/packs-index/<ms>-<worker>-<pack>-<state>.json
+    written by runner/nest-worker/nest-pack-submit; nest-queue-status folds in 1 rclone copy + batched done markers
+    (advisory, live fallback). (3) hf-hub split: save writes per-repo tars + monolith; restore honors NEST_HF_REPOS
+    (union of pending packs'
 action:
   type: dispatch
   status: running
