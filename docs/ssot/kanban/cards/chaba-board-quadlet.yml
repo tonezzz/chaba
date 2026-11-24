@@ -1,7 +1,7 @@
 id: chaba-board-quadlet
 title: Package board-api + render + kanban-sync as one quadlet on idc03
-column: review
-updated: 2026-11-24 17:04
+column: done
+updated: 2026-11-24 20:41
 brief: 'Post-migration consolidation: once OPS-0725 (dell-off) lands and edge service names exist, the board stack
   can become a single podman quadlet — repo checkout as volume, ssh keys via mounted secrets. Assessed 2026-10-22:
   real fragility is topology assumptions in probes, not process management; container adds little until the host
@@ -234,6 +234,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:41
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261124-162438-package-board-api-render-kanba
+    (tip f6f28a7fa124) was merged into origin/master in this triage as fa88b38cef9e; runner reported finished (ok)
+    with an outcome doc. Work is landed and gate-checked. Closing.'
+- at: 2026-11-24 20:41
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
