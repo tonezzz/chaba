@@ -1,7 +1,7 @@
 id: ada-scenario-quadlets-exit-contract
 title: Deploy quadlet exit-contract shim (smoke/full) — image rebuild pending
 column: doing
-updated: 2026-11-24 21:38
+updated: 2026-11-24 21:40
 priority: medium
 tags:
 - ada
@@ -229,6 +229,12 @@ comms:
   from: devin
   text: 'dispatch started: idc03 checkout has shim fix (1f3b48b); runner-agent sha256 already converged on idc03+mn01
     — will re-install anyway per spec, then run install.sh'
+- at: 2026-11-24 21:40
+  from: devin
+  text: 'DONE: install.sh ran clean on idc03 — image localhost/ada-scenario-runner:latest rebuilt (4494ce2aac4a)
+    with ENTRYPOINT /usr/local/bin/container-suite-run verified in-image; quadlets + all timers armed (smoke next
+    22:00 +07). runner-agent.py redeployed to idc03+mn01 ~/.local/bin, sha256 a08451d9 matches repo (was already
+    converged). Outcome: dispatch-outcome-20261124-213717-deploy-the-container-suite-run.md'
 spec: Deploy the container-suite-run.sh entrypoint shim for the ada-scenario-smoke and ada-scenario-full quadlets
   on idc03 to map scenario-report.py exit-1-with-marker conditions to exit 0. Run stacks/services/ada-scenario-runner/install.sh
   on idc03 to rebuild the image and apply the fix. Also redeploy the drifted runner-agent on idc03 and mn01 by copying
