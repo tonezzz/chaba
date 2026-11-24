@@ -1,7 +1,7 @@
 id: timer-alert-idc03-daily-brief
 title: Timer daily-brief on idc03 failing
-column: backlog
-updated: 2026-11-24 17:02
+column: done
+updated: 2026-11-24 19:13
 priority: high
 tags:
 - timer-alert
@@ -60,6 +60,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-24 19:05 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 19:13
+  from: tony
+  text: closed by tony
 requests:
 - id: multiple-hosts-including-idc03-29f709
   ask: Multiple hosts (including idc03) are deferring dispatch because the installed runner-agent has drifted from
@@ -76,4 +82,5 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent to idc03 and all deferred hosts via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     and retry the daily-brief investigation
-awaiting_action: true
+action:
+  status: done
