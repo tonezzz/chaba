@@ -1,6 +1,6 @@
 id: nest-percussion
 title: Nest Percussion — sonified fleet state, browser-playable node
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-09
 updated: 2026-11-24 15:02
@@ -172,6 +172,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 15:02
+  from: tony-omen
+  text: claimed
 ref: OPS-0381
 spec: Build a browser-playable WebAudio percussion page at /apps/percussion with synthesized drums, driven by state.json
   fed via ops-percussion-sync timer on tony-dell. Heavy timbres represent big hosts, light timbres for light hosts,
@@ -181,7 +184,10 @@ spec: Build a browser-playable WebAudio percussion page at /apps/percussion with
   by toggling a check.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 15:02
