@@ -1,7 +1,7 @@
 id: ssh-access-ansible-standard
 title: Standardize host SSH access with Ansible
 column: backlog
-updated: 2026-11-24 16:03
+updated: 2026-11-24 16:17
 brief: 'Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per
   controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap,
   with read-only verification first.'
@@ -74,6 +74,13 @@ comms:
     pubkey, push --dry-run, user consistency; config drift warn-only). Gate from tony-omen 2026-11-24: PLAY RECAP
     ok=12 failed=0. reach/auth/push=OK on idc02, idc03, tony-omen, tony-dell, mn01; push=n/a on tony-macbook/con01
     (not declared). kk-mac ssh_config user=tony vs inventory=kkk'
+- at: 2026-11-24 16:17
+  from: chaba
+  text: 'SLICE 2 DONE — go-ahead executed. origin/master c2a82a8929. Added playbooks/ssh-config-generate.yml (blockinfile
+    owns one BOF block, mode 0600, timestamped backup, purpose stanzas preserved), ssh-bootstrap.yml (hashed known_hosts;
+    tailnet IPs gated, LAN aliases best-effort, idc01 never scanned), ssh-config-render.yml + templates/ssh-config-stanzas.j2;
+    README + onboarding §2 now use playbooks instead of manual ssh-keyscan. Live proof: generator applied on tony-omen
+    with backup config.bak-20261124'
 requests:
 - id: scope-decision-how-far-should-the-first-f6a3bd
   ask: SCOPE DECISION — how far should the first slice go? (★ = recommended default; answer here or in chat; I proceed
