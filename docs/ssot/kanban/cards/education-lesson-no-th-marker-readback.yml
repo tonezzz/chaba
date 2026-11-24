@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
 column: review
-updated: 2026-11-24 17:37
+updated: 2026-11-24 17:38
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -230,6 +230,10 @@ comms:
 - at: 2026-11-24 17:37
   from: chaba
   text: 'worktree kept: dirty — 7 uncommitted file(s)'
+- at: 2026-11-24 17:38
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-171704-investigate-why-a-lesson-writt on tony-macbook still
+    dirty — 7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -239,6 +243,8 @@ action:
   attempts: 1
   result: 'exit=0 entry. Outcome doc: `dispatch-outcome-20261124-171704-investigate-why-a-lesson-writt.md`. | devin-task-20261124-171704-investigate-why-a-lesson-writt.service:
     Consumed 44.310s CPU time over 18min 45.020s wall clock time, 376.9M memory peak.'
+  sweep:
+    dirty: 7
 claim:
   since: 2026-11-24 17:16
 review_kind: verify
