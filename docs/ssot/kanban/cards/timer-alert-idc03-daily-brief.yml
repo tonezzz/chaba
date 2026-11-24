@@ -1,14 +1,14 @@
 id: timer-alert-idc03-daily-brief
 title: Timer daily-brief on idc03 failing
 column: backlog
-updated: 2026-11-24 12:03
+updated: 2026-11-24 13:33
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-24 07:05) of `daily-brief.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u daily-brief.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-24 07:05) of `daily-brief.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u daily-brief.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-0010
 comms:
 - at: 2026-11-24 07:54
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-24 08:03
   from: devin
-  text: '[still suspicious] Last run (11-24 07:05) of `daily-brief.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u daily-brief.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-24 07:05) of `daily-brief.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u daily-brief.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 08:11
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -49,18 +49,27 @@ comms:
 - at: 2026-11-24 13:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-24 13:33
+  from: tony
+  text: 'answered multiple-hosts-including-idc03-29f709: ★ Redeploy runner-agent to idc03 and all deferred hosts
+    via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and retry the daily-brief investigation'
+- at: 2026-11-24 13:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: multiple-hosts-including-idc03-29f709
-  ask: Multiple hosts (including idc03) are deferring dispatch because the installed runner-agent has
-    drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
-    Before the daily-brief timer failure on idc03 can be investigated, the runner-agent across affected
-    nodes needs to be updated or the dispatch mechanism reconciled.
+  ask: Multiple hosts (including idc03) are deferring dispatch because the installed runner-agent has drifted from
+    the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py. Before the daily-brief
+    timer failure on idc03 can be investigated, the runner-agent across affected nodes needs to be updated or the
+    dispatch mechanism reconciled.
   options:
   - ★ Redeploy runner-agent to idc03 and all deferred hosts via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     and retry the daily-brief investigation
   - Postpone the timer-alert-idc03-daily-brief card until the global runner-agent drift is resolved separately
-  - Run the investigation for daily-brief.service directly via SSH on idc03 without relying on the automated
-    runner-agent
-  status: open
+  - Run the investigation for daily-brief.service directly via SSH on idc03 without relying on the automated runner-agent
+  status: answered
   at: 2026-11-24 13:20
   from: backlog-spec-enrich
+  answer: ★ Redeploy runner-agent to idc03 and all deferred hosts via scp from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    and retry the daily-brief investigation
+awaiting_action: true
