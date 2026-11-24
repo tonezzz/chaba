@@ -1,7 +1,7 @@
 id: consumer-canary-standing-retired-hostnam-6aa4a2
 title: 'consumer-canary: standing retired-hostname audit across live surfaces'
 column: doing
-updated: 2026-11-24 15:26
+updated: 2026-11-24 15:32
 priority: low
 tags:
 - ops
@@ -591,6 +591,13 @@ comms:
     13:51 CLEAN (9 greps + dashboards). Last finding was 11-18 idc02:caddy-edge:630 — cleared since. Now hardening
     script: ssh/grep failures currently return empty stdout = silent CLEAN (blind spot); also findings exit 1 spawns
     timer-alert noise. Checking live targets before patching.'
+- at: 2026-11-24 15:32
+  from: devin
+  text: '[done] Standing audit verified alive + hardened (dispatch 20261124-152422). State: consumer-canary.timer
+    on idc03 active, 6h cadence, CLEAN since 11-18 (last finding idc02:caddy-edge:630 resolved — upstream now 127.0.0.1:3000).
+    Fixes in scripts/audit/consumer-canary.py on branch dispatch/20261124-152422-consumer-canary-standing-retir
+    (commit db44e2df31): (1) unauditable surfaces (dead ssh/grep rc>1/dashboard SKIP) now post as UNAUDITABLE findings
+    — blind greps no longer read as CLEAN; (2) exit 0'
 action:
   type: dispatch
   status: running
