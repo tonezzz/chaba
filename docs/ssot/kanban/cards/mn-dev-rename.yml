@@ -1,7 +1,7 @@
 id: mn-dev-rename
 title: Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)
 column: doing
-updated: 2026-11-24 17:47
+updated: 2026-11-24 18:13
 brief: 'Public hostname renamed to mn-ha.surf-thailand.com (2026-10-16) and system-map now calls the dev twin mn-dev.
   Physical rename pending: michael-dev.service, podman container michael-dev, ~/.config/michael-dev, ~/.config/secrets/ha-michael-dev.env,
   plus ~119 references across docs/ssot, AGENTS.md, scripts. All must move together or scripts break.'
@@ -262,6 +262,13 @@ comms:
     copies renamed on idc03/tony-dell/tony-omen (incl. mn-ha-dev-parity.timer on omen, masked mn-ha-dev.service
     on idc03/dell). Env ha-michael-dev.env -> ha-mn-ha-dev.env on all 4 hosts + compat symlink left for stale consumers.
     NOTE: using mn-ha-dev not mn-dev — system-'
+- at: 2026-11-24 18:13
+  from: devin
+  text: 'DONE (attempt 2). Live rename executed on idc02 (instance moved there 2026-10-26 — card spec stale): mn-ha-dev.service
+    active, :8124=200, mha-state-push feeding. Quadlet+config dir+env renamed; ha-michael-dev.env->ha-mn-ha-dev.env
+    w/ compat symlink left fleet-wide. Parked copies renamed on idc03/tony-dell/tony-omen (parity timer re-armed).
+    Live edges updated: /apps/ha/mn-ha-dev on idc02 web-srv + mn01 caddy (michael-dev kept as legacy alias). Repo
+    sweep: 81 files, lanes.instances.mn-ha-dev, syst'
 action:
   type: dispatch
   status: running
