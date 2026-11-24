@@ -3,7 +3,7 @@ title: Registry SSOT files past 350-line review threshold — split or exempt de
 brief: 'Two registry-style SSOT files crossed the bloat threshold: infrastructure/ssot.secrets.yml (465 lines) and
   kanban/ssot.kanban.yml (460). Registries grow linearly with services/cards — decide whether to split them by domain,
   raise the registry threshold, or accept + document as permanent baseline debt.'
-column: review
+column: done
 priority: low
 created: 2026-10-09
 tags:
@@ -275,6 +275,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:39
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261123-183707-registry-ssot-files-past-350-l
+    (tip ab3979ac7039) is merged into origin/master; runner reported finished (ok) with an outcome doc. Work is
+    provably landed. Closing.'
+- at: 2026-11-24 20:39
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
@@ -289,5 +297,5 @@ action:
   runner: tony-macbook
   result: 'exit=0 mjs` reports 0 errors/0 warnings on all touched files and `ssot-optimize-gate.mjs` passes. | devin-task-20261123-183707-registry-ssot-files-past-350-l.service:
     Consumed 19.988s CPU time over 4min 10.397s wall clock time, 308.4M memory peak.'
-updated: 2026-11-24 17:04
+updated: 2026-11-24 20:39
 review_kind: verify
