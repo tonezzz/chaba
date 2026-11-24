@@ -223,6 +223,33 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(envs[0].get("DISPATCH_MODEL"), "swe-2-flash")
         self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
 
+    def test_action_timeout_s_arms_runtime_max_sec(self):
+        """OPS-0999: a card-declared action.timeout_s reaches the
+        devin-dispatch unit as --property=RuntimeMaxSec via
+        DISPATCH_UNIT_PROPS; undeclared cards stay unbounded."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="devin", model="swe-2-flash", timeout_s=300)
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        props = envs[0].get("DISPATCH_UNIT_PROPS") or ""
+        self.assertIn("--property=RuntimeMaxSec=300", props)
+
+        envs.clear()
+        card2 = _card(lane="devin", model="swe-2-flash")
+        unit, tid, err = self.mod.start_task(card2, "dispatch")
+        self.assertEqual(err, "")
+        props2 = envs[0].get("DISPATCH_UNIT_PROPS") or ""
+        self.assertNotIn("RuntimeMaxSec", props2)
+
     def test_classified_manual_is_refused_not_dispatched(self):
         """manual lane = Tony's hands — fail loudly, never burn tokens."""
         self.mod.classify_lane = lambda card: "manual"

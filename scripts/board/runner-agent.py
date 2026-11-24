@@ -3156,8 +3156,18 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
+    # Outer runtime bound (OPS-0999): the executor's own urlopen/ssh
+    # timeouts bound each call, but a stuck probe/monitor could still
+    # hold the unit forever — arm RuntimeMaxSec from the card's
+    # action.timeout_s, default 900s (one bounded generate + memory
+    # sampling fits comfortably).
+    try:
+        tmax = int(a.get("timeout_s") or 0) or 900
+    except (TypeError, ValueError):
+        tmax = 900
     err = rt_launch(f"devin-task-{tid}",
-                    f"runner {cid} kk_mac {task_class}", shell)
+                    f"runner {cid} kk_mac {task_class}", shell,
+                    timeout_s=tmax)
     if err:
         return "", "", err
     return f"devin-task-{tid}", tid, ""
@@ -3676,19 +3686,47 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     key_alias = str(a.get("llm_key_alias") or "ada").strip().lower()
     key_env_var = "LITELLM_KEY_" + key_alias.upper()
     key_expr = "${" + key_env_var + ":-}"
+    oc_argv = [oc_bin, "run", "--format", "json"]
+    if opencode_needs_standalone(oc_bin):
+        oc_argv.append("--standalone")
+    oc_argv += ["--model", model,
+                "--agent", ocp.agent_name(prof_id), task]
+    events = taskdir / "events.jsonl"
+    # Denial-streak circuit breaker (OPS-0999 follow-up): headless
+    # doom_loop can't escalate, so N consecutive permission denials
+    # trip the guard — it kills the child, writes
+    # taskdir/denial-breaker.json, and the unit exits nonzero instead
+    # of burning the whole RuntimeMaxSec budget in a retry loop.
+    # action.denial_streak_max / OPENCODE_DENIAL_STREAK_MAX override
+    # the default; 0 disables. Missing guard script = plain tee
+    # (RuntimeMaxSec still bounds the run).
+    try:
+        streak = int(a.get("denial_streak_max")
+                     or os.environ.get("OPENCODE_DENIAL_STREAK_MAX")
+                     or 10)
+    except (TypeError, ValueError):
+        streak = 10
+    guard = _devnest_script("opencode_stream_guard.py") \
+        if streak > 0 else None
+    if guard is not None:
+        inner = (f"python3 -u {shlex.quote(str(guard))} "
+                 f"--events {shlex.quote(str(events))} "
+                 f"--max-streak {streak} "
+                 f"--marker {shlex.quote(str(taskdir / 'denial-breaker.json'))} "
+                 f"-- {shlex.join(oc_argv)}")
+        rc_expr = "$$?"
+    else:
+        inner = (f"{shlex.join(oc_argv)} 2>&1 | "
+                 f"tee {shlex.quote(str(events))}")
+        rc_expr = "$${PIPESTATUS[0]}"
     shell = (
         "set -a; if [ -f $$HOME/.config/secrets/litellm-keys.env ]; then "
         f". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY={key_expr}; "
         "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
-        f"{shlex.quote(oc_bin)} run --format json "
-        + ("--standalone " if opencode_needs_standalone(oc_bin) else "")
-        + f"--model {shlex.quote(model)} "
-        f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
-        f"{shlex.quote(task)} 2>&1 | "
-        f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "
-        "rc=$${PIPESTATUS[0]}; "
+        f"{inner}; "
+        f"rc={rc_expr}; "
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
@@ -3766,7 +3804,14 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    # Same OPS-0999 bound as the other lanes: action.timeout_s or the
+    # script-lane default — an nlm_batch hang must not hold the unit.
+    try:
+        ntmax = int(a.get("timeout_s") or 0) or 1800
+    except (TypeError, ValueError):
+        ntmax = 1800
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell,
+                    timeout_s=ntmax)
     if err:
         return "", "", err
     return u2, tid, ""
@@ -3858,7 +3903,14 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    # Same OPS-0999 bound as the other lanes: action.timeout_s or the
+    # script-lane default — an nlm_batch hang must not hold the unit.
+    try:
+        ntmax = int(a.get("timeout_s") or 0) or 1800
+    except (TypeError, ValueError):
+        ntmax = 1800
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell,
+                    timeout_s=ntmax)
     if err:
         return "", "", err
     return u2, tid, ""
@@ -4143,11 +4195,22 @@ def start_task(card: dict, typ: str) -> tuple:
                 env["DISPATCH_EFFORT"] = str(a["effort"])
         else:
             env["DISPATCH_PROVIDER"] = model_provider(model) or "devin"
-    if typ == "dispatch" and LIMITS_ON:
+    if typ == "dispatch":
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the
         # live unit for hosts with a stale devin-dispatch.
-        env["DISPATCH_UNIT_PROPS"] = " ".join(task_run_props())
+        # OPS-0999: a card-declared action.timeout_s also arms
+        # RuntimeMaxSec — opt-in only, devin sessions legitimately
+        # run long so there is no default bound on this path.
+        props = list(task_run_props()) if LIMITS_ON else []
+        try:
+            dmax = int(a.get("timeout_s") or 0)
+        except (TypeError, ValueError):
+            dmax = 0
+        if dmax > 0:
+            props.append(f"--property=RuntimeMaxSec={dmax}")
+        if props:
+            env["DISPATCH_UNIT_PROPS"] = " ".join(props)
     r = sh(argv, timeout=180, env=env)
     if r.returncode != 0:
         return "", "", (r.stderr or r.stdout).strip()[:240]

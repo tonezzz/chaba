@@ -1576,6 +1576,74 @@ class KkMacExecutorContractTest(unittest.TestCase):
                     os.environ["HOME"] = home
 
 
+class KkMacLaneTimeoutTest(unittest.TestCase):
+    """OPS-0999: the kk_mac_local transient unit must carry
+    RuntimeMaxSec — action.timeout_s when declared, else the 900s
+    default — on the systemd-run argv (rt_launch maps timeout_s to
+    --property=RuntimeMaxSec; launchd gets the wrapper watchdog)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in ("HOST",)}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("kk_mac_module", "dr_module", "sh", "api",
+                           "enforce_task_limits", "task_runtime")}
+        m.HOST = "testhost"
+        m.api = lambda *a, **k: {}
+        m.enforce_task_limits = lambda *a, **k: None
+        m.task_runtime = lambda: "systemd"
+        self._home_old = os.environ.get("HOME")
+        self.td = tempfile.TemporaryDirectory()
+        os.environ["HOME"] = self.td.name
+        fake_kme = types.SimpleNamespace(
+            artifact_allowed=lambda p: True,
+            admission_gate=lambda tc, p: {"eligible": True,
+                                          "reasons": [], "gate": {}})
+        m.kk_mac_module = lambda: fake_kme
+        repo = Path(self.td.name) / "repo"
+        repo.mkdir()
+        m.dr_module = lambda: types.SimpleNamespace(
+            repos=lambda: {"chaba": {"path": str(repo),
+                                     "default_branch": "master"}})
+        self.argvs = []
+        m.sh = lambda argv, **kw: (
+            self.argvs.append(list(argv)) or _proc(0))
+
+    def tearDown(self):
+        m = self.mod
+        if self._home_old is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = self._home_old
+        self.td.cleanup()
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def _run(self, **action_kw):
+        card = _card(executor="kk_mac_local", task_class="summary",
+                     prompt="summarize the host evidence", **action_kw)
+        unit, tid, err = self.mod.start_kk_mac_lane(
+            card, "runner-20260101-000000-kk1")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-20260101-000000-kk1")
+        sdr = [a for a in self.argvs if a and a[0] == "systemd-run"]
+        self.assertTrue(sdr, "no systemd-run argv captured")
+        return sdr[-1]
+
+    def test_default_timeout_armed(self):
+        argv = self._run()
+        self.assertIn("--property=RuntimeMaxSec=900", argv)
+
+    def test_action_timeout_s_wins(self):
+        argv = self._run(timeout_s=123)
+        self.assertIn("--property=RuntimeMaxSec=123", argv)
+        self.assertNotIn("--property=RuntimeMaxSec=900", argv)
+
+
 class KkMacBoardApiTest(unittest.TestCase):
     """board-api validates the kk_mac_local contract at the door."""
 
