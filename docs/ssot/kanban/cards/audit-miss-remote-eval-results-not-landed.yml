@@ -1,7 +1,7 @@
 id: audit-miss-remote-eval-results-not-landed
 title: Remote-host eval results never landed in repo
-column: backlog
-updated: 2026-11-24 21:47
+column: doing
+updated: 2026-11-24 21:58
 brief: 'Session audit 2026-11-20 (AUD-0973): eval output files claimed produced on remote hosts; absent from origin/master
   and not found on tony-macbook.'
 priority: medium
@@ -127,9 +127,15 @@ comms:
 - at: 2026-11-24 21:47
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 2.36 > 1.5)'
+- at: 2026-11-24 21:58
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 21:58
