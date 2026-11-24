@@ -1,7 +1,7 @@
 id: gev-google-maps-key-suspect-dead-verify-be569a
 title: gev-google-maps key suspect dead — verify GEV Google layers + renew
-column: review
-updated: 2026-11-24 18:44
+column: backlog
+updated: 2026-11-24 18:55
 priority: low
 tags:
 - gev
@@ -250,13 +250,19 @@ comms:
 - at: 2026-11-24 18:44
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-24 18:55
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0 il; full details in `dispatch-outcome-20261124-173838-found-via-card-map-embed-tool-.md`. | devin-task-20261124-173838-found-via-card-map-embed-tool-.service:
     Consumed 39.400s CPU time over 10min 24.577s wall clock time, 412.8M memory peak.'
@@ -277,5 +283,5 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-24 queue
 review_kind: verify
-awaiting_action: true

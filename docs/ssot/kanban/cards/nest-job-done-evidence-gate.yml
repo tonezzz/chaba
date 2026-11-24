@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
-column: review
-updated: 2026-11-24 18:43
+column: backlog
+updated: 2026-11-24 18:55
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -241,17 +241,22 @@ comms:
 - at: 2026-11-24 18:43
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'answer-sweep: executed ''resolve — let devin resolve the conflict and land it'' -> queued for processing'
+- at: 2026-11-24 18:55
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: codemod
   lane_source: kw
-  runner: idc02
   attempts: 1
   result: 'exit=0 ice: No such file or directory | devin-task-20261124-165943-review-and-harden-the-runtime-.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261124-165943-review-and-harden-the-runtime-.service:
     No such file or directory'
-  verified: false
   sweep:
     conflict_sig: 5033b78e0cb6|docs/kb/board-api-write-door.md
 claim:
@@ -277,4 +282,4 @@ requests:
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
   answer: resolve — let devin resolve the conflict and land it ★
-awaiting_action: true
+  executed: 2026-11-24 queue
