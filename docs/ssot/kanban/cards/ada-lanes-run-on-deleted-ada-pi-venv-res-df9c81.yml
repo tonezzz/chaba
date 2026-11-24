@@ -1,7 +1,7 @@
 id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
 title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
-column: doing
-updated: 2026-11-24 21:43
+column: review
+updated: 2026-11-24 21:47
 priority: medium
 tags:
 - ada
@@ -88,12 +88,40 @@ comms:
     scenario-live ws smoke PASS, 0 tracebacks/FileNotFoundError since restart. pgrep ada-pi/.venv on idc03 now =
     0. mn01: NO restart needed — both lanes (ada-ha-tony 13:21 UTC, ada-ha-michael 08:44 UTC) already post-repair
     on ada-voice path; card spec was stale there. Al'
+- at: 2026-11-24 21:47
+  from: idc02
+  text: 'finished (ok): exit=0 h outcome doc; work committed on the dispatch branch (not pushed), and final status
+    posted to the card. | devin-t'
+- at: 2026-11-24 21:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:47
+  from: chaba
+  text: banked 482 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:47
+  from: chaba
+  text: pushed dispatch/20261124-212710-found-during-michael-lane-cont to origin
+- at: 2026-11-24 21:47
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 21:47
+  from: chaba
+  text: auto-merged ecbddb0e (dispatch/20261124-212710-found-during-michael-lane-cont) → origin/master
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 h outcome doc; work committed on the dispatch branch (not pushed), and final status posted to
+    the card. | devin-task-20261124-212710-found-during-michael-lane-cont.service: Consumed 26.493s CPU time, 327.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:26
+review_kind: verify
