@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
-column: backlog
-updated: 2026-11-24 17:06
+column: doing
+updated: 2026-11-24 17:16
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -184,9 +184,15 @@ comms:
 - at: 2026-11-24 17:06
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 17:16
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 17:16
