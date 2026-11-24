@@ -1314,8 +1314,12 @@ def _refuse_human_queue(card: dict, frm: str, verb: str,
 
 
 def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
-    """Queue-time classification (OPS-0838). Sets lane and model, and
-    returns an abort message if classified as manual."""
+    """Queue-time classification (OPS-0838). Sets lane (and lane_source);
+    the lane->model pick is executor-aware and resolves at claim/launch
+    via dispatch_repos.lane_model — the executor isn't known at queue
+    time, so no lane-derived model is persisted here
+    (devin-executor-model-routing). Returns an abort message if
+    classified as manual."""
     if not BOARD_CLASSIFY_AT_QUEUE:
         return None
     # An explicit action.lane (author-set, no lane_source provenance) is
@@ -1347,8 +1351,6 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
             comms_add(card, "chaba",
                       f"classified as manual ({source} conf {conf:.2f})")
             return "classified as manual — queue skipped"
-        if lane in dr.LANE_MODELS and not a.get("model"):
-            a["model"] = dr.LANE_MODELS[lane]
         comms_add(card, "chaba",
                   f"classified as {lane} ({source} conf {conf:.2f})")
     return None

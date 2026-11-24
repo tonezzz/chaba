@@ -846,36 +846,41 @@ def start_pending(path: Path) -> str:
         lane = classify_lane(card)
         if lane:
             a["lane"] = lane
-            # Persist the cheapest model too, so ANY claimer (runner-agent
-            # reads action.model) routes to the right lane — the env-only
-            # path never reached remote runner-agents (model-chain probe
-            # OPS-0836, 2026-10-25).
-            if lane in LANE_MODELS:
-                a["model"] = LANE_MODELS[lane]
+            # Persist the executor-aware cheapest model too, so ANY
+            # claimer (runner-agent reads action.model) routes to the
+            # right lane — the env-only path never reached remote
+            # runner-agents (model-chain probe OPS-0836, 2026-10-25).
+            # This dispatcher only launches devin, so the pick is the
+            # devin-native id — litellm/* aliases belong to the
+            # opencode/proxy executor and never reach action.model here
+            # (devin-executor-model-routing; paid_frontier has no devin
+            # pick -> stays gated, executor default).
+            pick = dr.lane_model(lane, "devin")
+            if pick:
+                a["model"] = pick
             save_card(path, card)
     if lane == "manual":
         return "manual lane — not dispatched (Tony's hands)"
     env = dict(os.environ)
-    if a.get("model"):
-        env["DISPATCH_MODEL"] = str(a["model"])  # -> devin --model
-    elif lane in LANE_MODELS:
-        env["DISPATCH_MODEL"] = LANE_MODELS[lane]  # cheapest lane
+    # Provider/executor namespaces must match
+    # (dispatch-model-pick-executor-mismatch + devin-executor-model-
+    # routing): a litellm/* model id on the devin CLI is a guaranteed
+    # 'Unknown model' exit — drop it to the executor default rather
+    # than launch a dead session. This dispatcher only serves devin.
+    exr = ex or "devin"
+    model = str(a.get("model") or "")
+    if model and not dr.model_valid_for_executor(model, exr):
+        model = ""
+    if not model:
+        model = dr.lane_model(lane, exr)  # cheapest lane, ns-aware
+    if model:
+        env["DISPATCH_MODEL"] = model  # -> devin --model
     # Executor-contract context for the launcher's task meta + usage:
     # the card that declared it, the resolved executor/provider, and the
     # profile id — devin-dispatch._meta_write persists them.
     env["DISPATCH_CARD"] = card.get("id") or path.stem
-    env["DISPATCH_EXECUTOR"] = ex or "devin"
-    # OPS-1127: a stale or lane-mapped litellm/* id must never reach the
-    # devin path — the CLI only accepts its own model ids and exits at
-    # launch (hands-off claim, 2026-11-08). A persisted action.model can
-    # outlive the lane/executor that produced it, so validate provider
-    # vs the resolved executor at launch: incompatible -> devin default.
-    if (env["DISPATCH_EXECUTOR"]) == "devin" and \
-            dr.model_provider(env.get("DISPATCH_MODEL") or "") \
-            not in ("devin", ""):
-        env.pop("DISPATCH_MODEL", None)
-    env["DISPATCH_PROVIDER"] = dr.model_provider(
-        env.get("DISPATCH_MODEL") or "") or "devin"
+    env["DISPATCH_EXECUTOR"] = exr
+    env["DISPATCH_PROVIDER"] = dr.model_provider(model) or "devin"
     if dr.card_profile(card):
         env["DISPATCH_PROFILE"] = dr.card_profile(card)
     if a.get("target_host"):
