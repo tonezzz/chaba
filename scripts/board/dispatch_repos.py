@@ -935,7 +935,10 @@ def sort_claimable(cards: list, starve_hours: float = 12.0,
 
 SERVED_TYPES = {"dispatch", "container", "script"}
 
-_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+)\s*:")
+# kk-* hosts join the declared fleet (OPS-0220: kk-mac runner provisioned
+# and e2e-verified 2026-11-19, but host:kk-mac pins were invisible here and
+# produced "pins naming no declared runner" defers fleet-wide).
+_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+|kk-[\w-]+)\s*:")
 _FLEET_LABELS_RE = re.compile(
     r"\blabels\s+([A-Za-z0-9_:.\-]+(?:\s*,\s*[A-Za-z0-9_:.\-]+)*)")
 _FLEET_TYPES_RE = re.compile(r"\(\s*([a-z_]+(?:\s*\+\s*[a-z_]+)*)")
@@ -1545,9 +1548,11 @@ def _resolve_gate_cmd(cmd: str, wt: Path, repo_name: str,
 def run_test_gate(wt: Path, repo_name: str) -> dict:
     """Run the repo's fast test step inside the merged worktree.
 
-    {ran, ok, failed?, skipped?, command?, elapsed?, error?} —
-    ok=False only for red tests / suite timeout; missing pytest or a
-    tree without tests/ skips fail-open (merge_guard convention)."""
+    {ran, ok, failed?, skipped?, command?, elapsed?, error?,
+     unrunnable?} — ok=False for red tests, suite timeout, or an
+    unrunnable gate. Missing pytest is FAIL-CLOSED (OPS-1191): a merge
+    with no test evidence is held, never landed as "verified". A tree
+    without tests/ still skips (nothing to run)."""
     if os.environ.get("KANBAN_TESTGATE", "1") == "0":
         return {"ran": False, "ok": True, "skipped": "KANBAN_TESTGATE=0"}
     cfg = test_gate_config(repo_name)
@@ -1584,8 +1589,17 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
     if r.returncode != 0 and re.search(
             r"No module named .?pytest|command not found", out):
-        return {"ran": False, "ok": True, "command": cmd, "python": interp,
-                "skipped": "pytest unavailable — fail-open"}
+        # OPS-1191: "test gate skipped: pytest unavailable — fail-open"
+        # let tony-macbook merges land with ZERO test evidence. Hold the
+        # merge instead. Runners advertise a `pytest` claim label so a
+        # testable card can be routed to a host that can actually run it;
+        # a repo .venv with pytest is preferred by _resolve_gate_cmd.
+        return {"ran": False, "ok": False, "command": cmd, "python": interp,
+                "unrunnable": True,
+                "failed": ["pytest unavailable — no test evidence"],
+                "error": "test gate unrunnable: pytest unavailable "
+                         "(fail-closed; use a pytest-capable runner or "
+                         "repo .venv)"}
     if r.returncode == 5:
         return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "no tests collected"}

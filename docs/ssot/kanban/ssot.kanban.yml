@@ -538,14 +538,14 @@ execution:
                (systemd unit + .bak-cap2 backup, caffeinate 4h; 4-pinned-probe
                test: 3 claimed concurrently, 4th waited for a slot);
                suspend-prone member, don't park long sessions).
-               kk-mac: STAGED, not yet in fleet (2026-11-14, card
-               kk-mac-launchd-runner-port — KK approved fleet use
-               2026-10-30): launchd task runtime (RUNNER_TASK_
-               RUNTIME=launchd) landed in runner-agent.py; provision
-               via scripts/ops/kk-mac-runner-onboard.sh as kkkakk —
-               cap 1, labels desktop,mac,arm64,cpu (+push:chaba after
-               the deploy-key probe). devin executor stays Linux-only;
-               opencode/script/container lanes serve. Runbook:
+               kk-mac: ACTIVE in fleet (OPS-0220 — launchd runner
+               provisioned via scripts/ops/kk-mac-runner-onboard.sh
+               and e2e-verified 2026-11-19: claimed+finished script
+               card kk-mac-script-smoke exit=0, deploy key enrolled;
+               RUNNER_TASK_RUNTIME=launchd, cap 1, labels desktop,
+               mac,arm64,cpu (dispatch+script+container — devin
+               executor stays Linux-only; opencode/script/container
+               lanes serve). Runbook:
                docs/kb/kk-mac-launchd-runner.md.
                Push creds (2026-10-14 audit, runner-push-cred-gap):
                tony-dell pushes all dispatch_repos repos; tony-macbook's
