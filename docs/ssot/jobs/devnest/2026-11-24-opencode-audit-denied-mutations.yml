@@ -1,0 +1,65 @@
+title: "OpenCode session audit — denied mutation attempts no longer file mutating_command cards"
+date: 2026-11-24
+card: audit-oc-mutating-command-1bbtyha8
+session: "dispatch-wt-20261124-220425-auto-filed-by-opencode-session (tony-dell)"
+status: "shipped — classifier fix + 2 regression tests; card verdict: benign"
+
+verdict_on_flagged_session:
+  session: ses_e827708b4ffeNCHdk31bBtYHA8 (storage-dryrun, lane_gated,
+    run p1-storage-dryrun-idc02-20261027-202449)
+  finding: "the 'mutations: writes' evidence was TWO python3 -c
+    output-write attempts, BOTH permission-denied (5 denied calls
+    total). Zero bytes written by the agent. The artifact still
+    landed: artifact.mode=message means the runner extracts the JSON
+    from the final assistant message (finish_opencode_lane ->
+    opencode_profiles.extract_artifact) — the agent's file-write
+    attempts were unnecessary model noise, not a scope breach that
+    executed. Lane verdict pass, artifact_landed=true."
+  correction: "the 2026-11-07 job doc said 'storage-dryrun wrote
+    report files via python -c' — inaccurate: it ATTEMPTED to write
+    and the permission gate denied every attempt."
+
+root_cause:
+  "opencode_session_audit.py counted every mutation-classified bash
+    command toward the cardable mutating_command finding regardless
+    of call status. Permission-denied calls (status=error +
+    DENY_SIGNATURE) never executed, yet under a read-only profile
+    they produced severity=high findings -> board cards. All three
+    mutating_command cards filed 2026-11-07
+    (1bbtyha8 / 0b3n5bce / aahmnvt5) are this exact false-positive
+    class: denied-only attempts by storage-dryrun / ops-readonly
+    lane-eval sessions."
+
+fix:
+  script: "scripts/devnest/opencode_session_audit.py"
+  changes:
+    - "mutation entries (bash classes + non-completed write/edit)
+      now carry denied=true when the call was permission-denied"
+    - "the cardable mutating_command finding and the 'mutation
+      outside profile scope' safety flag are computed over
+      non-denied entries only; errored non-denial calls still count
+      (partial execution possible) — conservative"
+    - "denied-only mutation attempts emit a severity=info
+      mutating_command finding ('blocked by permission gate') —
+      visible in reports, never carded (file_cards skips info)"
+    - "denied bash write-classified commands no longer contribute
+      redirect targets to write_paths, so a denied 'cmd > /path'
+      can't mint a bogus artifact_not_durable/missing finding"
+  tests: "tests/devnest/test_opencode_session_audit.py — 22 pass
+    (2 new: denied-only attempts -> info finding + no artifacts;
+    mixed denied-write + completed-delete -> high finding names
+    only the executed class)"
+
+followups:
+  - "sibling cards audit-oc-mutating-command-0b3n5bce and
+    -aahmnvt5 are the same denied-only class (ops-readonly net_write
+    attempts: urllib POST + curl POST to board-api /comment) —
+    safe to close as benign once this lands; the classifier fix
+    prevents recurrence"
+  - "denied_tool cards still fire on storms (>=20 denials) —
+    audit-oc-denied-tool-muijr5b4 (113 denials) remains a real
+    friction/profile-allowlist signal, untouched by this change"
+
+repeatable:
+  test: "python3 -m unittest tests.devnest.test_opencode_session_audit"
+  audit: "python3 scripts/devnest/opencode_session_audit.py --session ses_e827708b4ffeNCHdk31bBtYHA8"
