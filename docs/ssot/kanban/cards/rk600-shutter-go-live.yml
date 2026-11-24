@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
 column: review
-updated: 2026-11-24 18:44
+updated: 2026-11-24 18:54
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -319,6 +319,11 @@ comms:
 - at: 2026-11-24 18:44
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-161757-shutter-control-ui-armed-gate- failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261124-161757-shutter-control-ui-armed-gate- by
+    hand.'
 action:
   type: dispatch
   status: failed
@@ -330,6 +335,7 @@ action:
     Consumed 49.727s CPU time over 16min 32.784s wall clock time, 373.4M memory peak.'
   sweep:
     dirty: 2
+    failed_noted: 2026-11-24 18:54
   runner: tony-macbook
   verified: false
   last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
