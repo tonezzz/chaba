@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
-column: doing
-updated: 2026-11-24 21:37
+column: done
+updated: 2026-11-24 21:38
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -531,9 +531,14 @@ comms:
     (live CF tokens). Landed now on dispatch/20261124-210156 (rebased on master, 5 commits): cherry-picked the 3
     clean commits — inpaint-mask.py, omen-inpaint.py sd-cli driver, land-render.py --lane local-file + cf-inpaint
     u8-array fix, runbook with FINAL lane comp'
+- at: 2026-11-24 21:38
+  from: chaba
+  text: 'merge-sweep: merged b4f78093 (dispatch/20261124-210156-build-an-inpaint-lane-for-the- from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-210156-build-an-inpaint-lane-for-the-.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   sweep:
     stale_running: 2026-11-08 14:05
@@ -546,6 +551,11 @@ action:
     Consumed 1min 8.491s CPU time.'
   runner: tony-omen
   attempts: 1
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-24 20:55
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 21:38
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-210156-build-an-inpaint-lane-for-the-.md
