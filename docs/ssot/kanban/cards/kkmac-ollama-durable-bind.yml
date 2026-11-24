@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
 column: review
-updated: 2026-11-24 18:56
+updated: 2026-11-24 19:41
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -229,6 +229,12 @@ comms:
 - at: 2026-11-24 18:56
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 19:41
+  from: tony
+  text: 'answered kk-mac-ollama-now-binds-0-0-0-0-verified-aa50ca: proceed'
+- at: 2026-11-24 19:41
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -251,10 +257,12 @@ requests:
     sudo): (1) verify OLLAMA_HOST is set in net.adanest.ollama.plist so the bind survives reboot; (2) narrow bind
     to tailnet IP only — LAN 192.168.0.101:11434 is currently exposed (SEC-0985 intent is tailnet-only). Can you
     get adanest access (KK sign-off per docs/kb/ada-nest-kk-mac-onboarding.md) or confirm the plist contents?'
-  status: open
+  status: answered
   at: 2026-11-24 18:47
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
