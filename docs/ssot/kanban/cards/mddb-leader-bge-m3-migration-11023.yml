@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: doing
-updated: 2026-11-24 21:57
+updated: 2026-11-24 21:58
 priority: high
 tags:
 - mddb
@@ -226,6 +226,13 @@ comms:
     queue ~1.7k/4000. ada-ha-bank-general + personal-tony + note-tony vector-search already returning bge hits.
     CAVEAT: pool is only idc03+omen primaries — shim 504s under saturation are retrying (maxAttempts=50, dropped=0)
     but ~46 jobs show early per-chunk failures; plan a non-force cl'
+- at: 2026-11-24 21:58
+  from: devin
+  text: '[DONE - migration live, reindex draining] Leader :11023 now embeds+searches in bge-m3/1024d via embed-pool-shim
+    :11436. All 63 collections force-reindexing async (31 done, 19 heavy jobs running; ETA ~20-30h for 144k chunks
+    - card ETA was stale). Recall already restoring on ada-ha-bank-general/personal-tony/note-tony. KEY UNDOCUMENTED
+    STEP executed: DB-stored /v1/embedding-configs default overrode env - flipped to bge-m3-local via set-default
+    API + added MDDB_OUTBOUND_ALLOWLIST env; gemini-proxy '
 action:
   type: dispatch
   status: running
