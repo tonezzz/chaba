@@ -1,6 +1,6 @@
 id: model-route-registration-unify
 title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
-column: backlog
+column: doing
 updated: 2026-11-24 18:40
 spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
   live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
@@ -166,9 +166,15 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:40
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 18:40
