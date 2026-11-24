@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
-column: backlog
-updated: 2026-11-24 19:26
+column: doing
+updated: 2026-11-24 19:27
 tags:
 - hardware
 - omen
@@ -303,20 +303,24 @@ comms:
 - at: 2026-11-24 19:26
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 3.55 > 1.5)'
+- at: 2026-11-24 19:27
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-24 15:39
     dirty: 1
     close_held: 2026-11-24 16:38
   result: 'exit=0 ended), after which the automation activates automatically. | devin-task-20261124-160901-goal-keep-omen-battery-in-40-8.service:
     Consumed 4min 42.815s CPU time over 22min 37.048s wall clock time, 938.9M memory peak, 443.6M memory swap peak.'
+  runner: tony-omen
 claim:
-  since: 2026-11-24 15:17
+  since: 2026-11-24 19:27
 requests:
 - id: omen-charge-policy-a-vs-b
   ask: 'Pick the omen charge-limit path. Verified live today: (1) omen 15-BC has no charge_control_* and hp_bioscfg
@@ -376,4 +380,3 @@ requests:
   - id: have-one
     label: Already have a spare — will say which
 review_kind: verify
-awaiting_action: true
