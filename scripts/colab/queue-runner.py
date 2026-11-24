@@ -38,7 +38,14 @@
 # Observability (all on Drive, readable via rclone from fleet hosts):
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
 #   queue/prep-<name>.log    — per-job prep stdout/stderr
-#   queue/heartbeat          — rewritten every 15s: <epoch> <job> <phase>
+#   queue/lease              — THE liveness file (unified 2026-11-24):
+#                            JSON {worker,epoch,ts,job,phase} rewritten
+#                            every 15s; doubles as the nest-fence record.
+#                            queue/heartbeat is retired — readers fall back
+#                            to it for pre-unification runners.
+#   queue/packs-index/       — one tiny JSON event per pack state change
+#                            (claim/done/fail) so fleet scans fold the dir
+#                            in O(1) rclone calls instead of O(packs) lsf
 #   queue/runner.pid         — running pid, removed on clean exit (legacy)
 #   queue/runner.id          — JSON {pid,boot_id,worker,epoch,ts} — the
 #                            — boot-scoped identity; a pid on shared Drive is
@@ -134,9 +141,14 @@ def say(msg):
 
 # --- nest-fence (v4): lease + epoch. Only the newest generation may write;
 # a zombie that resurfaces discovers it lost the lease and self-exits
-# before it can mutate the store. Two-VM race: newer epoch wins. ---
+# before it can mutate the store. Two-VM race: newer epoch wins. The lease
+# is ALSO the liveness file (unified 2026-11-24, ADA-0806): it carries
+# {worker,epoch,ts,job,phase} refreshed every 15s — the separate
+# queue/heartbeat text file is retired; consumers fall back to it for
+# runners deployed before the unification. ---
 import json
 LEASE = f'{Q}/lease'
+state = {'job': 'boot', 'phase': 'boot'}
 
 def read_lease():
     try:
@@ -145,6 +157,10 @@ def read_lease():
     except Exception:
         return 0, ''
 
+def lease_doc(worker, epoch):
+    return {'worker': worker, 'epoch': epoch, 'ts': int(time.time()),
+            'job': state['job'], 'phase': state['phase']}
+
 def take_lease(worker):
     # FUSE write->read visibility can lag arbitrarily — a read-back
     # check would self-exit on a healthy store. Write-and-remember:
@@ -152,8 +168,7 @@ def take_lease(worker):
     # different (epoch,worker) within its 15s poll and exits).
     e, _w = read_lease()
     with open(LEASE, 'w') as f:
-        f.write(json.dumps(
-            {'worker': worker, 'epoch': e + 1, 'ts': int(time.time())}))
+        f.write(json.dumps(lease_doc(worker, e + 1)))
     return e + 1
 
 def fenced_out(my_epoch, worker):
@@ -163,9 +178,6 @@ def fenced_out(my_epoch, worker):
     if not w:
         return False
     return (e, w) != (my_epoch, worker)
-
-# heartbeat: lets fleet-side checks flag a stall without any notebook access
-state = {'job': 'boot', 'phase': 'boot'}
 
 def _registry_refresh():
     """Keep this VM's managed-runtime record fresh while the queue runs —
@@ -178,17 +190,16 @@ def _registry_refresh():
         pass
 
 def heartbeat():
+    """Refresh the unified lease every 15s — ts is liveness for watchers,
+    job/phase is stall-alert context, worker/epoch is the fence. Only
+    rewrite while the lease still names us: a fenced-out writer must not
+    resurrect its own lease over the winner's."""
     while True:
         try:
-            with open(f'{Q}/heartbeat', 'w') as h:
-                h.write(f'{time.time():.0f} {state["job"]} {state["phase"]}\n')
-            # refresh lease ts while I still hold it — liveness for watchers
-            e, w = read_lease()
+            _e, w = read_lease()
             if w == WORKER:
                 with open(LEASE, 'w') as f:
-                    f.write(json.dumps(
-                        {'worker': WORKER, 'epoch': EPOCH,
-                         'ts': int(time.time())}))
+                    f.write(json.dumps(lease_doc(WORKER, EPOCH)))
             _registry_refresh()
         except OSError:
             pass
@@ -196,11 +207,17 @@ def heartbeat():
 
 def fence_watch():
     # self-fencing: if my lease was overwritten, my writes are no longer
-    # legitimate — die before corrupting the store
+    # legitimate — die before corrupting the store. os._exit bypasses the
+    # finally block, so release any held pack claim HERE first — a fenced
+    # runner that exits without releasing poisons the pack for the whole
+    # stale-claim window (ADA-0806).
     while True:
         time.sleep(15)
         try:
             if fenced_out(EPOCH, WORKER):
+                say('fenced — lost lease; releasing held claim, exiting')
+                if state.get('claim'):
+                    release_claim(state['claim'])
                 os._exit(1)
         except OSError:
             pass                    # unreadable lease ≠ lost lease; retry
@@ -208,7 +225,7 @@ def fence_watch():
 WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
 EPOCH = take_lease(WORKER)
 say(f'lease acquired: {WORKER} epoch {EPOCH}')
-# heartbeat thread starts only after WORKER/EPOCH exist — starting it
+# liveness thread starts only after WORKER/EPOCH exist — starting it
 # earlier raced the take_lease settle window and died on NameError
 # (observed 2026-10-23: heartbeat NameError: EPOCH -> no heartbeat ever)
 threading.Thread(target=heartbeat, daemon=True).start()
@@ -278,7 +295,8 @@ def start_prep(job):
             subprocess.Popen(job['prep'], shell=True,
                              stdout=pl, stderr=subprocess.STDOUT,
                              env=dict(os.environ, NEST_ROOT=ROOT,
-                                      PACK_DIR=pack_dir),
+                                      PACK_DIR=pack_dir,
+                                      NEST_HF_REPOS=HF_REPOS),
                              start_new_session=True))
 
 def wait_prep(prep):
@@ -358,15 +376,77 @@ def release_claim(name):
         os.unlink(f'{PACKS}/{name}/claim/{WORKER}')
     except OSError:
         pass
+    if state.get('claim') == name:
+        state['claim'] = None
 
-def touch_index(name, state, info=''):
-    """packs-index.json — one tiny line per state change so fleet scans
-    can go O(1) instead of O(packs x rclone lsf). Best-effort."""
+def fail_pack(name, why):
+    """Terminal pack failure: record the index event AND release our claim
+    — mirrors nest-worker's failed-marker + deletefile-on-fail so a failed
+    pack never waits out the stale-claim window."""
+    touch_index(name, 'fail', why)
+    release_claim(name)
+
+PINDEX = f'{Q}/packs-index'
+_idx_seq = [0]
+
+def touch_index(name, event, info=''):
+    """packs-index/<ms>-<seq>-<worker>-<pack>-<event>.json — one tiny
+    immutable event per state change (claim/done/fail). Fleet scanners
+    fold the whole dir in a single rclone copy — O(1) calls instead of
+    O(packs) lsf. Event files, not an append log: rclone has no Drive
+    append, and per-event files are atomic — no read-modify-write race
+    between Colab (FUSE) and fleet (rclone) writers. Best-effort."""
     try:
-        with open(f'{Q}/packs-index.json', 'a') as f:
-            f.write(f'{time.time():.0f} {name} {state} {WORKER} {info}\n')
+        os.makedirs(PINDEX, exist_ok=True)
+        _idx_seq[0] += 1
+        fn = (f'{time.time():.0f}-{_idx_seq[0]:03d}-{WORKER}-'
+              f'{name}-{event}.json')
+        with open(f'{PINDEX}/{fn}', 'w') as f:
+            json.dump({'ts': time.time(), 'pack': name, 'state': event,
+                       'worker': WORKER, 'info': info}, f)
     except OSError:
         pass
+
+def index_retention():
+    """Drop packs-index events older than 14d — the fold only needs recent
+    state; done/failed markers on the packs themselves are the durable
+    record. Best-effort, runs once at startup."""
+    cutoff = time.time() - 14 * 86400
+    for f in glob.glob(f'{PINDEX}/*.json'):
+        try:
+            if os.path.getmtime(f) < cutoff:
+                os.unlink(f)
+        except OSError:
+            pass
+
+def norm_hf_repos(job):
+    """hf_repos: HF hub repos ('org/name') this job/pack needs restored
+    into /root/.cache/huggingface/hub — drives the selective
+    restore-hf-cache prep (ADA-0806 item 3). Absent/empty = declares no
+    HF need; undeclared HF use self-downloads via huggingface_hub, the
+    pre-cache path, so packs must opt in explicitly."""
+    r = job.get('hf_repos')
+    if isinstance(r, str):
+        return [r]
+    if isinstance(r, (list, tuple)):
+        return [x for x in r if isinstance(x, str)]
+    return []
+
+def hf_repos_needed(queue):
+    """Union of hf_repos over jobs/packs WITHOUT a done marker — what the
+    restore-hf-cache prep should extract this boot. 'NONE' means no
+    pending work needs the hub cache at all (fastest cold start)."""
+    repos = []
+    for j in queue:
+        try:
+            if os.path.exists(markpath(j)):
+                continue
+        except Exception:
+            pass
+        for r in norm_hf_repos(j):
+            if r not in repos:
+                repos.append(r)
+    return repos
 
 def claim(job):
     """Optimistic first-writer-wins on packs/<name>/claim/. Drive dir-listing
@@ -414,7 +494,6 @@ signal.signal(signal.SIGALRM, _alrm)
 
 try:
     ns = {}
-    current = ""                   # pack name whose claim we hold
     pending = None                  # (job_name, logfile, Popen) — bg prep for a
                                     # specific job, started under an earlier job's
                                     # GPU time. Only the owning job consumes it.
@@ -422,6 +501,16 @@ try:
     if packs:
         say(f'packs discovered: {[p["name"] for p in packs]} (caps gpu={CAPS["gpu_gb"]:.0f}GB disk={CAPS["disk_gb"]:.0f}GB)')
     queue = JOBS + packs
+    # selective HF restore: union of hf_repos over packs/jobs still pending
+    # this boot — restore-hf-cache extracts only those per-repo archives
+    # (LTX not VoxCPM2). 'NONE' = nothing pending needs the hub cache.
+    HF_REPOS = ' '.join(hf_repos_needed(queue)) or 'NONE'
+    if HF_REPOS != 'NONE':
+        say(f'hf restore set: {HF_REPOS}')
+    index_retention()
+    flush_check = []                # (name, [patterns], {pat: bytes}) —
+                                    # mark-time artifact sizes for the
+                                    # post-settle flush verification
     for i, job in enumerate(queue):
         name = job['name']
         state.update(job=name, phase='check')
@@ -437,7 +526,7 @@ try:
                 say(f'== {name}: SKIP needs unmet ({why})'); continue
             if not claim(job):
                 say(f'== {name}: SKIP (claimed by another worker)'); continue
-            current = name
+            state['claim'] = name
             touch_index(name, 'claim')
         if pending is not None and pending[0] == name:
             state['phase'] = 'prep-wait'
@@ -445,14 +534,14 @@ try:
             say(f'== {name}: prep rc={rc}')
             if rc != 0:
                 say(f'== {name}: PREP FAILED — skipping')
-                if job.get('_pack'): release_claim(name)
+                if job.get('_pack'): fail_pack(name, 'prep')
                 continue
         elif job.get('prep') and (pending is None or pending[0] != name):
             state['phase'] = 'prep'
             say(f'== {name}: prep (foreground, see prep-{name}.log)')
             if wait_prep(start_prep(job)) != 0:
                 say(f'== {name}: PREP FAILED — skipping')
-                if job.get('_pack'): release_claim(name)
+                if job.get('_pack'): fail_pack(name, 'prep')
                 continue
         if pending is None:         # one bg slot — hide next prep under this run
             nxt = next((j for j in queue[i+1:]
@@ -490,30 +579,58 @@ try:
             ok, info = verify_artifacts(job)
             if not ok:
                 say(f'== {name}: FAIL artifacts missing after run: {info}')
-                if job.get('_pack'): release_claim(name)
+                if job.get('_pack'): fail_pack(name, 'artifacts')
                 continue
             if fenced_out(EPOCH, WORKER):
                 sys.exit('fenced — lost lease before done-mark')
             open(markpath(job), 'w').write(f'{dt:.0f}s boot={BOOT_ID} ep={EPOCH} {info}\n')
-            if job.get('_pack'): touch_index(name, 'done', info)
+            if job.get('_pack'):
+                touch_index(name, 'done', info)
+                release_claim(name)   # claim's job is done — don't litter
+            # mark-time artifact byte counts — the flush-settle re-check
+            # below compares against these (stage-then-push evidence)
+            pats = [p.replace('{boot_id}', BOOT_ID)
+                    for p in (job.get('artifacts') or [])]
+            if pats:
+                flush_check.append(
+                    (name, pats,
+                     {p: sum(os.path.getsize(f) for f in glob.glob(
+                                 f'{ROOT}/{p}')
+                             if os.path.isfile(f)) for p in pats}))
             say(f'== {name}: DONE {dt:.0f}s {info} (gpu {gpu_note()})')
         except Exception:
             say(f'== {name}: FAIL')
             traceback.print_exc()
             log.write(traceback.format_exc() + '\n')
-            if job.get('_pack'): release_claim(name)
+            if job.get('_pack'): fail_pack(name, 'error')
     if pending is not None:
         state['phase'] = 'drain-prep'
         wait_prep(pending)
-    # DriveFS flushes async — give big artifacts a window to land server-side
-    # before the VM idles/recycles. Marker content already recorded sizes so
-    # a fleet-side rclone check can confirm.
+    # DriveFS flushes async — give big artifacts a window to land
+    # server-side before the VM idles/recycles (stage-then-push: packs
+    # write big outputs to local disk, push to the Drive path, and this
+    # settle is the push's flush window). After settling, re-stat every
+    # artifact pattern marked done this session: sizes recorded at mark
+    # time are the FUSE view, so growth during settle means bytes were
+    # still flushing when the marker landed — the 2026-10-23 lost-tar
+    # class. Logged for the fleet audit; never fails the queue.
     state['phase'] = 'flush-settle'
     settle = float(os.environ.get('NEST_QUEUE_SETTLE_S', '120'))
     say(f'QUEUE-DRAINED — settling {settle:.0f}s for DriveFS flush')
-    time.sleep(settle)
+    if settle > 0:
+        time.sleep(settle)
+    for name, pats, before in flush_check:
+        after = {p: sum(os.path.getsize(f) for f in glob.glob(f'{ROOT}/{p}')
+                        if os.path.isfile(f)) for p in pats}
+        moved = {p: f'{before.get(p, 0)}->{after.get(p, 0)}B'
+                 for p in pats if after.get(p, 0) != before.get(p, 0)}
+        if moved:
+            say(f'flush-check {name}: sizes still moving {moved} — '
+                'DriveFS flush may have been incomplete at mark time')
+        else:
+            say(f'flush-check {name}: {len(pats)} artifact pattern(s) stable')
 finally:
     state['job'] = 'exit'; state['phase'] = 'exit'
-    if current:
-        release_claim(current)      # died mid-pack — don't poison the pack
+    if state.get('claim'):
+        release_claim(state['claim'])  # died mid-pack — don't poison it
     remove_own_runner_marks()

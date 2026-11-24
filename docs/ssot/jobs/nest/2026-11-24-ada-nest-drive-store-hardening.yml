@@ -1,0 +1,115 @@
+id: jobs/nest/2026-11-24-ada-nest-drive-store-hardening
+title: >-
+  ada-nest drive-store hardening (ADA-0806) — claim lifecycle, packs-index,
+  per-repo HF cache, flush-settle verify, unified liveness
+card: ada-nest-drive-store-hardening-stale-cla-558c90
+date: 2026-11-24
+runner: devin-dispatch worktree (repo landing only — no Drive deploy, no push)
+status: delivered
+
+# Closes the five ranked fixes from the 2026-10-23 Drive-FUSE lessons
+# (lost-race claim poisoning, self-exits, slow fleet scans, monolithic
+# hf cache, heartbeat+lease split-brain). Core boundary unchanged: Drive
+# is the artifact bus, not a transactional lock DB — every index/liveness
+# file here is advisory with live-check fallback.
+
+items:
+  claim_release:
+    what: >-
+      queue-runner.py releases its own pack claim on every terminal path:
+      PREP FAILED, artifact-missing FAIL, exception FAIL, fence-exit
+      (released BEFORE os._exit since finally never runs), and on done.
+      fail_pack() pairs release_claim() with a 'fail' index event.
+      Mirrors nest-worker's deletefile-on-fail; closes the 60-min
+      stale-claim poison window on the Colab side.
+    files: [scripts/colab/queue-runner.py]
+  packs_index:
+    what: >-
+      queue/packs-index/<ms>-<seq>-<worker>-<pack>-<state>.json — one tiny
+      IMMUTABLE event file per state change (stage|claim|done|fail|
+      release). Event files, not an append log: rclone has no Drive
+      append and per-event files are atomic between Colab (FUSE) and
+      fleet (rclone) writers. Writers: queue-runner (claim/done/fail),
+      nest-worker (claim/done/fail/release), nest-pack-submit (stage).
+      nest-queue-status.py folds the dir in ONE rclone copy + batches
+      done-marker fetches via --files-from; index is advisory, never
+      authoritative — non-terminal packs still get live lsf/cat.
+      index_retention() drops events >14d at runner startup.
+    files: [scripts/colab/queue-runner.py, scripts/ada/nest-worker.py,
+            scripts/ada/nest-pack-submit.py, scripts/ada/nest-queue-status.py]
+  hf_cache_split:
+    what: >-
+      save-hf-cache now writes BOTH cache/hf-hub/models--<org>--<name>.tar.zst
+      per-repo archives AND the legacy cache/hf-hub.tar.zst monolith
+      (one transition cycle). restore-hf-cache honors NEST_HF_REPOS —
+      set by the runner to the union of hf_repos over packs/jobs still
+      pending this boot: named repos extract only their own tar, or their
+      hub/models--* subtree out of the monolith in ONE tar pass (selective
+      even before per-repo archives exist), 'NONE' skips the extract
+      entirely (fastest cold start), unset restores the whole monolith
+      (legacy runners) with per-repo tars as monolith-less fallback. New optional
+      pack.yml field `hf_repos:` (validated org/name in
+      nest-pack-submit). Annotated: 9 LTX packs -> Lightricks/LTX-Video;
+      5 f5-tts-th packs -> VIZINTZOR/F5-TTS-TH-V2 + charactr/vocos-mel-24khz;
+      thonburian-bench -> biodatlab/ThonburianTTS + vocos;
+      vyncx-v2-cer -> Systran/faster-whisper-small. Embeds packs
+      deliberately unannotated (model-archive/t5xxl is their input path;
+      LTX-Video is only a missing-archive fallback).
+    files: [scripts/colab/JOBS.py, scripts/colab/queue-runner.py,
+            scripts/ada/nest-pack-submit.py, scripts/colab/packs/*/pack.yml]
+  flush_settle:
+    what: >-
+      Formalized stage-then-push: NEST_QUEUE_SETTLE_S stays the flush
+      window; after settling the runner re-stats every artifact glob
+      marked done this session (sizes recorded at mark time) and logs
+      'flush-check <name>: sizes still moving' when bytes grew during
+      settle — the 2026-10-23 lost-tar detector. Logged, never fails
+      the queue; 0 disables the sleep.
+    files: [scripts/colab/queue-runner.py]
+  unified_liveness:
+    what: >-
+      queue/lease is now THE liveness file: {worker,epoch,ts,job,phase}
+      rewritten every 15s by the runner's heartbeat thread (which only
+      writes while the lease still names us — a fenced writer cannot
+      resurrect its lease). queue/heartbeat text is retired; every
+      reader falls back to it for pre-unification runners:
+      nest-queue-watch (stall alert), nest-queue-health (snapshot),
+      nest-queue-status, queue-launcher-cell (reap/zombie gate),
+      gap-runner heartbeat(), mcp-colab server (session status +
+      queue-start freshness gate). gap-lease/gap-heartbeat are a
+      separate space and were NOT unified.
+    files: [scripts/colab/queue-runner.py, scripts/ops/nest-queue-watch.py,
+            scripts/ops/nest-queue-health.py, scripts/ada/nest-queue-status.py,
+            scripts/colab/queue-launcher-cell.py, scripts/colab/gap-runner.py,
+            mcp-servers/mcp-colab/server.py]
+
+tests:
+  updated: [tests/colab/test_job_console.py,
+            tests/ops/test_nest_queue_watch.py]
+  added_coverage:
+    - 'e2e drain asserts lease JSON + no heartbeat file'
+    - 'e2e packs-index claim/done events + NEST_HF_REPOS in prep env'
+    - 'launcher: fresh lease alone blocks (no heartbeat needed)'
+    - 'watch fixture serves unified lease JSON'
+  command: >-
+    python3 -m pytest tests/colab/ tests/ops/test_nest_queue_watch.py
+    tests/ada/test_nest_worker_scan.py tests/board/test_stalled_claim_lifecycle.py
+    tests/colab/test_pack_preflight.py tests/devnest/test_kk_mac_lane_worker.py
+    tests/ops/test_kk_mac_worker_installer.py -q
+  result: all pass (test_kk_mac_image_render_poc DisabledTemplateTest
+    fails identically on clean HEAD — pre-existing, unrelated)
+
+deploy_notes:
+  - 'queue-runner.py canonical source is scripts/colab/queue-runner.py;'
+  - '  the Drive copy is queue/runner.py — stage via the documented'
+  - '  fleet-side rclone flow (docs/kb/colab-mcp-jobs.md §standard launch'
+  - '  sequence) and purge queue/__pycache__ after bumping JOBS.py.'
+  - 'nest-worker.py + nest-pack-submit.py deploy via each host''s'
+  - '  chaba checkout sync (chaba-repo-sync.timer), not scp.'
+  - 'Pre-unification runners keep working: lease gains job/phase fields'
+  - '  additively; heartbeat-file readers fall back until every runner'
+  - '  is redeployed. Monolithic hf-hub.tar.zst still restored when no'
+  - '  per-repo archive exists.'
+
+procedure: docs/kb/colab-mcp-jobs.md  # updated: lease liveness, packs-index,
+                                     # hf_repos, per-repo cache, flush-check

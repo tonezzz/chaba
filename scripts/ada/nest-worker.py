@@ -276,6 +276,22 @@ def say(msg):
     print(f'{time.strftime("%H:%M:%S")} {msg}', flush=True)
 
 
+def index_event(remote_root, name, state, info=''):
+    """packs-index event file — same contract as the Colab runner's
+    touch_index (ADA-0806): one tiny immutable JSON per state change under
+    <remote>/queue/packs-index/, so fleet/status scans fold the dir in a
+    single rclone call instead of listing every pack. rclone has no Drive
+    append — events are files, which also keeps Colab (FUSE) and fleet
+    (rclone) writers race-free. Best-effort: index loss never blocks work."""
+    try:
+        fn = (f'{int(time.time() * 1000)}-{WORKER}-{name}-{state}.json')
+        rcat(f'{remote_root}/queue/packs-index/{fn}',
+             json.dumps({'ts': time.time(), 'pack': name, 'state': state,
+                         'worker': WORKER, 'info': info}))
+    except Exception as e:
+        say(f'  index event {name}/{state} failed: {e}')
+
+
 STATUS = {'ts': 0, 'worker': '', 'pending': 0, 'claimed': None,
           'last': None}
 
@@ -446,6 +462,7 @@ def main():
         args.remote, args.stale_claim_min)
     say(f'discovery: {len(candidates)} pending, {len(releases)} stale '
         f'claims, {time.time() - t0:.1f}s')
+    rc('mkdir', f'{args.remote}/queue/packs-index', check=False)
     STATUS.update(worker=WORKER, pending=len(candidates))
     write_status()
     if args.scan_only:
@@ -459,6 +476,7 @@ def main():
     for d, c, age in releases:
         say(f'{d}: releasing stale claim {c} ({age:.0f}s)')
         rc('deletefile', f'{args.remote}/packs/{d}/claim/{c}', check=False)
+        index_event(args.remote, d, 'release', f'stale claim {c}')
     for d, spec in candidates:
         pdir = f'{args.remote}/packs/{d}'
         # requires is re-evaluated at claim time: a dependency finished
@@ -483,6 +501,7 @@ def main():
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
             continue
         say(f'{d}: CLAIMED — running')
+        index_event(args.remote, d, 'claim')
         STATUS['claimed'] = d
         write_status()
         ok, info = run_pack(d, spec, args.remote)
@@ -491,9 +510,11 @@ def main():
         write_status()
         if ok:
             rcat(f'{pdir}/done', f'{info} worker={WORKER}')
+            index_event(args.remote, d, 'done', info)
             say(f'{d}: DONE {info}')
         else:
             say(f'{d}: FAIL {info}')
+            index_event(args.remote, d, 'fail', info)
             # Contract failures are terminal for this package. Leaving the
             # pack unmarked causes an invalid model response to retry forever.
             rcat(f'{pdir}/failed', f'{info} worker={WORKER}')

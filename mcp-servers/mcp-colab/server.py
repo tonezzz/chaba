@@ -168,20 +168,35 @@ def colab_session_status() -> str:
         lines.append("managed runtimes: " + (
             f"unavailable ({registry_error})" if registry_error
             else "none registered"))
-    _, hb = _rclone("cat", f"{NEST}/queue/heartbeat")
+    # unified liveness: queue/lease carries {worker,epoch,ts,job,phase}
+    # (ADA-0806); queue/heartbeat text is the pre-unification fallback.
+    _, lease_raw = _rclone("cat", f"{NEST}/queue/lease")
+    lease_ts = lease_job = lease_phase = None
     try:
-        ts, job, phase = hb.split()
-        lines.append(f"queue heartbeat: {job}/{phase} "
-                     f"{now - float(ts):.0f}s ago")
+        d = json.loads(lease_raw)
+        lease_ts = float(d.get("ts") or 0) or None
+        lease_job = d.get("job")
+        lease_phase = d.get("phase")
     except Exception:
-        lines.append("queue heartbeat: absent")
-    _, lease = _rclone("cat", f"{NEST}/queue/lease")
-    try:
-        d = json.loads(lease)
-        lines.append(f"queue lease: {d.get('worker')} epoch {d.get('epoch')} "
-                     f"({now - float(d.get('ts') or 0):.0f}s ago)")
-    except Exception:
-        lines.append("queue lease: absent")
+        pass
+    if lease_ts is None or not lease_phase:
+        _, hb = _rclone("cat", f"{NEST}/queue/heartbeat")
+        parts = hb.split()
+        if len(parts) >= 3:
+            if lease_ts is None:
+                try:
+                    lease_ts = float(parts[0])
+                except ValueError:
+                    pass
+            if not lease_phase:
+                lease_job = " ".join(parts[1:-1])
+                lease_phase = parts[-1]
+    if lease_ts is not None:
+        lines.append(
+            f"queue liveness: {lease_job or '?'}/{lease_phase or '?'} "
+            f"{now - lease_ts:.0f}s ago")
+    else:
+        lines.append("queue liveness: absent")
     _, rid = _rclone("cat", f"{NEST}/queue/runner.id")
     try:
         d = json.loads(rid)
@@ -233,23 +248,25 @@ def colab_queue_start(boot_id: str, confirm: bool) -> str:
         return ("REFUSED: queue/runner.id is present; inspect "
                 "colab_session_status before launching another runner.")
 
-    rc, heartbeat = _rclone("cat", f"{NEST}/queue/heartbeat")
-    try:
-        heartbeat_age = now - float(heartbeat.split()[0])
-    except (ValueError, IndexError):
-        heartbeat_age = float("inf")
-    if heartbeat_age <= 90:
-        return (f"REFUSED: queue heartbeat is fresh ({heartbeat_age:.0f}s); "
-                "the shared queue appears to be running.")
+    # unified liveness: queue/lease ts is the freshness signal (ADA-0806);
+    # queue/heartbeat is the pre-unification fallback.
     rc, lease = _rclone("cat", f"{NEST}/queue/lease")
+    liveness_age = float("inf")
     try:
-        lease_data = json.loads(lease)
-        lease_age = now - float(lease_data.get("ts") or 0)
+        _lts = float(json.loads(lease).get("ts") or 0)
+        if _lts:
+            liveness_age = now - _lts
     except (TypeError, ValueError, json.JSONDecodeError):
-        lease_age = float("inf")
-    if lease_age <= 90:
-        return (f"REFUSED: queue lease is fresh ({lease_age:.0f}s); "
-                "the shared queue may be running.")
+        pass
+    if liveness_age == float("inf"):
+        rc, heartbeat = _rclone("cat", f"{NEST}/queue/heartbeat")
+        try:
+            liveness_age = now - float(heartbeat.split()[0])
+        except (ValueError, IndexError):
+            pass
+    if liveness_age <= 90:
+        return (f"REFUSED: queue liveness is fresh ({liveness_age:.0f}s); "
+                "the shared queue appears to be running.")
 
     request_id = uuid.uuid4().hex
     request = {

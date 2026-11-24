@@ -59,6 +59,11 @@ class WatchTick(unittest.TestCase):
         self.tmp.cleanup()
 
     def remote(self, *args):
+        if args[0] == "cat" and args[1].endswith("/lease"):
+            # unified liveness file (ADA-0806)
+            return ('{"worker": "colab-x", "epoch": 4, '
+                    f'"ts": {int(time.time())}, '
+                    '"job": "doc-embeds-ss1", "phase": "run"}')
         if args[0] == "cat" and args[1].endswith("/heartbeat"):
             return f"{int(time.time())} doc-embeds-ss1 run"
         if args[0] == "lsf":
