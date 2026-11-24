@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-upgrade
 title: Ansible ada-ocb upgrade playbook (approval-gated)
 column: done
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:24
 brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
   (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
   approval.
@@ -75,6 +75,11 @@ comms:
 - at: 2026-11-24 08:22
   from: devin
   text: moved doing -> done
+- at: 2026-11-24 08:24
+  from: devin
+  text: 'Correction on column: moved done -> review. The card''s done-condition includes a live upgrade run on idc02
+    with verify green; that run was deliberately NOT performed (needs explicit same-session approval). Code is complete
+    and safety-tested, execution remains gated. Leave in review until Tony approves and the run is evidenced.'
 action:
   status: done
 claim: {}

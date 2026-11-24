@@ -1,7 +1,7 @@
 id: rotate-or-key-restart-openclaw-gateway
 title: 'rotate-or-key.sh: always restart openclaw-gateway after key swap'
 column: backlog
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:23
 brief: 'During the 2026-11-23 OR rotation, all 4 stores were updated correctly but a live OpenClaw agent turn STILL
   returned 401. The script only restarts openclaw-gateway if the unit has EnvironmentFile.*openrouter — it does
   not; the gateway caches the authProfiles.store key at startup, so it keeps using the old key until restarted.
@@ -55,4 +55,8 @@ comms:
 - at: 2026-11-24 08:14
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
