@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: doing
-updated: 2026-11-24 16:11
+updated: 2026-11-24 16:20
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -296,6 +296,12 @@ comms:
     button 6 remains final WebGPU-EP confirm. ALSO: embed-nest-bridge (lane-B pull-worker bridge lost with the 11-14
     worktree) rebuilt at scripts/nest/embed-nest-bridge.py + shim DEFER tier restored + page gained installable
     PWA/auto-worker/pool-worker mode + /apps/embed-nest Caddy rou'
+- at: 2026-11-24 16:20
+  from: devin
+  text: '[done] Committed on dispatch branch (24f8684): embed-nest-bridge rebuilt + shim DEFER tier + page PWA/pool-worker
+    + /apps/embed-nest route; 11 tests pass; bge compat proven headless (0.9664 cls). Deploy steps + rollback in
+    docs/ssot/jobs/nest/2026-11-24-embed-nest-bridge-iphone.yml — needs idc03 bridge unit + shim env + caddy reload
+    + iPhone Add-to-Home-Screen before the phone joins the real pool.'
 action:
   type: dispatch
   status: running
