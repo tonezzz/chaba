@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
-column: backlog
-updated: 2026-11-24 08:06
+column: doing
+updated: 2026-11-24 08:07
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -119,6 +119,12 @@ comms:
 - at: 2026-11-24 08:06
   from: chaba
   text: 'idc03 defers: disk headroom 1454MB < 2048MB floor'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 08:07
+  from: tony-macbook
+  text: claimed
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -139,7 +145,10 @@ requests:
   answer: re-pin 7 timer-alert cards to free_lane (recommended)
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 08:07
