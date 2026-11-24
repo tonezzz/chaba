@@ -1,7 +1,7 @@
 id: mn-dev-rename
 title: Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)
 column: doing
-updated: 2026-11-24 16:40
+updated: 2026-11-24 16:50
 brief: 'Public hostname renamed to mn-ha.surf-thailand.com (2026-10-16) and system-map now calls the dev twin mn-dev.
   Physical rename pending: michael-dev.service, podman container michael-dev, ~/.config/michael-dev, ~/.config/secrets/ha-michael-dev.env,
   plus ~119 references across docs/ssot, AGENTS.md, scripts. All must move together or scripts break.'
@@ -206,6 +206,10 @@ comms:
 - at: 2026-11-24 16:40
   from: devin
   text: dispatch started on tony-dell worktree; reconning michael-dev refs + idc03 state
+- at: 2026-11-24 16:50
+  from: devin
+  text: 'raised request target-name-for-the-dev-twin-rename-mn-d-c65456: Target name for the dev-twin rename: mn-dev
+    (card title/spec) or mn-ha-dev (system-map homes id + grand-rename spec + 20'
 action:
   type: dispatch
   status: running
@@ -215,3 +219,16 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 16:39
+requests:
+- id: target-name-for-the-dev-twin-rename-mn-d-c65456
+  ask: 'Target name for the dev-twin rename: mn-dev (card title/spec) or mn-ha-dev (system-map homes id + grand-rename
+    spec + 2026-11-23 runbook all say mn-ha-dev)? I recommend mn-ha-dev — it is the name the grown-up spec settled
+    on; mn-dev appears only in this card''s stale title/spec. Also note: the live instance moved idc03->idc02 on
+    2026-10-26, so I will execute the rename on idc02 (live) + parked copies on idc03/tony-dell/tony-omen, not idc03
+    as the stale spec says.'
+  status: open
+  at: 2026-11-24 16:50
+  from: devin
+  options:
+  - proceed
+  - hold
