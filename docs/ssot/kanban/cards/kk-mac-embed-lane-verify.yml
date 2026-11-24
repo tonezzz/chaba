@@ -1,7 +1,7 @@
 id: kk-mac-embed-lane-verify
 title: kk-mac bge-m3 embed lane — verify registration in embed-pool upstreams
 column: done
-updated: 2026-11-24 08:12
+updated: 2026-11-24 08:14
 spec: 'bge-m3 is pulled on kk-mac and embed-pool-shim runs on idc03:11436. Verify whether kk-mac ollama :11434 is
   registered as an embed-pool upstream; if not, add it (bounded: embeddings only, admission-gated). embed-pool-fleet
   card closed on live-service evidence — this verifies kk-mac specifically joins the pool.'
@@ -133,6 +133,10 @@ comms:
 - at: 2026-11-24 08:12
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}

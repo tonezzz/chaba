@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-11-24 08:12
+updated: 2026-11-24 08:14
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -614,6 +614,14 @@ comms:
     announce, no USB storage on omen. Physical step still blocked. Adding the missing piece this card kept lacking:
     scripts/ops/stick-watch.py — a fleet-side detector that alerts (board comment + HA push) the moment the stick
     boots/steals mn01, with the exact fix command. Commits on t'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: devin
+  text: 'raised request approve-installing-stick-watch-timer-on-cb8082: Approve installing stick-watch.timer on
+    tony-dell? New 5-min user timer runs scripts/ops/stick-watch.py — detects the st'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -651,4 +659,16 @@ requests:
   - hold
   answer: proceed
   executed: 2026-11-23 queue
+- id: approve-installing-stick-watch-timer-on-cb8082
+  ask: 'Approve installing stick-watch.timer on tony-dell? New 5-min user timer runs scripts/ops/stick-watch.py
+    — detects the stick booting (ops-feed announce / ssh mn01 hostname=tony-usb / tailnet tony-usb node) and HA-pushes
+    the exact fix command. Install: install -m644 systemd/stick-watch.{service,timer} ~/.config/systemd/user/ &&
+    systemctl --user daemon-reload && systemctl --user enable --now stick-watch.timer. Kill switch: touch ~/.config/stick-watch.off.
+    Without it the detector only runs manually.'
+  status: open
+  at: 2026-11-24 08:14
+  from: devin
+  options:
+  - install it
+  - skip watcher
 review_kind: verify
