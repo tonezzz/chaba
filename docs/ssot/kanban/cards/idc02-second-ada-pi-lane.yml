@@ -1,7 +1,7 @@
 id: idc02-second-ada-pi-lane
 title: Provision idc02 as second ada-pi dispatch lane
 column: doing
-updated: 2026-11-24 15:51
+updated: 2026-11-24 15:53
 priority: medium
 tags:
 - dispatch
@@ -179,6 +179,10 @@ comms:
   text: 'canary claimed: idc02-vps-lane-canary-hv (OPS-0034, priority re-queued high after low-pri OPS-0029 starved
     in queue churn) -> idc02 runner-agent claimed 15:51, devin-task-20261124-155106 running repo=ada-pi model=swe-2-flash-medium
     in dispatch-wt worktree. Awaiting run->push->merge->pytest-gate.'
+- at: 2026-11-24 15:53
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-155106 no longer active on idc02 but card still says running — sweeping
+    its branch'
 action:
   type: dispatch
   status: running
@@ -186,5 +190,7 @@ action:
   lane_source: kw
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 15:53
 claim:
   since: 2026-11-24 15:02
