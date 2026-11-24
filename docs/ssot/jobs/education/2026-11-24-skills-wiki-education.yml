@@ -1,0 +1,66 @@
+title: Wiki education — test and record the ada-ocb skill inventory
+subtitle: >
+  Offline phase: pin the 11 skills found in session history with a contract
+  test, render an Education: page from the SKILL.md files, and write the
+  docs/kb education entry. Publish is a separate, card-gated step through
+  the board-api wiki-education sink — no wiki writes here.
+icon: education
+version: 1
+
+card: null
+date: 2026-11-24
+source_session: "2026-11-24 session history — skills exploration and how to use them in ada-ocb"
+
+delivered:
+  test:
+    file: tests/test_agents_skills_explored.py
+    tests: 6
+    coverage:
+      - "inventory: 10 .agents/skills + 1 .opencode/skills (session-capture)"
+      - "metadata: name, description, trigger, usage for every SKILL.md"
+      - "frontmatter-less shape (auto-kb, overnight-assessment)"
+      - "offline wikitext render: template params, table, categories, all skills"
+  script:
+    file: scripts/skills-wiki-export.py
+    behavior: "collect_skills(repo) + render_page(...); --out writes wikitext; no network"
+    page_title: Education:Ada-Ocb-Skills
+    topic: ada-ocb-skills
+    template: แม่แบบ:Education
+    next_review: 2026-12-08
+  kb:
+    file: docs/kb/ada-ocb-skills-education.md
+    type: education
+    role: "pointer-first write-up; SSOT keeps only verdict row + ref"
+
+design_notes:
+  why_offline_first: >
+    The inventory is a fact about the checkout, so the test can pin it
+    deterministically. Rendering the Education: page from the same SKILL.md
+    files keeps the wiki record in lockstep with the skills, and the
+    fixtures prove the template shape before any live write.
+  why_the_door: >
+    Wiki writes stay behind board-api /publish sinks=["wiki-education"]:
+    the door owns credentials and the idempotency key, reruns dedupe, and
+    failures queue to the publication outbox. Direct MediaWiki API calls
+    bypass the Education: namespace and Lockdown boundary rules.
+  series_convention: >
+    "ada-ocb-skills" is the hub topic. Future per-skill lessons use
+    ada-ocb-skills-* titles with their own review dates; upsert the hub's
+    inventory rather than forking a new topic (AGENTS.md lesson series).
+
+activation_gate:
+  - "File/obtain a kanban card authorizing the wiki-education write."
+  - "Merge this work, then render: python3 scripts/skills-wiki-export.py --out /tmp/ada-ocb-skills.wiki"
+  - "POST /publish with kind=lesson, meta format=wikitext + topic/level/source/learned_at/next_review/status, sinks=['wiki-education']."
+
+verify:
+  - "python3 -m pytest tests/test_agents_skills_explored.py -q -> 6 passed"
+  - "python3 scripts/skills-wiki-export.py | grep -E 'Education|ada-ocb-skills' -> template + topic present"
+  - "node scripts/ssot-validate-all.mjs -> no new errors on this job yml"
+  - "POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row present"
+  - "EDU_SOURCE=wiki python3 scripts/education-report.py -> new lesson counted"
+
+remaining:
+  - "Card-gated live publish through the board-api door (not done offline)."
+  - "Refresh the hub inventory when a skill is added/removed; the test will fail first."
+  - "Optional on-wiki polish: {{#cargo_declare}} on แม่แบบ:Education for queryable next_review/status."
