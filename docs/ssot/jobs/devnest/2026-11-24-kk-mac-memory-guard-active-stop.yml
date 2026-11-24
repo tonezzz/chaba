@@ -1,0 +1,58 @@
+id: 2026-11-24-kk-mac-memory-guard-active-stop
+title: kk-mac live memory guard — active stop + conditional unload (MEM-1043 closeout)
+host: tony-dell (worktree) + kk-mac (target)
+card: kk-mac-live-memory-guard
+spec_note: >-
+  Card spec: monitor covering model load AND generation, 60% pre-load
+  floor, stop below 50% or on pressure, unload only a task-loaded model
+  (never owner-resident), persist pre/during/post snapshots, threshold
+  tests, KK_MAC_LANES=0 until verified. Prior state on master was
+  detection-only (MemoryMonitor thread + verdict flip after the fact —
+  the 2026-11-23 soak showed memory_pressure_abort verdicts at 13-14%
+  free with the model still resident). This change adds the missing
+  active-stop and conditional-unload layers.
+verified: >-
+  382 devnest tests + 146 board executor/queue tests green locally,
+  incl. 20 new guard tests (mid-stream threshold crossing, silent-load
+  abort, critical-pressure abort, unmeasurable streak, unload-only-
+  task-loaded, owner-resident/unknown-residency preservation,
+  executor evidence persistence). Live probes vs kk-mac while awake
+  (2026-11-24 ~21:0x ICT): ssh memory_pressure -Q + sysctl
+  kern.memorystatus_level + /api/ps all readable — free% oscillated
+  75%->13-16% during the session with owner-resident qwen3:30b-a3b
+  (20.3GB vram); the new combined _PROBE_CMD shape is exactly what was
+  run manually. kk-mac went offline (tailscale last seen ~9m, ssh
+  timeout) before the guarded path could be exercised end-to-end —
+  same external-host blocker as the 2026-11-07 verify-hold. Fail-closed
+  verified live: sample() -> ok=false -> evaluate(pre) ->
+  memory_sample_failed, i.e. any run would abort before inference.
+changes: >-
+  scripts/devnest/kk_mac_llm.py — generate_guarded(): streamed
+  /api/generate (local urllib for --host local, remote ssh Popen+curl
+  otherwise); in-band memory poll every ~1s local / ~2s remote where
+  the queue timeout IS the poll tick, covering Ollama's silent
+  model-load window; breach (<50% free, memstatus critical, or 3
+  consecutive unmeasurable samples) closes the HTTP response / kills
+  ssh so Ollama drops the generation; post-call unload_model
+  (keep_alive=0) fires ONLY when /api/ps proved the model absent
+  beforehand — owner-resident or unknown-residency never touched.
+  run_task defaults to the guarded path; memory_guard=False keeps the
+  raw call_remote shape (bench harness scripts/bench/kkmac-classes/
+  score.py intentionally stays unguarded — manual supervised tool).
+  scripts/devnest/kk_mac_memory.py — sample() probe now also returns
+  memstatus_pct (kern.memorystatus_level, the "or on pressure" signal;
+  evaluate() -> memory_pressure_critical in all phases); new
+  resident_models()/unload_model()/_ollama_request() for both
+  transports. scripts/devnest/kk_mac_executor.py — persists
+  memory.guard evidence block and surfaces guard abort_reason in
+  fallback reasons. KK_MAC_LANES verified still "0" default in
+  runner-agent.py; no repo config enables it.
+followups: >-
+  Live end-to-end verification still owed: when kk-mac is awake and
+  memory >60% free, run one bounded pack through the lane worker (or
+  `kk_mac_executor.py run --host kk-mac`) and confirm
+  kk_mac_result.json memory.guard shows loaded_by_task/unloaded and
+  min_free_pct. Until then KK_MAC_LANES stays 0 and the lane worker's
+  own gate keeps denying under pressure (observed live at 13-16% free).
+  kk-mac sleeps frequently — verification needs an awake window.
+commit: e6481199a7a (branch dispatch/20261124-210151-before-another-kk-mac-local-in)
