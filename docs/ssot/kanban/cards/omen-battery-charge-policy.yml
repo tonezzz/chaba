@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 15:19
+updated: 2026-11-24 15:33
 tags:
 - hardware
 - omen
@@ -193,6 +193,10 @@ comms:
   from: devin
   text: 'dispatch 20261124-151835 picked up: gathering HA-side facts (omen battery sensor, spare Tuya plugs) + BIOS
     Battery Health Manager research, then will raise decision request with recommendation.'
+- at: 2026-11-24 15:33
+  from: devin
+  text: 'raised request omen-charge-policy-a-vs-b: Pick the omen charge-limit path. Verified live today: (1) omen
+    15-BC has no charge_control_* and hp_bioscfg exposes no b'
 action:
   type: dispatch
   status: running
@@ -202,3 +206,26 @@ action:
   attempts: 1
 claim:
   since: 2026-11-24 15:17
+requests:
+- id: omen-charge-policy-a-vs-b
+  ask: 'Pick the omen charge-limit path. Verified live today: (1) omen 15-BC has no charge_control_* and hp_bioscfg
+    exposes no battery settings — no OS path; (2) battery telemetry already live in tony-ha — sensor.tony_omen_battery_level=61
+    fresh via command_line+telemetry push; (3) proven pattern exists — automation.mac_plug_charge_band_80_60 on
+    tony-ha; (4) NO spare plug — coffee/bedside/mac_plug/plug_tv all in use, so A needs a new Tuya (~THB 250) paired
+    to Smart Life. Option A = plug on charger + staged 85/45 hysteresis automation w/ failsafes (plug power-on=ON,
+    <25%/15min alert, <20% force-on, stale-sensor fail-open) — full YAML+runbook ready in docs/ssot/jobs/home-assistant/2026-11-24-omen-battery-charge-band.yml.
+    Option B = check F10 BIOS Battery Health Manager at next reboot — very likely ABSENT on a 2018 consumer Omen
+    (HP reserves charge-limit for business class; even 2025 Omen 16 lacks it) but costs nothing to glance at. Recommend
+    A; check BIOS opportunistically at next reboot anyway — if a charge-limit option exists it beats the plug. If
+    A: name a spare plug or buy+pair one, then tell me the device name and I deploy.'
+  status: open
+  at: 2026-11-24 15:33
+  from: devin
+  options:
+  - id: a
+    label: A — plug + automation now (recommended)
+  - id: b
+    label: B — check BIOS at next reboot first
+  - id: ab
+    label: A+B — plug anyway, BIOS opportunistic
+  suggested: a
