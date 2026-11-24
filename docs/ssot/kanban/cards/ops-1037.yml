@@ -1,7 +1,7 @@
 id: ops-1037
 title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
 column: doing
-updated: 2026-11-24 19:34
+updated: 2026-11-24 19:38
 spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
   LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
   Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
@@ -204,6 +204,11 @@ comms:
     (80%↔30%) as external consumers load/unload models; LiteLLM virtual keys have per-key model allowlists — cf-qwen38-27b
     403s on the C; [gemini-live-cap-rekey] STATE CHANGE 2026-11-23 ~19:30 (from card ada-scenario-c; [gemini-proxy-paid-last-resort-leg]
     DONE 2026-11-13: paid-Gem'
+- at: 2026-11-24 19:38
+  from: devin
+  text: 'dispatch picked up — plan: add ENRICH_PROVIDER=litellm|gemini to backlog-spec-enrich.py using scripts/ada/litellm_chat.py
+    (OpenAI /chat/completions, x-litellm attribution), gemini_rest stays as fallback; wire env_file litellm-chaba.env
+    + LITELLM_URL in ssot.jobs.yml and re-render the idc03 unit'
 action:
   type: dispatch
   status: running
