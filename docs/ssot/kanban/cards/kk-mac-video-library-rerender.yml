@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
-column: backlog
-updated: 2026-11-24 17:03
+column: doing
+updated: 2026-11-24 17:04
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -247,9 +247,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 17:04
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 17:04
