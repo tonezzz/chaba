@@ -1,7 +1,7 @@
 id: gev-google-maps-key-suspect-dead-verify-be569a
 title: gev-google-maps key suspect dead — verify GEV Google layers + renew
-column: doing
-updated: 2026-11-24 20:00
+column: review
+updated: 2026-11-24 20:01
 priority: low
 tags:
 - gev
@@ -284,16 +284,37 @@ comms:
   text: '[done] Attempt 2: committed attempt-1 verified findings (previous run failed merge-sweep for zero commits).
     Re-checked gcloud fleet-wide — absent on idc03/mn01/con01/tony-omen too, so key mint/enable stays a Tony GCP-console
     step despite the proceed answer. SSOT secrets entry + jobs/gev trail + outcome doc on dispatch branch (fd9409cc89).'
+- at: 2026-11-24 20:01
+  from: tony-macbook
+  text: 'finished (ok): exit=0 (OAuth2-only upstream). Final comms posted to the card; full details in the outcome
+    file. | devin-task-20261124-1'
+- at: 2026-11-24 20:01
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 20:01
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-194840-found-via-card-map-embed-tool-
+    is 21 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 20:01
+  from: chaba
+  text: pushed dispatch/20261124-194840-found-via-card-map-embed-tool- to origin
+- at: 2026-11-24 20:01
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 20:01
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 il; full details in `dispatch-outcome-20261124-173838-found-via-card-map-embed-tool-.md`. | devin-task-20261124-173838-found-via-card-map-embed-tool-.service:
-    Consumed 39.400s CPU time over 10min 24.577s wall clock time, 412.8M memory peak.'
+  result: 'exit=0 (OAuth2-only upstream). Final comms posted to the card; full details in the outcome file. | devin-task-20261124-194840-found-via-card-map-embed-tool-.service:
+    Consumed 48.175s CPU time over 11min 53.586s wall clock time, 407.9M memory peak.'
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-24 19:47
 requests:
