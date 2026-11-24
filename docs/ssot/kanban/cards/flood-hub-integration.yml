@@ -9,7 +9,7 @@ note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30
   HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
   leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
   Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
-updated: 2026-11-24 12:13
+updated: 2026-11-24 12:14
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
@@ -160,9 +160,29 @@ comms:
     package (16 sensors), runbook docs/ssot/jobs/infrastructure/2026-11-24-flood-hub-integration.yml. Live activation
     still gated: waitlist approval not landed + idc01 offline ~33d. Spec correction: API has no WARNING severity
     — alert floor is ABOVE_NORMAL.'
+- at: 2026-11-24 12:14
+  from: devin
+  text: 'raised request flood-hub-integration-is-code-complete-b-d0108b: Flood Hub integration is code-complete
+    but live activation needs two externals: (1) has the Google waitlist approval ema'
 spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist approval
   lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01 IP, storing it in
   ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py, configure HA
   REST sensors on michael-dev using the mha_mirror_* pattern, and implement flood-news-update.py to manage an auto-block
   on flood-report and saraburi leaf. Finally, add the Ada flood_status tool and LINE alert for severity >= WARNING,
   optionally adding the GEV KML overlay as detailed in docs/assessments/flood-hub-assessment.md.
+requests:
+- id: flood-hub-integration-is-code-complete-b-d0108b
+  ask: 'Flood Hub integration is code-complete but live activation needs two externals: (1) has the Google waitlist
+    approval email landed? (2) idc01 is offline ~33d — store FLOODS_API_KEY on tony-dell instead and restrict the
+    GCP key to tony-dell+idc02 egress IPs?'
+  status: open
+  at: 2026-11-24 12:14
+  from: devin
+  options:
+  - id: approved-tony-dell
+    label: approval landed — use tony-dell secret host
+  - id: approved-idc01
+    label: approval landed — wait for idc01
+  - id: not-yet
+    label: no approval yet — keep waiting
+  suggested: approved-tony-dell
