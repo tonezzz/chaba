@@ -1,7 +1,7 @@
 id: litellm-key-bench-dead-shadows-chaba
 title: LITELLM_KEY_BENCH returns 422 — dead virtual key shadows working CHABA in lane_gate probe
-column: doing
-updated: 2026-11-24 21:20
+column: review
+updated: 2026-11-24 21:35
 priority: high
 program: devnest
 tags:
@@ -210,12 +210,43 @@ comms:
     falls back to first-present when unverifiable. probe() reuses the resolved key, records secrets.bench_key_src;
     L2 secrets check accepts litellm-chaba.env. Verified live on tony-omen: litellm_authed:true via file:litellm-chaba.env:LITELLM_KEY,
     lane_gate admit clean (no failed_provider:lite'
+- at: 2026-11-24 21:35
+  from: tony-omen
+  text: 'finished (ok): exit=0 tellm master key and explicit approval, and (b) makes it unnecessary for correctness.
+    | devin-task-20261124-21034'
+- at: 2026-11-24 21:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:35
+  from: chaba
+  text: banked 477 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:35
+  from: chaba
+  text: pushed dispatch/20261124-210348-shadow-eval-bench-key-returns- to origin
+- at: 2026-11-24 21:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 21:35
+  from: chaba
+  text: auto-merged 913708d1 (dispatch/20261124-210348-shadow-eval-bench-key-returns-) → origin/master
+- at: 2026-11-24 21:35
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-210348-shadow-eval-bench-key-returns-,
+    branch dispatch/20261124-210348-shadow-eval-bench-key-returns-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 tellm master key and explicit approval, and (b) makes it unnecessary for correctness. | devin-task-20261124-210348-shadow-eval-bench-key-returns-.service:
+    Consumed 5min 22.809s CPU time over 23min 8.449s wall clock time, 910.9M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 21:02
+review_kind: verify
