@@ -1,7 +1,7 @@
 id: inference-provider-watch
 title: Inference-provider market watch — iterate the living research + eval new brains on the dev-AI fleet
-column: doing
-updated: 2026-11-24 16:27
+column: review
+updated: 2026-11-24 16:31
 brief: 'Living doc: devin-kb/docs/tools/inference-provider-market.md (iter 1, 2026-10-25). Each iteration: refresh
   prices/free tiers, add providers, and — per Tony — try candidates on the dev-AI fleet itself: eval-bed (new LiteLLM
   model group + config.<name>.yaml + cli-compare run vs bench baseline) AND live-task trials (route real chores/dispatch
@@ -276,12 +276,36 @@ comms:
     brain. zen-ds 3/4 then provider.free-limit (promo quota). cf-gpt-oss-120b 0/4 — CF 10K neurons/day already exhausted
     fleet-wide, ~7min retry loops per task. bench/flash-lite 1/4 today (real content fails, was 4/4 on 10-25 — watching).
     Groq re-probed: key+models live, TTFT 0.26-0.5s on '
+- at: 2026-11-24 16:31
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    Failed to ope'
+- at: 2026-11-24 16:31
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:31
+  from: chaba
+  text: pushed dispatch/20261124-155724-queued-experiments-from-iter-1 to origin
+- at: 2026-11-24 16:31
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 82.2s)
+- at: 2026-11-24 16:31
+  from: chaba
+  text: auto-merged 7dc1d062 (dispatch/20261124-155724-queued-experiments-from-iter-1) → origin/master
+- at: 2026-11-24 16:31
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-155724-queued-experiments-from-iter-1,
+    branch dispatch/20261124-155724-queued-experiments-from-iter-1'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-142254-queued-experiments-from-iter-1.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261027-142254-queued-experiments-from-iter-1.service:
-    Failed with result ''exit-code''.'
+  status: done
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    No such file or directory'
   sweep:
     session_gone: 2026-10-27 14:32
     no_repo: 2026-10-31 13:50
@@ -290,6 +314,7 @@ action:
   lane_source: kw
   runner: idc02
   attempts: 1
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-24 15:56
