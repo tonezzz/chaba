@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
-column: doing
-updated: 2026-11-24 18:54
+column: review
+updated: 2026-11-24 18:56
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -226,13 +226,37 @@ comms:
     class). 114/114 executor-contract tests pass; lint clean. LIVE GATE BLOCKED: smoke card ops-1025-remote-read-smoke-idc03
     exits 2 because idc02 lane is at S1 (manual rollback 2026-11-23) while its envelope requires S3 — admit() denies
     wrong_stage, working as designed. Simulate'
+- at: 2026-11-24 18:56
+  from: tony-macbook
+  text: 'finished (ok): exit=0 e-earns S3 — promoting the lane is an operator decision I left flagged on the board.
+    | devin-task-20261124-184301'
+- at: 2026-11-24 18:56
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 18:56
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-24 18:56
+  from: chaba
+  text: pushed dispatch/20261124-184301-ops-1021-exposed-the-gap-ops-r to origin
+- at: 2026-11-24 18:56
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 18:56
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 e-earns S3 — promoting the lane is an operator decision I left flagged on the board. | devin-task-20261124-184301-ops-1021-exposed-the-gap-ops-r.service:
+    Consumed 5min 45.133s CPU time over 12min 10.123s wall clock time, 373.3M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 18:42
+review_kind: verify
