@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
-column: doing
-updated: 2026-11-24 18:54
+column: review
+updated: 2026-11-24 18:56
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -207,9 +207,31 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-184115-ollama-serve-runs-on-kk-mac-un on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 18:56
+  from: tony-omen
+  text: 'finished (ok): exit=0 ed; full details in `dispatch-outcome-20261124-184115-ollama-serve-runs-on-kk-mac-un.md`.
+    | devin-task-20261124-1'
+- at: 2026-11-24 18:56
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 18:56
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-184115-ollama-serve-runs-on-kk-mac-un'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 18:56
+  from: chaba
+  text: pushed dispatch/20261124-184115-ollama-serve-runs-on-kk-mac-un to origin
+- at: 2026-11-24 18:56
+  from: chaba
+  text: "auto-merge not done: push: To github-chaba:tonezzz/chaba.git\n ! [rejected]              HEAD -> master
+    (fetch first)\nerror: failed to push some refs to 'github-chaba:tonezzz/chaba.git'\nhint: Updates were rejected
+    because the re — close will block until merged"
+- at: 2026-11-24 18:56
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -218,6 +240,8 @@ action:
   sweep:
     stale_running: 2026-11-24 18:54
     dirty: 1
+  result: 'exit=0 ed; full details in `dispatch-outcome-20261124-184115-ollama-serve-runs-on-kk-mac-un.md`. | devin-task-20261124-184115-ollama-serve-runs-on-kk-mac-un.service:
+    Consumed 3min 54.334s CPU time over 10min 1.461s wall clock time, 1G memory peak.'
 claim:
   since: 2026-11-24 18:40
 requests:
@@ -233,3 +257,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
