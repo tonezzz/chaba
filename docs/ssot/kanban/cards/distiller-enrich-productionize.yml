@@ -1,7 +1,7 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
 column: doing
-updated: 2026-11-24 14:57
+updated: 2026-11-24 15:08
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
   pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
@@ -472,6 +472,13 @@ comms:
     Artifacts + T2 transcript dump in sync-devin-summaries.py, new session_recall.py (T1 mddb vector-search + T2
     sqlite FTS5 over local .md archives — disk-backed, no in-memory BM25 = the likely OOM cause), wire into notebooklm-recall.sh,
     --enrich onto the two bare systemd units.'
+- at: 2026-11-24 15:08
+  from: devin
+  text: 'DONE (attempt 3, idc02, commit a12b75e91f on dispatch/20261124-145112-productionize-the-enriched-t1-).
+    Rebuilt lean after prior OOM: sticky ## Artifacts + T2 transcript dump in sync-devin-summaries.py; new session_recall.py
+    = T1 mddb vector-search + T2 sqlite FTS5 (disk-backed incremental index — no in-memory BM25); notebooklm-recall.sh
+    injects bounded hybrid block; --enrich added to devin-summaries-sync.service + ada-memory-pull.service. Verified:
+    distiller --enrich real run exit 0 (3 docs upse'
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
