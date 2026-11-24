@@ -1,7 +1,7 @@
 id: ops-1037
 title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
-column: doing
-updated: 2026-11-24 19:49
+column: review
+updated: 2026-11-24 19:52
 spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
   LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
   Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
@@ -216,12 +216,43 @@ comms:
     route=spec_draft, per-card metadata) on the chaba virtual key; ENRICH_MODEL accepts any gateway model_name (ollama-qwen38b-kkmac
     = free local, gemini-3.5-flash-lite default). gemini_rest kept as fallback (explicit provider or auto on failed
     litellm '
+- at: 2026-11-24 19:52
+  from: tony-dell
+  text: 'finished (ok): exit=0  writeup is in `dispatch-outcome-20261124-193403-backlog-spec-enrich-idc03-4x-d.md`.
+    | devin-task-20261124-193403'
+- at: 2026-11-24 19:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 19:52
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-193403-backlog-spec-enrich-idc03-4x-d'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 19:52
+  from: chaba
+  text: pushed dispatch/20261124-193403-backlog-spec-enrich-idc03-4x-d to origin
+- at: 2026-11-24 19:52
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 59.2s)
+- at: 2026-11-24 19:52
+  from: chaba
+  text: auto-merged cd9fbd70 (dispatch/20261124-193403-backlog-spec-enrich-idc03-4x-d) → origin/master
+- at: 2026-11-24 19:52
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0  writeup is in `dispatch-outcome-20261124-193403-backlog-spec-enrich-idc03-4x-d.md`. | devin-task-20261124-193403-backlog-spec-enrich-idc03-4x-d.service:
+    Consumed 4min 19.077s CPU time over 15min 28.283s wall clock time, 832.7M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 19:33
+review_kind: verify
