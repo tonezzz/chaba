@@ -1,7 +1,7 @@
 id: auto-route-bounded-card-classes-to-execu-257c7a
 title: Auto-route bounded card classes to executor=claude (classifier policy)
 column: doing
-updated: 2026-11-24 23:37
+updated: 2026-11-24 23:38
 priority: medium
 tags:
 - claude-lane
@@ -43,6 +43,8 @@ action:
   lane_source: kw
   runner: tony-macbook
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 23:38
 ref: KNB-0215
 comms:
 - at: 2026-11-19 08:29
@@ -199,5 +201,9 @@ comms:
     gate (wrapper+binary+auth probe+systemd); un-pinned cards fall back to normal lanes, declared executor=claude
     stays fail-closed. Also fixed latent start_task lane-hijack for claude on OPENCODE_LANES hosts; board-api do_claim/do_create
     doors accept the claude task_class pair
+- at: 2026-11-24 23:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-221236-follow-up-to-pr-187-claude-exe no longer active on tony-macbook
+    but card still says running — sweeping its branch'
 claim:
   since: 2026-11-24 22:11
