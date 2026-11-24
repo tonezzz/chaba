@@ -1,0 +1,82 @@
+title: boards-502 residuals — idc02 edge DNS hardening + h3 forensic access
+card: boards-502-residuals-dns-h3-access
+date: "2026-11-24"
+status: partial  # part 1 done+deployed; part 2 blocked on Tony credential (request raised)
+kind: ops-change
+refs:
+  rca: docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml
+
+part1_dns_hardening:
+  measurement:
+    note: >-
+      caddy-edge on idc02 is a systemd USER quadlet (podman,
+      ~/.config/systemd/user via user@1000) — the lookup errors are in the
+      USER journal, not the system journal:
+      `journalctl --user -u caddy-edge.service` on idc02.
+    window: "journal retention 2026-11-10 .. 2026-11-24 (~14 days)"
+    dns_timeout_502s_boards_h3: 7
+    dns_timeout_502s_all_hosts: "7 for boards.h3; other hosts have their own upstream classes"
+    dates: "2026-11-14, 11-16 x2, 11-17 x2, 11-18, 11-23 (last)"
+    rate: "~0.5 public 502/day — chronic low-grade, matches RCA 'still sporadic'"
+    error_shape: >-
+      "dial tcp: lookup boards.h3.gizmo-thailand.com: i/o timeout" via
+      127.0.0.53 (systemd-resolved), ~3s duration, status 502,
+      err_trace reverseproxy.statusError.
+  change:
+    file: "idc02:~/.config/caddy/Caddyfile (bind-mounted ro into caddy-edge container)"
+    backup: "idc02:~/.config/caddy/Caddyfile.bak-dnsresolvers-20261124"
+    what: >-
+      Added `transport http { resolvers 1.1.1.1 8.8.8.8 }` inside the
+      reverse_proxy blocks for BOTH h3 upstreams —
+      status.surf-thailand.com -> chaba.h3 (same zone/NS, same failure
+      class) and boards.surf-thailand.com -> boards.h3. Caddy now resolves
+      upstream hostnames directly against public resolvers, bypassing
+      systemd-resolved (whose stub was the timing-out leg). Hostname is
+      kept (not IP-pinned) so a future h3 IP change still resolves.
+    validate_reload: >-
+      `podman exec caddy-edge caddy validate --config /etc/caddy/Caddyfile
+      --adapter caddyfile` -> Valid; `podman exec caddy-edge caddy reload
+      --config /etc/caddy/Caddyfile --adapter caddyfile` applied live.
+    verify:
+      - "https://boards.surf-thailand.com/wp/ -> 200 (0.62s)"
+      - "https://status.surf-thailand.com/ -> 200 (0.43s)"
+      - "0 'lookup boards.h3' events in the 10 min post-reload"
+    rollback: >-
+      cp ~/.config/caddy/Caddyfile.bak-dnsresolvers-20261124
+      ~/.config/caddy/Caddyfile && podman exec caddy-edge caddy reload
+      --config /etc/caddy/Caddyfile --adapter caddyfile
+  followup_measurement: >-
+    Re-check in ~7 days:
+    `ssh idc02 'journalctl --user -u caddy-edge.service --since "7 days ago"
+    | grep -c "lookup boards.h3"'` — expect 0 (or near-0; other DNS
+    failure classes may remain).
+
+part2_h3_access:
+  probed_2026-11-24:
+    ip: 103.99.11.249
+    plesk_panel: "Plesk Obsidian 18.0.81 live — https://103.99.11.249:8443/login.php (also http :8880)"
+    ssh: "port 22 filtered; alt ports 2222/2022/22022/222/8022 all closed — no ops SSH path"
+    fleet_secret_sweep: >-
+      Checked ~/.config/secrets on tony-omen, idc02, idc03, tony-dell
+      (idc01 unreachable, con01 no key): only WP-side creds exist
+      (wp-boards.env app-passwords on idc03/tony-dell, wp-boards-users.env,
+      wiki-h3-gizmo.env MediaWiki bot, and the boards wp-admin login
+      boards-surf-thailand-com-wp-admin-credential on tony-omen). NONE
+      grant Plesk panel or host shell access.
+  registered:
+    - "docs/ssot/infrastructure/ssot.secrets.yml -> credentials id
+      `h3-plesk-panel` (endpoint, issuer, pending slot
+      ~/.config/secrets/h3-plesk.env PLESK_URL/PLESK_USER/PLESK_PASSWORD)."
+  blocked_on_tony:
+    - "Board request raised (request id h3-forensic-access-plesk-panel-is-live-a-fc58e4):
+      supply Plesk admin login or ReadyIDC client-area creds, or enable SSH."
+    - "Once landed: pull Plesk/nginx/apache/php-fpm logs for
+      2026-10-29 16:00-24:00 +07 to close the RCA trigger question."
+
+lessons:
+  - "caddy-edge on idc02 logs to the USER journal (podman quadlet under
+    user@1000) — `journalctl -u caddy-edge` (system) shows nothing; use
+    `journalctl --user -u caddy-edge.service`."
+  - "Caddy reverse_proxy DNS bypass: `transport http { resolvers <ips> }`
+    overrides system resolvers for upstream lookups — cleaner than
+    IP-pinning when the hostname may change."
