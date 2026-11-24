@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: doing
-updated: 2026-11-24 17:43
+updated: 2026-11-24 17:47
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -204,6 +204,13 @@ comms:
     no longer implies milestone->done and requires explicit job ref; GET /nest-jobs read endpoint added; scripts/ops/nest-job-reconcile.py
     read-only cross-surface reconciler + tests all green; docs updated (SOP enforcement section, colab-mcp-jobs
     lifecycle map, write-door). Remaining: commit + outcome doc.'
+- at: 2026-11-24 17:47
+  from: devin
+  text: 'DONE (worktree dispatch/20261124-165943, commits f407b35f0f+5033b78e0c, not pushed/deployed). do_job enforces
+    JOB_TRANSITIONS + terminal-done gate (result_ref + verified evidence, persisted to meta.evidence/artifact_verified);
+    _pub_job_send requires explicit job ref, milestone no longer implies done, rejections -> skipped receipt; new
+    GET /nest-jobs; new scripts/ops/nest-job-reconcile.py read-only cross-check (nest_job vs pack markers vs packs-index
+    vs lease). Tests: +27 new, 130 focused pass, s'
 action:
   type: dispatch
   status: running
