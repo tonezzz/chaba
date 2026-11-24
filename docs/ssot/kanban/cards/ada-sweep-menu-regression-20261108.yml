@@ -1,7 +1,7 @@
 id: ada-sweep-menu-regression-20261108
 title: Ada /sweep command menu is missing
 column: doing
-updated: 2026-11-24 22:07
+updated: 2026-11-24 22:11
 priority: medium
 tags:
 - ada
@@ -232,6 +232,13 @@ comms:
     ~10:38 the ada-code/jack-ide quadlets were retired AND the whole ~/.local/share/ada-code tree (incl. workspace)
     was moved to ~/backups/retired-opencode-20261124/, so the pane lost its command file + ada-control MCP config.
     ada_sweep backend untouched. Restoring the workspace dir n'
+- at: 2026-11-24 22:11
+  from: devin
+  text: 'DONE: root cause = 2026-11-24 retirement of ada-code quadlets moved ~/.local/share/ada-code (incl. workspace/.opencode/commands/ada.md
+    + ada-control MCP config) to ~/backups/retired-opencode-20261124/ on idc02 — the ada-ocb OpenChamber pane opens
+    that dir as its project, so the whole /ada menu vanished. FIX: moved workspace/ back to ~/.local/share/ada-code/workspace
+    (quadlets/routes stay retired). Verified: /opencode-command verify → match:true sha 077aaff3; ada_mcp.py bridge
+    starts tools=30; /a'
 action:
   type: dispatch
   status: running
