@@ -1,0 +1,136 @@
+title: Thai LLM fine-tune bakeoff — Typhoon-2.5 vs WangchanX
+subtitle: Desk bakeoff + ready-to-run LoRA/eval harness; GPU run is the remaining step
+icon: flask
+card: thai-llm-finetune-experiment-typhoon-wan-9ef801  # OPS-0760
+related:
+  ncm_recon: docs/ssot/jobs/experiments/2026-10-20-ncm-thai-recon.yml
+  ncm_toy: docs/ssot/jobs/experiments/2026-10-20-ncm-thai-toy-train.yml
+  code: experiments/thai-llm-ft/  # prep_data.py + train_lora.py + eval_run.py + merge_lora.py
+  leaderboard: huggingface.co/datasets/ThaiLLM-Leaderboard/results
+
+decision_context:
+  mode: desk-bakeoff  # dispatch on idc02 — CPU-only 4c/15GB, no GPU; mirrors NCM recon/toy-train split
+  host: idc02
+
+gate_answer:
+  question: "if the want is fast/usable Thai generation TODAY, does a small Thai AR model beat rebuilding NCM?"
+  verdict: |
+    YES — verified live, not just on paper. Typhoon2.5-Qwen3-4B Q4_K_M GGUF
+    (2.5GB, official, Apache-2.0) ran on idc02 CPU-only via llama-cpp-python:
+    fluent Thai self-intro, a correct one-line Thai news summary (XL-Sum-style
+    prompt), and a correct EN->TH translation — ~0.4-0.6 tok/s under host load
+    (uncontended CPU est. 2-4 tok/s; omen GPU would be 30-80 tok/s). "Usable
+    TODAY" = deploy this GGUF on ollama; "fast" needs the GPU lane.
+    NCM stays a research artifact — not instruction-tuned, Thai toy run still
+    needs a GPU day (OPS-0750).
+    The open question the GPU run answers: does light LoRA on the WangchanX
+    120k Thai-instruct slice move either model enough to change the deploy pick?
+    Published numbers say WangchanX-8B owns Thai NLG (news summarisation/QA)
+    while Typhoon owns en→th MT — the bakeoff decides if that gap survives
+    at 4B and after equal-data SFT.
+
+smoke_test:
+  date: 2026-11-24
+  host: idc02 (4 vCPU, no GPU, load ~5 during run)
+  model: typhoon-ai/typhoon2.5-qwen3-4b-gguf typhoon2.5-qwen3-4b-q4_k_m.gguf (2,497,276,128 B)
+  runtime: llama-cpp-python 0.3.38, n_ctx=4096, n_threads=4, temp=0
+  results:
+    thai_self_intro: "fluent natural Thai, correct self-description (thinks it's Qwen — base-model identity leak through Typhoon's thin persona)"
+    thai_news_summary: "accurate one-line Thai summary of XL-Sum-style Delhi-PM2.5 article"
+    en_to_th_translation: "correct Thai translation; leaked '<s>' and '[/INST]' literal tokens — chat-template artifact of this GGUF on llama.cpp, cosmetic"
+  speed: "0.4-0.6 tok/s under load; model load+mmap ~60s; RSS ~4.3GB"
+  verdict_input: "instruct baseline already produces usable Thai — supports 'deploy now, fine-tune only if Δ justifies it'"
+
+base_picks:
+  typhoon: typhoon-ai/typhoon2.5-qwen3-4b   # Qwen3-4B instruct, 256k ctx, Apache-2.0, official GGUF
+  wangchanx: airesearch/LLaMa3-8b-WangchanX-sft-Full  # Llama-3-8B instruct, llama3 license
+  alternates_rejected:
+    - "typhoon2-qwen2.5-7b-instruct / llama3.x-typhoon2-*-instruct — previous gens, superseded by 2.5"
+    - "typhoon2.5-qwen3-30b-a3b — MoE, too big for the deploy lane"
+    - "airesearch/*-cpt-sea-lionv2 / gemma-2-9b-alpaca-th-* — WangchanX pipeline experiments, no canonical instruct release"
+    - "airesearch/LLaMa3-8b-WangchanX-sft-Demo — demo-size SFT, sft-Full is the flagship"
+
+published_baselines:
+  source: ThaiLLM-Leaderboard/results on HF (SEACrowd harness), pulled 2026-11-24
+  note: "typhoon2.5-qwen3-4b post-dates this snapshot — its row is absent; typhoon2-qwen2.5-7b is the newest published Typhoon-2 instruct"
+  table: |
+    model                                   XL-Sum-th R1/R2/RL   ThaiQA(iApp)R2   FLORES en>th B/chrF++   FLORES th>en B/chrF++
+    Gemma2-9B-WangchanLIONv2-instruct       37.4/16.5/28.0        71.2             25.8/52.2             52.6/59.4
+    LLaMa3-8B-WangchanX-sft-Full            37.6/16.4/28.2        66.9             22.9/50.2             48.5/55.3
+    llama3.1-typhoon2-8b-instruct           30.3/10.6/21.0        63.2             27.4/52.7             50.6/58.4
+    llama3.2-typhoon2-3b-instruct           31.2/11.1/21.7        57.3             24.3/50.7             49.6/56.8
+    llama3.2-typhoon2-1b-instruct           26.7/9.5/18.7         48.4             18.7/43.3             42.5/50.9
+    typhoon2-qwen2.5-7b-instruct            26.5/9.6/17.7         43.1             27.7/54.3             49.3/58.8
+    Pathumma-llm-text-1.0.0                 24.9/9.7/16.9         34.6             26.7/53.0             52.8/59.7
+    openthaigpt1.5-14b-instruct             28.9/10.1/19.5        28.1             22.4/48.6             48.3/59.5
+    openthaigpt1.5-7b-instruct              27.0/9.3/18.1         25.8             20.9/45.0             46.1/57.3
+    openthaigpt-1.0.0-7b-chat               24.6/6.6/16.7         36.8             18.4/44.9             15.9/24.3
+    Llama-3.1-8B-ThaiInstruct               25.4/9.1/17.2         27.6             17.3/42.4             28.7/31.3
+    Qwen2.5-7B-ThaiInstruct                 22.3/8.5/15.1         15.4             11.2/39.3             35.3/53.0
+  read: |
+    WangchanX + WangchanLION own Thai NLG (news summarisation, extractive QA —
+    likely domain overlap with eval data). Typhoon owns en->th MT and is the
+    actively developed family. KhanomTanLLM 1B/3B scored ~0 on NLG (broken
+    outputs). Absolute numbers are SEACrowd-harness, not our harness — our
+    eval_run.py reproduces the same three task families for the Δ measurement.
+
+data_pack:
+  sft: "airesearch/wangchanx-seed-free-synthetic-instruct-thai-120k (MIT, 118,898 rows) — same seed-free synthetic mix WangchanX trains on; default 8k seeded slice"
+  xlsum: "csebuetnlp/xlsum thai_XLSum_v2.0.tar.bz2 test=826 (12MB tarball; not datasets-loadable — parsed manually)"
+  thaiqa: "lighteval/thaiqa_squad_fixed validation=74 — parquet mirror of pythainlp/thaiqa_squad (script-only repo, unloadable on datasets>=3)"
+  scbmt: "pythainlp/scb-mt-en-th-2020_mt-opus test seeded 1k en->th (test split is 432k rows — must subsample)"
+  verified: "prep_data.py ran end-to-end on idc02 CPU 2026-11-24; all 4 jsonl files written; metric functions unit-checked"
+
+metric_caveats:
+  - "rouge_score default tokenizer keeps only [a-z0-9] — Thai scores 0. eval_run.py uses PyThaiNLP newmm segmentation (+thainlp corpus pkg), per-char fallback."
+  - "sacrebleu BLEU on unspaced Thai degenerates; chrF++ is the robust primary for Thai MT. BLEU reported for comparability — compare deltas."
+  - "ThaiQA-SQuAD val = 74 items — noisy; iApp-SQuAD (SEACrowd) is the leaderboard proxy if a bigger ThaiQA set is wanted."
+
+harness:
+  dir: experiments/thai-llm-ft/
+  files:
+    prep_data.py: "HF -> data/{sft_train,eval_xlsum_th,eval_thaiqa_validation,eval_scbmt_en2th}.jsonl (deterministic seed 20261124)"
+    train_lora.py: "QLoRA SFT, completion-only loss; unsloth backend preferred (4GB VRAM), peft+bnb fallback; r=16 a=32 lr=2e-4 2ep seq2048"
+    merge_lora.py: "adapter -> merged HF dir for eval/GGUF export"
+    eval_run.py: "backend hf (transformers) | openai (vllm/ollama/llama.cpp server); strips <think> blocks; writes results-*.json"
+  gpu_sizing: |
+    4B QLoRA ~6GB VRAM (unsloth+small bs for omen 4GB); 8B QLoRA ~10-12GB —
+    omen GTX1650 4GB NOT viable for the 8B lane; needs >=12GB (rented T4 ok).
+    idc02 CPU cannot train; this dispatch verified data+metrics only.
+
+deploy_lane:
+  if_winner_typhoon: "official GGUF typhoon2.5-qwen3-4b-q4_k_m (2.50GB) -> ollama on omen GPU or idc shelf; Apache-2.0 clean"
+  if_winner_wangchanx: "GGUF via mradermacher/llama-3.1-8b-wangchanX-instruct-GGUF Q4_K_M (~4.9GB) or merge+convert own LoRA; llama3 license (700M-MAU cap)"
+  note: "eval_run.py --backend openai scores the deployed GGUF through ollama :11434/v1 or llama.cpp server — same metrics pre/post deploy"
+
+remaining_for_done:
+  - "GPU run: 2x train_lora.py (4B ~hours on T4; 8B needs >=12GB) + eval_run.py --eval all on 4 model variants (2 instruct baselines + 2 LoRA) — then fill comparison table + verdict"
+  - "decision this doc leaves open: deploy Typhoon2.5-4B GGUF now as the 'usable TODAY' baseline regardless of LoRA outcome (recommended)"
+
+processing:
+  status: completed
+  started_at: "2026-11-24"
+  completed_at: "2026-11-24"
+  steps:
+    - id: 1
+      label: Inventory Typhoon-2.x + WangchanX families on HF; pick bases
+      status: completed
+    - id: 2
+      label: Pull published ThaiLLM-Leaderboard numbers for comparison table
+      status: completed
+    - id: 3
+      label: Build + verify data pack and eval harness on CPU
+      status: completed
+      notes: "caught+fixed 3 real bugs — datasets>=3 script rejection, hf_hub repo_type, rouge_score Thai tokenizer, sacrebleu chrf signature"
+    - id: 3b
+      label: CPU smoke test Typhoon2.5-4B GGUF (llama-cpp-python)
+      status: completed
+      notes: "usable Thai verified live — see smoke_test block"
+    - id: 4
+      label: LoRA/SFT runs + side-by-side eval
+      status: deferred
+      notes: "needs GPU host — idc02 has none; see gpu_sizing"
+    - id: 5
+      label: Verdict + deploy-lane note
+      status: completed
+      notes: "provisional verdict in gate_answer; final verdict awaits GPU Δ numbers"
