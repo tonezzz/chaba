@@ -1,0 +1,44 @@
+id: board-gantt-timeline-view-generalized
+title: board-gantt generalized to project:<slug> grouping + unfiled + filter/refresh
+date: 2026-11-24
+card: board-gantt-timeline-view
+host: web-static (stacks/web/public/apps/board-gantt)
+status: implemented — verified via node smoke + headless-chrome render; awaits merge/deploy for live check
+
+goal: >
+  Card spec (decided with Tony 2026-11-09): frappe/gantt timeline of
+  kanban cards grouped by project:<slug> tag, untagged in 'unfiled',
+  top bar with project filter + refresh. The 2026-11-09 pilot
+  (cbafdeccfd + follow-ups) only charted cards matching a hardcoded
+  GROUPS registry (adobe-stock) and dropped everything else.
+
+state_found: >
+  Stub + route + Caddy + HA tab were already live (a63ebe9f28,
+  344f37ffe2). Pilot app existed with vendored frappe-gantt.es.js,
+  column colors/progress, click popup, foldable group/sub headers —
+  but opt-in grouping. Zero live cards carried project: tags at build
+  time; the bare `adobe-stock` tag (11 cards) predates the
+  project-lifecycle convention.
+
+changes:
+  - "js/config.js: GROUPS registry -> PROJECT_ALIASES (fallback matchers consulted only when no explicit project slug); UNGROUPED_ID/LABEL constants"
+  - "js/data.js: project slug from `project:` field then /^project\\s*:/i tag, normalized (lowercase, dashes, slash-nesting preserved)"
+  - "js/groups.js: dynamic buckets — group id = first slug segment; alias fallback; 'unfiled' last; groups sort by most-recent activity desc"
+  - "js/tasks.js: end = max(last comms at, updated, created) — true last activity; open cards still run to today"
+  - "js/app.js + index.html: project <select> filter (all projects + per-group counts) and refresh button (force reload); status shows bars/groups/updated"
+
+verified:
+  - "node smoke (/tmp harness, not committed): 724 normalized cards -> 726 rows; synthetic project:/parent-child/unfiled cases assert dates, progress, sub-headers, fold, popup"
+  - "headless chrome --dump-dom against real rendered cards.json (724 cards): 726 .bar-wrapper nodes, col-* classes per column (172 backlog/1 lab/13 doing/20 review/518 done), status '726 bars · 2 groups', no JS errors"
+  - "spot-check: board-gantt-timeline-view bar start=2026-11-09 (first comms), backlog p0, end=today"
+  - "HA tab already iframes /apps/board-gantt/index.html?v=1 (ada-ha-chaba-admin-current.json) — no change needed"
+
+notes:
+  - "vendor is frappe-gantt.es.js (ES-module build of frappe/gantt 1.2.2, MIT) not .min.js — app is type=module; LICENSE vendored"
+  - "scope reality: a same-day mass `updated` touch put all 518 done cards inside the 30d window -> ~724 bars; frappe-gantt handles it, fold headers keep it navigable"
+  - "live verify pending merge: https://tony-ha.surf-thailand.com/apps/board-gantt/ (CF Access) + chaba-admin gantt tab on ada-ha"
+
+lessons:
+  - "cards.json is gitignored and rendered on the served checkout — local verify needs render-board2.py output or a YAML->JSON dump, never the repo file"
+  - "node can't import the app's .js as ESM without a package.json type:module — copy js/ to /tmp with one for smoke tests"
+  - "google-chrome --headless=new --virtual-time-budget=20000 --dump-dom renders the gantt far enough to count .bar-wrapper nodes — cheap DOM verification without a browser driver"

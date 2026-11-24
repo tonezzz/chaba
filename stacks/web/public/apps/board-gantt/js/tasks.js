@@ -1,6 +1,6 @@
 // tasks.js — normalized cards -> frappe-gantt task list.
 import { COLUMN_STYLE, DEFAULT_COLUMN_STYLE, DONE_RECENT_DAYS } from './config.js';
-import { groupCards, groupLabel } from './groups.js';
+import { groupCards, projectSlugOf } from './groups.js';
 
 const DAY = 86400000;
 
@@ -27,7 +27,10 @@ export function cardToTask(card, now = new Date()) {
   if (!inScope(card, now)) return null;
   let start = parseDate(card.firstAt) || parseDate(card.created);
   if (!start) return null;
-  let end = parseDate(card.lastAt) || parseDate(card.updated) || new Date();
+  // end = last activity — latest of last comms / updated / created
+  let end = [card.lastAt, card.updated, card.created]
+    .map(parseDate).filter(Boolean)
+    .reduce((a, b) => (b > a ? b : a), null) || new Date();
   if (card.column !== 'done') end = now;              // open cards run to today
   if (end <= start) end = new Date(start.getTime() + DAY);  // min 1-day bar
   const style = COLUMN_STYLE[card.column] || DEFAULT_COLUMN_STYLE;
@@ -42,11 +45,11 @@ export function cardToTask(card, now = new Date()) {
   };
 }
 
-// project: slugs nest — 'adobe-stock/foo' folds under the adobe-stock group
-// as sub-group 'foo'. Returns the card's sub-path segments relative to the
-// group (['foo','bar'] for 'adobe-stock/foo/bar'), [] for direct members.
+// project slug sub-path relative to the group: 'a/b/c' in group 'a' ->
+// ['b','c']; direct members and alias-matched cards -> [].
 function subPath(card, groupId) {
-  const segs = String(card.project || '').split('/').filter(Boolean);
+  const slug = projectSlugOf(card) || '';
+  const segs = slug.split('/').filter(Boolean);
   return segs[0] === groupId ? segs.slice(1) : [];
 }
 
@@ -82,23 +85,23 @@ const byStart = (a, b) =>
 // their header row (▸) and skip all descendants.
 export function buildTasks(cards, now = new Date(), collapsed = new Set()) {
   const tasks = [];
-  for (const { group, cards: gcards } of groupCards(cards)) {
+  for (const { id: gid, label, cards: gcards } of groupCards(cards)) {
     const cardTasks = gcards
       .map((c) => ({ card: c, task: cardToTask(c, now) }))
       .filter((x) => x.task)
       .map((x) => ({
         ...x.task,
-        _group: group.id,
-        _sub: subPath(x.card, group.id),
+        _group: gid,
+        _sub: subPath(x.card, gid),
       }))
       .sort(byStart);
     if (!cardTasks.length) continue;
 
-    const gKey = `group:${group.id}`;
+    const gKey = `group:${gid}`;
     const gCollapsed = collapsed.has(gKey);
     const header = spanHeader(
-      `group-${group.id}`,
-      `${gCollapsed ? '▸' : '▾'} ${groupLabel(group.id)} (${cardTasks.length})`,
+      `group-${gid}`,
+      `${gCollapsed ? '▸' : '▾'} ${label} (${cardTasks.length})`,
       'group-header', cardTasks, gKey);
     if (header) tasks.push(header);
     if (gCollapsed) continue;
@@ -115,10 +118,10 @@ export function buildTasks(cards, now = new Date(), collapsed = new Set()) {
 
     for (const t of direct) tasks.push({ ...t, name: INDENT + t.name });
     for (const [key, list] of [...subs.entries()].sort()) {
-      const sKey = `sub:${group.id}/${key}`;
+      const sKey = `sub:${gid}/${key}`;
       const sCollapsed = collapsed.has(sKey);
       const subHeader = spanHeader(
-        `sub-${group.id}-${key}`,
+        `sub-${gid}-${key}`,
         `${sCollapsed ? '▸' : '└'} ${key} (${list.length})`,
         'sub-header', list, sKey);
       if (subHeader) tasks.push(subHeader);
