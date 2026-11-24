@@ -1,0 +1,20 @@
+id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
+title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
+column: backlog
+updated: 2026-11-24 22:19
+spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
+  (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
+  tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
+  cannot pull (conflicts / dirty tree). Tool pins were converged directly so runner-agent + devin-dispatch installed
+  builds now match origin/master pins on both hosts, but runner-agent still imports dispatch_repos.py and other
+  helpers from the STALE checkout code. Need a human decision on the in-flight dirty work before forcing checkout
+  current (stash -u + ff-only, commit, or abandon). Do NOT destroy unproven work. NOTE: OPS-1326 tool-pin drift
+  IS resolved on both hosts — remaining failure is the pre-existing clone-stale condition, not introduced by the
+  pin bump.'
+action:
+  type: manual
+ref: OPS-1330
+comms:
+- at: 2026-11-24 22:19
+  from: devin
+  text: card captured via board-api
