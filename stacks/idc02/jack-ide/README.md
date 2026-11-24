@@ -41,6 +41,39 @@ jack-enroll health      # gateway + upstream
 Workspace reset (files, not auth):
 `systemctl --user stop jack-opencode && rm -rf ~/.local/share/jack-ide/workspace/* && systemctl --user start jack-opencode`
 
+## Promotion lane (jack-task)
+
+`opencode-jack.surf-thailand.com` is the canonical shared instance. The
+container has git but **no GitHub credentials** — promotion runs host-side
+via `lane/jack-task.py` (install as `~/.local/bin/jack-task`):
+
+```
+init → import (allowlist) → new (worktree + jack/<slug>)
+→ Jack edits + LOCAL commits in /workspace/worktrees/<repo>--<slug>
+→ verify (secret/scope/clean-tree/test gates, independent verdict)
+→ push (scoped token, task branch only) → pr (human merge gate after)
+```
+
+Operator config on idc02:
+
+```
+install -Dm644 lane/repos.example.json ~/.config/jack-ide/repos.json   # edit: pilot repos
+install -m600 /dev/null ~/.config/secrets/jack-git.env                # JACK_GIT_TOKEN= (see lane/jack-git.env.example)
+install -m755 lane/jack-task.py ~/.local/bin/jack-task
+jack-task init                          # mkdir layout + /workspace/AGENTS.md + tony-workspace src
+```
+
+`JACK_GIT_TOKEN` is a fine-grained PAT limited to the pilot repos
+(Contents + Pull requests RW). It is injected per git invocation via
+`http.extraHeader` — never written to repo config, never mounted into the
+container. `push` refuses without a passing `verify` verdict matching HEAD
+and only pushes `jack/<slug>`; merge/deploy stay human gates. Tests:
+`python3 -m unittest tests.jack.test_jack_task` (repo root).
+
+The `tony-workspace` bind mount (supervised Tony<->Jack test) needs the
+host dir `~/.local/share/jack-ide/tony-workspace` to exist before
+`jack-opencode` starts — `jack-task init` creates it.
+
 ## Edge
 
 - **Tailnet (live):** `sudo tailscale serve --https=8448 http://127.0.0.1:8377`
