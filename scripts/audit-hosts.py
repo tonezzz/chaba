@@ -42,7 +42,7 @@ FLEET_SYS_RE = re.compile(
     r"(chaba|ada[-_.]|home-?assist|michael|ollama|mddb|vcast|go2rtc|nest|jev|"
     r"kanban|cms|mcp[-_.]|cloudflared|cast-|camwall|sunsynk|devin|litellm|"
     r"openjev|caddy|rclone|notebooklm|workflows|yomi|obsidian|input-bridge|"
-    r"barrier|gods-eye|gev[-_.]|playwright|yolo|xmeye|vms|raceman|helm|"
+    r"barrier|gods-eye|gev[-_.]|playwright|yolo|xmeye|vms|raceman|"
     r"node-red|dnsmasq|gesture|plug-watch|secrets-console|status-data|"
     r"trade-api|websockify|xvfb|bserver|redis|postgres|weaviate)")
 

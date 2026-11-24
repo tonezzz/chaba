@@ -218,7 +218,7 @@ curl http://localhost:8080/api/yomi/health
 
 # Check logs for errors
 docker compose logs --tail=50 web
-docker compose logs --tail=50 helm
+docker compose logs --tail=50 yomi-api
 ```
 
 ### Rollback Procedure
@@ -249,35 +249,6 @@ docker compose exec -T postgres psql -U chaba chaba < backup_YYYYMMDD.sql
 ```
 
 ## Service-Specific Production Notes
-
-### Helm Service
-
-**Development Configuration:**
-
-```yaml
-volumes:
-  - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
-environment:
-  - PROJECTS_PATH=/home/tony/CascadeProjects
-```
-
-**Production Configuration:**
-
-```yaml
-volumes:
-  - ./public:/app/public:ro
-environment:
-  - NODE_ENV=production
-  - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
-  - PROJECTS_PATH=/app/projects
-```
-
-**Migration Steps:**
-
-1. Build static assets locally
-2. Copy to `./public` directory
-3. Update `PROJECTS_PATH` to container path
-4. Remove host directory mounts
 
 ### Yomi API
 
@@ -355,7 +326,6 @@ docker stats
 
 # Container logs
 docker compose logs -f web
-docker compose logs -f helm
 docker compose logs -f yomi-api
 ```
 

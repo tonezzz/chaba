@@ -19,7 +19,7 @@ sections:
       - label: Canonical source
         text: Google AI Studio free-tier rate-limits dashboard
       - label: Active assignments
-        text: gemma-4-31b-it for Yomi summarization; gemini-2.5-flash for Helm
+        text: gemma-4-31b-it for Yomi summarization and media analysis
       - label: Ingest script
         text: scripts/ingest-gemini-rate-limits.py updates this file from JSON/YAML input
       - label: Consumers
@@ -59,7 +59,7 @@ models:
       tpm: 100000
       rpd: 100
     status: available
-    notes: "Managed agent via the Gemini Interactions API. Not a text-only generateContent model; requires environment_config and interaction lifecycle. Do not use as a direct LLM provider in Helm."
+    notes: "Managed agent via the Gemini Interactions API. Not a text-only generateContent model; requires environment_config and interaction lifecycle."
     last_verified: "2026-08-24"
   gemini-robotics-er-2-preview:
     display_name: Gemini Robotics ER 2 Preview
@@ -135,7 +135,7 @@ models:
     free_tier:
       status: unverified
     status: available
-    notes: "Antigravity managed-agent preview identifier. Requires the Gemini Interactions API (interactions.create/run) and an environment, not the standard generateContent endpoint. Not a Helm LLM provider."
+    notes: "Antigravity managed-agent preview identifier. Requires the Gemini Interactions API (interactions.create/run) and an environment, not the standard generateContent endpoint."
     last_verified: "2026-08-24"
     smoke_test:
       status: passed
@@ -271,27 +271,6 @@ models:
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: "2026-08-15"
 fallbacks:
-  helm-llm:
-    primary: gemini-3.1-flash-lite
-    chain:
-      - model: gemini-3.5-flash-lite
-        expected_quality: high
-        reason: 3x RPM and 25x RPD vs Gemini 2.5 Flash; identical limits to gemini-3.1-flash-lite
-      - model: gemini-3.7-flash
-        expected_quality: medium-high
-        reason: Newest Flash family with low observed usage; 5 RPM / 20 RPD, adequate for code
-      - model: gemini-3.5-flash
-        expected_quality: medium
-        reason: Same 5 RPM / 20 RPD as 3.7; useful when 3.1/3.5-lite quotas are exhausted
-      - model: gemini-2.5-flash-lite
-        expected_quality: medium
-        reason: Higher RPM (10) but observed over RPD on 2026-08-18; use after daily reset
-      - model: gemini-2.5-flash
-        expected_quality: medium
-        reason: Previously primary; 5 RPM / 20 RPD and observed over RPD on 2026-08-18
-      - model: gemini-3.6-flash
-        expected_quality: medium
-        reason: 5 RPM / 20 RPD; observed over RPD on 2026-08-18; fall back to this after reset
   yomi-summarization:
     primary: gemma-4-31b-it
     chain:
