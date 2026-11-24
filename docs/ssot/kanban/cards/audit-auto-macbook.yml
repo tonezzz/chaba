@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: doing
-updated: 2026-11-24 22:14
+updated: 2026-11-24 22:20
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -235,6 +235,13 @@ comms:
     shows runner-agent.timer active, runner-agent.service+zram-swap.service no longer failed, vcast-real-macbook
     declared+active, stick-announce ghost gone). Only live delta = nest-mgr.service undeclared — intentional install
     (ops-macbook-nestmgr-install SYS-0158, done 11-17). Reconciling SSOT declarations now.'
+- at: 2026-11-24 22:20
+  from: devin
+  text: 'DONE (dispatch worktree, commit ede017de55a). All 4 original 11-09 deltas verified resolved via audit reports
+    — no live changes needed. Only live delta was nest-mgr.service undeclared (intentional install SYS-0158); declared
+    it in ssot.audit.hosts.yml for macbook AND the same gap on idc02/con01/mn01, plus stick-announce expected_absent
+    on macbook. Replayed diff_against_ssot: macbook clean, no new deltas. Trail: docs/ssot/jobs/infrastructure/2026-11-24-macbook-audit-drift-reconcile.yml
+    + dispatch'
 action:
   type: dispatch
   status: running
