@@ -15,7 +15,9 @@ inventory/group_vars/ocb_pane.yml   # declared ada-ocb pane contract (pins, unit
 playbooks/site.yml        # baseline: packages, security updates, docker check
 playbooks/ada-ocb-audit.yml   # read-only pane surface probe + durable artifact
 playbooks/ada-ocb-verify.yml  # contract gate (producer + consumer), nonzero on drift
-playbooks/tasks/ada-ocb-{probe,edge-probe}.yml  # shared one-round-trip probes
+playbooks/ada-ocb-upgrade.yml # approval-gated write path (starts the host's update unit)
+playbooks/vars/ada-ocb-upgrade.yml  # safety defaults: ocb_change_approved=false
+playbooks/tasks/ada-ocb-{probe,edge-probe,assert}.yml  # shared probes + shared gate
 playbooks/templates/ada-ocb-audit.j2       # audit report renderer
 ```
 
@@ -49,9 +51,35 @@ ansible-playbook playbooks/ada-ocb-verify.yml --limit idc02
   edge is a failure.
 - No secrets are read into Ansible; the probe only checks that `startup.env`
   is mode 600 and that the drop-in references `litellm-ada.env`.
-- Prod writes (an `ada-ocb-upgrade.yml`) remain out of scope until explicitly
-  approved in-session; when added it must start the host's existing update
-  unit, not reimplement `npm i -g`.
+### Ada-OCB upgrade (approval-gated — built, not yet executed on prod)
+
+`ada-ocb-upgrade.yml` is the write path, but it is inert by default:
+
+```bash
+cd ansible
+ansible-playbook playbooks/ada-ocb-upgrade.yml --check --diff   # preview; no write
+ansible-playbook playbooks/ada-ocb-upgrade.yml                  # still no write (default)
+# only after explicit SAME-SESSION approval:
+ansible-playbook playbooks/ada-ocb-upgrade.yml -e ocb_change_approved=true
+```
+
+- Ansible does **not** implement the upgrade — it starts idc02's existing
+  `openchamber-update.service` (oneshot: npm install → fail-loud patch
+  re-apply → restart). `--check` is a genuine simulation because the shell
+  write is guarded by `not ansible_check_mode`, so even
+  `-e ocb_change_approved=true --check` starts nothing.
+- Rollback (restore the Caddy route line + reload) is printed on the
+  controller **before** the write task. A failed unit exits nonzero and the
+  play stops; no half-applied state.
+- Post-upgrade reuses `tasks/ada-ocb-assert.yml` — the *exact* gate
+  `ada-ocb-verify.yml` runs — so the write cannot be declared good without
+  producer + consumer proof.
+- The `systemd` module cannot reach the user bus over SSH on idc02
+  (`Failed to connect to bus`), hence the guarded `systemctl --user` shell
+  path. Do not "improve" it back to the module without re-testing check mode.
+- Note: the host unit pins `@openchamber/web@2.7.3` but installs
+  `@opencode/cli` unpinned, while SSOT declares 2.3.2. That pin gap is a
+  separate host-unit decision — the playbook does not edit host units.
 
 ## Install ansible (once, on the controller — any tailnet host)
 

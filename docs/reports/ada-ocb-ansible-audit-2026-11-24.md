@@ -78,10 +78,41 @@ Both playbooks are read-only on targets. Probes carry `check_mode: no`, so
 the probe only asserts `startup.env` mode 600 and that the drop-in references
 `litellm-ada.env`.
 
+## Approval-gated upgrade playbook (built, not executed on prod)
+
+ADA-0015 added `ada-ocb-upgrade.yml` plus a shared assertion file
+(`tasks/ada-ocb-assert.yml`) now used by both verify and the upgrade post-gate
+— one gate, no fork. The playbook is inert by default
+(`ocb_change_approved: false` in `vars/ada-ocb-upgrade.yml`) and starts
+idc02's existing `openchamber-update.service` only when explicitly approved.
+
+Live unit inspected: `Type=oneshot`, `RemainAfterExit=no`,
+`ExecStart` = `npm i -g --prefix ~/.local/node @openchamber/web@2.7.3 @opencode/cli`,
+two `ExecStartPost` steps (patch script, then `openchamber.service` restart).
+Fail-loud behaviour is the host unit's, not Ansible's.
+
+Safety proofs (all runs `changed=0` on every host):
+
+| Run | Exit | Unit start |
+|---|---|---|
+| `--check --diff` | 0 | skipped (check mode) |
+| no approval, no `--check` | 0 | skipped (`ocb_change_approved=false`) |
+| `-e ocb_change_approved=true --check` | 0 | skipped (check mode beats approval) |
+| verify with `-e ocb_bind=127.0.0.1:9999` | 2 | n/a — named assertion, bounded evidence |
+
+Rollback is printed on the controller before the write task. The `systemd`
+module cannot reach the user bus over SSH here (`Failed to connect to bus`),
+so the guarded `systemctl --user` shell path is used; check mode is enforced
+by `not ansible_check_mode`, not by module emulation.
+
+**Not done:** no prod write was executed. `@opencode/cli` is unpinned in the
+host unit despite the SSOT 2.3.2 declaration — flagged for a separate host-unit
+decision; this playbook does not edit host units.
+
 ## Out of scope / follow-ups
 
-- `ada-ocb-upgrade.yml` (prod write) — needs explicit same-session approval;
-  when built it must start the host's existing update unit, not reimplement `npm i -g`.
+- Running the upgrade with `-e ocb_change_approved=true` on idc02 — needs
+  explicit same-session approval.
 - Board card writes stay on board-api only; Ansible remains stateless.
 - The hourly `ada-ocb-smoke.timer` probes the MCP bridge, not the pane — this
   audit covers the pane surface explicitly.
