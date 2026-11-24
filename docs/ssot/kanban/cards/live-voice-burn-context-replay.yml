@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: backlog
-updated: 2026-11-24 00:13
+updated: 2026-11-24 07:52
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -355,6 +355,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 07:52
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-24 07:52
+  from: tony
+  text: queued for processing
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -371,7 +377,7 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
   lane_source: kw
   sweep:
@@ -383,7 +389,6 @@ action:
   attempts: 2
   result: 'exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-voice-to.service:
     Consumed 1min 6.268s CPU time over 24min 17.945s wall clock time, 915.8M memory peak, 230.8M memory swap peak.'
-  runner: tony-dell
 spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
   for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
   (noting recent runner-agent drift across idc03, tony-macbook, idc02, and tony-dell). Constraints: Rely strictly
@@ -392,4 +397,3 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
   test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
 claim:
   since: 2026-11-23 22:06
-awaiting_action: true
