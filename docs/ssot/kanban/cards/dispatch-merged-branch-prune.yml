@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
 column: done
-updated: 2026-11-24 08:13
+updated: 2026-11-24 08:14
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -217,6 +217,10 @@ comms:
 - at: 2026-11-24 08:13
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 requests:
