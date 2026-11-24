@@ -1,7 +1,7 @@
 id: ada-ocb-manual-queue-semantics
 title: 'Ada-OCB: distinguish manual queue items from dispatchable work'
 column: backlog
-updated: 2026-11-24 17:04
+updated: 2026-11-24 19:50
 brief: The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners
   reject them as unsupported. Make the response accurately identify human-only work without changing card state
   or inventing an executor.
@@ -152,6 +152,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:50
+  from: chaba
+  text: 'IMPLEMENTED + PROMOTED (ada-voice origin/main @ 92f2355854a2). opencode/ada_mcp.py: queued cards with action.type=manual
+    (or runner verdict \"unknown type ''manual''\") now return why=''human-only (manual action) - not runner-dispatchable''
+    plus human_only=true/dispatchable=false; non-manual queue picks keep the exact previous ''queued for dispatch''
+    shape and response fields. Manual cards remain selectable with issued selection_token; ada_plan confirmation
+    + token gates untouched and covered by a new'
 review_kind: verify
 action:
   status: idle
