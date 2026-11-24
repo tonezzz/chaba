@@ -7,7 +7,7 @@ subtitle: >
 icon: education
 version: 1
 
-card: null
+card: ada-ocb-skills-wiki-education-2026-11-24  # ADA-0031
 date: 2026-11-24
 source_session: "2026-11-24 session history — skills exploration and how to use them in ada-ocb"
 
@@ -49,18 +49,19 @@ design_notes:
     inventory rather than forking a new topic (AGENTS.md lesson series).
 
 activation_gate:
-  - "File/obtain a kanban card authorizing the wiki-education write."
-  - "Merge this work, then render: python3 scripts/skills-wiki-export.py --out /tmp/ada-ocb-skills.wiki"
-  - "POST /publish with kind=lesson, meta format=wikitext + topic/level/source/learned_at/next_review/status, sinks=['wiki-education']."
+  - "DONE 2026-11-24: card ADA-0031 (ada-ocb-skills-wiki-education-2026-11-24) created in backlog via board-api."
+  - "DONE 2026-11-24: rendered python3 scripts/skills-wiki-export.py --out /tmp/opencode/ada-ocb-skills.wiki (11 skills)."
+  - "DONE 2026-11-24: POST /publish kind=lesson, meta format=wikitext + topic/level/source/learned_at/next_review/status, sinks=['wiki-education'] -> delivered."
 
 verify:
-  - "python3 -m pytest tests/test_agents_skills_explored.py -q -> 6 passed"
-  - "python3 scripts/skills-wiki-export.py | grep -E 'Education|ada-ocb-skills' -> template + topic present"
-  - "node scripts/ssot-validate-all.mjs -> no new errors on this job yml"
-  - "POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row present"
-  - "EDU_SOURCE=wiki python3 scripts/education-report.py -> new lesson counted"
+  - "DONE 2026-11-24: python3 -m pytest tests/test_agents_skills_explored.py -q -> 6 passed"
+  - "DONE 2026-11-24: python3 scripts/skills-wiki-export.py -> Education: template + ada-ocb-skills topic present"
+  - "DONE 2026-11-24: node scripts/ssot-validate-all.mjs -> this job yml valid (5 pre-existing errors elsewhere)"
+  - "DONE 2026-11-24: python3 scripts/render-jobs.py --check -> OK 116 jobs, 8 hosts"
+  - "DONE 2026-11-24: POST /publish -> wiki-education=delivered, wiki:Education:Ada-Ocb-Skills pageid 333 revid 480 (event skills-wiki-export-2026-11-24)"
+  - "DONE 2026-11-24: POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row (slug lesson-d8b6938588d3, next_review 2026-12-08)"
 
 remaining:
-  - "Card-gated live publish through the board-api door (not done offline)."
+  - "Optional (Tony): run EDU_SOURCE=wiki education-report and confirm the new lesson in the daily audit."
   - "Refresh the hub inventory when a skill is added/removed; the test will fail first."
   - "Optional on-wiki polish: {{#cargo_declare}} on แม่แบบ:Education for queryable next_review/status."
