@@ -1,7 +1,7 @@
 id: mddb-leader-bge-m3-migration-11023
 title: migrate mddb leader :11023 embed provider gemini-embedding-2 -> bge-m3 via embed-pool-shim
 column: doing
-updated: 2026-11-24 21:36
+updated: 2026-11-24 21:48
 priority: high
 tags:
 - mddb
@@ -212,6 +212,13 @@ comms:
     follower search is pre-existing, accepted. Step2 pool warmed: effective upstreams are idc03:11434 + omen:11434
     (+kk-mac defer :11447) — idc03 cold-loaded bge-m3 12.7s now resident 30m, omen warm. SCALE CORRECTION vs card:
     live stats show 63 collections / 56.5k docs / '
+- at: 2026-11-24 21:48
+  from: devin
+  text: '[env live + canary PASS] KEY FINDING the card missed: :11023 has DB-stored embedding configs that override
+    env — default was gemini-proxy(:11435). env swap alone changed nothing for embeds (first canary hit the gemini
+    proxy and failed on its caps). Fix applied: flipped default to pre-staged bge-m3-local config, added MDDB_OUTBOUND_ALLOWLIST=100.102.134.91
+    to quadlet (API SSRF guard rejects private apiUrl), set apiUrl=http://100.102.134.91:11436, restarted (3rd boot).
+    CANARY: force-reindex ada-ha'
 action:
   type: dispatch
   status: running
