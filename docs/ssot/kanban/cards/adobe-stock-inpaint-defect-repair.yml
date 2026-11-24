@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: doing
-updated: 2026-11-24 21:12
+updated: 2026-11-24 21:37
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -524,6 +524,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:37
+  from: devin
+  text: 'Attempt 2 complete (tony-omen). ROOT CAUSE of the 2-week stall found + fixed: the Nov-9 bundle was intact
+    in idc03 patch-inbox; GH013 push-protection rejected it because the session checkpoint had committed tmp/inpaint-lane/cloudflare.env
+    (live CF tokens). Landed now on dispatch/20261124-210156 (rebased on master, 5 commits): cherry-picked the 3
+    clean commits — inpaint-mask.py, omen-inpaint.py sd-cli driver, land-render.py --lane local-file + cf-inpaint
+    u8-array fix, runbook with FINAL lane comp'
 action:
   type: dispatch
   status: running
