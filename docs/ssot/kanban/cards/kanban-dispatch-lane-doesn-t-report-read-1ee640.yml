@@ -1,7 +1,7 @@
 id: kanban-dispatch-lane-doesn-t-report-read-1ee640
 title: kanban-dispatch lane doesn't report /ready verdicts (tony-dell invisible in queue view)
 column: doing
-updated: 2026-11-24 17:26
+updated: 2026-11-24 17:50
 priority: medium
 tags:
 - kanban
@@ -200,6 +200,13 @@ comms:
     Re-laned from retired jules to executor=devin /; [omen-maintenance-preflight-back-up-ha-st-b3738f] Dispatch
     started on tony-macbo; The runner posts "defers: installed runner-agent drifted" on EVERY card it scans; Zombie
     restarts (OPS-1071) produce duplicate sessions — befor'
+- at: 2026-11-24 17:50
+  from: devin
+  text: 'DONE (code): kanban-dispatch.py now runs verdict_pass() each pass — evaluates every queued card against
+    the same gate order as the claim loop (shared claim_pass_gate for pass-level gates) and POSTs {host,verdicts,active}
+    to /ready, debounced like runner-agent. Commit f59866b399 on dispatch/20261124-172624-follow-up-from-knb-1007-deploy
+    + job note docs/ssot/jobs/kanban/2026-11-24-kanban-dispatch-ready-verdicts.yml. 103/103 board tests ok; stub-/ready
+    e2e verified. Live /queue verify happens after'
 action:
   type: dispatch
   status: running
