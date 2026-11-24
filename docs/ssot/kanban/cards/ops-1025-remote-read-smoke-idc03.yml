@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: doing
-updated: 2026-11-24 08:08
+column: backlog
+updated: 2026-11-24 08:09
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,12 +69,15 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: running
+  status: failed
   attempts: 1
-  last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795451529.service: Main
-    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795451529.service:
+  last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service: Main
+    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service:
     Failed with result ''exit-code''.'
   runner: idc02
+  result: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service: Main process
+    exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -239,5 +242,12 @@ comms:
   from: chaba
   text: started devin-task-ops-1025-remote-read-smoke-idc03-1795482522 on idc02 (dispatch executor=opencode profile=ops-remote-read
     model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 08:09
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 08:39'
 claim:
   since: 2026-11-24 08:08
