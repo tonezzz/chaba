@@ -1,7 +1,7 @@
 id: ada-wiki-extension-confirm-flag
 title: ada-voice wiki_extension tool must pass confirm=true on mutations
-column: review
-updated: 2026-11-24 21:22
+column: done
+updated: 2026-11-24 21:23
 brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
   ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
   door deploys.'
@@ -109,6 +109,11 @@ comms:
 - at: 2026-11-24 21:22
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'merge-sweep: merged 9be44ee2 (dispatch/20261124-210549-in-ada-voice-repo-edit-point-t from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-210549-in-ada-voice-repo-edit-point-t.md)
+    — auto-closed'
 action:
   type: dispatch
   status: done
@@ -119,7 +124,11 @@ action:
   attempts: 1
   result: 'exit=0 a final comms entry posted to the card; next step is merge + `deploy-ada.sh` on idc03. | devin-task-20261124-210549-in-ada-voice-repo-edit-point-t.service:
     Consumed 2min 11.742s CPU time over 15min 25.256s wall clock time, 1.6G memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-24 21:05
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 21:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-210549-in-ada-voice-repo-edit-point-t.md
