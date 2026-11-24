@@ -1,7 +1,7 @@
 id: opencode-memory-freshness-check
 title: Read-only memory/feed freshness status check (Devin + OpenCode)
 column: backlog
-updated: 2026-11-24 21:31
+updated: 2026-11-24 21:32
 priority: low
 tags:
 - chaba-memory
@@ -160,6 +160,11 @@ comms:
   from: chaba
   text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 21:32
+  from: devin
+  text: '[2026-11-24 devin] Decision recorded (Tony): accepted A★ for MEM-0035 — read-only memory/feed freshness
+    check as repo script (scripts/chaba/check-memory-freshness.py), implemented in PR #207 (CI green, head 66976abfac).
+    Closure pending governed merge of PR #207 + evidence.'
 action:
   type: dispatch
   status: queued
