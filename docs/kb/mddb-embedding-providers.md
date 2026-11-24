@@ -137,3 +137,39 @@ ssh idc01 'podman logs --tail 20 gemini-ollama-proxy'
 ADA_MEMORY_BANKS_FILE=~/.config/ada/memory-banks.json \
   python3 scripts/ada/recall-canary.py
 ```
+
+## Stored embedding configs override env (learned 2026-11-24, :11023 bge migration)
+
+mddb persists named embedding configs in the DB
+(`GET /v1/embedding-configs`) and a stored `isDefault` config **wins
+over `MDDB_EMBEDDING_*` env** for the embed worker — env only applies
+when no stored default exists (mddb-cms :11027 has `configs:null`,
+which is why its env-only migration worked; :11023 had a staged
+`gemini-proxy` default that silently kept serving embeds after the env
+swap). Boot log `"vector search enabled" source="stored config"` is
+the tell; `/v1/config` `vectorConfig.source` shows which layer reports.
+
+Switching planes on an instance WITH stored configs:
+
+```bash
+# 1. env swap in the quadlet (apiUrl/model/dimensions) + daemon-reload
+# 2. create/fix the stored config, then flip default:
+curl -X POST $MDDB/v1/embedding-configs/set-default \
+  -H 'Content-Type: application/json' -d '{"id":"bge-m3-local"}'
+# apiUrl pointing at a private IP is SSRF-blocked on write — the host
+# must be in MDDB_OUTBOUND_ALLOWLIST (env, needs restart) or use
+# loopback. embed-pool-shim binds the tailnet addr only, so 127.0.0.1
+# does NOT reach it.
+curl -X PUT $MDDB/v1/embedding-configs/bge-m3-local \
+  -H 'Content-Type: application/json' -d '{"name":"...","provider":"ollama",
+  "model":"bge-m3","dimensions":1024,"apiKey":"","apiUrl":"http://<ip>:11436",
+  "isDefault":true}'   # PUT needs the FULL object
+# 3. restart mddb.service — the embed worker caches the config
+# 4. force reindex per collection (content-hash skip means force:true)
+```
+
+Rollback = `set-default` back to `gemini-proxy` + restart + reindex.
+Config list on :11023 post-migration: `bge-m3-local` (default,
+http://100.102.134.91:11436), `gemini-proxy` (:11435 fallback),
+`nomic-local` (:11434 staged). Full runbook:
+`docs/ssot/jobs/mddb/2026-11-24-leader-11023-bge-m3-migration.yml`.

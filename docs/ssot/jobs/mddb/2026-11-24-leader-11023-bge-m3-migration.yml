@@ -1,0 +1,116 @@
+title: mddb leader :11023 gemini-embedding-2 → bge-m3 migration — executed
+subtitle: card mddb-leader-bge-m3-migration-11023; last gemini plane migrated;
+  63 collections / ~144k chunks force-reindexed async
+icon: layers
+version: 1
+
+card: mddb-leader-bge-m3-migration-11023
+date: 2026-11-24
+dispatch: 20261124-142200-follow-on-to-the-proven-11027- (mn01)
+status: executed — reindex draining; rollback window closed once reindex completes
+
+# ------------------------------------------------------------- what changed
+changes: |
+  Host idc03, unit mddb.service (leader :11023, ada memory banks).
+
+  1. ~/.config/containers/systemd/mddb.container (backup:
+     mddb.container.bak-20261124-bge) — 4-line diff:
+       MDDB_EMBEDDING_API_URL  127.0.0.1:11435 -> http://100.102.134.91:11436
+       MDDB_EMBEDDING_MODEL    gemini-embedding-2 -> bge-m3
+       MDDB_EMBEDDING_DIMENSIONS 768 -> 1024
+     + NEW Environment=MDDB_OUTBOUND_ALLOWLIST=100.102.134.91
+       (SSRF guard rejects private apiUrl on API-written embed configs)
+     MDDB_EMBEDDING_PROVIDER=ollama unchanged (shim speaks ollama API).
+
+  2. Stored embedding config (DB, survives restarts — see gotcha):
+       POST /v1/embedding-configs/set-default {"id":"bge-m3-local"}
+       PUT  /v1/embedding-configs/bge-m3-local  (full object, apiUrl ->
+            http://100.102.134.91:11436 — 127.0.0.1:11436 refuses because
+            embed-pool-shim binds the tailnet addr only)
+     gemini-proxy + nomic-local configs kept, non-default = instant
+     rollback path via set-default.
+
+  3. Async force vector-reindex fired for ALL 63 collections
+     (POST /v1/vector-reindex {"collection":c,"force":true,"async":true}),
+     ordered: 15 ada-ha-bank-* (excl. monsters) -> other ada-ha-* ->
+     misc -> ada-ha-bank-devin-tony (76k chunks) -> ada-ha-bank-devin-handoff
+     (34.7k docs) last. Jobs in-memory only: /v1/vector-reindex/jobs.
+
+# ------------------------------------------------------------- THE GOTCHA
+stored_config_overrides_env: |
+  mddb keeps EMBEDDING CONFIGS IN THE DB (/v1/embedding-configs), and a
+  stored isDefault config WINS over MDDB_EMBEDDING_* env for the embed
+  worker. Boot log "vector search enabled source=stored config" is the
+  tell. :11027 worked env-only because its DB has configs:null — :11023
+  had a stored default "gemini-proxy" (:11435) staged long ago, so the
+  first env swap changed /v1/config (source=environment) but embeds
+  still went to the gemini proxy (which is ALSO currently capped:
+  OR daily-cap + paid hourly-cap -> 502s — the bge move fixes that too).
+
+  Symptom of the mismatch: vector-reindex errors naming the gemini
+  proxy's provider chain while /v1/config shows bge-m3. Diagnose with
+  GET /v1/embedding-configs — check isDefault + apiUrl reachability
+  (loopback OK without allowlist; private IPs need
+  MDDB_OUTBOUND_ALLOWLIST/ALLOW_PRIVATE env at boot).
+
+  Worker caches the config in memory — after PUT/set-default, restart
+  mddb.service (or wait? unverified) before embeds pick it up. We
+  restarted; third boot total.
+
+# ------------------------------------------------------------- verification
+verified: |
+  - canary: force-reindex ada-ha-bank-dev-scratch -> embedded=1 failed=0
+    in 1.9s via bge-m3; vector-search returned hit score 0.657.
+  - ~5min into bulk reindex: ada-ha-bank-general vector-search returns
+    ranked bge hits (recall restoring per-collection as chunks embed).
+  - provenance warning flipped to "embedded differently than bge-m3"
+    for 52 collections — expected until drain completes.
+  - queue depth ~1.7k/4000, occasional shim 504s under pool saturation
+    (2 primaries: idc03+omen ollama; idc02/con01 dropped from race
+    2026-11-20/24, kk-mac deferred) — retried, dropped=0.
+
+# ------------------------------------------------------------- scale correction
+scale: |
+  Card said 63 collections / 27.7k docs / ETA 8-12h. Live /v1/stats at
+  execution: 56.5k docs / 144.4k total_chunks (ada-ha-bank-devin-handoff
+  alone 34.7k docs; ada-ha-bank-devin-tony 76k chunks at ~25/doc).
+  Realistic drain at ~100-120 chunks/min warm-pool pace: ~20-30h, not
+  8-12h. Vector recall ramps per-collection; banks were queued first.
+
+# ------------------------------------------------------------- rollback
+rollback: |
+  BEFORE reindex drain completes: POST /v1/embedding-configs/set-default
+  {"id":"gemini-proxy"} + restart mddb.service + force-reindex again to
+  restore 768d vectors (gemini proxy currently capped — may need the
+  proxy's paid/free budget headroom first). Env quadlet can also be
+  reverted via mddb.container.bak-20261124-bge.
+  AFTER drain completes: rollback costs a full second reindex — treat
+  bge as committed once banks verify clean (golden-set eval card
+  cms-plane-bge-golden-set-eval remains the labeled-recall check).
+
+# ------------------------------------------------------------- followers
+followers: |
+  idc02 mddb (ro) and con01 mddb-follower (ro) have NO MDDB_EMBEDDING_*
+  env and no stored configs — vector-search there already returns
+  "no embedding provider configured" today (pre-existing, unchanged by
+  this migration). Doc replication unaffected; vectors replicate via
+  binlog as stored bytes — follower vector recall was already nil.
+
+# ------------------------------------------------------------- follow-ups
+followups:
+  - gemini-ollama-proxy :11435 now has no mddb consumer on :11023 — :11027
+    also on bge. Keep as declared fallback or retire per host-hygiene.
+  - embed-pool-shim effective upstreams are only idc03+omen (+kk-mac
+    defer) — drain rate ceiling is ~2 workers x fastest upstream; watch
+    504 rate overnight.
+  - mddb-embed-probe (15min canary) will emit degraded-search ops events
+    until drain completes — expected noise.
+  - ada-bge-memory-search-shadow keeps collecting overlap metrics
+    against :11028 — now measuring same-space bge-vs-bge.
+  - "POST-DRAIN CLEANUP — many reindex jobs logged per-chunk 504 failures
+    during pool saturation (46/63 jobs show failed>0 early on). Embed
+    queue retries to maxAttempts=50 but verify after drain: re-run
+    NON-force /v1/vector-reindex per collection (skips hash-matched,
+    picks up chunks that never got vectors) or rely on the daily
+    mddb-vector-reindex sweep; spot-check vector-search on
+    ada-ha-bank-general/personal-tony + Ada memory_search smoke."
