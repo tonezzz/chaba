@@ -2,7 +2,7 @@ id: scenario-report-opinion
 title: 'SCENARIO FIXTURE: Ada opinion posts land here (report: dev-kanban)'
 brief: Test fixture, not work. The report_opinion_loop live scenario posts Ada's [opinion] comments here so they
   don't pollute real cards. Nothing needed — leave it alone.
-column: backlog
+column: doing
 priority: low
 program: ada-tools
 updated: 2026-11-24 15:01
@@ -242,10 +242,17 @@ comms:
 - at: 2026-11-24 15:01
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.79 > 1.0)'
+- at: 2026-11-24 15:01
+  from: tony-macbook
+  text: claimed
 ref: KNB-0371
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 15:01
