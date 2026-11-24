@@ -31,9 +31,7 @@ SKILL_DIRS = (".agents/skills", ".opencode/skills")
 
 # Recorded from the session history: when to invoke each skill in ada-ocb.
 USAGE = {
-    "ansible-first": "Triage host/fleet jobs for an existing playbook, then run the governed 9-step converge: check/diff, approval, backup, converge, verify, evidence.",
     "auto-kb": "Session-end capture of verified findings into docs/kb (MDDB-indexed); not for hypotheses.",
-    "code-decision": "Jev decision door before applying a change with a construct/template/library/replacement choice; skip mechanical edits.",
     "docker-restart": "Restart the chaba web stack, with confirmation; verify localhost:8080/8081 after.",
     "git-status": "Quick branch / dirty-tree / diff / recent-commit summary when editing ada-ocb.",
     "health-check": "Deprecated: use the MCP health tools (check_health, get_alerts, restart_service) instead.",
@@ -44,91 +42,6 @@ USAGE = {
     "ssot-validate": "Validate SSOT YAML syntax/structure after edits.",
     "status": "Quick Working / Done / Remaining / Next-high-value summary.",
     "track4-smoke-test": "Quick navigation to the Track4 test page for smoke testing.",
-    "wiki-education-publish": "Render -> card-gated /publish wiki-education -> /lesson source=wiki verify -> job yml record; never direct MediaWiki API.",
-}
-
-# Repositories explored in the same session history (plus their role here).
-REPOS = [
-    {
-        "name": "tonezzz/chaba — ada-ocb worktree",
-        "ref": "https://github.com/tonezzz/chaba",
-        "role": "Ada-OCB control plane: SSOT, kanban, skills, board-api, wiki-education door",
-        "use": "Holds the 11 SKILL.md files, inventory test, this exporter, the docs/kb entry and job trail; source of Education:Ada-Ocb-Skills",
-    },
-    {
-        "name": "tonezzz/mddb — mddb-fork",
-        "ref": "https://github.com/tonezzz/mddb",
-        "role": "Markdown database with full-text/vector/hybrid search exposed over MCP",
-        "use": "The mddb agent skill (search-tool choice, chunk projections, memory_*); chaba-lessons and KB indexing. Local lag snapshots: ~/var/tmp/mddb-lag-base and -fix",
-    },
-    {
-        "name": "anthropics/claude-plugins-official",
-        "ref": "https://github.com/anthropics/claude-plugins-official",
-        "role": "Anthropic's official Claude Code plugin marketplace (plugins/, external_plugins/)",
-        "use": "Installed skill-creator from plugins/skill-creator/skills/ into ~/.claude/skills with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin LICENSE",
-    },
-    {
-        "name": "ansible-community/ai-forge",
-        "ref": "https://github.com/ansible-community/ai-forge @ 28a9a58",
-        "role": "Ansible community 'Lola' skills marketplace — 40 SKILL.md across 7 modules (collection SDLC, standards, content dev, docs, cloud, network, role scaffolding)",
-        "use": "Evaluated 2026-11-27 for ada-ocb (card ai-forge-skills-wiki-education-2026-11-27): GPL-3.0; collection-SDLC skills (release/changelog/sonarcloud/antsibull) are N/A to chaba. Candidates: write-content (CoP playbook/role authoring) and ansible-markdown-docs (docs.ansible.com as markdown). Verdict: reference only — do not install wholesale or copy skill text verbatim (GPL).",
-    },
-]
-
-AIFORGE_EVAL = {
-    "name": "ai-forge skill evaluation",
-    "ref": "ansible-community/ai-forge @ 28a9a58 — card ai-forge-skills-wiki-education-2026-11-27",
-    "result": "40 skills in 7 modules, all Ansible-content-scoped. Adopted as pointer/reference, not installed: write-content and ansible-markdown-docs are the only ada-ocb-relevant candidates; pr-review/pr-new help only on upstream ansible-collections work. GPL-3.0 licence means ideas/patterns may inform chaba skills but skill text must not be copied verbatim. Revisit if chaba takes on Ansible collection authoring.",
-}
-
-BENCHMARK = {
-    "name": "info-find efficiency A/B",
-    "ref": "PR #219 — evals/info-find-efficiency/",
-    "result": "8 offline tasks: direct grep 8/8 correct at ~92 narrow / 826 cross tokens vs info-find 0/8 at ~1700 tokens. Decision: keep info-find optional; no enforcement until routing improves. Card BEN-1359 closed.",
-}
-
-LESSON = {
-    "name": "Build is not apply (2026-11-26)",
-    "ref": "PR #229 / PR #236 — card OPS-1447",
-    "result": "Adding deploy-runner-tools.yml was not convergence: only --check --diff had been run, so drift stayed live. Apply the playbook, install the schedule, then re-audit independently. The first timer install failed with BadUnitSetting because OnCalendar/Persistent/Unit were in [Unit] instead of [Timer] — validate user units with systemd-analyze --user verify before rollout. After PR #236 all hosts are in-sync, the daily timer is active, and the audit shows no DRIFT.",
-}
-
-FINDABILITY = {
-    "name": "MDDB findability eval",
-    "ref": "chaba-lessons — 3 eval queries",
-    "result": "recall@5 / nDCG / MRR = 1.0 for all configs; FTS/bm25 ~5 ms p50 vs hybrid/vector ~1.6 s. Saved lessons are retrievable; keyword search is the cheap path.",
-}
-
-AUDIT_RULE = {
-    "name": "Runner audit compares to controller pins",
-    "ref": "PR #246 — ansible/playbooks/audit-runner-tools.yml",
-    "result": "Installed sha256 must be compared to scripts/devin/runner-tooling.manifest.json pins, not each host's checkout; an ahead or stale checkout produced false DRIFT.",
-}
-
-SCHEDULES = {
-    "name": "Scheduled automation",
-    "ref": "fleet timer + monitor acfd73e3-04e7-43f9-82e5-bdc5635e3358",
-    "result": "Daily runner-tools convergence timer on all managed hosts, plus a read-only 09:00 Asia/Bangkok SSOT/CI monitor covering ssot-validate-all, tooling pins, Cargo verifier and health/alerts.",
-}
-
-TOOLING2 = {
-    "name": "build-mcp-server",
-    "ref": "~/.claude/skills/build-mcp-server/ (from anthropics/claude-plugins-official)",
-    "role": "Second ported plugin skill — MCP server design workflow with 8 bundled reference docs",
-    "note": "Apache-2.0 LICENSE retained; OpenCode adaptation note covers Context7 fallback, board-api door for chaba mutations and {env:...} secrets in opencode.json.",
-}
-
-AI_FORGE = {
-    "name": "ansible-community/ai-forge skills (external, evaluated)",
-    "ref": "https://github.com/ansible-community/ai-forge/ @ 28a9a58 — 7 Lola modules, 37 skills",
-    "result": "Reference only, no wholesale install or port. Use ansible-cop-review, write-content and security-scan as checklists for chaba's ansible/ work; ansible-first stays the entry gate. Collection release/Sonar/PR skills, cloud/network modules and docs lookup have no current Ada-OCB workflow. Caveats: Lola is not installed here; several skills use Claude-specific tools; SKILLS.md is stale (35 vs 37 skills); CI is lint-only; GPL-3.0-or-later makes verbatim copying a license decision.",
-}
-
-TOOLING = {
-    "name": "ansible-first",
-    "ref": ".agents/skills/ansible-first/SKILL.md (repo-canonical; ~/.claude/skills/ansible-first is a symlink on OpenCode hosts)",
-    "role": "Global OpenCode skill — advertised before each model step for host/fleet/deploy/restart/provision tasks",
-    "note": "30-second triage: skip for local/repo work; use board-api door for kanban/wiki/SSOT; check chaba ansible/ playbooks before ad-hoc SSH; --check --diff --limit, vault secrets, approval for disruptive plays.",
 }
 
 
@@ -251,65 +164,11 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "* After SSOT edits → ''ssot-validate''. At handoff → ''session-capture'' (durable sinks + handoff packet) and, for verified findings, ''auto-kb''.",
         "* Health questions use the MCP health tools directly — ''health-check'' is deprecated; ''docker-restart'' needs confirmation; ''track4-smoke-test'' and ''overnight-assessment'' are the smoke/overnight checks.",
         "",
-        "== Repositories explored ==",
-        "",
-        "The same session history also explored these repositories (in addition to OpenCode's own documentation):",
-        "",
-        '{| class="wikitable"',
-        "! Repository !! Reference !! Role !! How we used it",
-    ]
-    for repo in REPOS:
-        tail.extend([
-            "|-",
-            f"| {_cell(repo['name'])} || {_cell(repo['ref'])} || "
-            f"{_cell(repo['role'])} || {_cell(repo['use'])}",
-        ])
-    tail.extend([
-        "|}", "",
-        "== Benchmarks ==",
-        "",
-        f"* '''{_cell(BENCHMARK['name'])}''' — {_cell(BENCHMARK['ref'])}: "
-        f"{_cell(BENCHMARK['result'])}",
-        "*",
-        f"* '''{_cell(LESSON['name'])}''' — {_cell(LESSON['ref'])}: "
-        f"{_cell(LESSON['result'])}",
-        "*",
-        f"* '''{_cell(FINDABILITY['name'])}''' — {_cell(FINDABILITY['ref'])}: "
-        f"{_cell(FINDABILITY['result'])}",
-        "",
-        "== External evaluation ==",
-        "",
-        f"* '''{_cell(AIFORGE_EVAL['name'])}''' — {_cell(AIFORGE_EVAL['ref'])}: "
-        f"{_cell(AIFORGE_EVAL['result'])}",
-        "",
-        "== Operations ==",
-        "",
-        f"* '''{_cell(AUDIT_RULE['name'])}''' — {_cell(AUDIT_RULE['ref'])}: "
-        f"{_cell(AUDIT_RULE['result'])}",
-        "*",
-        f"* '''{_cell(SCHEDULES['name'])}''' — {_cell(SCHEDULES['ref'])}: "
-        f"{_cell(SCHEDULES['result'])}",
-        "",
-        "== Related tooling ==",
-        "",
-        f"* '''{_cell(TOOLING['name'])}''' — {_cell(TOOLING['ref'])}: "
-        f"{_cell(TOOLING['role'])}. {_cell(TOOLING['note'])}",
-        "*",
-        f"* '''{_cell(TOOLING2['name'])}''' — {_cell(TOOLING2['ref'])}: "
-        f"{_cell(TOOLING2['role'])}. {_cell(TOOLING2['note'])}",
-        "",
-        "== External skill packs evaluated ==",
-        "",
-        f"* '''{_cell(AI_FORGE['name'])}''' — {_cell(AI_FORGE['ref'])}: "
-        f"{_cell(AI_FORGE['result'])}",
-        "*",
-        "* Decision 2026-11-27 (card DEV-1499): borrow the CoP review and Ansible authoring checklists as guidance; do not install Lola modules or copy GPL-3.0-or-later skill text into this repo.",
-        "",
         "[[Category:Education]]",
         "[[Category:Education/Level/intro]]",
         "[[Category:Education/Status/open]]",
         f"[[Category:Education/Topics/{pub._topic_slug(TOPIC)}]]",
-    ])
+    ]
     return "\n".join(header + rows + tail) + "\n"
 
 
