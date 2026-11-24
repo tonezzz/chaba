@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-1bbtyha8
 title: '[audit] mutating_command in opencode session Hdk31bBtYHA8'
 column: doing
-updated: 2026-11-24 22:14
+updated: 2026-11-24 22:17
 priority: medium
 program: ai-workforce
 tags:
@@ -217,6 +217,13 @@ comms:
     written; artifact landed via message-mode (runner extracts final-message JSON). Root cause: classifier counted
     denied attempts as mutations -> fixed in worktree (denied entries tagged, cardable finding uses executed-only;
     denied-only drops to info). 22/22 tests pass. Trail: docs/ssot/jobs/devnest/2026-11-24-opencode-audit-denied-mutations.yml'
+- at: 2026-11-24 22:17
+  from: devin
+  text: 'DONE — verdict benign (denied-only write attempts, artifact landed via message-mode, lane pass). Fix committed
+    20ef6d07527: audit classifier now tags denied mutation entries and only executed calls feed the cardable mutating_command
+    finding; denied-only drops to info. 22/22 unittests pass. Sibling cards 0b3n5bce + aahmnvt5 are the same class
+    — safe to close benign. Trail: docs/ssot/jobs/devnest/2026-11-24-opencode-audit-denied-mutations.yml + dispatch-outcome
+    doc.'
 action:
   type: dispatch
   status: running
