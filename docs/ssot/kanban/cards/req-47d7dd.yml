@@ -1,7 +1,7 @@
 id: req-47d7dd
 title: ติดตามสถานการณ์น้ำท่วม กทม.
-column: backlog
-updated: 2026-11-24 14:09
+column: done
+updated: 2026-11-24 14:23
 priority: high
 note: ติดตามสถานการณ์น้ำท่วมกรุงเทพฯ และประกาศแจ้งเตือนเส้นทางจราจรอย่างต่อเนื่อง
 ref: OPS-1040
@@ -843,6 +843,15 @@ comms:
 - at: 2026-11-24 14:09
   from: tony-macbook
   text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:23
+  from: tony
+  text: 'TRIAGE 2026-11-24: closed on merged evidence. Devin DONE 2026-11-23 11:03/14:03 — scp runner-agent to tony-dell
+    (sha256 1e8ea0d8 == repo), flood-alert.timer armed and Result=success, zero drift lines. First dispatch auto-merged
+    6225b2b9 -> origin/master (verified ancestor); second dispatch was a duplicate that lost a push race. Goal already
+    met.'
+- at: 2026-11-24 14:23
+  from: tony
+  text: closed by tony
 requests:
 - id: the-card-requests-continuous-t-5456a6
   ask: The card requests continuous tracking of Bangkok flood situations and traffic alerts, but multiple runner-agents
@@ -897,7 +906,7 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repo to tony-dell and queue the monitoring task there
 action:
-  status: failed
+  status: done
   type: dispatch
   lane: devin
   lane_source: fallback
@@ -915,4 +924,3 @@ spec: Redeploy the runner-agent script from the local chaba repository to tony-d
 claim:
   since: 2026-11-23 13:59
 review_kind: verify
-awaiting_action: true
