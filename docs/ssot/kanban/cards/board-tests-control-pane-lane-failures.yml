@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
 column: backlog
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:32
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -76,4 +76,8 @@ comms:
 - at: 2026-11-24 08:22
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

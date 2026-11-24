@@ -1,6 +1,6 @@
 id: ocb-cli-pin-drift
 title: 'idc02 openchamber: pin @opencode/cli to declared 2.3.2 (gate failing)'
-column: backlog
+column: done
 updated: 2026-11-24 08:32
 brief: 'ADA-0015''s live upgrade completed successfully, but the post-gate fails: @opencode/cli is 2.4.1 while SSOT
   declares 2.3.2. Root cause: host unit ExecStart pins only @openchamber/web@2.7.3 and installs @opencode/cli bare.
@@ -63,3 +63,16 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: devin
+  text: 'RESOLVED per Tony''s choice: accept 2.4.1 + update SSOT (option b). Compatibility checked: opencode --version
+    = v2.4.1; openchamber journal clean; local 200; edge 200; patch present; 4/4 units active; web 2.7.3 requires
+    opencode >=2.2.4. Updated ssot.audit.hosts.yml (pin 2.3.2 -> 2.4.1 + decision note), ansible/inventory/group_vars/ocb_pane.yml,
+    ansible/README.md. Validation: ssot-validate-all 5641/5641 valid, 0 errors; ansible-playbook playbooks/ada-ocb-verify.yml
+    exit 0 with producer+consumer O'
+- at: 2026-11-24 08:32
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

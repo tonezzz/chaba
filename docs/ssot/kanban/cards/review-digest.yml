@@ -5,9 +5,11 @@ review_kind: verify
 tags:
 - kanban
 - digest
-note: '**30 in review:**
+note: '**33 in review:**
 
   ADA-1180 · Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report
+
+  ADA-0015 · Ansible ada-ocb upgrade playbook (approval-gated)
 
   ADA-0507 · ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 
@@ -29,18 +31,16 @@ note: '**30 in review:**
 
   OPS-0133 · idc01 returns: warm-DR node — mddb follower #2, standby edge, lab sandbox
 
+  ADA-0631 · Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens
+
   ---- · Log coverage gaps
 
-  ---- · logs `idc03` backlog 2548
+  ---- · logs `idc03` backlog 2603
 
-  ---- · logs `mn01` backlog 344
+  … +18 more
 
-  ---- · logs `mn01` silent 7h
-
-  … +15 more
-
-  **1 unanswered request(s):** tony-usb-own-nodekey'
-updated: 2026-11-24 08:24
+  **1 unanswered request(s):** devin-lane-cheap-ops-reroute'
+updated: 2026-11-24 08:33
 ref: KNB-0453
 comms:
 - at: 2026-10-11 10:15
@@ -186,6 +186,10 @@ comms:
 - at: 2026-11-24 08:24
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
