@@ -1,7 +1,7 @@
 id: board-tests-control-pane-lane-failures
 title: 'Fix pre-existing board test failures: control-pane projection + lane claim classification'
 column: review
-updated: 2026-11-24 23:14
+updated: 2026-11-24 23:23
 brief: Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest).
   Find the real cause; do not weaken asserts.
 priority: medium
@@ -200,6 +200,9 @@ comms:
 - at: 2026-11-24 23:14
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 23:23
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-222204'
 action:
   type: dispatch
   status: done
@@ -210,6 +213,8 @@ action:
   result: 'exit=0  gate itself is unrunnable here per OPS-1191 — that''s a host fix, not a repo change. | devin-task-20261124-222204-observed-2026-11-20-while-ship.service:
     Consumed 23min 9.055s CPU time over 50min 37.122s wall clock time, 840.9M memory peak.'
   verified: false
+  sweep:
+    no_repo: 2026-11-24 23:23
 claim:
   since: 2026-11-24 22:21
 review_kind: verify
