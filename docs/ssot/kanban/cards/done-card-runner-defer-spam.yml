@@ -1,7 +1,7 @@
 id: done-card-runner-defer-spam
 title: done cards with stale action.runner get defer-spam from every runner
 column: doing
-updated: 2026-11-24 23:33
+updated: 2026-11-24 23:44
 priority: medium
 tags:
 - board
@@ -98,6 +98,13 @@ comms:
     claim path never checked column (a done/review card with stale status=queued could actually be claimed), and
     kanban-dispatch verdict_pass mirrored the gap. Gated all three on column in {backlog,doing}; regression tests
     added. Suite running.'
+- at: 2026-11-24 23:44
+  from: devin
+  text: 'DONE (dispatch 20261124-225256). PR #204 had gated only the defer-notes block; this change scopes the whole
+    claim queue to column in {backlog,doing}: runner-agent _claimable() first-gate + _note_capacity_skip hostgate
+    notes, kanban-dispatch Phase-A queued filter + _verdict_reason. Regression tests added (ClaimQueueColumnGateTest,
+    off-queue claim test); manifest sha repinned; 6 column-less fixtures gained column:backlog. Verified: tests/board
+    893+116 green; only failure is pre-existing missing st'
 action:
   type: dispatch
   status: running
