@@ -1,7 +1,7 @@
 id: tg-relay-turn-ok-unbound
 title: 'tg_relay forwarded-media path: UnboundLocalError(turn_ok) reds 2 chaba tests on master'
 column: doing
-updated: 2026-11-24 16:51
+updated: 2026-11-24 16:54
 priority: medium
 program: chaba-ci
 tags:
@@ -183,6 +183,12 @@ comms:
     Verification staging update: branch fix/kk-mac-memory; "Only en/th supported" was never the MDDB store — verify
     the store layer first; ; Cherry-pick `origin/fix/fleet-jobs-report-accuracy` before editing — Tony''s corr;
     The live `~/CascadeProjects/ada-voice` checkout may sit on so'
+- at: 2026-11-24 16:54
+  from: devin
+  text: 'dispatch 20261124-165119: verified already-fixed — fda0685d77 (2026-10-26 12:07) added turn_ok=False/True
+    to the forwarded-media branch of tg_relay.forward-provenance.patch, ~3h after this card was filed. pytest tests/ada/test_tg_forward_provenance.py
+    -q: 16 passed against ada-voice origin/main@2e9a1ee (scratch archive) and the idc02 checkout. Patch still applies
+    forward on origin/main; no changes needed.'
 action:
   type: dispatch
   status: running

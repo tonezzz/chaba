@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
 column: doing
-updated: 2026-11-24 16:50
+updated: 2026-11-24 16:54
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -204,6 +204,14 @@ comms:
     dedup cursor, 20h rate limit, kill switch, NEWS_BRIEF_HA=1 Tony-HA mirror, dry-run default + --probe consumer
     test. wp-news-brief job registered idc03 07:50 DRY-RUN (no --send) per telegram-conversation-standard — arm
     after probe confirmed. Units rendered; 9 unit tests pass; trail doc d'
+- at: 2026-11-24 16:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-163820-extend-the-existing-wp-news-fe no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-24 16:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-163820-extend-the-existing-wp-news-fe on tony-macbook still
+    dirty — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -212,5 +220,8 @@ action:
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 16:54
+    dirty: 8
 claim:
   since: 2026-11-24 16:37
