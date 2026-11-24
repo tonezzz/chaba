@@ -1,7 +1,7 @@
 id: scr-calibrate-t1-thresholds-on-real-tg-v-8ca63e
 title: 'SCR: calibrate T1 thresholds on real TG voice corpus'
 column: doing
-updated: 2026-11-24 17:03
+updated: 2026-11-24 17:09
 priority: medium
 spec: 'Context: research doc docs/kb/short-command-recognition-research.md, prototype docs/prototypes/short-command/
   (stdlib, host-agnostic). Work: (1) build a corpus.jsonl from the TG voice refs labeling short-command vs non-command
@@ -190,6 +190,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:09
+  from: devin
+  text: 'Done. Recovered the lost 10-27 prototype from tony-macbook (was staged-uncommitted, never merged). Built
+    corpus-tg-{qwen,ref}.jsonl from the 28 real TG voice refs: all no_match — zero in-grammar commands in real traffic.
+    Wrong-fire 0/28 real, 0/51 synthetic; non-command ceiling 0.216 vs true-command floor 0.615. Recommend accept=0.40
+    gray_lo=0.25 (defaults updated) + tg_relay as first surface. Full writeup in docs/kb/short-command-recognition-research.md
+    §Real-corpus calibration; trail in docs/s'
 action:
   type: dispatch
   status: running
