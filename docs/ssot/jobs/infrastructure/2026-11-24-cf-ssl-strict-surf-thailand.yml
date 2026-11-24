@@ -1,0 +1,114 @@
+id: 2026-11-24-cf-ssl-strict-surf-thailand
+title: Cloudflare ssl=full -> strict for surf-thailand.com — idc02 edge cert migration
+domain: infrastructure
+date: 2026-11-24
+status: implemented
+cards:
+- cf-ssl-strict-migrate-idc02-edge-origin-3fa959
+- cloudflare-setup
+
+summary: >
+  Flipped the surf-thailand.com zone SSL mode from `full` to `strict`
+  (zone 4feb4a3682e44e38cce3feed65dba7f3) after migrating every proxied
+  origin to publicly-trusted certificates. 25 proxied names audited;
+  all now return normal responses (200/301/302/308/404) — zero 525/526.
+
+origin_work:
+  idc02-edge:
+    what: >
+      caddy-edge quadlet served `tls internal` (Caddy Local Authority)
+      on all 15 site blocks — untrusted, strict would 526 everything.
+      Issued ONE Let's Encrypt wildcard via acme.sh DNS-01
+      (*.surf-thailand.com + surf-thailand.com, YE1, expires
+      2027-02-22) using the cfat_ CF_API_TOKEN already in
+      ~/.config/secrets/cloudflare.env on idc02. Installed to
+      ~/.config/containers/caddy/data/certs/ (container /data/certs/)
+      with --install-cert --reloadcmd "podman exec caddy-edge caddy
+      reload". Replaced all 15 `tls internal` lines with
+      `tls /data/certs/surf-thailand.com.crt /data/certs/surf-thailand.com.key`
+      and appended wiki+wiki-internal blocks. acme.sh cron renews
+      4x/day; next renewal ~2027-01-23.
+    why_dns01: >
+      HTTP-01/TLS-ALPN-01 impossible: ~11 names sit behind Cloudflare
+      Access which intercepts /.well-known/acme-challenge/ with a 302
+      login. Origin CA cert creation is not permitted for the cfat_
+      token (needs SSL-and-Certificates scope we don't hold).
+  idc03-edge:
+    what: api+app already served valid LE certs (YE2) — untouched.
+    deleted: idc03.surf-thailand.com A record removed (525-broken,
+      no site block, zero consumers in repo/SSOT).
+  idc01:
+    what: idc01.surf-thailand.com A record unproxied (grey cloud).
+      Host is retired/warm-DR, tailscale offline 34d, public :443
+      filtered — record was a dead canary. Kept (not deleted) so it
+      can be re-proxied if idc01 returns as standby edge.
+  wiki:
+    what: >
+      wiki.surf-thailand.com + wiki-internal.surf-thailand.com were
+      CNAME -> wiki.h3.gizmo-thailand.com (Plesk node 103.99.11.249,
+      LE cert covers only *.h3.gizmo-thailand.com -> strict 526).
+      Repointed both CNAMEs -> edge.surf-thailand.com and added an
+      idc02 caddy block: TLS terminates on the LE wildcard, then
+      reverse_proxy https://wiki.h3.gizmo-thailand.com with
+      tls_server_name + Host {host} preserved + public-resolver
+      transport (same h3-DNS hardening as status/boards). Plesk
+      verified serving both surf-thailand Hosts (MediaWiki 301s
+      identical to pre-change).
+
+podman_comma_Z_phantom_mount:
+  what: >
+    caddy-edge.container on idc02 mounted dirs with `,Z` (comma form:
+    `-v src:/data,Z`). Rootless podman produced PHANTOM mounts — the
+    container saw an orphan dir containing only caddy/ while the host
+    dir had www/+certs/. Symptoms masked for weeks: apex www webroot
+    never served (blank page), /feeds/usage.json + /kk-ha + /tony-ha
+    subpaths silently dead, autosave.json written to void. Fixed by
+    changing the two dir mounts to `:z` (colon form) + restart.
+    Caddyfile file-bind `:ro,Z` was unaffected (file binds follow the
+    inode; dir binds did not).
+  verified: >
+    After :z + restart, /data shows certs+www+caddy; apex serves real
+    index.html; /feeds/usage.json 403-anon (auth gate live);
+    /kk-ha/ + /tony-ha/ 200.
+  audit_needed: >
+    Other `,Z`/`:Z` dir mounts fleet-wide should be audited — idc03
+    caddy-edge /srv/public:ro,Z verified OK (content matches),
+    mn-ha-dev :Z verified OK. The phantom appeared specific to idc02
+    caddy-edge's data/config dirs; mechanism not fully root-caused
+    (not a named volume — checked podman volume ls).
+  related_gotcha: >
+    Single-file bind mounts break on atomic-replace edits (sed -i,
+    editors that rename). The container kept the old inode until
+    restart — always restart caddy-edge after sed -i-style edits, or
+    edit in place.
+
+dns_final_state:
+  proxied_ok:
+  - "15 idc02 site names -> LE wildcard on idc02 caddy-edge"
+  - "wiki + wiki-internal -> idc02 -> Plesk 103.99.11.249"
+  - "api + app -> idc03 LE certs (unchanged)"
+  - "claw -> CF Worker (no origin, unaffected)"
+  dns_only:
+  - edge -> 45.136.236.190 (direct; now gets valid LE cert too)
+  - idc01 -> 157.85.110.99 (dead host, out of strict scope)
+  deleted:
+  - idc03.surf-thailand.com (was A -> 157.85.102.125, 525-broken)
+  stale_flagged:
+  - "ada-code/opencode-ada/opencode-jack still proxied -> idc02 but
+    have NO caddy blocks (services retired 2026-11-24); Access-gated
+    so curl=302, post-auth would 525 — same as before strict. Records
+    + Access apps are retirement leftovers worth a cleanup card."
+
+verification:
+  - "GET /zones/.../settings/ssl -> value=strict, certificate_status=active"
+  - "curl https://<all 23 proxied names> -> 200/301/302/308/404, zero 525/526"
+  - "openssl s_client 45.136.236.190:443 SNI=boards -> LE YE1 *.surf-thailand.com"
+  - "openssl s_client 157.85.102.125:443 SNI=api/app -> LE YE2 per-name"
+  - "deep paths: app /install 200, status / 200, wiki /index.php 301, boards+api 404-on-missing-route (origin reached)"
+  - "acme.sh cron installed on idc02 (01:51/07:51/13:51/19:51) with caddy reloadcmd"
+
+rollback:
+  ssl: "PATCH /zones/{id}/settings/ssl {\"value\":\"full\"} reverts instantly"
+  caddyfile: "~/.config/caddy/Caddyfile.bak-sslstrict-<ts> + .bak-dnsresolvers-20261124 on idc02"
+  quadlet: "~/.config/containers/systemd/caddy-edge.container.bak-sslstrict-20261124"
+  dns: "wiki CNAMEs -> wiki.h3.gizmo-thailand.com; idc01 re-proxy; idc03 record recreatable (A 157.85.102.125 proxied)"
