@@ -196,3 +196,53 @@ variants:
       model: none
     host_labels: []
     notes: "Harness self-test — exercises the result schema with no services."
+
+  # --- dispatch_cmd variants (ADA-1088): dev-intake protocol via the
+  #     LiteLLM gateway 'bench' alias (gemini-3.5-flash-lite, paid->free
+  #     ->OR->local fallbacks) keyed by LITELLM_KEY_BENCH ($2/30d). ---
+
+  - id: direct-dispatch-bench
+    polish: null
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:4000/v1
+      model: bench
+      api_key_env: LITELLM_KEY_BENCH
+    host_labels: []
+    notes: "Dispatch baseline: raw Tony-style commands straight to the
+      dev-intake protocol on gemini-3.5-flash-lite via LiteLLM."
+
+  - id: polish-dispatch-bench
+    polish:
+      provider: openai_compat
+      base_url: http://100.102.134.91:4000/v1
+      model: bench
+      api_key_env: LITELLM_KEY_BENCH
+      prompt: dispatch_spec_v1
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:4000/v1
+      model: bench
+      api_key_env: LITELLM_KEY_BENCH
+    host_labels: []
+    notes: "Same model polishes (dispatch_spec_v1, spec-grade English)
+      then receives — measures whether self-polish helps the cheap lane."
+
+  - id: polish-dispatch-chat
+    polish:
+      provider: openai_compat
+      base_url: http://100.102.134.91:4000/v1
+      model: chat
+      api_key_env: LITELLM_KEY_BENCH
+      prompt: dispatch_spec_v1
+      max_tokens: 2048
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:4000/v1
+      model: bench
+      api_key_env: LITELLM_KEY_BENCH
+    host_labels: []
+    notes: "Strong-polisher variant: gemini-3.5-flash ('chat' alias,
+      paid->OR->lite fallbacks) rewrites, flash-lite receives. If this
+      beats bench-self-polish, the consult-tool route (ADA-1084) is the
+      deploy shape."

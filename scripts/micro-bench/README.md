@@ -21,11 +21,18 @@ raw fixture ──[optional polish model]──> sent text ──> downstream AI
 
 ## Layout
 
-- `fixtures/manifest.yml` — 40 inputs across 10 categories: en/th ASR noise,
+- `fixtures/manifest.yml` — 68 inputs across 12 categories: en/th ASR noise,
   Thai-Eng mix, typos, fragments, entity-heavy (preserve-check), **clean
   controls** (regression detector), chit-chat, **ambiguous + gibberish**
   (fabrication detector — a tool call where none is expected is scored
-  `fabricated`).
+  `fabricated`), **dispatch_cmd** (16 synthetic Tony-style dev commands —
+  ADA-1088), and **dispatch_real** (12 verbatim live kanban-card titles —
+  the real terse shorthand that flows into dispatch intake; split out so
+  polish scores on real vs synthetic commands separately). Dispatch
+  fixtures carry `protocol: dispatch` → the dev-intake tool surface
+  (dispatch_devin / dispatch_opencode / create_card) instead of the HA
+  surface, and use the `dispatch_spec_v1` polish prompt (spec-grade
+  English rewrite, route-preserving).
 - `variants.yml` — `{id, polish, downstream, host_labels}` per run. Providers:
   `openai_compat` (ollama/llama.cpp /v1), `ssh_openai` (same call over an
   ssh prefix to a remote loopback server — incl. multi-hop like
