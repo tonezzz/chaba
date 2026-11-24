@@ -2,4 +2,8 @@
 docker_enabled: true
 
 # idc03 served/writer checkout path differs from workstation default.
-chaba_repo_path: "{{ ansible_facts.env.HOME }}/CascadeProjects/chaba-tony-dell"
+# Use ~ (not ansible_facts.env.HOME): this verifier runs gather_facts: false,
+# so an ansible_facts reference would stay un-templated. The remote shell
+# expands ~ for the login user when the push probe runs.
+chaba_repo_path: ~/CascadeProjects/chaba-tony-dell
+ssh_push_repo_path: ~/CascadeProjects/chaba-tony-dell

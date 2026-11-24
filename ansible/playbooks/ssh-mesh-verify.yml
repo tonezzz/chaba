@@ -1,0 +1,210 @@
+---
+# ssh-mesh-verify.yml — read-only SSH access contract gate (SYS-0032).
+#
+# Verifies the declared SSH contract in inventory against the live mesh,
+# from THIS controller. Every probe is an explicit `ssh`/`git` command run
+# on localhost (delegate-free): failures are plain rc values, so there is
+# no cross-play registered-variable ambiguity and nothing is written on any
+# remote host.
+#
+#  1. BatchMode reachability of every enabled host
+#  2. this controller's declared identity pubkey is authorized on the host
+#  3. declared push:chaba hosts can actually push (live dry-run, no ref)
+#  4. declared ssh_user == effective ansible_user (inventory consistency)
+#  5. ~/.ssh/config effective User vs declared user — REPORTED, not gated
+#     (known kk-mac drift is reconciled by the generated-config slice)
+#
+# ssh-mesh-sync.sh remains the WRITER of authorized_keys/known_hosts; this
+# playbook never writes anything, anywhere. No private key material is read
+# into Ansible — only the pubkey file named by ssh_identity_file.
+#
+# Hosts are filtered by `ssh_enabled` (default true). Retired hosts (idc01)
+# and the partially-seeded member device (kk-mac) set it false and are
+# skipped. Use --limit for a subset; -e ssh_strict=false downgrades the
+# asserts to a survey (drift printed, no gate).
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ssh-mesh-verify.yml
+#   ansible-playbook playbooks/ssh-mesh-verify.yml --limit vps
+#   ansible-playbook playbooks/ssh-mesh-verify.yml --limit mn01
+#   ansible-playbook playbooks/ssh-mesh-verify.yml -e ssh_strict=false
+
+- name: Verify the declared SSH access contract (read-only, controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    ssh_strict: true
+    # BatchMode = no password prompt; StrictHostKeyChecking=yes refuses an
+    # unknown host WITHOUT writing known_hosts (stays read-only). Hosts are
+    # expected to be pre-seeded by the README ssh-keyscan snippet.
+    ssh_probe_opts: '-o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes'
+
+  tasks:
+    - name: Resolve enabled hosts (respect ssh_enabled, skip disabled group)
+      ansible.builtin.set_fact:
+        ssh_enabled_hosts: "{{ ssh_enabled_hosts | default([]) + [item] }}"
+      loop: "{{ groups['all'] | difference(groups['disabled'] | default([])) }}"
+      loop_control:
+        label: "{{ item }}"
+      when: hostvars[item].get('ssh_enabled', true) | bool
+
+    - name: Show probe scope
+      ansible.builtin.debug:
+        msg: "Probing {{ ssh_enabled_hosts | length }} enabled host(s): {{ ssh_enabled_hosts | join(', ') }}"
+
+    # --- Leg 1: BatchMode reachability -----------------------------------
+    - name: BatchMode SSH reachability probe
+      ansible.builtin.shell: |
+        set -u
+        ssh {{ ssh_probe_opts }} \
+          -i {{ hostvars[item].ssh_identity_file }} \
+          -p '{{ hostvars[item].ssh_port }}' \
+          -l '{{ hostvars[item].ssh_user }}' \
+          '{{ hostvars[item].ansible_host }}' true
+      register: reach_res
+      changed_when: false
+      failed_when: false
+      loop: "{{ ssh_enabled_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+
+    # --- Leg 2: declared identity pubkey authorized on the host ----------
+    # Fetch authorized_keys over SSH and grep it locally — read-only.
+    - name: Check declared identity pubkey is authorized
+      ansible.builtin.shell: |
+        set -u
+        ssh {{ ssh_probe_opts }} \
+          -i {{ hostvars[item].ssh_identity_file }} \
+          -p '{{ hostvars[item].ssh_port }}' \
+          -l '{{ hostvars[item].ssh_user }}' \
+          '{{ hostvars[item].ansible_host }}' \
+          'cat ~/.ssh/authorized_keys 2>/dev/null' \
+          | grep -qF -- "$(cat {{ hostvars[item].ssh_identity_file }}.pub)"
+      register: auth_res
+      changed_when: false
+      failed_when: false
+      loop: "{{ ssh_enabled_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+
+    # --- Leg 3: declared push:chaba really works -------------------------
+    - name: Probe declared push:chaba creds (dry-run, no ref created)
+      ansible.builtin.shell: |
+        set -u
+        ssh {{ ssh_probe_opts }} \
+          -i {{ hostvars[item].ssh_identity_file }} \
+          -p '{{ hostvars[item].ssh_port }}' \
+          -l '{{ hostvars[item].ssh_user }}' \
+          '{{ hostvars[item].ansible_host }}' \
+          "git -C {{ hostvars[item].ssh_push_repo_path }} push --dry-run -q origin HEAD:refs/heads/__ssh_verify_probe"
+      register: push_res
+      changed_when: false
+      failed_when: false
+      loop: "{{ ssh_enabled_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when: hostvars[item].get('ssh_push_chaba', false) | bool
+
+    # --- Evidence (always printed, independent of gating) ----------------
+    - name: Emit per-host evidence
+      ansible.builtin.debug:
+        msg: >-
+          {{ reach_item.item }}:
+          reach={{ 'OK' if reach_item.rc == 0 else 'FAIL' }}
+          auth={{ 'OK' if auth_item.rc == 0 else 'DRIFT/MISSING' }}
+          push={{ 'n/a' if not (hostvars[reach_item.item].get('ssh_push_chaba', false) | bool)
+                  else ('OK' if push_item.rc == 0 else 'FAIL') }}
+          user={{ hostvars[reach_item.item].ssh_user }}/{{ hostvars[reach_item.item].ansible_user }}
+          net={{ hostvars[reach_item.item].ssh_network }}
+      loop: "{{ reach_res.results }}"
+      loop_control:
+        loop_var: reach_item
+        label: "{{ reach_item.item }}"
+      vars:
+        # Index the parallel result lists by the same host order.
+        auth_item: "{{ auth_res.results | selectattr('item', 'equalto', reach_item.item) | first }}"
+        push_item: "{{ (push_res.results | selectattr('item', 'equalto', reach_item.item) | list | first)
+                       if (hostvars[reach_item.item].get('ssh_push_chaba', false) | bool)
+                       else {'rc': 0} }}"
+
+    # --- Leg 5: ~/.ssh/config user drift (report only) -------------------
+    - name: Effective SSH config user for declared stanzas
+      ansible.builtin.shell: |
+        set -u
+        u=$(ssh -G '{{ item }}' 2>/dev/null | awk '$1=="user"{print $2; exit}')
+        echo "${u:-UNRESOLVED}"
+      register: cfg_users
+      changed_when: false
+      failed_when: false
+      loop: "{{ ssh_config_checked_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Config-vs-inventory user comparison (warn-only)
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.item }}: ssh_config={{ item.stdout }}
+          inventory={{ hostvars[item.item].ssh_user }}
+          {{ 'MATCH' if item.stdout == hostvars[item.item].ssh_user
+             else 'DRIFT (reconciled by generated-config slice)' }}
+      loop: "{{ cfg_users.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # --- Assertions (rc-based; gated by ssh_strict) ----------------------
+    - name: Assert BatchMode reachability
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: "SSH unreachable (BatchMode): {{ item.item }}"
+        success_msg: "reachable: {{ item.item }}"
+      loop: "{{ reach_res.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: ssh_strict | bool
+
+    - name: Assert declared identity is authorized
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: >-
+          {{ item.item }}: identity {{ hostvars[item.item].ssh_identity_file }}.pub
+          is not in authorized_keys (run ssh-mesh-sync.sh on a mesh host)
+        success_msg: "authorized: {{ item.item }}"
+      loop: "{{ auth_res.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: ssh_strict | bool
+
+    - name: Assert declared push creds are real
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: >-
+          {{ item.item }} declares push:chaba but git push --dry-run failed —
+          false label, remove it or fix the deploy key
+        success_msg: "push contract ok: {{ item.item }}"
+      loop: "{{ push_res.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when:
+        - ssh_strict | bool
+        - not (item.skipped | default(false))   # non-declaring hosts have no rc
+
+    - name: Assert declared user matches the effective connection user
+      ansible.builtin.assert:
+        that: >-
+          hostvars[item].ssh_user | string == hostvars[item].ansible_user | string
+        fail_msg: >-
+          {{ item }}: ssh_user={{ hostvars[item].ssh_user }} but
+          ansible_user={{ hostvars[item].ansible_user }}
+        success_msg: "user contract ok: {{ item }}"
+      loop: "{{ ssh_enabled_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when: ssh_strict | bool
+
+    - name: Survey mode notice
+      ansible.builtin.debug:
+        msg: >-
+          ssh_strict=false — drift reported above but NOT gated. Re-run
+          without the flag before declaring the mesh verified.
+      when: not (ssh_strict | bool)

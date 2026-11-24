@@ -163,6 +163,36 @@ print("\n".join(sorted({v["ansible_host"] for g in d.values()
 non-enumerable.) The controller's own host key is not needed: self is
 probed via `ansible_connection=local`, not ssh.
 
+## SSH access contract (read-only verifier)
+
+`playbooks/ssh-mesh-verify.yml` gates the declared SSH access contract in
+`inventory/hosts.yml` + `group_vars/all.yml` (`ssh_user`, `ssh_port`,
+`ssh_identity_file`, `ssh_network`, `ssh_enabled`, `ssh_push_chaba`,
+`ssh_push_repo_path`) against the live mesh. (`ssh_push_repo_path` is a
+verifier-specific path so it can stay in `~` form — unlike `chaba_repo_path`,
+which `session_capture.yml` renders verbatim into systemd units.) It never writes: `ssh-mesh-sync.sh`
+remains the writer of `authorized_keys`/`known_hosts`. No private key is read
+into Ansible — only the pubkey file named by `ssh_identity_file`.
+
+```bash
+cd ansible
+ansible-playbook playbooks/ssh-mesh-verify.yml              # gate: exit 2 on drift
+ansible-playbook playbooks/ssh-mesh-verify.yml --limit vps  # one group
+ansible-playbook playbooks/ssh-mesh-verify.yml --limit mn01 # off-net laptop only
+ansible-playbook playbooks/ssh-mesh-verify.yml -e ssh_strict=false  # survey, no gate
+```
+
+Four legs are asserted: BatchMode reachability, this controller's declared
+identity in the host's `authorized_keys`, a live `git push --dry-run` for
+every host declaring `ssh_push_chaba`, and `ssh_user` == effective
+`ansible_user`. A fifth check — `ssh -G <alias>` user vs declared user — is
+**reported only** in this slice, because kk-mac's `~/.ssh/config` stanza has
+no `User` line (the generated-config slice will reconcile it). Pass creds
+were probed 2026-11-24 on idc02, idc03, tony-omen, tony-dell and mn01 before
+declaring them. Retired hosts (`ssh_enabled: false`, i.e. idc01) are always
+excluded. Use `--limit` for sleeping laptops; `ssh_strict=false` downgrades
+asserts to warnings for a broad survey.
+
 ## Inventory notes
 
 - `ansible_host` uses **Tailscale IPs** — works from any tailnet node.
