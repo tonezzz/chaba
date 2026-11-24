@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-24 09:07
+updated: 2026-11-24 09:14
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -434,9 +434,9 @@ comms:
   text: pushed dispatch/20261124-080626-investigate-and-resolve-the-fa to origin
 - at: 2026-11-24 08:21
   from: chaba
-  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->\
-    \ master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates\
-    \ were rejected  — close will block until merged"
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->
+    master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates
+    were rejected  — close will block until merged"
 - at: 2026-11-24 08:21
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
@@ -475,6 +475,13 @@ comms:
     DONE (attempt on tony-omen). runner; Drift flags flap transiently: chaba-repo-sync updates the checkout copy,
     and unt; [ada-scenario-casting-service-failed-on-i-340465] finished (failed): exit=1 oces; [ada-scenario-casting-service-failed-on-i-340465]
     primer inje'
+- at: 2026-11-24 09:14
+  from: devin
+  text: 'attempt 5 on tony-dell: runner-agent re-copied to idc03 + sha256-verified (94ce1cb7, identical). Service
+    still Result=success — last run 2026-11-23 20:27-22:48 exit 0 score 0.172; not in failed list. Root causes all
+    resolved by prior attempts (lock contention, hang, ProviderCapLatched). Re-armed prod-allow-casting sentinel
+    citing this card so next scheduled fire (Sat 05:55 weekly, or tonight 02:00 if preflight passes) actually runs
+    — it was consumed one-shot by the 20:27 run. Trail doc recovered'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
