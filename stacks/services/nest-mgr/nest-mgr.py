@@ -1115,6 +1115,9 @@ def publish(nodes: dict, hid: HostId, now: datetime,
         "interval_min": int(cfg.get("interval_min") or PUBLISH_S // 60),
         "run_now": False,
         "page": slug,
+        # generator host — cms-auto-health gates staleness on tailnet
+        # reachability so a powered-off host doesn't card as broken
+        "host": hid.label(),
         "generator": {"kind": "service", "name": "nest-mgr",
                       "unit": "nest-mgr.service",
                       "note": "per-host daemon — publishes every 15 min + "

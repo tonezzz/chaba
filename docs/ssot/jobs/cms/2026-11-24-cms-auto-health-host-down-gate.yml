@@ -1,0 +1,50 @@
+title: cms-auto-health host-down gate — powered-off generators stop carding
+subtitle: nest-mgr stamps cfg.host; cms-auto-health demotes unhealthy verdicts to host-down on tailnet-offline
+icon: shield
+job: cms-auto-health-host-down-gate
+card: cms-auto-health-stop-carding-powered-off-e11c7a (KNB-0046)
+date: 2026-11-24
+host: dispatch worktree on tony-dell — consumer runs on tony-dell via kanban-sync.timer (15min)
+type: fix
+result: implemented — direction A (explicit host field + reachability gate), fail-open
+
+change:
+  producer: >-
+    stacks/services/nest-mgr/nest-mgr.py publish() now writes
+    host:<hostname> into the ada-cms-automation/nest-<host> registry cfg
+    on every publish (alongside last_run/last_status).
+  consumer: >-
+    scripts/ada/cms-auto-health.py — new host_gate() wraps judge(): a
+    non-healthy verdict (stale/error/dead) on a cfg carrying 'host' is
+    demoted to state=host-down when that host is confirmed offline via
+    `tailscale status --json` (one cached call per run, probed lazily
+    only when a cfg would go unhealthy). host-down counts as healthy —
+    no card is created, and an open cms-auto-* review card auto-closes
+    through the GREEN_WINDOWS streak with a host-down note.
+  fail_open: >-
+    unknown reachability keeps the judged state — no host field,
+    tailscale missing/erroring, or host not a tailnet peer all alert as
+    before. The gate only suppresses on positive offline evidence.
+
+verification:
+  tests: >-
+    tests/ada/test_cms_auto_health.py — 14 tests: peer-map parsing
+    (HostName/DNSName/IP/self), fail-open paths, gate demotion for
+    stale+error+dead, and main()-loop card suppression + auto-close.
+  live_probe: >-
+    host_online() exercised on tony-dell: tony-macbook/mn01/idc03 True,
+    idc01 (off) False, ghost-host None.
+
+rollout_notes:
+  - >-
+    registry docs gain 'host' only when each host's nest-mgr next
+    publishes. install.sh scp's nest-mgr.py to ~/.local/share/nest/ —
+    the field lands per-host on the next nest-mgr redeploy + publish
+    (<=15min later); until then that host keeps old behavior.
+  - >-
+    cfgs without 'host' (every non-nest producer today) are unaffected —
+    the gate requires the field.
+  - >-
+    real staleness still cards: host online + overdue last_run -> stale
+    -> review card. cms-auto-nest-tony-dell stays a true positive
+    (nest-mgr.service disabled on tony-dell, host reachable).
