@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: doing
-updated: 2026-11-24 08:02
+column: done
+updated: 2026-11-24 08:07
 priority: low
 tags:
 - opencode
@@ -760,6 +760,11 @@ comms:
     live devin-task-<tid>/-fuN unit -> defer; provably-over prior run (taskdir exit_code/verdict.json or dead lane-family
     meta) -> worktree remove --force + prune; unattributable -> defer; taskdir evidence untouched. Tests re-run
     on this checkout: test_runner_stale_worktree.py 12/'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'merge-sweep: merged 0e3014a1 (dispatch/20261124-075507-ops-1021-proved-it-when-an-ope from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-075507-ops-1021-proved-it-when-an-ope.md)
+    — auto-closed'
 action:
   type: dispatch
   repo: chaba
@@ -775,7 +780,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: done
   labels:
   - push:chaba
   sweep:
@@ -792,6 +797,7 @@ action:
     | devin-task-20261123-233259-ops-1021-proved-it-when-an-ope.service: Consumed 4min 50.992s CPU time, 525.7M
     memory peak, 0B memory swap peak.'
   runner: idc02
+  verified: true
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
@@ -835,3 +841,7 @@ requests:
 claim:
   since: 2026-11-24 07:54
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:07
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-075507-ops-1021-proved-it-when-an-ope.md
