@@ -1,0 +1,69 @@
+id: ada-ocb-dispatch-parity
+title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
+column: backlog
+updated: 2026-11-24 09:08
+brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
+  no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
+  path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
+  / board-native / visibility only).'
+priority: high
+tags:
+- ada-ocb,dispatch,kanban,ledger,needs-inp
+spec: 'Origin: Tony asked 2026-11-24 to card the parity gap after the capability review (lesson lesson-b8d8bfd4de93
+  / Education:Ada-Ocb-Remote-Job-Dispatch).
+
+
+  Problem: ada-ocb can queue host-targeted agent/process jobs through the board dispatch lane (ada_envelope_draft
+  -> ada_dispatch_check -> ada_envelope_stage -> runner-agent on action.target_host), but that lane lacks the Devin
+  console''s job lifecycle: no job/<id> ledger in MDDB ada-ha-bank-devin-handoff, no needs-input/awaiting-user detection
+  carrying the question text, no answer/resume path, no iPhone attention, and no Dispatch layer for these jobs in
+  the Report feed (job workflow 2026-09-26-dispatch-console).
+
+
+  Verified evidence (2026-11-24):
+
+  - OpenChamber session.create has no host param; remote execution goes through the board runner, not OC.
+
+  - scripts/board/runner-agent.py has NO needs-input, awaiting-user, or job-doc emitter (grep clean). It pins action.target_host
+  (lines 1711-1715, 1887) and its EXECUTORS set includes opencode/devin/script.
+
+  - Envelope required fields (ada-voice/opencode/ada_mcp.py:2616): type, repo, executor, model, profile, target_host,
+  artifact.
+
+  - Devin-lane primitives to model after: job-run.sh (exit 42 / NEEDS-INPUT: line / needs-input.txt), devin-dispatch-watch.sh,
+  job/<id> + answer/<id> MDDB docs, chaba-events requires_response + push, Ada devin_pending/devin_answer with confirmed
+  gate, render-report-feed.py Dispatch layer.
+
+  - OC analogue of `devin-dispatch followup` is tools.openchamber session.send (new prompt to an existing sessionId)
+  — use for resume if the runner can retain the session id.
+
+
+  Scope decision is raised as a request on this card. Options: (a) full parity incl. Ada voice tools + report layer,
+  (b) board-native parity using card requests only, (c) status visibility only.
+
+
+  Constraints:
+
+  - Board mutations only via board-api; no direct card-file edits from a non-served checkout.
+
+  - Do not add a second ledger or retry counter — reuse the Devin lane''s job/<id> docs, needs-input signals and
+  confirmed gates.
+
+  - Advisory bits (notify, chaba-events, report feed) degrade warn-only; they must never block claim/merge.
+
+  - No secrets in code or card; prod writes (host unit/service/SSOT) need explicit same-session approval.
+
+  - Preserve OC''s two-call confirmation gate on dispatch staging; staged profiles stay admitted-only.
+
+  - No Ada personal-memory (ada-*) writes from a Chaba context.
+
+
+  Done when: for an OC/opencode job queued from the pane, a job/<id> MDDB doc tracks running|awaiting-user|done|failed;
+  a needs-input produces the question plus requires_response attention; an answer resumes the session (or is recorded
+  when non-resumable); and the Report Dispatch layer shows it — all within the scope chosen on the request. Include
+  a live smoke with evidence and a lesson/report update.'
+ref: ADA-0024
+comms:
+- at: 2026-11-24 09:08
+  from: tony
+  text: card captured via board-api
