@@ -120,6 +120,10 @@ def qc_decision(asset: str, decision: str, note: str) -> str:
         subprocess.run(["rclone", "copyto", str(qp),
                         f"{root}/40-qc-review.md"],
                        capture_output=True, timeout=120)
+    board_comment(
+        f"QC decision: {asset} -> {decision}"
+        + (f" — {note[:160]}" if note else "")
+        + " (SESSION.json + 40-qc-review.md updated)")
     return "ok"
 
 
@@ -128,6 +132,19 @@ class Handler(SimpleHTTPRequestHandler):
         self.inbox = server.inbox
         super().__init__(request, client_address, server,
                          directory=str(server.serve_dir))
+
+    def end_headers(self):
+        # CORS: the HA ada-chat-card (different origin) polls /api/session
+        # and POSTs /api/qc-decision. Tailnet/LAN tool — '*' is fine.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods",
+                         "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
+    def do_OPTIONS(self):  # noqa: N802
+        self.send_response(204)
+        self.end_headers()
 
     def do_GET(self):  # noqa: N802
         path = self.path.split("?")[0]
@@ -145,6 +162,7 @@ class Handler(SimpleHTTPRequestHandler):
                 out = sp.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(out)))
             self.end_headers()
             self.wfile.write(out)
@@ -153,6 +171,7 @@ class Handler(SimpleHTTPRequestHandler):
             out = json.dumps(campaign_status()).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(out)))
             self.end_headers()
             self.wfile.write(out)
@@ -189,6 +208,7 @@ class Handler(SimpleHTTPRequestHandler):
             out = json.dumps({"ok": res == "ok", "result": res}).encode()
             self.send_response(200 if res == "ok" else 500)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(out)))
             self.end_headers()
             self.wfile.write(out)

@@ -149,6 +149,7 @@ function mount(config) {
     autoconnect: false,
     screen: "off",
     height: "190px",
+    picker_url: "",          // QC panel off unless a scenario opts in
   }, config || {}));
   card.hass = window.__hassStub;
   const sec = document.createElement("section");
@@ -204,6 +205,11 @@ const BOGUS = `${BASE}/bogus/image.png`;
 const PATHIMG = `${BASE}/apps/yolo/api/image?v=42`;   // no ext — /image[/?] rule
 
 /* ---------- scenarios ---------- */
+// Per-scenario card config — qc-panel points picker_url at the fixture
+// server's stateful /qc-picker/* endpoints (see server.py).
+const SCENARIO_CFG = {
+  "qc-panel": { picker_url: `${BASE}/qc-picker`, qc_poll_s: 5 },
+};
 const SCENARIOS = {};
 
 // Full ws handshake sanity: connect → ready → status flips connected.
@@ -436,6 +442,100 @@ SCENARIOS["mobile-layout"] = async (card, c) => {
     img && `imgW=${Math.round(img.getBoundingClientRect().width)}`);
 };
 
+// Adobe Stock QC panel (card ada-opencode-repair-menu-card): picker_url
+// -> /qc-picker fixture. Hidden with no pending candidate; shows thumb +
+// 4 action buttons when SESSION.json has an undecided last_landed;
+// Keep/Reject/Revise POST /api/qc-decision (recorded fixture-side, then
+// reflected into /api/session like the real SESSION.json write); Repair
+// opens picker ?img=/img/<asset> and records NO decision.
+SCENARIOS["qc-panel"] = async (card, c) => {
+  const QC = `${BASE}/qc-picker`;
+  const ASSET = "qc-fixture-candidate";
+  const ctl = (body) => fetch(`${QC}/__control`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body) }).then(r => r.json());
+  const state = async () => (await (await fetch(`${QC}/__state`)).json());
+  const visible = () => card._qcPanel.style.display !== "none";
+  // _qcPoll no-ops while a previous poll is in flight — loop so a busy
+  // window can't flake the assertions.
+  const pollFor = async (want) => {
+    for (let i = 0; i < 50; i++) {
+      await card._qcPoll();
+      await sleep(60);
+      if (visible() === want) return true;
+    }
+    return visible() === want;
+  };
+
+  await ctl({ pending: null, clear_decisions: true });
+  await sleep(150);   // let the mount-time poll settle
+  await card._qcPoll();
+  check(c, "panel hidden with no pending candidate", !visible());
+
+  await ctl({ pending: ASSET });
+  check(c, "panel appears for pending candidate", await pollFor(true));
+  check(c, "asset label", card._qcAsset.textContent === ASSET,
+    card._qcAsset.textContent);
+  check(c, "lane subtitle", /gemini-image/.test(card._qcSub.textContent),
+    card._qcSub.textContent);
+  const btns = () => [...card.querySelectorAll(".acc-qc-btn")];
+  check(c, "four action buttons", btns().length === 4, `n=${btns().length}`);
+  check(c, "button labels Keep/Reject/Revise/Repair",
+    btns().map(b => b.textContent).join("|") ===
+      "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region",
+    btns().map(b => b.textContent).join("|"));
+  const thumb = card._qcThumb;
+  check(c, "thumb src = picker /img/<asset>",
+    thumb.src === `${QC}/img/${ASSET}`, thumb.src);
+  const decoded = await waitFor(
+    () => thumb.complete && thumb.naturalWidth > 0, 4000);
+  check(c, "thumb decoded (naturalWidth>0)", decoded,
+    `nw=${thumb.naturalWidth} display=${thumb.style.display}`);
+
+  // Keep — records decision, hides panel
+  btns()[0].click();
+  check(c, "panel hides after Keep", await pollFor(false));
+  let st = await state();
+  check(c, "Keep POST recorded decision=keep",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "keep",
+    JSON.stringify(st.decisions));
+
+  // Reject with note — pending again after clearing recorded decisions
+  await ctl({ clear_decisions: true });
+  check(c, "panel reappears for re-pended candidate", await pollFor(true));
+  card._qcNote.value = "fixture reject note";
+  btns()[1].click();
+  check(c, "panel hides after Reject", await pollFor(false));
+  st = await state();
+  check(c, "Reject recorded decision+note",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "reject"
+    && st.decisions[ASSET].note === "fixture reject note",
+    JSON.stringify(st.decisions));
+
+  // Revise
+  await ctl({ clear_decisions: true });
+  await pollFor(true);
+  btns()[2].click();
+  await pollFor(false);
+  st = await state();
+  check(c, "Revise recorded decision=revise",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "revise",
+    JSON.stringify(st.decisions));
+
+  // Repair — opens picker ?img=/img/<asset>, records no decision
+  await ctl({ clear_decisions: true });
+  await pollFor(true);
+  window.__accOpened.length = 0;
+  btns()[3].click();
+  await sleep(30);
+  check(c, "Repair opens picker ?img=/img/<asset>",
+    window.__accOpened.some(o => o.url === `${QC}/?img=/img/${ASSET}`),
+    JSON.stringify(window.__accOpened));
+  st = await state();
+  check(c, "Repair records no QC decision", !st.decisions[ASSET],
+    JSON.stringify(st.decisions));
+};
+
 /* ---------- runner ---------- */
 window.__acc = { mount, connect, wsEmit, frame, SCENARIOS, FakeWebSocket };
 window.__accResults = null;
@@ -443,7 +543,7 @@ window.__accScenario = null;
 window.__accDone = false;
 
 async function runOne(key, label) {
-  const card = mount();
+  const card = mount(SCENARIO_CFG[key]);
   if (key === "connect" || key === "stream-rerender") {
     // those scenarios manage their own ws
   }

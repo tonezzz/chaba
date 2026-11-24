@@ -55,7 +55,7 @@ const RUN_FILE = args.runFile || path.join(os.homedir(), ".config/openchamber/ru
 const SCENARIO = args.scenario || "all";
 const SCENARIOS = ["connect", "text-urls", "push-image", "push-video", "push-mixed",
   "push-empty", "push-broken", "push-nonhttp", "stream-rerender", "click-open",
-  "download-link", "mobile-layout"];
+  "download-link", "qc-panel", "mobile-layout"];
 
 const log = (...a) => console.log("[preview-bridge]", ...a);
 const die = (msg) => { console.error("[preview-bridge] FATAL:", msg); process.exit(2); };
