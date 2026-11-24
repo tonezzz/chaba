@@ -4410,6 +4410,70 @@ JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
 JOB_COMMS_CAP = 200
 JOB_FROM_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,40}$")
 
+# Lifecycle contract (OPS-0923, docs/kb/job-package-status-sop.md):
+# nest_job is the Drive-queue mirror — status writes must follow the
+# SOP transition map. Same-status rewrites and writes with no status
+# are always allowed (idempotent mirror + comms-only updates); a prior
+# status outside the map (legacy/garbage meta) imposes no constraint.
+# Terminal states only exit through `queued` (explicit requeue) or
+# `failed` (a falsely-done job corrected honestly) — never a silent
+# resurrection back into claimed/running.
+JOB_TRANSITIONS = {
+    "queued":    {"claimed", "running", "done", "failed",
+                  "stalled", "cancelled"},
+    "claimed":   {"running", "done", "failed", "stalled",
+                  "cancelled", "queued"},
+    "running":   {"done", "failed", "stalled", "cancelled", "queued"},
+    "stalled":   {"claimed", "running", "queued", "done",
+                  "failed", "cancelled"},
+    "failed":    {"claimed", "running", "queued", "done",
+                  "stalled", "cancelled"},
+    "done":      {"queued", "failed"},
+    "cancelled": {"queued", "failed"},
+}
+
+
+def _job_evidence_refs(v) -> list:
+    """evidence: str | list[str] -> clean ref list (cap 20)."""
+    if isinstance(v, str):
+        v = [v]
+    if not isinstance(v, (list, tuple)):
+        return []
+    return [str(x).strip()[:300] for x in v if str(x).strip()][:20]
+
+
+def _job_truthy(v) -> bool:
+    return v is True or str(v).strip().lower() in (
+        "1", "true", "yes", "verified")
+
+
+def _job_verified_claim(*srcs) -> bool:
+    """Explicit verification signal — verified/artifact_verified flag or
+    confidence=verified on any of the given dicts (body, body.meta,
+    stored meta)."""
+    for src in srcs:
+        if not isinstance(src, dict):
+            continue
+        for k in ("verified", "artifact_verified"):
+            if _job_truthy(src.get(k)):
+                return True
+        if str(src.get("confidence") or "").strip().lower() == "verified":
+            return True
+    return False
+
+
+def _job_done_evidence(body: dict, meta: dict) -> bool:
+    """Terminal-done evidence gate (OPS-0923): a `done` write must show
+    the artifact was verified — evidence[] refs, an explicit verified
+    flag, or confidence=verified. result_ref is the durable pointer;
+    this is the proof someone checked it."""
+    extra = body.get("meta")
+    srcs = [body, extra if isinstance(extra, dict) else {}, meta]
+    for src in srcs:
+        if _job_evidence_refs(src.get("evidence")):
+            return True
+    return _job_verified_claim(*srcs)
+
 
 def job_actor(body: dict, ident: str) -> str:
     """/job writers are daemons (queue-mgr, pack runners) — allow ACTORS
@@ -4454,6 +4518,32 @@ def do_job(body: dict, frm: str) -> dict:
 
     existing = _job_by_slug(slug)
     meta = dict(existing.get("meta") or {}) if existing else {}
+
+    # Lifecycle contract (OPS-0923): transitions follow JOB_TRANSITIONS;
+    # terminal `done` additionally requires a durable result_ref plus
+    # verified artifact evidence — a bare status=done is rejected.
+    prior = str(meta.get("status") or "").strip()
+    if status and status != prior and prior in JOB_TRANSITIONS \
+            and status not in JOB_TRANSITIONS[prior]:
+        raise ValueError(
+            f"invalid transition {prior} -> {status} for nest_job "
+            f"{slug} (allowed from {prior}: "
+            f"{sorted(JOB_TRANSITIONS[prior] | {prior})})")
+    if status == "done":
+        ref = str(body.get("result_ref")
+                  or meta.get("result_ref") or "").strip()
+        extra = body.get("meta")
+        if not ref and isinstance(extra, dict):
+            ref = str(extra.get("result_ref") or "").strip()
+        if not ref:
+            raise ValueError(
+                "status=done requires result_ref — a durable pointer "
+                "to the verified result")
+        if not _job_done_evidence(body, meta):
+            raise ValueError(
+                "status=done requires verified artifact evidence — "
+                "evidence[] refs, verified:true, or confidence=verified")
+
     note_text = str(body.get("comms") or body.get("note") or "").strip()
     if note_text:
         try:
@@ -4474,6 +4564,15 @@ def do_job(body: dict, frm: str) -> dict:
             k = str(k)
             if k in JOB_META_KEYS and str(v).strip():
                 meta[k] = str(v)[:300]
+    # evidence/verification ride meta for the reconciler + auditors —
+    # result_ref is the pointer, these are the proof it was checked
+    ev_refs = _job_evidence_refs(body.get("evidence"))
+    if not ev_refs and isinstance(extra, dict):
+        ev_refs = _job_evidence_refs(extra.get("evidence"))
+    if ev_refs:
+        meta["evidence"] = " ".join(ev_refs)[:300]
+    if _job_verified_claim(body, extra if isinstance(extra, dict) else {}):
+        meta["artifact_verified"] = "true"
     meta["updated"] = datetime.now(timezone.utc).isoformat(
         timespec="seconds")
     title = str(body.get("title") or "").strip()
@@ -4490,6 +4589,35 @@ def do_job(body: dict, frm: str) -> dict:
         action = "created"
     return {"message": f"{action} nest_job {slug} (post {r.get('id')})",
             "slug": slug, "post_id": r.get("id"), "action": action}
+
+
+def _nest_jobs(slug: str = "", limit: int = 200,
+               comms: bool = False) -> dict:
+    """Read-only nest_job CPT listing — the mirror side of the queue
+    contract, for reconciliation/audit (OPS-0923). Status/meta only;
+    the bulky comms log is stripped unless explicitly requested."""
+    route = ("/wp/v2/nest_job?per_page=100&status=private,archived"
+             "&_fields=id,slug,title,modified,meta")
+    if slug:
+        route += "&slug=" + urllib.parse.quote(slug, safe="")
+    out, page = [], 1
+    while len(out) < limit and page <= 10:
+        hits = wp_api(f"{route}&page={page}")
+        if not isinstance(hits, list) or not hits:
+            break
+        for h in hits:
+            meta = dict(h.get("meta") or {})
+            if not comms:
+                meta.pop("comms", None)
+            out.append({"id": h.get("id"), "slug": h.get("slug"),
+                        "title": (h.get("title") or {}).get("rendered", ""),
+                        "modified": h.get("modified"),
+                        "status": meta.get("status"),
+                        "meta": meta})
+        if len(hits) < 100:
+            break
+        page += 1
+    return {"count": len(out), "jobs": out[:limit]}
 
 
 def _dashed_slug(text: str) -> str:
@@ -4767,13 +4895,23 @@ def do_opencode_command(body: dict, frm: str) -> dict:
 
 
 def _pub_job_send(ev: dict, frm: str) -> dict:
-    """progress|milestone|alert -> nest_job live execution state."""
-    slug = ev["job"] or ev["project"] or ev["card"]
+    """progress|milestone|alert -> nest_job live execution state.
+
+    OPS-0923 contract: the sink fires only for an explicit `job` ref —
+    card/project-scoped events audit via the board sink and must never
+    mint or complete a nest_job post. Status is never implied by the
+    event kind beyond liveness hints: progress->running, alert->stalled,
+    milestone->no status change (a milestone is a checkpoint, not
+    terminal evidence). meta.job_status is the explicit override; a
+    `done` assertion still hits do_job's result_ref + verified-artifact
+    gate, and contract rejections surface as Skip (never retried)."""
+    slug = ev["job"]
     if not slug:
-        raise pub.Skip("job sink needs a job|project|card ref")
+        raise pub.Skip("job sink needs an explicit job ref "
+                       "(card/project events are not nest jobs)")
     meta = ev.get("meta") or {}
     status = str(meta.get("job_status") or
-                 {"progress": "running", "milestone": "done",
+                 {"progress": "running",
                   "alert": "stalled"}.get(ev["kind"], ""))
     body = {"slug": slug, "title": ev["title"],
             "comms": ev["body"] or ev["title"],
@@ -4782,7 +4920,10 @@ def _pub_job_send(ev: dict, frm: str) -> dict:
     if status:
         body["status"] = status
     if ev["evidence"]:
+        body["evidence"] = ev["evidence"]
         body["result_ref"] = ev["evidence"][0]
+    if ev["confidence"] == "verified":
+        body["verified"] = True
     if ev["kind"] == "alert":
         body["error"] = ev["title"][:300]
     if ev["parent"]:
@@ -4790,7 +4931,10 @@ def _pub_job_send(ev: dict, frm: str) -> dict:
     for k in ("host", "pack", "runner"):
         if meta.get(k):
             body[k] = str(meta[k])
-    r = do_job(body, frm)
+    try:
+        r = do_job(body, frm)
+    except ValueError as e:
+        raise pub.Skip(f"job status rejected: {e}")
     return {"ref": f"nest_job:{r['slug']}", "post_id": r.get("post_id"),
             "action": r["action"]}
 
@@ -5575,6 +5719,24 @@ class H(BaseHTTPRequestHandler):
                 "ok": True,
                 "jobs": _lane_evidence(job_id=job_id, card_id=card_id,
                                        limit=limit)})
+        if path == "/nest-jobs":
+            # Read-only nest_job CPT mirror listing (OPS-0923) — the
+            # status side of queue reconciliation; WP creds stay
+            # server-side, callers get slug/status/meta only.
+            q = parse_qs(url.query)
+            slug = _q1(q, "slug").strip()
+            try:
+                limit = int(_q1(q, "limit", "200") or 200)
+            except ValueError:
+                limit = 200
+            limit = max(1, min(limit, 500))
+            try:
+                return self._send(200, {
+                    "ok": True,
+                    **_nest_jobs(slug=slug, limit=limit,
+                                 comms=_q1(q, "comms") == "1")})
+            except UpstreamError as e:
+                return self._send(502, {"error": str(e)})
         if path == "/queue":
             try:
                 return self._send(200, queue_view())
@@ -6940,13 +7102,19 @@ def _selftest() -> None:
                                "queue-mgr"), "no parent job")
         res = do_job({"slug": "thonburian-bench", "status": "done",
                       "comms": "finished in 98s", "pack": "thonburian-bench",
-                      "kind": "pack"}, "queue-mgr")
+                      "kind": "pack",
+                      "result_ref": "ada-nest/packs/thonburian-bench",
+                      "evidence": ["ada-nest/packs/thonburian-bench/done"]},
+                     "queue-mgr")
         assert res["action"] == "created"
         route, payload = wp3.posts[-1]
         assert route == "/wp/v2/nest_job"
         assert payload["slug"] == "thonburian-bench"
         assert payload["status"] == "private"
         assert payload["meta"]["status"] == "done"
+        assert payload["meta"]["result_ref"] == \
+            "ada-nest/packs/thonburian-bench"
+        assert payload["meta"]["evidence"]
         assert payload["meta"]["pack"] == "thonburian-bench"
         log = json.loads(payload["meta"]["comms"])
         assert log[0]["from"] == "queue-mgr" and "98s" in log[0]["text"]

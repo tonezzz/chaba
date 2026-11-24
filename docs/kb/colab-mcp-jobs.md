@@ -403,3 +403,35 @@ per runtime with `scripts/colab/gap-launcher-cell.py`. Policy + contract:
   already staged by an env job — a pack is meant to be self-contained.
 - Pack `run` is exec'd in a *shared* namespace with the manifest jobs —
   pop stale `model`/`pipe` globals and `torch.cuda.empty_cache()` first.
+
+## Job status lifecycle and storage map
+
+How a nest job's status flows across the four surfaces, and where each
+piece of truth lives (OPS-0922 SOP: `docs/kb/job-package-status-sop.md`;
+enforcement: OPS-0923).
+
+| Surface | What it stores | Writer / reader |
+|---|---|---|
+| `queue/lease` | unified liveness `{worker,epoch,ts,job,phase}` — what the runner is doing *right now* | runner rewrites ~15 s; `queue/heartbeat` text is the pre-unification fallback |
+| `packs/<name>/claim/` + `done`/`failed` markers | per-pack queue truth — who claimed, terminal proof | worker writes claim, verify-before-mark writes `done`; readers: `nest-queue-status.py`, `nest-job-reconcile.py` |
+| `queue/packs-index/*.json` | advisory event fold `{ts,pack,state,worker}` — `stage|claim|done|fail|release` | nest-pack-submit / nest-worker / queue-runner write; fleet scanners fold in one rclone copy; never authoritative alone |
+| WP `nest_job` CPT meta | member-facing mirror — `status`, `result_ref`, `error`, `evidence`, `artifact_verified`, `comms[]` | board-api `/job` (and `/publish` job sink) is the ONLY writer; queue-mgr mirrors Drive state through it |
+
+Status flow: `queued → claimed → running → done|failed|stalled|
+cancelled`. `done`/`cancelled` are terminal — they exit only via
+`queued` (explicit requeue) or `failed` (honest correction).
+
+Write-door contract (enforced in `do_job`, board-api):
+
+- transitions follow `JOB_TRANSITIONS` — illegal jumps get HTTP 400;
+- `status=done` requires `result_ref` **and** verified artifact
+  evidence (`evidence[]`, `verified:true`, or `confidence=verified`);
+- `/publish` milestones never imply `done` — only an explicit
+  `meta.job_status` does, and it hits the same gate;
+- evidence lands in `meta.evidence` + `meta.artifact_verified` so the
+  mirror carries its own proof.
+
+Read side: `GET /nest-jobs` on board-api lists the mirror (slug,
+status, meta — comms stripped unless `comms=1`);
+`scripts/ops/nest-job-reconcile.py` cross-checks all four surfaces and
+reports drift without mutating anything.

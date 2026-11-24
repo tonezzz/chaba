@@ -233,6 +233,7 @@ class JobDoorTest(DoorTestBase):
             {"slug": "thonburian-bench", "status": "done", "kind": "pack",
              "pack": "thonburian-bench", "host": "colab-t4",
              "result_ref": "ada-nest/packs/thonburian-bench",
+             "evidence": ["ada-nest/packs/thonburian-bench/done"],
              "comms": "finished in 98s"}, "queue-mgr")
         self.assertEqual(res["action"], "created")
         route, payload = wp.posts[-1]
@@ -241,6 +242,8 @@ class JobDoorTest(DoorTestBase):
         self.assertEqual(payload["status"], "private")
         self.assertEqual(payload["meta"]["status"], "done")
         self.assertEqual(payload["meta"]["host"], "colab-t4")
+        self.assertEqual(payload["meta"]["evidence"],
+                         "ada-nest/packs/thonburian-bench/done")
         log = json.loads(payload["meta"]["comms"])
         self.assertEqual(len(log), 1)
         self.assertEqual(log[0]["from"], "queue-mgr")
@@ -278,6 +281,133 @@ class JobDoorTest(DoorTestBase):
         meta = wp.posts[-1][1]["meta"]
         self.assertEqual(meta["host"], "mn01")
         self.assertNotIn("bogus", meta)
+
+    # --- OPS-0923 lifecycle contract: transitions + terminal-done gate ---
+
+    def _job_with_status(self, status, **meta):
+        m = {"status": status}
+        m.update(meta)
+        return FakeWP([{"id": 7, "meta": m}])
+
+    def test_done_requires_result_ref(self):
+        wp = FakeWP()
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "done",
+             "evidence": ["packs/s/done"]}, "queue-mgr"),
+            "result_ref")
+        self.assertEqual(wp.posts, [])          # rejected before any write
+
+    def test_done_requires_verified_evidence(self):
+        wp = FakeWP()
+        self.mod.wp_api = wp
+        # result_ref alone is a pointer, not proof — evidence required
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "done",
+             "result_ref": "packs/s/done"}, "queue-mgr"),
+            "verified artifact evidence")
+        # evidence[] refs satisfy the gate and persist to meta
+        res = self.mod.do_job(
+            {"slug": "s", "status": "done",
+             "result_ref": "packs/s/done",
+             "evidence": ["packs/s/done", "packs/s/out.wav"]},
+            "queue-mgr")
+        self.assertEqual(res["action"], "created")
+        meta = wp.posts[-1][1]["meta"]
+        self.assertEqual(meta["status"], "done")
+        self.assertIn("packs/s/out.wav", meta["evidence"])
+        # verified:true is an equivalent honest signal
+        wp.existing = [{"id": 9, "meta": {"status": "running"}}]
+        res = self.mod.do_job(
+            {"slug": "s2", "status": "done",
+             "result_ref": "packs/s2/report.md", "verified": True},
+            "queue-mgr")
+        meta = wp.posts[-1][1]["meta"]
+        self.assertEqual(meta["artifact_verified"], "true")
+        # confidence=verified (publish path) also counts
+        wp.existing = [{"id": 9, "meta": {"status": "running"}}]
+        self.mod.do_job(
+            {"slug": "s3", "status": "done",
+             "result_ref": "packs/s3/x", "confidence": "verified"},
+            "queue-mgr")
+        self.assertEqual(wp.posts[-1][1]["meta"]["status"], "done")
+
+    def test_done_gate_reads_existing_meta(self):
+        # a post already carrying result_ref + artifact_verified passes
+        # an idempotent done rewrite with no fresh evidence
+        wp = self._job_with_status(
+            "done", result_ref="packs/s/done", artifact_verified="true")
+        self.mod.wp_api = wp
+        res = self.mod.do_job({"slug": "s", "status": "done",
+                               "note": "still done"}, "queue-mgr")
+        self.assertEqual(res["action"], "updated")
+        # but a legacy done post WITHOUT evidence cannot launder a
+        # bare done rewrite — the gate inspects stored meta too
+        wp = self._job_with_status("done", result_ref="packs/s/done")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "done"}, "queue-mgr"),
+            "verified artifact evidence")
+
+    def test_invalid_transitions_rejected(self):
+        wp = self._job_with_status("done")
+        self.mod.wp_api = wp
+        for bad in ("running", "claimed", "stalled", "cancelled"):
+            self.rejects(lambda b=bad: self.mod.do_job(
+                {"slug": "s", "status": b}, "queue-mgr"),
+                "invalid transition")
+        self.assertEqual(wp.posts, [])
+        # cancelled is terminal the same way — only requeue/failed out
+        wp = self._job_with_status("cancelled")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "done",
+             "result_ref": "x", "verified": True}, "queue-mgr"),
+            "invalid transition")
+
+    def test_terminal_requeue_and_failed_correction_allowed(self):
+        # done -> queued is the honest requeue path
+        wp = self._job_with_status("done")
+        self.mod.wp_api = wp
+        res = self.mod.do_job({"slug": "s", "status": "queued"},
+                              "queue-mgr")
+        self.assertEqual(res["action"], "updated")
+        # done -> failed is the false-done correction (lost-artifact
+        # class) — allowed, and failed is not terminal
+        wp = self._job_with_status("done")
+        self.mod.wp_api = wp
+        res = self.mod.do_job({"slug": "s", "status": "failed",
+                               "error": "artifact never landed"},
+                              "queue-mgr")
+        self.assertEqual(wp.posts[-1][1]["meta"]["status"], "failed")
+
+    def test_failed_and_stalled_retries_allowed(self):
+        # failed/stalled are retryable — any forward status is legal
+        for prior in ("failed", "stalled"):
+            for nxt in ("queued", "claimed", "running"):
+                wp = self._job_with_status(prior)
+                self.mod.wp_api = wp
+                res = self.mod.do_job({"slug": "s", "status": nxt},
+                                      "queue-mgr")
+                self.assertEqual(res["action"], "updated",
+                                 f"{prior} -> {nxt}")
+        # stalled -> done still needs the evidence gate
+        wp = self._job_with_status("stalled")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "done"}, "queue-mgr"),
+            "result_ref")
+
+    def test_comms_only_write_ignores_transitions(self):
+        # no status in the body = annotation, never a transition —
+        # a done job can still take comms/meta updates
+        wp = self._job_with_status("done")
+        self.mod.wp_api = wp
+        res = self.mod.do_job({"slug": "s", "note": "audited"},
+                              "queue-mgr")
+        self.assertEqual(res["action"], "updated")
+        # prior status rides through untouched — no transition asserted
+        self.assertEqual(wp.posts[-1][1]["meta"]["status"], "done")
 
 
 class InboxDoorTest(DoorTestBase):
