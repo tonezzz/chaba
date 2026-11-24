@@ -43,6 +43,7 @@ USAGE = {
     "ssot-validate": "Validate SSOT YAML syntax/structure after edits.",
     "status": "Quick Working / Done / Remaining / Next-high-value summary.",
     "track4-smoke-test": "Quick navigation to the Track4 test page for smoke testing.",
+    "wiki-education-publish": "Render -> card-gated /publish wiki-education -> /lesson source=wiki verify -> job yml record; never direct MediaWiki API.",
 }
 
 # Repositories explored in the same session history (plus their role here).
