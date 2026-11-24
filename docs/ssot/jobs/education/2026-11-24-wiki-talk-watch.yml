@@ -1,0 +1,95 @@
+id: 2026-11-24-wiki-talk-watch
+title: Wiki talk-page watch — unattended classify + signed Ada auto-reply
+date: 2026-11-24
+card: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
+ref: OPS-0074
+dispatch: dispatch-wt-20261124-075942-supersedes-manual-card-wiki-ta
+
+summary: >
+  Tony drops questions on wiki talk pages expecting the agent fleet to
+  answer; the manual procedure card OPS-0073 only described how to do it
+  by hand. OPS-0074 builds the loop end-to-end: a 15-min systemd user
+  timer on idc03 polls recentchanges over every talk namespace, extracts
+  each new comment by revision diff, classifies it via LiteLLM
+  gemini-3.5-flash-lite, drafts a reply, and posts a signed section reply
+  — all unattended. Supersedes the manual spec.
+
+mechanism:
+  poll: >-
+    GET api.php action=query&list=recentchanges&rctype=edit|new over
+    namespaces 1,3,5,7,9,11,13,15 (public talks) + 3001/3003 (private
+    Infra/PrivateNews talk) + 3005/3007 (Education/Reports talk),
+    rclimit=50 paged by rcend/rcstart, rcprop=title|ids|timestamp|comment|
+    user|flags. Watermark = max rcid in ~/.local/state/wiki-talk-watch/
+    last-rcid; processed_rcids dedupes per-rcid retries (MAX_ATTEMPTS=3).
+    First run baselines without replying — history is never answered.
+  extract: >-
+    For each candidate, old_revid vs revid wikitext are diffed
+    (difflib, added lines only) — rvprop=ids|content, rvslots=main,
+    formatversion=2 emits slot key "content" (v1 emits "*").
+  classify: >-
+    v1 JevTeam stand-in: LiteLLM generate() via
+    scripts/ada/gemini_rest.py against the :4000 gateway —
+    model gemini-3.5-flash-lite (gemini-2.5-flash-lite is retired
+    upstream), key from ~/.config/secrets/litellm-keys.env
+    (LITELLM_KEY_* virtual keys). Output lane=ada-code|no-response.
+    classify --print renders without side effects.
+  draft_and_post: >-
+    opencode headless via card-run.py pattern when OPENCODE_BIN resolves
+    (v2 needs --standalone so a shared opencode serve env can't leak
+    LITELLM_KEY); otherwise --drafter litellm reuses the classify lane.
+    Posts action=edit&section=new&appendtext inside the commenter's
+    located talk section (fallback new top-level section), signed
+    "— Ada (<lane>) ~~~~~". Titles/descriptions stripped from replies.
+  visibility_guard: >-
+    Talk ns tier map (public/members/private) is compared against the
+    base page's protection: private-tier content never lands on a
+    public-tier talk page; members gets members-level replies only.
+    Anon mode skips non-public namespaces entirely.
+  failure_handling: >-
+    Any classify/draft/post failure -> deduped board-api /inbox flag
+    (report-watch slug-dedupe pattern); per-rcid attempt cap, no blind
+    retries; --dry-run writes nothing.
+
+install:
+  job_id: wiki-talk-watch
+  host: idc03
+  dispatch: systemd user timer
+  on_calendar: '*-*-* *:07/15:00'
+  phase_offset: >-
+    kanban-commit is OnUnitActiveSec=15min + RandomizedDelaySec=120 so
+    its phase drifts; explicit offset minutes :07/:22/:37/:52 keep the
+    watch ~7min clear of the commit burst (flock + API contention).
+  units: systemd/generated/idc03/wiki-talk-watch.{service,timer}
+  env: '%h/.config/secrets/wiki-h3-gizmo.env'   # WIKI_* + LITELLM_* creds
+  install_cmd: >-
+    python3 scripts/render-jobs.py --host idc03 --ids wiki-talk-watch
+    --install   # after merge, from the served checkout on idc03
+  verify: >-
+    --dry-run --process-all from idc03 must print candidates with
+    lane=/guard=ok; --self-test must pass 16/16 offline checks; first
+    live tick baselines the watermark (no history replies).
+
+verified:
+  - 'self-test: 16/16 offline checks PASS (parse_sections, locate_section,
+    extract_added_text, signature/heading strip, guard public/members/
+    private/password cases)'
+  - 'live dry-run on idc03 (authed as ada): 11 real rcids walked —
+    Tony/Tonezzzz questions on Education talk + Reports talk classified
+    ada-code vs no-response with sensible drafts, guard=ok, own-bot and
+    empty-diff skips correct'
+  - 'anon run: login-unavailable path degrades to public-ns-only +
+    watermark baseline'
+
+files_changed:
+  - scripts/wiki/wiki-talk-watch.py (new)
+  - docs/ssot/infrastructure/ssot.jobs.yml (wiki-talk-watch entry)
+  - systemd/generated/idc03/wiki-talk-watch.{service,timer} (rendered)
+
+open_items:
+  - 'opencode is not installed on idc03 — drafter auto-falls back to the
+    LiteLLM lane until OPENCODE_BIN appears (script probes PATH +
+    ~/.opencode/bin + ~/.local/bin).'
+  - 'Acceptance-test timer tick (fresh sandbox comment -> unattended
+    signed reply) requires the unit installed post-merge; dry-run
+    proves every step short of the POST.'
