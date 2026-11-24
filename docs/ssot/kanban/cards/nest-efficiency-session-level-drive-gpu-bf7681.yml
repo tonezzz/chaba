@@ -1,7 +1,7 @@
 id: nest-efficiency-session-level-drive-gpu-bf7681
 title: 'nest-efficiency: session-level Drive/GPU efficiency report'
-column: backlog
-updated: 2026-11-24 15:42
+column: doing
+updated: 2026-11-24 15:53
 brief: 'Measure whether the Drive-store improvements (ADA-0806, 10-23/24) actually pay. Parses queue/run-*.out.log
   + done markers + heartbeat to emit per-session metrics: wall_min, gpu_min (from gpu% in DONE lines), idle_min,
   packs_done, failures, cold_start_min, and estimated $/pack.'
@@ -199,9 +199,16 @@ comms:
   from: chaba
   text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 15:53
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 15:53
