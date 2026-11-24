@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: doing
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:22
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -340,6 +340,21 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-080849-fix-the-executor-model-id-mism no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261124-080849-fix-the-executor-model-id-mism on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-24 08:22
+  from: devin
+  text: 'attempt 3 (tony-macbook): root cause confirmed — OPS-1127 guard landed but the fuller executor-aware fix
+    (3c43db4ac9, model_valid_for_executor/lane_model) was lost in the 2026-11-08 auto-merge conflict. Implementing:
+    per-executor lane tables (DEVIN_LANE_MODELS, paid_frontier stays gated), lane_model() resolution in dispatch_repos
+    + runner-agent + kanban-dispatch + board-api, and a devin-models-list preflight inside devin-dispatch.sh before
+    systemd-run.'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -366,6 +381,8 @@ action:
   lane_source: fallback
   sweep:
     failed_noted: 2026-11-17 23:40
+    stale_running: 2026-11-24 08:22
+    session_gone: 2026-11-24 08:22
   attempts: 1
   last_failure: 'exit=1 61123-202551-fix-the-executor-model-id-mism.service: Failed with result ''exit-code''. |
     devin-task-20261123-202551-fix-the-executor-model-id-mism.service: Consumed 1min 56.432s CPU time over 16min

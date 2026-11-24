@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: review
 priority: medium
 created: 2026-10-10
-updated: 2026-11-24 08:20
+updated: 2026-11-24 08:22
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -658,6 +658,9 @@ comms:
 - at: 2026-11-24 08:20
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''approve-installing-stick-watch''] block close)'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
@@ -674,6 +677,7 @@ action:
     zero_commit: 2026-11-23 20:22
     session_gone: 2026-11-23 19:17
     no_repo: 2026-11-23 19:49
+    close_held: 2026-11-24 08:22
   last_failure: 'exit=1 s-to-stop-the-tony-u.service: Failed with result ''exit-code''. | devin-task-20261123-202412-the-goal-is-to-stop-the-tony-u.service:
     Consumed 2min 26.771s CPU time over 18min 51.112s wall clock time, 1.3G memory peak, 460.2M memory swap peak.'
   attempts: 1
