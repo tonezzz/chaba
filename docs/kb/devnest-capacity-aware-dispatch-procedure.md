@@ -158,10 +158,15 @@ procedure, but DevNest does not yet have one shared capacity broker that
 converts ready cards/reports into normalized lane inbox specs. Implement that
 broker next, starting with read-only reports and finite Colab evaluations.
 
-## Bounded package planner (proposed)
+## Bounded package planner (designed 2026-11-24)
 
 A planner can improve fanout, but it must be a proposal generator, not a
-queue writer:
+queue writer. The artifact path and validator contract are implemented in
+`scripts/devnest/kk_mac_plan_validator.py` with a 20-case held-out fixture
+suite (`fixtures/devnest-planner/`); the design record, metrics plan, and
+rollout gate live in
+`docs/ssot/jobs/devnest/2026-11-24-jevnest-bounded-package-planner.yml`
+(card `jevnest-bounded-package-planner`, OPS-1027).
 
 ```text
 real evidence
