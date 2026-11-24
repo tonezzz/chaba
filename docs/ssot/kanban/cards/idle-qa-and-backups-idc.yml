@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
 column: review
-updated: 2026-11-24 16:12
+updated: 2026-11-24 16:23
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -220,6 +220,10 @@ comms:
 - at: 2026-11-24 16:12
   from: chaba
   text: 'worktree kept: dirty — 32 uncommitted file(s)'
+- at: 2026-11-24 16:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-152133-move-recurring-qa-backups-to-i on tony-macbook still
+    dirty — 32 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -229,6 +233,8 @@ action:
   attempts: 1
   result: 'exit=0  Full details in `dispatch-outcome-20261124-152133-move-recurring-qa-backups-to-i.md`. | devin-task-20261124-152133-move-recurring-qa-backups-to-i.service:
     Consumed 1min 58.309s CPU time over 50min 11.110s wall clock time, 3.5G memory peak.'
+  sweep:
+    dirty: 32
 claim:
   since: 2026-11-24 15:20
 review_kind: verify
