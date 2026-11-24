@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: doing
-updated: 2026-11-24 14:38
+updated: 2026-11-24 14:55
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -510,6 +510,13 @@ comms:
   from: devin
   text: 'attempt on tony-macbook: prior exits were provider rate-limits, no code changes. Starting audit of CMS
     write surfaces now — cms_publish_page/cms_edit vs wp_post/cpt_post/place_report/wp_chat_page.'
+- at: 2026-11-24 14:55
+  from: devin
+  text: 'DONE: consolidated the 4 overlapping boards-WP writers (wp_post/cpt_post/place_report/wp_chat_page) into
+    canonical `wp` tool with action=post|record|place|chat_page; old names kept as aliases via common.py _ALIASES+_ALIAS_ARG_DEFAULTS.
+    cms_publish_page/cms_edit untouched — different sink (MDDB CMS). tool-lint clean (70 declared, 96 aliases);
+    full pytest suite 1958 passed. Deliverables: dispatch-outcome-20261124-143127-ada-tool-consolidation-merge-o.md
+    + docs/ssot/jobs/ada/2026-11-24-wp-tool-cons'
 action:
   type: dispatch
   repo: ada-voice
