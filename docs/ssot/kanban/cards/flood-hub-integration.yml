@@ -9,7 +9,7 @@ note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30
   HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
   leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
   Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
-updated: 2026-11-24 12:09
+updated: 2026-11-24 12:13
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
@@ -153,6 +153,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:13
+  from: devin
+  text: 'attempt 2 progress: repo-side integration complete — flood-hub-lib.py client, flood-hub:auto CMS block
+    in flood-news-update.py + feeds.json areas, flood-hub-alert.py watchdog, flood-status.py JSON tool, HA flood_hub.yaml
+    package (16 sensors), runbook docs/ssot/jobs/infrastructure/2026-11-24-flood-hub-integration.yml. Live activation
+    still gated: waitlist approval not landed + idc01 offline ~33d. Spec correction: API has no WARNING severity
+    — alert floor is ABOVE_NORMAL.'
 spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist approval
   lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01 IP, storing it in
   ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py, configure HA
