@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit
 title: Timer chaba-audit on tony-omen disabled
 column: done
-updated: 2026-11-24 08:32
+updated: 2026-11-24 08:39
 priority: high
 tags:
 - timer-alert
@@ -187,6 +187,10 @@ comms:
 - at: 2026-11-24 08:32
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Ensure that `chaba-audit.timer` is enabled and active on the host `tony-omen`. Execute `systemctl --user enable
   --now chaba-audit.timer` to bring the critical audit census timer to its expected active state. Verify success

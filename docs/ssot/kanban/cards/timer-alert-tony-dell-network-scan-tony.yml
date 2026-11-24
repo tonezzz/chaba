@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-24 08:33
+updated: 2026-11-24 08:39
 priority: high
 tags:
 - timer-alert
@@ -2068,6 +2068,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-24 08:13) of `network-scan-tony.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
