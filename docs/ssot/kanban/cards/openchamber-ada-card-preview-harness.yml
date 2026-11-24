@@ -1,7 +1,7 @@
 id: openchamber-ada-card-preview-harness
 title: OpenChamber Preview harness for Ada image and video chat cards
 column: doing
-updated: 2026-11-24 20:05
+updated: 2026-11-24 20:08
 brief: Use OpenChamber Preview to validate Ada chat-card media rendering against a deterministic local harness.
 priority: medium
 program: devnest
@@ -213,6 +213,10 @@ comms:
     + 410/wrong-mime/non-http routes), instrumented harness.html loading the real card JS, preview-bridge.mjs driving
     OpenChamber Preview via SSE browser-control (browser.open/snapshot/capture/resize on headless Chrome/Playwright).
     14/14 scenarios PASS incl. image-only, video-only, mixed, em'
+- at: 2026-11-24 20:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-191048-build-a-small-local-browser-ha no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -220,5 +224,7 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 20:08
 claim:
   since: 2026-11-24 19:10
