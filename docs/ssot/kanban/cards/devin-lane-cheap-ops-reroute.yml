@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
-column: review
-updated: 2026-11-24 09:43
+column: backlog
+updated: 2026-11-24 09:45
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -334,6 +334,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-090439-findings-2026-11-23-from-board,
     branch dispatch/20261124-090439-findings-2026-11-23-from-board'
+- at: 2026-11-24 09:45
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-24 09:45
+  from: tony
+  text: queued for processing
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
@@ -373,7 +379,7 @@ requests:
   executed: 2026-11-24 queue (already running)
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   attempts: 2
@@ -384,9 +390,6 @@ action:
   result: 'exit=0 on3 scripts/board/kanban-stats.py --check` rendering the matrix on live card YAMLs. | devin-task-20261124-090439-findings-2026-11-23-from-board.service:
     Consumed 19min 39.718s CPU time over 34min 44.990s wall clock time, 934.5M memory peak.'
   model: litellm/gemini-3.5-flash-lite
-  runner: tony-omen
-  verified: true
 claim:
   since: 2026-11-24 09:03
 review_kind: verify
-awaiting_action: true
