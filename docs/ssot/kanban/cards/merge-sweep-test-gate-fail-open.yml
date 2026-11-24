@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
-column: review
-updated: 2026-11-24 17:03
+column: done
+updated: 2026-11-24 20:44
 priority: medium
 tags:
 - merge-sweep
@@ -705,6 +705,15 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:44
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): the fail-closed merge test gate (OPS-1191) is already
+    in origin/master — scripts/board/dispatch_repos.py carries the unrunnable-gate hold and tests/board/test_dispatch_close_out.py
+    has the OPS-1191 pytest-absence coverage (commit 04298c99a23). The dispatch branch conflicted only because it
+    re-landed the same change; no new work to merge. Closing.'
+- at: 2026-11-24 20:44
+  from: tony
+  text: closed by tony
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
