@@ -142,6 +142,20 @@ class BoardApiLifecycleTest(unittest.TestCase):
         self.assertTrue(any("parked at attempt cap" in m["text"]
                             for m in c["comms"]))
 
+    def test_cap_park_preserves_real_failure_reason(self):
+        # The cap is a lifecycle fact; triage needs the original dispatch
+        # failure (exit code / precondition / OOM) to choose the next fix.
+        c = {"id": "lc-cap-reason", "column": "backlog", "comms": [],
+             "action": {"type": "dispatch", "status": "queued",
+                        "attempts": 2,
+                        "last_failure": "exit=1 FAILED_PRECONDITION"}}
+        with self.assertRaises(self.api.AttemptCapError):
+            self.api.do_claim(c, {"host": "mn01"})
+        self.assertEqual(c["action"]["last_failure"],
+                         "exit=1 FAILED_PRECONDITION")
+        self.assertTrue(any("parked at attempt cap" in m["text"]
+                            for m in c["comms"]))
+
     def test_claim_refused_at_lane_envelope_cap(self):
         c = {"id": "lc-env-cap", "column": "backlog", "comms": [],
              "action": {"type": "dispatch", "status": "queued",

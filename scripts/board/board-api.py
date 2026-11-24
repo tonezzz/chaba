@@ -1463,7 +1463,10 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             reason = (f"attempt cap reached ({att}/{max_att}) — "
                       "/action do=retry re-arms it")
             a["status"] = "failed"
-            a["last_failure"] = reason
+            # Keep the real failure — the cap is a lifecycle fact, not the
+            # root cause. Overwriting it hid exit codes/OOM/precondition
+            # evidence from triage (found the day this guard landed).
+            a.setdefault("last_failure", reason)
             comms_add(card, frm, f"queue refused — {reason}")
             return f"parked at attempt cap — /action do=retry re-arms it"
         a["status"] = "queued"
@@ -1653,7 +1656,9 @@ def do_claim(card: dict, body: dict) -> str:
         # The handler persists this mutation before answering 400.
         # do=retry is the only re-arm and resets attempts.
         a["status"] = "failed"
-        a["last_failure"] = reason
+        # Preserve the dispatch's real failure (exit code, precondition,
+        # OOM) — the cap note goes to comms, not over the diagnosis.
+        a.setdefault("last_failure", reason)
         a.pop("runner", None)
         a.pop("task_id", None)
         _ensure_claim(card).pop("session", None)
