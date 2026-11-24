@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: doing
-updated: 2026-11-24 15:25
+updated: 2026-11-24 15:27
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -250,6 +250,13 @@ comms:
   from: devin
   text: 'raised request kk-files-restore-is-blocked-on-the-backu-27b870: KK-files restore is blocked on the backup
     media: the ubuntu-usb stick holding home/tony/macbook-backup-2026-10-10 (23G k'
+- at: 2026-11-24 15:27
+  from: devin
+  text: 'FINAL: (1) KK files — BLOCKED, nothing restored: the ubuntu-usb stick with home/tony/macbook-backup-2026-10-10
+    (23G kkkakk home) is attached to no reachable host (checked macbook/dell/omen/mn01/idc02/idc03/kk-mac; no copy
+    on macbook disk, restic is config-tier only). Board request kk-files-restore-is-blocked-on-the-backu-27b870
+    asks Tony to plug in the stick + pick restore scope (recommended: preserve backup top-level structure into ~).
+    (2) Runner-agent — VERIFIED LIVE, no install needed: sha256'
 ref: SYS-0452
 claim:
   since: 2026-11-24 15:04
