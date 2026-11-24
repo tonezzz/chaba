@@ -1340,6 +1340,21 @@ hosts:
       #     tony-dell: 8G zstd, prio 100 ahead of /swap.img; /tmp tmpfs is
       #     Ubuntu default here, no unit needed) ---
       - {name: zram-swap.service, type: service, scope: system}
+      # 2026-11-24 audit reconcile (audit-auto-macbook / OPS-1296): the four
+      # 2026-11-09 deltas verified resolved — runner-agent.timer re-armed
+      # 11-12, runner-agent.service + zram-swap.service failures cleared by
+      # the 11-14 cold boot, vcast-real-macbook declared 11-12, stick-announce
+      # ghost gone. nest-mgr.service runs intentionally (installed
+      # 2026-11-17, card ops-macbook-nestmgr-install / SYS-0158) — declared.
+      - {name: nest-mgr.service, type: service, scope: user}
+    expected_absent:
+      # stick-announce.service — pre-rebuild ghost (macOS-era carryover /
+      # early-Ubuntu leftover); not installed on the rebuilt host. Its
+      # failed-system flag (2026-11-03/04) cleared after the 11-14 cold
+      # boot; declared absent so a resurrected unit files a delta instead
+      # of slipping through. A *failed* ghost still flags via the
+      # failed-units loop — that tripwire stays armed.
+      - {name: stick-announce.service, scope: system}
     allowed_running:
       - devin-task-*.service    # ephemeral dispatch session units
     known_failed: []
@@ -1428,6 +1443,9 @@ hosts:
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -2319,6 +2337,9 @@ hosts:
       - {name: jack-enroll.service, type: service, scope: user, note: "Jack IDE enroll gateway"}
       - {name: jack-ide-network.service, type: service, scope: user, note: "podnet for the jack-ide pair"}
       - {name: ada-stt.service, type: service, scope: user, note: "Ada local STT (audio.cpp Qwen3-ASR, CPU)"}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
     expected_absent:
       - name: chaba-audit.timer
         scope: user
@@ -2475,6 +2496,9 @@ hosts:
       - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: report-distill.timer, type: timer, scope: user}
       - {name: devin-bank-distill.timer, type: timer, scope: user}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
     expected_absent:
       - name: qemu-guest-agent.service
         note: "purged 2026-10-22 — Contabo hypervisor exposes no virtio

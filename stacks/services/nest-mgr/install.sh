@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # install.sh [host ...] — install + start nest-mgr on each host.
-# Default hosts: the currently deployed fleet (v1 card comms 2026-11-17).
+# Default hosts: the currently deployed fleet — idc02 idc03 con01 mn01
+# tony-omen tony-macbook (tony-dell retired to omen 2026-10-19/20 phase-5;
+# tony-macbook added 2026-11-17 via ops-macbook-nestmgr-install).
 # v2 rollout: upgrade lands in monitor mode everywhere; flip a pilot host
 # to recommend with `ssh <h> 'echo recommend > ~/.local/share/nest/mode'`.
 # Installs the self-contained manager to ~/.local/share/nest/ and the user
@@ -9,7 +11,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 HOSTS=("$@")
-[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc02 idc03 con01 mn01 tony-omen tony-dell)
+[ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc02 idc03 con01 mn01 tony-omen tony-macbook)
 
 for host in "${HOSTS[@]}"; do
   echo "== $host"
