@@ -1,7 +1,7 @@
 id: roster-devin-nest-shims
 title: Lane-ws shims so devin + nest join the Agents roster
-column: doing
-updated: 2026-11-24 17:04
+column: review
+updated: 2026-11-24 17:06
 priority: low
 tags:
 - roster
@@ -227,13 +227,37 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:06
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ould be watched since the `-c -p` continuation flag combo is per docs but unverified
+    live. | devin-task-20261124-'
+- at: 2026-11-24 17:06
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 17:06
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-164840-roster-page-apps-roster-card-r
+    is 55 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 17:06
+  from: chaba
+  text: pushed dispatch/20261124-164840-roster-page-apps-roster-card-r to origin
+- at: 2026-11-24 17:06
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 17:06
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ould be watched since the `-c -p` continuation flag combo is per docs but unverified live. | devin-task-20261124-164840-roster-page-apps-roster-card-r.service:
+    Consumed 50.367s CPU time over 16min 1.884s wall clock time, 346.1M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 16:48
+review_kind: verify
