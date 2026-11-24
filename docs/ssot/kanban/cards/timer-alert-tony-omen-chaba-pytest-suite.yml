@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-pytest-suite
 title: Timer chaba-pytest-suite on tony-omen failing
 column: backlog
-updated: 2026-11-24 08:22
+updated: 2026-11-24 08:32
 priority: high
 tags:
 - timer-alert
@@ -111,6 +111,10 @@ comms:
 - at: 2026-11-24 08:22
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the chaba-pytest-suite.service systemd user timer on the tony-omen host, where
   the last run at 03:57 on 11-21 exited with an error code. Access the host systemd journal using `journalctl --user
