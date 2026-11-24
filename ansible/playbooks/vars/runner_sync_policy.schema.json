@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "runner_sync_policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_root", "max_drift_files", "tailnet_cidr"],
+  "properties": {
+    "source_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repo path on the controller that holds the canonical runner tools."
+    },
+    "max_drift_files": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How many files may differ before the play fails (0 = strict)."
+    },
+    "tailnet_cidr": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Only rsync to targets inside this CIDR."
+    }
+  }
+}
