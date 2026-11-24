@@ -4,11 +4,11 @@ brief: 'Tony 2026-10-09: decouple input surface from response surface to reduce 
   on iPhone (or any mic surface) → Ada answers on TV / dashboard / nearest screen. Inputs route to the appropriate
   Nest node which stores, compresses, extracts, or discards them — a Nest-tier memory pipeline instead of one big
   session context.'
-column: review
+column: backlog
 review_kind: decide
 priority: medium
 created: 2026-10-09
-updated: 2026-11-24 17:03
+updated: 2026-11-24 20:07
 autonomy: t2
 links:
 - chaba-nest
@@ -357,9 +357,18 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:07
+  from: tony
+  text: 'triage (decide): fabric daemon landed in ea812cc1 (2026-10-10, 29 tests green) and Tony closed the card
+    the same day; 2026-11-08 lifecycle bounce asked for evidence against the PWA->TV e2e verify criterion, which
+    was never actually run. Adoption into ada-pi + deployment remain unconfirmed. Holding in backlog with this evidence
+    for the human decision (run the e2e, amend verify:, or close).'
+- at: 2026-11-24 20:07
+  from: tony
+  text: put on hold
 action:
   type: dispatch
-  status: done
+  status: idle
   repo: chaba
   runner: idc03
   result: 'exit=0 da-pi-side adoption (`/v1/inputs` + `/v1/respond`, separate repo) and `./install.sh idc03` on
