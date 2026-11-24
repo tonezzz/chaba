@@ -1,0 +1,58 @@
+id: plan-proposal-v2-readonly
+card: opencode-cline-idea-proposal-workflow
+case_id: readonly-report
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: proposal-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-proposal-v2-readonly.json
+  schema: evals/opencode-lane/profiles/proposal-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/proposal-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Isolated S0 task; the agent has no tools or policy fields.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+task: >-
+  case_id=readonly-report. Create a proposal for a read-only health report
+  using synthetic fixture data on tony-macbook. The planned output is
+  reports/health-snapshot.json. The first S0 step is analysis only; no live
+  host inspection or execution.
+jev_input:
+  title: Read-only health report
+  brief: Produce a report from a synthetic fixture; no live commands or writes.
+expected_jev_route: free_lane
+policy_snapshot:
+  source: synthetic_card_snapshot
+  card_id: SYN-READONLY-REPORT-001
+  version: 1
+  case_id: readonly-report
+  task_class: report
+  risk_level: low
+  target_host: tony-macbook
+  allowed_paths:
+    - reports/health-snapshot.json
+  mcp_allowlist: []
+  artifact:
+    path: reports/health-snapshot.json
+    schema: health-report-v1
+  verifier:
+    type: held_out_py
+    ref: evals/shadow/fixtures/host-health/verify.py
+  done_condition: The held-out health-report verifier passes.
+  human_gate_required: false
+  expected_jev_route: free_lane

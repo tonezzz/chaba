@@ -185,6 +185,7 @@ STRONG_MODELS = [
 PRICE_TABLE = {
     "litellm/gemini-3.5-flash-lite": (0.10, 0.40),
     "litellm/gemini-3.5-flash": (0.30, 2.50),
+    "litellm/ollama-qwen7b": (0.0, 0.0),
     "litellm/claude-fable-5.1": (10.0, 50.0),
     "litellm/or-claude-fable-5.1": (10.0, 50.0),
     "litellm/or-gemini-3.1-pro-preview": (2.0, 12.0),

@@ -1,0 +1,56 @@
+id: plan-proposal-v3-workflow-idea
+card: opencode-cline-idea-proposal-workflow
+case_id: opencode-cline-idea-proposal-workflow
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: proposal-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-proposal-v3-workflow-idea.json
+  schema: evals/opencode-lane/profiles/proposal-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/proposal-only/fixture/verify_workflow.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Proposal-only output; no policy authority or execution tools.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+timeout_s: 600
+task: >-
+  case_id=opencode-cline-idea-proposal-workflow. Draft a review proposal,
+  not an executable plan.
+
+  The intended roles are fixed: OpenCode clarifies and drafts content; JEV
+  classifies/routes but does not create content or verify artifacts; Nest
+  owns durable job claims, heartbeats, retries, and result references; Cline
+  executes in an isolated workspace; an independent verifier checks the
+  artifact; Chaba Kanban is the canonical shared card and version.
+
+  Verified context: JEV matched 3/3 known synthetic routes. V1 model-owned
+  policy fields failed because allowed_paths widened beyond request scope.
+  Proposal-only content passed 3/3 after refining the schema. Local Qwen is
+  slow. Cline/Nest artifact completion and a generic OpenCode-to-Nest submit
+  API remain unverified. The card's recorded route choice is repair-adapter
+  first; do not claim current PR/deployment state. No repo/MCP lookup is
+  available, so matching work must be not_evaluated.
+
+  Recommendation: repair and verify the Cline/Nest artifact contract before
+  any canary; keep policy fields deterministic and execution disabled.
+  Viewpoints must mention: Chaba card value; OpenCode/JEV/Nest/Cline/verifier
+  roles; isolated scope, human gates, and deterministic policy; local latency
+  and cost. Compare exactly two options: repair-adapter-first and manual
+  Cline UI analysis-only, each with benefit and tradeoff. Ask which artifact
+  schema/result_ref should satisfy Review/Done. Keep each viewpoint 8-12
+  words and each option benefit/tradeoff 6-10 words.

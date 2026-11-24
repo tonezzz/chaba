@@ -1,0 +1,59 @@
+id: plan-proposal-v2-docs
+card: opencode-cline-idea-proposal-workflow
+case_id: docs-only
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: proposal-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-proposal-v2-docs.json
+  schema: evals/opencode-lane/profiles/proposal-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/proposal-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Isolated S0 proposal output; no execution tools are available.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+task: >-
+  case_id=docs-only. Propose a checklist for a synthetic documentation-only
+  task that would create docs/reports/plan-route-checklist.md. No target
+  repository/workspace is supplied. Explicitly ask which repository or
+  workspace should receive the checklist in open_questions; do not invent it.
+  Do not create or edit the file; this is proposal text only.
+jev_input:
+  title: Documentation-only checklist
+  brief: Draft a checklist artifact; target repository is not provided.
+expected_jev_route: free_lane
+policy_snapshot:
+  source: synthetic_card_snapshot
+  card_id: SYN-DOCS-ONLY-001
+  version: 1
+  case_id: docs-only
+  task_class: artifact_write
+  risk_level: low
+  target_host: null
+  allowed_paths:
+    - docs/reports/plan-route-checklist.md
+  mcp_allowlist: []
+  artifact:
+    path: docs/reports/plan-route-checklist.md
+    schema: markdown-checklist-v1
+  verifier:
+    type: human_review
+    description: Review required headings, links, and the proposed scope.
+  done_condition: The checklist passes human review before any write.
+  human_gate_required: true
+  expected_jev_route: free_lane

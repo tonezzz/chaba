@@ -1,0 +1,24 @@
+id: plan-route-only
+title: Structured job plan contract
+class: shadow_replay
+timeout_s: 360
+artifact: plan.json
+contract:
+  required_fields:
+    case_id: string
+    objective: short string
+    recommendation: short string
+    task_class: string
+    risk_level: low|medium|high
+    target_host: string or null
+    allowed_paths: list
+    mcp_allowlist: list; must be empty
+    done_condition: short string
+    verification: short string
+    human_gate_required: boolean
+    execution_allowed: boolean; must be false
+    viewpoints: mapping with four concise lenses
+    options: exactly two options with benefit and tradeoff
+    assumptions: list
+    open_questions: list
+    matching_existing_work: status not_evaluated and no claimed matches

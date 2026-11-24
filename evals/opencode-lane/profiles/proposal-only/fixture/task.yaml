@@ -1,0 +1,16 @@
+id: proposal-only
+title: Proposal-only review contract
+class: shadow_replay
+timeout_s: 300
+artifact: proposal.json
+contract:
+  required_fields:
+    case_id: string
+    goal: short string
+    recommendation: short string
+    viewpoints: mapping with user_value, technical, operations_safety, cost_effort
+    options: exactly two objects with label, benefit, tradeoff
+    assumptions: list
+    open_questions: list
+    matching_existing_work: status not_evaluated and no claimed matches
+    no_policy_fields: task_class, target_host, allowed_paths, mcp_allowlist, execution_allowed, human_gate_required absent
