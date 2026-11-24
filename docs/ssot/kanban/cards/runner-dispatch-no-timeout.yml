@@ -1,7 +1,7 @@
 id: runner-dispatch-no-timeout
 title: 'runner-agent: dispatch units get RuntimeMaxUSec=infinity — task timeout_s never armed'
 column: doing
-updated: 2026-11-24 17:26
+updated: 2026-11-24 17:27
 spec: 'Found during devnest-fl-pilot-health (2026-10-30): the dispatch path''s systemd-run units carry no RuntimeMaxSec,
   so an agent in a tool-call loop runs unbounded (nemotron ran 12+ min / 77 calls / 60 denials on a 420s fixture).
   The fixture timeout_s exists in task.yaml but only the synchronous opencode_profiles.run path honors it. Fix:
@@ -188,6 +188,16 @@ comms:
 - at: 2026-11-24 17:26
   from: tony-omen
   text: claimed
+- at: 2026-11-24 17:27
+  from: chaba
+  text: started devin-task-20261124-172726-found-during-devnest-fl-pilot- on tony-omen (dispatch)
+- at: 2026-11-24 17:27
+  from: chaba
+  text: 'primer injected 8 lesson(s): idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
+    ; tony-omen ollama serves qwen2.5:7b CPU-only (api/ps size_vram=0): agent-loop ben; [devnest-queue-consolidation]
+    dispatch on idc02: repo-side consolidation landed ; [dispatch-worktree-gc] done: gc_worktree guard helper in
+    dispatch_repos (clean +; [kk-mac-launchd-runner-followthrough] raised request verified-kk-mac-only-runs-n; [opencode-retry-stale-worktree]
+    DONE (branch dispatch/2026112'
 action:
   type: dispatch
   status: running
