@@ -1,7 +1,7 @@
 id: ada-opencode-v2-upgrade
 title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
 column: doing
-updated: 2026-11-24 21:30
+updated: 2026-11-24 21:39
 priority: medium
 tags:
 - ada
@@ -223,6 +223,13 @@ comms:
     gate runs a FIXED file list in dispatch_repos.py REPO_TESTS; The live `~/CascadeProjects/ada-voice` checkout
     may sit on someone else''s featur; verify.py resolves REPO via `Path(__file__).parents[5]` — to replay an OLD
     verif; lp.build does a repo walk + a 10s-timeout MDDB bank fetch on '
+- at: 2026-11-24 21:39
+  from: devin
+  text: 'dispatch started (tony-omen worktree). Premise is stale: the localhost/ada-opencode container + ada-code/ada-enroll
+    quadlets were retired TODAY (~/backups/retired-opencode-20261124 on idc02); live opencode on idc02 is now host
+    binary v2.4.1 (/usr/local/bin/opencode -> @opencode/cli npm global, installed today 12:20) served by opencode-serve.service.
+    Card was already satisfied on 2026-11-08 (v2.2.5 live) and master Containerfile pins 2.2.6. Verifying ada_mcp.py
+    MCP compat under v2.4.1 + running o'
 action:
   type: dispatch
   status: running
