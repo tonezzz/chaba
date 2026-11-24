@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: review
-updated: 2026-11-24 22:02
+updated: 2026-11-24 22:08
 priority: medium
 tags:
 - ada
@@ -284,6 +284,10 @@ comms:
 - at: 2026-11-24 22:02
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-24 22:08
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-214616-first-live-smoke-run-in-11-day on tony-omen still dirty
+    — 3 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -294,6 +298,8 @@ action:
   attempts: 1
   result: 'exit=0 e-20261124-214616-first-live-smoke-run-in-11-day.md`; final verdict posted to card comms. | devin-task-20261124-214616-first-live-smoke-run-in-11-day.service:
     Consumed 55.750s CPU time over 11min 13.124s wall clock time, 968.8M memory peak.'
+  sweep:
+    dirty: 3
 claim:
   since: 2026-11-24 21:44
 review_kind: verify
