@@ -12,6 +12,10 @@ export function normalizeCard(c) {
     const hit = tags.find((t) => typeof t === 'string' && t.startsWith('project:'));
     if (hit) project = hit.slice('project:'.length);
   }
+  // compact payload (render-board2 board-weight-cards-json): per-card
+  // comms are absent or a tail slice, so first_at/last_at/last_comm/
+  // comms_total carry the same facts precomputed. Older full payloads
+  // fall through to the comms scan unchanged.
   const times = comms
     .map((m) => m && m.at)
     .filter(Boolean)
@@ -26,12 +30,12 @@ export function normalizeCard(c) {
     brief: c.brief || '',
     note: c.note || '',
     // activity span (decided 2026-11-09): first comms/claim/created -> last activity
-    firstAt: times[0] || (c.claim && c.claim.since) || c.created || null,
-    lastAt: times[times.length - 1] || c.updated || c.created || null,
+    firstAt: c.first_at || times[0] || (c.claim && c.claim.since) || c.created || null,
+    lastAt: c.last_at || times[times.length - 1] || c.updated || c.created || null,
     created: c.created || null,
     updated: c.updated || null,
-    commsCount: comms.length,
-    lastComm: comms[comms.length - 1] || null,
+    commsCount: c.comms_total ?? comms.length,
+    lastComm: c.last_comm || comms[comms.length - 1] || null,
     raw: c,
   };
 }

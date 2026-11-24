@@ -378,6 +378,17 @@ def load_cards(man: dict) -> list:
     return cards
 
 
+def _self_sig() -> str:
+    """Renderer-code stat folded into --if-changed: editing this file
+    forces one re-render even when no card changed, so a template fix
+    doesn't wait for the next unrelated card write."""
+    try:
+        st = Path(__file__).stat()
+        return f"{st.st_size}:{st.st_mtime_ns}"
+    except OSError:
+        return ""
+
+
 def main():
     man = yaml.load(MANIFEST.read_text(), Loader=_YAML_LOADER)
     card_dir = REPO / man["card_dir"]
@@ -385,7 +396,7 @@ def main():
 
     state_hash = None
     if "--if-changed" in sys.argv:
-        state_hash = dir_hash(card_dir)
+        state_hash = dir_hash(card_dir) + _self_sig()
         if STATE.exists() and STATE.read_text().strip() == state_hash \
                 and out_path.exists():
             return 0

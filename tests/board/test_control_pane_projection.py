@@ -120,7 +120,11 @@ def test_pane_implemented_on_board_page():
     for fn in ("cpPane", "cpReason", "cpEscalate", "cpCards",
                "renderControl", "cpFetchLive"):
         assert fn + "(" in src
-    page = (REPO / "stacks/web/public/apps/board2/index.html").read_text()
+    page_path = REPO / "stacks/web/public/apps/board2/index.html"
+    if not page_path.exists():
+        import pytest
+        pytest.skip("generated board page absent (gitignored artifact)")
+    page = page_path.read_text()
     assert "cp-head" in page and "Card cycle control" in page
 
 
@@ -142,9 +146,14 @@ def test_pane_data_contract_on_board_payload():
     # The page's data (cards.json — written by board-api after card writes)
     # carries the pane's sources: the active-cycle card + the fields its
     # sections read (card record + live action overlay via board-api).
-    payload = json.loads(
-        (REPO / "stacks/web/public/apps/board2/cards.json").read_text())
-    fields = ("title", "brief", "spec", "comms", "requests", "updated")
+    # Compact payload (board-weight-cards-json): summaries ship inline;
+    # comms/spec/verify/help moved behind GET /card/<id> fetched on open.
+    payload_path = REPO / "stacks/web/public/apps/board2/cards.json"
+    if not payload_path.exists():
+        import pytest
+        pytest.skip("generated board payload absent (gitignored artifact)")
+    payload = json.loads(payload_path.read_text())
+    fields = ("title", "brief", "updated", "comms_total")
     # KNB-0229 is archived now, so it is legitimately absent from the live
     # payload. Assert the same contract against a card that carries the
     # pane's sources; prefer the design card if it is ever re-opened.
@@ -156,3 +165,10 @@ def test_pane_data_contract_on_board_payload():
     assert k["column"] in ("backlog", "doing", "review", "done", "lab")
     for f in fields:
         assert f in k
+    # compact contract: no full comms/spec bulk in the list payload —
+    # at most the control-pane tail on active-cycle cards
+    assert "spec" not in k and "verify" not in k and "help" not in k
+    assert len(k.get("comms") or []) <= 5
+    # and the detail door the modal fetches on open exists
+    src = (REPO / "scripts/render-board2.py").read_text()
+    assert "/card/' + encodeURIComponent" in src

@@ -4,14 +4,16 @@ different layout — Lab/Backlog/Doing/Review/Done as five side-by-side
 columns (no tab navigation), zoom +/- cycling card density
 compact|normal|full, drag-and-drop card moves via board-api /action
 do=move, and a modal card detail overlay. Writes board2/index.html +
-board2/cards.json. View layer only; all write actions go through the
-same /apps/board-api/ endpoints.
+board2/cards.json (compact card summaries — full detail via
+GET /apps/board-api/card/<id> on open). View layer only; all write
+actions go through the same /apps/board-api/ endpoints.
 
 Usage: render-board2.py [--if-changed]
 """
 import hashlib
 import importlib.util
 import json
+import re
 import shutil
 import sys
 from datetime import datetime, timezone, timedelta
@@ -36,6 +38,128 @@ _rb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_rb)
 
 esc = _rb.esc
+
+# ---- compact cards.json (board-weight-cards-json) ----
+# The page polls this payload every ~10s, so it carries card summaries
+# only; full detail (comms history, spec, verify, help) is fetched on
+# demand via GET /apps/board-api/card/<id> when a card opens. Derived
+# fields keep the list view, needs-you band, ticker and the
+# gantt/diagram consumers fed without the bulk:
+#   comms        -> comms_total + first_at/last_at/last_comm (activity
+#                   span) + attachments[] (badge/thumbnail scan) + a
+#                   5-entry tail on active-cycle cards (control pane
+#                   timeline) ; payload.recent feeds the ticker
+#   spec/verify/help -> dropped (modal-only fields)
+#   requests     -> open entries only (answered history is detail)
+#   checks       -> {k, ok} — the row badge reads pass/fail only
+_COMPACT_DROP = frozenset({"comms", "spec", "verify", "help"})
+# action.status values that keep a card in the cycle-control pane even
+# outside doing/review — mirrors the page's cpCards() active set plus
+# the live-ish statuses cpReason names.
+_ACTIVE_ACTION = frozenset(
+    {"queued", "running", "claimed", "verifying", "stalled"})
+_CP_COMMS_TAIL = 5
+_TICKER_RECENT = 30
+_TICKER_TEXT = 400
+# same pattern the page's attachLinks() applies to comms text
+_ATTACH_RE = re.compile(
+    r"docs/ssot/kanban/attachments/([A-Za-z0-9._/-]+)")
+
+
+def _comm_at(m: dict) -> str:
+    return str(m.get("at") or m.get("ts") or "")
+
+
+def _card_attachments(comms: list) -> list:
+    """Unique attachment repo-paths across a card's comms — the same
+    scan cardAttach() ran client-side, done once at render."""
+    seen, out = set(), []
+    for m in comms:
+        if not isinstance(m, dict):
+            continue
+        text = str(m.get("text") or m.get("msg") or "")
+        for mm in _ATTACH_RE.finditer(text):
+            rel = re.sub(r"[./]+$", "", mm.group(1))
+            if rel and rel not in seen:
+                seen.add(rel)
+                out.append(rel)
+    return out
+
+
+def _compact_card(c: dict) -> dict:
+    out = {k: v for k, v in c.items() if k not in _COMPACT_DROP}
+    comms = [m for m in (c.get("comms") or []) if isinstance(m, dict)]
+    out["comms_total"] = len(comms)
+    # activity span — first_at/last_at mirror board-gantt's normalize:
+    # earliest/latest comm timestamp, falling back to claim.since /
+    # created / updated exactly as its client-side chain did.
+    ats = sorted(t for t in (_comm_at(m) for m in comms) if t)
+    claim = c.get("claim") if isinstance(c.get("claim"), dict) else {}
+    first = ats[0] if ats else (claim.get("since") or c.get("created"))
+    last = ats[-1] if ats else (c.get("updated") or c.get("created"))
+    if first:
+        out["first_at"] = str(first)
+    if last:
+        out["last_at"] = str(last)
+    if comms:
+        lc = comms[-1]
+        out["last_comm"] = {
+            "at": _comm_at(lc),
+            "from": str(lc.get("from") or lc.get("who") or ""),
+            "text": str(lc.get("text") or lc.get("msg") or "")[:200]}
+    atts = _card_attachments(comms)
+    if atts:
+        out["attachments"] = atts
+    reqs = [r for r in (c.get("requests") or [])
+            if isinstance(r, dict) and r.get("status") != "answered"]
+    if reqs:
+        out["requests"] = reqs
+    else:
+        out.pop("requests", None)
+    if isinstance(c.get("checks"), list):
+        out["checks"] = [{"k": x.get("k"), "ok": x.get("ok")}
+                         for x in c["checks"] if isinstance(x, dict)]
+    act = c.get("action") if isinstance(c.get("action"), dict) else {}
+    if (c.get("column") or "backlog") in ("doing", "review") \
+            or act.get("status") in _ACTIVE_ACTION:
+        if comms:
+            out["comms"] = comms[-_CP_COMMS_TAIL:]
+    return out
+
+
+def _ticker_recent(cards: list) -> list:
+    """Newest-first comm events for the bottom ticker — the same top-30
+    the page used to compute by scanning every card's comms client-side."""
+    ev = []
+    for c in cards:
+        cid = str(c.get("id") or "")
+        for m in (c.get("comms") or []):
+            if not isinstance(m, dict):
+                continue
+            ev.append({
+                "at": _comm_at(m),
+                "id": cid,
+                "from": str(m.get("from") or m.get("who") or ""),
+                "text": str(m.get("text") or m.get("msg") or "")
+                        [:_TICKER_TEXT],
+            })
+    ev.sort(key=lambda e: e["at"], reverse=True)
+    return ev[:_TICKER_RECENT]
+
+
+def _renderer_sig() -> str:
+    """Stat signature of the renderers themselves — a template/pipeline
+    edit must force one re-render even when no card changed, or the new
+    page+payload wouldn't deploy until the next unrelated card write."""
+    h = hashlib.sha256()
+    for p in (Path(__file__).resolve(),
+              REPO / "scripts/render-board.py"):
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        h.update(f"{p.name}:{st.st_size}:{st.st_mtime_ns};".encode())
+    return h.hexdigest()
 
 # raw-string template — JS braces/escapes (\n, \s, \w) pass through
 # unchanged; only __POLL_SECONDS__ is substituted
@@ -225,6 +349,10 @@ PAGE = r"""<!doctype html>
 const API = '/apps/board-api';
 const POLL = __POLL_SECONDS__ * 1000;
 let DATA = null, sel = null;
+// full card detail for the open modal — fetched on demand via
+// GET /apps/board-api/card/<id> (compact cards.json carries summaries
+// only); keyed by id so a stale fetch can't clobber a newer selection
+const selCard = {};
 let q = localStorage.getItem('b2-q') || '';
 let autoOpen = JSON.parse(localStorage.getItem('b2-auto') || '{}');
 // done-column paging — render first PAGE cards, expand on demand
@@ -272,7 +400,9 @@ function attachLinks(text) {
   return out;
 }
 function cardAttach(c) {
-  // unique attachment paths across the card's comms, first-seen order
+  // unique attachment paths — precomputed at render (attachments[]);
+  // fall back to scanning whatever comms slice the card carries
+  if (Array.isArray(c.attachments)) return c.attachments;
   const seen = new Set();
   for (const m of (c.comms || [])) for (const rel of attachLinks(m.text || m.msg || '')) seen.add(rel);
   return [...seen];
@@ -348,7 +478,7 @@ function badgeHtml(c, ctx) {
   const col = c.column || 'backlog';
   if (ctx === 'lab' || ctx === 'done') b += `<span class="badge bg-slate-700 text-slate-300">${esc(col)}</span> `;
   if (c.review_kind && col === 'review') b += `<span class="badge bg-sky-900/70 text-sky-200">${esc(c.review_kind)}</span> `;
-  if ((c.checks||[]).some(x => x.state === 'fail')) b += `<span class="badge bg-red-900/80 text-red-200">✗ check</span> `;
+  if ((c.checks||[]).some(x => x.ok === false)) b += `<span class="badge bg-red-900/80 text-red-200">✗ check</span> `;
   return b;
 }
 
@@ -358,7 +488,7 @@ function rowHtml(c, ctx) {
   const tip = esc(c.brief || '').replace(/"/g, '&quot;');
   const mv = movedIn[c.id];
   const ny = needYou(c);
-  const ncm = (c.comms || []).length;
+  const ncm = c.comms_total ?? (c.comms || []).length;
   const nat = cardAttach(c).length;
   return `<div class="card${mv ? ' just-moved' : ''}" draggable="true" data-id="${esc(c.id)}"${c.brief ? ` title="${tip}"` : ''}>` +
     `<div class="ttl">${esc(c.title)}</div>` +
@@ -615,12 +745,14 @@ function markAnswered(cid, rid, answer) {
   pendingAns[key] = {answer, at: Date.now()};
   nyFlash[key] = true;
   const c = DATA && DATA.cards.find(x => x.id === cid);
-  if (c) {
+  const mc = selCard[cid];
+  for (const tgt of [c, mc]) {
+    if (!tgt) continue;
     if (rid === 'ask') {
-      const a = askOf(c);
+      const a = askOf(tgt);
       if (a) { a.status = 'answered'; a.answer = answer; }
     } else {
-      const r = (c.requests || []).find(x => String(x.id) === String(rid));
+      const r = (tgt.requests || []).find(x => String(x.id) === String(rid));
       if (r) { r.status = 'answered'; r.answer = answer; }
     }
   }
@@ -1013,9 +1145,22 @@ function detailHtml(c) {
   return h;
 }
 
+// full card detail for the modal — the compact payload has no
+// comms/spec/verify/help, so opening a card fetches the whole record
+// once, then each poll refresh keeps it live while the modal is open
+async function refreshSel() {
+  const id = sel;
+  if (!id) return;
+  const r = await getApi('/card/' + encodeURIComponent(id));
+  if (sel !== id) return;              // user moved on mid-flight
+  if (r && r.card) selCard[id] = r.card;
+  renderModal();
+}
+
 function renderModal() {
   const ov = document.getElementById('overlay');
-  const c = DATA && DATA.cards.find(x => x.id === sel);
+  const c = (sel && selCard[sel]) ||
+    (DATA && DATA.cards.find(x => x.id === sel));
   if (!c) { ov.classList.remove('open'); return; }
   const body = document.getElementById('modal-body');
   // preserve the half-typed comment + scroll across poll re-renders
@@ -1045,8 +1190,10 @@ function renderModal() {
 
 function openModal(id) {
   sel = id;
+  delete selCard[id];
   history.replaceState(null,'','#card='+id);
   renderModal();
+  void refreshSel();
 }
 function closeModal() {
   sel = null;
@@ -1131,15 +1278,11 @@ document.addEventListener('keydown', e => {
 // ?decisions=1 deep-link (report/notifier surfaces) — open the band once
 let decisionsLink = new URLSearchParams(location.search).has('decisions');
 
-// 底部事件流：取全卡 comms 最近 30 条滚动展示；内容不变时不动 DOM，
+// 底部事件流：payload.recent 带渲染端算好的最近 30 条（compact
+// payload 不再带全量 comms）；内容不变时不动 DOM，
 // 让 -50% 无缝循环动画持续跑
 function renderTicker() {
-  const items = [];
-  for (const c of (DATA ? DATA.cards : [])) for (const m of (c.comms || [])) {
-    items.push({at: m.at || m.ts || '', id: c.id, from: m.from || m.who || '', text: m.text || m.msg || ''});
-  }
-  items.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  const top = items.slice(0, 30);
+  const top = (DATA && DATA.recent) || [];
   const track = document.getElementById('tk-track');
   if (!track) return;
   let html;
@@ -1176,6 +1319,7 @@ async function load() {
     document.getElementById('gen').textContent = 'v' + (DATA.page_version||'') + ' · ' + (DATA.generated||'');
     const cm = location.hash.match(/card=([\w-]+)/); if (cm) sel = cm[1];
     renderBoard(); renderControl(); renderTicker();
+    if (sel) void refreshSel();
     const dot = document.getElementById('live-dot');
     dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
     dot.classList.remove('tick'); void dot.offsetWidth; dot.classList.add('tick');
@@ -1297,7 +1441,8 @@ def main():
     if "--if-changed" in sys.argv:
         state_hash = (_rb.dir_hash(card_dir)
                       + _rb.dir_hash(card_dir / "archive")
-                      + _tree_sig(ATTACH_SRC))
+                      + _tree_sig(ATTACH_SRC)
+                      + _renderer_sig())
         if STATE.exists() and STATE.read_text().strip() == state_hash \
                 and out_path.exists():
             return 0
@@ -1343,7 +1488,8 @@ def main():
         "page_version": ver,
         "columns": man["columns"],
         "doing_limit": limit,
-        "cards": cards,
+        "recent": _ticker_recent(cards),
+        "cards": [_compact_card(c) for c in cards],
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     json_path = out_path.with_name("cards.json")

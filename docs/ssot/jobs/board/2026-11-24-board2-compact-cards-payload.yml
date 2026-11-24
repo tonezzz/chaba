@@ -1,0 +1,94 @@
+id: board2-compact-cards-payload
+title: board2 cards.json slimmed 13.2MB -> 881KB via per-card detail fetch
+date: 2026-11-24
+card: board-weight-cards-json-still-6-2mb-at-7-894827
+ref: KNB-1302
+host: fleet (render-board2.py, board2 page, board-gantt/js/data.js)
+status: implemented (worktree; not pushed/deployed)
+
+goal: >
+  Board page must load a compact cards payload (<1.5MB at ~750 cards)
+  with full card detail fetched on open via GET /card/<id>; doing holds
+  only cards with a live claim or running action.
+
+state_found: >
+  Measured on the live 726-card board: full cards.json was ~13.2MB, of
+  which the comms field alone was ~12MB (51,750 entries, mean 71/card,
+  max 1,083). Everything else summed to ~1.1MB, so dropping comms bulk
+  met the target. board-api already had /card/<id> (full card incl.
+  comms/spec, archive-index fallback, gzip) and /cards compact=1|2
+  projections — no server work needed. render-board2.py embedded the
+  entire page JS in a raw-string PAGE template; board-render-guard.timer
+  re-renders every 60s with --if-changed gated on the card-dir stat hash
+  (docs/ssot/kanban/.render-state-board2).
+
+design:
+  render_compact_card: >-
+    _compact_card() in render-board2.py main() drops
+    comms/spec/verify/help outright; keeps
+    id,title,column,updated,priority,ref,review_kind,brief,action,
+    claim,requests(open-only),ask,comms_total,first_at,last_at,
+    last_comm{at,from,text[:200]},attachments[] (repo-paths scanned
+    once at render),checks[{k,ok}]. Active-cycle cards
+    (doing/review column or action.status in
+    queued/running/claimed/verifying/stalled) keep a 5-entry comms
+    tail for the control-pane timeline. Top-level `recent` array
+    carries newest-first comm events for the ticker.
+  page_js: >-
+    Modal detail fetches GET /card/<id> on open (full card incl.
+    comms+spec) instead of reading comms from the payload; needs-you
+    band keeps working off compact requests/ask fields.
+  gantt: >-
+    board-gantt/js/data.js normalizeCard prefers precomputed
+    first_at/last_at/last_comm/comms_total over scanning comms
+    timestamps; falls through to the old comms scan on full
+    payloads.
+  self_sig: >-
+    _self_sig() added to --if-changed in render-board2.py AND
+    render-board.py — renderer file mtime folded into the state hash
+    so a template fix forces one re-render instead of waiting for
+    the next unrelated card write.
+
+result: >-
+  cards.json = 881,355 bytes at 726 cards (target <1.5MB). Render took
+  ~3.9s; --if-changed skip verified (second run prints nothing).
+  Node stub harness smoke-tested renderBoard/control pane/modal fetch
+  -> "SMOKE OK". Full tests/board suite — 959 passed, 17 subtests
+  passed (~11min). One pre-existing environmental failure excluded —
+  test_dispatch_close_out.py shells `python3 -m pytest` and system
+  python3 has no pytest; fails on clean tree too (verified via
+  /tmp/pps-venv).
+
+consumers_kept_working:
+  needs_you_band: board2 needs-you band scans requests/ask across all
+    cards (compact fields kept).
+  ticker: board2 ticker reads top-level `recent` comms array.
+  gantt_diagram: board-gantt + board-diagram normalizeCard updated for
+    compact shape, backward-compatible with full payloads.
+  classic_board: classic board/cards.json unchanged (render-board.py
+    writes the same classic path board-api reads as legacy base).
+
+doing_invariant: >-
+  Live board at render time — 727 cards (done 529, backlog 163,
+  review 22, doing 12, lab 1). All 12 doing cards had
+  action.status=running — zero doing cards lacked a live claim/running
+  action, so no reaper change was needed. merge-sweep.py
+  reap_stalled_claims (~line 1827) enforces the invariant via
+  board-janitor.py tick on idc03.
+
+verify:
+  - Re-render `python3 scripts/render-board2.py` then `wc -c
+    stacks/web/public/apps/board2/cards.json` (~881KB at 726 cards).
+  - Open a card modal -> network shows GET /card/<id>.
+  - board-gantt renders activity spans from first_at/last_at.
+
+lessons: >-
+  - cards.json consumers beyond board2 page exist — grep public/apps/*
+    for fetch('cards.json') before changing payload shape; board-gantt
+    and board-diagram needed a compat shim.
+  - render-board2.py embeds all page JS in a PAGE raw-string template;
+    node syntax-check the extracted script, not just the .py.
+  - --if-changed hash only covered the card dir; fold renderer mtime in
+    or template fixes wait for an unrelated card write.
+  - tests/board/test_dispatch_close_out.py fails on hosts where system
+    python3 lacks pytest — run the suite via a venv python.
