@@ -5,7 +5,11 @@ unattended: true
 description: Repo-grounded document drafting. Reads the checkout with
   read-only tools only (no bash, no writes), then emits ONE markdown
   artifact as its final message — the runner lands it at the declared
-  path and the held-out verifier checks structure + declared sentinels.
+  path and the held-out verifier checks structure + the card's declared
+  verify contract (action.verify_contains/verify_sections sentinels,
+  verify_regex patterns, verify_min_terms coverage — all optional but
+  mechanical-only; doc-draft cards should declare specific sentinels,
+  OPS-1014).
 task_classes:
 - report
 stages:

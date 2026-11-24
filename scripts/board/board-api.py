@@ -340,12 +340,18 @@ ACTION_TYPES = {"dispatch", "manual"}
 OPTION_ACTIONS = {"queue", "retry", "close", "hold", "none"}
 LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 # action keys a caller may set — status/runner/task_id are board-owned and
-# silently dropped so a spawn can't fake a running card
+# silently dropped so a spawn can't fake a running card. verify_* are the
+# held-out verifier contract read by the opencode profile verify.py
+# fixtures (OPS-1014: they were never settable through this door, so
+# doc-draft sentinel checks were unreachable — card
+# doc-draft-verifier-semantic-gap).
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
                "subject_host", "llm_key_alias", "lane_envelope", "nlm_notebook",
-               "nlm_source_file", "nlm_source_text", "nlm_source_url")
+               "nlm_source_file", "nlm_source_text", "nlm_source_url",
+               "verify_contains", "verify_sections", "verify_regex",
+               "verify_min_terms")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -2586,6 +2592,67 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError(
                     "action.expect.enums must be an object of small "
                     "lists")
+        # verify_* is the held-out verifier contract (opencode profile
+        # verify.py fixtures read it live off the card). Validate shapes
+        # at the door so a malformed contract fails here, not silently
+        # at verify time — card doc-draft-verifier-semantic-gap.
+        for vk in ("verify_contains", "verify_sections"):
+            vv = act.get(vk)
+            if vv is not None and not (
+                    isinstance(vv, str)
+                    or (isinstance(vv, list) and len(vv) <= 20
+                        and all(isinstance(s, str) and len(s) <= 300
+                                for s in vv))):
+                raise ValueError(
+                    f"action.{vk} must be a string or a list of <=20 "
+                    "strings (<=300 chars each)")
+        vrx = act.get("verify_regex")
+        if vrx is not None:
+            pats = [vrx] if isinstance(vrx, str) else vrx
+            if not (isinstance(pats, list) and len(pats) <= 20
+                    and all(isinstance(s, str) and len(s) <= 300
+                            for s in pats)):
+                raise ValueError(
+                    "action.verify_regex must be a string or a list of "
+                    "<=20 regex strings (<=300 chars each)")
+            for p in pats:
+                try:
+                    re.compile(p)
+                except re.error as e:
+                    raise ValueError(
+                        "action.verify_regex pattern does not compile: "
+                        f"{p!r} ({e})")
+        vmt = act.get("verify_min_terms")
+        if vmt is not None:
+            if isinstance(vmt, dict):
+                terms = vmt.get("terms")
+                at_least = vmt.get("at_least")
+                if not (isinstance(terms, list) and terms
+                        and len(terms) <= 50
+                        and all(isinstance(s, str) and s.strip()
+                                and len(s) <= 200 for s in terms)):
+                    raise ValueError(
+                        "action.verify_min_terms.terms must be a "
+                        "non-empty list of <=50 strings (<=200 chars)")
+                if at_least is not None and not (
+                        isinstance(at_least, int)
+                        and not isinstance(at_least, bool)
+                        and 1 <= at_least <= len(terms)):
+                    raise ValueError(
+                        "action.verify_min_terms.at_least must be an "
+                        "int between 1 and len(terms)")
+            elif isinstance(vmt, list):
+                if not (vmt and len(vmt) <= 50
+                        and all(isinstance(s, str) and s.strip()
+                                and len(s) <= 200 for s in vmt)):
+                    raise ValueError(
+                        "action.verify_min_terms must be a non-empty "
+                        "list of <=50 strings (<=200 chars) or "
+                        "{terms, at_least}")
+            else:
+                raise ValueError(
+                    "action.verify_min_terms must be a list of terms "
+                    "or {terms: [...], at_least: N}")
     on_exists = str(body.get("on_exists") or "error").strip()
     if on_exists not in ("error", "queue"):
         raise ValueError("on_exists must be error|queue")

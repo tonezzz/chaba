@@ -47,9 +47,21 @@ kkkakk@kk-mac` on idc03; registered in LiteLLM as
 needs a declared unit or a real `OLLAMA_HOST` bind on adanest's plist
 before it is durable.
 
-## Verifier weakness found
+## Verifier weakness found (OPS-1014, resolved 2026-11-24)
 
-The `doc-draft` verifier passed a doc that contained the sentinel
-strings but ignored the task brief (wrote a code-summary instead of
-model notes). Sentinel checks are mechanical, not semantic — doc
-quality still needs human review at card closeout.
+The `doc-draft` verifier passed a doc that ignored the task brief
+(wrote a code-summary of runner-agent.py instead of model notes).
+Two compounding causes: the card declared **no** verify contract at
+all — `action.verify_contains`/`verify_sections` were never in
+board-api's `ACTION_KEYS`, so the write door silently dropped them —
+and even declared sentinels are mechanical, not semantic.
+
+Resolution (card `doc-draft-verifier-semantic-gap`): the verifier now
+supports optional `action.verify_regex` (patterns that must match) and
+`action.verify_min_terms` (`{terms, at_least}` keyword coverage), and
+all four `verify_*` keys are settable through board-api with shape
+validation. The contract is held-out — the values are not injected
+into the agent prompt, so the spec prose must still say what to write;
+verify_* only enforces it. Declare strings/terms only a correct
+deliverable contains — but the gate stays mechanical, so **doc quality
+still needs human review at card closeout**.

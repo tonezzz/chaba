@@ -62,6 +62,16 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   it wins over `_apply_classify_at_queue` instead of being
   re-classified on the next queue. CLI:
   `board-cli.py card-set CARD --reason "why" [--lane L|''] [--executor E|''] [--tags a,b|--tag-add a --tag-remove b]`.
+- **`action.verify_*` — the held-out verifier contract** (card
+  `doc-draft-verifier-semantic-gap`, 2026-11-24): `/card` admits
+  `verify_contains`, `verify_sections`, `verify_regex`, and
+  `verify_min_terms` on `action` — the doc-draft/artifact-write
+  verify.py fixtures read them live off the card at verify time.
+  Shapes are validated at the door (sentinels/regex = string or ≤20
+  strings ≤300 chars, regexes must compile; `verify_min_terms` =
+  `{terms, at_least}` or a bare term list). Before this they were
+  silently dropped — no card could declare a sentinel via the API
+  (the OPS-1014 miss). See `evals/opencode-lane/PROCEDURE.md`.
 - **`/request` options** — `options[]` entries are strings or dicts
   `{id, label, action?}`. A dict option lets the emitter declare the
   answer's consequence at request time: when the answer picks that

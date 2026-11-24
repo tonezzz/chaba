@@ -1,0 +1,98 @@
+title: doc-draft verifier semantic gap — optional verify_regex/verify_min_terms + write-door fix
+id: doc-draft-verifier-semantic-gap
+date: 2026-11-24
+card: doc-draft-verifier-semantic-gap
+ref: OPS-1017
+parent_ref: OPS-1014
+domain: devnest
+status: done
+summary: >-
+  The OPS-1014 miss is now closable: the doc-draft/artifact-write
+  held-out verifiers honor optional action.verify_regex and
+  action.verify_min_terms alongside verify_contains/verify_sections,
+  and all four verify_* keys finally pass through board-api's
+  ACTION_KEYS with shape validation — they were silently dropped
+  before, so no card could ever declare a sentinel via the write door.
+
+context: >-
+  OPS-1014 evidence: qwen2.5:32b emitted a code-summary of
+  runner-agent.py instead of the specced model-notes doc, yet
+  verify_contains "passed". Re-checking the archived card showed the
+  deeper cause: the card declared NO verify contract, and could not
+  have — verify_contains/verify_sections were absent from board-api
+  ACTION_KEYS, so /card dropped them silently. The only gates that
+  ran were structural (size, markdown shape, no placeholders), which
+  a code summary trivially satisfies. Card offered three options;
+  took the recommended middle path: keep the mechanical gate,
+  document that doc-draft cards need specific sentinels, add the
+  optional stronger checks. Semantic judging stays a human closeout
+  duty — deliberately not automated.
+
+changes:
+  - file: evals/opencode-lane/profiles/doc-draft/fixture/verify.py
+    notes: >-
+      _card_sentinels -> _card_contract: fetches all four action.verify_*
+      keys live from board-api (fail closed on fetch error). New checks:
+      verify_regex (every pattern must re.search the artifact;
+      uncompilable pattern fails closed) and verify_min_terms
+      ({terms, at_least} case-insensitive coverage, or bare list = all
+      required; vacuous/unsatisfiable spec fails closed). Existing
+      sentinel semantics unchanged.
+  - file: evals/opencode-lane/profiles/artifact-write/fixture/verify.py
+    notes: Identical contract (docstring now names artifact-write).
+  - file: scripts/board/board-api.py
+    notes: >-
+      ACTION_KEYS += verify_contains, verify_sections, verify_regex,
+      verify_min_terms — the verifier read them but the write door
+      dropped them (root cause of the unreachable sentinel path).
+      do_create validates shapes: sentinels/regex = string or <=20
+      strings <=300 chars; regexes must re.compile at the door;
+      verify_min_terms = {terms: <=50 strings, at_least: int in
+      [1,len(terms)]} or a bare non-empty term list.
+  - file: evals/opencode-lane/profiles/doc-draft/fixture/task.yaml
+    notes: contract.required_fields documents all three verify_*
+      fields + the OPS-1014 sentinel-specificity warning.
+  - file: evals/opencode-lane/profiles/artifact-write/fixture/task.yaml
+    notes: same contract documentation.
+  - file: evals/opencode-lane/profiles/doc-draft/fixture/prompt.md
+    notes: rails now describe the whole verify contract, not just
+      sentinel strings.
+  - file: evals/opencode-lane/profiles/doc-draft/profile.yml
+    notes: description names the verify contract + the doc-review
+      caveat.
+  - file: evals/opencode-lane/PROCEDURE.md
+    notes: new "Card-declared verify contract" paragraph under the
+      profiles section.
+  - file: docs/kb/opencode-lane-model-notes.md
+    notes: >-
+      The verifier-weakness section rewritten as resolved — records
+      both root causes (no declared contract + unreachable keys) and
+      keeps the human-review caveat.
+  - file: tests/devnest/test_doc_draft_verify.py
+    notes: >-
+      10 tests over the fixture verifier incl. an OPS-1014 replay:
+      the code-summary artifact passes with no contract, fails once a
+      realistic contract (sentinel + regex + min_terms) is declared,
+      and the correct doc passes the same contract.
+  - file: tests/board/test_executor_contract.py
+    notes: >-
+      BoardApiContractTest: verify_* keys persist through do_create;
+      bad shapes (dict sentinels, uncompilable regex, bad
+      verify_min_terms) rejected at the door.
+
+verify: >-
+  python3 -m pytest tests/devnest/test_doc_draft_verify.py -q -> 10
+  passed. python3 -m pytest tests/board/test_executor_contract.py -q
+  -> 116 passed, 17 subtests.
+
+notes: >-
+  - verify_contains remains case-sensitive verbatim; verify_min_terms
+    is the case-insensitive fuzzy complement — pick per spec.
+  - Cards already queued cannot gain verify_* via /card (re-queue only
+    fires on non-active states); YAML edit or re-spawn required —
+    same limitation as every other action field.
+  - The twin card ssot-research-verifier-semantic (OPS-1017
+    citation-existence gap) is untouched — different verifier, same
+    shape of fix may apply later.
+  - Semantic doc quality is still NOT gated — recommendation kept the
+    human closeout review; verify_regex/min_terms only raise the floor.
