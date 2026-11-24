@@ -1,7 +1,7 @@
 id: model-route-registration-unify
 title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
 column: doing
-updated: 2026-11-24 18:42
+updated: 2026-11-24 19:01
 spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
   live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
   model.allowed. Four surfaces, zero of them cross-validated — drift is guaranteed. Options: (a) scripts/devnest/sync-opencode-models.py
@@ -183,6 +183,13 @@ comms:
   from: devin
   text: dispatch picked up — exploring opencode-lane profiles, litellm config, and fleet-unit sync pattern before
     writing sync-opencode-models.py
+- at: 2026-11-24 19:01
+  from: devin
+  text: 'DONE (dispatch wt-184132, branch dispatch/20261124-184132-adding-one-model-today-require, commit cfdd359251).
+    Option (a) implemented: sync-opencode-models.py hardened (provider-aware validation, --write baseURL guard,
+    --alert inbox, key discovery), live drift fixed (ops-remote-read gemini-3-flash typo, ssot-research stale or-free-north-code,
+    pilot phantom claude-fable-5.1/gemini-3-pro -> or- routes), opencode-models-sync jobs declared idc02+:37/tony_dell+:41
+    in ssot.jobs.yml + units rendered, CI'
 action:
   type: dispatch
   status: running
