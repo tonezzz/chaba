@@ -1,0 +1,79 @@
+id: tony-macbook-ssh-mesh-restore-enroll
+title: tony-macbook — ssh mesh repair + runner-agent verify + KK-files blocker
+host: tony-macbook
+date: 2026-11-24
+card: tony-macbook-restore-enroll
+status: partial — runner verified, KK files blocked on backup media
+
+trigger: >
+  Dispatch card tony-macbook-restore-enroll (SYS-0452): restore KK files
+  from the macOS backup into ~ and verify/enroll the runner-agent lane.
+
+ssh_access:
+  symptom: >
+    `ssh macbook` / `ssh tony@100.77.76.112` denied (publickey) from omen
+    and dell; mn01 had no Host stanza; only idc02's key still worked.
+  root_cause: >
+    The macbook's ~/.ssh/authorized_keys had been rebuilt down to 3 keys
+    (omen id_ed25519, an omen-cascade copy, idc02) — the rejoin-seeded
+    dedicated keys (omen id_ed25519_macbook, both dell keys) were gone.
+    ssh-mesh-sync only APPENDS default keys, so the dedicated alias keys
+    never came back on their own.
+  fix:
+    - re-added omen id_ed25519_macbook.pub + dell id_cascade.pub to the
+      macbook's authorized_keys (via working id_ed25519 path)
+    - ran scripts/ops/ssh-mesh-sync.sh — 7 hosts synced, 42 key-checks
+      (idc01 unreachable, pre-existing)
+    - added missing `Host macbook tony-macbook` stanza to mn01's
+      ~/.ssh/config (IdentityFile id_cascade — its key was already
+      authorized; bare ssh had no default identity to offer)
+  verified: >
+    ssh macbook works from omen AND dell; mn01/idc02/idc03 reach
+    tony-macbook; authorized_keys now 9 keys covering the fleet.
+
+runner_agent:
+  state: already enrolled 2026-10-11; cap raised 2->3 2026-11-24 via
+    card tony-macbook-cap-raise
+  verified_live:
+    - ~/.local/bin/runner-agent sha256 == repo scripts/board/runner-agent.py
+      == origin/master 52cbc072f269 (drift defer from 08:40 healed —
+      _self_update/sync-runner-tools converged it)
+    - runner-agent.service + runner-agent.timer active; timer firing
+    - "unit env RUNNER_CAP=3 RUNNER_MAX_LOAD_PC=0.8
+      RUNNER_LABELS=macbook,local-8c,always-home"
+    - "/host-status showed 3 active cards at 15:13 and merge-sweep merged
+      a dispatch branch from tony-macbook at 15:23 — claims live"
+  inventory:
+    - ssot.host-roles.yml tony-macbook entry — present
+    - ssot.kanban.yml runner_fleet prose — cap 3 labels match live unit
+    - audit-hosts.py HOSTS — "macbook" -> tony-macbook present
+    - ssot.host-capacity.yml tony_macbook — refreshed (disk free 203->96,
+      runner note cap2/cpu,dev,portable -> cap3/macbook,local-8c,always-home)
+
+kk_files_blocker:
+  needed: >
+    ubuntu-usb stick (117G portable Ubuntu) holding
+    home/tony/macbook-backup-2026-10-10 — 23G kkkakk home + 211M Shared.
+  checked_absent:
+    - "macbook: no USB mass-storage in lsblk/lsusb (only Realtek LAN +
+      an iPhone in recovery mode); no ~/backup*; find for
+      macbook-backup*/kkkakk across /home /media /mnt /run/media /tmp
+      /var/tmp /opt /srv /root — nothing; du shows no ~23G dir"
+    - "tony-dell / tony-omen / mn01 / idc02 / idc03: no ~117G usb device
+      in lsblk; /mnt/ubuntu-usb on dell is an empty mountpoint"
+    - "kk-mac (KK's Mac Studio): diskutil shows no external disk"
+    - "restic: macbook fleet-restic covers ~/.config ~/.local/bin ~/.ssh
+      only — not the backup; /dell-backup/restic-fleet/tony-macbook is
+      the same config-tier repo"
+  board_request: kk-files-restore-is-blocked-on-the-backu-27b870
+  scope_question_raised: >
+    restore-into-~ preserving backup top-level structure (recommended)
+    vs merge home contents (clobbers .ssh/.config) vs user-dirs-only.
+
+skipped_per_spec:
+  - redis — no backup exists (podman redis-data volume never exported)
+
+next: >
+  When the stick is attached: mount it, inspect
+  home/tony/macbook-backup-2026-10-10 layout, rsync into ~ per Tony's
+  scope answer, then verify file presence and close the card.
