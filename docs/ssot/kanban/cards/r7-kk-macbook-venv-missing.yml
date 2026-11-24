@@ -1,7 +1,7 @@
 id: r7-kk-macbook-venv-missing
 title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
 column: doing
-updated: 2026-11-24 20:23
+updated: 2026-11-24 20:46
 brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
   package missing.'
 priority: medium
@@ -149,6 +149,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-201439-source-ansible-verify-host-sof on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 20:46
+  from: tony
+  text: 'answered job-input-r7-kk-macbook-venv-missing: answer — Answer — reply in chat'
+- at: 2026-11-24 20:46
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 requests:
 - id: install-python3-14-venv-on-tony-macbook-e29487
   ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
@@ -179,7 +185,7 @@ requests:
   ask: 'Job needs your input: sudo on tony-macbook needs your password — please run `ssh tony-macbook` then `sudo
     apt install -y python3.14-venv` yourself (board request sudo-on-tony-macbook-needs-your-password-364cd9 has
     options), or add a NOPASSWD rule so I can do it.'
-  status: open
+  status: answered
   at: 2026-11-24 20:21
   from: chaba
   options:
@@ -189,6 +195,7 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+  answer: answer — Answer — reply in chat
 action:
   type: dispatch
   status: running
