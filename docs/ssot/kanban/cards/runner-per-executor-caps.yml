@@ -1,8 +1,8 @@
 id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
-column: doing
-updated: 2026-11-24 22:16
+column: review
+updated: 2026-11-24 22:18
 priority: high
 tags:
 - devnest
@@ -35,7 +35,7 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 20:34
   last_failure: 'journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794918460.service:
@@ -45,6 +45,8 @@ action:
   lane: devin
   lane_source: fallback
   runner: tony-dell
+  result: 'exit=0 tch-outcome-20261124-211725-problem-observed-2026-11-09-re.md`. | devin-task-20261124-211725-problem-observed-2026-11-09-re.service:
+    Consumed 7min 18.792s CPU time over 59min 25.623s wall clock time, 1.1G memory peak, 511M memory swap peak.'
 ref: OPS-1284
 comms:
 - at: 2026-11-09 17:07
@@ -405,5 +407,29 @@ comms:
     keeps ratelimit/kill/disk + lane servability gates; script OPS-1182 exception unchanged. claim_pass logs per-card
     gate ({pool} gate holds — {cap}); both-pools-full pre-pass skip keeps per-card board notes. State entries stamp
     resolved executor via start_task out-param (+me'
+- at: 2026-11-24 22:18
+  from: tony-dell
+  text: 'finished (ok): exit=0 tch-outcome-20261124-211725-problem-observed-2026-11-09-re.md`. | devin-task-20261124-211725-problem-observed-202'
+- at: 2026-11-24 22:18
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:18
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-211725-problem-observed-2026-11-09-re'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 13 l'
+- at: 2026-11-24 22:18
+  from: chaba
+  text: banked 2 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:18
+  from: chaba
+  text: pushed dispatch/20261124-211725-problem-observed-2026-11-09-re to origin
+- at: 2026-11-24 22:18
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 22:18
+  from: chaba
+  text: 'worktree kept: dirty — 13 uncommitted file(s)'
 claim:
   since: 2026-11-24 21:16
+review_kind: verify
