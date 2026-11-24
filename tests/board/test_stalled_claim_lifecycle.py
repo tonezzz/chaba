@@ -125,16 +125,22 @@ class BoardApiLifecycleTest(unittest.TestCase):
         self.api.do_claim(c, {"host": "mn01"})
         self.assertEqual(c["column"], "doing")
 
-    def test_claim_refused_at_attempt_cap(self):
+    def test_claim_refused_at_attempt_cap_parks_card(self):
+        # A capped claim must park the card, not just refuse it: a card
+        # left queued at cap is re-tried by every runner every tick
+        # (2026-11-24 capped-queue churn).
         c = {"id": "lc-cap", "column": "backlog", "comms": [],
              "action": {"type": "dispatch", "status": "queued",
                         "attempts": 2}}
-        try:
+        with self.assertRaises(self.api.AttemptCapError) as ctx:
             self.api.do_claim(c, {"host": "mn01"})
-        except ValueError as e:
-            self.assertIn("attempt cap", str(e))
-            return
-        raise AssertionError("claim at cap should be refused")
+        self.assertIn("attempt cap", str(ctx.exception))
+        a = c["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(c["column"], "backlog")
+        self.assertIn("attempt cap", a["last_failure"])
+        self.assertTrue(any("parked at attempt cap" in m["text"]
+                            for m in c["comms"]))
 
     def test_claim_refused_at_lane_envelope_cap(self):
         c = {"id": "lc-env-cap", "column": "backlog", "comms": [],
@@ -211,6 +217,25 @@ class BoardApiLifecycleTest(unittest.TestCase):
         self.api.do_action(c, "queue", "tony")
         self.assertEqual(c["action"]["status"], "queued")
         self.assertEqual(c["column"], "backlog")
+
+    def test_queue_at_cap_parks_instead_of_requeuing(self):
+        # do=queue keeps attempts (unlike do=retry) — at cap it must park
+        # the card, otherwise it is immediately claimable-but-unclaimable.
+        c = {"id": "lc-q-cap", "column": "backlog", "comms": [],
+             "action": {"type": "dispatch", "status": "failed",
+                        "attempts": 2}}
+        msg = self.api.do_action(c, "queue", "tony")
+        self.assertIn("parked at attempt cap", msg)
+        a = c["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(c["column"], "backlog")
+        self.assertIn("attempt cap", a["last_failure"])
+        self.assertTrue(any("queue refused" in m["text"]
+                            for m in c["comms"]))
+        # do=retry is the only re-arm and still resets the budget
+        self.api.do_action(c, "retry", "tony")
+        self.assertEqual(c["action"]["status"], "queued")
+        self.assertEqual(c["action"]["attempts"], 0)
 
 
 class DispatchLifecycleTest(unittest.TestCase):

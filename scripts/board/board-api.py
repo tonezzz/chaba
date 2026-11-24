@@ -55,6 +55,9 @@ Endpoints (after prefix strip):
       finish {host, ok?, result?} is the remote-runner report path
       (runner-agent.py): only the claiming host may finish; ok:true
       moves the card to review, ok:false marks it failed in place.
+      attempt cap: a claim at cap parks the card failed in backlog and
+      answers 400 (do=queue at cap does the same); do=retry is the only
+      re-arm and resets attempts. Capped cards never stay queued.
       do:queue|retry|close|hold are verify-or-loud (card
       board-api-queue-write-verify-lost-race-f85f2f): after the flock
       releases, the queued commit is flushed (bounded
@@ -300,6 +303,13 @@ PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish", "archive", "unarchive"}
+
+
+class AttemptCapError(ValueError):
+    """A claim hit the dispatch attempt cap and parked the card. The
+    request handler catches this to persist the park before answering 400
+    — a bare ValueError left the card queued and every runner re-tried
+    it every minute (2026-11-24 capped-queue churn)."""
 # done+verified cards older than this move to cards/archive/ via
 # /action do=archive (KNB-1178; SSOT column_sla.done convention).
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
@@ -1442,6 +1452,20 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         if refused:
             return refused
         a.setdefault("type", "dispatch")
+        # A plain re-queue is NOT a re-arm: it keeps attempts. Queueing a
+        # card that already spent its budget recreates the claim churn —
+        # park it and point the operator at do=retry (which resets
+        # attempts to 0). This closes the second path that left capped
+        # cards claimable-but-unclaimable.
+        att = int(a.get("attempts") or 0)
+        max_att = dr.dispatch_attempt_cap(card)
+        if att >= max_att:
+            reason = (f"attempt cap reached ({att}/{max_att}) — "
+                      "/action do=retry re-arms it")
+            a["status"] = "failed"
+            a["last_failure"] = reason
+            comms_add(card, frm, f"queue refused — {reason}")
+            return f"parked at attempt cap — /action do=retry re-arms it"
         a["status"] = "queued"
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
@@ -1621,9 +1645,22 @@ def do_claim(card: dict, body: dict) -> str:
     att = int(a.get("attempts") or 0)
     max_att = dr.dispatch_attempt_cap(card)
     if att >= max_att:
-        raise ValueError(
-            f"attempt cap reached ({att}/{max_att}) — /action do=retry "
-            "re-arms it")
+        reason = (f"attempt cap reached ({att}/{max_att}) — "
+                  "/action do=retry re-arms it")
+        # Park instead of merely refusing: a capped card left queued is
+        # claimable-but-unclaimable, so every runner hammers it on each
+        # tick (2026-11-24: 12 dispatch cards at 2/2 retried fleet-wide).
+        # The handler persists this mutation before answering 400.
+        # do=retry is the only re-arm and resets attempts.
+        a["status"] = "failed"
+        a["last_failure"] = reason
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        _ensure_claim(card).pop("session", None)
+        if card.get("column") in ("doing", "review", "done"):
+            card["column"] = "backlog"
+        comms_add(card, host, f"parked at attempt cap — {reason}")
+        raise AttemptCapError(reason)
     pinned = a.get("host")
     if pinned and dr.canon_host(pinned) != dr.canon_host(host):
         raise ValueError(f"card is pinned to {pinned}")
@@ -5644,7 +5681,15 @@ class H(BaseHTTPRequestHandler):
                     card = load(p)
                     if verb in ("claim", "move", "finish"):
                         if verb == "claim":
-                            msg = do_claim(card, body)
+                            try:
+                                msg = do_claim(card, body)
+                            except AttemptCapError:
+                                # do_claim parked the card at cap — persist
+                                # it before the 400 so it leaves /queue and
+                                # the next runner tick skips it entirely.
+                                card["updated"] = now()
+                                save(p, card)
+                                raise
                         elif verb == "move":
                             msg = do_move(card, body, actor(body))
                         else:
