@@ -1,7 +1,7 @@
 id: board-cli-request-ask-field
 title: Fix board-cli request subcommand — posts 'text' but API expects 'ask'
 column: doing
-updated: 2026-11-24 22:20
+updated: 2026-11-24 22:22
 brief: 'board-cli.py request subcommand POSTs {text: ...} to /request, but do_request() reads body[''ask''] — every
   ''board-cli request'' returns HTTP 400 ''ask required''. Confirmed identical bug in dell and idc03 checkouts (line
   ~168). One-word fix in the payload dict. Requests meanwhile go via curl with ''ask'' — workaround proven 2026-11-09
@@ -245,6 +245,11 @@ comms:
     /comment and /request can hang >90s behind a; board-api derives REPO from `__file__`, so bind-mounting the checkout
     at its rea; jev-student''s noul head ignores question text entirely — out-of-domain it return; [ada-opencode-repair-menu-card]
     Post-deploy check 2026-11-09 on idc03: systemd'
+- at: 2026-11-24 22:22
+  from: devin
+  text: 'dispatch 20261124-222026: worktree HEAD already carries the fix — request branch sends "ask": args.text
+    (landed via 80101e81ce5). Verifying live via --ssh idc03 on a scratch card; comment/respond field names checked
+    against board-api do_comment/do_respond.'
 action:
   type: dispatch
   status: running
