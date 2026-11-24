@@ -1,0 +1,70 @@
+title: Bound unattended dispatch units — RuntimeMaxSec + denial-streak breaker
+id: runner-dispatch-no-timeout
+date: 2026-11-24
+card: runner-dispatch-no-timeout
+ref: OPS-0999
+domain: devnest
+status: done
+summary: >-
+  Unattended dispatch task units are now wall-clock bounded on every
+  headless lane, and headless opencode runs get a denial-count circuit
+  breaker since doom_loop=ask cannot fire without a TTY.
+
+context: >-
+  Found during devnest-fl-pilot-health: nemotron burned 12+ min / 77
+  tool calls / 60 permission denials on a fixture whose task.yaml
+  declared timeout_s=420 — the synchronous opencode_profiles.run path
+  honored it, the systemd-run unit path did not.
+
+changes:
+  - file: scripts/board/runner-agent.py
+    notes: >-
+      start_kk_mac_lane: rt_launch timeout_s = action.timeout_s or 900s
+      default (was unbounded).
+      start_nlm_lane (both duplicate defs): timeout_s =
+      action.timeout_s or 1800s default.
+      _start_opencode_lane: RuntimeMaxSec was already armed (fixture
+      task.yaml timeout_s -> action.timeout_s -> 420s default);
+      shell now wraps opencode argv in opencode_stream_guard.py
+      (falls back to plain tee if the script is absent).
+      devin-dispatch path: DISPATCH_UNIT_PROPS appends
+      --property=RuntimeMaxSec=<n> ONLY when the card declares
+      action.timeout_s (opt-in — devin sessions legitimately run
+      long; task_run_props already self-gates on LIMITS_ON).
+  - file: scripts/devnest/opencode_stream_guard.py
+    notes: >-
+      New. Wraps a child process, tees its stdout JSONL to
+      <taskdir>/events.jsonl while counting consecutive tool
+      permission denials (same DENY_HINT_RE semantics as
+      opencode_profiles._tool_denial). Any completed tool call resets
+      the streak; text/other events do not. On trip: SIGTERM child,
+      SIGKILL after grace, write <taskdir>/denial-breaker.json
+      {tripped, streak, max_streak, at}, exit 3.
+      Threshold: action.denial_streak_max > OPENCODE_DENIAL_STREAK_MAX
+      > default 10; 0 disables.
+  - file: tests/devnest/test_opencode_stream_guard.py
+    notes: Unit tests for streak logic + CLI end-to-end (kill, marker,
+      passthrough exit code).
+  - file: tests/board/test_runner_agent_lane.py
+    notes: >-
+      DISPATCH_UNIT_PROPS carries RuntimeMaxSec=<timeout_s> when the
+      card declares it; absent otherwise.
+  - file: tests/board/test_executor_contract.py
+    notes: >-
+      KkMacLaneTimeoutTest: systemd-run argv carries
+      RuntimeMaxSec=900 default and =123 when action.timeout_s=123.
+
+verify: >-
+  python3 -m pytest tests/devnest/test_opencode_stream_guard.py \
+    tests/board/test_runner_agent_lane.py \
+    tests/board/test_executor_contract.py -x -q
+  -> 145 passed, 17 subtests passed.
+
+notes: >-
+  - start_nlm_lane/start_finish_nlm_lane are defined twice in
+    runner-agent.py (second def shadows first) — pre-existing dead
+    code; both copies patched identically.
+  - The dispatch (devin) lane deliberately has NO default RuntimeMaxSec
+    — only cards that opt in via action.timeout_s get bounded.
+  - denial-breaker.json is a finish-time audit signal; wiring it into
+    finish_opencode_lane's failure taxonomy is a possible follow-up.
