@@ -1,7 +1,7 @@
 id: ada-sweep-menu-regression-20261108
 title: Ada /sweep command menu is missing
 column: doing
-updated: 2026-11-24 21:46
+updated: 2026-11-24 22:07
 priority: medium
 tags:
 - ada
@@ -225,6 +225,13 @@ comms:
     Fresh evidence 2026-11-24 18:58 +07: ton; [idc03-ada-hygiene-20261107] RESOLVED (d): the ada-dev restarter is
     deploy-prefl; [ada-dispatch-approve-button] merge-sweep: no session/worktree found for devin-t; [ada-opencode-repair-menu-card]
     Post-deploy check 2026-11-09 '
+- at: 2026-11-24 22:07
+  from: devin
+  text: 'Root cause found: /ada sweep lives in .opencode/commands/ada.md inside the ada-code OpenCode workspace
+    on idc02 (~/.local/share/ada-code/workspace) — the project dir the ada-ocb OpenChamber pane opens. Today 2026-11-24
+    ~10:38 the ada-code/jack-ide quadlets were retired AND the whole ~/.local/share/ada-code tree (incl. workspace)
+    was moved to ~/backups/retired-opencode-20261124/, so the pane lost its command file + ada-control MCP config.
+    ada_sweep backend untouched. Restoring the workspace dir n'
 action:
   type: dispatch
   status: running
