@@ -8,20 +8,20 @@ column: review
 review_kind: decide
 priority: medium
 created: 2026-10-09
-updated: 2026-11-24 09:07
+updated: 2026-11-24 11:43
 autonomy: t2
 links:
 - chaba-nest
 - nest-micro-training
 - ada-member-pwa-invite
-spec: "Pieces that exist already: iOS PWA (ada-pi-pwa on idc03), voice_fx bark channel (client-side machine voice),\
-  \ cast_to_screen/yt actuation to TVs, memory banks + MDDB tiers, Nest lanes. The new part is the FABRIC: 1. Session\
-  \ registry: an utterance on surface A can bind to response\n   surface B (route rule: last-active screen, room\
-  \ sensor, or explicit\n   \"answer on the TV\").\n2. Ingestion tiers per Nest node: hot (live session), warm (compressed\n\
-  \   summary), cold (extracted facts → memory banks), discard (noise).\n   Every input gets a tier decision — that\
-  \ IS the Nest doing triage.\n3. Response broker: picks the output surface (voice reply / cast /\n   card push\
-  \ / silent note) — today the ws session is the only channel.\n4. Gemini Live becomes one lane among others; a\
-  \ local lane\n   (student/encoder tier) can own low-risk turns."
+spec: "Pieces that exist already: iOS PWA (ada-pi-pwa on idc03), voice_fx bark channel (client-side machine voice),
+  cast_to_screen/yt actuation to TVs, memory banks + MDDB tiers, Nest lanes. The new part is the FABRIC: 1. Session
+  registry: an utterance on surface A can bind to response\n   surface B (route rule: last-active screen, room sensor,
+  or explicit\n   \"answer on the TV\").\n2. Ingestion tiers per Nest node: hot (live session), warm (compressed\n
+  \  summary), cold (extracted facts → memory banks), discard (noise).\n   Every input gets a tier decision — that
+  IS the Nest doing triage.\n3. Response broker: picks the output surface (voice reply / cast /\n   card push /
+  silent note) — today the ws session is the only channel.\n4. Gemini Live becomes one lane among others; a local
+  lane\n   (student/encoder tier) can own low-risk turns."
 verify: Speak into the PWA on iPhone with no TV session open → answer plays on the living-room TV; the utterance
   lands in the correct memory tier (check the bank); a second surface (tablet) can co-listen without stealing the
   session.
@@ -340,6 +340,10 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done

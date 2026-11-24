@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
 column: backlog
-updated: 2026-11-24 09:26
+updated: 2026-11-24 11:43
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -448,6 +448,10 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned

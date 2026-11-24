@@ -7,7 +7,7 @@ metric: digest calls out first-seen-in-7d lines; matched/shipped ratio stops car
 note: 'Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a ''new today'' flag for normalized lines
   absent from the prior 7d — where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal
   not churn (feeds directly into the backlog check''s accuracy).'
-updated: 2026-11-24 08:42
+updated: 2026-11-24 11:43
 spec: 'Digest signal density: (a) ''new today'' flag for normalized lines absent from the prior 7d — where real
   incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal not noise. Repeat offenders already
   collapse via RX_VOLATILE — build on that. Verify: digest shows a new-today marker on an injected novel line and
@@ -55,11 +55,11 @@ comms:
     cap in shipper.'
 - at: 2026-10-06 10:54
   from: devin
-  text: 'done on dispatch branch 0a17913f. (a) 🆕 new-today flag: full-scan + prior-7d baseline sigs — verified on
-    stub (novel line flagged, baseline-known line not) and live (all 6 hosts now in the true window — found the
+  text: "done on dispatch branch 0a17913f. (a) \U0001F195 new-today flag: full-scan + prior-7d baseline sigs — verified
+    on stub (novel line flagged, baseline-known line not) and live (all 6 hosts now in the true window — found the
     old scan was pinned to oldest 5000 docs, digest was showing Oct-3 data). (b) noise: remote grep -vE pre-drop
     (-72% payload on omen), DROP += session-scope/uvicorn/restart-counter, REPEAT_CAP=25/sig with meta.suppressed
-    so xN stays truthful. Pending: install-log-shipper.sh re-run per hos'
+    so xN stays truthful. Pending: install-log-shipper.sh re-run per hos"
 - at: 2026-10-06 10:55
   from: tony-omen
   text: 'finished (ok): exit=0 ut. Trail: `docs/ssot/jobs/infrastructure/2026-10-06-log-digest-signal-density.yml`.
@@ -213,6 +213,10 @@ comms:
 - at: 2026-11-24 08:42
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 ref: OPS-0121

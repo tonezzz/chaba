@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: done
-updated: 2026-11-24 11:30
+updated: 2026-11-24 11:43
 action:
   type: manual
   status: done
@@ -272,9 +272,21 @@ comms:
 - at: 2026-11-24 11:05
   from: chaba
   text: action.type=manual — human-owned work, not runner-dispatchable
-- at: '2026-11-24 11:30'
+- at: 2026-11-24 11:30
   from: tony
-  text: '[verify] OPS-0790 close-out (Tony). (1) runner-agent drift cleared: sha256 of /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py matches ~/.local/bin/runner-agent on idc03, idc02, tony-dell, tony-omen, tony-macbook, con01 and mn01; no new "runner-agent drifted" defer since 08:41. (2) systemd migration complete: all 8 replacement timers from docs/reports/dispatcher-systemd-migration-2026-10-29.md are enabled+active — idc03 embed-lane-news/embed-lane-lessons/yomi-update-active, idc02 embed-lane-banks, tony-dell mcp-debug-h3-sync/tony-dell-health-snapshot/network-scan-tony/lesson-drift-check. (3) The last unarmed unit, tony-dell lesson-drift-check.timer, was enabled --now at 11:28 and proof-ran clean ("0 stale lesson(s), 0 unmapped family topic(s), 0 missing page(s)"; no drift — nothing filed). Legacy chaba-jobs.timer is gone fleet-wide. (4) chaba-board-api.service was down 11:10-11:21 (502s); restarted, backend and /queue verified 200. Done-condition met.'
+  text: '[verify] OPS-0790 close-out (Tony). (1) runner-agent drift cleared: sha256 of /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    matches ~/.local/bin/runner-agent on idc03, idc02, tony-dell, tony-omen, tony-macbook, con01 and mn01; no new
+    "runner-agent drifted" defer since 08:41. (2) systemd migration complete: all 8 replacement timers from docs/reports/dispatcher-systemd-migration-2026-10-29.md
+    are enabled+active — idc03 embed-lane-news/embed-lane-lessons/yomi-update-active, idc02 embed-lane-banks, tony-dell
+    mcp-debug-h3-sync/tony-dell-health-snapshot/network-scan-tony/lesson-drift-check. (3) The last unarmed unit,
+    tony-dell lesson-drift-check.timer, was enabled --now at 11:28 and proof-ran clean ("0 stale lesson(s), 0 unmapped
+    family topic(s), 0 missing page(s)"; no drift — nothing filed). Legacy chaba-jobs.timer is gone fleet-wide.
+    (4) chaba-board-api.service was down 11:10-11:21 (502s); restarted, backend and /queue verified 200. Done-condition
+    met.'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
