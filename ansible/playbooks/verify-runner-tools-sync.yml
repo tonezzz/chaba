@@ -68,7 +68,7 @@
     - name: Refuse targets outside the tailnet
       ansible.builtin.assert:
         that:
-          - ansible_host | ansible.utils.ipaddr(runner_sync_policy.tailnet_cidr)
+          - ansible_host == (ansible_host | ansible.utils.ipaddr(runner_sync_policy.tailnet_cidr))
         fail_msg: >-
           {{ inventory_hostname }} is outside {{ runner_sync_policy.tailnet_cidr }}
           — refusing to rsync
