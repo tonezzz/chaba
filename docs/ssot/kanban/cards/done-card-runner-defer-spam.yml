@@ -1,0 +1,19 @@
+id: done-card-runner-defer-spam
+title: done cards with stale action.runner get defer-spam from every runner
+column: backlog
+updated: 2026-11-24 16:14
+priority: medium
+tags:
+- board
+- runner
+spec: 'Observed 2026-11-24 on lab-cf-kv-claw-channel.yml (column: done, action.status: done): 154+ identical chaba
+  comms ''unclaimable by the declared runner fleet: action.runner=idc01 names no declared runner'', emitted by idc03/tony-dell/mn01/idc02/con01
+  across the day. Card grew to 754 lines and broke the SSOT CI hard-bloat gate (>750). Root cause: runner-agent
+  claim loop emits defer comms on done cards instead of short-circuiting before any write. Fix: gate claim/defer
+  on column in {backlog,doing} before comms_add, plus a regression test. Workaround applied meanwhile: grandfathered
+  the card in ssot.file-optimization.yml config.bloat_exemptions.hard_threshold (PR #203).'
+ref: KNB-0036
+comms:
+- at: 2026-11-24 16:14
+  from: tony
+  text: card captured via board-api
