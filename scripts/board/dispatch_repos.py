@@ -26,6 +26,7 @@ the mddb devin-handoff collection (cross-repo-lesson-harvest) — the
 repo-agnostic corpus lesson_primer reads back over /v1/search.
 """
 import base64
+import fcntl
 import json
 import os
 import re
@@ -1366,10 +1367,22 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # throwaway worktree the repo's test command runs there BEFORE the result
 # pushes to origin — a red suite holds the merge exactly like a conflict
 # (close_out returns test_failures; kanban-dispatch requeues with
-# action.last_failure carrying the failing test names). Fail-open on
-# missing pytest (same convention as the merge guard); a suite timeout
+# action.last_failure carrying the failing test names). A suite timeout
 # counts as a failure — the alternative is merging a tree the suite can't
 # even finish on. KANBAN_TESTGATE=0 disables the gate entirely.
+#
+# Fail-CLOSED on an unrunnable gate (merge-sweep-test-gate-fail-open,
+# 2026-11-19 — tony-macbook merged with 'pytest unavailable — fail-open'
+# and zero test evidence): when the gate is pytest-shaped, tests/ exists,
+# and NO interpreter can `import pytest`, the merge is HELD
+# (result.unrunnable) — the card requeues with labels:[pytest] so a
+# capable runner claims the retry. action.test_exempt on the card is the
+# allowlist for docs-only work. Before holding, a bounded bootstrap
+# provisions the CANONICAL checkout's .venv with the repo's declared
+# gate deps (repo-scoped pytest, never a global host install — the
+# card's approved direction; KANBAN_GATE_BOOTSTRAP=0 disables). Skips
+# that still merge ungated are the declared ones: no gate configured,
+# no tests/ dir in the merged tree, the off-switch, or test_exempt.
 #
 # Interpreter resolution (card dispatch-test-gate-venv — the 2026-10-13
 # line-multihome incident: ada-voice's suite needs google.genai from its
@@ -1384,7 +1397,9 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 #      worktree's git-common parent; dispatch worktrees carry no .venv
 #      of their own, this is where ada-voice's lives
 #   4. <repos.conf path>/{.venv,venv}/bin/python[3]
-#   5. "" — command keeps system python3
+#   5. bootstrap — provision <canonical or repos.conf checkout>/.venv
+#      with REPO_TESTS[repo]["bootstrap"] deps (default ["pytest"])
+#   6. "" — command keeps system python3
 #
 # The probe is `import pytest`, not mere existence: chaba's venv/ has
 # no pytest and must NOT win over a pytest-capable system python, else
@@ -1426,7 +1441,17 @@ REPO_TESTS = {
               "tests/board/test_board_api_action_persistence.py "
               "tests/test_ssot_validate_refs.py "
               "-x -q",
-              "timeout": 240},
+              # the set outgrew its old 240s budget — 237 tests need
+              # ~480s on tony-omen under load (2026-11-19), which held
+              # merges on "suite timeout" even when green; on idc03's
+              # 4 vCPUs it can stretch further. 900s keeps the gate
+              # honest without wedging every dispatch — a held merge
+              # costs more than a slow gate.
+              "timeout": 900,
+              # what the bootstrap installs when nothing on the host can
+              # import pytest — chaba's merge-smoke set needs pyyaml
+              # (test files import yaml at collection time)
+              "bootstrap": ["pytest", "pyyaml"]},
     "ada-voice": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
                "timeout": 300},
     # legacy alias — same suite for cards still saying repo: ada-pi
@@ -1457,6 +1482,8 @@ def test_gate_config(repo_name: str) -> dict:
            "timeout": int(ent.get("timeout") or DEFAULT_TEST_TIMEOUT)}
     if ent.get("python"):
         cfg["python"] = ent["python"]
+    if ent.get("bootstrap"):
+        cfg["bootstrap"] = ent["bootstrap"]
     return cfg
 
 
@@ -1485,11 +1512,107 @@ def _has_pytest(py: Path) -> bool:
               timeout=20).returncode == 0
 
 
+GATE_BOOTSTRAP_TTL = int(os.environ.get(
+    "KANBAN_GATE_BOOTSTRAP_TTL", "21600"))  # 6h between pip attempts
+
+
+def _gate_bootstrap_roots(wt: Path, repo_name: str) -> list:
+    """Checkouts the gate venv may be provisioned in, best-first — the
+    canonical checkout (linked worktree's git-common parent), then the
+    repos.conf-declared path. The throwaway tree under test is
+    deliberately excluded: a venv created there dies with the merge."""
+    roots: list[Path] = []
+    for d in (_repo_root(Path(wt)),
+              (repos().get(repo_name or "") or {}).get("path")):
+        if d:
+            d = Path(d)
+            if d not in roots:
+                roots.append(d)
+    return roots
+
+
+def _bootstrap_gate_python(wt: Path, repo_name: str, cfg: dict) -> str:
+    """Provision a pytest-capable interpreter inside the repo's own
+    checkout — repo-scoped, never a global host install (the card's
+    approved direction over OS-level pip). An existing
+    <root>/{.venv,venv} is topped up with the repo's "bootstrap" deps;
+    otherwise <root>/.venv is created. Returns the venv python when it
+    can `import pytest`, else "".
+
+    Serialized per checkout under a flock + a mtime marker
+    (.gate-bootstrap.stamp inside the venv) so a pip-incapable host
+    retries at most once per GATE_BOOTSTRAP_TTL instead of on every
+    merge. KANBAN_GATE_BOOTSTRAP=0 disables — the gate then goes
+    straight to fail-closed."""
+    if os.environ.get("KANBAN_GATE_BOOTSTRAP", "1") == "0":
+        return ""
+    deps = [str(d) for d in (cfg.get("bootstrap") or ["pytest"])]
+    for root in _gate_bootstrap_roots(wt, repo_name):
+        try:
+            if not root.is_dir():
+                continue
+        except OSError:
+            continue
+        venv = next((root / vd for vd in VENV_DIRS
+                     if (root / vd / "bin").is_dir()), root / ".venv")
+        stamp = venv / ".gate-bootstrap.stamp"
+        try:
+            (root / ".gate-bootstrap.lock").touch(exist_ok=True)
+            fd = os.open(str(root / ".gate-bootstrap.lock"), os.O_RDWR)
+        except OSError:
+            continue
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            try:
+                # a racing merge may have provisioned while we waited
+                for bn in ("python", "python3"):
+                    p = venv / "bin" / bn
+                    if p.is_file() and _has_pytest(p):
+                        return str(p)
+                # mtime = last provision attempt — bounds pip to once
+                # per TTL no matter how it went; re-checked under the
+                # lock so a serialized loser doesn't immediately re-pip
+                try:
+                    fresh = (time.time() - stamp.stat().st_mtime
+                             < GATE_BOOTSTRAP_TTL)
+                except OSError:
+                    fresh = False
+                if fresh:
+                    continue
+                try:
+                    stamp.parent.mkdir(parents=True, exist_ok=True)
+                    stamp.touch(exist_ok=True)
+                except OSError:
+                    pass
+                py = venv / "bin" / "python"
+                if not py.exists():
+                    r = sh(["python3", "-m", "venv", str(venv)],
+                           timeout=120)
+                    if r.returncode != 0 or not py.exists():
+                        continue
+                sh([str(py), "-m", "pip", "install", "-q",
+                    "--disable-pip-version-check", *deps], timeout=240)
+                if _has_pytest(py):
+                    return str(py)
+            finally:
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                except OSError:
+                    pass
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+    return ""
+
+
 def gate_python(wt: Path, repo_name: str, cfg: dict) -> str:
     """Interpreter for a `python3 -m pytest` test command; "" keeps the
     system python3 already in the command. An explicit REPO_TESTS
     "python" pin wins when it exists; otherwise the first checkout venv
-    whose python can import pytest."""
+    whose python can import pytest, then the bounded repo-scoped
+    bootstrap."""
     pin = cfg.get("python")
     if pin:
         p = Path(pin).expanduser()
@@ -1498,7 +1621,30 @@ def gate_python(wt: Path, repo_name: str, cfg: dict) -> str:
     for p in _venv_python_candidates(wt, repo_name):
         if _has_pytest(p):
             return str(p)
-    return ""
+    return _bootstrap_gate_python(wt, repo_name, cfg)
+
+
+def pytest_capable(repo_name: str = "") -> bool:
+    """Can this host run a pytest gate for `repo_name` — or for ANY
+    repos.conf repo when ""? True when system python3 or one of that
+    repo's checkout venvs can `import pytest`. Powers the 'pytest'
+    runner label: proven capability only — bootstrap provisionability
+    does NOT count, so a host that can merely create a venv doesn't
+    claim what it can't yet verify."""
+    cands = [Path("python3")]
+    if repo_name:
+        roots = [(repos().get(repo_name) or {}).get("path")]
+    else:
+        roots = [e.get("path") for e in repos().values()]
+    for root in roots:
+        if not root:
+            continue
+        for vd in VENV_DIRS:
+            for bn in ("python", "python3"):
+                p = Path(root) / vd / "bin" / bn
+                if p.is_file() and os.access(p, os.X_OK):
+                    cands.append(p)
+    return any(_has_pytest(p) for p in cands)
 
 
 _PY_LEAD_RE = re.compile(r"^\s*python[\d.]*(?=\s)")  # python, python3, python3.11
@@ -1542,14 +1688,23 @@ def _resolve_gate_cmd(cmd: str, wt: Path, repo_name: str,
     return _PY_LEAD_RE.sub(shlex.quote(py), cmd, count=1), py
 
 
-def run_test_gate(wt: Path, repo_name: str) -> dict:
+def run_test_gate(wt: Path, repo_name: str,
+                  card: dict | None = None) -> dict:
     """Run the repo's fast test step inside the merged worktree.
 
-    {ran, ok, failed?, skipped?, command?, elapsed?, error?} —
-    ok=False only for red tests / suite timeout; missing pytest or a
-    tree without tests/ skips fail-open (merge_guard convention)."""
+    {ran, ok, failed?, unrunnable?, skipped?, command?, elapsed?,
+    error?} — ok=False for red tests / suite timeout AND for a
+    configured gate that cannot run (unrunnable: pytest-shaped command,
+    tests/ present, no interpreter can import pytest after venv
+    resolution + bootstrap — the merge must hold, card
+    merge-sweep-test-gate-fail-open). Declared skips still merge
+    ungated: off-switch, no gate config, no tests/ dir, or a card
+    carrying action.test_exempt."""
     if os.environ.get("KANBAN_TESTGATE", "1") == "0":
         return {"ran": False, "ok": True, "skipped": "KANBAN_TESTGATE=0"}
+    if card is not None and _act(card).get("test_exempt"):
+        return {"ran": False, "ok": True,
+                "skipped": "test-exempt card (action.test_exempt)"}
     cfg = test_gate_config(repo_name)
     cmd = cfg.get("command")
     if not cmd or not wt or not Path(wt).is_dir():
@@ -1560,6 +1715,14 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
     cmd = _prune_missing_test_paths(cmd, wt)
     interp = py or ("python3" if _PY_LEAD_RE.match(cmd) else None)
+    if not py and interp \
+            and re.search(r"(?:^|\s)-m\s+pytest\b", cmd) \
+            and not _has_pytest(interp):
+        return {"ran": False, "ok": False, "command": cmd,
+                "python": interp,
+                "unrunnable": f"pytest unavailable on {interp} "
+                              "(no venv candidate and bootstrap "
+                              "failed/disabled)"}
     timeout = int(cfg["timeout"])
     t0 = time.time()
     attempts = 0
@@ -1584,8 +1747,8 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
     if r.returncode != 0 and re.search(
             r"No module named .?pytest|command not found", out):
-        return {"ran": False, "ok": True, "command": cmd, "python": interp,
-                "skipped": "pytest unavailable — fail-open"}
+        return {"ran": False, "ok": False, "command": cmd, "python": interp,
+                "unrunnable": "pytest/tool unavailable — merge held"}
     if r.returncode == 5:
         return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "no tests collected"}
@@ -1689,7 +1852,8 @@ def _baseline_failures(base_wt: Path, repo_name: str,
     return failed
 
 
-def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
+def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str,
+                             card: dict | None = None) -> dict:
     """Do not blame a change for failures already present on base —
     and never let a pre-existing failure hide a new one.
 
@@ -1702,7 +1866,7 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
     holds the merge. Any comparison step that can't prove its set
     leaves the hold in place — suppression needs evidence, not doubt.
     """
-    branch = run_test_gate(wt, repo_name)
+    branch = run_test_gate(wt, repo_name, card)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
         return branch
     if branch.get("timeout"):
@@ -1886,7 +2050,7 @@ def _docs_only_paths(wt: Path, base: str) -> bool:
 
 
 def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
-                    base: str) -> tuple:
+                    base: str, card: dict | None = None) -> tuple:
     """_merge_in + shadow guard + the post-merge test gate ->
     (ok, conflicts, err, tests, shadows).
 
@@ -1899,7 +2063,7 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     shadows = shadow_paths(mwt, base, "HEAD")
     if shadows:
         return False, [], "", {}, shadows
-    tests = baseline_aware_test_gate(mwt, repo_name, base)
+    tests = baseline_aware_test_gate(mwt, repo_name, base, card)
     if not tests.get("ok") and tests.get("timeout") \
             and _docs_only_paths(mwt, base):
         # suite-timeout flake on a docs-only diff — land it flagged
@@ -2027,7 +2191,9 @@ def close_out(card: dict) -> dict:
     Result keys: merged, noop (silent skip — no commits produced),
     checkpoint, pushed/push_error, gate, conflicts, shadows (pre-push
     gitignored-dir shadow guard), merged_sha,
-    tests/test_failures (post-merge test gate), skipped|error, note,
+    tests/test_failures/gate_unrunnable (post-merge test gate —
+    unrunnable = a configured pytest gate could not run on this host,
+    merge held fail-closed), skipped|error, note,
     session, executor/provider/model/profile (from task meta),
     lesson_bank (best-effort mddb harvest of the outcome doc's
     lessons: lines — advisory, never gates the merge)."""
@@ -2115,7 +2281,7 @@ def close_out(card: dict) -> dict:
         mref = branch if _rev_parse(repo, f"refs/heads/{branch}") \
             else s["head"]
         ok, conflicts, merr, tests, shadows = _merge_and_gate(
-            mwt, mref, s.get("repo_name") or "", s["base_ref"])
+            mwt, mref, s.get("repo_name") or "", s["base_ref"], card)
         if tests:
             out["tests"] = tests
         if not ok:
@@ -2123,6 +2289,8 @@ def close_out(card: dict) -> dict:
                 out["shadows"] = shadows
             elif merr:
                 out["error"] = f"merge: {merr}"
+            elif tests.get("unrunnable"):
+                out["gate_unrunnable"] = tests["unrunnable"]
             elif tests and not tests.get("ok"):
                 out["test_failures"] = tests.get("failed") or ["?"]
             else:
@@ -2138,7 +2306,7 @@ def close_out(card: dict) -> dict:
             sh(["git", "-C", str(mwt), "reset", "-q", "--hard",
                 s["base_ref"]], timeout=30)
             ok, conflicts, merr, tests, shadows = _merge_and_gate(
-                mwt, mref, s.get("repo_name") or "", s["base_ref"])
+                mwt, mref, s.get("repo_name") or "", s["base_ref"], card)
             if tests:
                 out["tests"] = tests
             if not ok:
@@ -2146,6 +2314,8 @@ def close_out(card: dict) -> dict:
                     out["shadows"] = shadows
                 elif merr:
                     out["error"] = f"merge: {merr}"
+                elif tests.get("unrunnable"):
+                    out["gate_unrunnable"] = tests["unrunnable"]
                 elif tests and not tests.get("ok"):
                     out["test_failures"] = tests.get("failed") or ["?"]
                 else:
@@ -2235,6 +2405,13 @@ def close_out_notes(res: dict) -> list:
                      + " — card stays in review for manual resolution")
         return notes
     tests = res.get("tests") or {}
+    if res.get("gate_unrunnable"):
+        notes.append(f"test gate could not run — merge held "
+                     f"(fail-closed): {res['gate_unrunnable']}. A "
+                     "pytest-capable runner (labels: pytest) must land "
+                     "this, or merge-sweep re-gates it on the served "
+                     "host")
+        return notes
     if res.get("test_failures"):
         # names ride this note into action.last_failure via the caller —
         # the retry session starts knowing exactly what broke

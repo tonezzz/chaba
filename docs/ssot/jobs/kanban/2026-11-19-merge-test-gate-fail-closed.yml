@@ -1,0 +1,116 @@
+title: Merge test gate fail-closed + repo-scoped pytest bootstrap
+subtitle: Unrunnable gates hold merges; bootstrap + pytest label route retries to capable hosts
+icon: shield-check
+# Card: merge-sweep-test-gate-fail-open (OPS-1191)
+# Incident: 2026-11-08 tony-macbook merged hands-off-waiting-card-procedure
+# with 'test gate skipped: pytest unavailable — fail-open' — zero test
+# evidence. Decide + implement was approved via card request
+# approve-dispatch-of-this-multi-step-pyte-f36ee6 (Tony: "Approve Devin
+# dispatch", direction: repo-scoped pytest in the checkout .venv, never a
+# global host install).
+date: 2026-11-19
+domain: kanban/dispatch
+status: implemented
+card: merge-sweep-test-gate-fail-open
+
+landings:
+  - "attempt 1 (2026-11-19, dispatch/20261119-131744): implemented +
+    pushed; merge held on suite timeout — the gate ran the OLD
+    dispatch_repos copy (exec checkout, synced from master) so the
+    branch's own fixes can't rescue its own merge."
+  - "attempt 2 (2026-11-19, dispatch/20261119-165806): re-landed +
+    chaba gate timeout 240s->900s; held again on 'suite timeout
+    (240s)' for the same bootstrap reason — the running gate code is
+    always the pre-merge master's."
+  - "attempt 3 (2026-11-24, dispatch/20261124-143145): merged the
+    attempt-2 branch onto current master — resolved _merge_and_gate to
+    keep BOTH the card-aware gate call AND master's docs-only
+    timeout-override; excluded unrelated dev-system.assessment churn.
+    Re-measured the chaba gate set on tony-omen: 247 tests / ~78s —
+    the earlier ~483s figure was a loaded-host outlier; 900s stays as
+    headroom for idc03's 4 vCPUs (pitfall: 240s smoke set times out
+    there even for doc-only diffs)."
+
+decision:
+  chosen: fail-closed (spec option 1) + repo-scoped pytest bootstrap +
+          pytest claim label for re-routing retries
+  rejected:
+    - "option 3 (degrade to 'unverified' column): merges the untested
+      tree anyway — the gate still protects nothing on that host, it
+      just stamps the blind spot. Holding the merge + routing the retry
+      to a capable host fixes the evidence gap instead of documenting
+      it."
+    - "global host pytest install: the approved direction was
+      explicitly repo-scoped — pytest lives in the canonical checkout's
+      .venv, per-repo deps via REPO_TESTS[repo]['bootstrap']."
+
+behavior:
+  gate_runnable:
+    - "run_test_gate resolves the interpreter exactly as before: pin →
+      tree venv → canonical-checkout venv → repos.conf venv."
+    - "NEW step 5: _bootstrap_gate_python provisions <canonical or
+      repos.conf checkout>/.venv (or tops up an existing venv/) with
+      the repo's bootstrap deps — chaba: [pytest, pyyaml]; default:
+      [pytest]. Serialized per checkout under .gate-bootstrap.lock
+      flock; .gate-bootstrap.stamp bounds retries to once per
+      KANBAN_GATE_BOOTSTRAP_TTL (default 6h)."
+    - "KANBAN_GATE_BOOTSTRAP=0 disables provisioning entirely."
+  fail_closed:
+    - "pytest-shaped gate + tests/ in merged tree + no importable
+      pytest → {ok: False, unrunnable} → merge HELD; close_out surfaces
+      gate_unrunnable (distinct from test_failures)."
+    - "'command not found'/No-module-named output on ANY gate command
+      now holds too (was fail-open)."
+  exempt:
+    - "action.test_exempt: true on the card skips the gate — the
+      allowlist for docs-only/script-pilot work."
+    - "Declared skips that still merge ungated: KANBAN_TESTGATE=0, no
+      gate config (REPO_TESTS command: None), no tests/ dir, pytest
+      rc 5 (nothing collected)."
+  routing:
+    - "runner-agent and kanban-dispatch auto-advertise label 'pytest'
+      when dr.pytest_capable() proves an interpreter (system python3 or
+      a repos.conf checkout venv). Bootstrap provisionability does NOT
+      count — proven capability only."
+    - "kanban-dispatch's unrunnable requeue adds labels:[pytest] so the
+      retry only lands where the gate can run; the existing
+      unclaimable-warn lane flags it when no declared runner can."
+  merge_sweep:
+    - "merge_strict runs dr.baseline_aware_test_gate before push — a
+      pytest-less runner can no longer strand its branch into an
+      ungated sweep merge. Held heads stamp action.sweep.gate_blocked
+      keyed to head[:12]; a new head re-gates."
+    - "Merged comms lines now carry gate evidence (passed Ns / skipped
+      reason)."
+
+ops:
+  redeploy_required:
+    - "runner-agent.py deploys as a single file per host —
+      `scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent`
+      per the fleet drift notes already on the card, or the change
+      reaches hosts through the next runner redeploy pass."
+    - "merge-sweep.py and dispatch_repos.py run from the served chaba
+      checkout (idc03) — effective once master merges + kanban-commit
+      pulls."
+  verify:
+    - "python3 -m pytest tests/board/test_dispatch_close_out.py
+      tests/board/test_merge_sweep.py -x -q"
+    - "on a pytest-less host: a dispatch merge for chaba should hold
+      with 'test gate could not run — merge held (fail-closed)' and the
+      card should requeue with labels:[pytest]; or watch the host's
+      canonical checkout gain .venv/bin/pytest via the bootstrap."
+
+edge_cases:
+  - "Bootstrap needs network on first provision; a pip-incapable host
+    retries at most once per 6h TTL, then holds fail-closed."
+  - "A card carrying labels:[pytest] with no pytest-advertising runner
+    starves into the unclaimable warn — honest pressure to provision a
+    runner, not silent merging."
+  - "test_exempt cards still pass through goals/conflict/shadow/verified
+    gates — only the pytest step is waived."
+  - "chaba gate timeout raised 240s -> 900s: the 12-file gate set
+    measures ~78s on an idle tony-omen but the earlier ~483s reading
+    shows loaded hosts (idc03 4 vCPU) can blow 240s even on doc-only
+    diffs — the held-merge cost of a too-small budget exceeds the
+    cost of a slow gate. Trim the set or add pytest-xdist if 900s
+    becomes painful."

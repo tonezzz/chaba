@@ -44,7 +44,11 @@ For each card in doing/review with action.type=dispatch:
      .venv incident): merge_strict flags them pre-push; sweep_card posts
      comms and stamps action.sweep.shadow_blocked keyed to the head sha
      so a fixed branch re-checks but a flagged head doesn't re-merge
-     every pass.
+     every pass. The repo test gate also runs here before push
+     (merge-sweep-test-gate-fail-open — a pytest-less runner's close-out
+     must not strand its branch into an ungated sweep merge):
+     baseline-aware, red or unrunnable holds with a gate_blocked stamp
+     keyed to the head sha.
   6. verified gate before any verified stamp (2026-10-09 nest-mgr
      incident — the unit died 1s in, produced nothing, and was stamped
      verified anyway): verified=True requires (a) the devin-task unit
@@ -1100,12 +1104,18 @@ def inbox_relay(repo: Path, card: dict) -> dict:
 
 
 def merge_strict(repo: Path, sha: str, base_ref: str,
-                 base: str) -> dict:
+                 base: str, repo_name: str = "",
+                 card: dict | None = None) -> dict:
     """--no-ff merge of sha into origin/<base> inside a throwaway
     detached worktree of the served repo — NEVER silently resolves a
     side: any conflicted path aborts and is reported. A clean merge is
-    still held when it introduces gitignored-dir shadow paths.
-    {merged, sha, conflicts, shadows, error}."""
+    still held when it introduces gitignored-dir shadow paths — and by
+    the repo test gate (merge-sweep-test-gate-fail-open): a runner that
+    couldn't run the gate (no pytest) used to get its work landed here
+    with zero test evidence; the sweep now runs the same
+    baseline-aware gate before push.
+    {merged, sha, conflicts, shadows, test_failures, gate_unrunnable,
+    tests, error}."""
     mwt = Path(tempfile.mkdtemp(prefix="merge-sweep-"))
     try:
         r = sh(["git", "-C", str(repo), "worktree", "add", "--detach",
@@ -1133,11 +1143,22 @@ def merge_strict(repo: Path, sha: str, base_ref: str,
                 # guard) — the 2026-10-10 .venv incident class. The merge
                 # is clean but the tree must not reach origin.
                 return {"merged": False, "shadows": shadows}
+            tests = dr.baseline_aware_test_gate(mwt, repo_name, base_ref,
+                                                card)
+            if not tests.get("ok"):
+                if tests.get("unrunnable"):
+                    return {"merged": False,
+                            "gate_unrunnable": tests["unrunnable"],
+                            "tests": tests}
+                return {"merged": False,
+                        "test_failures": tests.get("failed") or ["?"],
+                        "tests": tests}
             push = sh(["git", "-C", str(mwt), "push", "-q", "origin",
                        f"HEAD:{base}"], timeout=90)
             if push.returncode == 0:
                 return {"merged": True,
-                        "sha": dr._rev_parse(mwt, "HEAD")}
+                        "sha": dr._rev_parse(mwt, "HEAD"),
+                        "tests": tests}
             if attempt == 2:
                 return {"merged": False,
                         "error": (f"push: "
@@ -1562,8 +1583,12 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return stamp_gate_result(
             f"{probe.get('branch')} already in {base_ref}")
     # shadow-flagged heads don't re-attempt the doomed merge every pass —
-    # a new head sha re-checks from scratch
+    # a new head sha re-checks from scratch. Same for a head the test
+    # gate already held: re-running the suite every 15min proves nothing
+    # new until the head (or the host's pytest) changes.
     if (a.get("sweep") or {}).get("shadow_blocked") == head[:12]:
+        return False
+    if (a.get("sweep") or {}).get("gate_blocked") == head[:12]:
         return False
     if dry:
         verdict = ("verify" if g.get("verify") else
@@ -1572,7 +1597,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
               f"({m['unmerged']} commits) -> {base_ref} in {repo} "
               f"[gate: {verdict}]")
         return True
-    res = merge_strict(repo, head, base_ref, base)
+    res = merge_strict(repo, head, base_ref, base, repo_name, card)
     if res.get("merged"):
         # land the session branch ref too (best-effort) — a salvaged
         # branch that exists only in origin/<base> history still looks
@@ -1583,10 +1608,36 @@ def sweep_card(card: dict, active: dict, dry: bool,
         if br:
             sh(["git", "-C", str(repo), "push", "-q", "origin",
                 f"{head}:refs/heads/{br}"], timeout=60)
-        stamp_gate_result(
-            f"merged {res['sha'][:8]} ({probe.get('branch')} from "
-            f"{runner or HOST}) -> origin/{base}")
+        merged_txt = (f"merged {res['sha'][:8]} ({probe.get('branch')} "
+                      f"from {runner or HOST}) -> origin/{base}")
+        t = res.get("tests") or {}
+        if t.get("ran"):
+            merged_txt += (f" — test gate passed "
+                           f"({t.get('elapsed', '?')}s)")
+        elif t.get("skipped"):
+            merged_txt += f" — test gate skipped: {t['skipped']}"
+        stamp_gate_result(merged_txt)
         gc_runner_worktree(card, runner, probe, head, tid, dry)
+        return True
+    if res.get("gate_unrunnable"):
+        if (a.get("sweep") or {}).get("gate_blocked") != head[:12]:
+            card_note(
+                cid,
+                f"merge-sweep: test gate could not run on {HOST} — "
+                f"{res['gate_unrunnable']} — merge held fail-closed "
+                "(provision repo pytest in the served checkout .venv, "
+                "or merge by hand; a new head re-gates)", dry)
+            stamp(cid, "gate_blocked", head[:12], dry)
+        return True
+    if res.get("test_failures"):
+        names = ", ".join(str(f) for f in res["test_failures"][:8])
+        if (a.get("sweep") or {}).get("gate_blocked") != head[:12]:
+            card_note(
+                cid,
+                f"merge-sweep: test gate failed on {HOST} — merge held: "
+                f"{names} — card stays for the failing tests to be "
+                "fixed (a new head re-gates)", dry)
+            stamp(cid, "gate_blocked", head[:12], dry)
         return True
     if res.get("shadows"):
         paths = ", ".join(str(p) for p in res["shadows"][:10])

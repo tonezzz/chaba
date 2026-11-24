@@ -133,7 +133,11 @@ card_schema:
     labels: "optional list — capability requirements; a runner only claims
              the card if every label is in its RUNNER_LABELS (e.g. gpu).
              'desktop' is reserved as a host marker (not a card label): it
-             arms runner-agent's interactive-host guards. push:<repo> is a
+             arms runner-agent's interactive-host guards. 'pytest' is
+             auto-advertised by runners whose interpreter can import
+             pytest (merge-sweep-test-gate-fail-open) — cards requeued
+             after an unrunnable merge test gate gain it so only a
+             gate-capable host reclaims. push:<repo> is a
              host-side capability label (runner declares it, cards don't
              request it) — dispatch cards for action.repo imply it
              implicitly: without the label, the claiming path runs a live
@@ -152,6 +156,11 @@ card_schema:
              (kind=unclaimable, awaiting flag over /comment), and
              per-host misses get '<host> defers: missing labels [...]'
              comms so skips stop being journal-only"
+    test_exempt: "optional bool — allowlist for docs-only work: the
+          merge test gate skips the card even when a pytest gate is
+          configured and the merged tree has tests/ (card
+          merge-sweep-test-gate-fail-open). Everything else still
+          gates — goals, conflicts, shadow paths, verified evidence."
     gpu: "optional — VRAM pre-flight for gpu-labeled cards
           (omen-gpu-display-wedge): {min_free_mb: N} — the runner claims
           only while some GPU shows >=N MB free in nvidia-smi (a host
@@ -393,10 +402,25 @@ execution:
                     per-repo timeout holds the merge: close_out returns
                     test_failures, the card requeues via auto-retry with
                     action.last_failure carrying the failing test names
-                    — same rails as merge conflicts. Missing pytest /
-                    no tests dir / pytest rc 5 skip fail-open (the
-                    merge_guard convention — infra gaps never wedge the
-                    board). KANBAN_TESTGATE=0 disables just this step.
+                    — same rails as merge conflicts. FAIL-CLOSED on an
+                    unrunnable gate (merge-sweep-test-gate-fail-open,
+                    2026-11-19 — tony-macbook merged with 'pytest
+                    unavailable — fail-open' and zero evidence): a
+                    pytest-shaped gate with tests/ present and no
+                    importable pytest holds the merge (gate_unrunnable);
+                    a bounded bootstrap first tries to provision the
+                    canonical checkout's .venv with the repo's declared
+                    bootstrap deps (KANBAN_GATE_BOOTSTRAP=0 disables),
+                    and an unrunnable requeue gains labels:[pytest] so
+                    only a pytest-capable runner reclaims it (runners
+                    auto-advertise the label when their interpreter
+                    probe passes). action.test_exempt is the allowlist
+                    for docs-only cards. Declared skips still merge
+                    ungated: no gate config, no tests/ dir, pytest rc 5
+                    (nothing collected), KANBAN_TESTGATE=0. merge-sweep
+                    runs the same gate in merge_strict before push so a
+                    pytest-less runner can't strand work into an
+                    ungated sweep merge.
                  6. push HEAD:<base> — only reached with a green gate.
                action.verified is stamped True on merge, False on
                conflicts/failed goals/test-gate failures (the review
@@ -559,7 +583,14 @@ execution:
                micro-training cold batch -> idc02 (idc01 RETIRED — removed
                from fleet 2026-10-10; runner-agent.timer stopped+disabled after
                stranded dispatches), bench cadence/corpus ->
-               idc02/idc03, GPU FT/LoRA -> omen (labels)."
+               idc02/idc03, GPU FT/LoRA -> omen (labels). pytest label
+               (2026-11-19, merge-sweep-test-gate-fail-open): runners
+               auto-advertise it when a gate-capable interpreter exists —
+               verified on tony-omen (system python3); this prose lists
+               only statically-declared labels, so a host can serve
+               labels:[pytest] cards without 'pytest' appearing here —
+               the auto-advertise is the source of truth, the
+               unclaimable warn flags it when NO declared runner has it."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
                a runner unreachable via ssh for KANBAN_REQUEUE_MISSES
                consecutive passes (default 3 ≈ 6min) gets its card

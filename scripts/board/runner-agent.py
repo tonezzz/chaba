@@ -1365,6 +1365,20 @@ def dr_module():
     return None
 
 
+# 'pytest' is auto-advertised when a gate-capable interpreter exists on
+# this host (merge-sweep-test-gate-fail-open): cards requeued after an
+# unrunnable test gate carry labels:[pytest] so the retry only lands
+# where the merge gate can actually run. Proven capability only — the
+# bootstrap path doesn't count here.
+try:
+    _dr0 = dr_module()
+    if _dr0 and getattr(_dr0, "pytest_capable", None) \
+            and _dr0.pytest_capable():
+        LABELS.add("pytest")
+except Exception:
+    pass
+
+
 def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     """Local merge step for a finished dispatch claim. Returns
     (verified: bool|None, comms notes: list[str])."""
@@ -1408,7 +1422,7 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     if res.get("merged"):
         return True, notes
     if res.get("conflicts") or res.get("test_failures") \
-            or res.get("shadows") or (
+            or res.get("gate_unrunnable") or res.get("shadows") or (
             res.get("gate") and not res["gate"]["ok"]):
         return False, notes
     return None, notes

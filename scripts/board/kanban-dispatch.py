@@ -110,6 +110,15 @@ MAX_LOAD_PC = float(os.environ.get("KANBAN_MAX_LOAD_PC", "1.0"))
 MY_LABELS = {x.strip() for x in
              os.environ.get("KANBAN_HOST_LABELS", "").split(",")
              if x.strip()}
+# 'pytest' is auto-advertised when a gate-capable interpreter exists
+# (merge-sweep-test-gate-fail-open): cards requeued after an unrunnable
+# test gate carry labels:[pytest] so only a host that can run the gate
+# reclaims them. Mirrors runner-agent's LABELS.
+try:
+    if dr.pytest_capable():
+        MY_LABELS.add("pytest")
+except Exception:
+    pass
 # Push-credential claim guard (runner-push-cred-gap): same rule as
 # runner-agent — a dispatch card is only claimable when this host can
 # actually push the card's repo. A `push:<repo>` label in
@@ -979,7 +988,7 @@ def merge_pending_one(path: Path) -> str:
                         f"({'failed' if ex_ok is False else 'unproven'} "
                         f"exit) — held for review")
         elif res.get("conflicts") or res.get("test_failures") \
-                or res.get("shadows") or (
+                or res.get("gate_unrunnable") or res.get("shadows") or (
                 res.get("gate") and not res["gate"]["ok"]):
             a["verified"] = False  # checked and NOT verified
             # Review feedback loop: conflicts/goal-failures requeue the
@@ -995,6 +1004,16 @@ def merge_pending_one(path: Path) -> str:
                 why = ("; ".join(dr.close_out_notes(res)) or
                        "merge/goals failed")[:280]
                 a["last_failure"] = why
+                if res.get("gate_unrunnable"):
+                    # fail-closed: this host can't run the gate — pin the
+                    # retry to a pytest-capable runner so the same host
+                    # doesn't reclaim it (the label is auto-advertised by
+                    # runners whose interpreter can import pytest)
+                    labels = set(a.get("labels") or [])
+                    if "pytest" not in labels:
+                        labels.add("pytest")
+                        a["labels"] = sorted(labels)
+                        why += " (labels += pytest)"
                 a["status"] = "queued"
                 a.pop("runner", None)
                 a.pop("task_id", None)

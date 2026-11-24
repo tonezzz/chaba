@@ -71,10 +71,14 @@ class Case(unittest.TestCase):
         self.tmp = Path(self._td.name)
         self._env = {}
         for k in ("DISPATCH_DIR", "CHABA_REPO", "MERGE_SWEEP_TARGETS",
-                  "BOARD_API", "ZOMBIE_AGE_H", "ZOMBIE_IDLE_MIN"):
+                  "BOARD_API", "ZOMBIE_AGE_H", "ZOMBIE_IDLE_MIN",
+                  "KANBAN_GATE_BOOTSTRAP"):
             self._env[k] = os.environ.get(k)
         os.environ["DISPATCH_DIR"] = str(self.tmp / "dispatch")
         os.environ["BOARD_API"] = "http://127.0.0.1:9"  # refuse fast
+        # hermetic suite — the gate bootstrap may only run real
+        # venv/pip work where a test opts in explicitly
+        os.environ["KANBAN_GATE_BOOTSTRAP"] = "0"
 
         # bare origin with a base commit
         self.origin = self.tmp / "origin.git"
@@ -825,6 +829,93 @@ class Case(unittest.TestCase):
         self.assertTrue(self.remote_has("master", "good.py"))
         self.assertFalse(self.remote_has("master", ".venv"))
         self.assertIs(self.read_card()["action"].get("verified"), True)
+
+    # -------------------------------------------- merge test gate
+    # merge-sweep-test-gate-fail-open: a runner that couldn't run the
+    # gate (no pytest) used to get its branch landed here with zero
+    # evidence — the sweep now runs the same baseline-aware gate
+    # before push. Red or unrunnable holds with a head-keyed
+    # gate_blocked stamp; a new head re-gates.
+
+    def _with_repo_gate(self, cfg: dict) -> None:
+        old = dr.REPO_TESTS.get("chaba")
+        dr.REPO_TESTS["chaba"] = cfg
+
+        def restore():
+            if old is None:
+                dr.REPO_TESTS.pop("chaba", None)
+            else:
+                dr.REPO_TESTS["chaba"] = old
+        self.addCleanup(restore)
+
+    def test_sweep_gate_unrunnable_holds_merge(self):
+        """The incident shape: gate configured, tests/ in the merged
+        tree, and the interpreter can't import pytest — hold, flag,
+        stamp; don't land ungated."""
+        commit(self.wt, "tests/test_smoke.py",
+               "def test_ok():\n    assert True\n", "tests")
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        py = self.tmp / "nopytest" / "python"
+        py.parent.mkdir()
+        py.write_text("#!/bin/sh\nexec python3 -S \"$@\"\n")
+        py.chmod(0o755)
+        self._with_repo_gate(
+            {"command": "python3 -m pytest tests -x -q",
+             "timeout": 60, "python": str(py)})
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertFalse(self.remote_has("master", "feature.py"))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        head = dr._rev_parse(self.runner_repo, f"dispatch/{TID}") or ""
+        self.assertEqual((c["action"].get("sweep") or {})
+                         .get("gate_blocked"), head[:12])
+        self.assertTrue(any("test gate" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        # a held head isn't re-gated (and re-noted) every pass
+        n = len(c.get("comms") or [])
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+        self.assertEqual(len(self.read_card().get("comms") or []), n)
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_sweep_gate_new_failure_holds_merge(self):
+        """A red suite on the merged tree holds the sweep merge the
+        same way it holds a close_out merge."""
+        commit(self.wt, "tests/test_red.py",
+               "def test_red():\n    assert False\n", "red test")
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_repo_gate(
+            {"command": "python3 -m pytest tests -x -q", "timeout": 60})
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertFalse(self.remote_has("master", "feature.py"))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        self.assertTrue(any("test_red" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_sweep_gate_green_merges_and_notes(self):
+        """The normal path: tests/ present, suite green — merge lands
+        and the comms line carries the gate evidence."""
+        commit(self.wt, "tests/test_smoke.py",
+               "def test_ok():\n    assert True\n", "tests")
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_repo_gate(
+            {"command": "python3 -m pytest tests -x -q", "timeout": 60})
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertTrue(self.remote_has("master", "feature.py"))
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)
+        self.assertTrue(any("test gate passed" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
 
     def test_dirty_worktree_flagged_not_fetched(self):
         commit(self.wt, "feature.py", "x=1\n", "work")

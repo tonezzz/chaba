@@ -62,6 +62,10 @@ class Case(unittest.TestCase):
         self.tmp = Path(self._td.name)
         self._old_dir = os.environ.get("DISPATCH_DIR")
         os.environ["DISPATCH_DIR"] = str(self.tmp / "dispatch")
+        # keep the suite hermetic: the gate bootstrap may only fire a
+        # real `python3 -m venv`/`pip` where a test explicitly opts in
+        self._old_boot = os.environ.get("KANBAN_GATE_BOOTSTRAP")
+        os.environ["KANBAN_GATE_BOOTSTRAP"] = "0"
         # hermetic git identity — the close_out merge needs a committer;
         # hosts without a global user.name/email would fail the fixture
         self._old_ident = {k: os.environ.get(k) for k in (
@@ -111,6 +115,10 @@ class Case(unittest.TestCase):
             os.environ.pop("DISPATCH_DIR", None)
         else:
             os.environ["DISPATCH_DIR"] = self._old_dir
+        if self._old_boot is None:
+            os.environ.pop("KANBAN_GATE_BOOTSTRAP", None)
+        else:
+            os.environ["KANBAN_GATE_BOOTSTRAP"] = self._old_boot
         for k, v in self._old_ident.items():
             if v is None:
                 os.environ.pop(k, None)
@@ -694,13 +702,50 @@ class Case(unittest.TestCase):
         commit(self.wt, "code.py", "x=1\n", "code")
         self.assertFalse(dr._docs_only_paths(self.wt, "origin/master"))
 
-    def test_gate_missing_runner_fails_open(self):
+    def test_gate_missing_runner_fails_closed(self):
+        """merge-sweep-test-gate-fail-open: a gate tool that isn't there
+        must HOLD the merge — the old fail-open let a pytest-less host
+        land work with zero test evidence (tony-macbook 2026-11-08)."""
         commit(self.wt, "feature.py", "x=1\n", "work")
         self._with_test_gate(
             {"command": "no-such-pytest-bin-ci-test-gate", "timeout": 10})
         res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(res.get("gate_unrunnable"), res)
+        self.assertFalse(self.remote_has("master", "feature.py"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("could not run" in n for n in notes), notes)
+
+    def test_gate_unrunnable_holds_when_pytest_missing(self):
+        """The incident shape itself: `python3 -m pytest` where the
+        interpreter can't import pytest — merge held, not merged."""
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        # a 'python' that runs but cannot import pytest (-S drops
+        # site-packages) — pinned via REPO_TESTS so no venv resolution
+        # or bootstrap can rescue it
+        py = self.tmp / "nopytest" / "python"
+        py.parent.mkdir()
+        py.write_text("#!/bin/sh\nexec python3 -S \"$@\"\n")
+        py.chmod(0o755)
+        self._with_test_gate(
+            {"command": "python3 -m pytest tests -x -q", "timeout": 60,
+             "python": str(py)})
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(res.get("gate_unrunnable"), res)
+        self.assertTrue(res["tests"].get("unrunnable"), res["tests"])
+        self.assertFalse(self.remote_has("master", "feature.py"))
+
+    def test_gate_test_exempt_merges(self):
+        """action.test_exempt is the allowlist for docs-only work — the
+        card declares it can't be gated, so an unrunnable gate skips."""
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self.card["action"]["test_exempt"] = True
+        self._with_test_gate(
+            {"command": "no-such-pytest-bin-ci-test-gate", "timeout": 10})
+        res = dr.close_out(self.card)
         self.assertTrue(res["merged"], res)
-        self.assertIn("fail-open", res["tests"]["skipped"])
+        self.assertIn("test-exempt", res["tests"]["skipped"])
 
     def test_gate_no_tests_dir_skips(self):
         bare = self.tmp / "no-tests"
@@ -817,6 +862,47 @@ class Case(unittest.TestCase):
         self.assertEqual(cmd, f"{pin} -m pytest tests -k x -q")
         cmd, py = dr._resolve_gate_cmd("make test", self.wt, "chaba", cfg)
         self.assertEqual((cmd, py), ("make test", ""))
+
+    # -------------------------------------- repo-scoped gate bootstrap
+    # merge-sweep-test-gate-fail-open approved direction: when no
+    # interpreter can import pytest, provision the CANONICAL checkout's
+    # .venv with the repo's bootstrap deps — repo-scoped, never a global
+    # host install. Bounded by a stamp so a pip-incapable host retries
+    # occasionally, not on every merge.
+
+    def test_bootstrap_disabled_returns_empty(self):
+        self._pin_repos_conf()  # fixture already sets BOOTSTRAP=0
+        self.assertEqual(
+            dr._bootstrap_gate_python(self.wt, "chaba",
+                                      dr.test_gate_config("chaba")), "")
+
+    def _bootstrap_on(self) -> None:
+        """Re-enable the bootstrap path a fixture-wide-off test needs."""
+        os.environ.pop("KANBAN_GATE_BOOTSTRAP", None)
+
+    def test_bootstrap_reuses_pytest_capable_venv(self):
+        """A checkout venv that already imports pytest is returned
+        without any pip work."""
+        self._pin_repos_conf()
+        self._bootstrap_on()
+        shim = '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nexec python3 "$@"\n'
+        py = self._make_venv(self.main, shim)
+        got = dr._bootstrap_gate_python(
+            self.wt, "chaba", dr.test_gate_config("chaba"))
+        self.assertEqual(got, str(py))
+
+    def test_bootstrap_fresh_stamp_skips_provision(self):
+        """A recent attempt stamp bounds pip retries — no venv creation
+        while the stamp is fresh."""
+        self._pin_repos_conf()
+        self._bootstrap_on()
+        venv = self.main / ".venv"
+        (venv / "bin").mkdir(parents=True)
+        (venv / ".gate-bootstrap.stamp").write_text("tried\n")
+        got = dr._bootstrap_gate_python(
+            self.wt, "chaba", dr.test_gate_config("chaba"))
+        self.assertEqual(got, "")
+        self.assertFalse((venv / "bin" / "python").exists())
 
     @unittest.skipUnless(
         subprocess.run(["python3", "-c", "import pytest"],
