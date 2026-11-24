@@ -1,7 +1,7 @@
 id: r7-kk-macbook-venv-missing
 title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
 column: backlog
-updated: 2026-11-24 19:44
+updated: 2026-11-24 20:00
 brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
   package missing.'
 priority: medium
@@ -77,10 +77,17 @@ comms:
   from: devin
   text: 'raised request install-python3-14-venv-on-tony-macbook-e29487: Install python3.14-venv on tony-macbook
     (requires your sudo), or leave the R7 venv probe blocked?'
+- at: 2026-11-24 20:00
+  from: tony
+  text: 'answered install-python3-14-venv-on-tony-macbook-e29487: Run sudo apt install -y python3.14-venv on tony-macbook,
+    then rerun verify-host-software --limit tony-macbook (recommended)'
+- at: 2026-11-24 20:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: install-python3-14-venv-on-tony-macbook-e29487
   ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
-  status: open
+  status: answered
   at: 2026-11-24 19:44
   from: devin
   options:
@@ -89,3 +96,6 @@ requests:
   - Leave blocked; I will handle the install offline
   suggested: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
     (recommended)
+  answer: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
+awaiting_action: true
