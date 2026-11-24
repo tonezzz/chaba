@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-24 07:57
+updated: 2026-11-24 08:02
 priority: low
 tags:
 - opencode
@@ -753,6 +753,13 @@ comms:
     exists" was a hard fail with no liveness/evidence check — lane; [opencode-retry-stale-worktree] DONE (branch
     dispatch/20261123-233259-ops-1021-p; [opencode-retry-stale-worktree] merge-sweep: no session/worktree found
     for devin; [opencode-retry-stale-worktree] Re-armed after infra fix: 13:'
+- at: 2026-11-24 08:02
+  from: devin
+  text: 'attempt 2 verified-only: the fix was already merged by the 2026-11-23 run (b58f75984e, auto-merge 4b79513c,
+    confirmed ancestor of origin/master). _stale_worktree_gate covers BOTH _start_opencode_lane and start_kk_mac_lane:
+    live devin-task-<tid>/-fuN unit -> defer; provably-over prior run (taskdir exit_code/verdict.json or dead lane-family
+    meta) -> worktree remove --force + prune; unattributable -> defer; taskdir evidence untouched. Tests re-run
+    on this checkout: test_runner_stale_worktree.py 12/'
 action:
   type: dispatch
   repo: chaba
