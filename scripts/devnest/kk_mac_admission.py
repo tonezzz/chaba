@@ -60,6 +60,25 @@ def _ssh_load(host: str) -> float | None:
         return None
 
 
+def load_gate_limit(*, max_load_1m: float, max_load_per_core: float,
+                    cpu_cores: float | None = None) -> tuple[float, float]:
+    """Effective load ceiling and the core count it was derived from.
+
+    The old gate used an absolute load of 4.0. On KK-Mac's 14-core box
+    that is 0.29/core, so the lane denied nearly every minute while the
+    box was merely busy with its own llama-server. When the node reports
+    a core count, scale the ceiling per core; without one keep the
+    absolute ceiling so an unknown host still fails closed.
+    """
+    try:
+        cores = float(cpu_cores or 0)
+    except (TypeError, ValueError):
+        cores = 0.0
+    if cores > 0:
+        return float(max_load_per_core) * cores, cores
+    return float(max_load_1m), 0.0
+
+
 def snapshot(
     *,
     host: str = "KKs-Mac-Studio",
@@ -67,7 +86,9 @@ def snapshot(
     url: str = "http://100.102.134.91:11026/v1",
     max_age_s: int = 900,
     min_disk_gb: int = 20,
+    # Fallback only: used when the heartbeat has no cpu_cores field.
     max_load_1m: float = 4.0,
+    max_load_per_core: float = 1.0,
     # Tony 2026-11-09: KK runs hot under load — hold new work at 60C.
     max_temp_c: float = 60.0,
     require_idle: bool = True,
@@ -111,6 +132,8 @@ def snapshot(
         "ollama_ok": None,
         "disk_free_gb": None,
         "load_1m": None,
+        "cpu_cores": None,
+        "load_limit": None,
         "identity_alias": identity_alias,
         "node_busy": None,
     }
@@ -154,7 +177,14 @@ def snapshot(
     try:
         if load is None:
             raise ValueError("missing load")
-        if float(load) > max_load_1m:
+        limit, cores = load_gate_limit(
+            max_load_1m=max_load_1m,
+            max_load_per_core=max_load_per_core,
+            cpu_cores=body.get("cpu_cores"),
+        )
+        result["cpu_cores"] = cores or None
+        result["load_limit"] = round(limit, 2)
+        if float(load) > limit:
             result["reasons"].append("load_high")
     except (KeyError, TypeError, ValueError):
         result["reasons"].append("load_unknown")
@@ -292,7 +322,9 @@ def local_snapshot(
     *,
     host: str = "local",
     min_disk_gb: int = 20,
+    # Fallback only: used when os.cpu_count() is unavailable.
     max_load_1m: float = 4.0,
+    max_load_per_core: float = 1.0,
     max_temp_c: float = 60.0,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
@@ -314,6 +346,8 @@ def local_snapshot(
         "ollama_ok": None,
         "disk_free_gb": None,
         "load_1m": None,
+        "cpu_cores": None,
+        "load_limit": None,
         "cpu_temp_c": None,
         "node_busy": None,
     }
@@ -335,9 +369,17 @@ def local_snapshot(
         result["reasons"].append("disk_unknown")
     load = _local_load_1m()
     result["load_1m"] = load
+    cores = os.cpu_count() or 0
+    limit, cores = load_gate_limit(
+        max_load_1m=max_load_1m,
+        max_load_per_core=max_load_per_core,
+        cpu_cores=cores,
+    )
+    result["cpu_cores"] = cores or None
+    result["load_limit"] = round(limit, 2)
     if load is None:
         result["reasons"].append("load_unknown")
-    elif load > max_load_1m:
+    elif load > limit:
         result["reasons"].append("load_high")
     temp = _local_temp_c()
     result["cpu_temp_c"] = temp
@@ -349,7 +391,6 @@ def local_snapshot(
         result["tmux_jobs"] = tmux
         if tmux:
             busy.append("tmux_jobs")
-    cores = os.cpu_count() or 0
     if cores > 0 and load is not None and load / cores > max_load_pc:
         busy.append("load1")
     result["node_busy"] = bool(busy)
@@ -371,11 +412,16 @@ def main() -> int:
     parser.add_argument("--allow-busy", action="store_true",
                         help="admit even when the node reports work")
     parser.add_argument("--max-load-pc", type=float, default=1.0)
+    parser.add_argument("--max-load-per-core", type=float, default=1.0,
+                        help="load ceiling per reported CPU core "
+                             "(default 1.0; absolute 4.0 only when core "
+                             "count is unknown)")
     args = parser.parse_args()
     if args.local:
         result = local_snapshot(min_disk_gb=args.min_disk_gb,
                                 require_idle=not args.allow_busy,
-                                max_load_pc=args.max_load_pc)
+                                max_load_pc=args.max_load_pc,
+                                max_load_per_core=args.max_load_per_core)
         print(json.dumps(result, sort_keys=True))
         return 0 if result["eligible"] else 2
     try:
@@ -386,6 +432,7 @@ def main() -> int:
             min_disk_gb=args.min_disk_gb,
             require_idle=not args.allow_busy,
             max_load_pc=args.max_load_pc,
+            max_load_per_core=args.max_load_per_core,
         )
     except Exception as exc:
         result = {

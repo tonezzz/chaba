@@ -3,7 +3,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from scripts.devnest.kk_mac_admission import snapshot
+from scripts.devnest.kk_mac_admission import local_snapshot, snapshot
 
 
 def doc(body):
@@ -82,6 +82,64 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("load_high", result["reasons"])
+
+    def test_load_is_normalized_by_reported_core_count(self):
+        # 9.0 on a 14-core Mac is 0.64/core — not the overload that the
+        # old absolute 4.0 gate reported every minute on KK-Mac.
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 9.0,
+                "cpu_cores": 14,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertTrue(result["eligible"], result["reasons"])
+        self.assertEqual(result["reasons"], [])
+        self.assertEqual(result["cpu_cores"], 14)
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_per_core_gate_still_denies_real_overload(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 15.0,
+                "cpu_cores": 14,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_unknown_core_count_keeps_absolute_limit(self):
+        # Legacy heartbeats have no cpu_cores: fail closed with 4.0.
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 4.1,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertIsNone(result["cpu_cores"])
+        self.assertEqual(result["load_limit"], 4.0)
 
     def test_old_heartbeat_uses_read_only_ssh_load_fallback(self):
         now = time.time()
@@ -198,6 +256,58 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("node_busy:load1", result["reasons"])
+
+
+class LocalAdmissionLoadTests(unittest.TestCase):
+    """On-host worker gate must use the same per-core ceiling."""
+
+    def _snapshot(self, load, cores):
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        stat = type("Stat", (), {"f_bavail": 100, "f_frsize": 10 ** 9})()
+        with patch(
+            "scripts.devnest.kk_mac_admission.urllib.request.urlopen",
+            return_value=_Resp(),
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.statvfs", return_value=stat
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_load_1m",
+            return_value=load,
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.cpu_count",
+            return_value=cores,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_temp_c",
+            return_value=40.0,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_tmux_jobs",
+            return_value="",
+        ):
+            return local_snapshot()
+
+    def test_local_load_normalized_by_cpu_count(self):
+        result = self._snapshot(load=9.0, cores=14)
+        self.assertTrue(result["eligible"], result["reasons"])
+        self.assertEqual(result["cpu_cores"], 14)
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_local_overload_denied(self):
+        result = self._snapshot(load=15.0, cores=14)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+
+    def test_local_unknown_cpu_count_falls_back_to_absolute(self):
+        result = self._snapshot(load=4.5, cores=0)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertEqual(result["load_limit"], 4.0)
 
 
 class QuietHoursTests(unittest.TestCase):

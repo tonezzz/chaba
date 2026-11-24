@@ -81,6 +81,21 @@ load_1m() {
   fi
 }
 
+# Admission gates normalize load_1m by core count; emit an integer or 0
+# (unknown) so an absent/bogus value cannot break the JSON payload.
+cpu_cores() {
+  n=""
+  if [ "$(uname -s)" = "Darwin" ]; then
+    n=$(sysctl -n hw.ncpu 2>/dev/null)
+  else
+    n=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
+  fi
+  case "$n" in
+    ''|*[!0-9]*) echo 0 ;;
+    *) echo "$n" ;;
+  esac
+}
+
 cpu_temp_c() {
   # Apple Silicon: smctemp (user-built, no root). Linux: first thermal
   # zone with a sane value, no root needed.
@@ -102,7 +117,7 @@ EXTRA=""
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_temp_c\":$(cpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_cores\":$(cpu_cores),\"cpu_temp_c\":$(cpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )
