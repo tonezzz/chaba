@@ -10,6 +10,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 id: ops-board-render-fail
 title: chaba-board-render failing — board stale
 column: review
@@ -20,4 +24,4 @@ note: render-board2.py rc=1 —   in "<unicode string>", line 24, column 1
 help: 'journalctl --user -u chaba-board-render -n 50. The note names the failing renderer + its last stderr line
   — a poisoned card YAML is the usual cause: fix or remove the file it names and the next 60s tick re-renders +
   auto-closes this card.'
-updated: 2026-11-24 11:42
+updated: 2026-11-24 12:00
