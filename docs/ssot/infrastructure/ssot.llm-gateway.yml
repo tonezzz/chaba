@@ -246,6 +246,7 @@ proof_lanes:
   ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
   chaba: "scripts/litellm/daily-ledger.py + gateway-bench; the whole report/extract/distill chain honors GEMINI_BASE_URL via scripts/ada/gemini_rest.py (2026-10-13, card gateway-batch-opt-in-for-report-extract-aee7d7)."
   chat-local: "verified end-to-end 2026-10-15 (alias reply + 768d embed); adopters wired 2026-10-16: news-digest EN synthesis, wp-comment-sync intent classify, kanban-brief prose (env_file litellm-chaba.env). PRODUCTION-VERIFIED 2026-10-22: lane was silently 100% fallback since merge (5-7min calls vs 90-120s timeouts, NUM_PARALLEL=1 head-of-line blocking) — fixed via parallel=2 + bounded payloads; LANE_OK smoke 2.1s, contended classify ~82s, contended synthesis 263s."
+  backlog-spec-enrich: "ENRICH_PROVIDER=litellm since 2026-11-24 (ops-1037/OPS-1316) — idc03 4x/day spec-draft job rides OpenAI /v1/chat/completions via litellm_chat.py with the chaba virtual key (env_file litellm-chaba.env, tags service/job=backlog-spec-enrich route=spec_draft); default model gemini-3.5-flash-lite real-name chain, ENRICH_MODEL accepts any gateway model_name (ollama-qwen38b-kkmac = free local). gemini_rest direct path kept as fallback (ENRICH_PROVIDER=gemini, or automatic on failed litellm reply for gemini-* models). Smoke-verified live 2026-11-24."
 
 batch_opt_in:
   how: >-
