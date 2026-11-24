@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: doing
-updated: 2026-11-24 08:50
+updated: 2026-11-24 08:52
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -395,6 +395,13 @@ comms:
     rate-limit before committing. Verified: results md5 == idc03 /tmp source, all report metrics (acc/family/ECE/latency)
     recomputed from raw records and match, Drive copy byte-identical. Landing harness+results+report+job-doc on
     this branch now.'
+- at: 2026-11-24 08:52
+  from: devin
+  text: 'DONE — benchmark was already complete; this attempt verified + landed it. Results: jev-student 0.480 (confirm
+    1.000, choice dead 0.062), jevos 0.720 (tool 0.812, stag 0.917, confirm-gate fails 0.500), laya 0.540 (middling,
+    4-40x slower). No single backend wins — per-family routing is the read. Deliverables: report gdrive:ada-nest/reports/2026-11-23-decision-arena-50.md
+    (already uploaded, byte-verified), reports/2026-11-23-decision-arena-50.md + evals/results/jev/decision-arena-50-20261123.json
+    ('
 action:
   type: dispatch
   status: running
