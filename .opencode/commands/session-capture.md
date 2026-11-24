@@ -12,7 +12,7 @@ Follow `docs/ssot/ssot.knowledge-capture.yml` and the `session-capture` procedur
 3. **Lessons:** file retainable/educate-me answers (`/lesson` or `scripts/lesson-add.py`); state if write fails.
 4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history).
 5. **Evidence:** attach outcomes/evidence to cards/reports; capture only reusable deltas.
-6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
+6. **Handoff packet (required):** scaffold with `python3 scripts/chaba/handoff-packet.py scaffold` (validate with `validate <file>`), fill evidence refs, then save it durably — OpenChamber knowledge note preferred and/or card comms refs (see `.opencode/commands/handoff-packet.md`) — and include `where_filed` in the response.
 
 ## Guardrails
 - SSOT-first retrieval; SSOT/designated live authority wins on conflict.

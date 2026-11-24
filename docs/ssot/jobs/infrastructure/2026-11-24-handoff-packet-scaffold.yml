@@ -1,0 +1,33 @@
+id: 2026-11-24-handoff-packet-scaffold
+title: Session Handoff Packet one-step scaffold + validate helper
+card: opencode-handoff-packet-scaffold-save
+date: "2026-11-24"
+domain: infrastructure
+status: implemented
+summary: >
+  Added scripts/chaba/handoff-packet.py — a dependency-free scaffold +
+  validate helper for the required Session Handoff Packet
+  (docs/ssot/ssot.knowledge-capture.yml#Session Handoff Packet). `scaffold`
+  prints/writes the canonical template with as_of prefilled (local time +
+  TZ) and optional --objective/--state/--refs; `validate` exits non-zero
+  listing any missing required field and rejects a placeholder/empty
+  where_filed. Wired into .opencode/commands/handoff-packet.md (which now
+  also enumerates concrete durable save paths: OpenChamber knowledge note,
+  board-api card comms, dispatch-outcome file) and referenced from the
+  session-capture sweep in .opencode/commands/session-capture.md,
+  .opencode/instructions/session-capture.md, and
+  .devin/skills/session-capture/SKILL.md.
+
+context: >
+  Card opencode-handoff-packet-scaffold-save (DEV-0038 follow-up, OPS-0037).
+  A prior dispatch landed option A (the /handoff-packet command, PR #207)
+  but the packet was still hand-written and the save step named sinks
+  without concrete commands. This change makes scaffold+validate one step
+  each and makes the save door explicit. Scaffold-only by design — the
+  OpenChamber knowledge write keeps its own auth/path handling (option B's
+  risky half was not taken).
+
+verify: >
+  python3 scripts/chaba/handoff-packet.py scaffold --objective x --out /tmp/h.md
+  python3 scripts/chaba/handoff-packet.py validate /tmp/h.md   # exit 1 until
+  where_filed is filled; exit 0 on a complete packet.

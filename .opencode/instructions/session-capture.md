@@ -14,7 +14,7 @@ Follow `docs/ssot/ssot.knowledge-capture.yml` and procedures `knowledge-capture`
 3. **Lessons:** file retainable/educate-me answers (state if write fails — a lesson only in reply is a miss).
 4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml`. Prefer `mcp-debug` `mcp_focus` (`session_summary` / `technical_decision`; recommend/status also log decisions) where available; otherwise make consistent append-only edits preserving required fields and never rewriting history.
 5. **Evidence:** attach outcomes/evidence to cards/reports; capture only reusable deltas.
-6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
+6. **Handoff packet (required):** scaffold with `python3 scripts/chaba/handoff-packet.py scaffold` (validate with `validate <file>`; save paths in `.opencode/commands/handoff-packet.md`), save it durably (OpenChamber knowledge note preferred and/or card comms refs), and include `where_filed` in the response.
 
 Where available (Chaba pipeline), `scripts/chaba/immediate-pin.py` and `scripts/chaba/recent-event.py` may record structured resume/events, but they do **not** replace durable sinks or the handoff packet.
 
