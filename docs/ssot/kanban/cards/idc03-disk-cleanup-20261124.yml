@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: review
-updated: 2026-11-24 21:16
+updated: 2026-11-24 21:23
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -194,6 +194,9 @@ comms:
 - at: 2026-11-24 21:16
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-210041-evidence-2026-11-24'
 action:
   type: dispatch
   status: done
@@ -203,6 +206,8 @@ action:
   attempts: 1
   result: 'exit=0 atch-outcome-20261124-210041-evidence-2026-11-24-config-89g.md`. | devin-task-20261124-210041-evidence-2026-11-24-config-89g.service:
     Consumed 35.730s CPU time over 13min 11.428s wall clock time, 925.8M memory peak, 677.3M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-24 21:24
 claim:
   since: 2026-11-24 20:59
 review_kind: verify
