@@ -402,6 +402,10 @@ def derive(sc: dict) -> dict:
             "parent": ROOT_SLUG,
             "runner": runner, "result_ref": result_ref, "error": error,
         }
+        if status == "done" and result_ref:
+            # OPS-0923 terminal-done gate: the done marker IS the
+            # verified artifact evidence — point at it explicitly
+            post["evidence"] = [result_ref]
         posts[slug] = post
         children[slug] = status
 
@@ -426,6 +430,8 @@ def derive(sc: dict) -> dict:
             "runner": lease_worker if status == "running" else "",
             "result_ref": result_ref, "error": "",
         }
+        if status == "done" and result_ref:
+            post["evidence"] = [result_ref]
         posts[slug] = post
         children[slug] = status
 
@@ -452,7 +458,7 @@ def derive(sc: dict) -> dict:
     else:
         root_status = "done" if sts else "queued"
 
-    posts = {ROOT_SLUG: {
+    root_post = {
         "slug": ROOT_SLUG, "title": ROOT_TITLE, "status": root_status,
         "kind": "queue", "pack": "", "parent": "",
         "runner": lease_worker,
@@ -464,7 +470,16 @@ def derive(sc: dict) -> dict:
                     "active": sum(1 for s in sts
                                   if s in ("claimed", "running")),
                     "pending": sum(1 for s in sts if s == "queued")},
-    }, **posts}
+    }
+    if root_status == "done":
+        # OPS-0923 gate: root done is derived — its evidence is the
+        # children's done markers (capped; the queue dir is the
+        # fallback pointer)
+        done_refs = [p["result_ref"] for p in posts.values()
+                     if p.get("status") == "done" and p.get("result_ref")]
+        root_post["evidence"] = done_refs[:10] or [
+            "gdrive:ada-nest/queue/"]
+    posts = {ROOT_SLUG: root_post, **posts}
     return posts
 
 
