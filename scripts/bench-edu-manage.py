@@ -65,6 +65,20 @@ _spec = importlib.util.spec_from_file_location(
 lm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(lm)
 
+
+def load_loop_gate():
+    """Optional Jev stagnation probe (scripts/jev/loop-gate.py, card
+    jev-stagnation-gate-...-a70f74). None when absent/unloadable — the
+    --stagnation-gate flag then degrades to a no-op."""
+    p = REPO / "scripts" / "jev" / "loop-gate.py"
+    if not p.exists():
+        return None
+    try:
+        from importlib.machinery import SourceFileLoader
+        return SourceFileLoader("loop_gate", str(p)).load_module()
+    except Exception:
+        return None
+
 CORPUS = REPO / "scripts" / "bench-edu-corpus.json"
 CURRENT_MODEL = "gemini-3.5-flash-lite"
 JUDGE_MODEL = "gemini-3.5-flash-lite"
@@ -760,6 +774,35 @@ def run_agent_task(lane, task, store, store_aware=False):
 
 # ------------------------------------------------------------------ scoring
 
+def bench_loop_state(lane_name, lane, done_scores, done_recs, rep):
+    """Trajectory state for the Jev stagnation gate: per-task outcomes
+    so far as `recent` lines (same shape as the console print), plus
+    cheap signals (failure streak, completions)."""
+    recent, fails = [], 0
+    for sc, rec in zip(done_scores, done_recs):
+        ok = bool(sc.get("completed"))
+        lat = rec.get("latency") or 0
+        err = rec.get("err") or ""
+        recent.append(f"{sc.get('id')} ok={ok} lat={lat:.0f}s"
+                      + (f" err={err}" if err else ""))
+        fails = fails + 1 if not ok else 0
+    model = getattr(lane, "model", "") or "scripted"
+    return {
+        "loop": "bench",
+        "task": f"bench-edu-manage lane {lane_name} rep {rep + 1} "
+                f"model={model}",
+        "iterations": len(done_recs),
+        "elapsed_s": round(sum(r.get("latency") or 0
+                               for r in done_recs), 1),
+        "heartbeat_age_s": 0,
+        "recent": recent[-12:],
+        "signals": {"consecutive_failures": fails,
+                    "completed": sum(1 for s in done_scores
+                                     if s.get("completed")),
+                    "lane": lane_name, "rep": rep + 1},
+    }
+
+
 def score_task(task, store, rec):
     """-> dict of per-task scores + notes."""
     s = {"id": task["id"], "type": task["type"],
@@ -992,6 +1035,22 @@ def main():
                          "result file and rewrite it + the .md")
     ap.add_argument("--out", default=None,
                     help="output prefix (default reports/bench-edu-manage-<date>)")
+    ap.add_argument("--stagnation-gate", action="store_true",
+                    help="Jev loop-gate probe (scripts/jev/loop-gate.py) "
+                         "after each agent-lane task; --gate-strikes "
+                         "consecutive halt verdicts skips the lane's "
+                         "remaining tasks (the 4.4h colibri stall guard)")
+    ap.add_argument("--gate-halt-p", type=float, default=None,
+                    help="noul p at/above which the gate reads halt "
+                         "(default loop-gate's 0.7)")
+    ap.add_argument("--gate-warn-p", type=float, default=None,
+                    help="noul p at/above which the gate reads warn "
+                         "(default loop-gate's 0.5)")
+    ap.add_argument("--gate-strikes", type=int, default=2,
+                    help="consecutive halt verdicts before the lane is "
+                         "stopped (default 2)")
+    ap.add_argument("--gate-every", type=int, default=1,
+                    help="probe cadence in completed tasks (default 1)")
     args = ap.parse_args()
 
     agent_prompt = (Path(args.agent_prompt).read_text()
@@ -1058,11 +1117,16 @@ def main():
     out_prefix = args.out or str(
         REPO / "reports" / f"bench-edu-manage-{date.today().isoformat()}")
     all_scores, all_recs, drafts = {}, {}, []
+    lg = load_loop_gate() if args.stagnation_gate else None
+    if args.stagnation_gate and lg is None:
+        print("[gate] loop-gate.py not loadable — flag is a no-op",
+              flush=True)
     for rep in range(args.reps):
         for name, lane in lanes.items():
             print(f"[{name}] rep {rep + 1}", flush=True)
             t_scores, t_recs = [], []
-            for task in tasks:
+            gate_streak, gate_halt = 0, None
+            for ti, task in enumerate(tasks):
                 store = MockStore(corpus["seeds"][task["seed"]])
                 if name == "current":
                     topics = ([r["topic"] for r in store.list_all()]
@@ -1095,7 +1159,51 @@ def main():
                             "task": task["id"], "ok": sc["completed"],
                             "err": rec.get("err"),
                             "latency": rec["latency"]}) + "\n")
+                # --- stagnation gate (opt-in, agent lanes only) ---
+                # After each task the probe judges the trajectory so
+                # far; --gate-strikes consecutive halt verdicts stops
+                # the lane early instead of grinding identical
+                # failures for hours (colibri-bench 2026-10-24).
+                if (lg is not None and name != "current"
+                        and ti + 1 >= 3
+                        and (ti + 1) % max(1, args.gate_every) == 0):
+                    try:
+                        gv = lg.gate(
+                            bench_loop_state(name, lane, t_scores,
+                                             t_recs, rep),
+                            halt_p=args.gate_halt_p,
+                            warn_p=args.gate_warn_p)
+                    except Exception as e:
+                        gv = {"verdict": "unknown",
+                              "error": str(e)[:120]}
+                    gverdict = gv.get("verdict") or "unknown"
+                    gp = (gv.get("noul") or {}).get("p")
+                    gchoice = (gv.get("choice") or {}).get("action")
+                    gback = gv.get("backends")
+                    if gverdict == "halt":
+                        gate_streak += 1
+                    else:
+                        gate_streak = 0
+                    if gverdict != "continue":
+                        print(f"  [gate] {gverdict} after "
+                              f"{len(t_recs)} tasks "
+                              f"(noul p={gp} choice={gchoice} "
+                              f"backends={gback})", flush=True)
+                    if gate_streak >= args.gate_strikes:
+                        gate_halt = {
+                            "at_task": task["id"], "rep": rep + 1,
+                            "verdict": gverdict, "noul": gv.get("noul"),
+                            "choice": gv.get("choice"),
+                            "strikes": gate_streak,
+                            "ran": len(t_recs),
+                            "skipped": len(tasks) - ti - 1}
+                        print(f"  [gate] HALT — stopped lane after "
+                              f"{len(t_recs)}/{len(tasks)} tasks",
+                              flush=True)
+                        break
             agg = aggregate(name, t_scores, t_recs)
+            if gate_halt:
+                agg["gate"] = gate_halt
             all_scores.setdefault(name, []).append(agg)
             all_recs.setdefault(name, []).extend(
                 {"rep": rep + 1, "task": s["id"],

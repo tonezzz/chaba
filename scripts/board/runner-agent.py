@@ -577,6 +577,26 @@ VSYNC_PAT = "GetVSyncParametersIfAvailable"
 UNSTICK = ("display unstick: ssh in, `sudo chvt 3`, sleep 2, "
            "`sudo chvt 2` (modeset reset — session survives)")
 
+# --- jev stagnation gate (card jev-stagnation-gate-...-a70f74) --------
+# Semantic stall detection over each running job's progress: heartbeat
+# (freshest taskdir/journal write) + recent outputs -> the Jev
+# loop-gate probe (scripts/jev/loop-gate.py) answers CONTINUE/WARN/
+# REPLAN/HALT. WARN/REPLAN post a debounced comms note; HALT needs
+# GATE_HALT_STRIKES consecutive halt verdicts, then the unit is
+# SIGTERMed and the finish result names the gate. Advisory by
+# contract: no probe module/backend -> the pass is a no-op, and a
+# gate error never blocks claims or finishes. The 4.4h colibri-bench
+# stall (2026-10-24) is the motivating replay — see
+# docs/ssot/jobs/bench/2026-11-24-jev-stagnation-gate.yml.
+GATE_ON = os.environ.get("RUNNER_STAGNATION_GATE", "auto")
+GATE_MIN_AGE_S = int(os.environ.get("RUNNER_GATE_MIN_AGE_S", "2700"))
+GATE_INTERVAL_S = int(os.environ.get("RUNNER_GATE_INTERVAL_S", "900"))
+GATE_HALT_STRIKES = int(os.environ.get("RUNNER_GATE_HALT_STRIKES", "2"))
+GATE_HALT_P = float(os.environ.get("RUNNER_GATE_HALT_P", "0.7"))
+GATE_WARN_P = float(os.environ.get("RUNNER_GATE_WARN_P", "0.5"))
+GATE_TYPES = {t.strip() for t in os.environ.get(
+    "RUNNER_GATE_TYPES", "dispatch").split(",") if t.strip()}
+
 # --- push-credential claim guard (runner-push-cred-gap) ---------------
 # A runner must only claim dispatch cards for repos it can push. The
 # ADA-0673 failure (2026-10-14): tony-macbook's ada-voice clone looked
@@ -1360,6 +1380,47 @@ def dr_module():
             import dispatch_repos as dr
             _DR = dr
             return _DR
+        except Exception:
+            continue
+    return None
+
+
+_LG = None
+_LG_TRIED = False
+
+
+def lg_module():
+    """Import loop-gate — the Jev stagnation probe (scripts/jev/
+    loop-gate.py, card jev-stagnation-gate-...-a70f74). Same
+    single-file deploy constraint as dt_module/dr_module: the probe
+    lives in the chaba repo, so resolve it from a local checkout
+    (repos.conf chaba path first — freshest on exec hosts — then the
+    module-adjacent and ~/CascadeProjects/chaba copies). The file is
+    hyphenated like its scripts/jev siblings, so it loads via
+    SourceFileLoader (code-decision-eval.py convention). None -> the
+    gate pass is a no-op; advisory, never a claim blocker."""
+    global _LG, _LG_TRIED
+    if _LG_TRIED:
+        return _LG
+    _LG_TRIED = True
+    from importlib.machinery import SourceFileLoader
+    cands = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        cands.append(Path(env).parent / "jev" / "loop-gate.py")
+    cands += [Path(__file__).resolve().parent.parent / "jev"
+              / "loop-gate.py",
+              Path.home() / "CascadeProjects/chaba/scripts/jev"
+              / "loop-gate.py"]
+    co = _repo_checkout("chaba")
+    if co:
+        cands.append(co / "scripts" / "jev" / "loop-gate.py")
+    for p in cands:
+        if not p.exists():
+            continue
+        try:
+            _LG = SourceFileLoader("loop_gate", str(p)).load_module()
+            return _LG
         except Exception:
             continue
     return None
@@ -4113,6 +4174,15 @@ def finish_pass(st: dict) -> bool:
                 changed = True
             continue
         ok, result = collect(unit)
+        # Stagnation-gate halt (gate_pass SIGTERMed the unit): name the
+        # gate in the finish result so the board/retry ledger sees WHY
+        # it died — prepended so it survives result truncation.
+        gh = ent.pop("gate_halt", None)
+        if gh and not ok:
+            result = ("stagnation-gate HALT "
+                      f"(noul p={(gh.get('noul') or {}).get('p')}, "
+                      f"choice={(gh.get('choice') or {}).get('action')}, "
+                      f"streak={gh.get('streak')}): " + result)[:2000]
         # ADA-0024: needs-input is a blocked state, not a failure. This
         # runs before the rate-limit scan and the executor merge gates so
         # "stopped to ask" never turns into a crash/retry or a bogus merge.
@@ -4802,6 +4872,145 @@ def claim_pass(st: dict) -> bool:
     return changed
 
 
+# --- jev stagnation gate pass -----------------------------------------
+
+def _job_loop_state(cid: str, ent: dict, card: dict):
+    """Loop-state for the stagnation probe: heartbeat (freshest
+    taskdir/journal write) + recent outputs. Dispatch jobs sample the
+    devin-dispatch taskdir (run.*.log / events.jsonl / transcript);
+    other unit types fall back to the unit journal tail. Returns the
+    probe's normalized state dict, or None when nothing is
+    sampleable."""
+    lg = lg_module()
+    if lg is None:
+        return None
+    task = ""
+    if card:
+        task = str(card.get("title") or "")[:160]
+        spec = str(card.get("spec") or card.get("brief") or "")
+        if spec:
+            task = (task + " — " + spec.strip())[:500]
+    if (ent.get("type") or "dispatch") == "dispatch":
+        td = _job_taskdir(ent)
+        if td.is_dir():
+            st = lg.state_from_taskdir(td, task=task or cid)
+            if st:
+                return st
+    unit = ent.get("unit") or ""
+    recent = []
+    if task_runtime() == "launchd":
+        try:
+            recent = _launchd_log(unit).read_text()[-8000:] \
+                .splitlines()[-15:]
+        except OSError:
+            recent = []
+    else:
+        r = sh(["journalctl", "--user", "-u", unit, "-n", "15",
+                "--no-pager", "-o", "cat"], timeout=10)
+        recent = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    recent = [l.strip()[:200] for l in recent[-15:] if l.strip()]
+    if not recent:
+        return None
+    return lg.normalize_state({
+        "loop": "job", "task": task or cid,
+        "iterations": 0,
+        "elapsed_s": round(time.time() - float(ent.get("at") or
+                                              time.time()), 1),
+        "heartbeat_age_s": None,
+        "recent": recent,
+        "signals": {"unit": unit, "type": ent.get("type") or ""}})
+
+
+def gate_pass(st: dict) -> bool:
+    """Jev stagnation gate over this host's running jobs (card
+    jev-stagnation-gate-...-a70f74). WARN/REPLAN post a debounced
+    comms note; HALT needs GATE_HALT_STRIKES consecutive verdicts
+    before the unit is SIGTERMed — the finish pass then reports it as
+    a failed run with the gate evidence in the result. Advisory by
+    contract: GATE_ON=0, no probe module, or any probe error is a
+    no-op — the gate never blocks the claim loop."""
+    if GATE_ON in ("0", "false", "no") or not GATE_TYPES:
+        return False
+    lg = lg_module()
+    if lg is None:
+        return False
+    now = time.time()
+    changed = False
+    cards = None
+    for cid, ent in list(st.items()):
+        unit = ent.get("unit") or ""
+        if not unit or not unit_active(unit):
+            continue
+        if ent.get("job_awaiting"):
+            continue
+        if (ent.get("type") or "dispatch") not in GATE_TYPES:
+            continue
+        g = ent.setdefault("gate", {})
+        if now - float(g.get("last") or 0) < GATE_INTERVAL_S:
+            continue
+        if now - float(ent.get("at") or now) < GATE_MIN_AGE_S:
+            continue
+        if cards is None:
+            cards = {c.get("id"): c for c in
+                     (api("/cards") or {}).get("cards") or []}
+        try:
+            state = _job_loop_state(cid, ent, cards.get(cid) or {})
+        except Exception as e:
+            print(f"{cid}: stagnation gate sample failed: {e}")
+            continue
+        if not state:
+            continue
+        g["last"] = now
+        try:
+            v = lg.gate(state, halt_p=GATE_HALT_P, warn_p=GATE_WARN_P)
+        except Exception as e:
+            print(f"{cid}: stagnation gate probe failed: {e}")
+            continue
+        verdict = str(v.get("verdict") or "unknown")
+        g["verdict"] = verdict
+        g["noul_p"] = (v.get("noul") or {}).get("p")
+        g["backends"] = v.get("backends")
+        if verdict == "halt":
+            g["halt_streak"] = int(g.get("halt_streak") or 0) + 1
+        else:
+            g["halt_streak"] = 0
+        ev = (f"noul p={g['noul_p']} "
+              f"choice={(v.get('choice') or {}).get('action')} "
+              f"backends={g['backends']}")
+        if verdict in ("warn", "replan") and g.get("noted") != verdict:
+            g["noted"] = verdict
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": f"stagnation gate: {verdict} "
+                                     f"({ev}) — job still running, "
+                                     "watching"})
+            changed = True
+        elif verdict == "halt":
+            streak = int(g.get("halt_streak") or 0)
+            if streak >= GATE_HALT_STRIKES and not ent.get("gate_halt"):
+                ent["gate_halt"] = {
+                    "at": datetime.now(timezone.utc).isoformat(),
+                    "verdict": verdict, "noul": v.get("noul"),
+                    "choice": v.get("choice"),
+                    "streak": streak}
+                _signal_job(unit, "TERM")
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"stagnation gate: HALT after "
+                                         f"{streak} consecutive verdicts "
+                                         f"({ev}) — SIGTERM to {unit}; "
+                                         "finish pass reports it failed"})
+                _notify(cid, "stalled",
+                        f"gate halt p={g['noul_p']} on {unit}")
+                changed = True
+            elif not ent.get("gate_halt"):
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"stagnation gate: halt verdict "
+                                         f"{streak}/{GATE_HALT_STRIKES} "
+                                         f"({ev}) — one more interval "
+                                         "before killing"})
+                changed = True
+    return changed
+
+
 def verdict_pass(st: dict) -> None:
     """/ready report — runner-observed claimability for every queued card
     plus this host's in-flight claims (KNB-1007). Runs every pass, even
@@ -4901,7 +5110,7 @@ def _self_update():
 def main() -> int:
     _self_update()
     st = load_state()
-    changed = (finish_pass(st) | watchdog_pass(st)
+    changed = (finish_pass(st) | watchdog_pass(st) | gate_pass(st)
                | reconcile_pass(st) | claim_pass(st))
     verdict_pass(st)
     if changed:
