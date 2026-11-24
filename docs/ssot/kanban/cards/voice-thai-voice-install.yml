@@ -1,7 +1,7 @@
 id: voice-thai-voice-install
 title: 'voice: install Thai Piper voice (th_TH-tsync2) — needs tltk+pandas dep fix'
-column: review
-updated: 2026-11-24 17:03
+column: done
+updated: 2026-11-24 20:42
 brief: 'Thai replies in the voice mini-app. Voice model downloaded (61MB th_TH-tsync2) but needs tltk+pandas; numpy
   dtype mismatch in ada-whisper venv blocks install (ValueError: numpy.dtype size changed).'
 priority: medium
@@ -231,6 +231,14 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:42
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261124-153546-fix-venv-deps-without-breaking
+    (tip ff5d89bf0026) was merged into origin/master in this triage as dafc736954e4; runner reported finished (ok)
+    with an outcome doc. Work is landed and gate-checked. Closing.'
+- at: 2026-11-24 20:42
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
