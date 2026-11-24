@@ -10,14 +10,14 @@ brief: 'ada-ha-tony journal, 7d: gemini-2.5-flash generateContent calls return 4
   rest of the UTC day. Confirmed casualties: web_search tool, documents.check (classify on ingest). Likely explains
   a share of the ''tool quietly failed'' audits. NOTE: dispatch/CLI side (devin tasks on idc02/mn01) shows ZERO
   rate-limit errors — this is only the Gemini free tier under ada-ha.'
-spec: "Options, pick after checking how many keys/projects are already wired (secrets: ~/.config/secrets/ada-ha-tony-keys.json\
-  \ on idc03):\n A. Move side-tool calls (web_search, documents classify, any flash generateContent) to a billing-enabled\
-  \ project/key — quota is per-project-per-model, billing removes the 20/day wall.\n B. Round-robin across N projects/keys\
-  \ — each project gets its own 20/day free tier.\n C. Cache + debounce: web_search results and document classify\
-  \ are repeat-heavy; a small cache cuts the request count.\n D. Loud-fail surface: when quota exhausts, flag ops\
-  \ event + tell Tony plainly (companion to google-token-loud-fail pattern) instead of silent per-call failures.\n\
-  VERIFY: simulate/confirm no 429s in ada-ha-tony journal for 48h; during a forced-exhaust test, Ada surfaces the\
-  \ quota error instead of silent tool failure."
+spec: "Options, pick after checking how many keys/projects are already wired (secrets: ~/.config/secrets/ada-ha-tony-keys.json
+  on idc03):\n A. Move side-tool calls (web_search, documents classify, any flash generateContent) to a billing-enabled
+  project/key — quota is per-project-per-model, billing removes the 20/day wall.\n B. Round-robin across N projects/keys
+  — each project gets its own 20/day free tier.\n C. Cache + debounce: web_search results and document classify
+  are repeat-heavy; a small cache cuts the request count.\n D. Loud-fail surface: when quota exhausts, flag ops
+  event + tell Tony plainly (companion to google-token-loud-fail pattern) instead of silent per-call failures.\nVERIFY:
+  simulate/confirm no 429s in ada-ha-tony journal for 48h; during a forced-exhaust test, Ada surfaces the quota
+  error instead of silent tool failure."
 expected_goals:
 - check: test "$(ssh -o BatchMode=yes idc03 'journalctl --user -u ada-ha-tony --since \"2 days ago\" --no-pager
     | grep -c \"429 Too Many Requests\"')" -lt 10
@@ -695,7 +695,11 @@ comms:
   from: chaba
   text: 'idc03 defers: unclaimable by the declared runner fleet: action.runner=idc01 names no declared runner —
     fix action.labels/host pins or teach a runner the capability'
-updated: 2026-11-24 09:07
+- at: 2026-11-24 09:16
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.runner=idc01 names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+updated: 2026-11-24 09:16
 action:
   type: dispatch
   status: done
@@ -707,3 +711,4 @@ action:
   verified: true
 claim: {}
 ref: ADA-0321
+awaiting_action: true
