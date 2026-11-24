@@ -157,6 +157,10 @@ comms:
 - at: 2026-11-24 15:03
   from: tony
   text: queued for processing
+- at: 2026-11-24 15:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
   Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,
   and enable --now the timer. The host is tony-omen and the repo is chaba. The done-condition is verified when systemctl
