@@ -1,7 +1,7 @@
 id: opencode-memory-freshness-check
 title: Read-only memory/feed freshness status check (Devin + OpenCode)
 column: doing
-updated: 2026-11-24 23:22
+updated: 2026-11-24 23:28
 priority: low
 tags:
 - chaba-memory
@@ -206,6 +206,13 @@ comms:
     chaba-repo-sync updates the checkout copy, and unt; after the MEM-0545 mddb split, any long-lived script with
     a hardcoded :11023 def; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; [publish-promote-knowledge-capture-ssot-w-d34a39]
     [2026-11-21'
+- at: 2026-11-24 23:28
+  from: devin
+  text: '[2026-11-24 devin] Re-dispatch verify+extend pass on scripts/chaba/check-memory-freshness.py (commit f4b26dc052
+    on dispatch branch): --hosts now defaults to fleet fanout (all=tony-dell,tony-omen,idc03), added SSH reachability
+    probe (ERROR+evidence), parsed render service ActiveState/ExecMainStatus/ExecMainExitTimestamp, feed-input ages
+    (events/immediate/recent-events), session-memory.md tail SessionEnd/Compaction marker scan, simplified FRESH/STALE/ERROR.
+    Live run: dell+omen FRESH, idc03 STALE ('
 action:
   type: dispatch
   status: running
