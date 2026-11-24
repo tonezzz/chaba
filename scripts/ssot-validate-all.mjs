@@ -348,6 +348,7 @@ function main() {
       const output = execSync(`python3 ${TEMP_PY}`, {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 64 * 1024 * 1024,
       });
       pyResults = JSON.parse(output);
     } catch (error) {
