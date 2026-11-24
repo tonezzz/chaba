@@ -1,0 +1,135 @@
+title: wiki-talk-watch — auto-reply loop for wiki talk pages
+subtitle: >-
+  15-min idc03 timer polls MediaWiki recentchanges across all talk
+  namespaces, classifies comments via LiteLLM (JevTeam stand-in), drafts
+  replies via opencode headless (LiteLLM fallback), posts signed
+  '— Ada (ada-code)' sections through the Ada bot; visibility guard
+  keeps members-ns detail off public talk pages.
+icon: message
+id: 2026-11-24-wiki-talk-watch
+status: done
+owner: devin-dispatch
+project: chaba
+card: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
+started: "2026-11-24"
+completed: "2026-11-24"
+
+context:
+  user_request: >
+    Tony drops questions on wiki talk pages expecting the agent fleet to
+    answer; the first one (Education_talk:Ada-Ocb-Card-Runner, "Are we
+    going to create an mcp for this?") was only noticed because he asked
+    in chat. Card wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
+    supersedes the manual procedure card
+    wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 and specs the full
+    loop: watcher -> classify -> draft -> signed reply, watermark
+    idempotency, namespace-visibility guard, focus-inbox failure flags.
+
+design:
+  script: scripts/wiki/wiki-talk-watch.py — single-file stdlib watcher
+    (no PyYAML dep; board-api /inbox is the alert channel).
+  poll: >
+    api.php list=recentchanges, rctype=edit|new,
+    rcnamespace=1|3|5|7|9|11|13|15|3001|3003|3005|3007 (verified live —
+    Form talk 107 is the only talk ns excluded, per spec),
+    rcprop=title|ids|timestamp|comment|user|flags (user+flags added to
+    the spec's prop list — required for own-bot/minor filtering).
+    rcend=<watermark-ts> bounds the server-side scan; watermark itself
+    is max rcid in ~/.local/state/wiki-talk-watch/last-rcid with the
+    timestamp mirrored in state.json. rcid > watermark filter makes
+    reruns idempotent; per-rcid outcomes persist in state.json before
+    the watermark advances, so a crash resumes without double-posts.
+  first_run: >
+    No last-rcid file -> seed to newest rcid and process nothing.
+    Replying to the entire historical backlog would be noise; the file's
+    existence (not watermark>0) is the seeded check.
+  extract: >
+    type=new -> whole page wikitext is the comment; type=edit ->
+    revisions diff old_revid->revid keeps '+' lines (the appended
+    section); rc_comment (edit summary) is fallback context, never the
+    sole source — talk comments live in content, not summaries.
+  filters: >
+    skip rcid<=watermark, rcid in state.done, user==WIKI_USER (env
+    override WIKI_TALK_SELF_USER="" for sandbox self-tests),
+    WIKI_TALK_SKIP_USERS list, 'minor' rc flag. Caps: 8 candidates and
+    5 replies per run; deferred candidates stay above the watermark.
+  classify: >
+    LiteLLM gateway gemini-3.5-flash-lite via scripts/ada/gemini_rest.py
+    generate_json — the same pattern board-api /lesson Thai translation
+    uses (base http://100.102.134.91:4000, key resolved from
+    WIKI_TALK_LITELLM_* env -> litellm-keys.env CHABA/MDDB ->
+    litellm-chaba.env -> mddb-gemini.env). Output
+    {respond, lane=ada-code|no-response, reason}; classify failure
+    breaks the run (dead gateway -> one inbox flag, watermark holds).
+  draft: >
+    opencode run --format json --archived --model
+    litellm/gemini-3.5-flash-lite -f prompt.md in a scratch dir under
+    ~/.local/state/wiki-talk-watch/runs/ (binary resolved
+    OPENCODE_BIN -> PATH -> ~/.opencode/bin -> ~/.local/bin, --standalone
+    on v2 — the card-run/trade-lesson-migrate invocation pattern).
+    Fallback when opencode is absent (it is NOT installed on idc03):
+    gemini_rest.generate with the same prompt. Prompt carries the
+    visibility class; members pages may cite the repo, public pages are
+    told to work only from the comment.
+  post: >
+    action=edit&section=new&sectiontitle=Ada reply&appendtext=<body +
+    '\n\n— Ada (ada-code) ~~~~~'>&summary=wiki-talk-watch reply
+    (ada-code) via bot-password login + csrftoken (board-api
+    _wiki_login dance, ~/.config/secrets/wiki-h3-gizmo.env).
+  guard: >
+    Talk ns 3001/3003/3005/3007 map to Lockdown 'inhouse' namespaces
+    (Infrastructure/PrivateNews/Education/Reports) -> visibility=members,
+    internal detail allowed. All other polled talk ns -> public:
+    drafts are leak-scanned for tailnet IPs, *.ts.net, internal
+    hostnames (idc0*, tony-*, mn01, michael-ha, kk-mac*, taila0626a)
+    and secret shapes (sk-*, *_KEY, api_key, bearer); a hit blocks the
+    post and files a high-priority inbox flag with the draft preserved
+    under runs/.
+  alerts: >
+    board-api POST /inbox (no card flock; the served checkout owns the
+    file). Dedupe-by-slug in state.json — one alert per slug per 24h,
+    1h hard floor. Kinds: login-error, classify-error, draft-failed-*,
+    leak-guard-*, post-error-*, run-error.
+
+job:
+  manifest: docs/ssot/infrastructure/ssot.jobs.yml -> id wiki-talk-watch
+  units: systemd/generated/idc03/wiki-talk-watch.{service,timer}
+  schedule: "OnCalendar=*-*-* *:07/15:00 — every 15min at :07/:22/:37/:52,
+    offset from the :00 job cluster and kanban-commit's 15-min cycle
+    (the job takes no card flock; only a brief /inbox POST)."
+  gate: "ConditionPathExists keeps the unit inert until the script
+    merges and chaba-repo-sync lands it on idc03 — install post-merge
+    with render-jobs.py --host idc03 --install."
+  timeout: 30m (opencode draft worst-case ~5min x MAX_REPLIES; typical
+    run is seconds when the queue is empty)
+
+verify:
+  - "E2E 2026-11-24 on tony-dell: probe comment posted on
+    Education_talk:ZZ-Talk-Watch-Probe -> watcher classified
+    respond=true lane=ada-code -> opencode drafted -> signed reply
+    landed as rev 465 ('— Ada (ada-code)' + ~~~~~ signature)."
+  - "Idempotent rerun: examined=0 replies=0, watermark stable at rcid
+    471; the bot's own reply edit filtered as own-bot."
+  - "--dry-run writes nothing (no state dir created); --seed sets
+    watermark without processing."
+  - "Anon action=parse on Education_talk:ZZ-Talk-Watch-Probe ->
+    permissiondenied (inhouse Lockdown intact)."
+  - "leak_hits() unit-checked: tailnet IPs, ts.net, idc03/tony-dell
+    hostnames, sk-* keys all trip; plain answers pass."
+  - "Pending post-merge: first real timer tick on idc03 (draft path
+    will be the LiteLLM fallback — no opencode there)."
+
+notes:
+  - "rcprop gained user|flags beyond the spec's title|ids|timestamp|
+    comment — own-bot and minor-edit filtering is impossible without
+    them; rcend takes the watermark TIMESTAMP (rcid is not a valid
+    rcend value — verified live)."
+  - "recentchanges leaks protected-ns titles to anonymous callers —
+    pre-existing wiki behavior, unchanged by this job; comment content
+    still requires the bot session."
+  - "JevTeam lanes are still under construction — v1 classify is a
+    single LiteLLM stand-in emitting only ada-code|no-response; swap
+    classify() for the real router when JevTeam lands."
+  - "opencode absence on idc03 is deliberate for v1: the LiteLLM
+    generateContent fallback keeps the loop alive; installing opencode
+    on idc03 upgrades draft quality with zero code change."

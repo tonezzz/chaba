@@ -1866,6 +1866,38 @@ jobs:
     job). 07:35 lands after daily-brief (07:05) + narration and the
     lessons-due refresh (07:30). --print renders without sending.
     Added 2026-11-20.'
+- id: wiki-talk-watch
+  name: Wiki talk-page watcher — classify + auto-reply (ada-code lane)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:07/15:00'
+  persistent: true
+  timeout: 30m
+  condition_path: '%h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py
+  note: 'Card wiki-talk-watch-auto-reply-to-wiki-talk-a9f107 (supersedes
+    manual wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318). Polls
+    api.php list=recentchanges across all talk namespaces
+    (1|3|5|7|9|11|13|15|3001|3003|3005|3007) on wiki.surf-thailand.com,
+    watermark = max rcid in ~/.local/state/wiki-talk-watch/last-rcid
+    (idempotent reruns; first run seeds, never backlog-replies).
+    Classify v1 = LiteLLM gemini-3.5-flash-lite via the board-api
+    /lesson gateway pattern (JevTeam stand-in); draft = opencode
+    headless litellm/gemini-3.5-flash-lite with LiteLLM
+    generateContent fallback (opencode is NOT installed on idc03 —
+    fallback is the live path until it lands). Replies post as
+    action=edit section=new appendtext signed "— Ada (ada-code) ~~~~~"
+    via ~/.config/secrets/wiki-h3-gizmo.env. Visibility guard: members
+    talk ns (3001/3003/3005/3007, Lockdown inhouse) may carry internal
+    detail; public talk ns drafts are leak-scanned (tailnet IPs, ts.net,
+    hostnames, secret shapes) and blocked to focus-inbox on a hit.
+    Failures -> deduped board-api /inbox flags, no blind retries.
+    :07/15 offset avoids the :00 job cluster and kanban-commit''s
+    15-min cycle (the job takes no card flock — only a brief /inbox
+    POST). condition_path keeps the unit inert until the script merges
+    and chaba-repo-sync lands it. Install post-merge:
+    render-jobs.py --host idc03 --install. E2E-verified 2026-11-24 on
+    Education_talk:ZZ-Talk-Watch-Probe (rev 465). Added 2026-11-24.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py
