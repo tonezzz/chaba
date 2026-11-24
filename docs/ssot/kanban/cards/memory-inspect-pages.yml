@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: backlog
-updated: 2026-11-24 12:47
+updated: 2026-11-24 14:09
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -657,6 +657,9 @@ comms:
 - at: 2026-11-24 12:47
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -678,15 +681,14 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   sweep:
     failed_noted: 2026-11-17 23:41
   attempts: 2
-  last_failure: 'exit=1 emory-inspection-pa.service: Failed with result ''exit-code''. | devin-task-20261123-145907-implement-memory-inspection-pa.service:
-    Consumed 14min 45.197s CPU time over 22min 51.242s wall clock time, 1.6G memory peak, 750.6M memory swap peak.'
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
   result: 'exit=0 -memory-inspection-pa.md` and final comms posted to the card. | devin-task-20261123-155646-implement-memory-inspection-pa.service:
     Consumed 3min 46.473s CPU time over 10min 47.240s wall clock time, 1.1G memory peak, 785.6M memory swap peak.'
 claim:
