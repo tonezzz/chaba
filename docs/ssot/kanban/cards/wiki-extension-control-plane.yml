@@ -1,7 +1,7 @@
 id: wiki-extension-control-plane
 title: Controlled MediaWiki extension management for Ada/OpenCode
 column: review
-updated: 2026-11-24 19:54
+updated: 2026-11-24 20:01
 brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
   without arbitrary Springboard/API or shell access.
 priority: high
@@ -253,6 +253,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-192442-create-a-controlled-wiki-exten on tony-macbook still
     dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 20:01
+  from: tony
+  text: 'answered springboard-is-unusable-on-the-wiki-mw-1-2aa6f8: proceed'
+- at: 2026-11-24 20:01
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -276,10 +282,12 @@ requests:
     URL https://raw.githubusercontent.com/CanastaWiki/RecommendedRevisions/master/1.44.yaml (contains all 7 approved
     names incl. Mermaid repo override). Who applies it, or should this go to a new card? Meanwhile all approved
     extensions are already installed and the hardened door is in the dispatch branch.'
-  status: open
+  status: answered
   at: 2026-11-24 19:42
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
