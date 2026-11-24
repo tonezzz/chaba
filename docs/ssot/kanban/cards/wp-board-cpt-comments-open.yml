@@ -1,7 +1,7 @@
 id: wp-board-cpt-comments-open
 title: 'boards: open comment_status on board CPTs so member comments reach wp-comment-sync lanes'
 column: doing
-updated: 2026-11-24 15:14
+updated: 2026-11-24 15:16
 priority: medium
 tags:
 - by:wp-comment-sync
@@ -198,6 +198,12 @@ comms:
   text: 'place/trip/ops-event are registered outside chaba-boards without comments support (REST omits comment_status).
     Building chaba-boards 0.9.1: register_post_type_args filter adds comments support to place/trip/ops-event/asset/cam/bench/render_job
     + one-time comment_status=open migration on version bump. Deploying zip via tony-omen wp-admin flow.'
+- at: 2026-11-24 15:16
+  from: devin
+  text: 'DONE: chaba-boards v0.9.1 deployed to boards.surf-thailand.com via deploy-plugin-zip.sh on tony-omen. register_post_type_args
+    filter adds comments support to place/trip/ops-event (registered outside the plugin) + one-time migration opened
+    comment_status on all 7 board CPTs. Verified: all CPTs return comment_status=open incl. private asset/cam/bench/render_job
+    posts; test comment create+trash on place post 106 succeeded. news/posts untouched. Deliverables: integrations/wp-boards/chaba-boards.php,'
 spec: The goal is to open comment_status on board Custom Post Types (place, trip, ops-event, asset, cam, bench,
   render_job) on boards.surf-thailand.com so member comments can reach wp-comment-sync lanes. Host and repo must
   be derived strictly from available configuration since none were asserted in the card. Constraints require enabling
