@@ -1,7 +1,7 @@
 id: cms-plane-bge-golden-set-eval-measure-re-cad4f4
 title: CMS-plane BGE golden-set eval — measure retrieval quality vs gemini before :11027 migration decision
-column: doing
-updated: 2026-11-24 23:38
+column: review
+updated: 2026-11-24 23:42
 priority: medium
 tags:
 - mddb
@@ -215,16 +215,50 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-223607-follow-up-to-mem-0193-spike-pr on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 23:42
+  from: tony-omen
+  text: 'finished (ok): exit=0 ocs/ssot/jobs/mddb/2026-11-24-cms-bge-golden-eval.yml`; final comms posted to the
+    card. | devin-task-20261124-223'
+- at: 2026-11-24 23:42
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 23:42
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-223607-follow-up-to-mem-0193-spike-pr'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 23:42
+  from: chaba
+  text: banked 16 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:42
+  from: chaba
+  text: pushed dispatch/20261124-223607-follow-up-to-mem-0193-spike-pr to origin
+- at: 2026-11-24 23:42
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 23:42
+  from: chaba
+  text: auto-merged 832de4e8 (dispatch/20261124-223607-follow-up-to-mem-0193-spike-pr) → origin/master
+- at: 2026-11-24 23:42
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
   sweep:
-    stale_running: 2026-11-24 23:38
+    stale_running: 2026-11-24 23:39
     dirty: 1
+  result: 'exit=0 ocs/ssot/jobs/mddb/2026-11-24-cms-bge-golden-eval.yml`; final comms posted to the card. | devin-task-20261124-223607-follow-up-to-mem-0193-spike-pr.service:
+    Consumed 8min 5.723s CPU time over 58min 50.652s wall clock time, 892M memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:34
+review_kind: verify
