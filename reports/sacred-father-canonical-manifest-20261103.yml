@@ -34,15 +34,38 @@ review:
     - thai
     - english
 artifacts:
-  video: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.mp4
-  thai_subtitles: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.th.srt
-  english_subtitles: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.en.srt
+  video: gdrive:ada-nest/kk-mac-video-pilot/final/pdf-final-preview-v4-clean.mp4
+  thai_subtitles: gdrive:ada-nest/kk-mac-video-pilot/final/pdf-final-preview-v4-clean.th.srt
+  english_subtitles: gdrive:ada-nest/kk-mac-video-pilot/final/pdf-final-preview-v4-clean.en.srt
 qc:
   decode: passed
   audio: aac
   duration_seconds: 59.916667
   frames: 720
   public_release: false
+verified:
+  at: 2026-11-24
+  by: devin dispatch video-render-dispatcher
+  method: rclone cat | sha256sum + ffprobe on the live Drive objects
+  video:
+    bytes: 2497219
+    sha256: 9a0e37224c320d1fc5dc1004dbe039a9f52ec752087371e1ba69ce2f47106d7a
+    streams: h264 640x384 12fps-container 720 frames + aac
+    duration_seconds: 59.916667
+  subtitles:
+    thai_bytes: 772
+    english_bytes: 369
+  unmanifested_alternate: >-
+    final/pdf-final-preview-canonical-v1.mp4 (2026-11-04, 3451458 bytes,
+    same 720f/59.92s container, PSNR~14dB vs v4-clean) exists on the same
+    root but is NOT this manifest's canonical artifact — recorded for
+    owner review; do not treat as canonical until Tony/KK decide.
+  note: >-
+    artifact paths corrected 2026-11-24 — the original draft used the
+    nonexistent rclone root gdrive:ada-nest-kk-mac-video-pilot; the real
+    path is gdrive:ada-nest/kk-mac-video-pilot. The copy at
+    gdrive:ada-nest/kk-mac-video-pilot/manifests/ still carries the old
+    paths and needs re-publish on next approved write.
 next:
   - visual_review
   - approve_private_preview
