@@ -1,7 +1,7 @@
 id: ha-ada-isolation
 title: Isolate tony-ha + kk-ha from Ada failures (runbook ha-ada-isolation)
 column: done
-updated: 2026-11-24 08:13
+updated: 2026-11-24 08:21
 brief: Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy,
   idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
 priority: high
@@ -429,6 +429,10 @@ comms:
 - at: 2026-11-24 08:13
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: gemini-key-isolation-strategy-today-all-12834c
