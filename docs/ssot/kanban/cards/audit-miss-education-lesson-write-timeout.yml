@@ -1,7 +1,7 @@
 id: audit-miss-education-lesson-write-timeout
 title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
-column: doing
-updated: 2026-11-24 17:32
+column: review
+updated: 2026-11-24 17:37
 brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
   the supported board-api writer.
 priority: medium
@@ -209,12 +209,40 @@ comms:
     Verified via op:get read-back (full wikitext + meta: working/chat/learned 2026-11-24/review 2026-12-01/no_th)
     AND MDDB chaba-lessons mirror doc lesson-4dd48148b1be. Content reconstructed from durable artifacts in dd8a1684d2
     (original transcript unavailable). Side findin'
+- at: 2026-11-24 17:37
+  from: tony-omen
+  text: 'finished (ok): exit=0 me-20261124-171714-retry-the-education-lesson-ups.md` (76555e8c42); card comms updated.
+    | devin-task-20261124-171'
+- at: 2026-11-24 17:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:37
+  from: chaba
+  text: pushed dispatch/20261124-171714-retry-the-education-lesson-ups to origin
+- at: 2026-11-24 17:37
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 73.2s)
+- at: 2026-11-24 17:37
+  from: chaba
+  text: auto-merged 8539f0a9 (dispatch/20261124-171714-retry-the-education-lesson-ups) → origin/master
+- at: 2026-11-24 17:37
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-171714-retry-the-education-lesson-ups,
+    branch dispatch/20261124-171714-retry-the-education-lesson-ups'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 me-20261124-171714-retry-the-education-lesson-ups.md` (76555e8c42); card comms updated. | devin-task-20261124-171714-retry-the-education-lesson-ups.service:
+    Consumed 4min 50.355s CPU time over 15min 4.895s wall clock time, 5.4G memory peak.'
+  verified: true
 claim:
   since: 2026-11-24 17:14
+review_kind: verify
