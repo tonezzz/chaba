@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-eval
 title: Timer ada-ocb-eval on idc02 failing
-column: backlog
-updated: 2026-11-24 08:39
+column: done
+updated: 2026-11-24 09:33
 priority: high
 tags:
 - timer-alert
@@ -63,6 +63,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:33
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 09:33
+  from: tony
+  text: closed by tony
 requests:
 - id: multiple-runner-agents-across-fa4249
   ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because the installed
@@ -77,8 +83,9 @@ requests:
   at: 2026-11-23 19:20
   from: backlog-spec-enrich
   answer: ★ Redeploy runner-agent from repository to all affected hosts via scp and resume timer investigation
-awaiting_action: true
 spec: 'Goal: Redeploy runner-agent from repository to idc02 via scp and resume timer investigation for ada-ocb-eval.service.
   Host: idc02. Repo: chaba. Constraints: Only use the specified host, repository, and paths from the context. Testable
   done-condition: runner-agent.py is successfully copied to idc02 and the system journal for ada-ocb-eval.service
   is investigated.'
+action:
+  status: done
