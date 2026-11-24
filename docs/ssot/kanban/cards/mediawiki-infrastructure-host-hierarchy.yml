@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
-column: doing
-updated: 2026-11-24 19:26
+column: review
+updated: 2026-11-24 19:28
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -281,13 +281,36 @@ comms:
     + 10 registry-driven leaves (idc01 retired stub, idc03/con01/macbook/kk-mac/michael-ha covered) from audit-hosts/host-loads/disk-trend/timer-timeline/ssot.reports.
     --check gates pass on private+public surfaces; anon-deny probe verified live. host-services-cms HOST_META reconciled
     to registry; ssot.reports gained missing audit-hosts/idc02+con01 nodes. Did NOT --apply: mn01 cant reach con01/kk-'
+- at: 2026-11-24 19:28
+  from: mn01
+  text: 'finished (ok): exit=0  outcome doc at `dispatch-outcome-20261124-120558-define-and-implement-the-media.md`.
+    | devin-task-20261124-12055'
+- at: 2026-11-24 19:28
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 19:28
+  from: chaba
+  text: 'session-end checkpoint 9ef073f2: 1 leftover file(s) committed'
+- at: 2026-11-24 19:28
+  from: chaba
+  text: pushed dispatch/20261124-120558-define-and-implement-the-media to origin
+- at: 2026-11-24 19:28
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 19:28
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0  outcome doc at `dispatch-outcome-20261124-120558-define-and-implement-the-media.md`. | devin-task-20261124-120558-define-and-implement-the-media.service:
+    Consumed 4min 3.552s CPU time over 20min 38.293s wall clock time, 717.4M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 19:05
+review_kind: verify
