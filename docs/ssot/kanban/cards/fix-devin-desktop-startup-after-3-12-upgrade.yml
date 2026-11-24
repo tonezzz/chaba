@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: doing
-updated: 2026-11-24 21:17
+updated: 2026-11-24 21:25
 priority: high
 tags:
 - devin
@@ -237,6 +237,13 @@ comms:
     — the two never see each other, so every launch spawns a parallel instance fighting over profile locks (LevelDB
     LOCK errors observed). Affects both hosts: dell stale pre-upgrade instance PID 3271309 (deleted exe) since Nov-23
     16:10; omen watchdog instance PID 47209 since Nov-23 19'
+- at: 2026-11-24 21:25
+  from: devin
+  text: 'DONE — root cause was split-brain single-instance, not the 3.12 package: cron watchdog launches lack XDG_RUNTIME_DIR
+    so Electron bound ~/.config/Devin/1.14-main.sock while interactive launches use /run/user/1000/vscode-*-main.sock;
+    the two never saw each other so every launch spawned a parallel instance fighting over the profile (LevelDB
+    LOCK errors). dell was worst: stale pre-upgrade instance (deleted exe) squatted since Nov-23 16:10. FIX: watchdog
+    now exports XDG_RUNTIME_DIR (committed de193f9'
 action:
   type: dispatch
   status: running
