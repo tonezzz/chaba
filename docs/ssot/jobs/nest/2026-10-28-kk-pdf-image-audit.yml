@@ -1,0 +1,123 @@
+title: Sacred Father PDF source and image audit
+subtitle: Compare the original and revised source PDFs without using images in renders
+icon: file-search
+card: kk-video-c9f99fee6146
+date: 2026-10-28
+
+planning:
+  goal: >-
+    Inventory embedded images and page-level provenance for both private
+    Sacred Father PDFs, then stage the verified report for review before
+    any visual asset or prompt change.
+  scope: >-
+    Preserve both source PDFs, verify hashes and page counts, extract an
+    image inventory and private review copies, and keep the existing
+    preview pack blocked pending explicit visual-use approval. Do not
+    regenerate shots, change voice/provider, publish images, or alter
+    sharing permissions.
+  success_criteria:
+    - Both source PDFs match manifest hashes and are identified by version.
+    - A private report lists page count, embedded-image count, dimensions, and hashes.
+    - The preview queue cannot rerun against unreviewed image inputs.
+    - Audit artifacts are read back from Drive and linked to OPS-0914.
+  risks:
+    - Family images are sensitive; keep source and extracted assets private.
+    - A stale queued preview could repeat the failed Edge TTS path; gate it before launching the audit queue.
+    - Do not infer that a Telegram upload alone grants likeness/publication rights.
+  resources:
+    - idc03 project source: ~/.local/share/devnest/projects/kk-video-c9f99fee6146/source/
+    - private Drive project root: gdrive:ada-nest/projects/kk-video-c9f99fee6146/
+    - managed Colab T4 boot 07b5cf10-a2ab-474f-a355-7e78d08b0680
+    - scripts/colab/queue-runner.py and mcp-colab queue control
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Sacred Father preview and source revision
+      file: docs/ssot/kanban/cards/kk-video-c9f99fee6146.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-28
+  steps:
+    - id: 1
+      label: Confirm source revision decision and preserve v1
+      status: completed
+      notes: Tony selected v1_01 as the new source of truth; original remains in sources[].
+    - id: 2
+      label: Mirror source PDFs and manifest to private Drive project store
+      status: completed
+      notes: Copied original and v1_01 PDFs plus updated project.json to the private project source directory; hashes verified on Drive; no permission changes.
+    - id: 3
+      label: Build and validate the CPU-only image-audit pack
+      status: completed
+      notes: Added deterministic Poppler inventory and text-diff packs; 44 targeted Colab/preflight tests pass; image/text outputs stay private and are not passed to LTX or an external model.
+    - id: 4
+      label: Stage the release and run the source audit on Colab
+      status: completed
+      notes: Run-20261028-0945 passed R4 preflight (21 checks, 0 warnings), completed the image audit, and skipped preview at the source-image-use approval gate. Run-20261028-1025 completed the private text diff and also skipped preview. No LTX or TTS work ran.
+  decisions:
+    - label: v1_01 supersedes the original PDF
+      rationale: Tony answered the project-card source-role request; preserve the original as v1.
+      alternatives_considered: Keep both sources active as an addendum.
+  changes:
+    - file: scripts/colab/packs/kk-video-c9f99fee6146-pdf-image-audit/
+      summary: Added a CPU-only private audit for both PDF revisions with page-level text fingerprints and embedded-image inventory.
+    - file: scripts/colab/packs/kk-video-c9f99fee6146-pdf-text-diff/
+      summary: Added a private CPU-only text diff; no external model was called and no standalone extracted-text files were retained.
+    - file: docs/reports/kk-video-c9f99fee6146-source-audit-2026-10-28.md
+      summary: Recorded source hashes, image counts, text-diff caveat, and the private review paths.
+    - file: scripts/colab/packs/kk-video-c9f99fee6146-preview/pack.yml
+      summary: Synchronized the pack source to the deployed R3 QC version and gated future claims on R4 preflight, source audit, and explicit visual-use approval.
+
+followup:
+  verification:
+    - Compare remote and local SHA-256 values for both PDFs.
+    - Verify PDF page counts and image inventory from the audit pack result.
+    - Confirm the queue skipped the preview while visual-use approval is absent.
+    - Verify the private text diff was generated without a model call.
+  rollback_plan:
+    - Restore the prior preview pack manifest from its versioned backup.
+    - Do not remove either source PDF; revert only the source pointer if needed.
+  handoff:
+    - Tony/KK review the private image inventory and specify any approved images.
+  deferred:
+    - Shot/prompt revisions and any rerender remain blocked until the text diff and page-specific image use are reviewed.
+    - Narration retry remains separately blocked on Edge TTS reliability.
+
+report:
+  status: completed
+  completed_at: 2026-10-28
+  summary: >-
+    Promoted v1_01 as the primary private source while preserving v1, verified both hashes, inventoried 15 original and 17 revised embedded images, and compared normalized text. R4 preflight passed; the audit and text-diff packs completed on Colab. Private contact sheets are available for review. The preview remains blocked pending page-specific image-use approval.
+  metrics:
+    - metric: R4 preflight
+      value: 21 checks passed, 0 warnings
+    - metric: embedded images
+      value: original 15; v1_01 17
+    - metric: normalized text diff
+      value: 2 added lines, 2 removed lines; 12,797 normalized characters in each; no new story event identified
+    - metric: GPU usage
+      value: 0 MiB for preflight and audit packs
+  links:
+    - title: OPS-0914 project card
+      file: docs/ssot/kanban/cards/kk-video-c9f99fee6146.yml
+    - title: Private source audit report
+      file: docs/reports/kk-video-c9f99fee6146-source-audit-2026-10-28.md
+    - title: Drive image inventory
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-pdf-image-audit/out/report.md
+    - title: Drive text diff
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-pdf-text-diff/out/text-diff.patch
+    - title: Private contact sheets
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-pdf-image-audit/out/contact-sheets/
+  kb_review:
+    - No standalone KB entry needed; project-specific facts are in the report and OPS-0914/OPS-0952.
+  lessons_learned:
+    - Page-level text hashes can reflect form-feed reflow; compare normalized whole-document text before inferring broad content changes.
+
+config:
+  version: 1
+  created_at: 2026-10-28
+  last_updated: 2026-10-28
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
