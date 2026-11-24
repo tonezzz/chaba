@@ -1,7 +1,7 @@
 id: timer-alert-idc03-fleet-restic-backup
 title: Timer fleet-restic-backup on idc03 failing
 column: backlog
-updated: 2026-11-24 07:54
+updated: 2026-11-24 08:03
 priority: high
 tags:
 - timer-alert
@@ -61,6 +61,10 @@ comms:
 - at: 2026-11-24 07:54
   from: devin
   text: '[reopened — condition recurred] Last run (11-24 04:30) of `fleet-restic-backup.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 08:03
+  from: devin
+  text: '[still suspicious] Last run (11-24 04:30) of `fleet-restic-backup.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-idc03`.'
 spec: Investigate the failure of the user systemd timer fleet-restic-backup.service on host idc03, which exited
   with a non-zero exit code during its 11-21 04:30 run. Review the journal logs using journalctl --user -u fleet-restic-backup.service
