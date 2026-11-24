@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-1bbtyha8
 title: '[audit] mutating_command in opencode session Hdk31bBtYHA8'
 column: doing
-updated: 2026-11-24 22:04
+updated: 2026-11-24 22:14
 priority: medium
 program: ai-workforce
 tags:
@@ -211,6 +211,12 @@ comms:
     resumes the last session in the cwd — the cheap way to; no chaba-audit.service/chaba-audit-full.service entries
     exist in ssot.audit.host; [ada-ocb-bridge-version] merge-sweep: no session/worktree found for devin-task-2;
     [ada-ocb-bridge-version] primer injected 8 lesson(s): [ada-oc'
+- at: 2026-11-24 22:14
+  from: devin
+  text: 'audit verdict: benign — both python3 -c write attempts were permission-denied (5 denials total), zero bytes
+    written; artifact landed via message-mode (runner extracts final-message JSON). Root cause: classifier counted
+    denied attempts as mutations -> fixed in worktree (denied entries tagged, cardable finding uses executed-only;
+    denied-only drops to info). 22/22 tests pass. Trail: docs/ssot/jobs/devnest/2026-11-24-opencode-audit-denied-mutations.yml'
 action:
   type: dispatch
   status: running
