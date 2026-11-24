@@ -1,7 +1,7 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
-column: doing
-updated: 2026-11-24 15:38
+column: review
+updated: 2026-11-24 15:40
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
@@ -591,10 +591,36 @@ comms:
   text: "merge-sweep: landing devin-task-20261124-151206-ada-tool-consolidation-merge-o failed: push: remote: error:
     refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
     branch in a non-bare repository        \nremote: is denied, because it will"
+- at: 2026-11-24 15:40
+  from: tony-dell
+  text: 'finished (ok): exit=0 d to the card. No commit, push, or deploy per dispatch rules. | devin-task-20261124-151206-ada-tool-consolidation'
+- at: 2026-11-24 15:40
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 15:40
+  from: chaba
+  text: 'session-end checkpoint 6830df86: 3 leftover file(s) committed'
+- at: 2026-11-24 15:40
+  from: chaba
+  text: banked 70 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:40
+  from: chaba
+  text: pushed dispatch/20261124-151206-ada-tool-consolidation-merge-o to origin
+- at: 2026-11-24 15:40
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 549.2s)
+- at: 2026-11-24 15:40
+  from: chaba
+  text: auto-merged 7f061fca (dispatch/20261124-151206-ada-tool-consolidation-merge-o) → origin/main
+- at: 2026-11-24 15:40
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-151206-ada-tool-consolidation-merge-o,
+    branch dispatch/20261124-151206-ada-tool-consolidation-merge-o'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
@@ -605,10 +631,11 @@ action:
     stale_running: 2026-11-23 19:48
     dirty: 5
     session_gone: 2026-11-23 21:22
-    merge_err: 2026-11-24 15:38
-  result: 'exit=0 onsolidation.yml` in the worktree, and a final summary comment was posted to the card. | devin-task-20261124-143127-ada-tool-consolidation-merge-o.service:
-    Consumed 3min 41.461s CPU time over 24min 15.241s wall clock time, 7.3G memory peak.'
+    merge_err: 2026-11-24 15:39
+  result: 'exit=0 d to the card. No commit, push, or deploy per dispatch rules. | devin-task-20261124-151206-ada-tool-consolidation-merge-o.service:
+    Consumed 4min 36.875s CPU time over 18min 31.620s wall clock time, 1.6G memory peak, 740.5M memory swap peak.'
   runner: tony-dell
+  verified: true
 requests:
 - id: multiple-target-hosts-tony-ome-99110b
   ask: Multiple target hosts (tony-omen, idc02, idc03, tony-macbook) have deferred the card because their installed
