@@ -1,7 +1,7 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
 column: doing
-updated: 2026-11-24 18:43
+updated: 2026-11-24 18:54
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
 tags:
@@ -219,6 +219,13 @@ comms:
     2026-11-23 — processing the queued dispatch ; [fleet-jobs-report-and-ada-verb] Re-laned from retired jules to
     executor=devin /; Prior "no exit record" failures were the lane never running the contract at all;; bench-edu-manage.py
     needs `/home/tony/reports/skills/{filing,'
+- at: 2026-11-24 18:54
+  from: devin
+  text: 'Dispatch 2026-11-24: profile+verifier+routing already on origin/master (fbd321aa81, ea828c6cba, d9f3e9c9ec).
+    Added missing failure_class to fixture contract.required_fields + verify.py REQ (card spec: result names a failure
+    class). 114/114 executor-contract tests pass; lint clean. LIVE GATE BLOCKED: smoke card ops-1025-remote-read-smoke-idc03
+    exits 2 because idc02 lane is at S1 (manual rollback 2026-11-23) while its envelope requires S3 — admit() denies
+    wrong_stage, working as designed. Simulate'
 action:
   type: dispatch
   status: running
