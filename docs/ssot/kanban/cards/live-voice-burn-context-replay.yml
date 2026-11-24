@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: doing
-updated: 2026-11-24 08:00
+updated: 2026-11-24 08:08
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -403,6 +403,13 @@ comms:
     finished (failed): exit=1 s-the-live-voice-to.s; [live-voice-burn-context-replay] merge-sweep: no session/worktree
     found for devi; runbook docs/kb/chaba-lab.md: Chaba Lab — evaluation platform for Ada — Date: 20; [live-session-token-diet]
     test gate failed — merge held: test'
+- at: 2026-11-24 08:08
+  from: devin
+  text: 'DONE (branch dispatch/20261124-075500, commit ca86138, not pushed). Re-measured idc03 usage.jsonl: ada-dev
+    whale already collapsed (28.7M dig-day -> 0-5.5M/day residual = ~42 short Live scenario sessions/day; smoke
+    44/47 text). TEST-POLLUTION recurred via non-pytest runner (t-ctx daily 10-17..11-09, ~4.36M) — FIXED: usage_tracker
+    implicit default now persists only with ADA_INSTANCE_ID lane + env pin in test_context_budget.py + new gate
+    test; full pytest 1927 pass; direct-run repro writes zero fi'
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -438,3 +445,4 @@ spec: 'Goal: Address the live voice token burn where context replay dominates in
   test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
 claim:
   since: 2026-11-24 07:59
+awaiting_action: true
