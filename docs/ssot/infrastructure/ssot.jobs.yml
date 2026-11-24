@@ -1866,6 +1866,36 @@ jobs:
     job). 07:35 lands after daily-brief (07:05) + narration and the
     lessons-due refresh (07:30). --print renders without sending.
     Added 2026-11-20.'
+- id: wiki-talk-watch
+  name: Wiki talk-page watch — classify + signed Ada auto-reply
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:07/15:00'
+  persistent: true
+  timeout: 20m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py
+  env_file: '%h/.config/secrets/wiki-h3-gizmo.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py'
+  note: 'card wiki-talk-watch-auto-reply-to-wiki-talk-a9f107 (OPS-0074,
+    supersedes OPS-0073 manual spec). Polls api.php recentchanges over
+    talk ns 1,3,5,7,9,11,13,15 (public) + 3001/3003 (private) +
+    3005/3007 (members), watermark=max rcid in
+    ~/.local/state/wiki-talk-watch/ (idempotent, first run baselines —
+    never replies to history). Skips own-bot/minor/bot-flagged edits;
+    extracts the comment by diffing revid vs old_revid. v1 JevTeam
+    stand-in: LiteLLM gemini-3.5-flash-lite via the :4000 gateway ->
+    lane=ada-code|no-response; draft via opencode when the binary
+    resolves else the same LiteLLM lane (opencode is NOT installed on
+    idc03 as of 2026-11-24 — auto-falls back). Posts action=edit
+    appendtext inside the commenter''s section (fallback section=new),
+    signed — Ada (ada-code) ~~~~~. Visibility guard scans the draft
+    against the talk page''s tier so protected content never lands on a
+    more-public talk page. Failures -> deduped board-api /inbox flags,
+    MAX_ATTEMPTS=3 per rcid, no blind retries. :07/15 phase offsets the
+    tick ~7min from kanban-commit''s drifting 15-min cycle. Install:
+    render-jobs.py --host idc03 --ids wiki-talk-watch --install after
+    merge.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py
