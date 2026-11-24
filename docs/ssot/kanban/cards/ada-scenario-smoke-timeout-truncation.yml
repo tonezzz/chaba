@@ -1,7 +1,7 @@
 id: ada-scenario-smoke-timeout-truncation
 title: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
 column: doing
-updated: 2026-11-24 21:41
+updated: 2026-11-24 21:45
 priority: medium
 tags:
 - ada
@@ -227,6 +227,12 @@ comms:
     chaba-repo-sync updates the checkout copy, and unt; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] [done]
     all 3 jobs verified exi; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard already on idc0; [unattended-pilot-health-probe]
     first live gate run: claimed '
+- at: 2026-11-24 21:45
+  from: devin
+  text: 'investigating: smoke path = quadlet -> container-suite-run.sh -> scenario-report.py --tier smoke (ada-voice
+    repo, sequential, :8199 lock). 47 smoke scenarios now. Plan: raise TimeoutStartSec (unit lives in chaba), keep
+    hourly timer (lock self-throttles), ship scenario-report.py last-fail-first + budget patch under docs/kb/patches/
+    since ada-voice is outside this worktree.'
 action:
   type: dispatch
   status: running
