@@ -1,0 +1,36 @@
+job: voice-thai-voice-install
+title: 'voice-miniapp: Thai Piper voice (tsync2) + language-aware TTS on tony-omen'
+date: 2026-11-24
+runner: tony-macbook (dispatch) -> host work on tony-omen
+card: voice-thai-voice-install
+status: done
+summary: >-
+  Thai Piper voice (th_TH-tsync2-medium) installed into the voice-miniapp
+  lane on tony-omen and language-aware TTS is live. The numpy dtype
+  mismatch was NOT in numpy itself — scikit-learn 1.2.2 (a tltk dep) was
+  compiled against numpy 1.x while the venv had numpy 2.5.4. Upgrading
+  scikit-learn to 1.7.2 in ~/.venvs/ada-whisper fixed tltk/nltk/
+  sklearn_crfsuite without touching numpy or faster-whisper, so the
+  working voice lane was never at risk. unicode_rbnf (piper Thai
+  phonemizer dep) was also missing and installed.
+changes:
+  host_tony_omen:
+    - "~/.venvs/ada-whisper: scikit-learn 1.2.2 -> 1.7.2, +unicode_rbnf (pip)"
+    - "~/voice-miniapp/server.py: dual piper voices + Thai detection + Thai system prompt (deployed; backup at server.py.bak-20261124)"
+    - "voice-miniapp.service restarted; /health reports tts_voices [en, th]"
+  repo:
+    - "stacks/tony-omen/voice-miniapp/server.py — canonical copy of deployed server.py"
+    - "stacks/tony-omen/voice-miniapp/stack.yml — stack doc (was undocumented host-local app)"
+verification:
+  thai_e2e: >-
+    POST /api/voice with fixtures/th-chat-hello.wav -> transcript
+    "สวัสดีครับ วันนี้เป็นไงบ้าง", Thai reply "สวัสดีครับ วันนี้อากาศดีมากค่ะ
+    ฉันคิดว่าจะออกกำลังกายบ้างนะคะ", 264192B PCM @22050Hz, RMS ~4957
+    (non-silent), synthesized by tsync2.
+  english_e2e: >-
+    POST /api/voice with en-chat-hello.wav -> English reply via
+    en_US-lessac-medium, 126464B PCM — existing lane unchanged.
+notes:
+  - "tltk 1.11 declares scikit-learn~=1.2.0 but works fine on 1.7.2 — the pin is conservative, not a hard API break."
+  - "Thai voice path needs tltk (thai word segmentation) + unicode_rbnf (piper phonemize_thai); both now in ada-whisper venv."
+  - "SYSTEM prompt now has a Thai variant selected when the transcript contains Thai chars; voice selection keys off the REPLY text, so an English reply to a Thai question still uses the English voice."

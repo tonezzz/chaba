@@ -1,0 +1,43 @@
+title: "Dispatch worktree GC — scheduled stale-worktree reaper wired into runner-agent"
+date: 2026-11-24
+card: ops-1036
+session: "dispatch-wt-20261124-193310-idc02-has-68-stale-dispatch-wt (idc02)"
+status: "implemented — 14 new tests green; sweep was already built (e9a01ec, Nov 3) but never scheduled; this session hardened it and gave it a declared periodic path"
+
+context:
+  problem: "idc02 held 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. gc_worktree()/gc_session() only reap provably-merged trees by design, so failed runs leak forever."
+  prior_art: "scripts/board/dispatch-wt-sweep.py already existed (e9a01ec68de + 06246073a29, Nov 3) with the bounded-reap gates and salvage-before-reap push (69569e2b163) — but nothing invoked it on a schedule, and its in-flight-unit check only understood systemd --user."
+
+changes:
+  dispatch-wt-sweep.py:
+    - "unit_active() is runtime-aware: darwin probes launchd gui/<uid>/devin-task-<tid> jobs via `launchctl print` (base + -fuN followup plists under ~/.local/share/runner-agent/launchd/); missing launchctl or unreadable state keeps the tree (keep-on-doubt, same predicate as runner-agent._launchd_active)"
+    - "on_origin() dedupes `git fetch --prune origin` once per repo root per sweep via a fetched set threaded through sweep() — a host with N stale trees on one repo pays one fetch (or one timeout when origin is dead), not N"
+    - "evidence gate broadened to EVIDENCE_FILES = meta.json, events.jsonl, usage.json, verdict.json, exit_code — any durable run record counts, matching what the dispatch machinery actually writes per executor"
+    - "DISPATCH_WT_SWEEP=0 kill switch inside sweep() itself, so the scheduled path inherits it"
+  runner-agent.py:
+    - "wt_sweep_module() — SourceFileLoader resolver (lg_module convention) for the hyphenated script; candidates: $DISPATCH_REPOS_DIR, module-adjacent dir, ~/CascadeProjects/chaba/scripts/board, _repo_checkout('chaba')/scripts/board"
+    - "wt_sweep_pass() — runs mod.sweep(~/CascadeProjects, RUNNER_WT_SWEEP_DAYS=3, task_root=None, apply=True) once per RUNNER_WT_SWEEP_S (default 86400); throttled by STATE_DIR/wt-sweep.ts stamp; warn-only, never raises, never touches claim state; stamps even on failure so a broken sweep can't hot-loop the 60s tick; RUNNER_WT_SWEEP=0 disables"
+    - "called in main() after verdict_pass(st); env knobs documented in the header block"
+
+scheduling_decision:
+  choice: "wired into runner-agent instead of declaring a new host-hygiene unit"
+  rationale: "runner-agent.timer/LaunchAgent is already declared fleet-wide (host-hygiene 'declared-or-dead' satisfied with zero new units), already runs on every dispatch host incl. macOS launchd, and in-process execution lets unit_active() see that host's real task units — a standalone script could not distinguish a live devin-task unit from a stale one any better, but would need N unit declarations across Linux+macOS"
+  coverage: "every host running runner-agent sweeps its own ~/CascadeProjects dispatch-wt-* once/day; idc02's 68-tree leak is exactly this shape"
+
+gates_unchanged:
+  - "forensic window: trees younger than --days (default 3) are KEPT"
+  - "in-flight: any live devin-task-<tid>* unit (systemd or launchd) -> KEEP"
+  - "evidence: no durable task record -> KEEP for manual review"
+  - "salvage-before-reap: unpushed head pushed to origin wip/dispatch/<tid> + card comms; origin unreachable -> KEEP"
+  - "dry-run default; --apply only via the scheduled pass or explicit flag"
+
+verify:
+  - "python3 -m pytest tests/board/test_dispatch_wt_sweep.py — 14 tests (evidence breadth, fetch-once, launchd active/inactive/fuN-plist/no-launchctl, pass throttle/disable/module-missing/failure-warn)"
+  - "dry-run on tony-dell ~/CascadeProjects --days 0: ~68 REAP candidates, in-flight units KEPT, no-evidence KEPT, unpushed heads flagged 'would salvage-push'"
+  - "live idc02 check: 38 dispatch-wt-* remain but all <28h — inside the forensic window; the original 68 aged out via the weekly devin-dispatch-prune.timer backstop"
+
+out_of_scope_unchanged:
+  - "card schema, board-api — comms ride the existing /comment surface"
+  - "gc_worktree/gc_session close-path GC and merge-sweep REMOTE_GC_PROBE — untouched; this is the failed-run reaper they deliberately never were"
+
+deploy_note: "runner-agent self-updates via _self_update() once the repo copy reaches each host (chaba-repo-sync); dispatch-wt-sweep.py resolves from the same synced checkout — no manual scp, no new units to install"

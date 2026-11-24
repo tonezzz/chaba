@@ -1,0 +1,25 @@
+id: voice-miniapp
+host: tony-omen
+description: >-
+  Voice mini-app — browser mic WAV in -> faster-whisper small (cpu int8)
+  STT -> ollama hermes3:8b -> piper TTS out, streamed as PCM16 chunks.
+  Language-aware TTS since 2026-11-24 (card voice-thai-voice-install):
+  replies containing Thai chars (U+0E00-U+0E7F) synthesize with
+  th_TH-tsync2-medium; everything else uses en_US-lessac-medium. The LLM
+  gets a Thai-answer system prompt when the transcript has Thai chars.
+verify: >-
+  curl -sf http://127.0.0.1:8520/health | grep -q '"tts_voices"'
+  and POST /api/voice with a Thai WAV returns X-Reply Thai + X-Rate 22050.
+state:
+  - "~/voice-miniapp/server.py — deployed from stacks/tony-omen/voice-miniapp/server.py in chaba"
+  - "~/voice-miniapp/index.html — host-local, not in repo"
+  - "~/.venvs/ada-whisper — shared venv: faster-whisper 1.2.1, piper-tts 1.8.0, tltk 1.11, scikit-learn 1.7.2 (numpy-2 compatible), unicode_rbnf"
+  - "~/.local/share/piper_voices/en/en_US/lessac/medium/ + th/th_TH/tsync2/medium/ — piper voice models"
+restore: >-
+  Copy stacks/tony-omen/voice-miniapp/server.py to ~/voice-miniapp/,
+  ensure ~/.venvs/ada-whisper has faster-whisper, piper-tts, tltk,
+  unicode_rbnf and a numpy-2-compatible scikit-learn (>=1.6),
+  systemctl --user restart voice-miniapp.
+related_cards: [voice-thai-voice-install, voice-tier1-omen-local, voice-p0-turn-interrupt]
+status: deployed
+deployed: 2026-11-24

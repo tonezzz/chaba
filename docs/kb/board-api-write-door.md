@@ -33,7 +33,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | `/pipeline` | `{id, opt_in?|pipeline?|stage+status}` | CI status block |
 | `/patch-relay` | `{id, head, branch?, bundle}` | git bundle spool |
 | **`/lesson`** | `{topic, content, level?, source?, next_review?, status?, no_th?, from?}` | WP `lesson` CPT upsert by slug `lesson-<md5(topic)>` + auto-Thai section |
-| **`/job`** | `{slug, title?, status?, comms?|note?, parent?, kind?, host?, pack?, runner?, result_ref?, error?, meta?}` | WP `nest_job` CPT upsert (ada-nest queue mirror) |
+| **`/job`** | `{slug, title?, status?, comms?|note?, parent?, kind?, host?, pack?, runner?, result_ref?, error?, evidence?, verified?, meta?}` | WP `nest_job` CPT upsert (ada-nest queue mirror) — status writes follow `JOB_TRANSITIONS`; `done` requires `result_ref` + verified evidence (OPS-0923) |
 | **`/report`** | `{query}` \| `{slug, note, lang?}` \| `{title|slug, content_md, meta?}` | ada-cms-pages search / session-log append / create |
 | **`/inbox`** | `{text, label?, priority?, tags?, missing_info?, subtasks?, session?, owner?, safe_to_parallel?}` | `docs/ssot/focus-inbox/<ts>-<slug>.yml` + commit |
 | **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
@@ -143,6 +143,19 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   `tony-dell`). queue-mgr (`scripts/ops/queue-mgr.py`, tony-dell
   `queue-mgr.timer` 5m) mirrors `gdrive:ada-nest` queue/packs state
   through this — Colab workers and watchers never write.
+  **Lifecycle contract (OPS-0923):** status changes follow
+  `JOB_TRANSITIONS` — terminal `done`/`cancelled` exit only via
+  `queued`/`failed`, and `done` requires `result_ref` plus verified
+  artifact evidence (`evidence[]`, `verified:true`, or
+  `confidence=verified`); violations are HTTP 400 before any WP write.
+  `meta.status` is an alternate carrier for the same field — it is
+  folded into the gated status (a top-level/meta disagreement is a
+  400), so it cannot bypass the contract. queue-mgr sends the pack
+  `done` marker as `evidence[]` on every done write.
+  Accepted evidence persists to `meta.evidence` +
+  `meta.artifact_verified`. Read side: `GET /nest-jobs?slug=&limit=
+  &comms=1` lists the mirror for reconciliation
+  (`scripts/ops/nest-job-reconcile.py`).
 - **`/lesson`** — same semantics old `scripts/lesson-add.py` had (which is
   now a thin CLI client of this endpoint): upsert by topic slug,
   `learned_at`/`next_review`/`status` preserved on re-file, Thai section
@@ -241,6 +254,18 @@ short refs/metadata, never source binaries.
 | lesson | `lesson` | Education CPT |
 | news | `news`, `board`, `telegram` | evidence required |
 | alert | `telegram`, `board`, `job` | |
+
+**Job-sink contract (OPS-0923):** the `job` sink fires only for events
+with an explicit `job` ref — card/project-scoped events audit via the
+`board` sink and never mint `nest_job` posts. Status is never implied
+by kind beyond liveness hints: `progress`→`running`, `alert`→`stalled`,
+`milestone`→no status change (a milestone is a checkpoint, NOT
+terminal evidence). `meta.job_status` is the explicit override; any
+`done` assertion hits the same `result_ref` + verified-evidence gate
+as `/job` — a rejection is a per-sink `skipped` receipt
+(`job status rejected: …`), never outbox-retried, while sibling sinks
+still deliver. `evidence[]` and `confidence=verified` pass through to
+the job write (`result_ref` defaults to `evidence[0]`).
 
 **Guards:** idempotent on `idempotency_key` (deduped replies carry the
 stored receipts); outbox under `~/.local/state/board-api-publish/`

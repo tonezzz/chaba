@@ -347,7 +347,10 @@ writers:
                   wp-news-fetch.timer hourly; RSS/Atom -> news CPT, dedup by
                   slug n-<md5(link)> via ?slug= lookup (no local ledger).
                   Categories/tags mapped per feed; flood Google-News queries
-                  land under disaster>flood + thailand region cats.
+                  land under disaster>flood + thailand region cats. AI/model
+                  feeds (gn-ai-*, hf-blog — added 2026-11-24 for the morning
+                  brief, card ai-news-education-morning-brief) carry tag ai
+                  and feed the news-morning-brief job.
                   Archive: /wp/news/ (live 2026-10-14, ~120 seeded items)"
   repeat_ask_sync: "scripts/sync-repeat-asks.py on idc03 —
                   chaba-repeat-asks-sync.timer every 15min; reads
@@ -375,6 +378,24 @@ writers:
                   wp-comment-sync routes pin/unpin/watch comment commands
                   to the same transition. Every change posts a WP comment
                   — never silent. Card news-situation-summaries."
+  news_morning_brief: "scripts/ada/news-morning-brief.py on idc03 —
+                  wp-news-morning-brief.timer daily 08:00 ICT
+                  (ssot.jobs.yml). Reads the news CPT (AI feeds
+                  gn-ai-*/hf-blog in news-feeds.json carry tag ai +
+                  source_feed), drafts the fixed-section private brief
+                  (60s scan / model-provider table / impacts /
+                  TRY-WATCH-NO-ACTION / sources+confidence / Education)
+                  via chat-local LiteLLM -> gemini fallback ->
+                  deterministic render (never blocks). Upserts private
+                  page slug ai-morning-brief — consumer URL
+                  https://boards.surf-thailand.com/wp/ai-morning-brief/
+                  (editor login required). Durable comparisons append a
+                  dated 'News watch' block to matched EXISTING lessons
+                  via board-api /lesson (update-only, max 2/run). Ask:
+                  news-morning-brief.py ask \"<text>\" (news+lesson
+                  embedding query). verify subcommand re-checks the page.
+                  Card ai-news-education-morning-brief; procedure
+                  docs/kb/ai-news-to-education-procedure.md."
   cam_snapshot: "scripts/cam-wall/cam-snapshot-wp.py on tony-dell —
                   wp-cam-snapshot.timer every 15min at :02 (ssot.jobs.yml
                   job wp-cam-snapshot). Enumerates streams from

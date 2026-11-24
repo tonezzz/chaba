@@ -24,7 +24,7 @@ tony-dell|~/CascadeProjects/chaba-tony-dell|chaba-board-api.service chaba-monito
 tony-dell|~/CascadeProjects/chaba|
 idc02|~/CascadeProjects/ada-voice|
 tony-macbook|~/CascadeProjects/chaba|
-tony-macbook|~/CascadeProjects/ada-pi|
+tony-macbook|~/CascadeProjects/ada-voice|
 "
 
 probe_host() { # host relpath units

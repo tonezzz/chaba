@@ -1,0 +1,10 @@
+[Unit]
+Description=Wiki talk-page watch — classify + signed Ada auto-reply (job:wiki-talk-watch, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1200
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py
+WorkingDirectory=%h/CascadeProjects/chaba
+EnvironmentFile=%h/.config/secrets/wiki-h3-gizmo.env

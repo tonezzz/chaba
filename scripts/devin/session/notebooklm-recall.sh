@@ -41,8 +41,9 @@ parts = []
 if MEMORY_FILE.exists():
     try:
         text = MEMORY_FILE.read_text(encoding='utf-8', errors='replace')
-        # Take the most recent ~8,000 chars so the recall is concise.
-        recent = text[-8000:] if len(text) > 8000 else text
+        # Take the most recent ~3,500 chars — the hybrid block below gets
+        # the larger share; together they must stay <=8KB injected.
+        recent = text[-3500:] if len(text) > 3500 else text
         parts.append(
             f"# Recent session memory for `{PROJECT_NAME}`\n\n"
             f"{recent.strip()}"
@@ -58,7 +59,7 @@ if os.path.exists(RECALL_SCRIPT):
             ['python3', RECALL_SCRIPT,
              '--session', session_id or '',
              '--project', PROJECT_NAME,
-             '--max-chars', '4000'],
+             '--max-chars', '4300'],
             capture_output=True, text=True, timeout=90)
         hybrid = (out.stdout or '').strip()
         if hybrid:

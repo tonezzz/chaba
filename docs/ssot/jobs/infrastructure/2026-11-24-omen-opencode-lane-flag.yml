@@ -1,0 +1,80 @@
+# Job: KNB-1008 — omen OPENCODE_LANES flag/binary drift resolved + drift probe
+# Card: tony-omen-declares-opencode-lanes-1-but-4cbe02 (OPS-1022).
+# Dispatch 2026-11-24-200652 on tony-macbook.
+title: omen opencode lane flag — premise stale, binary present, capability probe added
+subtitle: >-
+  Card claimed omen runner-agent had OPENCODE_LANES=1 with no opencode
+  binary. Live verification shows both horns already resolved: the flag
+  was commented out 2026-11-09 and opencode v2.4.1 was installed
+  2026-11-24. Added an ssot.host-software capability probe so binary
+  drift is caught by host-ready-check.py.
+icon: wrench
+date: 2026-11-24
+card: tony-omen-declares-opencode-lanes-1-but-4cbe02
+session: "dispatch-wt-20261124-200652-found-2026-10-30-knb-1008-depl (tony-macbook)"
+status: done — flag intentionally off, binary installed, probe declared
+
+verified_state:
+  omen_unit_env: >-
+    systemctl --user cat runner-agent.service on tony-omen: OPENCODE_LANES
+    is commented out in runner-agent.service.d/jev-lane.conf since
+    2026-11-09 ("gated on OPS-0846 closeout"). Active env: RUNNER_CAP=3,
+    RUNNER_LABELS=gpu,desktop,cpu, RUNNER_API=tailnet board-api,
+    CLAUDE_LANES=1, JEV_LANE=1, KK_MAC_LANES=1, NLM_LANES=1. The claim
+    gate now fails at "executor=opencode but OPENCODE_LANES=0" — the
+    'no opencode binary' defer reason can no longer fire.
+  omen_binary: >-
+    ~/.npm-global/bin/opencode -> @opencode/cli@2.4.1 (ELF binary,
+    `opencode --version` = v2.4.1), installed 2026-11-24 12:20 via
+    npm i -g. ~/.opencode/bin exists but is empty. Unit PATH already
+    includes ~/.npm-global/bin, and opencode_bin() now also falls back
+    to that prefix explicitly.
+  omen_push: "git push --dry-run origin HEAD:refs/heads/__probe -> github-chaba OK (creds work; no push:* label declared — live probe at claim)"
+  fleet_binary: >-
+    verified 2026-11-24: tony-dell ~/.local/bin/opencode v2.4.1,
+    idc02 ~/.opencode/bin + /usr/local/bin v2.4.1, idc03 ~/.opencode/bin
+    v2.4.1, con01 ~/.opencode/bin v2.4.1, tony-omen ~/.npm-global/bin
+    v2.4.1. mn01 has NO opencode binary (not declared).
+
+changes:
+  - docs/ssot/infrastructure/ssot.host-software.yml: >-
+      new `opencode` capability (probe mirrors opencode_bin() resolution
+      + npm-global prefix + command -v) declared on tony-dell,
+      tony-omen, con01, idc02, idc03 — host-ready-check.py now flags
+      binary drift fleet-wide.
+  - scripts/board/runner-agent.py: >-
+      opencode_bin() fallback list gains ~/.npm-global/bin/opencode
+      (npm -g prefix installs were invisible to the gate unless the
+      unit PATH carried the prefix).
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml: >-
+      tony-omen runner-agent.service entry documenting env/drop-ins
+      and the intentionally-off OPENCODE_LANES.
+  - docs/kb/new-host-onboarding.md: >-
+      runner-enrollment section now requires the opencode capability
+      declaration for lane-serving hosts.
+
+decision:
+  flag_left_off: >-
+    OPENCODE_LANES stays commented on omen. Fleet-wide enablement is
+    gated on the three-job savings pilot (ssot.devnest-lanes open_gaps)
+    and the idc02 lane re-climb (opencode-lane-regraduation, OPS-1255);
+    omen has no ~/.local/state/opencode-lane so it would start at S0
+    (shadow fixtures only). With the binary now installed omen is
+    ready the moment the fleet gate opens — re-enable = uncomment the
+    line in jev-lane.conf + daemon-reload.
+  rejected_alternative: >-
+    Re-enabling the flag in this dispatch was rejected: it would let
+    omen claim opencode-lane cards into an empty S0 ladder outside the
+    supervised pilot, and push:* labels are undeclared (claim-time
+    probe only).
+
+verify:
+  - "ssh tony-omen 'systemctl --user cat runner-agent.service' — no OPENCODE_LANES=1"
+  - "ssh tony-omen '~/.npm-global/bin/opencode --version' -> v2.4.1"
+  - "python3 scripts/host-ready-check.py --host tony-omen — opencode pass"
+  - "journalctl --user -u runner-agent on omen — no 'no opencode binary' defers"
+
+lessons:
+  - "card premise was 3 weeks stale — always re-verify live unit env before acting on a 'flag set but binary missing' finding"
+  - "npm i -g @opencode/cli lands in ~/.npm-global/bin on omen — outside both opencode_bin() fallbacks and default PATH; capability probes must cover prefix installs, not just ~/.opencode/bin"
+  - "binary presence and lane enablement are separate gates — ssot.host-software tracks the binary, ssot.devnest-lanes + per-host lane_gate stage track the lane"

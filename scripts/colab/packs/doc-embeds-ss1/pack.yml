@@ -87,4 +87,14 @@ run: |
   except Exception as e:
       print(f'archive save skipped: {type(e).__name__}: {str(e)[:120]}',
             flush=True)
+  # release the queue-runner's shared namespace (card
+  # colab-pack-release-t5-before-ltx): every pack's run: execs in ONE ns —
+  # a resident T5 (~9.5GB bf16 on cuda) would starve the next LTX pack.
+  # LTX packs pop enc/tok defensively on entry; this is the producer half.
+  for _v in ('enc', 'tok', 'encode', 'neg_e', 'neg_m', 'e', 'm', 's'):
+      globals().pop(_v, None)
+  import gc
+  gc.collect()
+  if torch.cuda.is_available():
+      torch.cuda.empty_cache()
   print('doc-embeds-ss1 complete', flush=True)

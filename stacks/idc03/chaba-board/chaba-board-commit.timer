@@ -1,0 +1,12 @@
+[Unit]
+Description=Kanban git persistence (every 15 min) — quadlet, replaces kanban-commit.timer
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+# Same stagger as the old unit so it doesn't collide deterministically
+# with other 15-min writers (kanban-sync, dispatch merges).
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

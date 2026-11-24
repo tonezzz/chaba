@@ -1,0 +1,92 @@
+diff --git a/backend/memory_ops.py b/backend/memory_ops.py
+index 931cbd3..d9d78b2 100644
+--- a/backend/memory_ops.py
++++ b/backend/memory_ops.py
+@@ -401,6 +401,10 @@ def _doc_to_hit(
+         "attribute": _meta_first(meta, "attribute"),
+         "last_verified": _meta_first(meta, "last_verified"),
+         "valid_until": _meta_first(meta, "valid_until"),
++        # Persona asset docs (card persona-photo-store) carry a fetchable
++        # image URL in meta — surfaced so the search result can re-show
++        # the picture instead of only describing it.
++        "image_url": _meta_first(meta, "image_url"),
+     }
+     if with_bank:
+         hit["bank"] = bank.name
+@@ -1002,6 +1006,76 @@ async def remember(
+     return out
+ 
+ 
++async def asset_remember(
++    mddb: MddbClient,
++    registry: MemoryBankRegistry,
++    instance: str,
++    bank: str,
++    key: str,
++    text: str,
++    image_url: str,
++    subject: str | None = None,
++    session_id: str | None = None,
++    person_entity: str | None = None,
++) -> dict[str, Any]:
++    """Upsert a persona asset doc — an 'assets/<slug>' memory carrying
++    meta.image_url so recall can re-show the picture (card
++    persona-photo-store, tools.d/asset_save).
++
++    Deterministic key: no vector dedupe — re-saving the same slug
++    corrects the doc in place. The write rides the ada_remember ACL
++    decision: a bank that accepts remember-writes accepts asset docs —
++    the doc IS a memory; only the image_url meta differs."""
++    if str(bank) == "personal" and person_entity:
++        bank = registry.personal_bank_name(person_entity)
++    b = registry.bank(str(bank))
++    decision = registry.acl_decision(
++        person_entity, bank=b.name, tool="ada_remember")
++    if not decision["allowed"]:
++        raise PermissionError(
++            str(decision.get("reason")
++                or f"memory bank '{b.name}' is not writable by this "
++                   "identity"))
++    # No write_policy=confirmed refusal here: live calls are gated
++    # upstream (asset_save checks before staging — the tools.d
++    # confirmed/confirm_token args never reach run()), and an approved
++    # pending-lane apply IS the confirmation, same as route='bank'.
++    if "note" not in b.kinds:
++        raise ValueError(
++            f"kind 'note' not allowed in bank '{b.name}' "
++            f"(allowed: {', '.join(b.kinds)})")
++    refusal = memory_write_guard.check_write(
++        bank=b.name, text=text, fields={"key": key, "subject": subject})
++    if refusal is not None:
++        return refusal
++    today = datetime.now(timezone.utc).date().isoformat()
++    scope = "shared" if b.scope == "shared" else instance
++    meta = memory_meta(
++        b, scope, today, "note", subject, None, None, [], session_id)
++    meta["written_by"] = ["asset_save"]
++    meta["image_url"] = [str(image_url)]
++    _warn_unknown_meta(registry, meta)
++    existing = await mddb.get_document(b.mddb_collection, str(key))
++    if existing is not None:
++        res = await mddb.update_document(
++            b.mddb_collection, str(key), content_md=str(text), meta=meta,
++            durable=True, tool="asset_save", session_id=session_id)
++        _must(res, f"update asset {b.mddb_collection}/{key}")
++        verb = "correct"
++    else:
++        res = await mddb.add_document(
++            b.mddb_collection, str(key), "en", str(text), meta,
++            durable=True, tool="asset_save", session_id=session_id)
++        _must(res, f"add asset {b.mddb_collection}/{key}")
++        verb = "create"
++    await memory_write_guard.warn_if_bank_large(
++        mddb, b.mddb_collection, b.name)
++    return _queued_note({
++        "verb": verb, "bank": b.name, "key": str(key),
++        "image_url": str(image_url),
++    }, res)
++
++
+ VOCAB_DOC_KEY = "vocab/log"
+ 
+ 

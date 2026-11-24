@@ -142,8 +142,10 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host + 6
-          leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
+        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host +
+          per-host leaf pages (one per ssot.audit.hosts.yml registry entry,
+          incl. retired idc01 stub) via scripts/ada/host-services-cms.py;
+          OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
       - name: chaba-jobs.timer
@@ -936,6 +938,8 @@ hosts:
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: runner-agent.service, type: service, scope: user,
+         note: "oneshot claim+execute, cap 3, labels gpu,desktop,cpu (no push:* — live probe at claim). Drop-ins: api.conf (tailnet board-api), claude.conf (CLAUDE_LANES=1), jev-lane.conf (JEV_LANE=1; OPENCODE_LANES commented out 2026-11-09 — intentionally OFF pending fleet lane enablement per ssot.devnest-lanes), kk-mac.conf, nlm.conf. opencode v2.4.1 installed ~/.npm-global/bin/opencode 2026-11-24 (npm i -g @opencode/cli) — binary present, lane flag stays off until the savings-pilot gate opens; drift now probed via ssot.host-software opencode capability"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
@@ -1672,20 +1676,25 @@ hosts:
       - name: kkmac-ollama-tunnel.service
         type: service
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: "ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac —
-          reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
-          feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
-          dies with kk-mac (member device, offline_ok)"
+        note: "DISABLED fallback since 2026-11-19 (card
+          kkmac-ollama-durable-bind): kk-mac ollama now binds the tailnet
+          directly (100.108.217.17:11434) and the admission shim
+          upstreams it — nothing consumes :11445. Unit kept installed
+          (declared in stacks/idc03/litellm/) for a loopback-bind
+          rollback only; it flapped ~19k restarts while enabled.
+          ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac"
       - name: kkmac-admission-shim.service
         type: service
         scope: user
         expected_state: active
         critical: false
         note: "Ada Nest admission gate on 127.0.0.1:11447 in front of
-          kkmac-ollama-tunnel :11445 (card kk-mac-gateway-admission-shim,
-          2026-11-14) — 503s instantly when kk-mac heartbeat is stale
+          kk-mac ollama (card kk-mac-gateway-admission-shim,
+          2026-11-14; upstream repointed from tunnel :11445 to direct
+          tailnet 100.108.217.17:11434 on 2026-11-19) — 503s instantly
+          when kk-mac heartbeat is stale
           >900s / temp>60C / disk<20G / busy, so LiteLLM kk-mac legs
           (summary/classify/bench leg-1, chat-local leg-2) fail fast to
           the paid leg. Drain switch: touch
@@ -1697,7 +1706,8 @@ hosts:
         critical: false
         note: "Ollama-shaped /api/embed racing proxy on 100.102.134.91:11436
           (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen/kk-mac ollama
-          bge-m3 (kk-mac via kkmac-ollama-tunnel :11445, added 2026-10-30);
+          bge-m3 (kk-mac via kkmac-admission-shim :11447 -> direct
+          tailnet bind, repointed 2026-11-19; added 2026-10-30);
           first 2xx wins, 8s upstream timeout; fronts mddb-embed embeds"
       - name: mddb-panel.service
         type: service
@@ -2562,15 +2572,26 @@ hosts:
     capabilities:
       ollama:
         note: "ollama serve under adanest user (launchd
-          net.adanest.ollama.plist), loopback bind only — reachable via
-          kkmac-ollama-tunnel.service on idc03 (ssh -L 11445 -> :11434).
-          KK approved full fleet use 2026-10-30. Models: qwen2.5:32b,
+          net.adanest.ollama.plist, /Library/LaunchDaemons — root:wheel)
+          binds 0.0.0.0 since 2026-11-19 — reachable directly on tailnet
+          100.108.217.17:11434 AND LAN 192.168.0.101:11434 +
+          192.168.2.90:11434 (verified answering 2026-11-24; LAN
+          exposure pending narrow-to-tailnet — SEC-0985 intent is
+          tailnet-only, needs KK sudo on kk-mac, card
+          kkmac-ollama-durable-bind). Fleet path: idc03
+          kkmac-admission-shim :11447 -> tailnet bind; idc03
+          kkmac-ollama-tunnel :11445 is a disabled fallback (installed,
+          never enabled — ~19k flaps before disable 2026-11-17). KK
+          approved full fleet use 2026-10-30. Models: qwen2.5:32b,
           qwen3:8b, qwen2.5vl:7b, llama3.2:3b. LiteLLM routes:
           ollama-*-kkmac. Audit blind spot CLOSED 2026-11-24
           (audit-hosts-macos-blindspot): the daemon is declared in
           expected_services above and the audit enumerates all launchd
-          domains + fleet processes."
-        upstream: "http://127.0.0.1:11445 (idc03 tunnel) / 127.0.0.1:11434 (kk-mac)"
+          domains + fleet processes. Bind durability VERIFIED
+          2026-11-24: OLLAMA_HOST=0.0.0.0:11434 is in the LaunchDaemon
+          plist EnvironmentVariables (launchctl print system/
+          net.adanest.ollama) — survives reboot by construction."
+        upstream: "http://100.108.217.17:11434 (kk-mac tailnet) via idc03 kkmac-admission-shim :11447"
       kk_llm_worker:
         note: "net.adanest.kk-llm-worker LaunchAgent (kkkakk domain,
           StartInterval=60) — dedicated bounded LLM pack consumer for

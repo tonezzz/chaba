@@ -1,0 +1,106 @@
+title: GEV Google Maps key — verify dead-key impact; live bundle is keyless
+subtitle: >
+  Dispatch of kanban card gev-google-maps-key-suspect-dead-verify-be569a
+  (ref MED-0937). The AQ.Ab8… GOOGLE_MAPS_API_KEY was probed invalid on
+  2026-10-27; this session answered the two open questions: what the live
+  GEV actually renders today, and what it would take to restore Google
+  layers.
+icon: search
+
+planning:
+  goal: >
+    Determine whether GEV still renders Google map layers or silently sits
+    on the keyless Esri fallback, and scope the renewal path for the dead
+    key (GEV + ada map_embed lane).
+  scope: >
+    Read-only verification across tony-dell (~/gods-eye-view checkout,
+    ~/.config/secrets/gev-google-maps.env) and idc02 (migrated GEV API
+    container + ~/web-srv/public/apps/gev static bundle), plus upstream
+    gods-eye-view git history and Google endpoint probes.
+  success_criteria:
+    - "Live-served bundle's credential posture identified from the artifact
+      itself, not from .env intent"
+    - "Keyless-vs-Google rendering path traced in source"
+    - "Renewal blockers enumerated for Tony (GCP console, OAuth vs key)"
+  owner: devin (dispatch)
+  related_focus:
+    - label: card
+      file: docs/ssot/kanban/cards/gev-google-maps-key-suspect-dead-verify-be569a.yml
+    - label: secrets entry
+      file: docs/ssot/infrastructure/ssot.secrets.yml (gev-google-maps)
+
+processing:
+  status: done
+  findings:
+    live_bundle: >
+      https://idc02.taila0626a.ts.net/apps/gev/ serves index-Bd5DfCi5.js
+      (staged via chaba stacks/web/public/apps/gev, built from
+      gods-eye-view merge baaa09d = upstream v0.2.1 + fork patches). The
+      bundle instantiates the app as
+      createStandaloneApplication({googleApiKey: undefined,
+      cesiumToken: undefined}) — NO Google key and NO Cesium ion token are
+      baked in (verified by grep: no AQ.Ab8/AIza literal; the older
+      index-D8kXv0di.js.bak-predeploy still carries AQ.Ab8…). So the dead
+      key is not even attempted at runtime.
+    rendering_today: >
+      With both credentials undefined, src/app/scene.js skips every
+      google-direct/google-ion attempt, loadPhotorealisticTileset returns
+      tileset:null, and the viewer runs the documented keyless path:
+      globe.show=true, Esri World Imagery default stack with OSM
+      construction/tile-failure fallback (src/maps/defaultSources.js).
+      The loader shows 'Loading the keyless globe...' — not silent.
+      /api/google/tiles-token returns 404 (no server impl in this
+      checkout; upstream only ships a 204 stub plugin for dev).
+    dead_key_redundant: >
+      Even if the key were alive it could not restore Google
+      Photorealistic 3D Tiles: tile.googleapis.com/v1/3dtiles/root.json
+      answers 401 'API keys are not supported by this API. Expected OAuth2
+      access token' for ANY key — upstream issue
+      bilawalsidhu/gods-eye-view#59 (Aug 2026). GEV's google-direct route
+      (Cesium createGooglePhotorealistic3DTileset {key}) is dead upstream;
+      the replacement is the googleTokens path (short-lived OAuth bearer
+      tokens from /api/google/tiles-token) which has a client but no
+      server implementation, or a Cesium ion token (asset 2275207).
+    key_still_referenced: >
+      ~/gods-eye-view/.env on BOTH tony-dell and idc02 still carries the
+      dead key (idc02 copy verified same AQ.Ab8 prefix). It is consumed
+      only by server-side providers via vite loadEnv →
+      googleServerApiKey() (Places nearby-places, CCTV Street View
+      fallback) — the browser bundle ignores it. Those server calls fail
+      with the dead key; the app degrades to Nominatim etc.
+    gcp_access: >
+      No gcloud CLI on tony-macbook/tony-dell/idc02 — the owning GCP
+      project cannot be identified or minted from the fleet. Console-only
+      (console.cloud.google.com/apis/credentials).
+      Re-checked attempt 2 (2026-11-24 ~19:5x): still no gcloud and no
+      ~/.config/gcloud on idc03, mn01, con01, tony-omen either — the
+      whole fleet is console-blocked; Tony answered 'proceed' on the
+      board request, which cannot mint a key without his GCP console
+      session. Deliverables committed on the dispatch branch this run
+      (attempt 1 left them uncommitted → merge-sweep NOT-verified).
+
+result:
+  open_question_1: >
+    GEV does NOT render Google layers today — and it is not a silent
+    fallback: the live bundle is deliberately keyless (credentials voided
+    at build), so it runs the documented keyless Esri+OSM globe by design.
+  open_question_2: >
+    Renewal needs Tony in GCP console regardless: (a) for the ada
+    map_embed lane a fresh restricted Maps key (Embed+Static+Geocode+
+    Routes) unblocks that lane; (b) for GEV photoreal specifically a
+    plain key is useless — needs OAuth tiles-token server impl (upstream
+    gap) or a Cesium ion Community token. Decision carded via board
+    request on the kanban card.
+  deliverables:
+    - docs/ssot/infrastructure/ssot.secrets.yml — gev-google-maps note +
+      idc02 slot updated with 2026-11-24 verification
+    - this job trail
+    - board request raised on gev-google-maps-key-suspect-dead-verify-be569a
+
+lessons:
+  - The live GEV bundle is NOT built from ~/gods-eye-view/dist on idc02 —
+    it's staged via chaba stacks/web/public/apps/gev; check the served
+    bundle's embedded literals, not the checkout's .env.
+  - Google 3D Tiles moved to OAuth2-only — 'invalid key' probes on Maps
+    Platform endpoints do not predict tile.googleapis.com behavior; that
+    endpoint rejects ALL API keys.

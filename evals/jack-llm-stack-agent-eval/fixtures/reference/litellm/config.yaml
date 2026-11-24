@@ -1,0 +1,26 @@
+# LiteLLM routing for the disposable Jack stack.
+# Single alias `jack-chat` -> local Ollama. No external providers,
+# no fallbacks — a dead Ollama must surface as an error, not silently
+# route somewhere paid.
+
+model_list:
+  - model_name: jack-chat
+    litellm_params:
+      model: ollama_chat/${JACK_OLLAMA_MODEL:-qwen2.5:3b}
+      api_base: os.environ/JACK_OLLAMA_URL
+      request_timeout: 120
+      num_retries: 0
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 0
+  timeout: 120
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  # Hard cap: this disposable stack must never fan out to paid upstreams.
+  # Only the single local ollama_chat model is declared above.

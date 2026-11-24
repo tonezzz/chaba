@@ -106,6 +106,13 @@ user-level unless marked **[sudo]** or **[Tony]** (needs his hands/password).
 - Mirror cap+labels in `ssot.kanban.yml#execution.concurrency.runner_fleet` prose —
   fleet-health parses it and audits declared `push:<repo>` labels against
   the probe (false label = `push-label-false` violation).
+- OpenCode lane hosts: serving `executor=opencode` / lane-routed cards
+  needs BOTH the `OPENCODE_LANES=1` drop-in AND a real binary — the
+  claim gate fails closed on either missing piece. Declare the
+  `opencode` capability in `ssot.host-software.yml` so
+  `host-ready-check.py` catches binary drift (omen ran the flag with
+  no binary for weeks — card tony-omen-declares-opencode-lanes-1-but-4cbe02).
+  Lane enablement itself stays gated per `ssot.devnest-lanes.yml`.
 - Task types: `dispatch` needs the devin login; `container` needs podman;
   `script` needs only git+the toolchain — a host can run script-only while pending.
 - Verify: `journalctl --user -u runner-agent` clean passes; the runner reports

@@ -1,0 +1,216 @@
+# doc-v2-vo-earcheck — VO ear-check for the ss1 hybrid-v6 cut
+# (card doc-pilot-v2-polish-music-bed-subs-shot-943456, item 4).
+# CPU pack: analyzes the exact 18 VO wavs the v6 assembly used
+# (vo/ + vo-v2 repairs 4/8 + vo-v4 fact-check 6/7 + vo-v5 kuiper 15)
+# and flags beats that need a human ear-check: clipping, long internal
+# silence, repeated-segment (stutter) scores, duration outliers vs the
+# approved script's est_s, non-finite/near-silent output.
+#
+# Output is a flag list, not a verdict — TTS stutter is a perceptual
+# call; the report gives metrics + per-beat spectrograms so Tony/KK can
+# confirm in seconds. flagged-beats.txt feeds any re-voice pass.
+name: doc-v2-vo-earcheck
+needs:
+  gpu_gb: 0
+  disk_gb: 2
+venv: true
+timeout_s: 900
+fetch:
+  - doc-pilot/script.yml
+  - doc-pilot/vo/
+  - doc-pilot/vo-v2/
+  - doc-pilot/vo-v4/
+  - doc-pilot/vo-v5/
+artifacts:
+  - packs/doc-v2-vo-earcheck/out/vo-earcheck-report.md
+  - packs/doc-v2-vo-earcheck/out/flagged-beats.txt
+  - packs/doc-v2-vo-earcheck/out/spec/shot*.png
+publish:
+  doc-pilot/qc: doc-pilot/qc
+prep: |
+  command -v ffmpeg >/dev/null || (apt-get update -qq && apt-get install -y -qq ffmpeg)
+  pip install -q soundfile numpy pyyaml matplotlib
+run: |
+  import os, json
+  import numpy as np
+  import soundfile as sf
+  import yaml
+
+  ROOT = NEST_ROOT
+  OUT = f'{PACK_DIR}/out'
+  SPEC = f'{OUT}/spec'
+  STORE = f'{ROOT}/doc-pilot/qc/vo-earcheck'
+  for d in (OUT, SPEC, STORE):
+      os.makedirs(d, exist_ok=True)
+
+  # same VO resolution as packs/08-doc-hybrid-v6 (doc-pilot-v2 queue)
+  def vo_rel(n):
+      if n in (4, 8):
+          return f'doc-pilot/vo-v2/ss1-vo-{n:02d}-v2.wav'
+      if n in (6, 7):
+          return f'doc-pilot/vo-v4/ss1-vo-{n:02d}-v4.wav'
+      if n == 15:
+          return f'doc-pilot/vo-v5/ss1-vo-15-v5.wav'
+      return f'doc-pilot/vo/ss1-vo-{n:02d}.wav'
+
+  script = yaml.safe_load(open(f'{ROOT}/doc-pilot/script.yml',
+                               encoding='utf-8'))
+  est = {int(s['shot']): float(s.get('est_s') or 0) for s in script['shots']}
+  th = {int(s['shot']): s.get('th', '') for s in script['shots']}
+
+  SR = 24000
+  HOP, WIN = 240, 600          # 10 ms hop, 25 ms window
+
+  def envelope(x):
+      n = (len(x) - WIN) // HOP
+      if n <= 0:
+          return np.zeros(1)
+      idx = np.arange(n)[:, None] * HOP + np.arange(WIN)[None, :]
+      fr = x[idx]
+      return np.sqrt((fr ** 2).mean(axis=1))
+
+  def rep_score(x):
+      """Max normalized autocorrelation of the RMS envelope over lags
+      0.20-2.00 s — a repeated syllable/word (stutter) shows as a high,
+      sustained correlation at the repeat lag."""
+      e = envelope(x)
+      e = e - e.mean()
+      s = e.std()
+      if s <= 1e-9 or len(e) < 30:
+          return 0.0, 0.0
+      e /= s
+      best_c, best_lag = 0.0, 0.0
+      for lag_s in np.arange(0.20, 2.01, 0.05):
+          lag = int(round(lag_s * SR / HOP))
+          if lag >= len(e) - 10:
+              break
+          a, b = e[:-lag], e[lag:]
+          c = float((a * b).mean())
+          if c > best_c:
+              best_c, best_lag = c, lag_s
+      return best_c, best_lag
+
+  def gaps(x, thr=0.008, min_s=0.40):
+      """Internal silence runs longer than min_s seconds."""
+      env = envelope(x)
+      hop_s = HOP / SR
+      silent = env < thr
+      runs, cur = [], 0
+      for v in silent:
+          cur = cur + 1 if v else 0
+          if not v and cur:
+              runs.append(cur * hop_s)
+              cur = 0
+      if cur:
+          runs.append(cur * hop_s)
+      return [r for r in runs if r >= min_s]
+
+  rows = ['# doc-v2 VO ear-check (v6 VO set)', '',
+          '| shot | file | dur_s | est_s | peak | rms_dB | clip | '
+          'lead_sil | trail_sil | max_gap_s | rep@lag | flags |',
+          '|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|']
+  flagged, missing, invalid = [], [], []
+
+  import matplotlib
+  matplotlib.use('Agg')
+  import matplotlib.pyplot as plt
+
+  for n in range(1, 19):
+      rel = vo_rel(n)
+      path = f'{ROOT}/{rel}'
+      if not os.path.isfile(path):
+          missing.append((n, rel))
+          rows.append(f'| {n} | MISSING {rel} | - | - | - | - | - | '
+                      '- | - | - | - | MISSING |')
+          continue
+      try:
+          w, sr = sf.read(path, dtype='float32')
+      except Exception as e:
+          invalid.append((n, str(e)[:80]))
+          rows.append(f'| {n} | {os.path.basename(path)} | READ-ERR '
+                      f'{str(e)[:40]} | - | - | - | - | - | - | - | - | BAD |')
+          continue
+      finite = bool(np.isfinite(w).all())
+      dur = len(w) / sr if sr else 0.0
+      peak = float(np.abs(w).max()) if len(w) else 0.0
+      rms = float(np.sqrt((w ** 2).mean())) if len(w) else 0.0
+      rms_db = 20 * np.log10(rms + 1e-9)
+      clip_n = int((np.abs(w) >= 0.98).sum())
+      act = np.abs(w) > 0.01
+      lead = float(np.argmax(act)) / sr if act.any() else dur
+      trail = float(np.argmax(act[::-1])) / sr if act.any() else 0.0
+      g = gaps(w)
+      max_gap = max(g) if g else 0.0
+      rc, rl = rep_score(w)
+      e_s = est.get(n, 0.0)
+      dur_ratio = dur / e_s if e_s else 0.0
+
+      fl = []
+      if not finite or sr != SR:
+          fl.append('BAD')
+      if peak < 0.01:
+          fl.append('SILENT')
+      if clip_n:
+          fl.append(f'CLIPx{clip_n}')
+      if max_gap > 0.45:
+          fl.append(f'GAP{max_gap:.2f}')
+      if rc > 0.80:
+          fl.append(f'REPEAT{rc:.2f}@{rl:.1f}s')
+      elif rc > 0.70:
+          fl.append(f'rep?{rc:.2f}@{rl:.1f}s')
+      if e_s and (dur_ratio > 2.2 or dur_ratio < 0.45):
+          fl.append(f'DUR{dur_ratio:.1f}x')
+      if fl:
+          flagged.append(n)
+
+      rows.append(
+          f'| {n} | {os.path.basename(path)} | {dur:.2f} | {e_s:.0f} | '
+          f'{peak:.3f} | {rms_db:.1f} | {clip_n} | {lead:.2f} | '
+          f'{trail:.2f} | {max_gap:.2f} | {rc:.2f}@{rl:.1f}s | '
+          f'{", ".join(fl) or "ok"} |')
+
+      # spectrogram for eyeball pass
+      try:
+          fig, ax = plt.subplots(figsize=(6, 1.6))
+          ax.specgram(w, NFFT=512, Fs=sr, noverlap=384, cmap='viridis')
+          ax.set_title(f'shot {n:02d}  {dur:.2f}s  {os.path.basename(path)}'
+                       + (f'  [{", ".join(fl)}]' if fl else ''),
+                       fontsize=8)
+          fig.tight_layout()
+          fig.savefig(f'{SPEC}/shot{n:02d}.png', dpi=90)
+          plt.close(fig)
+      except Exception:
+          pass
+
+  rows += ['',
+           f'missing: {[n for n, _ in missing] or "none"}',
+           f'read_errors: {[n for n, _ in invalid] or "none"}',
+           f'flagged beats: {flagged or "none"}',
+           '',
+           'Flags are heuristics for a human ear-check, not a verdict:',
+           'CLIP = samples at >=0.98 full scale; GAP = internal silence',
+           '>0.45s; REPEAT = envelope autocorr >0.80 at 0.2-2.0s lag',
+           '(possible repeated syllable/word); DUR = duration outside',
+           '0.45-2.2x the script estimate; rep? = 0.70-0.80 watch band.']
+  rep = '\n'.join(rows) + '\n'
+  open(f'{OUT}/vo-earcheck-report.md', 'w', encoding='utf-8').write(rep)
+  open(f'{OUT}/flagged-beats.txt', 'w').write(
+      ''.join(f'{n}\n' for n in flagged) or 'none\n')
+  # store-side copies (Colab: NEST_ROOT is the Drive mount; fleet:
+  # NEST_ROOT==PACK_DIR and publish: mirrors doc-pilot/qc to the store)
+  open(f'{STORE}/vo-earcheck-report.md', 'w',
+         encoding='utf-8').write(rep)
+  open(f'{STORE}/flagged-beats.txt', 'w').write(
+      ''.join(f'{n}\n' for n in flagged) or 'none\n')
+  for f in os.listdir(SPEC):
+      if f.endswith('.png'):
+          dst = f'{STORE}/spec'
+          os.makedirs(dst, exist_ok=True)
+          import shutil
+          shutil.copyfile(f'{SPEC}/{f}', f'{dst}/{f}')
+
+  verdict = 'FAIL' if missing or invalid else (
+      f'PASS flagged={flagged or "none"}')
+  print(f'doc-v2-vo-earcheck {verdict}', flush=True)
+  if missing or invalid:
+      raise SystemExit(f'missing={missing} invalid={invalid}')

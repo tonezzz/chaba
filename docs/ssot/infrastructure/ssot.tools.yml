@@ -866,6 +866,21 @@ tools:
     ada-dev: ada_forget
   source: ada-voice:backend/realtime_provider.py
   notes: MEMORY_WRITE_TOOLS
+- name: memory.asset_save
+  kind: tool
+  sig: name,description,media_url,bank
+  policy: read
+  secondary: false
+  backend: LINE media archive persona-assets/ + mddb bank doc (meta.image_url)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: asset_save
+    ada-dev: asset_save
+  source: ada-voice:backend/tools.d/asset_save.py
+  notes: "card persona-photo-store (2026-11-24) — writes ride the ada_remember ACL + staged-writes lane (pending route 'asset'); confirmed-policy banks refuse in-tool; recall side is _doc_to_hit image_url + ada_memory_search top-level promote -> relay _images_from"
 - name: agent.ops
   kind: tool
   sig: action,node,bank,key,outcome,note,source,reset,collection,product,url,mode,topic,depth,identity,entity_id,tool,confirmed,confirm_token

@@ -1,0 +1,109 @@
+# Re-record Tony-approved, NASA-fact-checked Thai lines for shots 6, 7, 15.
+name: 04-doc-vo-factcheck-v4
+needs:
+  gpu_gb: 3
+  disk_gb: 5
+venv: true
+timeout_s: 2400
+fetch:
+  - doc-pilot/script.yml
+  - packs/01-doc-vo-repair-ss1/inputs/tony-ref-8s.wav
+  - packs/01-doc-vo-repair-ss1/inputs/ref_text_tony.txt
+artifacts:
+  - packs/04-doc-vo-factcheck-v4/out/ss1-vo-06-v4.wav
+  - packs/04-doc-vo-factcheck-v4/out/ss1-vo-07-v4.wav
+  - packs/04-doc-vo-factcheck-v4/out/ss1-vo-15-v4.wav
+  - packs/04-doc-vo-factcheck-v4/vo-report-v4.md
+publish:
+  out: doc-pilot/vo-v4
+prep: |
+  pip install -q torch pyyaml
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile librosa matplotlib transformers audioop-lts torchcodec
+  pip install -q --no-deps 'numpy>=2'
+run: |
+  import os, time
+  import numpy as np
+  import soundfile as sf
+  import torch
+  import yaml
+  from f5_tts_th.tts import TTS
+
+  ROOT = NEST_ROOT
+  SCRIPT = yaml.safe_load(open(
+      f'{ROOT}/doc-pilot/script.yml', encoding='utf-8'))
+  BEATS = {int(s['shot']): s['th'] for s in SCRIPT['shots']}
+  FIXES = {
+      6: ["ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ",
+          "ใต้เมฆกรดซัลฟิวริกหนาทึบ"],
+      7: ["โลกคือที่เดียวในระบบสุริยะ",
+          "ที่เราพบสิ่งมีชีวิต"],
+      15: ["เลยดาวเนปจูนออกไป",
+           "นักดาราศาสตร์คาดว่า",
+           "มีวัตถุน้ำแข็งนับล้านในแถบไคเปอร์"],
+  }
+  REF_DIR = f'{ROOT}/packs/01-doc-vo-repair-ss1/inputs'
+  OUT = f'{PACK_DIR}/out'
+  os.makedirs(OUT, exist_ok=True)
+  REF = f'{REF_DIR}/tony-ref-8s.wav'
+  REF_TEXT = open(f'{REF_DIR}/ref_text_tony.txt',
+                  encoding='utf-8').read().strip()
+
+  def valid(w):
+      return len(w) > 0 and bool(np.isfinite(w).all()) and \
+          float(np.abs(w).max()) >= 0.01
+
+  t0 = time.time()
+  tts = TTS(model='v2')
+  print('vyncx loaded %.0fs gpu=%.1fGB' %
+        (time.time()-t0, torch.cuda.memory_allocated()/1e9), flush=True)
+  report = ['# NASA-fact-checked Thai VO v4', '',
+            '| shot | Thai line | duration_s | peak | verdict |',
+            '|---:|---|---:|---:|---|']
+  failed = []
+  for shot, clauses in FIXES.items():
+      if shot not in BEATS:
+          failed.append(shot)
+          report.append(f'| {shot} | missing from script | - | - | FAIL |')
+          continue
+      chunks, bad = [], []
+      for clause in clauses:
+          w = np.asarray(tts.infer(
+              ref_audio=REF, ref_text=REF_TEXT, gen_text=clause,
+              step=32, cfg=2.0, speed=1.0), dtype='float32')
+          if valid(w):
+              chunks.append(w)
+          else:
+              bad.append(clause)
+      if bad or len(chunks) != len(clauses):
+          failed.append(shot)
+          report.append(f'| {shot} | {BEATS[shot]} | - | - | '
+                        f'FAIL {len(bad)} clauses |')
+          print(f'shot{shot} failed clauses: {bad}', flush=True)
+          continue
+      pieces = []
+      for i, chunk in enumerate(chunks):
+          if i:
+              pieces.append(np.zeros(6000, dtype='float32'))
+          pieces.append(chunk)
+      joined = np.concatenate(pieces)
+      if not valid(joined):
+          failed.append(shot)
+          report.append(f'| {shot} | {BEATS[shot]} | - | - | FAIL joined |')
+          continue
+      out = f'{OUT}/ss1-vo-{shot:02d}-v4.wav'
+      sf.write(out, joined, 24000)
+      check, sr = sf.read(out, dtype='float32')
+      ok = sr == 24000 and valid(check)
+      if not ok:
+          failed.append(shot)
+      peak = float(np.abs(check).max()) if len(check) else 0.0
+      report.append(f'| {shot} | {BEATS[shot]} | {len(check)/sr:.2f} | '
+                    f'{peak:.3f} | {"PASS" if ok else "FAIL readback"} |')
+      print(f'shot{shot} v4 {len(check)/sr:.2f}s peak={peak:.3f}',
+            flush=True)
+  report += ['', f'failed shots: {failed or "none"}']
+  open(f'{PACK_DIR}/vo-report-v4.md', 'w').write('\n'.join(report) + '\n')
+  if failed:
+      raise RuntimeError(f'VO v4 failed for shots {sorted(set(failed))}')
+  print('NASA-fact-checked VO v4 complete', flush=True)

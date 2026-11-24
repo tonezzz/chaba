@@ -87,7 +87,7 @@ Card:
 Decide ONE:
 - "spec"  — you can draft a concrete spec now. Write: goal, host/repo
   (hosts: tony-dell, idc02, idc03, tony-omen, tony-macbook, mn01, con01;
-  repos: chaba, ada-voice, ada-pi, sunsynk-card, mddb-fork, gods-eye-view),
+  repos: chaba, ada-voice, sunsynk-card, mddb-fork, gods-eye-view),
   constraints, and a testable done-condition. 3-6 sentences of plain
   text. Only assert facts present in the card/context — never invent
   hostnames, paths, or decisions.

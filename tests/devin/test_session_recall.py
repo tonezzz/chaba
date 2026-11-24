@@ -10,10 +10,14 @@ syncs never strip the section).
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import sqlite3
+import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -128,6 +132,44 @@ class IndexArchivesTest(unittest.TestCase):
             finally:
                 sr.ARCHIVE_DIRS = old_dirs
                 sr.INDEX_DB = old_db
+
+
+class MainFailOpenTest(unittest.TestCase):
+    """A dead T2 index must not take the T1 semantic lane down with it —
+    and vice versa. The hook depends on each lane degrading alone."""
+
+    def test_t1_survives_t2_index_failure(self):
+        fake_t1 = [{"key": "devin-session/aluminum-opossum",
+                    "score": 0.71, "content": "VCAST stale socket fix"}]
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(sr, "open_index",
+                               side_effect=sqlite3.OperationalError(
+                                   "no such module: fts5")), \
+             mock.patch.object(sr, "recall_t1", return_value=fake_t1), \
+             mock.patch.object(sr, "recall_t2", return_value=[]), \
+             mock.patch.object(sys, "argv",
+                               ["session_recall.py", "vcast idle stream"]), \
+             contextlib.redirect_stdout(out), \
+             contextlib.redirect_stderr(err):
+            rc = sr.main()
+        self.assertEqual(rc, 0)
+        self.assertIn("devin-session/aluminum-opossum", out.getvalue())
+        self.assertIn("t2 index unavailable", err.getvalue())
+
+    def test_empty_lanes_emit_nothing(self):
+        out = io.StringIO()
+        with mock.patch.object(sr, "open_index",
+                               return_value=sqlite3.connect(":memory:")), \
+             mock.patch.object(sr, "index_archives", return_value={}), \
+             mock.patch.object(sr, "recall_t1", return_value=[]), \
+             mock.patch.object(sr, "recall_t2", return_value=[]), \
+             mock.patch.object(sys, "argv",
+                               ["session_recall.py", "zzz-no-such-thing"]), \
+             contextlib.redirect_stdout(out), \
+             contextlib.redirect_stderr(io.StringIO()):
+            rc = sr.main()
+        self.assertEqual(rc, 0)
+        self.assertEqual(out.getvalue(), "")
 
 
 class StickyArtifactsTest(unittest.TestCase):

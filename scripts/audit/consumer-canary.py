@@ -8,6 +8,12 @@ loads (card JS, caddy configs, unit envs, HA dashboards) for retired hostnames.
 Runs on idc03, ssh's out to hosts. Findings are commented on the canary card
 via board-api; a clean run is stdout-only (no card spam).
 
+Exit code: 0 when the audit completed — including runs that found refs or
+unauditable surfaces, since board-api comms are the alert channel (exit-1
+on findings used to trip timer-sentinel into filing noise cards, see
+docs/ssot/jobs/monitoring/2026-11-08-consumer-canary-timer-alert.yml).
+Exit 1 only when findings exist but the board-api post failed.
+
 Env:
   RETIRED_HOSTS   comma list (default tony-dell.taila0626a.ts.net)
   CANARY_CARD     board-api card id to comment on
@@ -68,8 +74,9 @@ GREPS = [
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
     ("con01:units", "con01",
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
-    ("mn01:caddy+units", "mn01",
-     "grep -nE '%s' ~/.config/caddy/Caddyfile.mn01 2>/dev/null;"
+    ("mn01:caddy", "mn01",
+     "grep -nE '%s' ~/.config/caddy/Caddyfile.mn01 2>/dev/null"),
+    ("mn01:units", "mn01",
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
 ]
 
@@ -120,42 +127,57 @@ asyncio.run(main())
 
 
 def run(cmd, host=None):
+    """Run one audit grep. Returns (stdout, None) on success or
+    (None, reason) when the surface could not be audited — a dead ssh or a
+    grep error must never masquerade as 'no retired refs found'."""
     full = (["ssh", *SSH_OPTS, host, cmd] if host
             else ["bash", "-c", cmd])
     try:
         r = subprocess.run(full, capture_output=True, text=True, timeout=60)
-        return r.stdout
     except subprocess.TimeoutExpired:
-        return f"TIMEOUT {cmd[:60]}\n"
+        return None, "timeout after 60s"
+    if r.returncode > 1:  # grep: 0=match 1=clean 2+=error; ssh: 255=connect fail
+        err = r.stderr.strip().splitlines()
+        return None, (err[-1][:120] if err else f"exit {r.returncode}")
+    return r.stdout, None
 
 
 def main():
-    findings, skips = [], []
+    findings = []
     for label, host, tmpl in GREPS:
         cmd = tmpl % ((PAT,) * tmpl.count("%s"))
-        out = run(cmd, host)
+        out, err = run(cmd, host)
+        if err is not None:
+            findings.append(f"UNAUDITABLE {label}: {err}")
+            continue
         for line in out.splitlines():
             if not line.strip() or is_ignored(line):
                 continue
             findings.append(f"{label}: {line.strip()[:200]}")
 
-    r = subprocess.run(
-        ["ssh", *SSH_OPTS, "tony-omen", f"CANARY_HOSTS='{PAT}' python3 -"],
-        input=DASH_SCAN, capture_output=True, text=True, timeout=120)
-    for line in r.stdout.splitlines():
-        if line.startswith("HIT"):
-            findings.append(line[:240])
-        elif line.startswith(("SKIP", "TIMEOUT")):
-            skips.append(line.strip())
+    try:
+        r = subprocess.run(
+            ["ssh", *SSH_OPTS, "tony-omen", f"CANARY_HOSTS='{PAT}' python3 -"],
+            input=DASH_SCAN, capture_output=True, text=True, timeout=120)
+        if r.returncode != 0:
+            err = r.stderr.strip().splitlines()
+            findings.append("UNAUDITABLE dashboards: "
+                            + (err[-1][:120] if err else f"exit {r.returncode}"))
+        for line in r.stdout.splitlines():
+            if line.startswith("HIT"):
+                findings.append(line[:240])
+            elif line.startswith(("SKIP", "TIMEOUT")):
+                findings.append(f"UNAUDITABLE dashboards: {line.strip()}")
+    except subprocess.TimeoutExpired:
+        findings.append("UNAUDITABLE dashboards: timeout after 120s")
 
     if not findings:
-        print(f"consumer-canary: CLEAN ({len(GREPS)} greps + dashboards)"
-              + (f" | skips: {'; '.join(skips)}" if skips else ""))
+        print(f"consumer-canary: CLEAN ({len(GREPS)} greps + dashboards)")
         return 0
 
-    text = ("[consumer-canary] live retired-host refs found "
-            f"({len(findings)}):\n" + "\n".join(f"- {f}" for f in findings[:40])
-            + ("\n(skips: " + "; ".join(skips) + ")" if skips else ""))
+    text = ("[consumer-canary] live-surface audit findings "
+            f"({len(findings)}):\n"
+            + "\n".join(f"- {f}" for f in findings[:40]))
     print(text)
     try:
         body = json.dumps({"id": CARD_ID, "from": "devin", "text": text}).encode()
@@ -164,9 +186,10 @@ def main():
             headers={"Content-Type": "application/json"})
         resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
         print("board-api:", resp.get("message"))
+        return 0  # reported via card comms — not a unit failure
     except Exception as e:
         print(f"board-api comment failed: {e}")
-    return 1
+        return 1
 
 
 if __name__ == "__main__":

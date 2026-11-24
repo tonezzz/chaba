@@ -81,6 +81,14 @@ Env:
                  signature (default 1800). The lane model is shared —
                  re-claiming into a 429 burns card attempts across the
                  whole queue, not just the card that hit it.
+  RUNNER_WT_SWEEP_S    stale dispatch-worktree sweep interval —
+                 wt_sweep_pass runs dispatch-wt-sweep.py --apply once
+                 per interval (default 86400 = daily; 0 disables).
+                 The reaper keeps failed-run trees for
+                 RUNNER_WT_SWEEP_DAYS (default 3) and only removes
+                 ones whose task evidence is captured and no
+                 devin-task-<tid> unit is live. DISPATCH_WT_SWEEP=0
+                 disables inside the sweep itself.
 
 Interactive-host guards (card omen-gpu-display-wedge — on when the host
 carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
@@ -1426,6 +1434,43 @@ def lg_module():
     return None
 
 
+_WT_SWEEP = None
+_WT_SWEEP_TRIED = False
+
+
+def wt_sweep_module():
+    """Import dispatch-wt-sweep — the OPS-1036 bounded reaper for
+    failed-run dispatch worktrees (scripts/board/dispatch-wt-sweep.py).
+    Same single-file deploy constraint as lg_module: hyphenated name
+    -> SourceFileLoader, resolved from a local chaba checkout. None ->
+    the sweep pass is a no-op."""
+    global _WT_SWEEP, _WT_SWEEP_TRIED
+    if _WT_SWEEP_TRIED:
+        return _WT_SWEEP
+    _WT_SWEEP_TRIED = True
+    from importlib.machinery import SourceFileLoader
+    dirs = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        dirs.append(Path(env))
+    dirs += [Path(__file__).resolve().parent,
+             Path.home() / "CascadeProjects/chaba/scripts/board"]
+    co = _repo_checkout("chaba")
+    if co:
+        dirs.append(co / "scripts" / "board")
+    for d in dirs:
+        p = d / "dispatch-wt-sweep.py"
+        if not p.exists():
+            continue
+        try:
+            _WT_SWEEP = SourceFileLoader(
+                "dispatch_wt_sweep", str(p)).load_module()
+            return _WT_SWEEP
+        except Exception:
+            continue
+    return None
+
+
 def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     """Local merge step for a finished dispatch claim. Returns
     (verified: bool|None, comms notes: list[str])."""
@@ -2137,10 +2182,11 @@ def shutil_which(name: str) -> bool:
 
 
 def opencode_bin() -> str:
-    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the two
+    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the
     install locations the systemd user manager PATH never carries
-    (~/.opencode/bin only enters PATH via ~/.bashrc, so shutil_which
-    alone misses it under the timer unit)."""
+    (~/.opencode/bin only enters PATH via ~/.bashrc, ~/.npm-global/bin
+    only via per-unit drop-ins, so shutil_which alone misses both
+    under the timer unit)."""
     env = os.environ.get("OPENCODE_BIN") or ""
     if env and Path(env).is_file():
         return env
@@ -2149,7 +2195,8 @@ def opencode_bin() -> str:
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     for c in (Path.home() / ".opencode/bin/opencode",
-              Path.home() / ".local/bin/opencode"):
+              Path.home() / ".local/bin/opencode",
+              Path.home() / ".npm-global/bin/opencode"):
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     return ""
@@ -5110,6 +5157,48 @@ def gate_pass(st: dict) -> bool:
     return changed
 
 
+# --- stale dispatch-worktree sweep (OPS-1036) -------------------------
+# gc_worktree/gc_session only reap provably-merged trees; failed runs
+# leak dispatch-wt-<tid> dirs forever (idc02 held 68 ~= 14GB). The
+# bounded reaper lives in the repo (scripts/board/dispatch-wt-sweep.py)
+# and runs here once per WT_SWEEP_S — in-process so its unit_active()
+# sees this host's real systemd/launchd task units. Throttled by a
+# stamp file so the 60s claim tick pays ~nothing; a missing module or
+# any sweep failure is warn-only and never holds the claim pass.
+WT_SWEEP = os.environ.get("RUNNER_WT_SWEEP", "1") != "0"
+WT_SWEEP_S = int(os.environ.get("RUNNER_WT_SWEEP_S", "86400"))
+WT_SWEEP_DAYS = float(os.environ.get("RUNNER_WT_SWEEP_DAYS", "3"))
+WT_SWEEP_STAMP = STATE_DIR / "wt-sweep.ts"
+
+
+def wt_sweep_pass() -> None:
+    """Run dispatch-wt-sweep --apply when the interval elapsed.
+    Never raises, never touches state.json — maintenance, not claims."""
+    if not WT_SWEEP or WT_SWEEP_S <= 0:
+        return
+    try:
+        last = float(WT_SWEEP_STAMP.read_text().strip())
+    except Exception:
+        last = 0.0
+    if time.time() - last < WT_SWEEP_S:
+        return
+    mod = wt_sweep_module()
+    if mod is None:
+        return                     # no local checkout copy yet — retry next pass
+    try:
+        rc = mod.sweep(Path.home() / "CascadeProjects", WT_SWEEP_DAYS,
+                       None, True)
+        if rc:
+            print(f"warn: wt-sweep finished rc={rc}")
+    except Exception as e:
+        print(f"warn: wt-sweep failed: {type(e).__name__}: {e}")
+    try:                            # stamp even on failure — a broken
+        STATE_DIR.mkdir(parents=True, exist_ok=True)   # sweep must not
+        WT_SWEEP_STAMP.write_text(str(time.time()))    # hot-loop the pass
+    except OSError:
+        pass
+
+
 def verdict_pass(st: dict) -> None:
     """/ready report — runner-observed claimability for every queued card
     plus this host's in-flight claims (KNB-1007). Runs every pass, even
@@ -5243,6 +5332,7 @@ def main() -> int:
     changed = (finish_pass(st) | watchdog_pass(st) | gate_pass(st)
                | reconcile_pass(st) | claim_pass(st))
     verdict_pass(st)
+    wt_sweep_pass()
     if changed:
         save_state(st)
     return 0
