@@ -1,0 +1,50 @@
+id: ada-ocb-ansible-upgrade
+title: Ansible ada-ocb upgrade playbook (approval-gated)
+column: backlog
+updated: 2026-11-24 07:59
+brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
+  (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
+  approval.
+priority: medium
+tags:
+- ada-ocb,ansible,idc02,upgrade
+spec: 'Goal: complete the Ansible maintenance layer for ada-ocb with the write path, after Tony explicitly approves
+  a production write in-session.
+
+
+  Prereq (done): AUD-0014 / commit 2ab78f0101 added the ocb_pane inventory group, read-only audit + verify playbooks,
+  and the declared contract. Verify gate is proven (exit 2 on drift).
+
+
+  Required shape:
+
+  1. Playbook defaults to check mode; write tasks assert an explicit approval var (e.g. ocb_change_approved=true)
+  plus an in-session approval record.
+
+  2. Upgrade step = `systemctl --user start openchamber-update.service` on idc02 only. Do NOT reimplement npm install,
+  patch application, or restart — the unit already does patch-first fail-loud and is the sole executor.
+
+  3. Rollback statement before any destructive step: restore the one Caddy line + reload (per openchamber migration
+  runbook).
+
+  4. Post-write: run ada-ocb-verify.yml as the gate; on failure report with reason to the card via board-api and
+  stop — never half-apply.
+
+  5. Never write cards from Ansible (board-api only); no secrets in playbooks.
+
+
+  Done when: --syntax-check clean; dry-run shows only the intended unit start; live run on idc02 leaves verify green;
+  first-run report updated.
+
+
+  Owner: Tony — needs an explicit "approve the ada-ocb upgrade playbook" in-session. Default = do not write prod
+  until then.
+
+
+  Refs: card ada-ocb-ansible-audit-verify (AUD-0014, done); docs/reports/ada-ocb-ansible-audit-2026-11-24.md; ansible/playbooks/ada-ocb-verify.yml;
+  docs/ssot/infrastructure/ssot.audit.hosts.yml:2242-2279.'
+ref: ADA-0015
+comms:
+- at: 2026-11-24 07:59
+  from: tony
+  text: card captured via board-api
