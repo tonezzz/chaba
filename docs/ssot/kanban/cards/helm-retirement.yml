@@ -2,7 +2,7 @@ id: helm-retirement
 title: Helm app retirement
 column: done
 note: Container, unit, routes, compose, health entries removed 2026-09-30.
-updated: 2026-11-24 12:00
+updated: 2026-11-24 12:06
 ref: OPS-0004
 comms:
 - at: 2026-10-11 08:35
@@ -140,3 +140,10 @@ comms:
   from: devin
   text: 'attempt 2: verifying helm retirement completeness. OPS-1310 already removed route/static/SSOT/service;
     found residual compose + audit-regex leftovers, cleaning now.'
+- at: 2026-11-24 12:06
+  from: devin
+  text: 'attempt 2 done. OPS-1310 had already removed route/static/SSOT/service; this run removed residuals it missed:
+    helm blocks in docker-compose.prod.yml + .secrets.yml, HELM_* vars in .env.example/.env.production, Helm section
+    + log lines in production-deployment-operations.md runbook, helm in audit fleet regexes (audit-hosts.py + ansible
+    playbook, kept in sync), helm-llm fallback lane + primary_for/fallback_for refs in ssot.gemini-models*.yml,
+    stale prettierignore + workspaces purpose. Verified liv'
