@@ -1,0 +1,119 @@
+date: 2026-11-24
+title: BGE production serving architecture — cutover decision brief (rerank depth/latency)
+domain: ada
+job: dispatch
+cards: [bge-production-serving-architecture-rera-e6ba35]
+related: [MEM-1129, MEM-1083, ADA-1299, MEM-0235]
+host: idc02
+repo: chaba
+branch: dispatch/20261124-221747-quality-gate-is-passed-local-b
+summary: >
+  Decision card — quality gate PASSED 2026-11-08; what remains is the
+  serving-architecture call, explicitly Tony's on UX latency budget.
+  This dispatch verified live state and found a decision-critical
+  latency correction: live shadow rerank_ms measured 1.1-1.4s for
+  top-9/10 (Nov 18-19 soak) vs the 565ms eval-harness estimate, so a
+  synchronous top-10 arm lands ~1.4-1.7s added — ~3x over the ~500ms
+  voice budget. Board request raised with re-scored options;
+  recommendation = run two cheap unblocking probes (idle-GPU rerank
+  re-measure + lighter-reranker eval) before picking a-d.
+
+findings:
+  verified_live_2026-11-24:
+    - 'GET http://100.75.102.88:11555/health -> {"ok":true,
+      "model":"BAAI/bge-reranker-v2-m3","device":"cuda","served":0};
+      POST /rerank without token -> 401 (auth on, ADA-1299). served=0
+      means zero rerank calls since service start — consistent with the
+      documented memory_search traffic drought, or a recent restart.'
+    - 'Shadow lane live: ada-voice backend/bge_memory_shadow.py,
+      opt-in env-gated (ADA_BGE_SHADOW_*), enabled on ada-dev +
+      ada-ha-tony since ~2026-11-17/19. Validated 10/10 live scenarios
+      + 12 unit tests; runbook docs/kb/bge-memory-search-shadow.md.'
+    - 'Prereq cards done/archived: ada-bge-memory-search-shadow,
+      bge-serving-path-dense-retrieval-with-in-b080f6 (MEM-1129 dense
+      +bounded-fetch fix: includeContent=false cut dense ~4-6.6s ->
+      ~130ms).'
+    - 'mddb-leader-bge-m3-migration-11023 in review (re-dispatched
+      2026-11-24); :11027 cms plane already bge-m3. If :11023 landed,
+      production dense retrieval is already bge-m3 — the open question
+      narrows to the rerank stage; gemini stays the rollback upstream
+      per the pool-member-loss soak finding (~17x latency on member
+      loss, resilient).'
+    - 'chaba-bge-education-shadow.timer on idc03 FAILED 2026-11-24
+      07:22 (own card open) — lessons-mirror feed to bge-lessons-shadow
+      stale; affects education-query shadow coverage, not the
+      memory_search soak path itself.'
+  quality_unchanged:
+    - 'judged-union + expanded qrels: BGE dense + rerank-v2-m3 top-10
+      arm r@5 .262 / MRR .938 vs Gemini .244 / .893; Thai MRR 1.000.'
+    - 'Depth ablation (saved GPU ranks): top10 .262/.938 > top20
+      .251/.892 > top30 .263/.887 > top50 .260/.869 — deep pools
+      dilute; the cross-encoder earns its keep on the dense head.'
+    - 'Dense-only BGE arm (no rerank): r@5 .224 / MRR .767 — clearly
+      below Gemini. Rerank is what closes the gap, so an async-refine-
+      only design cannot fix the current turn.'
+  latency_correction:
+    spec_estimate: '~57ms/pair fp32 -> top-10 ~565ms (eval harness,
+      2026-11-08)'
+    live_measured: 'shadow soak 2026-11-18/19 prod context: rerank_ms
+      1078-1412 for reranked=9-10 (~110-140ms/pair effective);
+      dense_ms 131-322 + fetch_ms 59-82 (~200-390ms warm)'
+    sync_top10_total: '~1.4-1.7s added vs ~500ms voice budget —
+      ~3x over. Likely contributors: 3.6GB card shared with ollama,
+      serialized _lock in bge-rerank-server.py, tailscale RTT
+      idc03->omen. Unproven whether an idle-GPU window recovers the
+      eval-harness number.'
+    fp16: 'measured 4.7x WORSE on this card — closed, do not retry.'
+
+options_rescored:
+  a_sync_top10_m3: 'simplest plumbing (promote shadow path to sync);
+    ~1.4-1.7s added — over budget unless idle-GPU re-measure shows
+    ~2-3x better than the soak numbers'
+  a2_sync_top5: 'untested quality; est ~0.9-1.2s — still over budget'
+  b_lighter_reranker: 'bge-reranker-v2-minicpm-layerwise or base —
+    quality delta unknown, needs eval rerun on GPU lane
+    (scripts/ada/bge-rerank-eval.py + saved pools; /tmp/embedeval may
+    need rebuild); if ~3x faster -> ~400-500ms rerank, total
+    ~700-800ms — borderline fit. Cheapest missing datapoint.'
+  c_async_only: 'dense sync ~300ms + rerank refine in background —
+    current-turn quality = dense arm (MRR .767 < Gemini .893); only
+    viable paired with a sync upstream or if dense quality accepted'
+  d_hybrid: 'top-10 sync + deeper async — inherits (a) sync cost'
+  e_status_quo: 'gemini/bge-m3 dense stays sync, shadow keeps soaking
+    overlap_at_5; zero risk, keeps upstream spend; revisit with soak
+    data or probe results'
+  mem_1083_distillation: 'back on the table IF sync rerank cannot fit
+    the budget — distilled dense embedder serves ~300ms with no
+    rerank; the spec''s "rerank may have made it unnecessary" assumed
+    rerank fit.'
+
+recommendation: >
+  Do not pick a-d yet. Two cheap unblocking probes, both dispatchable
+  without production change: (1) idle-GPU /rerank top-K latency
+  re-measure via new scripts/ada/bge-rerank-probe.py (needs
+  RERANK_AUTH_TOKEN — omen secrets or ada-lab.env on idc02); (2)
+  lighter-reranker eval rerun (bge-rerank-eval.py, GPU lane) to price
+  option (b). If forced to pick today: status quo + probes — no prod
+  change is defensible while the latency number is 3x uncertain and
+  the UX budget is Tony''s call.
+
+board_request: >
+  Raised on the card with 4 options (probes-first starred,
+  sync-top10 / async-hybrid / stay-gemini). Answer routes the next
+  dispatch: probes-first -> GPU-lane eval dispatches; sync-top10 ->
+  ada-voice serving-path implementation card; async-hybrid ->
+  plumbing design card; stay-gemini -> card parks until soak data.
+
+verify:
+  - 'curl -s http://100.75.102.88:11555/health -> ok:true device:cuda'
+  - 'RERANK_URL=http://100.75.102.88:11555 RERANK_AUTH_TOKEN=<t> \
+    python3 scripts/ada/bge-rerank-probe.py --depths 3,5,10,20'
+  - 'docs/kb/bge-memory-search-shadow.md (shadow runbook + soak query)'
+
+artifacts:
+  probe_script: scripts/ada/bge-rerank-probe.py (new — top-K latency
+    sweep for the live endpoint; token via RERANK_AUTH_TOKEN or
+    ADA_BGE_SHADOW_RERANK_TOKEN env, never committed)
+  prior_art: 'docs/ssot/jobs/ada/2026-11-08-bge-rerank-v2-m3.{md,json},
+    2026-11-18-bge-shadow-dense-fetch-rerank.yml,
+    2026-11-19-bge-shadow-validation.yml'
