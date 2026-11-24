@@ -7,6 +7,10 @@ on:
       - "scripts/**"
       - "tests/**"
       - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+      - "docs/ssot/infrastructure/ssot.jobs.yml"
+      - "evals/opencode-lane/**"
+      - "stacks/idc03/litellm/**"
+      - "systemd/generated/**"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
   pull_request:
@@ -15,6 +19,10 @@ on:
       - "scripts/**"
       - "tests/**"
       - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+      - "docs/ssot/infrastructure/ssot.jobs.yml"
+      - "evals/opencode-lane/**"
+      - "stacks/idc03/litellm/**"
+      - "systemd/generated/**"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
 
@@ -64,3 +72,18 @@ jobs:
           python3 -m pytest -q
           tests/board/test_runner_tooling_contract.py
           tests/devin/test_unit_exit_status.py
+          tests/devnest/test_sync_opencode_models.py
+      # Model-route registration drift guard (card
+      # model-route-registration-unify / OPS-1020): profile allowlists
+      # and the jack-ide opencode provider map must only name routes the
+      # LiteLLM config actually serves. --check exits 1 on breaking
+      # classes (profile_route_missing, profile_default_unallowed,
+      # opencode_map_unwritable); route_not_registered notes are
+      # informational — the hourly opencode-models-sync job on idc02 /
+      # tony_dell --writes the live runner maps, CI never writes.
+      - name: OpenCode model drift check
+        run: >-
+          python3 scripts/devnest/sync-opencode-models.py
+          --from-config stacks/idc03/litellm/config.yaml
+          --opencode stacks/idc02/jack-ide/opencode/opencode.json
+          --check

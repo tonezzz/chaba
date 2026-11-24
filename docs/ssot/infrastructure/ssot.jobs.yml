@@ -1339,6 +1339,39 @@ jobs:
     only by schedule; small/medium/large and remote cells are run on demand
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
+- id: opencode-models-sync
+  name: OpenCode models sync — provider map + profile allowlist drift check
+  host: idc02
+  dispatch: systemd
+  on_calendar: '*-*-* *:37:00'
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/sync-opencode-models.py --from-config %h/CascadeProjects/chaba/stacks/idc03/litellm/config.yaml --opencode %h/.config/opencode/opencode.json --profiles-root %h/CascadeProjects/chaba/evals/opencode-lane/profiles --write --alert
+  note: 'card model-route-registration-unify (OPS-1020) — hourly: adds
+    missing LiteLLM routes to this host''s opencode provider map
+    (additive only; stale entries reported, --prune stays manual) and
+    fails + files a deduped board-api /inbox alert when a profile
+    allowlist names a route LiteLLM doesn''t serve. Route truth =
+    repo config.yaml, NOT live /v1/models: virtual keys return a
+    per-key-filtered model list (OPS-1020 KNOWN_PITFALLS) which would
+    false-flag routes other keys can call; config.yaml is what
+    deploy.sh pushes live. --write refuses when the provider block
+    lacks options.baseURL (map would be dead config). First seen
+    needed 2026-11-23 (or-deepseek-v4-flash, tony-dell).'
+- id: opencode-models-sync
+  name: OpenCode models sync — provider map + profile allowlist drift check
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* *:41:00'
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/sync-opencode-models.py --from-config %h/CascadeProjects/chaba/stacks/idc03/litellm/config.yaml --opencode %h/.config/opencode/opencode.json --profiles-root %h/CascadeProjects/chaba/evals/opencode-lane/profiles --write --alert
+  note: 'card model-route-registration-unify (OPS-1020) — same job as
+    idc02, staggered :41. tony-dell carries a litellm provider map in
+    ~/.config/opencode/opencode.json (apiKey via {file:...} — the sync
+    only touches provider.litellm.models, never options).'
 - id: chaba-lessons-due
   name: Education due-review queue + index -> wiki Education:Due/Index + WP page
   host: idc03
