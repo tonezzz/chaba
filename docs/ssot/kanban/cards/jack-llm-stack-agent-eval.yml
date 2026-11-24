@@ -1,7 +1,7 @@
 id: jack-llm-stack-agent-eval
 title: Evaluate OpenCode and Cline for Jack LLM-stack construction
 column: doing
-updated: 2026-11-24 17:08
+updated: 2026-11-24 17:13
 brief: Run a matched, gated evaluation of OpenCode and Cline building a disposable Jack LLM stack on a safe host.
 priority: high
 program: devnest
@@ -211,6 +211,12 @@ comms:
     [test-run canary 2026-10-29] One isolated Nest pac; [opencode-retry-stale-worktree] Pilot halted after model
     route failure. OpenRout; runbook docs/kb/jack-opencode-provider-and-ada-config.md: Jack OpenCode Provider; "worktree
     already exists" was a hard fail with no liveness/ev'
+- at: 2026-11-24 17:13
+  from: devin
+  text: 'dispatch started (devin, tony-macbook worktree). Plan: matched S0 harness self-test then supervised S1
+    builds — OpenCode arm via local opencode CLI + LiteLLM bench route (qwen2.5:32b kk-mac, $0), Cline arm via cline
+    npm CLI same route; mock deploy (no container runtime on host); deterministic verifier + safety ledger per arm;
+    no unattended routing (lane still S0).'
 action:
   type: dispatch
   status: running

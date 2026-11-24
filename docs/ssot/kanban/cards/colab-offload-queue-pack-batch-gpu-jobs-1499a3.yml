@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
 column: doing
-updated: 2026-11-24 17:04
+updated: 2026-11-24 17:13
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -236,6 +236,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:13
+  from: devin
+  text: 'DONE (built, awaiting deploy): queue-mgr — OPS-0759 leg 2, the missing Drive->WP mirror. scripts/ops/queue-mgr.py
+    polls gdrive:ada-nest via rclone and upserts WP nest_job via board-api /job: root ada-nest-queue (kind=queue,
+    status derived) + pack children + job-<name> manifest entries; delta-only fingerprint writes, comms on transitions,
+    kill switch ~/.config/queue-mgr.off. 21 unit tests + 119 ops tests green; live --dry-run derives 77 posts in
+    ~47s (root queued, 60 done, 9 pending). ssot.jobs.y'
 action:
   type: dispatch
   status: running
