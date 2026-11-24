@@ -1,0 +1,156 @@
+# Flood Hub (Google floodforecasting.googleapis.com) REST sensors —
+# card flood-hub-integration. Polls floodStatus:searchLatestFloodStatusByArea
+# for the same watch areas as scripts/ada/flood-news-feeds.json
+# `flood_hub.areas` — keep the loop vertices in sync with that file.
+#
+# Per area: 4 sensors sharing one POST (state=worst severity, alertable
+# gauge count, worst gauge id, freshest issuedTime). Jinja templates are
+# YAML-anchored once and aliased — &fh_* definitions live on the first
+# area's sensors, *fh_* aliases reuse them.
+#
+# Activation (see docs/ssot/jobs/infrastructure/2026-11-24-flood-hub-integration.yml):
+#   1. secrets.yaml on michael-dev needs:  flood_hub_api_key: "<GCP key>"
+#   2. the GCP key's IP restriction must include this host's egress IP
+#      (idc02) in addition to idc01's — one key can list several IPs.
+#   3. deploy: scripts/home-assistant/deploy-config.sh --host dev
+#
+# API severity enum has no WARNING — ABOVE_NORMAL is the alert floor
+# (UI "warning" ~ ABOVE_NORMAL, "danger" ~ SEVERE, "extreme" ~ EXTREME).
+
+rest:
+  # --- Nakhon Nayok / Ongkharak (flood-report area 1) ---
+  - resource: "https://floodforecasting.googleapis.com/v1/floodStatus:searchLatestFloodStatusByArea"
+    method: post
+    headers:
+      Content-Type: "application/json"
+      x-goog-api-key: !secret flood_hub_api_key
+    payload: '{"loop": {"vertices": [{"latitude": 14.2, "longitude": 100.8}, {"latitude": 14.2, "longitude": 101.4}, {"latitude": 14.9, "longitude": 101.4}, {"latitude": 14.9, "longitude": 100.8}]}, "pageSize": 20000, "includeNonQualityVerified": false}'
+    scan_interval: 21600
+    timeout: 30
+    sensor:
+      - name: "Flood Hub Nakhon Nayok Severity"
+        unique_id: flood_hub_nakhon_nayok_severity
+        icon: mdi:waves
+        availability: &fh_avail |-
+          {{ value_json is defined and value_json.floodStatuses is defined }}
+        value_template: &fh_sev |-
+          {% set rank = {'NO_FLOODING': 0, 'UNKNOWN': 1, 'ABOVE_NORMAL': 2, 'SEVERE': 3, 'EXTREME': 4} %}
+          {% set ns = namespace(worst = 'NO_FLOODING') %}
+          {% for s in value_json.floodStatuses | default([], true) %}
+          {%- if rank.get(s.severity, 0) > rank.get(ns.worst, 0) %}{% set ns.worst = s.severity %}{% endif %}
+          {% endfor %}{{ ns.worst }}
+      - name: "Flood Hub Nakhon Nayok Alert Count"
+        unique_id: flood_hub_nakhon_nayok_alert_count
+        icon: mdi:alert-outline
+        availability: *fh_avail
+        value_template: &fh_count |-
+          {{ value_json.floodStatuses | default([], true) | selectattr('severity', 'in', ['ABOVE_NORMAL', 'SEVERE', 'EXTREME']) | list | count }}
+      - name: "Flood Hub Nakhon Nayok Worst Gauge"
+        unique_id: flood_hub_nakhon_nayok_worst_gauge
+        icon: mdi:gauge
+        availability: *fh_avail
+        value_template: &fh_gauge |-
+          {% set rank = {'NO_FLOODING': 0, 'UNKNOWN': 1, 'ABOVE_NORMAL': 2, 'SEVERE': 3, 'EXTREME': 4} %}
+          {% set ns = namespace(worst = 'NO_FLOODING', gid = 'none') %}
+          {% for s in value_json.floodStatuses | default([], true) %}
+          {%- if rank.get(s.severity, 0) > rank.get(ns.worst, 0) %}{% set ns.worst = s.severity %}{% set ns.gid = s.gaugeId %}{% endif %}
+          {% endfor %}{{ ns.gid }}
+      - name: "Flood Hub Nakhon Nayok Issued"
+        unique_id: flood_hub_nakhon_nayok_issued
+        icon: mdi:clock-outline
+        availability: *fh_avail
+        value_template: &fh_issued |-
+          {{ value_json.floodStatuses | default([{'issuedTime': 'unknown'}], true) | map(attribute='issuedTime') | max }}
+
+  # --- Lower Chao Phraya (flood-report area 2) ---
+  - resource: "https://floodforecasting.googleapis.com/v1/floodStatus:searchLatestFloodStatusByArea"
+    method: post
+    headers:
+      Content-Type: "application/json"
+      x-goog-api-key: !secret flood_hub_api_key
+    payload: '{"loop": {"vertices": [{"latitude": 13.5, "longitude": 100.2}, {"latitude": 13.5, "longitude": 101.0}, {"latitude": 14.6, "longitude": 101.0}, {"latitude": 14.6, "longitude": 100.2}]}, "pageSize": 20000, "includeNonQualityVerified": false}'
+    scan_interval: 21600
+    timeout: 30
+    sensor:
+      - name: "Flood Hub Chao Phraya Lower Severity"
+        unique_id: flood_hub_chaophraya_lower_severity
+        icon: mdi:waves
+        availability: *fh_avail
+        value_template: *fh_sev
+      - name: "Flood Hub Chao Phraya Lower Alert Count"
+        unique_id: flood_hub_chaophraya_lower_alert_count
+        icon: mdi:alert-outline
+        availability: *fh_avail
+        value_template: *fh_count
+      - name: "Flood Hub Chao Phraya Lower Worst Gauge"
+        unique_id: flood_hub_chaophraya_lower_worst_gauge
+        icon: mdi:gauge
+        availability: *fh_avail
+        value_template: *fh_gauge
+      - name: "Flood Hub Chao Phraya Lower Issued"
+        unique_id: flood_hub_chaophraya_lower_issued
+        icon: mdi:clock-outline
+        availability: *fh_avail
+        value_template: *fh_issued
+
+  # --- Saraburi / Lopburi (flood-report-nongdon-saraburi area 1) ---
+  - resource: "https://floodforecasting.googleapis.com/v1/floodStatus:searchLatestFloodStatusByArea"
+    method: post
+    headers:
+      Content-Type: "application/json"
+      x-goog-api-key: !secret flood_hub_api_key
+    payload: '{"loop": {"vertices": [{"latitude": 14.3, "longitude": 100.4}, {"latitude": 14.3, "longitude": 101.1}, {"latitude": 15.1, "longitude": 101.1}, {"latitude": 15.1, "longitude": 100.4}]}, "pageSize": 20000, "includeNonQualityVerified": false}'
+    scan_interval: 21600
+    timeout: 30
+    sensor:
+      - name: "Flood Hub Saraburi Lopburi Severity"
+        unique_id: flood_hub_saraburi_lopburi_severity
+        icon: mdi:waves
+        availability: *fh_avail
+        value_template: *fh_sev
+      - name: "Flood Hub Saraburi Lopburi Alert Count"
+        unique_id: flood_hub_saraburi_lopburi_alert_count
+        icon: mdi:alert-outline
+        availability: *fh_avail
+        value_template: *fh_count
+      - name: "Flood Hub Saraburi Lopburi Worst Gauge"
+        unique_id: flood_hub_saraburi_lopburi_worst_gauge
+        icon: mdi:gauge
+        availability: *fh_avail
+        value_template: *fh_gauge
+      - name: "Flood Hub Saraburi Lopburi Issued"
+        unique_id: flood_hub_saraburi_lopburi_issued
+        icon: mdi:clock-outline
+        availability: *fh_avail
+        value_template: *fh_issued
+
+  # --- Chao Phraya Dam (flood-report-nongdon-saraburi area 2) ---
+  - resource: "https://floodforecasting.googleapis.com/v1/floodStatus:searchLatestFloodStatusByArea"
+    method: post
+    headers:
+      Content-Type: "application/json"
+      x-goog-api-key: !secret flood_hub_api_key
+    payload: '{"loop": {"vertices": [{"latitude": 14.9, "longitude": 99.8}, {"latitude": 14.9, "longitude": 100.7}, {"latitude": 15.5, "longitude": 100.7}, {"latitude": 15.5, "longitude": 99.8}]}, "pageSize": 20000, "includeNonQualityVerified": false}'
+    scan_interval: 21600
+    timeout: 30
+    sensor:
+      - name: "Flood Hub Chao Phraya Dam Severity"
+        unique_id: flood_hub_chaophraya_dam_severity
+        icon: mdi:waves
+        availability: *fh_avail
+        value_template: *fh_sev
+      - name: "Flood Hub Chao Phraya Dam Alert Count"
+        unique_id: flood_hub_chaophraya_dam_alert_count
+        icon: mdi:alert-outline
+        availability: *fh_avail
+        value_template: *fh_count
+      - name: "Flood Hub Chao Phraya Dam Worst Gauge"
+        unique_id: flood_hub_chaophraya_dam_worst_gauge
+        icon: mdi:gauge
+        availability: *fh_avail
+        value_template: *fh_gauge
+      - name: "Flood Hub Chao Phraya Dam Issued"
+        unique_id: flood_hub_chaophraya_dam_issued
+        icon: mdi:clock-outline
+        availability: *fh_avail
+        value_template: *fh_issued

@@ -8,6 +8,7 @@ Usage:
     flood-hub-check.py gauges [--region TH] [--include-unverified]
     flood-hub-check.py status <gaugeId> [<gaugeId>...]
     flood-hub-check.py forecast <gaugeId> [<gaugeId>...]
+    flood-hub-check.py area [--region TH] [--min-severity ABOVE_NORMAL]
 
 Key comes from $FLOODS_API_KEY or ~/.config/secrets/flood-forecasting.env.
 """
@@ -93,6 +94,42 @@ def cmd_status(key: str, ids: list[str]) -> None:
         print(json.dumps(out, indent=2)[:2000])
 
 
+SEVERITY_RANK = {"NO_FLOODING": 0, "UNKNOWN": 1, "ABOVE_NORMAL": 2,
+                 "SEVERE": 3, "EXTREME": 4}
+
+
+def cmd_area(key: str, region: str, min_severity: str) -> None:
+    """floodStatus:searchLatestFloodStatusByArea — worst-first summary.
+    Useful before gauge enumeration: shows which Thai gauges (or a
+    --loop polygon) currently report actionable severity."""
+    statuses, token = [], None
+    while True:
+        body = {"regionCode": region, "pageSize": 5000,
+                "includeNonQualityVerified": False}
+        if token:
+            body["pageToken"] = token
+        out = req(key, "POST", "/floodStatus:searchLatestFloodStatusByArea",
+                  body)
+        statuses += out.get("floodStatuses", [])
+        token = out.get("nextPageToken")
+        if not token:
+            break
+    floor = SEVERITY_RANK.get(min_severity, 2)
+    hits = [s for s in statuses
+            if SEVERITY_RANK.get(s.get("severity"), 0) >= floor]
+    hits.sort(key=lambda s: SEVERITY_RANK.get(s.get("severity"), 0),
+              reverse=True)
+    print(f"{len(statuses)} statuses in {region}; "
+          f"{len(hits)} at/above {min_severity}")
+    for s in hits[:100]:
+        loc = s.get("gaugeLocation", {})
+        print(f"  {s.get('gaugeId', '?'):24} "
+              f"sev={s.get('severity', '?'):14} "
+              f"trend={s.get('forecastTrend', '?'):10} "
+              f"({loc.get('latitude', 0):.3f},{loc.get('longitude', 0):.3f}) "
+              f"verified={s.get('qualityVerified')}")
+
+
 def cmd_forecast(key: str, ids: list[str]) -> None:
     # Forecasts issue ~daily; 25h back catches the latest run (DELFT-FEWS trick).
     start = (datetime.now(timezone.utc) - timedelta(hours=25)).strftime(
@@ -119,6 +156,11 @@ def main() -> None:
         cmd_status(key, rest)
     elif cmd == "forecast" and rest:
         cmd_forecast(key, rest)
+    elif cmd == "area":
+        region = rest[rest.index("--region") + 1] if "--region" in rest else "TH"
+        min_sev = (rest[rest.index("--min-severity") + 1]
+                   if "--min-severity" in rest else "ABOVE_NORMAL")
+        cmd_area(key, region, min_sev)
     else:
         print(__doc__)
         sys.exit(2)

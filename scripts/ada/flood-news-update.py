@@ -15,7 +15,10 @@ Each run:
   3. Rewrite the managed block between <!-- flood-news:auto --> markers in
      each language variant of the target page (inserted before the first
      "##" heading when markers are absent). Existing dated log sections
-     below are preserved.
+     below are preserved. Pages with a "flood_hub" config key also get a
+     <!-- flood-hub:auto --> block (Google Flood Hub gauge severities via
+     flood-hub-lib.py + FLOODS_API_KEY) inserted right after the news
+     block; without a key the block is skipped and left untouched.
   4. Skip the MDDB write entirely when the item set is unchanged (the
      fetch-stamp is ignored in the comparison) — safe to run on a timer
      without churning revisions.
@@ -34,10 +37,13 @@ FLOOD_NEWS_FEEDS. --feed name=url can be repeated for ad-hoc runs.
 Env:
     MDDB_BASE_URL     default http://100.102.134.91:11027/v1
     FLOOD_NEWS_FEEDS  path to the feeds config
+    FLOODS_API_KEY    Google Flood Hub key (or ~/.config/secrets/
+                      flood-forecasting.env) — enables flood-hub:auto blocks
 """
 import argparse
 import email.utils
 import html
+import importlib.util
 import json
 import os
 import re
@@ -52,6 +58,8 @@ COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"  # per-page switches/knobs + worker state
 BLOCK_BEGIN = "<!-- flood-news:auto -->"
 BLOCK_END = "<!-- /flood-news:auto -->"
+FHUB_BEGIN = "<!-- flood-hub:auto -->"
+FHUB_END = "<!-- /flood-hub:auto -->"
 ICT = timezone(timedelta(hours=7))
 FEEDS_CONFIG = os.environ.get(
     "FLOOD_NEWS_FEEDS",
@@ -223,6 +231,8 @@ def render_block(items, now_ict, since_hours, cfg=None):
 
 BLOCK_RE = re.compile(
     re.escape(BLOCK_BEGIN) + r".*?" + re.escape(BLOCK_END), re.S)
+FHUB_BLOCK_RE = re.compile(
+    re.escape(FHUB_BEGIN) + r".*?" + re.escape(FHUB_END), re.S)
 
 
 def _item_lines(block):
@@ -245,6 +255,138 @@ def apply_block(body, block, now_ict):
     if m:
         return new[:m.start()] + block + "\n\n" + new[m.start():]
     return new.rstrip() + "\n\n" + block + "\n"
+
+
+# --- flood-hub:auto managed block (Google Flood Hub gauge status) ---------
+# Card flood-hub-integration: second managed block alongside flood-news.
+# Config lives under each page's "flood_hub" key in the feeds JSON (the
+# automation registry can override it exactly like feeds). Requires
+# FLOODS_API_KEY — without it the block is skipped and any existing block
+# is left untouched, so the news path is never blocked by the waitlist.
+
+_FHUB_LIB = None
+_FHUB_LIB_TRIED = False
+FHUB_MAX_LINES = 10
+
+
+def flood_hub_lib():
+    """Lazy-load flood-hub-lib.py (same dir, dash-named filename)."""
+    global _FHUB_LIB, _FHUB_LIB_TRIED
+    if not _FHUB_LIB_TRIED:
+        _FHUB_LIB_TRIED = True
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "flood_hub_lib",
+                os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "flood-hub-lib.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            _FHUB_LIB = mod
+        except Exception as e:
+            print(f"warn: flood-hub-lib unavailable: {e}", file=sys.stderr)
+            _FHUB_LIB = None
+    return _FHUB_LIB
+
+
+def render_fhub_block(by_area, now_ict, fhub_cfg):
+    """by_area: {label: [FloodStatus]} raw from the API. Renders the
+    Thai managed block; gauges below min_severity collapse into the
+    summary line."""
+    lib = flood_hub_lib()
+    min_sev = (fhub_cfg or {}).get("min_severity") or lib.ALERT_MIN
+    stamp = now_ict.strftime("%Y-%m-%d %H:%M")
+    rows, seen, total = [], set(), 0
+    for area, statuses in (by_area or {}).items():
+        for s in statuses or []:
+            gid = s.get("gaugeId")
+            if gid and gid in seen:
+                continue
+            if gid:
+                seen.add(gid)
+            total += 1
+            if lib.meets_min(s.get("severity"), min_sev):
+                rows.append((area, s))
+    rows.sort(key=lambda r: lib.severity_rank(r[1].get("severity")),
+              reverse=True)
+    lines = [FHUB_BEGIN,
+             f"## สถานะน้ำท่วมจาก Google Flood Hub — {stamp} น. (ICT)",
+             ""]
+    if not rows:
+        lines.append(
+            f"*ไม่พบจุดที่มีระดับ {lib.SEVERITY_TH.get(min_sev, min_sev)} "
+            f"ขึ้นไป ในพื้นที่ที่เฝ้าระวัง ({total} เกจ)")
+    else:
+        shown = rows[:FHUB_MAX_LINES]
+        try:
+            names = lib.get_gauges(
+                [s.get("gaugeId") for _, s in shown if s.get("gaugeId")])
+        except Exception as e:
+            print(f"  warn: flood-hub gauge names failed: {e}",
+                  file=sys.stderr)
+            names = {}
+        for area, s in shown:
+            sev = s.get("severity") or "UNKNOWN"
+            trend = lib.TREND_TH.get(s.get("forecastTrend"),
+                                     s.get("forecastTrend") or "-")
+            gid = s.get("gaugeId") or "?"
+            g = names.get(gid) or {}
+            label = g.get("siteName") or g.get("river") or gid
+            loc = s.get("gaugeLocation") or {}
+            coord = (f"({loc.get('latitude', 0):.2f},"
+                     f"{loc.get('longitude', 0):.2f})") if loc else ""
+            issued = (s.get("issuedTime") or "")[:16].replace("T", " ")
+            flag = ("" if s.get("qualityVerified", True)
+                    else " ·คุณภาพต่ำ")
+            lines.append(
+                f"*   **[{lib.SEVERITY_TH.get(sev, sev)}]** {label} — "
+                f"{area} `{gid}` {coord} · แนวโน้ม {trend} · "
+                f"ออก {issued}{flag}")
+        if len(rows) > FHUB_MAX_LINES:
+            lines.append(
+                f"*   … อีก {len(rows) - FHUB_MAX_LINES} จุด "
+                f"(ดูทั้งหมดผ่าน flood-status)")
+    footer = (
+        f"ข้อมูล Google Flood Hub (floodforecasting.googleapis.com) · "
+        f"เฝ้าระวัง {total} เกจ · แสดงระดับ "
+        f"{lib.SEVERITY_TH.get(min_sev, min_sev)} ขึ้นไป · ฟรี CC BY 4.0 · "
+        f"เป็นข้อมูลอ้างอิง ไม่ใช่คำเตือนทางการ — ตรวจสอบ กรมชลฯ/RID")
+    lines += ["", f"*{footer}*", FHUB_END]
+    return "\n".join(lines)
+
+
+def fetch_fhub_block(cfg, now_ict):
+    """Rendered flood-hub block, or None when the page has no flood_hub
+    config, no API key, or the API call fails — in every None case any
+    existing block on the page is left untouched."""
+    fhub_cfg = cfg.get("flood_hub")
+    if not isinstance(fhub_cfg, dict) or not fhub_cfg:
+        return None
+    lib = flood_hub_lib()
+    if lib is None or not lib.available():
+        return None
+    try:
+        by_area = lib.statuses_for_config(fhub_cfg)
+    except Exception as e:
+        print(f"  warn: flood-hub status fetch failed: {e}",
+              file=sys.stderr)
+        return None
+    if not by_area:
+        return None
+    return render_fhub_block(by_area, now_ict, fhub_cfg)
+
+
+def apply_fhub_block(body, block):
+    """Replace the managed flood-hub block; else insert right after the
+    flood-news block when present, else before the first ## heading."""
+    if FHUB_BLOCK_RE.search(body):
+        return FHUB_BLOCK_RE.sub(lambda m: block, body, count=1)
+    m = re.search(re.escape(BLOCK_END), body)
+    if m:
+        return body[:m.end()] + "\n\n" + block + body[m.end():]
+    m = re.search(r"^## ", body, re.M)
+    if m:
+        return body[:m.start()] + block + "\n\n" + body[m.start():]
+    return body.rstrip() + "\n\n" + block + "\n"
 
 
 def get_page(key, lang):
@@ -362,14 +504,19 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
         write_state("error", 0, e)
         return 2
 
-    if not items:
+    fhub_block = fetch_fhub_block(cfg, now_ict)
+
+    if not items and not fhub_block:
         print("  nothing new — page left untouched")
         write_state("no-items", 0)
         return 0
 
-    block = render_block(items, now_ict, since, cfg)
+    block = render_block(items, now_ict, since, cfg) if items else None
     if args.dry_run:
-        print("\n" + block + "\n")
+        if block:
+            print("\n" + block + "\n")
+        if fhub_block:
+            print("\n" + fhub_block + "\n")
         return 0
 
     docs = get_page(page, args.lang)
@@ -383,16 +530,28 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
     try:
         for doc in docs:
             body = doc.get("contentMd") or ""
-            existing = BLOCK_RE.search(body)
-            if existing and _item_lines(existing.group(0)) == _item_lines(block):
-                print(f"  skip {doc['id']} — item set unchanged")
+            changed = False
+            if block is not None:
+                existing = BLOCK_RE.search(body)
+                if not (existing
+                        and _item_lines(existing.group(0))
+                        == _item_lines(block)):
+                    new_body = apply_block(body, block, now_ict)
+                    if new_body != body:
+                        body, changed = new_body, True
+            if fhub_block is not None:
+                existing = FHUB_BLOCK_RE.search(body)
+                if not (existing
+                        and _item_lines(existing.group(0))
+                        == _item_lines(fhub_block)):
+                    new_body = apply_fhub_block(body, fhub_block)
+                    if new_body != body:
+                        body, changed = new_body, True
+            if not changed:
+                print(f"  skip {doc['id']} — blocks unchanged")
                 continue
-            new_body = apply_block(body, block, now_ict)
-            if new_body == body:
-                print(f"  skip {doc['id']} — block unchanged")
-                continue
-            publish(doc, new_body, now, cfg)
-            print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
+            publish(doc, body, now, cfg)
+            print(f"  updated {doc['id']}")
     except Exception as e:
         print(f"== {page}: error {e}", file=sys.stderr)
         write_state("error", 0, e)

@@ -1,0 +1,126 @@
+title: Flood Hub API integration — activation runbook (blocked on waitlist + idc01 down)
+id: 2026-11-24-flood-hub-integration
+kind: runbook
+card: flood-hub-integration
+ref: OPS-0007
+hosts: [idc01 (API key + secrets), idc02 (michael-dev HA + flood worker deploy target is tony-dell ~/CascadeProjects/chaba), tony-dell (flood-news/flood-alert timers)]
+status: blocked
+summary: >-
+  Repo-side integration is complete and key-ready; live activation is
+  gated on TWO externals: (1) Google waitlist approval email (submitted
+  2026-09-30, still pending — no evidence it landed as of 2026-11-24),
+  (2) idc01 is offline on tailnet (last seen ~2026-10-22, 33d) so the
+  spec'd key host cannot hold the secret yet. Everything that can be
+  built without the key is built: shared API client, CMS auto-block,
+  severity watchdog, JSON status tool, HA sensor package, this runbook.
+blockers:
+  - >-
+    WAITLIST: approval email not received (card comms + focus-inbox item
+    2026-09-30-193000-flood-hub-api-waitlist.yml still draft). Only Tony
+    can confirm — check Gmail for the Flood Forecasting API approval,
+    then reply with GCP project flood-watch-510211.
+  - >-
+    IDC01 OFFLINE: tailscale last-seen 33d (2026-11-24). The spec stores
+    FLOODS_API_KEY in idc01:~/.config/secrets/flood-forecasting.env and
+    restricts the key to idc01's IP (157.85.110.99). Options when the key
+    lands: (a) bring idc01 back (warm-DR node, see card idc01-return-role),
+    (b) store the secret on the host that actually polls (tony-dell runs
+    the flood timers today) and add THAT egress IP to the key restriction
+    instead — deviation from spec, needs Tony's call.
+severity_mapping: >-
+  Card says "severity >= WARNING" but the Flood Hub API enum has no
+  WARNING: {NO_FLOODING, UNKNOWN, ABOVE_NORMAL, SEVERE, EXTREME}.
+  UI warning/danger/extreme colours map to ABOVE_NORMAL/SEVERE/EXTREME,
+  so the implemented alert floor is ABOVE_NORMAL (flood-hub-lib
+  ALERT_MIN). UNKNOWN never alerts.
+landed:
+  repo_files:
+    - scripts/ada/flood-hub-lib.py
+    - scripts/ada/flood-hub-alert.py
+    - scripts/ada/flood-status.py
+    - scripts/ada/flood-news-update.py  # + <!-- flood-hub:auto --> block
+    - scripts/ada/flood-news-feeds.json # + flood_hub.areas on flood-report + saraburi leaf
+    - scripts/ada/flood-hub-check.py   # + `area` command
+    - docs/home-assistant/configuration/packages/flood_hub.yaml
+  notes:
+    - >-
+      flood-news-update.py: pages with a `flood_hub` config key get a
+      second managed block <!-- flood-hub:auto --> rendered right after
+      the flood-news block. Without FLOODS_API_KEY (or on API error) the
+      block is skipped and any existing block is left untouched — the
+      news path cannot regress while the key is pending. Registry docs
+      can override flood_hub exactly like feeds (effective_config merge;
+      write_state persists it).
+    - >-
+      flood-news-feeds.json flood_hub.areas are COARSE bounding loops
+      (4 corners each) pending gauge enumeration — refine to explicit
+      `gauges: [...]` ids after `flood-hub-check.py gauges --region TH`.
+    - >-
+      flood-hub-alert.py dedups by gaugeId in ~/.cache/flood-hub-alert-
+      state.json, re-alerts only on severity escalation, writes registry
+      doc 'flood-hub-alert' for cms-auto-health. Default push channel
+      'ha,yomi' — LINE needs BOARD_NOTIFY_CHANNEL=yomi +
+      BOARD_NOTIFY_YOMI_CHAT once the Yomi session is valid again
+      (board_notify docstring: session was invalid 2026-10-05).
+    - >-
+      flood-status.py is the backend for the Ada `flood_status` tool —
+      ada-pi (separate repo) needs a thin wrapper that shells out or
+      HTTP-serves this; JSON contract documented in its docstring.
+    - >-
+      flood_hub.yaml: 4 watch areas x 4 sensors (severity, alert_count,
+      worst_gauge, issued), scan_interval 6h, POST
+      searchLatestFloodStatusByArea, x-goog-api-key header auth, Jinja
+      templates YAML-anchored. Deploys to michael-dev on idc02 via
+      deploy-config.sh --host dev; needs flood_hub_api_key in
+      ~/.config/michael-dev/secrets.yaml.
+    - >-
+      IP restriction wrinkle: spec restricts the key to idc01 only, but
+      michael-dev runs on idc02 (egress != idc01). The GCP key needs
+      BOTH IPs (or the pollers move to idc01). See blockers.
+activation_checklist:
+  - >-
+    1. Tony confirms waitlist approval email; reply with project
+    flood-watch-510211.
+  - >-
+    2. gcloud services enable floodforecasting.googleapis.com --project
+    flood-watch-510211; create API key restricted to that API + IPs
+    (idc01 157.85.110.99 + poller/HA host egress as decided).
+  - >-
+    3. On the chosen secret host: mkdir -p ~/.config/secrets && write
+    FLOODS_API_KEY=<key> to flood-forecasting.env (chmod 600).
+  - >-
+    4. Verify: python3 scripts/ada/flood-hub-check.py area --region TH
+    then `gauges --region TH` to enumerate; pick watch gauges and
+    tighten feeds.json flood_hub.areas -> gauges list if desired.
+  - >-
+    5. Deploy flood scripts to the worker host (tony-dell
+    ~/CascadeProjects/chaba is the live copy for the flood timers —
+    repo + deployed + registry must agree, per assessment gotcha).
+  - >-
+    6. HA: add flood_hub_api_key to michael-dev secrets.yaml, run
+    scripts/home-assistant/deploy-config.sh --host dev, verify
+    sensor.flood_hub_* entities appear (ha-mcp-call or UI).
+  - >-
+    7. Alerts: install/run flood-hub-alert.py on a timer (suggest 60min;
+    API refreshes daily) with BOARD_NOTIFY_CHANNEL=ha,yomi once Yomi
+    session is valid; --seed first to avoid a burst.
+  - >-
+    8. Ada: wire flood_status tool in ada-pi to flood-status.py; add a
+    tests/scenarios-live scenario in the flood_situation family.
+  - >-
+    9. CMS: next flood-news-update run writes flood-hub:auto blocks to
+    flood-report + flood-report-nongdon-saraburi (verify by fetching
+    the pages, not just the write).
+  - >-
+    10. GEV KML overlay (optional): FloodStatus.serializedNotification-
+    PolygonId -> GET /v1/serializedPolygons/{id} returns the KML
+    inundation polygon; lib has get_serialized_polygon(). GEV repo is
+    separate (tony-dell ~/gods-eye-view) — only worth it during an
+    active event.
+verification: >-
+  Without the key everything degrades quietly: flood-status.py exits 2
+  with JSON error, flood-hub-alert.py exits 0 "nothing to poll",
+  flood-news-update.py skips the fhub block. Post-key: check.py area
+  lists TH statuses; flood-status.py --pretty returns statuses JSON;
+  HA sensors show NO_FLOODING worst; CMS pages gain the
+  <!-- flood-hub:auto --> block on next regen.
