@@ -1,0 +1,30 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 6193bef..c777e83 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -764,3 +764,25 @@ weather_station: >-
+   rain + raining flag. Check stale/age_min BEFORE quoting numbers — if
+   stale, narrate the age ('station data is N min old, upload may be
+   down'), never present old readings as current.
++
++# tool_guide.yml snippet — append at top level
++# (<ada-voice>/backend/tool_guide.yml).
++#
++# asset_save (2026-11-24, card persona-photo-store): persona photo
++# assets — save a received LINE photo so 'show me the <name> photo'
++# re-shows it later via memory search.
++
++asset_save: >-
++  Keeps a photo as a persona asset — call when the member asks to
++  save/keep/remember a photo ('เก็บรูปนี้ไว้', 'save this one').
++  media_url= takes the (media_url: ...) shown in the photo turn
++  verbatim, or any fetchable image URL; omit it to use this chat's
++  latest inbound image. name= is the asset slug ('kk-crv' ->
++  assets/kk-crv) — pick a short memorable name from what the photo
++  shows; description= says what it is and why it's kept. bank= defaults
++  to the caller's personal bank — omit it. The file lands under
++  /relay-img/arch/persona-assets/ and the bank doc carries
++  meta.image_url: later 'show me the <name> photo' attaches the image
++  automatically — do NOT also chat_send it. A staged result means the
++  save is held for review — say 'kept for review', never 'saved'. A
++  confirmed-policy bank refuses outright — just use the personal bank.

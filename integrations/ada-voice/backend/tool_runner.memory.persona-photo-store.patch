@@ -1,0 +1,29 @@
+diff --git a/backend/tool_runner/memory.py b/backend/tool_runner/memory.py
+index f0a51b1..9568791 100644
+--- a/backend/tool_runner/memory.py
++++ b/backend/tool_runner/memory.py
+@@ -405,6 +405,24 @@ class MemoryMixin:
+             "hits": hits,
+             "degraded": degraded,
+         }
++        # Persona asset auto-attach (card persona-photo-store): the first
++        # usable hit carrying meta.image_url promotes it to a TOP-LEVEL
++        # scalar — the ws tool_result keeps scalars through _safe_args,
++        # so the relay's _images_from turns it into a real image message
++        # with no chat_send round-trip. Draft/archival hits never
++        # auto-attach (unverified content stays text-only); their
++        # per-hit image_url still reaches the model for an explicit
++        # chat_send when asked.
++        for h in hits:
++            img = str(h.get("image_url") or "")
++            if (img.startswith(("http://", "https://", "/v1/"))
++                    and not h.get("draft") and not h.get("archival")):
++                out["image_url"] = img
++                out["image_note"] = (
++                    "the top image-bearing memory match — already "
++                    "attached to this reply; do NOT resend it via "
++                    "chat_send")
++                break
+         if hits_error:
+             out["error"] = hits_error
+         if suppressed:

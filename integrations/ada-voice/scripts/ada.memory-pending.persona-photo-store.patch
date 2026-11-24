@@ -1,0 +1,13 @@
+diff --git a/scripts/ada/memory-pending.py b/scripts/ada/memory-pending.py
+index c151bfd..87414b6 100755
+--- a/scripts/ada/memory-pending.py
++++ b/scripts/ada/memory-pending.py
+@@ -75,7 +75,7 @@ def _runtime(entry: dict):
+     """Build the stores the apply route needs — only for its route."""
+     route = entry.get("route")
+     mddb = registry = chaba = None
+-    if route in ("bank", "vocab"):
++    if route in ("bank", "vocab", "asset"):
+         from backend.mddb_client import MddbClient
+         from backend.memory_banks import MemoryBankRegistry
+         mddb = MddbClient()

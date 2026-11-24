@@ -71,7 +71,7 @@ sections:
 config:
   version: 2
   created: "2026-09-19"
-  updated: "2026-09-20"
+  updated: "2026-11-24"
   maintainer: tony
   status: draft
   deployment: mn01
@@ -96,6 +96,12 @@ meta_schema:
     last_verified: {required: true, type: date}
     valid_until: {required: false, type: date}
     applies_to: {required: false, type: list}
+    # persona asset docs (key assets/<slug>, written by asset_save) —
+    # public URL of the stored image under /relay-img/arch/persona-assets/.
+    # _doc_to_hit surfaces it on hits; ada_memory_search promotes the
+    # first image-bearing hit to a top-level image_url the relay turns
+    # into a real image message (card persona-photo-store, 2026-11-24).
+    image_url: {required: false, type: url}
     supersedes: {required: false, type: key}
     superseded_by: {required: false, type: key}
     retracted_reason: {required: false}
