@@ -443,3 +443,148 @@ Read side: `GET /nest-jobs` on board-api lists the mirror (slug,
 status, meta — comms stripped unless `comms=1`);
 `scripts/ops/nest-job-reconcile.py` cross-checks all four surfaces and
 reports drift without mutating anything.
+## KK-Mac isolated Nest and DevNest jobs
+
+Use this lane for explicitly approved, bounded work on KK's member Mac
+(`kk-mac`, M4 Max, 36 GiB unified memory). It is not a general-purpose
+always-on fleet worker. The host is owner-first, may go offline without
+notice, and must pass a fresh resource admission before each run. Keyboard
+or mouse input and an open design app are not blockers by themselves.
+
+### Stores and lane boundaries
+
+- Video/MPS experiments use the isolated root
+  `gdrive:ada-nest-kk-mac-video-pilot`.
+- Local-model/DevNest experiments use the separate root
+  `gdrive:ada-nest-kk-mac-pilot`.
+- Never mix the two roots or launch a worker against `gdrive:ada-nest`
+  from KK-Mac. A Mac worker's `--once` scans every claimable pack in its
+  selected root, not just a named pack.
+- The recorded Qwen3:8B model-only slot in the LLM root is `partial` (2/5
+  fixtures) and postdates the `deterministic-only` decision recorded on
+  OPS-0966. Do not rerun or extend that inference lane until its authorization
+  is reconciled.
+
+### Admission and package contract
+
+1. **Card and lifecycle first.** Link the job to the relevant card and create
+   `planning` before execution. State the exact input hashes, output contract,
+   timeout, privacy, stop condition, owner workload protection, and rollback.
+2. **Use a versioned, bounded pack.** One pack should do one verifiable unit
+   (for video, one shot); use an immutable name for each revision. Declare
+   `needs.ram_gb` and `needs.disk_gb`. Do not use `gpu_gb` to describe Apple
+   MPS capacity: the generic fleet worker probes NVIDIA with `nvidia-smi`.
+3. **Do not treat `egress_only_ok: false` as host pinning.** The generic
+   `nest-worker.py` ignores that field when matching capabilities. The isolated
+   Mac root plus an explicit trusted-host one-shot launch is the placement
+   control; never run a generic fleet worker against that root.
+4. **Keep Mac execution offline and cache-only.** Pin the local model revision,
+   set `HF_HUB_OFFLINE=1`, verify required model files before inference, and
+   do not install dependencies, pull models, change services, or read personal
+   files unless separately approved.
+5. **Repeat safety gates in the pack's `prep`.** Require AC power, at least
+   80% free system memory before loading the video model, no resident Ollama
+   model, no competing Nest worker, and no active render/export process.
+   Sample design-app and system CPU with `mac-owner-resource-gate.py`;
+   recent input is informational and idle open apps may remain open. If a
+   gate fails, return nonzero before model load. Never close owner apps,
+   unload owner models, or stop owner workers to make a pack pass.
+6. **Hash-bind private inputs.** Put only the approved source files in
+   `inputs/`; verify source revision, audit record, image page, embedding and
+   byte/hash values before model load. Do not stage voice references or
+   narration unless the pack explicitly needs them.
+7. **Keep artifact gates strict.** Declare every required non-empty output;
+   independently verify media codec, size, frame count/duration, full decode,
+   black-frame threshold, output hash and private visibility. Technical pass
+   is not human quality approval.
+
+### Stage, run, verify
+
+1. Stage from a trusted fleet checkout to the specific Mac root:
+   `nest-pack-submit.py <pack-dir> --remote gdrive:ada-nest-kk-mac-video-pilot`.
+   Dry-run first; use a new pack name; then require `rclone check --one-way`
+   to report zero differences. The Colab MCP pack submitter may not be able to
+   see a satellite worktree path.
+2. Before launch, verify Tailscale reachability and the trusted tony-dell to
+   kk-mac SSH route without disabling host-key checking. Read AC state,
+   memory pressure, resident-model count, owner-app gate, disk and model-cache
+   status. If the Mac is offline or busy, leave the pack staged and stop.
+3. Confirm the isolated root contains only the intended runnable pack(s), no
+   active claim, and a completed prerequisite marker. Then run exactly one
+   worker pass from the trusted Dell hop:
+   ```bash
+   ssh -o BatchMode=yes kk-mac \
+     '$HOME/kk-video/.venv/bin/python "$HOME/CascadeProjects/chaba/scripts/ada/nest-worker.py" \
+       --once --remote gdrive:ada-nest-kk-mac-video-pilot \
+       --workdir "$HOME/.cache/nest-worker"'
+   ```
+   Do not start a persistent loop or launch parallel workers. The worker scans
+   every claimable pack in that root and runs them serially.
+4. If `prep` stops, treat that as a successful safety stop: do not retry until
+   a fresh preflight passes. If `run_sh` fails, inspect the claim/log and
+   artifact state before retrying. A failed run may leave local partial output;
+   stage per-shot packs or explicitly publish each verified checkpoint if
+   resumability is required.
+5. Require a remote `done` marker, non-empty declared artifacts, and a
+   fleet-side `rclone check`/read-back. Update the lifecycle and card through
+   board-api; keep human review separate from technical verification.
+
+### Renderer-neutral video contract
+
+Keep one shared job record and make renderer details adapter-specific. The
+same lifecycle can drive local MLX, local MPS, or a hosted provider without
+pretending their capabilities, cost, or continuity are interchangeable.
+
+1. The shared job record captures project/card, private-by-default visibility,
+   immutable job/version ID, source asset paths and SHA-256 values, action
+   plan, prompt, target duration/format, timeout, output location, audio plan,
+   and review gates. Record the renderer adapter, exact model/provider
+   revision, and any spend authorization.
+2. Each adapter receives a small native manifest. For example,
+   `~/kk-video/kk_mac_video_batch.py` accepts serial `shots` with `id`,
+   `image`, `prompt`, `frames`, `height`, `width`, `seed`, `steps`, and `fps`,
+   and writes one MP4 per shot plus `batch-result.json`. The MPS panel runner
+   additionally verifies its storyboard map and embeddings. Do not force
+   provider-specific controls into fields an adapter cannot honor.
+3. The local MLX and MPS adapters use verified local caches and produce silent
+   video in the current KK-Mac lane; audio/mux is a separate, hash-recorded
+   step. A hosted Veo adapter is a separate paid route: require explicit spend
+   authorization and provider billing verification before submission. Never
+   silently fall back from a local render to a paid provider.
+4. Run one short proof cut first. Give every retry a new immutable version;
+   do not overwrite output. A technical pass does not authorize the next cut:
+   human review must accept the action, identity, continuity, and framing
+   before extending or assembling a sequence. A creative rejection stops the
+   chain; a corrected same-cut retry needs a concrete prompt/input change.
+5. Independently verify output codec, dimensions, frame count, duration, full
+   decode, black-frame result, audio presence, size, and SHA-256. Keep the
+   technical report separate from the human creative-review result.
+6. Use explicit lifecycle states: `staged`, `ready`, `admitted`,
+   `rendering`, `produced`, `technical_pass`, `creative_review`,
+   `accepted_private`, and `published`. “Prepared” or “embedding complete”
+   never means a video exists.
+7. Keep the source, immutable manifest, logs, output, QC report, and review
+   decision in the private project artifact root. Verify the upload with
+   `rclone check --one-way`; do not publish or deliver it to LINE without the
+   applicable approval.
+
+The 2026-11-04 dance-party pilot confirmed the MLX adapter produces a
+73-frame, 640x384 silent proof in about 33 seconds on this host. Free memory
+briefly fell during model load and recovered after each run; keep runtime
+memory/swap under observation and stop the current render if pressure remains
+critical. This is a measured pilot, not a duration guarantee.
+
+### Current Sacred Father sequence
+
+- The 25-frame page-9 MPS I2V probe passed: H.264 640x384, 1.04 s, full decode.
+- `kk-mac-storyboard-i2v-fullshot01-20261030` passed at 73 frames/40 steps;
+  the user then requested one additional test render, and shot02/page12 passed
+  with the same settings. Both outputs remain private and need visual review.
+- A user-requested one-off test may run before visual review, but do not stage
+  or launch the remaining scene batch until shot01/shot02 are reviewed.
+  After review, package shots 3-10 as bounded child units with the approved
+  page/image/embedding map and a review gate. Keep MPS stages serial.
+- Only after all mapped shots pass artifact verification should the held
+  Colab V2 pack be resumed for cloned narration and assembly.
+- The Colab V2 pack currently has an explicit resume prerequisite; do not
+  remove that hold while Mac video work is in progress.
