@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
 column: doing
-updated: 2026-11-24 16:38
+updated: 2026-11-24 16:43
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -191,6 +191,12 @@ comms:
     primer injected 8 lesson(s): ru; [ai-news-education-morning-brief] Tony''s follow-up: structure a two-lane shadow
     ; [education-store] Spaced-review layer shipped: lesson-add.py defaults next_revie; [omen-maintenance-preflight-back-up-ha-st-b3738f]
     Education c'
+- at: 2026-11-24 16:43
+  from: devin
+  text: 'progress: flow mapped — news CPT digests (d-*) + situation flags are the source; delivery = ada-tg-relay
+    loopback /send (ack {ok,chat_id}) + optional board_notify ha channel. Building scripts/ada/news-brief-tg.py
+    with dry-run default, dedup cursor, rate limit, ~/.config kill switch; job stays dry-run until consumer confirms
+    probe per telegram-conversation-standard.'
 action:
   type: dispatch
   status: running
