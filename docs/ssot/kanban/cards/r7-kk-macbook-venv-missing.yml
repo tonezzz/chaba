@@ -1,7 +1,7 @@
 id: r7-kk-macbook-venv-missing
 title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
-column: backlog
-updated: 2026-11-24 20:10
+column: doing
+updated: 2026-11-24 20:13
 brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
   package missing.'
 priority: medium
@@ -109,6 +109,9 @@ comms:
 - at: 2026-11-24 20:10
   from: chaba
   text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 20:13
+  from: tony-omen
+  text: claimed
 requests:
 - id: install-python3-14-venv-on-tony-macbook-e29487
   ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
@@ -126,4 +129,11 @@ requests:
   executed: 2026-11-24 queue
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: free_lane
+  lane_source: claim
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 20:13
