@@ -1,7 +1,7 @@
 id: devin-lane-cheap-ops-reroute
 title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
 column: doing
-updated: 2026-11-24 08:16
+updated: 2026-11-24 08:18
 brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
   devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
   and kw:diagnos (ada-printer-diagnostics).'
@@ -177,6 +177,13 @@ comms:
     has set -e + sha256 assertion, so its ''tony-macbook runner tools FIXED'' output is the verification proof;
     ask Tony to confirm that line. Ansible path for future: ansible/playbooks/agent-runner.yml already deploys ~/.local/bin/runner-agent
     with backup:true + version stamp to the agen'
+- at: 2026-11-24 08:18
+  from: devin
+  text: '2026-11-24 Ansible correction: playbook lives in THIS checkout at ~/CascadeProjects/ada-ocb/ansible/playbooks/agent-runner.yml
+    (chaba checkout has no agent-runner.yml), so the first attempted cd failed. Correct invocation from idc02: cd
+    ~/CascadeProjects/ada-ocb/ansible && ansible-playbook playbooks/agent-runner.yml --limit tony-macbook --check
+    --diff -e runner_agent_controller_src=/home/tony/CascadeProjects/chaba-wt-lane-reroute/scripts/board/runner-agent.py.
+    ansible tony-macbook -m ping from i'
 requests:
 - id: dev-0045-next-slice-decision-the-audit-f-70570c
   ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
