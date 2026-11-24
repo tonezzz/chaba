@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
 column: review
-updated: 2026-11-24 20:26
+updated: 2026-11-24 20:31
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -232,6 +232,9 @@ comms:
 - at: 2026-11-24 20:26
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 20:31
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-193310-idc02-has-68-stale-dis'
 action:
   type: dispatch
   status: done
@@ -242,6 +245,8 @@ action:
   result: 'exit=0 ale-dispatch-wt.md`; card comms posted with the full summary. | devin-task-20261124-193310-idc02-has-68-stale-dispatch-wt.service:
     Consumed 15min 8.831s CPU time over 50min 48.840s wall clock time, 1.2G memory peak, 487.1M memory swap peak.'
   verified: false
+  sweep:
+    no_repo: 2026-11-24 20:31
 claim:
   since: 2026-11-24 19:32
 review_kind: verify
