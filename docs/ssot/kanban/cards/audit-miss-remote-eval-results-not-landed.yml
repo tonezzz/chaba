@@ -1,7 +1,7 @@
 id: audit-miss-remote-eval-results-not-landed
 title: Remote-host eval results never landed in repo
 column: doing
-updated: 2026-11-24 22:00
+updated: 2026-11-24 22:12
 brief: 'Session audit 2026-11-20 (AUD-0973): eval output files claimed produced on remote hosts; absent from origin/master
   and not found on tony-macbook.'
 priority: medium
@@ -144,6 +144,13 @@ comms:
   from: devin
   text: dispatch started on tony-macbook worktree; searching local git + remote host checkouts for the three missing
     eval artifacts
+- at: 2026-11-24 22:12
+  from: devin
+  text: 'DONE — all 3 artifacts recovered + landed on dispatch branch. devnest-host-tony-omen.json + devnest-replay-candidates.json
+    found on tony-dell:~/evals/results/ (skill writes outside repo); also landed 5 sibling host JSONs from same
+    batch. kk-mac-live-jev-probe artifact recovered from idc03 patch-inbox bundle, cherry-picked 1f16965029 (verdict=pass
+    retry). Commits 872de9664c + c6b7c252cb; job record docs/ssot/jobs/devnest/2026-11-24-remote-eval-results-recovery.yml.
+    Root cause: ~/evals untracked o'
 action:
   type: dispatch
   status: running
