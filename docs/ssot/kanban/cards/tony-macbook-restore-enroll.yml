@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: review
-updated: 2026-11-24 17:03
+updated: 2026-11-24 18:43
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -308,6 +308,12 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: 'answered kk-files-restore-is-blocked-on-the-backu-27b870: proceed'
+- at: 2026-11-24 18:43
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 ref: SYS-0452
 claim:
   since: 2026-11-24 15:04
@@ -322,10 +328,12 @@ requests:
     existing ~ files; (b) merge the kkkakk home contents directly into ~ — risks clobbering tony''s .ssh/.config,
     not recommended; (c) user dirs only (Documents/Desktop/Pictures/Music/Movies/Downloads). Redis stays skipped
     per spec (no backup exists).'
-  status: open
+  status: answered
   at: 2026-11-24 15:25
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
