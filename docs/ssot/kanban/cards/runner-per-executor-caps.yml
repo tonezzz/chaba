@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: review
-updated: 2026-11-24 22:24
+updated: 2026-11-24 23:28
 priority: high
 tags:
 - devnest
@@ -435,6 +435,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261124-211725-problem-observed-202 on tony-dell
     — if the work was never pushed it may be gone'
+- at: 2026-11-24 23:28
+  from: devin
+  text: 'worktree-triage 2026-11-24: dispatch-wt-20261124-211725 dropped after salvage — its STAGED delta (REMOTE_CAP/local
+    cap-pool split in runner-agent.py + runner-cap.sh + dispatch_repos.py + ssot.kanban.yml + new tests/board/test_runner_agent_caps.py
+    292L + outcome doc, +705/-96) was never committed and is NOT on master (master only has single-pool RUNNER_CAP).
+    Preserved as commit on local branch dispatch/20261124-211725-problem-observed-2026-11-09-re @ tony-dell:~/CascadeProjects/chaba
+    — the per-ex'
 claim:
   since: 2026-11-24 21:16
 review_kind: verify
