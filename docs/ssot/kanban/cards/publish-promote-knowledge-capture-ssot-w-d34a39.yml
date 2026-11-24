@@ -1,7 +1,7 @@
 id: publish-promote-knowledge-capture-ssot-w-d34a39
 title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
 column: done
-updated: 2026-11-24 19:58
+updated: 2026-11-24 20:29
 priority: medium
 tags:
 - ssot
@@ -230,6 +230,12 @@ comms:
     (base master, head ada/session-capture-followups; cherry-picks 6d38546a70,01d357fe04,c4790eaba7). Covers focus
     parity, /session-capture /recall /handoff-packet, and read-only memory freshness check (OPS-0036/OPS-0037/MEM-0035
     A★). Awaiting governed review/merge.'
+- at: 2026-11-24 20:29
+  from: devin
+  text: '[2026-11-24 devin] PR #207 CI status: SSOT CI validate FAILED due pre-existing master issue (not in PR
+    diff): docs/ssot/jobs/voice/2026-11-24-scr-t1-threshold-calibration.yml wrong_fire_real_ref=''0/28'' -> ssot-validate-refs.py
+    missing file docs/ssot/0/28. Repo lint syntax+tooling-contracts PASS. PR diff only touches session-capture/focus-parity/commands/freshness-check
+    files. Awaiting maintainer decision on merge despite pre-existing CI break or fix on master.'
 requests:
 - id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
   ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
