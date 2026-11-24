@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-24 08:12
+updated: 2026-11-24 08:14
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -405,6 +405,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: devin
+  text: 'RESOLVED (attempt 4, tony-dell). runner-agent on idc03 re-copied + sha256-verified (33a65f61, was already
+    synced). Root cause confirmed = ProviderCapLatched (Gemini monthly-cap latch in ada-voice/data/lane-budget.json)
+    — file absent, provider gate healthy, lock :8199 free. Service verified: Result=success, last run 2026-11-23
+    20:27-22:48 exit 0, score 0.172 (scenario fails are benchmark findings -> auto-report, by design). Trail: docs/ssot/jobs/ada/2026-11-24-casting-suite-service-triage.yml.
+    Wa'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
