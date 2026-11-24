@@ -17,49 +17,12 @@ planning:
     (3) T2 transcripts remain local grep-able .md (not GDrive-only);
     (4) no FTS in mddb — local BM25/FTS5 over the T2 dir.
   decisions: |
-    Prior dispatch attempts (tony-macbook x2 exit-code, tony-dell
-    oom-kill) never merged — rebuilt lean on idc02.
-
-    * Sticky enrichment (sync-devin-summaries.py): once a doc carries
-      "## Artifacts", any later run that cannot re-mine the transcript
-      (session pruned from sessions.db, or a non-enrich invocation)
-      re-appends the remote section verbatim instead of stripping it.
-      Byte-exact roundtrip verified — the unchanged-check still hits, so
-      no rewrite storm. Enrichment is a ratchet: live transcripts
-      refresh it, nothing else removes it.
-
-    * T2 archive dump (same script, default-on): for every
-      devin-session/<name> doc, writes
-      ~/.local/share/devin/transcripts/<name>.md while the session
-      still exists in sessions.db, refreshing only when
-      last_activity_at moves past the dump mtime. cli/summaries
-      history_*.md dumps already cover CLI sessions, so only named
-      (desktop) sessions need the new dump — bounded scope.
-
-    * session_recall.py (new, scripts/devin/session/): hybrid recall
-      CLI. T1 = mddb /v1/vector-search on ada-ha-bank-devin-tony
-      (status=active, threshold 0.45, topK 6, 8s timeout, fail-open).
-      T2 = sqlite FTS5 (porter unicode61, bm25 ranking, snippet) over an
-      INCREMENTAL disk-backed index at
-      ~/.local/share/devin/session-recall/index.db covering
-      transcripts/*.md + cli/summaries/*.md + summaries/*.md.
-      Deliberately NOT bench-recall.py's in-memory KeywordIndex — that
-      design is the likely OOM cause of the tony-dell attempt. Index
-      budget 45s/call; first run on a big archive catches up over
-      successive hook fires.
-
-    * notebooklm-recall.sh: after the session-memory.md tail, runs
-      session_recall.py --session <id> --project <name> (title from
-      sessions.db is the best free query at SessionStart) and appends
-      the bounded (<=4KB) hybrid block. Both scripts must deploy
-      together to ~/.config/devin/scripts/.
-
-    * Units: --enrich added to systemd/devin-summaries-sync.service and
-      the sync-devin-summaries.py ExecStart inside
-      systemd/ada-memory-pull.service (both previously ran bare — would
-      have stripped Artifacts before the sticky fix, and missed
-      enrichment entirely). jobs.yml tony_omen job + generated unit
-      already carried --enrich; note field documents the new behavior.
+    Prior dispatch attempts (tony-macbook x2 exit-code, tony-dell oom-kill) never merged; rebuilt lean on idc02.
+    * Sticky enrichment (sync-devin-summaries.py): once a doc has "## Artifacts", later runs that cannot re-mine transcript re-append the remote section verbatim; byte-exact roundtrip, unchanged-check still hits.
+    * T2 archive dump (default-on): for devin-session/<name>, write ~/.local/share/devin/transcripts/<name>.md while session exists in sessions.db; refresh only when last_activity_at > dump mtime. CLI history_*.md already cover CLI sessions.
+    * session_recall.py (new, scripts/devin/session/): hybrid recall CLI. T1=mddb /v1/vector-search ada-ha-bank-devin-tony (active, threshold 0.45, topK 6, 8s, fail-open). T2=sqlite FTS5 (porter unicode61, bm25, snippet) incremental index at ~/.local/share/devin/session-recall/index.db over transcripts/*.md+cli/summaries/*.md+summaries/*.md. Not in-memory KeywordIndex (likely tony-dell OOM cause); 45s index budget/call.
+    * notebooklm-recall.sh: after session-memory.md tail, run session_recall.py --session <id> --project <name>; append bounded <=4KB hybrid block. Deploy hook pair together to ~/.config/devin/scripts/.
+    * Units: --enrich added to systemd/devin-summaries-sync.service and sync-devin-summaries.py ExecStart in systemd/ada-memory-pull.service; jobs.yml tony_omen already had --enrich.
 
   changed:
     - "scripts/ada/sync-devin-summaries.py (sticky ## Artifacts,
