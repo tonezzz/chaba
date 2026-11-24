@@ -1,6 +1,6 @@
 id: ops-remote-read-opencode-profile-remote-56a439
 title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
-column: backlog
+column: doing
 updated: 2026-11-24 18:42
 priority: medium
 blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
@@ -206,9 +206,16 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 18:42
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-24 18:42
