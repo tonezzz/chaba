@@ -128,6 +128,10 @@ comms:
     (interactive auth required); sudoers NOPASSWD only covers apt-get update/upgrade/devin-desktop — no install
     path for me. sshd PermitUserEnvironment=no, /usr/local/bin not writable, so no user-space python3 shim. Blocked
     on root: needs Tony to run the apt install (or grant a NOPASSWD rule).'
+- at: 2026-11-24 20:20
+  from: devin
+  text: 'raised request sudo-on-tony-macbook-needs-your-password-364cd9: sudo on tony-macbook needs your password
+    — I cannot run the approved install unattended. Please either: (a) run `ssh ton'
 requests:
 - id: install-python3-14-venv-on-tony-macbook-e29487
   ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
@@ -143,6 +147,17 @@ requests:
   answer: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
     (recommended)
   executed: 2026-11-24 queue
+- id: sudo-on-tony-macbook-needs-your-password-364cd9
+  ask: 'sudo on tony-macbook needs your password — I cannot run the approved install unattended. Please either:
+    (a) run `ssh tony-macbook` then `sudo apt install -y python3.14-venv` yourself (then I rerun verify --limit
+    tony-macbook), or (b) add a NOPASSWD sudoers entry for `apt-get -y install python3.14-venv` and I will do it,
+    or (c) pick an alternative (e.g. uv-managed python3.14 + manifest probe change). Recommended: (a).'
+  status: open
+  at: 2026-11-24 20:20
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running
