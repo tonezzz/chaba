@@ -1,7 +1,7 @@
 id: model-efficiency-refresh-deepseek-flint-providers
 title: Refresh model efficiency scorecard across providers
 column: doing
-updated: 2026-11-24 17:04
+updated: 2026-11-24 17:31
 spec: Run a fixed efficiency fixture across local Ollama, Colab burst, OpenRouter pinned free models, Gemini gateway/direct,
   and DeepSeek API when credentials are available. Include warm/cold latency, tokens, error/429 rate, structured/tool
   correctness, vision where supported, cost/quota, license/data policy, and hardware fit. Add DeepSeek V4.1 Flash
@@ -205,6 +205,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:31
+  from: devin
+  text: 'done: fixed fixture model-efficiency-v1 run across omen+idc03 Ollama, Colab tunnel, OR pinned free, Gemini
+    gw/direct, deepseek-flash via OR. Artifacts: scripts/bench/model-efficiency.py, reports/model-efficiency-2026-11-24{,-local,-remote}.{json,md},
+    docs/ssot/jobs/models/2026-11-24-model-efficiency-refresh.yml (commit b4c23b34de). Headline: deepseek-flash
+    warm p50 0.97s @$0.00028/run (json/tool/vision ok); OR :free all 429 daily cap + laguna-s-2.1 delisted; Colab
+    tunnel down; NO routing changes'
 action:
   type: dispatch
   status: running
