@@ -1,7 +1,7 @@
 id: ai-video-quality-control-plane
 title: Expand AI video generation quality control plane
 column: doing
-updated: 2026-11-24 16:42
+updated: 2026-11-24 16:44
 spec: 'Extend the existing Ada Nest documentary pipeline with asset identity and continuity control. Implement in
   stages: P0 immutable per-shot manifest + asset IDs + scratch-VO timing + technical QA; P1 character/object/location
   bibles + continuity ledger + DWPose/depth controls; P2 deterministic Blender/stock/space scenes + Gaussian/camera
@@ -209,6 +209,11 @@ comms:
     Education lesson updated with three immediat; [colab-offload-queue-pack-batch-gpu-jobs-1499a3] nest-queue spec
     (Tony 2026-10-2; [doc-pilot-v2-polish-music-bed-subs-shot-943456] primer injected 8 lesson(s): [a; [gaussian-splatting-nest-video-poc]
     KK-Mac native Metal timin'
+- at: 2026-11-24 16:44
+  from: devin
+  text: 'dispatch started: P0 video-qc.py already merged (#77). Building the staged control plane as scripts/nest/doc_control.py
+    — immutable shot manifest v2 (asset IDs + scratch-VO timing + continuity links + control slots), bibles/continuity-ledger/approved-takes
+    schemas, stage verifier, P3 scene-graph eval fixture. Additive only; LTX/VYNCX packs untouched.'
 action:
   type: dispatch
   status: running
