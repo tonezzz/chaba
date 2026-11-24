@@ -64,7 +64,7 @@ def test_each_skill_has_name_and_description():
 
 
 def test_parse_skill_without_frontmatter_fixture():
-    # auto-kb and overnight-assessment have no YAML frontmatter.
+    # Legacy skills without frontmatter still parse from the first body line.
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         path = repo / ".agents" / "skills" / "plain-skill" / "SKILL.md"

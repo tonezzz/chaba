@@ -35,7 +35,7 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 | `track4-smoke-test` | `.agents/skills` | user | Navigate to the Track4 test page for a quick smoke check. |
 | `overnight-assessment` | `.agents/skills` | user | Overnight Chaba assessment: health, GPU/queues, logs, SSOT check, report. |
 
-`auto-kb` and `overnight-assessment` have no YAML frontmatter; the test contract handles both shapes.
+`auto-kb` and `overnight-assessment` gained `description` frontmatter on 2026-11-24 so OpenCode advertises them in this session; the test fixture still covers the frontmatter-less shape for legacy skills.
 
 ## Retrieval path
 
