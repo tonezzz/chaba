@@ -1,7 +1,7 @@
 id: runner-agent-opencode-lane-profile-bug
 title: 'runner-agent: explicit executor=opencode ignores card lane when resolving profile'
-column: doing
-updated: 2026-11-24 17:41
+column: review
+updated: 2026-11-24 17:45
 priority: low
 spec: 'start_task calls start_opencode_lane(card, "", unit) for declared executor=opencode — the card''s own action.lane
   never reaches the lane->LANE_PROFILES map, so an executor=opencode + lane=free_lane card fails with "no task profile
@@ -216,12 +216,42 @@ comms:
     sha vs repo+origin/master pins via kanban-sync). Real remaining gap closed: _claimable for executor=opencode
     never checked profile resolution — ops-1244d-janitor-merge class burned failed attempts. Added claim-time profile
     hold + executor_defer_reason mirror + 4 tests; also bumped runne'
+- at: 2026-11-24 17:45
+  from: tony-dell
+  text: 'finished (ok): exit=0 k-calls-start-opencod.md`, final comms posted to the card. | devin-task-20261124-171836-start-task-calls-start-op'
+- at: 2026-11-24 17:45
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:45
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-171836-start-task-calls-start-opencod'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 17:45
+  from: chaba
+  text: pushed dispatch/20261124-171836-start-task-calls-start-opencod to origin
+- at: 2026-11-24 17:45
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 52.3s)
+- at: 2026-11-24 17:45
+  from: chaba
+  text: auto-merged e6a92910 (dispatch/20261124-171836-start-task-calls-start-opencod) → origin/master
+- at: 2026-11-24 17:45
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 k-calls-start-opencod.md`, final comms posted to the card. | devin-task-20261124-171836-start-task-calls-start-opencod.service:
+    Consumed 7min 36.389s CPU time over 23min 30.771s wall clock time, 1015.1M memory peak, 446.2M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 17:17
+review_kind: verify
