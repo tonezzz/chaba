@@ -1,7 +1,7 @@
 id: persona-ab-split-routing-relay
 title: Per-caller A/B split routing in ada-line-relay — route senders to variant backends
 column: doing
-updated: 2026-11-24 17:39
+updated: 2026-11-24 17:53
 priority: low
 spec: 'From persona-ab-lane (OPS-0469) optional scope, now the real remaining work. Today A/B = whole-lane LINE_NAME_BACKENDS
   pointer flip (instant, reversible, all callers). True concurrent A/B needs a per-caller override in the relay:
@@ -203,6 +203,13 @@ comms:
     finished (failed): jou; runbook docs/kb/persona-eval-ab.md: Persona eval → variant → A/B → adopt — stand; When
     a card says "fix X in repo Y" and chaba already holds a staged drop patch f; info_find tests: intent "ssot"
     does NOT route the code adapte'
+- at: 2026-11-24 17:53
+  from: devin
+  text: 'DONE (code lane, staged not deployed): LINE_CALLER_BACKENDS per-caller override implemented as ada-voice
+    drop #22 — 3 patches in integrations/ada-voice/ (line_relay + test_line_relay_group + .env.example), git apply
+    --check clean vs origin/main @2e9a1eeb, pytest test_line_relay_group.py 32 green incl. 4 new CallerBackendTests.
+    docs/kb/persona-eval-ab.md §3 now documents the split config (user-kk=ws://127.0.0.1:8009 style). Trail: docs/ssot/jobs/ada/2026-11-24-persona-ab-split-routing.yml.
+    Deploy'
 action:
   type: dispatch
   status: running
