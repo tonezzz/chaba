@@ -1,0 +1,45 @@
+id: dispatch-prompt-budget-measure
+title: 'Dispatch session bloat: measure per-session prompt-token drivers and propose caps'
+column: backlog
+updated: 2026-11-24 22:59
+brief: DEV-0044 lever 4. Avg dispatch session ~4.4M prompt tokens, top decile 10-17M, 97% cached — burn scales with
+  turns x context size. Nothing measures the drivers yet.
+priority: medium
+program: devnest
+tags:
+- devin
+- usage
+- measurement
+- dispatch
+- report
+spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml.
+  READ-ONLY measurement card — produce a report artifact, do not change dispatch code.
+
+
+  DATA: `python3 scripts/devin/devin-usage.py --fleet --days 30 --json` emits per-session {task, session, model,
+  prompt, cached, completion, steps, result, finished_at, host}. Task dirs under ~/.local/share/devin-dispatch/tasks/<id>/
+  also carry prompt.txt (the dispatched prompt = spec + TASK_RAILS + lesson primer + RETRY/REPORT_RAILS per runner-agent
+  build_task_text), meta.json (attempts, result), and transcript.json steps.
+
+
+  TASK: (1) Pull the 30d fleet dataset via devin-usage.py --fleet --json (ssh to FLEET hosts; note unreachable hosts
+  explicitly). (2) For the top decile by prompt tokens plus a random sample of the median, join each session to
+  its task dir and record: prompt.txt bytes, primer lesson count (KNOWN_PITFALLS/KNOWN_GOOD lines), meta attempts,
+  steps, wall time, outcome (merged/verified/failed/zero-commit). (3) Correlate: which drivers predict prompt tokens
+  — spec size, primer size, retry count, host, lane/model? Report distributions, not just averages. (4) Propose
+  concrete caps with evidence: e.g. primer injection budget (max lessons/bytes per dispatch), spec-length guidance
+  for card authors, retry backoff, or a pre-dispatch size gate that holds oversized shapes for scoping. Each proposal
+  needs the measured number it would have saved. (5) Artifact: reports/dispatch-prompt-budget-2026-11.md (or docs/reports/)
+  + a docs/ssot/jobs/devnest/ job doc; post headline numbers to this card.
+
+
+  DONE WHEN: the report artifact exists with the driver correlations and >=1 evidence-backed cap proposal; no dispatch-path
+  code changed; devin-usage.py --fleet numbers reproducible.'
+action:
+  type: dispatch
+  repo: chaba
+ref: DEV-1334
+comms:
+- at: 2026-11-24 22:59
+  from: devin
+  text: card captured via board-api

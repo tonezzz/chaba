@@ -1,0 +1,43 @@
+id: devin-usage-allowance-visibility
+title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
+column: backlog
+updated: 2026-11-24 22:59
+brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
+  window burn but not plan allowance remaining.'
+priority: medium
+program: devnest
+tags:
+- devin
+- usage
+- allowance
+- observability
+spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml.
+
+
+  GAP (verified 2026-11-24 on idc02): `devin --help` shows NO usage/billing subcommand (auth/models/doctor/cloud/list/rm/ssh/forward/update/version/migrate/sandbox/setup/uninstall/acp
+  only); `/usage` is a TUI slash command, not scriptable headlessly; transcript.json schema = {schema_version, session_id,
+  agent, steps, final_metrics{total_prompt_tokens,total_cached_tokens,total_completion_tokens,total_steps}} — no
+  plan/quota fields; credentials live at ~/.local/share/devin/credentials.toml (api server https://server.codeium.com,
+  Devin API https://api.devin.ai, webapp https://app.devin.ai).
+
+
+  TASK: (1) find the authoritative allowance-remaining source — probe api.devin.ai usage/billing/entitlement endpoints
+  with the EXISTING stored creds (read-only GETs only, no spend, no auth changes); check `devin doctor`/`devin auth
+  status` verbose output and the CLI binary for hidden usage paths; check whether app.devin.ai exposes a usage page
+  Tony can read. (2) Extend scripts/devin/devin-usage.py: if a machine-readable source exists, add allowance remaining
+  + reset window to the footer (and --json); if not, print a documented pointer line (''allowance remaining: not
+  machine-readable — check <URL>'') so the est-$0 caveat is explicit rather than silent. (3) Document the finding
+  in the job doc style under docs/ssot/jobs/devnest/.
+
+
+  DONE WHEN: `python3 scripts/devin/devin-usage.py --days 30` output either shows real allowance remaining/reset
+  or a verified pointer to where Tony reads it; any new code path covered by a test or a documented manual verification;
+  no credentials or secrets committed.'
+action:
+  type: dispatch
+  repo: chaba
+ref: DEV-1332
+comms:
+- at: 2026-11-24 22:59
+  from: devin
+  text: card captured via board-api

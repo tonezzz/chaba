@@ -1,7 +1,7 @@
 id: command-polish-before-ai-dispatch
 title: Command-polish layer — improve Tony's English commands before they reach Devin/Ada/OpenCode
-column: doing
-updated: 2026-11-24 22:55
+column: review
+updated: 2026-11-24 22:59
 priority: medium
 program: ai-workforce
 tags:
@@ -277,12 +277,45 @@ comms:
     fixtures with VERBATIM live card titles as raw input (entity preservation 1.0, gold-sim 0.53-0.93). Decision
     record: docs/ssot/jobs/ada/2026-11-24-command-polish-dispatch.yml. Verdict restated: per-turn intake polish
     stays bench-REJECTED; on-demand consult (ada-expert-consult-tool, done)'
+- at: 2026-11-24 22:59
+  from: tony-dell
+  text: 'finished (ok): exit=0 ntextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261124-223529-goal-when-tony-issues-'
+- at: 2026-11-24 22:59
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:59
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-223529-goal-when-tony-issues-a-develo'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 22:59
+  from: chaba
+  text: banked 56 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:59
+  from: chaba
+  text: pushed dispatch/20261124-223529-goal-when-tony-issues-a-develo to origin
+- at: 2026-11-24 22:59
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:59
+  from: chaba
+  text: auto-merged 23833db5 (dispatch/20261124-223529-goal-when-tony-issues-a-develo) → origin/master
+- at: 2026-11-24 22:59
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 ntextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261124-223529-goal-when-tony-issues-a-develo.service:
+    Consumed 4min 18.473s CPU time over 20min 38.440s wall clock time, 1.2G memory peak, 159.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:34
+review_kind: verify
