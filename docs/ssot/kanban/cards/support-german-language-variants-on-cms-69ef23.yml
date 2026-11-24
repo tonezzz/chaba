@@ -1,7 +1,7 @@
 id: support-german-language-variants-on-cms-69ef23
 title: Support German language variants on CMS pages
 column: doing
-updated: 2026-11-24 15:00
+updated: 2026-11-24 15:07
 priority: low
 note: User wants to create a German version of CMS page 'translate-probe', but only EN/TH are supported.
 comms:
@@ -169,6 +169,12 @@ comms:
     is the report-event timeline (node/layer/st; board-api has THREE queue paths (do=queue, create queue:true, on_exists:queue
     re; chaba merge test gate (240s smoke set) times out on loaded idc03 even for doc-on; tony-omen ollama serves
     qwen2.5:7b CPU-only (api/ps size_vram'
+- at: 2026-11-24 15:07
+  from: devin
+  text: 'dispatch started (chaba worktree): store layer already accepts arbitrary lang; fixing chaba-side en/th
+    assumptions (cms_index dedup, cms-render index dedup, board-api /report create lang), then creating the translate-probe
+    de variant live to verify end-to-end. ada-voice cms_publish_page schema enum is the remaining gate — will card
+    it.'
 ref: KNB-0284
 action:
   type: dispatch
