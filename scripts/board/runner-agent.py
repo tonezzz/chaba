@@ -1932,6 +1932,18 @@ def _claimable(card: dict) -> tuple:
                 return "", ("executor=opencode declared but no "
                             "action.lane_envelope staged — admission "
                             "holds at start; stage the envelope")
+            # Profile-resolution hold at CLAIM — mirrors
+            # _start_opencode_lane: action.agent_profile wins, else
+            # LANE_PROFILES[action.lane] (explicit executor forwards
+            # the card's own lane since OPS-1021). A card that resolves
+            # neither can never start — claiming it burns a failed
+            # attempt (ops-1244d-janitor-merge: 'no task profile for
+            # lane paid_frontier').
+            if not (card_profile(card)
+                    or LANE_PROFILES.get(str(a.get("lane") or ""))):
+                return "", ("executor=opencode declared but no task "
+                            "profile resolves — set action.agent_profile "
+                            "or a lane mapped in LANE_PROFILES")
         elif ex in ("", "devin", "kk_mac_local"):
             # the devin path launches devin-dispatch, which drives
             # systemd-run itself — outside the launchd seam's reach. On
@@ -2031,6 +2043,18 @@ def executor_defer_reason(card: dict) -> str:
                     "hold at start, so the claim is held too: stage "
                     "the envelope or pin executor=devin (no attempt "
                     "burned)")
+        # Mirror of the _claimable profile hold — a card that resolves
+        # no task profile can never start; surface the reason on the
+        # board instead of letting it look like silent starvation.
+        if not (card_profile(card)
+                or LANE_PROFILES.get(str(a.get("lane") or ""))):
+            lane = str(a.get("lane") or "")
+            return ("executor=opencode declared but no task profile "
+                    f"resolves (action.agent_profile unset, action.lane "
+                    f"{lane or '(none)'!r} unmapped) — the card stays "
+                    "queued for a profile pin or a LANE_PROFILES-mapped "
+                    "lane rather than failing 'no task profile' at "
+                    "start (no attempt burned)")
     if ex == "claude":
         missing = []
         if not CLAUDE_LANES:
