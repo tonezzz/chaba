@@ -1,7 +1,7 @@
 id: ada-capability-verb-wiring
 title: Ada what-can-you-do verb — vendor tools snapshot + capability-ask read path
-column: doing
-updated: 2026-11-24 21:41
+column: review
+updated: 2026-11-24 21:44
 priority: medium
 tags:
 - ada
@@ -25,12 +25,15 @@ spec: 'REPO work (ada-voice repo). Implement the consumer half of docs/kb/ada-to
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 log.py` is run and committed in the chaba checkout — by design, but it must happen first. | devin-task-20261124-212846-repo-work-ada-voice-repo-imple.service:
+    Consumed 40.005s CPU time over 13min 30.903s wall clock time, 421.1M memory peak.'
+  verified: false
 ref: ADA-0012
 comms:
 - at: 2026-11-21 19:00
@@ -161,5 +164,28 @@ comms:
     at backend/generated/ada-tools-commands.json (regenerated from this tree, 76 unique tools) with deploy-refreshed
     override backend/data/; deploy-ada.sh gate 3c runs chaba tools-commands-catalog.py --check (hard fail on drift)
     then copies fresh JSON. 8 unit tests pass, tool-lin'
+- at: 2026-11-24 21:44
+  from: tony-macbook
+  text: 'finished (ok): exit=0 log.py` is run and committed in the chaba checkout — by design, but it must happen
+    first. | devin-task-20261124-2'
+- at: 2026-11-24 21:44
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 21:44
+  from: chaba
+  text: 'session-end checkpoint ac82cad3: 10 leftover file(s) committed'
+- at: 2026-11-24 21:44
+  from: chaba
+  text: banked 79 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:44
+  from: chaba
+  text: pushed dispatch/20261124-212846-repo-work-ada-voice-repo-imple to origin
+- at: 2026-11-24 21:44
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 21:44
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
 claim:
   since: 2026-11-24 21:28
+review_kind: verify
