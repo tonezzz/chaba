@@ -58,13 +58,36 @@ verification: |
   Merge test gate for ada-pi = `pytest tests -k 'not slow'` under
   ~/CascadeProjects/ada-voice/.venv (pytest 9.2.0 present).
 
-  (c) canary — card idc02-vps-lane-canary (OPS-0029), action
-  {type:dispatch, repo:ada-pi, labels:[vps], executor:devin,
-  lane:free_lane -> swe-2-flash-medium}. RESULT: PENDING — see card
-  comms / this file's result block.
+  (c) canary — first queued as idc02-vps-lane-canary (OPS-0029,
+  priority:low) but starved in claim order (~9 cards ahead; defer
+  comms kept refreshing `updated`). Re-queued as
+  idc02-vps-lane-canary-hv (OPS-0034, priority:high), low card closed.
+  RESULT: PASS end-to-end at 15:56 —
+  claim: idc02 runner-agent claimed 15:51 (only host carrying 'vps';
+  idc03/mn01/con01 correctly deferred 'unclaimable by declared fleet'
+  until the runner_fleet prose merge propagates);
+  run: devin-task-20261124-155106, repo=ada-pi, executor=devin,
+  model=swe-2-flash-medium (free_lane devin pick), dispatch-wt
+  worktree cut from origin/main;
+  session: committed docs/canary/idc02-vps-lane-hv.md (4da86c9), exit 0;
+  close-out: branch pushed to origin via github-ada-pi ssh, merge
+  --no-ff 2e9a1eeb -> origin/main, test gate PASSED
+  (ada-voice/.venv pytest tests -k 'not slow', 206.1s), worktree GC'd;
+  consumer proof: origin/main:docs/canary/idc02-vps-lane-hv.md reads
+  'idc02 vps-lane canary — 2026-11-24'.
 
 result: |
-  PENDING canary.
+  Lane verified. To fail over ada-pi/ada-voice dispatches to idc02:
+  queue the card with action.labels containing 'vps' (host-unique
+  opt-in) — or let normal unlabeled ada-pi cards ride the shared
+  queue; idc02 now passes the push guard for ada-voice so it competes
+  for them like tony-dell does. Dell remains the canonical edit point;
+  both hosts push dispatch branches to the same GitHub origin and
+  close-out merges land identically. Caveats: idc02 cap is 3 shared
+  with all its other dispatch work (not ada-pi-reserved), and its
+  ~/CascadeProjects/ada-voice is the staging checkout — dispatch
+  worktrees are siblings under ~/CascadeProjects/dispatch-wt-*, they
+  do not dirty it.
 
 lessons:
   - "idc02's kanban-dispatch.service was a linked unit running a stale
@@ -73,6 +96,7 @@ lessons:
     stopped it first. Drop-in repoint + BOARD_API made it real; always
     check ExecStart provenance before arming labels on a linked unit."
   - "runner-agent claim order is priority high>medium>absent>low then
-    oldest updated — a low-priority canary queues behind every older
-    unlabeled card on a busy host; only the 'vps' label made it
-    idc02-exclusive, the priority still governs slot order."
+    oldest updated — and every fleet 'X defers: unclaimable' comms
+    refreshes the card's updated stamp, so a low-priority labeled
+    canary on a busy host starves indefinitely. Queue canaries at
+    priority:high (or expect to re-queue)."
