@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: doing
-updated: 2026-11-24 22:27
+updated: 2026-11-24 22:30
 priority: medium
 tags:
 - embedding
@@ -248,6 +248,13 @@ comms:
   from: devin
   text: 'raised request bge-serving-cutover-pick-the-architectur-3728d5: BGE serving cutover — pick the architecture
     (quality gate PASSED; this is your UX latency-budget call). Verified 2026-11'
+- at: 2026-11-24 22:30
+  from: devin
+  text: 'dispatch done (idc02). Deliverables: decision brief docs/ssot/jobs/ada/2026-11-24-bge-serving-cutover-decision.yml
+    + new scripts/ada/bge-rerank-probe.py (top-K latency sweep for the live endpoint). KEY FINDING: live rerank_ms
+    was 1.1-1.4s top-10 vs 565ms eval estimate -> sync top-10 ~1.4-1.7s added, ~3x over the ~500ms voice budget;
+    dense-only BGE < Gemini so async-refine alone cannot fix the current turn. Raised board request bge-serving-cutover-pick-the-architectur-3728d5
+    with 4 options, sugge'
 action:
   type: dispatch
   status: running
