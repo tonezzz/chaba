@@ -1,6 +1,6 @@
 id: audit-miss-ada-chaba-home-snapshot
 title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
-column: review
+column: done
 updated: 2026-11-24 17:23
 brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
 priority: medium
@@ -236,6 +236,9 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-170951-reconcile-the-live-ada-ha-chab on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 17:23
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -252,3 +255,7 @@ action:
 claim:
   since: 2026-11-24 17:09
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 17:23
+  note: verified — evidence checks green, closing itself
