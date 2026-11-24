@@ -165,6 +165,14 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
     dead_cut = now - datetime.timedelta(days=DEAD_LETTER_DAYS)
     awaiting_n = 0
     dead_letters: list[dict] = []
+    # DEV-0045 lane-routing watch: bucket stamped action.lane on open
+    # cards by lane_source provenance. 'pin' (lane with no
+    # lane_source) is an author-set route that wins forever; every
+    # other source is a classifier/claim stamp that re-evaluates on
+    # re-queue — the matrix makes misroute cohorts (e.g. free_lane
+    # kw hits, fallback->devin) visible on the 15m report.
+    lane_routing = {"stamped": 0, "unstamped_dispatch": 0,
+                    "cells": {}}
 
     for c in cards:
         col = str(c.get("column") or "backlog")
@@ -173,6 +181,16 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
         a = _act(c)
         st = str(a.get("status")) if a.get("status") else "none"
         action_status[st] = action_status.get(st, 0) + 1
+
+        if col != "done":
+            if a.get("lane"):
+                lane_routing["stamped"] += 1
+                cell = lane_routing["cells"].setdefault(
+                    str(a["lane"]), {})
+                src = str(a.get("lane_source") or "pin")
+                cell[src] = cell.get(src, 0) + 1
+            elif str(a.get("type") or "") == "dispatch":
+                lane_routing["unstamped_dispatch"] += 1
 
         for r in c.get("requests") or []:
             if isinstance(r, dict) and r.get("status") == "open":
@@ -268,6 +286,7 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
             "cards": sorted(dead_letters,
                             key=lambda r: -(r["age_d"] or 1e9)),
         },
+        "lane_routing": lane_routing,
     }
     return stats
 
@@ -300,6 +319,31 @@ def render_md(stats: dict) -> str:
     if disp["median_cycle_h"] is not None:
         lines.append(f"- median dispatch→finish cycle: "
                      f"{disp['median_cycle_h']}h")
+    lr = stats.get("lane_routing") or {}
+    lines += ["", "## Lane routing — open cards", ""]
+    if lr.get("stamped"):
+        cells = lr["cells"]
+        srcs = sorted({s for m in cells.values() for s in m})
+        lines.append("| lane | " + " | ".join(srcs) + " | total |")
+        lines.append("|" + "---|" * (len(srcs) + 2))
+        for ln in sorted(cells):
+            m = cells[ln]
+            tot = sum(m.values())
+            lines.append(
+                f"| {ln} | " + " | ".join(
+                    str(m[s]) if m.get(s) else "·" for s in srcs)
+                + f" | {tot} |")
+        lines.append("")
+        lines.append("`pin` = author-set lane (wins over the "
+                     "classifier); kw/claim/fallback/jevos/"
+                     "timer-alert are classifier stamps that "
+                     "re-evaluate on re-queue (DEV-0045).")
+    else:
+        lines.append("- no stamped `action.lane` on open cards")
+    if lr.get("unstamped_dispatch"):
+        lines.append(f"- unstamped `type:dispatch` cards "
+                     f"(classify at queue/claim): "
+                     f"**{lr['unstamped_dispatch']}**")
     lines += ["", "## Needs attention", ""]
     if stale["cards"]:
         items = ", ".join(
