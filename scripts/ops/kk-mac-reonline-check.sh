@@ -99,7 +99,11 @@ if echo "$FACTS" | grep -q '^ssh_ok=true'; then
   if [ -n "$LOCAL_MD5" ] && [ "$REMOTE_MD5" != "unknown" ] && [ -n "$REMOTE_MD5" ]; then
       [ "$LOCAL_MD5" = "$REMOTE_MD5" ] \
           && pass "runner-agent in sync ($LOCAL_MD5)" \
-          || warn "runner-agent drift: repo=$LOCAL_MD5 host=$REMOTE_MD5"
+          || {
+            warn "runner-agent drift: repo=$LOCAL_MD5 host=$REMOTE_MD5"
+            info 'staged fix, run ON kk-mac: git -C ~/CascadeProjects/chaba pull && bash ~/CascadeProjects/chaba/scripts/devin/sync-runner-tools.sh --verbose ~/CascadeProjects/chaba && launchctl kickstart -k gui/$(id -u)/ai.chaba.runner-agent'
+            info 'ansible deploy-runner-agent.yml excludes group macos — do not use it here; if the installed copy is newer than the repo copy the never-downgrade guard keeps it, so diff by hand first'
+          }
   else
       warn "runner-agent hash comparison unavailable"
   fi
