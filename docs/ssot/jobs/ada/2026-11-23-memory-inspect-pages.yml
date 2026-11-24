@@ -41,6 +41,13 @@ schedule:
   job: "bank-inspect in ssot.jobs.yml — tony_dell, daily 05:40,
     persistent, 15m timeout, condition_path on the script. Units
     rendered to systemd/generated/tony_dell/."
+  armed: "2026-11-24 — installed on tony-dell via
+    `render-jobs.py --host tony_dell --ids bank-inspect --install`
+    from ~/CascadeProjects/chaba (writes ~/.config/systemd/user/
+    bank-inspect.{service,timer}, enables the timer; dispatcher
+    meta-units untouched). First scheduled run 2026-11-25 05:40 +07;
+    manual `systemctl --user start bank-inspect.service` same day
+    published all 37 lane pages, Result=success."
 
 verification:
   suite: "tests/ada/test_bank_inspect.py (12 tests: lane map, bank
