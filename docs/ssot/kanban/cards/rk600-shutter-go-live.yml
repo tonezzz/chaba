@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
-column: doing
-updated: 2026-11-24 15:21
+column: review
+updated: 2026-11-24 15:22
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -221,14 +221,40 @@ comms:
     snapshot + ordered go-live runbook at docs/ssot/jobs/home-assistant/2026-11-24-rk600-shutter-go-live-runbook.yml;
     board request rk600-wind-unit-20261124 raised for the wind-unit decision + motor-repair status. No live config
     mutated. Outcome doc: dispatch-outcome-20261124-151854-shutter-control-ui-armed-gate-.md'
+- at: 2026-11-24 15:22
+  from: tony-macbook
+  text: 'finished (ok): exit=0 outcome-20261124-151854-shutter-control-ui-armed-gate-.md`; no live HA config was
+    mutated. | devin-task-20261124-'
+- at: 2026-11-24 15:22
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 15:22
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/jobs/home-assistant/2026-11-24-rk600-shutter-go-live-runbook.yml\n\U0001F527
+    Checking YAML syntax..."
+- at: 2026-11-24 15:22
+  from: chaba
+  text: banked 295 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:22
+  from: chaba
+  text: pushed dispatch/20261124-151854-shutter-control-ui-armed-gate- to origin
+- at: 2026-11-24 15:22
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 15:22
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 outcome-20261124-151854-shutter-control-ui-armed-gate-.md`; no live HA config was mutated. | devin-task-20261124-151854-shutter-control-ui-armed-gate-.service:
+    Consumed 10.219s CPU time over 2min 22.216s wall clock time, 331.4M memory peak.'
 claim:
   since: 2026-11-24 15:18
 requests:
@@ -245,3 +271,4 @@ requests:
   - Rescale to true knots (displayed numbers x1.944)
   - Leave mislabeled for now
   suggested: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
+review_kind: verify
