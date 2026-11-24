@@ -48,6 +48,16 @@ CPU_HOLD_SECS="${WATCHDOG_CPU_HOLD_SECS:-$CPU_HOLD_SECS}"
 HOT_RUNS="${WATCHDOG_HOT_RUNS:-$HOT_RUNS}"
 RENDERER_KILL="${WATCHDOG_RENDERER_KILL:-$RENDERER_KILL}"
 HANG_RUNS="${WATCHDOG_HANG_RUNS:-$HANG_RUNS}"
+
+# Cron env has no XDG_RUNTIME_DIR. Without it Electron puts the
+# single-instance socket at ~/.config/Devin/<ver>-main.sock while
+# interactive launches use /run/user/$UID/vscode-*-main.sock — the two
+# never see each other, so every launch spawns a parallel instance fighting
+# over the profile (split-brain; observed 2026-11-24 on tony-dell + tony-omen
+# as LevelDB LOCK errors / "starting error" after the 3.12 upgrade).
+if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -d "/run/user/$(id -u)" ]; then
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+fi
 mkdir -p "$(dirname "$LOG")" "$STATE_DIR"
 
 log() { echo "$(date -Iseconds) $*" >>"$LOG"; }
