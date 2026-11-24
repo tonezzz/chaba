@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
 column: doing
-updated: 2026-11-24 21:57
+updated: 2026-11-24 22:18
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -219,6 +219,15 @@ comms:
   from: devin
   text: dispatch started on tony-omen — inventorying candidates in SSOT/routes/hosts before proposing retire/keep
     list
+- at: 2026-11-24 22:18
+  from: devin
+  text: 'Verification complete — retire/keep proposal (evidence per app):
+
+
+    KEEP — cline: NOT dead. cline-kanban container + authenticated proxy live on con01 (up 27h, :3484 tailnet 401
+    fail-closed), public edge cline.surf-thailand.com answers 302→CF Access. cline-intake.timer fires every 15m
+    and exits "no backlog cards tagged cline" (idle, not broken); cline-board-mirror.timer active 2m. Both jobs
+    declared in ssot.jobs.yml + con01 expected_services. cline-card-review-lane card DONE today 21:12; cline-nes'
 action:
   type: dispatch
   status: running
