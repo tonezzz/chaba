@@ -1,7 +1,7 @@
 id: rk600-shutter-go-live
 title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
-column: review
-updated: 2026-11-24 15:41
+column: backlog
+updated: 2026-11-24 15:48
 spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
   broken — cannot test real actuation until repaired.
 
@@ -256,13 +256,18 @@ comms:
 - at: 2026-11-24 15:41
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 15:48
+  from: chaba
+  text: classified as free_lane (kw:checklist conf 1.00)
+- at: 2026-11-24 15:48
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0 outcome-20261124-151854-shutter-control-ui-armed-gate-.md`; no live HA config was mutated. | devin-task-20261124-151854-shutter-control-ui-armed-gate-.service:
     Consumed 10.219s CPU time over 2min 22.216s wall clock time, 331.4M memory peak.'
@@ -286,4 +291,3 @@ requests:
   suggested: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
   answer: Relabel both to m/s (recommended — no value changes; 12.0 threshold then = 12 m/s ≈ 23kt storm-close)
 review_kind: verify
-awaiting_action: true
