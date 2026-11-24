@@ -1,7 +1,7 @@
 id: voice-thai-voice-install
 title: 'voice: install Thai Piper voice (th_TH-tsync2) — needs tltk+pandas dep fix'
 column: backlog
-updated: 2026-11-24 12:09
+updated: 2026-11-24 15:30
 brief: 'Thai replies in the voice mini-app. Voice model downloaded (61MB th_TH-tsync2) but needs tltk+pandas; numpy
   dtype mismatch in ada-whisper venv blocks install (ValueError: numpy.dtype size changed).'
 priority: medium
@@ -152,3 +152,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:30
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-24 15:30
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
