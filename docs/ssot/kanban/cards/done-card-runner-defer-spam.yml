@@ -1,7 +1,7 @@
 id: done-card-runner-defer-spam
 title: done cards with stale action.runner get defer-spam from every runner
-column: doing
-updated: 2026-11-24 23:44
+column: review
+updated: 2026-11-24 23:49
 priority: medium
 tags:
 - board
@@ -105,12 +105,44 @@ comms:
     notes, kanban-dispatch Phase-A queued filter + _verdict_reason. Regression tests added (ClaimQueueColumnGateTest,
     off-queue claim test); manifest sha repinned; 6 column-less fixtures gained column:backlog. Verified: tests/board
     893+116 green; only failure is pre-existing missing st'
+- at: 2026-11-24 23:49
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-225256-observed-2026-11-24-on-lab-cf-.service:
+    Failed to ope'
+- at: 2026-11-24 23:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 23:49
+  from: chaba
+  text: banked 88 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:49
+  from: chaba
+  text: pushed dispatch/20261124-225256-observed-2026-11-24-on-lab-cf- to origin
+- at: 2026-11-24 23:49
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 23:49
+  from: chaba
+  text: auto-merged 08b3dcf7 (dispatch/20261124-225256-observed-2026-11-24-on-lab-cf-) → origin/master
+- at: 2026-11-24 23:49
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-225256-observed-2026-11-24-on-lab-cf-,
+    branch dispatch/20261124-225256-observed-2026-11-24-on-lab-cf-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-225256-observed-2026-11-24-on-lab-cf-.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-225256-observed-2026-11-24-on-lab-cf-.service:
+    No such file or directory'
+  verified: true
 claim:
   since: 2026-11-24 22:52
+review_kind: verify
