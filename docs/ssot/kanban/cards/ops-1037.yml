@@ -1,7 +1,7 @@
 id: ops-1037
 title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
-column: review
-updated: 2026-11-24 19:52
+column: done
+updated: 2026-11-24 19:54
 spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
   LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
   Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
@@ -243,6 +243,9 @@ comms:
 - at: 2026-11-24 19:52
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 19:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -256,3 +259,7 @@ action:
 claim:
   since: 2026-11-24 19:33
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 19:54
+  note: verified — evidence checks green, closing itself
