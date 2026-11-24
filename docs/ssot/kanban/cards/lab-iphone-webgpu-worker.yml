@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
-column: doing
-updated: 2026-11-24 16:23
+column: review
+updated: 2026-11-24 16:24
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -310,9 +310,35 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-155201-lab-iphone-15-as-opportunistic on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 16:24
+  from: tony-dell
+  text: 'finished (ok): exit=0 Phone Add-to-Home-Screen step, all of which are deploy-gated. | devin-task-20261124-155201-lab-iphone-15-as-oppor'
+- at: 2026-11-24 16:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:24
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-155201-lab-iphone-15-as-opportunistic'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 16:24
+  from: chaba
+  text: pushed dispatch/20261124-155201-lab-iphone-15-as-opportunistic to origin
+- at: 2026-11-24 16:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 74.0s)
+- at: 2026-11-24 16:24
+  from: chaba
+  text: auto-merged 43ebe651 (dispatch/20261124-155201-lab-iphone-15-as-opportunistic) → origin/master
+- at: 2026-11-24 16:24
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
@@ -320,5 +346,9 @@ action:
   sweep:
     stale_running: 2026-11-24 16:23
     dirty: 1
+  result: 'exit=0 Phone Add-to-Home-Screen step, all of which are deploy-gated. | devin-task-20261124-155201-lab-iphone-15-as-opportunistic.service:
+    Consumed 7min 28.543s CPU time over 28min 51.967s wall clock time, 4.1G memory peak, 681.4M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 15:51
+review_kind: verify
