@@ -1,7 +1,7 @@
 id: ada-opencode-v2-upgrade
 title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
-column: doing
-updated: 2026-11-24 21:48
+column: review
+updated: 2026-11-24 21:54
 priority: medium
 tags:
 - ada
@@ -237,13 +237,52 @@ comms:
     ada_mcp.py is an MCP server not a plugin — no @opencode-ai/plugin dep exists; `opencode mcp list` under v2.4.1
     shows 7/7 servers connected incl ada-control. opsread regression: lane S1 quota exhausted so I mirrored the
     profile run manually — `opencode run --standalone` exit 0, art'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-213050-ada-opencode-on-idc02-runs-ope no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 21:54
+  from: tony-omen
+  text: 'finished (ok): exit=0 e (OPS-1310 lane), and ada-ocb-smoke FAILs are an unrelated find_card ambiguity bug.
+    | devin-task-20261124-213050'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-213050-ada-opencode-on-idc02-runs-ope'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: banked 484 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-213050-ada-opencode-on-idc02-runs-ope on tony-omen still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: pushed dispatch/20261124-213050-ada-opencode-on-idc02-runs-ope to origin
+- at: 2026-11-24 21:54
+  from: chaba
+  text: "auto-merge not done: push: To github-chaba:tonezzz/chaba.git\n ! [rejected]                HEAD -> master
+    (non-fast-forward)\nerror: failed to push some refs to 'github-chaba:tonezzz/chaba.git'\nhint: Updates were
+    rejected because — close will block until merged"
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 21:54
+    dirty: 2
+  result: 'exit=0 e (OPS-1310 lane), and ada-ocb-smoke FAILs are an unrelated find_card ambiguity bug. | devin-task-20261124-213050-ada-opencode-on-idc02-runs-ope.service:
+    Consumed 4min 34.720s CPU time over 18min 15.456s wall clock time, 898.5M memory peak.'
 claim:
   since: 2026-11-24 21:29
+review_kind: verify
