@@ -264,11 +264,41 @@ JOBS = [
      "run": _WARMUP_RUN},
 
     # ---- 2. restore HF hub cache from Drive (big CPU-bound extract) -------
+    # Per-repo archives (ADA-0806): cache/hf-hub/models--<org>--<name>.tar.zst.
+    # NEST_HF_REPOS (set by runner.py = union of pending packs' hf_repos)
+    # selects exactly what this boot needs — 'NONE' skips the extract
+    # entirely; named repos extract their own tar, or their hub/models--*
+    # subtree out of the legacy monolith hf-hub.tar.zst in ONE tar pass
+    # (selective even before per-repo archives exist); unset/empty (only
+    # pre-ADA-0806 runners never set it) restores the whole monolith —
+    # complete but unselective — with per-repo tars as the monolith-less
+    # fallback.
     {"name": "restore-hf-cache", "scope": "env",
-     "prep": "test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-             " && mkdir -p /root/.cache/huggingface"
-             " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-             "    -C /root/.cache/huggingface || true",
+     "prep": "mkdir -p /root/.cache/huggingface/hub;"
+             " CACHE=/content/drive/MyDrive/ada-nest/cache;"
+             " if [ \"$NEST_HF_REPOS\" = \"NONE\" ]; then"
+             "   echo 'no pending pack needs the HF cache — skipping';"
+             " elif [ -n \"$NEST_HF_REPOS\" ]; then"
+             "   MISS='';"
+             "   for r in $NEST_HF_REPOS; do"
+             "     d=\"models--${r//\\//--}\";"
+             "     t=\"$CACHE/hf-hub/$d.tar.zst\";"
+             "     if [ -f \"$t\" ]; then"
+             "       tar -I zstd -xf \"$t\""
+             "         -C /root/.cache/huggingface/hub || true;"
+             "     else MISS=\"$MISS hub/$d\"; fi;"
+             "   done;"
+             "   if [ -n \"$MISS\" ] && [ -f \"$CACHE/hf-hub.tar.zst\" ]; then"
+             "     tar -I zstd -xf \"$CACHE/hf-hub.tar.zst\""
+             "       -C /root/.cache/huggingface $MISS 2>/dev/null || true;"
+             "   fi;"
+             " elif [ -f \"$CACHE/hf-hub.tar.zst\" ]; then"
+             "   tar -I zstd -xf \"$CACHE/hf-hub.tar.zst\""
+             "     -C /root/.cache/huggingface || true;"
+             " elif ls \"$CACHE\"/hf-hub/*.tar.zst >/dev/null 2>&1; then"
+             "   for t in \"$CACHE\"/hf-hub/*.tar.zst; do"
+             "     tar -I zstd -xf \"$t\""
+             "       -C /root/.cache/huggingface/hub || true; done; fi",
      "run": "import os;p='/root/.cache/huggingface/hub';"
             "print('hub entries:',len(os.listdir(p))if os.path.isdir(p)else 0)"},
 
@@ -297,10 +327,18 @@ JOBS = [
      "run": _HELDOUT_RUN},
 
     # ---- 6. repack hub cache for the next runtime (verify-before-mark) --
+    # Writes BOTH the per-repo archives (cache/hf-hub/<repo>.tar.zst — what
+    # selective restore consumes) and the legacy monolith hf-hub.tar.zst
+    # (kept one transition cycle for pre-split restores; retire later).
     {"name": "save-hf-cache", "scope": "env",
-     "artifacts": ["cache/hf-hub.tar.zst"],
+     "artifacts": ["cache/hf-hub.tar.zst", "cache/hf-hub/*.tar.zst"],
      "prep": "test -d /root/.cache/huggingface/hub"
-             " && mkdir -p /content/drive/MyDrive/ada-nest/cache"
+             " && mkdir -p /content/drive/MyDrive/ada-nest/cache/hf-hub"
+             " && for d in /root/.cache/huggingface/hub/models--*; do"
+             "      [ -d \"$d\" ] || continue;"
+             "      b=$(basename \"$d\");"
+             "      tar -I zstd -cf \"/content/drive/MyDrive/ada-nest/cache/hf-hub/$b.tar.zst\""
+             "        -C /root/.cache/huggingface/hub \"$b\" || true; done"
              " && tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
              "    -C /root/.cache/huggingface hub || true",
      "run": "print('hf cache packed')"},

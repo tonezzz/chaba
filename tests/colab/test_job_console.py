@@ -111,6 +111,12 @@ class ConsoleSandbox(unittest.TestCase):
         (self.q / "heartbeat").write_text(
             f"{time.time() - age_s:.0f} some-job run\n")
 
+    def write_lease(self, age_s=0.0, job="some-job", phase="run"):
+        # unified liveness file (ADA-0806): {worker,epoch,ts,job,phase}
+        (self.q / "lease").write_text(json.dumps(
+            {"worker": "colab-peer-1234-1", "epoch": 7,
+             "ts": time.time() - age_s, "job": job, "phase": phase}))
+
     def spawn_sleeper(self):
         p = subprocess.Popen(["sleep", "30"])
         self.addCleanup(lambda: p.poll() is None and p.kill())
@@ -263,6 +269,24 @@ class TestPidCollisionSafety(ConsoleSandbox):
         self.assertNotIn(sleeper.pid, [p for p, _ in kills])
         self.assertIsNone(sleeper.poll())       # still alive
 
+    def test_fresh_lease_blocks_without_heartbeat(self):
+        """Unified liveness (ADA-0806): a fresh queue/lease alone marks the
+        queue alive — no heartbeat file needed."""
+        sleeper = self.spawn_sleeper()
+        self.write_runner_id("foreign-boot-c6c6", sleeper.pid)
+        self.write_lease(age_s=5)
+        kills = []
+        orig_kill = os.kill
+        self.launcher.os.kill = lambda p, s: kills.append((p, s))
+        try:
+            state, detail = self.launcher.runner_state(str(self.q))
+            self.assertEqual(state, "alive-elsewhere")
+            self.assertIn("foreign-boot-c6c6"[:8], detail)
+        finally:
+            self.launcher.os.kill = orig_kill
+        self.assertNotIn(sleeper.pid, [p for p, _ in kills])
+        self.assertIsNone(sleeper.poll())
+
     def test_stale_foreign_record_left_alone(self):
         self.write_runner_id("foreign-boot-a5a5", 424242)
         # no heartbeat at all -> stale record -> free, and never signaled
@@ -390,7 +414,7 @@ class TestEndToEndDrain(ConsoleSandbox):
         if mutate:
             deadline = time.time() + 10
             while time.time() < deadline:
-                if (self.q / "heartbeat").exists():
+                if (self.q / "lease").exists():
                     time.sleep(0.1)
                     mutate()
                     break
@@ -420,7 +444,47 @@ class TestEndToEndDrain(ConsoleSandbox):
         # clean exit removed our identity files
         self.assertFalse((self.q / "runner.id").exists())
         self.assertFalse((self.q / "runner.pid").exists())
-        self.assertTrue((self.q / "heartbeat").exists())
+        # unified liveness: queue/lease carries {worker,epoch,ts,job,
+        # phase}; the legacy heartbeat text file is retired (ADA-0806)
+        lease = json.loads((self.q / "lease").read_text())
+        self.assertIn("ts", lease)
+        self.assertIn("phase", lease)
+        self.assertFalse((self.q / "heartbeat").exists())
+
+    def test_packs_index_events_and_hf_repos_env(self):
+        """ADA-0806: claim/done land as packs-index event files, and the
+        union of pending packs' hf_repos reaches prep as NEST_HF_REPOS."""
+        d = self.root / "packs" / "hf-pack"
+        d.mkdir(parents=True)
+        (d / "pack.yml").write_text(
+            "name: hf-pack\n"
+            "hf_repos:\n"
+            "  - org/test-model\n"
+            "needs:\n"
+            "  egress_only_ok: true\n"
+            "timeout_s: 60\n"
+            "artifacts:\n"
+            "  - packs/hf-pack/out/result.txt\n"
+            "prep: |\n"
+            "  echo \"$NEST_HF_REPOS\" > \"$PACK_DIR/prep-env.txt\"\n"
+            "run: |\n"
+            "  import os\n"
+            "  os.makedirs(f'{PACK_DIR}/out', exist_ok=True)\n"
+            "  open(f'{PACK_DIR}/out/result.txt','w').write('ok\\n')\n")
+        rc, out = self.run_runner()
+        self.assertEqual(rc, 0, out)
+        # packs-index: one immutable event file per state change
+        idx = self.q / "packs-index"
+        self.assertTrue(idx.is_dir(), out)
+        events = [json.loads(p.read_text())
+                  for p in idx.glob("*.json")]
+        by_pack_state = {(e["pack"], e["state"]) for e in events}
+        self.assertIn(("hf-pack", "claim"), by_pack_state)
+        self.assertIn(("hf-pack", "done"), by_pack_state)
+        self.assertTrue(all(e.get("worker") for e in events))
+        # NEST_HF_REPOS carried the pending pack's declared repos into prep
+        env_txt = (d / "prep-env.txt").read_text().strip()
+        self.assertIn("org/test-model", env_txt.split())
 
     def test_foreign_runner_id_survives_our_exit(self):
         """If a newer generation's runner.id appeared mid-run, our cleanup

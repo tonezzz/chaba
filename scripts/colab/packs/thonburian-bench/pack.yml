@@ -10,6 +10,9 @@
 #    positionally but first param is `model`; MUST use kwargs.
 #  - ref_text supplied -> model.transcribe() (whisper) never invoked.
 name: thonburian-bench
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - biodatlab/ThonburianTTS
+  - charactr/vocos-mel-24khz
 needs:
   gpu_gb: 3        # megaF5 ~1.3GB + vocos + activations
   disk_gb: 4       # weights + pip deps

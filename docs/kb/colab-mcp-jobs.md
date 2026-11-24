@@ -51,9 +51,11 @@ workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
   runner removes its identity files only when they still name it, so a
   fenced-out generation can't strip a live runner's marks.
 - **Registry/state layout**: `queue/runtime-sessions/<boot_id>.json` (managed
-  VMs), `queue/runner.id`, `queue/heartbeat`, `queue/lease`,
-  `queue/warmup/<boot_id>.json` (per-boot warmup stats). Fleet-side read:
-  `mcp-colab` tool `colab_session_status`.
+  VMs), `queue/runner.id`, `queue/lease` (unified liveness —
+  `{worker,epoch,ts,job,phase}`; `queue/heartbeat` is the retired legacy
+  file kept only as a reader fallback), `queue/packs-index/` (per-event
+  pack state files), `queue/warmup/<boot_id>.json` (per-boot warmup
+  stats). Fleet-side read: `mcp-colab` tool `colab_session_status`.
 - **Snapshot constraint**: the runner imports `JOBS.py` and scans
   `packs/` ONCE at launch, runs all JOBS before the (name-sorted) packs,
   and overlaps only the *next* job's `prep` under the current `run`.
@@ -179,8 +181,11 @@ of staging cells per job:
 - **Detached mode (2026-10-23; hardened 2026-10-26)** — the launch path
   is cell 2 of the job-console notebook (`queue-launcher-cell.py`): it
   starts `queue/runner.py` as a session-detached process (output →
-  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, `queue/heartbeat`
-  rewritten every 15 s) after the session gate described above. The
+  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, unified
+  liveness → `queue/lease` JSON `{worker,epoch,ts,job,phase}` rewritten
+  every 15 s — the legacy `queue/heartbeat` text file is retired;
+  readers fall back to it for pre-unification runners, ADA-0806) after
+  the session gate described above. The
   kernel stays free for diagnostics mid-run, and the queue survives a
   kernel restart. Blocking in-kernel mode is only for interactive
   debugging.
@@ -199,25 +204,35 @@ of staging cells per job:
   `signal.alarm(N)` guard + a `start` print before it; a silent stall
   otherwise looks identical to a slow run (VoxCPM2 sat ~1 h at 0% GPU).
 - **Bracket every manifest with cache jobs** so the second runtime of a
-  session (or the next session) skips weight re-downloads entirely:
+  session (or the next session) skips weight re-downloads entirely.
+  Since ADA-0806 the cache is stored **per repo** —
+  `cache/hf-hub/models--<org>--<name>.tar.zst` — and `save-hf-cache`
+  writes those plus the legacy `cache/hf-hub.tar.zst` monolith (kept one
+  transition cycle). `restore-hf-cache` honors `NEST_HF_REPOS` (the
+  runner sets it to the union of `hf_repos` over packs/jobs still
+  pending this boot): named repos extract only their own tar — or their
+  `hub/models--*` subtree out of the monolith in ONE tar pass, so
+  selective restore works even before per-repo archives exist;
+  `'NONE'` skips the extract entirely; unset (only pre-ADA-0806 runners)
+  restores the whole monolith, with per-repo tars as the monolith-less
+  fallback:
   ```python
   {"name":"restore-hf-cache","scope":"env",
-   "prep":"test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          " && mkdir -p /root/.cache/huggingface"
-          " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          "    -C /root/.cache/huggingface || true",
-   "run":"import os;print('hub entries:',len(os.listdir('/root/.cache/huggingface/hub'))if os.path.exists('/root/.cache/huggingface/hub')else 0)"},
-  # ... gpu jobs whose preps stay `snapshot_download` — they validate the
-  # restored cache instantly instead of re-downloading ...
-  {"name":"save-hf-cache","scope":"env","artifacts":["cache/hf-hub.tar.zst"],
-   "prep":"tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          " -C /root/.cache/huggingface hub",
-   "run":"print('hf cache packed')"},
+   # prep/run as shipped in scripts/colab/JOBS.py — selective via
+   # $NEST_HF_REPOS: 'NONE' skips, 'org/name ...' extracts only those
+   # cache/hf-hub/models--org--name.tar.zst archives
+   ...},
+  {"name":"save-hf-cache","scope":"env",
+   "artifacts":["cache/hf-hub.tar.zst","cache/hf-hub/*.tar.zst"],
+   # prep tars each /root/.cache/huggingface/hub/models--* dir into
+   # cache/hf-hub/<name>.tar.zst AND the legacy monolith
+   ...},
   ```
   Drive read + zstd decompress beats an HF re-pull, and `snapshot_download`
   becomes a fast no-op validator when the cache is warm. Keep the
   `snapshot_download` preps regardless — they self-heal when the tar is
-  missing or stale.
+  missing or stale. Packs declare their hub need via `hf_repos:` (see
+  Packs below) so a pending LTX pack restores LTX-Video, not VoxCPM2.
 - **The first GPU job's prep is the one un-hideable window** — unless you
   put the warmup first. Canonical `JOBS.py`
   (`scripts/colab/JOBS.py`) opens with `t4-session-warmup` (scope `env`):
@@ -266,8 +281,13 @@ The launch order that keeps the T4 fed end-to-end:
 3. **After prep, the T4 package runs with durable-artifact gates.**
    env `scope` jobs re-run per boot; packs claim → prep → run →
    verify-before-mark (`artifacts` globs must hit ≥1 non-empty file) →
-   `packs/<name>/done`. The 120 s `NEST_QUEUE_SETTLE_S` drain window lets
-   DriveFS finish flushing before the VM idles; server-side truth is
+   `packs/<name>/done`. The `NEST_QUEUE_SETTLE_S` drain window (default
+   120 s) is the stage-then-push flush window: packs should write big
+   outputs to local disk and copy them into the Drive path, and after
+   settling the runner re-stats every artifact pattern marked done this
+   session — sizes still growing mean the FUSE flush was incomplete at
+   mark time (the 2026-10-23 lost-tar class); the check is logged for
+   the fleet audit and never fails the queue. Server-side truth is
    `rclone lsf` from a fleet host.
 
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
@@ -280,6 +300,11 @@ same bundle runs on Colab today and a fleet host tomorrow.
   ```yaml
   name: my-job
   needs: {gpu_gb: 3, disk_gb: 4, ram_gb: 8, egress_only_ok: true}   # capability floor
+  hf_repos: [Lightricks/LTX-Video]   # HF hub repos this pack needs in
+                                   # /root/.cache/huggingface/hub —
+                                   # drives selective restore-hf-cache
+                                   # (ADA-0806). Absent = no declared HF
+                                   # need; undeclared use self-downloads.
   requires: [my-release-preflight]  # claim gate — wait for done marker(s)
   timeout_s: 1200     # runner-side SIGALRM around the whole run
   artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
@@ -296,6 +321,16 @@ same bundle runs on Colab today and a fleet host tomorrow.
   (first-writer-wins, 2 s settle; Drive listing lag makes it best-effort
   for simultaneous claims — fine at our scale). Done marker is a FILE:
   `packs/<name>/done` (note: not `.done` suffix — inside the pack dir).
+  A worker releases its own claim on FAIL, on done, and before a
+  fence-exit self-kill — a dead claim never waits out the stale-claim
+  window (ADA-0806).
+- **packs-index** — every state change also drops one tiny immutable
+  JSON event at `queue/packs-index/<ms>-<worker>-<pack>-<state>.json`
+  (states: `stage|claim|done|fail|release`; writers: nest-pack-submit,
+  nest-worker, queue-runner). Fleet scans fold the dir in ONE rclone
+  copy instead of `lsf` per pack; the index is advisory — consumers
+  (`nest-queue-status.py`) fall back to live per-pack checks for
+  anything not called terminal.
 - **needs check** — workers advertise `gpu_gb` (nvidia-smi),
   `disk_gb` (statvfs), `ram_gb` (sysconf SC_PHYS_PAGES), and
   `egress_only_ok` (Colab can only egress). Unmatched packs skip
@@ -348,7 +383,8 @@ same bundle runs on Colab today and a fleet host tomorrow.
 `ada-nest/queue/gap-runner.py` fills the GPU-idle prep/prep-wait windows
 of the main queue with tiny self-contained **gap packs** under
 `ada-nest/gap-packs/<name>/pack.json`. It runs only while the main
-heartbeat is fresh (<=60s) AND phase is `prep`/`prep-wait`, a VRAM gate
+queue liveness is fresh (<=60s — `queue/lease` ts, heartbeat fallback)
+AND phase is `prep`/`prep-wait`, a VRAM gate
 passes, and `queue/gap-lease` is free — and it SIGKILLs the pack's process
 group the moment the window closes (claim released for retry). Gap packs
 never pull models, never touch HF/Drive caches or production indexes, and
