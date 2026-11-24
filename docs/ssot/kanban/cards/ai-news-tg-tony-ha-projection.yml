@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
-column: doing
-updated: 2026-11-24 16:54
+column: review
+updated: 2026-11-24 16:55
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -212,9 +212,30 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-163820-extend-the-existing-wp-news-fe on tony-macbook still
     dirty — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 16:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0 tcome-20261124-163820-extend-the-existing-wp-news-fe.md`; final comms posted to the
+    card. | devin-task-20261124-1'
+- at: 2026-11-24 16:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 16:55
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-163820-extend-the-existing-wp-news-fe
+    is 46 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 16:55
+  from: chaba
+  text: pushed dispatch/20261124-163820-extend-the-existing-wp-news-fe to origin
+- at: 2026-11-24 16:55
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 16:55
+  from: chaba
+  text: 'worktree kept: dirty — 8 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: jevos
   model: swe-2-flash-medium
@@ -223,5 +244,8 @@ action:
   sweep:
     stale_running: 2026-11-24 16:54
     dirty: 8
+  result: 'exit=0 tcome-20261124-163820-extend-the-existing-wp-news-fe.md`; final comms posted to the card. | devin-task-20261124-163820-extend-the-existing-wp-news-fe.service:
+    Consumed 25.692s CPU time over 12min 43.267s wall clock time, 317.9M memory peak.'
 claim:
   since: 2026-11-24 16:37
+review_kind: verify

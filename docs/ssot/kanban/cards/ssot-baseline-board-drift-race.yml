@@ -1,0 +1,24 @@
+id: ssot-baseline-board-drift-race
+title: SSOT warnings baseline races live board writes
+column: backlog
+updated: 2026-11-24 16:55
+brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
+  auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
+  nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
+  instead of repeated baseline refreshes.
+priority: medium
+program: chaba-ci
+spec: 'Observed 2026-11-24: after PR #205 restored an emptied baseline, fresh warnings appeared from omen-battery-charge-policy.yml
+  (362 lines > 350 review threshold) and a malformed job doc; PRs #205/#206 fixed those, but 156 cards already exceed
+  the review threshold so any active card can reintroduce the failure. Options: (a) RECOMMENDED — exclude kanban/cards/
+  from the advisory review-threshold bloat check in scripts/ssot-validate-all.mjs; keep the 750-line hard threshold
+  + per-card grandfathering as the real gate. (b) refresh the committed baseline from the board write path after
+  each card mutation (auditable but couples CI to board-api). (c) make optimize-gate treat card-only review warnings
+  as advisory (policy change, weaker signal). Done condition: a card growing from normal comms traffic cannot turn
+  master SSOT CI red; hard-threshold bloat still blocks. Verify by simulating a >350-line card write against the
+  gate.'
+ref: KNB-0040
+comms:
+- at: 2026-11-24 16:55
+  from: tony
+  text: card captured via board-api

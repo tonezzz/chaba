@@ -1,7 +1,7 @@
 id: tony-ha-cold-standby-config-sync-promote-d12293
 title: tony-ha cold standby — config sync + promote runbook
 column: review
-updated: 2026-11-24 16:46
+updated: 2026-11-24 16:55
 ref: HOM-0855
 comms:
 - at: 2026-10-25 13:55
@@ -225,6 +225,9 @@ comms:
 - at: 2026-11-24 16:46
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 16:55
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-162119'
 spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba repository.
   Constraints include adhering to existing infrastructure patterns without inventing hostnames or paths beyond what
   is established in the chaba repo. The testable done-condition is a documented and committed runbook in the repository
@@ -239,6 +242,8 @@ action:
   result: 'exit=0 stall once Tony picks the host. Card comms posted; outcome doc written with lessons. | devin-task-20261124-162119-goal-is-to-create-a-cold-stand.service:
     Consumed 1min 13.240s CPU time over 24min 30.818s wall clock time, 357.9M memory peak.'
   verified: false
+  sweep:
+    no_repo: 2026-11-24 16:55
 claim:
   since: 2026-11-24 16:20
 review_kind: verify

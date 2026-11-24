@@ -1,7 +1,7 @@
 id: chaba-board-quadlet
 title: Package board-api + render + kanban-sync as one quadlet on idc03
 column: review
-updated: 2026-11-24 16:48
+updated: 2026-11-24 16:54
 brief: 'Post-migration consolidation: once OPS-0725 (dell-off) lands and edge service names exist, the board stack
   can become a single podman quadlet — repo checkout as volume, ssh keys via mounted secrets. Assessed 2026-10-22:
   real fragility is topology assumptions in probes, not process management; container adds little until the host
@@ -227,6 +227,9 @@ comms:
 - at: 2026-11-24 16:48
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 16:54
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-162438'
 action:
   type: dispatch
   status: done
@@ -237,6 +240,8 @@ action:
   attempts: 1
   result: 'exit=0 1124-162438-package-board-api-render-kanba.md` and the card has a final comms entry. | devin-task-20261124-162438-package-board-api-render-kanba.service:
     Consumed 4min 30.781s CPU time over 21min 26.314s wall clock time, 979.2M memory peak.'
+  sweep:
+    no_repo: 2026-11-24 16:54
 claim:
   since: 2026-11-24 16:23
 review_kind: verify
