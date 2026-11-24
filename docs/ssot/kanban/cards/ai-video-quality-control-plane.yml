@@ -1,7 +1,7 @@
 id: ai-video-quality-control-plane
 title: Expand AI video generation quality control plane
-column: doing
-updated: 2026-11-24 16:50
+column: review
+updated: 2026-11-24 16:51
 spec: 'Extend the existing Ada Nest documentary pipeline with asset identity and continuity control. Implement in
   stages: P0 immutable per-shot manifest + asset IDs + scratch-VO timing + technical QA; P1 character/object/location
   bibles + continuity ledger + DWPose/depth controls; P2 deterministic Blender/stock/space scenes + Gaussian/camera
@@ -221,13 +221,34 @@ comms:
     P1 bibles schema + continuity-ledger.jsonl + approved-takes.json + pose/depth slots; P2 scene/camera (SCoPE)
     control slots + coverage reporting; P3 scene-graph eval fixture tagged vbench/t2v-compbench/videoscore2. verify
     -> qc/control-verify.json is the per-stage gate. 7 unittest'
+- at: 2026-11-24 16:51
+  from: tony-macbook
+  text: 'finished (ok): exit=0 d outcome summary in `dispatch-outcome-20261124-164201-extend-the-existing-ada-nest-d.md`.
+    | devin-task-20261124-'
+- at: 2026-11-24 16:51
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 16:51
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-24 16:51
+  from: chaba
+  text: pushed dispatch/20261124-164201-extend-the-existing-ada-nest-d to origin
+- at: 2026-11-24 16:51
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 d outcome summary in `dispatch-outcome-20261124-164201-extend-the-existing-ada-nest-d.md`. | devin-task-20261124-164201-extend-the-existing-ada-nest-d.service:
+    Consumed 37.830s CPU time over 8min 34.371s wall clock time, 379.6M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 16:41
+review_kind: verify
