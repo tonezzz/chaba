@@ -1,7 +1,7 @@
 id: openchamber-ada-card-preview-harness
 title: OpenChamber Preview harness for Ada image and video chat cards
 column: doing
-updated: 2026-11-24 19:10
+updated: 2026-11-24 20:05
 brief: Use OpenChamber Preview to validate Ada chat-card media rendering against a deterministic local harness.
 priority: medium
 program: devnest
@@ -206,6 +206,13 @@ comms:
     Landed on origin/master as 7b5f; Check `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip;
     [board-api-lock-contention] OPS-0725 follow-up (2026-11-21 06:04 ICT): PR #197 r; [dispatch-worktree-merged-triage]
     TRIAGE-RUN 2026-11-17 on to'
+- at: 2026-11-24 20:05
+  from: devin
+  text: 'DONE — local browser harness for ada-chat-card.js committed on dispatch/20261124-191048 (38965e66da, 41
+    files, not pushed/deployed). tests/ha/ada-chat-card/: fixture server (127.0.0.1:8777, real png/gif/mp4/webm
+    + 410/wrong-mime/non-http routes), instrumented harness.html loading the real card JS, preview-bridge.mjs driving
+    OpenChamber Preview via SSE browser-control (browser.open/snapshot/capture/resize on headless Chrome/Playwright).
+    14/14 scenarios PASS incl. image-only, video-only, mixed, em'
 action:
   type: dispatch
   status: running
