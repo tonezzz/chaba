@@ -1,7 +1,7 @@
 id: idc02-vps-lane-canary-hv
 title: 'Canary: idc02 vps-label ada-pi dispatch lane (high-pri re-queue)'
 column: done
-updated: 2026-11-24 16:08
+updated: 2026-11-24 16:11
 brief: High-priority re-queue of idc02-vps-lane-canary (closed) — same one-shot canary for card idc02-second-ada-pi-lane.
 priority: high
 tags:
@@ -138,6 +138,10 @@ comms:
 - at: 2026-11-24 16:08
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 16:11
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''vps''] — fix action.labels/host
+    pins or teach a runner the capability'
 claim:
   since: 2026-11-24 15:50
 review_kind: verify
@@ -145,3 +149,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-24 16:08
   note: verified — evidence checks green, closing itself
+awaiting_action: true
