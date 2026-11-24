@@ -1,0 +1,40 @@
+id: idc03-disk-cleanup-20261124
+title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
+column: backlog
+updated: 2026-11-24 08:28
+brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
+  (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
+priority: high
+program: chaba-ops
+tags:
+- disk
+- idc03
+- mddb
+spec: 'EVIDENCE (2026-11-24): ~/.config 89G (mddb-ops/data/mddb.db 70G, mddb-cms 12G, mddb 3.6G); ~/mddb-backups
+  131G in 10 files: filecopy-mddb-ops-20261124-0233.db.UNVERIFIED 70G + -20261123-0236 57G + four 0-byte UNVERIFIED;
+  native mddb-20261124-0230.db.gz 1.1G and 20261123 1014M pass gzip -t. Podman images 11.86G (only 305M reclaimable);
+  journals 1.9G total; ~/.cache 5G; /tmp 2.5M; dispatch worktrees 3/138M.
+
+
+  TIER 0 (safe, ~2G, no approval): journalctl --user --vacuum-time=7d + sudo journalctl --vacuum-time=7d; remove
+  zero-byte *.UNVERIFIED; skip podman image prune (305M only).
+
+
+  TIER 1 (127G, TONY APPROVAL — irreversible on-host): delete the two large *.UNVERIFIED filecopies ONLY after open-verifying
+  a native gz backup in a throwaway container (docs/kb/mddb-backup-binlog-2026-10-03.md) and confirming offsite
+  copy. Rationale: files are marked UNVERIFIED because podman-cp filecopy failed open-verify 3x — unsafe as restore
+  sources; the native /v1/backup dumps for same nights are intact.
+
+
+  TIER 2 (structural, requires maintenance window + approval): mddb-ops 70G bbolt file likely mostly freelist from
+  pruned host-logs; run prune-old-docs.py --dry-run, then Procedure C offline bbolt compact from docs/kb/mddb-prune-compact.md
+  (vector-safe, .pre-compact rollback, prior 18.9G->321M result). Downtime for mddb-ops.
+
+
+  ROOT CAUSE: ~/mddb-backup.sh retention=3 days; filecopy fallback leaves giant UNVERIFIED copies when disk is full.
+  Fix: keep <=1-2 UNVERIFIED, alert on fallback, stream filecopy through gzip, and add disk-usage alert at 85%.'
+ref: MEM-0021
+comms:
+- at: 2026-11-24 08:28
+  from: tony
+  text: card captured via board-api
