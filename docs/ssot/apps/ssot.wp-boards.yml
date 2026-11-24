@@ -170,6 +170,13 @@ post_types:
   # Regression probes: wp-nest-job-cpt + wp-activity-cpt in
   # ssot.health.home.web.yml; re-verify any time with
   # scripts/wp-boards/verify-nest-job.sh.
+  # v0.10.0 (DEPLOYED 2026-11-24 via deploy-plugin-zip.sh on tony-omen,
+  # card rename-educations-cpt-label-to-lessons-w-0014fb / OPS-0820):
+  # lesson CPT admin labels Education(s) -> Lesson(s) — name/singular_name/
+  # menu_name + full labels array; slug 'lesson', rest_base, has_archive
+  # and all meta unchanged (REST + board-api depend on the slug). WP
+  # lesson posts are a frozen archive since the 2026-11-07 wiki cutover;
+  # the 137 private posts still list under wp-admin Lessons.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
