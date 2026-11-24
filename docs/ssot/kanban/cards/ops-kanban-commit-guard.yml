@@ -422,12 +422,21 @@ comms:
   from: chaba
   text: 'commit refused (rebase-in-progress): rebase/merge/cherry-pick in progress in /home/tony/CascadeProjects/chaba-tony-dell
     — kanban-commit holding until resolved'
+- at: 2026-11-24 19:52
+  from: devin
+  text: 'Verified recovered 2026-11-24 19:49: no rebase/merge/cherry-pick state in the served checkout, manual git-safe-pull.sh
+    succeeded (writer 0/0), and kanban-commit.service Result=success with origin/master advanced to a2427f2e2df.
+    The 18:53 rebase-in-progress guard condition is stale; closing with evidence. A transient 19:47 safe-pull failure
+    was also cleared by the manual safe-pull; fail-streak file is absent.'
+- at: 2026-11-24 19:52
+  from: tony
+  text: closed by tony
 id: ops-kanban-commit-guard
 title: 'kanban-commit blocked: unsafe staged state'
-column: review
+column: done
 note: rebase/merge/cherry-pick in progress in /home/tony/CascadeProjects/chaba-tony-dell — kanban-commit holding
   until resolved
-updated: 2026-11-24 18:53
+updated: 2026-11-24 19:52
 action:
   status: done
 ref: KNB-0309
