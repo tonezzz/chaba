@@ -41,6 +41,7 @@ Manual: `python3 tests/ha/ada-chat-card/server.py --port 8777` then open
 - `stream-rerender` — transcript deltas stay raw text mid-stream; `response_completed`/`response_interrupted` re-render URLs into media/links.
 - `click-open` — img click → `window.open(url)`; anchor contract `target=_blank rel=noopener`.
 - `download-link` — attachment URL renders as anchor; server sends `Content-Disposition: attachment`.
+- `qc-panel` — Adobe Stock QC panel (card ada-opencode-repair-menu-card): `picker_url` → stateful `/qc-picker/*` fixture; hidden→shown on pending candidate, thumb decode, 4 buttons, keep/reject(+note)/revise POST `/api/qc-decision`, repair opens `?img=/img/<asset>` with no decision recorded. Other scenarios mount with `picker_url:""` (panel off).
 - `mobile-layout` — 360px stage + `browser.resize mobile` (390×844): no horizontal overflow, media capped at 100%.
 
 ## Notes

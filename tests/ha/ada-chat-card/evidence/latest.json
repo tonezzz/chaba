@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-11-24T13:02:39.253Z",
+  "startedAt": "2026-11-24T14:50:10.164Z",
   "ocUrl": "http://127.0.0.1:3000",
   "serverUrl": "http://127.0.0.1:8777",
   "scenarios": {
@@ -9,7 +9,7 @@
         {
           "name": "ws url binds channel=web&chat_id=web-tester",
           "pass": true,
-          "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=1aed7f7a98ac4abf9b16d28bb76f7aaf&api_key=harness-key&channel=web&chat_id=web-tester"
+          "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=b2c70123aa50489090e404222e87d5f3&api_key=harness-key&channel=web&chat_id=web-tester"
         },
         {
           "name": "ready frame → Connected status",
@@ -550,6 +550,114 @@
       "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=download-link",
       "title": "ada-chat-card harness"
     },
+    "qc-panel": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "panel hidden with no pending candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "panel appears for pending candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "asset label",
+          "pass": true,
+          "detail": "qc-fixture-candidate"
+        },
+        {
+          "name": "lane subtitle",
+          "pass": true,
+          "detail": "lane gemini-image · landed 2026-11-24"
+        },
+        {
+          "name": "four action buttons",
+          "pass": true,
+          "detail": "n=4"
+        },
+        {
+          "name": "button labels Keep/Reject/Revise/Repair",
+          "pass": true,
+          "detail": "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region"
+        },
+        {
+          "name": "thumb src = picker /img/<asset>",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/qc-picker/img/qc-fixture-candidate"
+        },
+        {
+          "name": "thumb decoded (naturalWidth>0)",
+          "pass": true,
+          "detail": "nw=320 display="
+        },
+        {
+          "name": "panel hides after Keep",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "Keep POST recorded decision=keep",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"keep\",\"note\":\"\",\"at\":\"2026-11-24T14:50:22.587119+00:00\"}}"
+        },
+        {
+          "name": "panel reappears for re-pended candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "panel hides after Reject",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "Reject recorded decision+note",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"reject\",\"note\":\"fixture reject note\",\"at\":\"2026-11-24T14:50:22.737896+00:00\"}}"
+        },
+        {
+          "name": "Revise recorded decision=revise",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"revise\",\"note\":\"\",\"at\":\"2026-11-24T14:50:22.893272+00:00\"}}"
+        },
+        {
+          "name": "Repair opens picker ?img=/img/<asset>",
+          "pass": true,
+          "detail": "[{\"url\":\"http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate\",\"target\":\"_blank\"}]"
+        },
+        {
+          "name": "Repair records no QC decision",
+          "pass": true,
+          "detail": "{}"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [
+        {
+          "url": "http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate",
+          "target": "_blank"
+        }
+      ],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=qc-panel",
+      "title": "ada-chat-card harness"
+    },
     "mobile-layout": {
       "pass": true,
       "checks": [
@@ -599,7 +707,7 @@
             {
               "name": "ws url binds channel=web&chat_id=web-tester",
               "pass": true,
-              "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=1aed7f7a98ac4abf9b16d28bb76f7aaf&api_key=harness-key&channel=web&chat_id=web-tester"
+              "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=b2c70123aa50489090e404222e87d5f3&api_key=harness-key&channel=web&chat_id=web-tester"
             },
             {
               "name": "ready frame → Connected status",
@@ -612,7 +720,7 @@
               "detail": ""
             }
           ],
-          "ms": 289,
+          "ms": 282,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -663,7 +771,7 @@
               "detail": "http://127.0.0.1:8777/dl/download-note.txt"
             }
           ],
-          "ms": 360,
+          "ms": 320,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -709,7 +817,7 @@
               "detail": ""
             }
           ],
-          "ms": 257,
+          "ms": 252,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -747,10 +855,10 @@
             {
               "name": "video metadata decoded (videoWidth>0)",
               "pass": true,
-              "detail": "readyState=1 videoWidth=320"
+              "detail": "readyState=4 videoWidth=320"
             }
           ],
-          "ms": 395,
+          "ms": 354,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -786,7 +894,7 @@
               "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.webm"
             }
           ],
-          "ms": 362,
+          "ms": 361,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -812,7 +920,7 @@
               "detail": "after=1"
             }
           ],
-          "ms": 255,
+          "ms": 252,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -843,7 +951,7 @@
               "detail": "http://127.0.0.1:8777/gone/clip.mp4"
             }
           ],
-          "ms": 4732,
+          "ms": 4717,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -874,7 +982,7 @@
               "detail": ""
             }
           ],
-          "ms": 266,
+          "ms": 264,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -915,7 +1023,7 @@
               "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html"
             }
           ],
-          "ms": 326,
+          "ms": 318,
           "opened": [],
           "linkClicks": [],
           "console": {
@@ -951,7 +1059,7 @@
               "detail": ""
             }
           ],
-          "ms": 329,
+          "ms": 314,
           "opened": [
             {
               "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
@@ -1003,7 +1111,7 @@
               "detail": ""
             }
           ],
-          "ms": 284,
+          "ms": 330,
           "opened": [
             {
               "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
@@ -1050,10 +1158,122 @@
               "detail": "imgW=320"
             }
           ],
-          "ms": 318,
+          "ms": 322,
           "opened": [
             {
               "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
+              "target": "_blank"
+            }
+          ],
+          "linkClicks": [
+            {
+              "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+              "target": "_blank",
+              "rel": "noopener"
+            }
+          ],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "qc-panel",
+          "label": "qc-panel",
+          "pass": true,
+          "checks": [
+            {
+              "name": "panel hidden with no pending candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "panel appears for pending candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "asset label",
+              "pass": true,
+              "detail": "qc-fixture-candidate"
+            },
+            {
+              "name": "lane subtitle",
+              "pass": true,
+              "detail": "lane gemini-image · landed 2026-11-24"
+            },
+            {
+              "name": "four action buttons",
+              "pass": true,
+              "detail": "n=4"
+            },
+            {
+              "name": "button labels Keep/Reject/Revise/Repair",
+              "pass": true,
+              "detail": "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region"
+            },
+            {
+              "name": "thumb src = picker /img/<asset>",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/qc-picker/img/qc-fixture-candidate"
+            },
+            {
+              "name": "thumb decoded (naturalWidth>0)",
+              "pass": true,
+              "detail": "nw=320 display="
+            },
+            {
+              "name": "panel hides after Keep",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "Keep POST recorded decision=keep",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"keep\",\"note\":\"\",\"at\":\"2026-11-24T14:50:33.352854+00:00\"}}"
+            },
+            {
+              "name": "panel reappears for re-pended candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "panel hides after Reject",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "Reject recorded decision+note",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"reject\",\"note\":\"fixture reject note\",\"at\":\"2026-11-24T14:50:33.495716+00:00\"}}"
+            },
+            {
+              "name": "Revise recorded decision=revise",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"revise\",\"note\":\"\",\"at\":\"2026-11-24T14:50:33.629744+00:00\"}}"
+            },
+            {
+              "name": "Repair opens picker ?img=/img/<asset>",
+              "pass": true,
+              "detail": "[{\"url\":\"http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate\",\"target\":\"_blank\"}]"
+            },
+            {
+              "name": "Repair records no QC decision",
+              "pass": true,
+              "detail": "{}"
+            }
+          ],
+          "ms": 943,
+          "opened": [
+            {
+              "url": "http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate",
               "target": "_blank"
             }
           ],
@@ -1086,6 +1306,11 @@
         {
           "kind": "console.error",
           "message": "Failed to load resource: the server responded with a status of 410 (Gone)",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "requestfailed",
+          "message": "http://127.0.0.1:8777/gone/clip.mp4 net::ERR_ABORTED",
           "url": "http://127.0.0.1:8777/gone/clip.mp4"
         },
         {
@@ -1129,9 +1354,9 @@
     }
   },
   "summary": {
-    "total": 14,
+    "total": 15,
     "failed": [],
     "verdict": "PASS"
   },
-  "finishedAt": "2026-11-24T13:03:03.494Z"
+  "finishedAt": "2026-11-24T14:50:35.772Z"
 }
