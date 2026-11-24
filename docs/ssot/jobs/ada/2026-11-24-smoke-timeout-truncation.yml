@@ -1,0 +1,80 @@
+date: 2026-11-24
+title: Smoke tier outgrew 45-min TimeoutStartSec — truncation fix
+       (timeout bump + worst-first ordering patch)
+domain: ada
+job: ada-scenario-smoke-timeout-truncation
+cards: [ada-scenario-smoke-timeout-truncation]
+refs: [ADA-1106, BEN-0573, OPS-0581]
+host: idc03 (units), tony-omen (dispatch worktree)
+summary: >
+  The hourly ada-scenario-smoke quadlet ran scenario-report.py
+  --tier smoke sequentially; 47 smoke scenarios at ~60-150s each
+  (plus one retry on fail) need ~70-130min, but TimeoutStartSec was
+  2700s. Systemd SIGTERM'd every run mid-tier; scenarios sort a-z so
+  the tail effectively never ran. Per-scenario MDDB reports already
+  posted, so no data loss — just silent coverage loss.
+
+root_cause:
+  - 'Suite grew past the 45-min cap (card estimated 44 scenarios;
+    tests/scenarios-live now has 47 with tier: smoke).'
+  - 'scenario-report.py had no ordering or budget concept — pure
+    sorted-glob a-z order, run until done or killed.'
+
+decision:
+  chosen: 'Option (d) raise TimeoutStartSec + option (c) worst-first
+    ordering as a patch; hourly timer kept.'
+  rejected:
+    - '(a) parallelize scenario-report.py -j N — rejected: concurrent
+      scenario runs share the Ada session and vcast screens and
+      contaminate each other (documented 2026-09-30 casting incident);
+      :8199 lock exists precisely to serialize. On the free dev lane
+      parallel ws sessions would also multiply 429/quota risk.'
+    - '(b) smoke-core + rotating shard — deferred: needs tier semantics
+      changes in ada-voice (benchmark.yml / tier field); unnecessary
+      once the cap fits the suite. Revisit if the suite doubles again.'
+    - '(d-only) was not enough long-term: ordering makes ANY future
+      truncation lose known-good coverage first.'
+
+changes:
+  - 'stacks/services/ada-scenario-runner/ada-scenario-smoke.container:
+    TimeoutStartSec 2700 -> 7800; added Environment=SCENARIO_BUDGET_S=7000
+    (honored only after the ada-voice patch lands; ignored harmlessly
+    before).'
+  - 'stacks/services/ada-scenario-runner/README.md: scheduling section
+    updated — weekly :55 slots can now be lapped by a long smoke run;
+    the 30-min wait queue absorbs it.'
+  - 'docs/kb/patches/ada-scenario-report-truncation-20261124.patch:
+    ada-voice scripts/scenario-report.py — (1) _prior_statuses() reads
+    latest per-scenario status from ada-ha-scenario-reports and sorts
+    the run fail -> flaky -> never-reported -> rest (a-z fallback on
+    MDDB hiccup); (2) --budget-s / SCENARIO_BUDGET_S stops starting new
+    scenarios before the unit cap so truncation is graceful, between
+    scenarios, not mid-session SIGTERM.'
+
+already-covered:
+  - 'python -u cheap win: both quadlets and all weekly .service files
+    already set PYTHONUNBUFFERED=1; scenario-benchmark.py prints with
+    flush=True. No change needed.'
+
+deploy:
+  - 'NOT deployed (dispatch scope). To activate on idc03: apply
+    docs/kb/patches/ada-scenario-report-truncation-20261124.patch in the
+    ada-voice repo (edit point per ada-voice AGENTS.md), push, let
+    deploy-ada.sh roll it, then re-run
+    stacks/services/ada-scenario-runner/install.sh on idc03 (or at least
+    re-copy ada-scenario-smoke.container + daemon-reload) to pick up
+    TimeoutStartSec=7800.'
+  - 'Without the ada-voice patch the timeout bump alone fixes the
+    truncation; SCENARIO_BUDGET_S is inert until the patch lands.'
+
+followups:
+  - 'ada-scenario-full.container TimeoutStartSec=3600 vs ~157 non-smoke
+    scenarios — same truncation shape, but manual/card-gated only;
+    raise or shard when next needed.'
+  - 'If smoke suite grows past ~2h again, revisit option (b) tier split.'
+verify: >
+  After deploy: journalctl --user -u ada-scenario-smoke should show all
+  47 '== <name>: <status>' lines plus the final 'N scenarios:' summary
+  in one run, and no 'KILLED'/timeout kill. MDDB
+  ada-ha-scenario-reports report/*-<ts> docs cover every scenario per
+  run; ordering puts prior fail/flaky first in the journal sequence.
