@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: doing
-updated: 2026-11-24 14:43
+updated: 2026-11-24 14:45
 priority: medium
 tags:
 - merge-sweep
@@ -671,6 +671,13 @@ comms:
     excluded assessment churn. Fail-closed design intact: unrunnable hold + repo .venv bootstrap + pytest label
     + gated merge-sweep. 101/101 focused tests, 247/247 gate set (~78s on tony-omen). Prior holds were the bootstrap
     trap: the gate always runs pre-merge master code, so th'
+- at: 2026-11-24 14:45
+  from: devin
+  text: 'done (attempt 3): fail-closed merge test gate re-landed onto master as merge 1fc75685fd (parents: master
+    + attempt-2 branch head). Deliverables: dispatch-outcome-20261124-143145-observed-on-hands-off-waiting-.md +
+    docs/ssot/jobs/kanban/2026-11-19-merge-test-gate-fail-closed.yml (landings trail). Verified: 255/255 gate-set
+    tests green in ~91s on merged tree — clears even the old 240s budget. Remaining ops (not code): routine runner-agent
+    fleet redeploy activates the pytest label auto-advertise; s'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
