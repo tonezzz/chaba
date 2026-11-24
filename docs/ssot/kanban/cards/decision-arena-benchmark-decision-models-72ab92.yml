@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
-column: backlog
-updated: 2026-11-24 08:41
+column: doing
+updated: 2026-11-24 08:42
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -375,9 +375,12 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -386,6 +389,7 @@ action:
     no_repo: 2026-11-17 09:39
   last_failure: 'exit=1 8-jev-bench-cases-4-pi.service: Failed with result ''exit-code''. | devin-task-20261123-211710-corpus-18-jev-bench-cases-4-pi.service:
     Consumed 1min 21.766s CPU time over 16min 36.261s wall clock time, 1G memory peak, 624.4M memory swap peak.'
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 claim:
-  since: 2026-11-23 21:16
+  since: 2026-11-24 08:42
