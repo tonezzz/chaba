@@ -281,8 +281,17 @@ instances:
       is a full-page panel iframe to
       https://tony-ha.surf-thailand.com/apps/board2/index.html?v=1. The
       default /apps/board/ URL remains a redirect to Board2. The live storage
-      has no Ada Control view, although the previous repo snapshot did. The
-      Kanban layout update preserved all other live views. Ada Code is a
+      has no Ada Control view, although the previous repo snapshot did.
+      Drift investigated 2026-11-24 (card ada-ha-dashboard-live-view-drift):
+      the view (ada-voice-card + ada-activity-card pair, added 2026-11-04 as
+      a chaba-home/ai iframe, reshaped to native cards 2026-11-08) was
+      dropped by a manual live edit inside the 2026-11-18→20 window — no
+      agent/dispatch trail exists and HA storage edits are not audit-logged;
+      the Kanban2 mutator provably only inserts its view. Per the answered
+      board request the current live set stays — do not restore Ada Control
+      without an explicit ask (resources remain registered:
+      /local/ada-voice-card.js?v=14). Sanitized live readback 2026-11-24 is
+      byte-identical to the repo snapshot. Ada Code is a
       full-page panel iframe to
       https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
       push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
