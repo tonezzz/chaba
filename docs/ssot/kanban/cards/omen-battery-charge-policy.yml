@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: doing
-updated: 2026-11-24 19:29
+updated: 2026-11-24 19:37
 tags:
 - hardware
 - omen
@@ -316,6 +316,13 @@ comms:
     AUD-0973 independent re-check (dispatch 201613 ; runbook docs/kb/hardware-tony-omen-sensors-2026-06-25.md: tony-omen
     — Sensor & d; [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; [chaba-board-quadlet]
     primer injected 8 lesson(s): [devnest-q'
+- at: 2026-11-24 19:37
+  from: devin
+  text: 'attempt 3 (dispatch 192853, tony-omen) re-verified live: automation.omen_plug_charge_band_85_45 on + watchdog
+    ticking every 5min (last_triggered 19:35), zero omen_plug errors in HA log. No switch.omen_plug yet; plug census
+    unchanged — every outlet in use (coffee/bedside/mac_plug-offline/plug_tv). Battery 61%, telemetry fresh. Still
+    blocked only on open request automation-is-deployed-and-live-on-tony-e51f7a (plug choice). Nothing else actionable
+    remotely.'
 action:
   type: dispatch
   status: running
