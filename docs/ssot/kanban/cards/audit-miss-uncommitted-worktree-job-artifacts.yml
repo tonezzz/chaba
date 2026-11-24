@@ -1,7 +1,7 @@
 id: audit-miss-uncommitted-worktree-job-artifacts
 title: Job records and eval artifacts uncommitted in live dispatch worktrees
-column: review
-updated: 2026-11-24 22:49
+column: done
+updated: 2026-11-24 22:54
 brief: 'Session audit 2026-11-20 (AUD-0973): produced artifacts found only as uncommitted or local-branch files
   in still-existing worktrees; never reached origin/master.'
 priority: medium
@@ -183,6 +183,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-220107-land-or-consciously-discard-th,
     branch dispatch/20261124-220107-land-or-consciously-discard-th'
+- at: 2026-11-24 22:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -197,3 +200,7 @@ action:
 claim:
   since: 2026-11-24 21:59
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 22:54
+  note: verified — evidence checks green, closing itself
