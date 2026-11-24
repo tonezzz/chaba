@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-followthrough
 title: kk-mac launchd-runner follow-through — verify runner claims cards end-to-end
-column: backlog
-updated: 2026-11-24 14:09
+column: done
+updated: 2026-11-24 14:44
 spec: kk-mac-launchd-runner-port shipped the launchd runner port; verify it actually claims+executes a real kanban
   card on kk-mac (not just packs). If it only handles nest packs, spec the gap to full runner-agent parity or document
   the boundary. Check net.adanest.* launchd jobs on kk-mac.
@@ -9,7 +9,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: failed
+  status: done
   sweep:
     stale_running: 2026-11-19 09:59
     dirty: 1
@@ -464,6 +464,16 @@ comms:
 - at: 2026-11-24 14:09
   from: tony-macbook
   text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:44
+  from: tony
+  text: 'TRIAGE 2026-11-24: closed, goal met. (1) E2E verified on-metal 2026-11-19 — kk-mac claimed+finished real
+    script card kk-mac-script-smoke (exit=0, sw_vers 15.7.3); devin executor correctly deferred with launchd boundary
+    reason. (2) Deploy key enrolled (tony answer ''enrolled'' 2026-11-19 13:05). (3) The two live gaps this card
+    surfaced — ssot.kanban.yml runner_fleet STAGED and _FLEET_HOST_RE missing kk-* hosts — are FIXED and LANDED
+    on origin/master as c141a81b89e (OPS-0220): kk-mac now ACTIVE with'
+- at: 2026-11-24 14:44
+  from: tony
+  text: closed by tony
 requests:
 - id: verified-kk-mac-only-runs-net-adanest-kk-d55ef4
   ask: 'Verified: kk-mac only runs net.adanest.kk-llm-worker (nest packs). runner-agent launchd port never provisioned
@@ -494,4 +504,3 @@ requests:
 review_kind: verify
 claim:
   since: 2026-11-23 22:05
-awaiting_action: true
