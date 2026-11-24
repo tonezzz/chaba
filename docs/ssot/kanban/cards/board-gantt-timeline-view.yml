@@ -1,7 +1,7 @@
 id: board-gantt-timeline-view
 title: 'Board: Gantt timeline tab — frappe/gantt over cards.json, activity-span bars grouped by project'
-column: doing
-updated: 2026-11-24 22:41
+column: review
+updated: 2026-11-24 22:51
 brief: 'Blank /apps/board-gantt/ stub + chaba-admin ''Gantt'' tab are live (2026-11-09). This card builds the real
   view: frappe/gantt timeline of kanban cards grouped by project:<slug>, bars = first-activity to last-activity.'
 priority: medium
@@ -255,12 +255,44 @@ comms:
     working). Top bar: project filter + refresh. Verified: node smoke (724 cards -> 726 rows, dates/column styles/fold/popup
     asserted) + headless-chrome render of real cards.json (726 bar-wrappers, status ok, no JS errors). Commit 7c3cd799fa
     on dispatch branch; deploys via normal web-sta'
+- at: 2026-11-24 22:51
+  from: idc02
+  text: 'finished (ok): exit=0 rd/2026-11-24-board-gantt-generalized.yml`, outcome doc committed, and a summary
+    posted to the card. | devin-task'
+- at: 2026-11-24 22:51
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:51
+  from: chaba
+  text: banked 1 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:51
+  from: chaba
+  text: pushed dispatch/20261124-221840-build-the-gantt-view-on-the-ex to origin
+- at: 2026-11-24 22:51
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-24 22:51
+  from: chaba
+  text: auto-merged a5600818 (dispatch/20261124-221840-build-the-gantt-view-on-the-ex) → origin/master
+- at: 2026-11-24 22:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-221840-build-the-gantt-view-on-the-ex,
+    branch dispatch/20261124-221840-build-the-gantt-view-on-the-ex'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 rd/2026-11-24-board-gantt-generalized.yml`, outcome doc committed, and a summary posted to the
+    card. | devin-task-20261124-221840-build-the-gantt-view-on-the-ex.service: Consumed 3min 12.295s CPU time, 1.0G
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:17
+review_kind: verify
