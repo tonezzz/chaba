@@ -133,6 +133,7 @@ class ClaimableContractTest(unittest.TestCase):
         self.mod.push_capable = lambda repo: False
         self.assertEqual(
             self.mod.claimable(_card(executor="opencode",
+                                     agent_profile="ops-readonly",
                                      lane_envelope={"id": "e"})), "")
 
     def test_devin_executor_claimable(self):
@@ -259,6 +260,44 @@ class UnstagedOpencodeHoldTest(unittest.TestCase):
         self.assertEqual(self.mod.claimable(c), "")
         self.assertIn("lane_envelope",
                       self.mod.executor_defer_reason(c))
+
+    def test_declared_opencode_mapped_lane_without_profile_claims(self):
+        """executor=opencode + lane=free_lane + staged envelope, no
+        agent_profile: LANE_PROFILES maps free_lane -> ops-readonly,
+        so the card is servable — the OPS-1021 lane-forwarding route."""
+        c = _card(executor="opencode", lane="free_lane",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+        self.assertEqual(self.mod.executor_defer_reason(c), "")
+
+    def test_declared_opencode_unmapped_lane_held(self):
+        """executor=opencode + lane=paid_frontier + staged envelope, no
+        agent_profile: no profile resolves — held at claim instead of
+        the ops-1244d-janitor-merge 'no task profile' start failure."""
+        c = _card(executor="opencode", lane="paid_frontier",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("agent_profile", r)
+        self.assertIn("paid_frontier", r)
+        self.assertIn("no attempt burned", r)
+
+    def test_declared_opencode_no_lane_no_profile_held(self):
+        """executor=opencode + staged envelope but neither
+        agent_profile nor a mapped lane — deterministic ineligibility,
+        held with the '(none)' lane named."""
+        c = _card(executor="opencode", lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("agent_profile", r)
+        self.assertIn("(none)", r)
+
+    def test_declared_opencode_profile_alias_claims(self):
+        """action.profile (pre-contract alias) satisfies the same
+        resolution as agent_profile."""
+        c = _card(executor="opencode", profile="ops-readonly",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
 
 
 # ------------------------------------------------------------- routing
