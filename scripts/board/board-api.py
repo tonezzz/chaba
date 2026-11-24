@@ -55,6 +55,13 @@ Endpoints (after prefix strip):
       finish {host, ok?, result?} is the remote-runner report path
       (runner-agent.py): only the claiming host may finish; ok:true
       moves the card to review, ok:false marks it failed in place.
+      do:queue|retry|close|hold are verify-or-loud (card
+      board-api-queue-write-verify-lost-race-f85f2f): after the flock
+      releases, the queued commit is flushed (bounded
+      BOARD_API_ACTION_VERIFY_S) and the card re-read; a write an
+      autostash pop already reverted is re-applied once under the flock,
+      and a still-unproven write answers 503 instead of claiming
+      'queued'. BOARD_API_ACTION_VERIFY_S=0 disables the wait.
   POST /respond  {id, request_id, answer, from?, reopen?}
       also pushes the answer into a running dispatch session: when the
       card's action.status=='running', a kind:"answer" line is appended
@@ -210,6 +217,7 @@ tailnet logins may write; unset = any tailnet identity.
 Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import base64
+import copy
 import fcntl
 import gzip
 import hashlib
@@ -769,6 +777,19 @@ COMMIT_RETRY_S = float(
 # kanban-commit sweep — a persistently-broken path must not retry+log
 # forever (the sweep sees the same dirty tree).
 COMMIT_MAX_TRIES = int(os.environ.get("BOARD_API_COMMIT_MAX_TRIES", "60"))
+# /action verify-or-loud (card
+# board-api-queue-write-verify-lost-race-f85f2f): the 2026-11-18/19
+# OPS-0200 losses — 'queued — kanban-dispatch will claim it' answered
+# while a git-safe-pull autostash-pop had resolved the raced write to
+# HEAD — happened because the response fired before the queued commit
+# proved the mutation durable. do:queue|retry|close|hold now wait
+# (bounded) for the commit worker, re-read the card, and compare the
+# persisted state; a proven mismatch re-applies the verb once under
+# the flock, anything unproven answers 503.
+# BOARD_API_ACTION_VERIFY_S bounds each flush wait (0 disables).
+ACTION_VERIFY_S = float(os.environ.get("BOARD_API_ACTION_VERIFY_S", "8"))
+ACTION_VERIFY_LOCK_S = float(
+    os.environ.get("BOARD_API_ACTION_VERIFY_LOCK_S", "10"))
 _pending_commits: dict = {}      # rel path -> label (insertion ordered)
 _commit_tries: dict = {}         # rel path -> consecutive failed drains
 _commit_mu = threading.Lock()
@@ -1701,6 +1722,112 @@ def do_finish(card: dict, body: dict) -> str:
               f"finished (failed){tail} — attempt cap {max_att} reached; "
               "moved doing -> backlog, a manual retry re-arms it")
     return "marked failed"
+
+
+def _action_fp(card: dict) -> dict:
+    """Fingerprint of the fields a do_action verb mutates — the
+    verify-or-loud comparison surface. comms/requests/updated are
+    excluded: concurrent legit writers may append there without
+    invalidating the proof."""
+    a = card.get("action")
+    a = a if isinstance(a, dict) else {}
+    cl = card.get("claim")
+    cl = cl if isinstance(cl, dict) else {}
+    return {"column": card.get("column"),
+            "awaiting_action": bool(card.get("awaiting_action")),
+            "action": copy.deepcopy(a),
+            "claim_session": cl.get("session")}
+
+
+def _action_write_durable(p: Path) -> bool:
+    """Porcelain-clean proof the card write is committed — only a
+    committed write survives every pull path (autostash pops carry
+    uncommitted changes only). BOARD_API_COMMIT=0 and non-repo paths
+    (selftest/tmp harnesses) report True: there is no pull window to
+    lose the write in — the sweep owns durability in that mode."""
+    if os.environ.get("BOARD_API_COMMIT", "1") == "0":
+        return True
+    try:
+        rel = p.resolve().relative_to(REPO.resolve())
+    except (ValueError, OSError):
+        return True
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO), "status", "--porcelain", "--",
+             str(rel)],
+            capture_output=True, text=True, timeout=10)
+    except Exception:
+        return False
+    return r.returncode == 0 and not r.stdout.strip()
+
+
+def _reapply_action(v: dict) -> bool:
+    """One locked re-apply of a proven-lost /action verb. Refuses to
+    stomp: re-loads under the flock and only mutates when disk still
+    shows the pre-write fingerprint — anything else means a concurrent
+    writer owns the card now."""
+    got = acquire_lock(LOCK, ACTION_VERIFY_LOCK_S)
+    if got is None:
+        return False
+    lf, _w = got
+    try:
+        try:
+            card = load(v["path"])
+        except Exception:
+            return False
+        if _action_fp(card) != v["before"]:
+            return False
+        try:
+            do_action(card, v["verb"], v["frm"])
+            card["updated"] = now()
+            save(v["path"], card)
+        except Exception as e:  # noqa: BLE001 — verify reports, not 500s
+            sys.stderr.write(f"board-api action re-apply failed: {e}\n")
+            return False
+        return True
+    finally:
+        lf.close()
+
+
+def verify_action_write(v: dict) -> dict:
+    """Post-lock persistence proof for do_action verbs (queue/retry/
+    close/hold). Waits (bounded) for the queued commit to drain, then
+    re-reads the card: fingerprint == after-write AND porcelain-clean
+    means the mutation is committed and un-losable. Fingerprint ==
+    before-write means an autostash pop (or equivalent) already
+    reverted it — re-apply once under the flock and re-verify. Any
+    other state is a concurrent writer — never stomp, report
+    unverified so the caller answers loudly instead of claiming
+    'queued' over a lost write (the 2026-11-18/19 OPS-0200 losses)."""
+    p = v["path"]
+    if v["before"] == v["after"]:
+        return {"ok": True}        # no-op verb — no state to lose
+    reapplied = False
+    for attempt in range(2):
+        commit_pending_flush(timeout_s=ACTION_VERIFY_S)
+        try:
+            card_now = load(p)
+        except Exception:
+            return {"ok": False,
+                    "error": "card re-read failed after write"}
+        fp = _action_fp(card_now)
+        if fp == v["after"]:
+            if _action_write_durable(p):
+                return {"ok": True, "reapplied": reapplied}
+            return {"ok": False, "persisted": fp,
+                    "error": "write landed but is not committed yet — "
+                             "retry to verify"}
+        if fp != v["before"]:
+            return {"ok": False, "persisted": fp,
+                    "error": "card changed concurrently — write "
+                             "unverified"}
+        # fp == before: the write was reverted — safe to re-apply once
+        if attempt == 1 or not _reapply_action(v):
+            return {"ok": False, "persisted": fp,
+                    "error": "action write lost and re-apply failed — "
+                             "retry"}
+        reapplied = True
+    return {"ok": False, "error": "unreachable"}
 
 
 def _opt_label(o) -> str:
@@ -5492,9 +5619,14 @@ class H(BaseHTTPRequestHandler):
                         card["updated"] = now()
                         _unarchive_move(p, card)
                     else:
-                        msg = do_action(card, verb, actor(body))
+                        frm = actor(body)
+                        vbefore = _action_fp(card)
+                        msg = do_action(card, verb, frm)
                         card["updated"] = now()
                         save(p, card)
+                        resp_extra["_verify"] = {
+                            "path": p, "verb": verb, "frm": frm,
+                            "before": vbefore, "after": _action_fp(card)}
                 elif path == "/respond":
                     frm = actor(body)
                     p = card_path(body.get("id") or body.get("card") or "")
@@ -5611,8 +5743,33 @@ class H(BaseHTTPRequestHandler):
                     f"held={hold_s:.1f}s path={path} "
                     f"load_ms={load_ms:.0f} mutate_ms={mutate_ms:.0f} "
                     f"save_ms={save_ms:.0f} card_path_ms={cp_ms:.0f}\n")
-        # card lock released — queue the push (debounced, best-effort) and
-        # render under its own lock so neither stalls other writers
+        # card lock released — nudge the commit worker, then for
+        # do_action verbs prove the write durable BEFORE answering:
+        # verify-or-loud (card board-api-queue-write-verify-lost-race-
+        # f85f2f) — the 2026-11-18/19 OPS-0200 losses answered 'queued'
+        # while a git-safe-pull autostash pop had already reverted the
+        # card. A proven revert is re-applied once; anything still
+        # unproven answers 503 so the caller retries instead of
+        # believing a write that isn't there.
+        commit_async()   # flush queued write paths post-lock (worker commits)
+        ver = resp_extra.pop("_verify", None)
+        if ver is not None and ACTION_VERIFY_S > 0:
+            try:
+                vres = verify_action_write(ver)
+            except Exception as e:  # noqa: BLE001 — loud, never silent
+                sys.stderr.write(f"board-api action verify error: {e}\n")
+                vres = {"ok": False,
+                        "error": f"verify error: {e}"[:200]}
+            if not vres.get("ok"):
+                return self._send(503, {
+                    "error": vres.get("error")
+                             or "action write unverified — retry",
+                    "verified": False,
+                    "persisted": vres.get("persisted"),
+                    "retry_after_s": 5})
+            if vres.get("reapplied"):
+                msg += " — write re-applied after pull race"
+            resp_extra["verified"] = True
         if notify_req:
             try:
                 queue_request_notify(*notify_req)
@@ -5620,7 +5777,6 @@ class H(BaseHTTPRequestHandler):
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
         self._send(200, {"ok": True, "message": msg, "via": ident,
                          **resp_extra})
-        commit_async()   # flush queued write paths post-lock (worker commits)
         render_async()
 
 

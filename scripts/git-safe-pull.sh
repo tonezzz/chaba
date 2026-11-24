@@ -18,7 +18,11 @@
 #      Conflicts outside generated paths abort the rebase and exit 1 —
 #      manual resolution, next run retries.
 #   3. autostash-pop conflicts under generated paths resolve to HEAD.
-#      When every contested path resolves (nothing kept for a human),
+#      Kanban card YAMLs additionally preserve the stash side (stage 3)
+#      as <path>.local-conflict-<ts> first, so step 5's reconcile folds
+#      the raced board write back instead of dropping it
+#      (board-api-queue-write-verify-lost-race-f85f2f). When every
+#      contested path resolves (nothing kept for a human),
 #      the stash's contested hunks are superseded upstream-wins and its
 #      clean hunks already landed — the retained entry is pure
 #      resurrection fuel (card safe-pull-autostash-resurrection), so it
@@ -176,6 +180,13 @@ for _st in rebase-merge rebase-apply; do
   fi
 done
 GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$}"
+# Kanban card YAMLs get extra handling on autostash-pop conflicts: the
+# stash side (stage 3 — the raced board-api write) is preserved as a
+# .local-conflict-* sidecar so the EXIT-trap reconcile-local-conflicts
+# folds it back into the card instead of the write dying upstream-wins
+# (card board-api-queue-write-verify-lost-race-f85f2f — the OPS-0200
+# 'queued' answers that never persisted action.status=queued).
+CARD_POP_RE='^docs/ssot/kanban/cards/[^/]+\.yml$'
 GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
 ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
 
@@ -341,11 +352,24 @@ _gc_autostash() {
 _resolve_autostash_pop() {
   # A failed autostash pop leaves unmerged entries + a retained stash.
   # Generated paths resolve to HEAD; anything else stays for a human.
-  local p bad=0 saw=0
+  # Card YAMLs additionally keep the stash side (stage 3 = the autostash
+  # copy of the dirty write) as <path>.local-conflict-<ts> BEFORE the
+  # HEAD resolution — the EXIT-trap reconcile-local-conflicts.py merges
+  # it back semantically (comms union, action per-key newer-wins), so a
+  # board write that raced the pull is folded back instead of silently
+  # dropped (card board-api-queue-write-verify-lost-race-f85f2f).
+  local p bad=0 saw=0 dest n
   while IFS= read -r p; do
     [ -n "$p" ] || continue
     saw=1
     if [[ "$p" =~ $GENERATED_RE ]]; then
+      if [[ "$p" =~ $CARD_POP_RE ]]; then
+        dest="$p.local-conflict-$TS"; n=1
+        while [ -e "$dest" ]; do
+          n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+        done
+        git show ":3:$p" > "$dest" 2>/dev/null || rm -f "$dest"
+      fi
       if git checkout HEAD -- "$p" 2>/dev/null; then
         git reset -q HEAD -- "$p" 2>/dev/null || true
       else

@@ -627,6 +627,72 @@ class Case(unittest.TestCase):
                             for f in res.get("test_failures") or []),
                         res)
         self.assertIn("timed out", res["tests"]["error"])
+        # the timeout ran the configured retry budget before holding
+        self.assertEqual(res["tests"].get("attempts"), 2, res["tests"])
+        self.assertTrue(res["tests"].get("timeout"), res["tests"])
+
+    # ------------------------------------- timeout = infra flake
+    # Card board-api-queue-write-verify-lost-race-f85f2f: 'suite
+    # timeout (240s)' held merges on docs/config-only diffs three
+    # times (OPS-0200, ADA-0201, KNB-0212) — a loaded merge host, not a
+    # red suite. The gate now retries a timeout once, marks the result
+    # timeout:true, skips the pointless baseline enumeration, and a
+    # docs-only diff (docs/, stacks/, *.md) merges flagged
+    # 'gate: timeout-override'.
+
+    def test_gate_timeout_retries_once_then_passes(self):
+        """A suite that times out once and passes on retry is flake —
+        the merge lands."""
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        count = self.tmp / "gate-runs"
+        # exec so the timeout kill takes the sleeper with it — a bare
+        # `sleep` grandchild would hold the output pipe open
+        self._with_test_gate({
+            "command": f"if [ -f {count} ]; then exit 0; "
+                       f"else touch {count}; exec sleep 30; fi",
+            "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res["tests"])
+        self.assertEqual(res["tests"].get("attempts"), 2, res["tests"])
+        self.assertTrue(self.remote_has("master", "feature.py"))
+
+    def test_gate_timeout_docs_only_merges_flagged(self):
+        """Docs-only diff + exhausted retries -> merge lands flagged
+        'gate: timeout-override' instead of holding for a human."""
+        commit(self.wt, "docs/guide/notes.md", "# notes\n", "docs")
+        self._with_test_gate({"command": "exec sleep 30", "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res["tests"])
+        self.assertTrue(res["tests"].get("timeout_override"),
+                        res["tests"])
+        self.assertTrue(res["tests"].get("timeout"), res["tests"])
+        self.assertTrue(self.remote_has("master", "docs/guide/notes.md"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("timeout-override" in n for n in notes),
+                        notes)
+
+    def test_gate_timeout_mixed_diff_still_holds(self):
+        """docs/ + code in one diff is NOT docs-only — the hold stays."""
+        commit(self.wt, "docs/guide/notes.md", "# notes\n", "docs")
+        commit(self.wt, "feature.py", "x=1\n", "code")
+        self._with_test_gate({"command": "exec sleep 30", "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertFalse(res["tests"].get("timeout_override"))
+        self.assertFalse(res["tests"]["ok"])
+
+    def test_docs_only_paths_detector(self):
+        """Unit-level: the allowlist is docs/, stacks/, *.md — anything
+        else (or an empty diff) is not docs-only."""
+        commit(self.wt, "docs/a.md", "a\n", "docs")
+        commit(self.wt, "stacks/svc.yml", "s\n", "stack")
+        commit(self.wt, "README.md", "r\n", "md")
+        commit(self.wt, "docs/ssot/x.yml", "x: 1\n", "ssot doc")
+        self.assertTrue(dr._docs_only_paths(self.wt, "origin/master"))
+        commit(self.wt, "code.py", "x=1\n", "code")
+        self.assertFalse(dr._docs_only_paths(self.wt, "origin/master"))
 
     def test_gate_missing_runner_fails_open(self):
         commit(self.wt, "feature.py", "x=1\n", "work")
