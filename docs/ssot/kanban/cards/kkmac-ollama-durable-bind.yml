@@ -1,7 +1,7 @@
 id: kkmac-ollama-durable-bind
 title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
-column: backlog
-updated: 2026-11-24 19:57
+column: doing
+updated: 2026-11-24 20:03
 spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
   ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
   drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
@@ -257,20 +257,24 @@ comms:
 - at: 2026-11-24 19:57
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 20:03
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-24 18:54
     dirty: 1
   result: 'exit=0 ed; full details in `dispatch-outcome-20261124-184115-ollama-serve-runs-on-kk-mac-un.md`. | devin-task-20261124-184115-ollama-serve-runs-on-kk-mac-un.service:
     Consumed 3min 54.334s CPU time over 10min 1.461s wall clock time, 1G memory peak.'
+  runner: tony-macbook
 claim:
-  since: 2026-11-24 18:40
+  since: 2026-11-24 20:03
 requests:
 - id: kk-mac-ollama-now-binds-0-0-0-0-verified-aa50ca
   ask: 'kk-mac ollama now binds 0.0.0.0 (verified live on tailnet 100.108.217.17:11434) but two adanest-side items
