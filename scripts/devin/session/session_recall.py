@@ -227,6 +227,10 @@ def recall_t1(query: str, top_k: int = T1_TOPK) -> list[dict]:
         out.append({"key": doc.get("key"), "score": h.get("score"),
                     "content": doc.get("contentMd")
                     or doc.get("content_md") or ""})
+    # devin-session/<name> distilled summaries read cleaner than devin/<hex>
+    # raw transcript dumps — surface them first; the set is unchanged.
+    out.sort(key=lambda h: 0 if (h.get("key") or "").startswith(
+        "devin-session/") else 1)
     return out
 
 
@@ -308,21 +312,41 @@ def main() -> int:
     ap.add_argument("--max-chars", type=int, default=MAX_CHARS)
     args = ap.parse_args()
 
+    # T2 index is opened independently of T1 — a broken/missing FTS5
+    # index must not take the mddb semantic lane down with it (and vice
+    # versa: mddb being unreachable already degrades to T2-only).
+    con = None
+    stats = None
+    index_err = None
     try:
         con = open_index()
-        stats = index_archives(con) if not args.no_index else None
+        if not args.no_index:
+            stats = index_archives(con)
+    except Exception as exc:
+        index_err = exc
+        con = None
+        print(f"session_recall: t2 index unavailable ({exc})",
+              file=sys.stderr)
+
+    try:
         if args.reindex:
+            if con is None:
+                print(json.dumps({"index": str(INDEX_DB),
+                                  "error": str(index_err), "chunks": 0},
+                                 indent=1))
+                return 0
             total = con.execute("SELECT count(*) FROM chunks").fetchone()[0]
             print(json.dumps({"index": str(INDEX_DB), **(stats or {}),
                               "chunks": total}, indent=1))
             return 0
         query = build_query(args)
         t1 = recall_t1(query) if query else []
-        t2 = recall_t2(con, query) if query else []
+        t2 = recall_t2(con, query) if (query and con is not None) else []
         if args.json:
             print(json.dumps({"query": query, "t1": t1, "t2": t2},
                              indent=1))
-        else:
+        elif t1 or t2:
+            # no hits -> emit nothing; an empty header is pure context noise
             sys.stdout.write(render(query, t1, t2, args.max_chars))
         if stats and (stats["indexed"] or stats["removed"]):
             print(f"# index: +{stats['indexed']} ~{stats['fresh']} "
