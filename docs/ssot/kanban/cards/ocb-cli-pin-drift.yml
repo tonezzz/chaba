@@ -1,0 +1,49 @@
+id: ocb-cli-pin-drift
+title: 'idc02 openchamber: pin @opencode/cli to declared 2.3.2 (gate failing)'
+column: backlog
+updated: 2026-11-24 08:28
+brief: 'ADA-0015''s live upgrade completed successfully, but the post-gate fails: @opencode/cli is 2.4.1 while SSOT
+  declares 2.3.2. Root cause: host unit ExecStart pins only @openchamber/web@2.7.3 and installs @opencode/cli bare.
+  Needs Tony''s decision: restore pin+reinstall 2.3.2, or accept 2.4.1 and update SSOT.'
+priority: high
+tags:
+- ada-ocb,idc02,drift,approval-needed
+spec: 'Evidence (2026-11-24, live):
+
+  - openchamber-update.service finished Result=success / ExecMainStatus=0 at 08:26:04 +07; patch script logged "models.status
+  patch applied and syntax-checked".
+
+  - web 2.7.3 (correct); @opencode/cli 2.4.1 (DRIFT). All 4 units active; local 200; edge 200.
+
+  - ansible-playbook playbooks/ada-ocb-verify.yml -> exit 2: "idc02 (primary) producer drift: web=2.7.3 cli=2.4.1
+  ...".
+
+  - Root cause: ~/.config/systemd/user/openchamber-update.service ExecStart = npm i -g --prefix ~/.local/node @openchamber/web@2.7.3
+  @opencode/cli  (cli unpinned), while ssot.audit.hosts.yml:2246 declares @opencode/cli@2.3.2.
+
+
+  Decision needed (Tony):
+
+  (a) RECOMMENDED — restore declared state: add @opencode/cli@2.3.2 to the unit ExecStart and reinstall at 2.3.2,
+  then re-run verify green. This is a prod host-unit + npm change; needs explicit same-session approval. Preserves
+  SSOT as source of truth and the tested pin.
+
+  (b) Accept 2.4.1: update ssot.audit.hosts.yml:2246 and ansible inventory/group_vars/ocb_pane.yml to 2.4.1, then
+  re-run verify. Needs a check that 2.4.1 is compatible (EBADENGINE warnings appeared during the install: npm reported
+  node v22.22.1 while web 2.7.3 requires >=24.14.0).
+
+
+  Secondary finding: npm under the unit reported node v22.22.1 / npm 11.9.0 despite Environment=PATH pointing at
+  ~/.local/node24/bin (manual check: node v24.14.0, /usr/bin/node v18.19.1). Service is currently healthy but the
+  runtime used by npm during install is inconsistent — investigate as part of either option.
+
+
+  Done when: verify exits 0 on idc02 with cli matching the declared pin, and this card carries the evidence.
+
+
+  Refs: card ada-ocb-ansible-upgrade (ADA-0015, review); docs/reports/ada-ocb-ansible-audit-2026-11-24.md; ssot.audit.hosts.yml:2245-2246.'
+ref: DEV-0020
+comms:
+- at: 2026-11-24 08:28
+  from: tony
+  text: card captured via board-api
