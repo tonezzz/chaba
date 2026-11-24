@@ -1,7 +1,7 @@
 id: doc-draft-verifier-semantic-gap
 title: doc-draft verifier passes off-spec docs — sentinels are mechanical not semantic
-column: doing
-updated: 2026-11-24 19:04
+column: review
+updated: 2026-11-24 19:06
 spec: 'OPS-1014 evidence: qwen2.5:32b emitted a code-summary of runner-agent.py instead of the specced model-notes
   doc, but verify_contains passed because code names matched sentinels. Options: require verify_contains to include
   at least one string that only appears in a correct deliverable (spec-author duty); add a task-keyword-coverage
@@ -185,12 +185,41 @@ comms:
     were absent from board-api ACTION_KEYS so /card dropped them silently; only structural checks ran. Changes:
     (1) doc-draft + artifact-write verify.py now honor optional action.verify_regex (all patterns must match, uncompilable
     fails closed) and action.verif'
+- at: 2026-11-24 19:06
+  from: idc02
+  text: 'finished (ok): exit=0 man closeout duty per the card''s own recommendation — the mechanical gate got stronger,
+    not smart. | devin-task-2'
+- at: 2026-11-24 19:06
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 19:06
+  from: chaba
+  text: pushed dispatch/20261124-184032-ops-1014-evidence-qwen2-5-32b- to origin
+- at: 2026-11-24 19:06
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 54.2s)
+- at: 2026-11-24 19:06
+  from: chaba
+  text: auto-merged e1575981 (dispatch/20261124-184032-ops-1014-evidence-qwen2-5-32b-) → origin/master
+- at: 2026-11-24 19:06
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-184032-ops-1014-evidence-qwen2-5-32b-,
+    branch dispatch/20261124-184032-ops-1014-evidence-qwen2-5-32b-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 man closeout duty per the card''s own recommendation — the mechanical gate got stronger, not smart.
+    | devin-task-20261124-184032-ops-1014-evidence-qwen2-5-32b-.service: Consumed 6min 40.524s CPU time, 644.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 18:39
+review_kind: verify
