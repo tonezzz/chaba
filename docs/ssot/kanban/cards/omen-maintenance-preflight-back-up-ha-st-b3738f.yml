@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: doing
-updated: 2026-11-24 16:14
+updated: 2026-11-24 16:22
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -274,6 +274,13 @@ comms:
     DONE (attempt on tony-omen). runner; [tony-omen-install-chaba-repo-sync-timer-c581bd] primer injected 8 lesson(s):
     [l; no chaba-audit.service/chaba-audit-full.service entries exist in ssot.audit.host; [ada-ocb-ansible-upgrade]
     CLOSED. Live upgrade executed 08:26'
+- at: 2026-11-24 16:22
+  from: devin
+  text: 'Dispatch started on tony-macbook. Verified live: HA git backups are local-only (no remote, DB+.storage
+    gitignored); fleet-restic-backup runs daily to tony-dell sdb but excludes both HA config dirs — that is the
+    real recurring-backup gap. Plan: extend fleet-restic PATHS with consistent sqlite3 .backup snapshots of both
+    HA DBs + config trees, run once to verify; reconcile audit drift in ssot.audit.hosts.yml (11 retired expected
+    units, 10 undeclared running services, 4 unexplained failed units, cha'
 action:
   type: dispatch
   status: running
