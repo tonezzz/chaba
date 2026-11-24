@@ -1,0 +1,67 @@
+id: 2026-11-24-tony-usb-own-nodekey
+title: tony-usb stick own tailnet nodekey — detector added, physical step still pending
+date: 2026-11-24
+card: tony-usb-own-nodekey
+ref: SEC-0303
+dispatch: dispatch-wt-20261124-080654-the-goal-is-to-stop-the-tony-u
+prior: docs/ssot/jobs/infrastructure/2026-11-23-tony-usb-own-nodekey.yml
+
+summary: >
+  Fourth dispatch attempt on this card (tony-omen this time). Re-verified
+  from a new vantage that the stick is still not booted or attached
+  anywhere reachable, then closed the gap that made four attempts fail
+  the same way: nobody could tell WHEN the stick next boots. Delivered
+  scripts/ops/stick-watch.py — a fleet-side detector that pages Tony
+  with the exact fix command the moment the stick announces, steals
+  mn01's session, or registers its own node — plus systemd units and
+  runbook updates. The physical step itself still requires Tony to boot
+  the stick (or the watcher to catch it booting elsewhere).
+
+reachability_check_2026-11-24 (from tony-omen + tony-dell):
+  - "tailnet: no tony-usb/rescue node in `tailscale status`; mn01
+    (100.106.196.22) ssh-verified as real ESPRIMO Q556/2, uptime 34d —
+    stick is not holding mn01's session"
+  - "ops feed ada-ha-events-tony (mddb-ops :11025): 500 ops-event docs
+    scanned, zero stick_online/host_online/announce hits — stick has
+    not booted since at least the window covered"
+  - "home LAN 192.168.2.0/24 port-22 sweep via tony-dell (wired; omen's
+    wifi segment is isolated): only .67 tony-dell, .79/.81 mn01 (real
+    ESPRIMO via ssh), .98 key-denied phone — no stick"
+  - "tony-omen local: lsblk/lsusb show no USB mass storage — stick not
+    plugged into omen either"
+
+delivered:
+  - "scripts/ops/stick-watch.py (new) — three-signal detector:
+    ops-feed stick_online/host_online announce in window, `ssh mn01
+    hostname` == tony-usb (active theft), tailnet roster tony-usb/rescue
+    node (fix applied). Alerts = board-api comment on the card +
+    board_notify push (HA iPhone default) with the exact
+    stick-own-nodekey.sh command; deduped per signal via state file,
+    kill switch ~/.config/stick-watch.off, --dry-run for testing"
+  - "systemd/stick-watch.{service,timer} — 5-min cadence + boot catch-up,
+    for tony-dell's user manager (%h/CascadeProjects/chaba exec
+    checkout, which has home-assistant-token.env for the ha channel)"
+  - "docs/kb/mn01-stick-standard.md — collision checklist now documents
+    the automatic detection path"
+
+verified:
+  - "stick-watch.py --dry-run --verbose on tony-omen: ssh mn01 -> 'mn01',
+    no feed announce, no tony-usb node -> 'no stick signals', rc=0"
+  - "unit-tested all three signals with stubs: theft/announce/own_node
+    each fire correctly; non-stick host_online, unrelated types, and
+    stale timestamps correctly ignored"
+  - "bash -n equivalent: python ast.parse clean; script is stdlib-only"
+
+pending:
+  - "INSTALL (needs approval — prod change): on tony-dell run
+    `install -m644 systemd/stick-watch.{service,timer}
+    ~/.config/systemd/user/ && systemctl --user daemon-reload &&
+    systemctl --user enable --now stick-watch.timer`. Until installed
+    the detector only runs when invoked manually."
+  - "PHYSICAL (unchanged): next time the tony-usb stick boots, run
+    FIRST: `ssh -t tony@<stick-lan-ip> 'sudo bash -s' <
+    scripts/ops/stick-own-nodekey.sh` from any fleet host (or the 4
+    manual commands in mn01-stick-standard.md at the stick console),
+    approve the tony-usb node in the admin console, then fill the
+    identity registry row in mn01-stick-standard.md. With the watcher
+    installed, Tony gets an HA push with this command automatically."

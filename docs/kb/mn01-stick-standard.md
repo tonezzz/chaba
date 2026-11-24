@@ -154,6 +154,13 @@ and the `nodekey:` value from `tailscale status --json` → `.Self.Key`.
 
 - `ssh mn01` → run `cat /sys/class/dmi/id/product_name` to see which hardware
   actually holds the identity right now.
+- **Automatic detection (2026-11-24):** `scripts/ops/stick-watch.py` on a
+  fleet host (tony-dell, `systemd/stick-watch.timer`, 5-min cadence)
+  watches three signals — ops-feed `stick_online`/`host_online` announce,
+  `ssh mn01 hostname` answering `tony-usb` (active theft), and a
+  `tony-usb`/`rescue` node appearing on the tailnet (fix applied). On
+  detection it comments this card and HA-pushes the exact fix command.
+  Kill switch: `touch ~/.config/stick-watch.off` on the watcher host.
 - If a boot lands somewhere unexpected: `sudo tailscale down` on it (or
   power it off) — the last-connected peer wins the IP. **Avoid
   `tailscale logout` on mn01-stamped media**: the cloned node key is
