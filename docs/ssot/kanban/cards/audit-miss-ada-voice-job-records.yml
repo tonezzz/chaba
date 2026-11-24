@@ -1,7 +1,7 @@
 id: audit-miss-ada-voice-job-records
 title: ada-voice job record YAMLs missing from origin/main
-column: doing
-updated: 2026-11-24 22:08
+column: review
+updated: 2026-11-24 22:11
 brief: 'Session audit 2026-11-20 (AUD-0973): two docs/ssot/jobs/ada records claimed produced are absent from ada-voice
   origin/main.'
 priority: medium
@@ -157,13 +157,40 @@ comms:
     dispatch/20261010-080544-ada-voice-sessions-churn-1-min (the merge-conflict orphan). line-file-doc-ingest: identical
     copies in 3 chaba worktrees. Both committed to ada-voice branch dispatch/20261124-220336-audit-miss-ada-job-records
     (pushed to origin; merge-sweep should land on main).'
+- at: 2026-11-24 22:11
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ed, outcome written to `dispatch-outcome-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.md`.
+    | devin-task-2026112'
+- at: 2026-11-24 22:11
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 22:11
+  from: chaba
+  text: 'session-end checkpoint 0a9628a0: 1 leftover file(s) committed'
+- at: 2026-11-24 22:11
+  from: chaba
+  text: banked 130 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:11
+  from: chaba
+  text: pushed dispatch/20261124-220336-docs-ssot-jobs-ada-2026-10-10- to origin
+- at: 2026-11-24 22:11
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 22:11
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ed, outcome written to `dispatch-outcome-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.md`. |
+    devin-task-20261124-220336-docs-ssot-jobs-ada-2026-10-10-.service: Consumed 40.187s CPU time over 5min 29.431s
+    wall clock time, 4.3G memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 22:02
+review_kind: verify
