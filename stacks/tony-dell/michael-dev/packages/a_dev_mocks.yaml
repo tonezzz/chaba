@@ -501,6 +501,13 @@ template:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_off, entity_id: switch.terrace_switch_switch_2 }
 
+  - binary_sensor:
+    - name: flood_hub_alert
+      unique_id: flood_hub_alert
+      device_class: problem
+      icon: mdi:waves-alert
+      state: "{{ states('sensor.flood_hub_status') in ['ABOVE_NORMAL', 'SEVERE', 'EXTREME'] }}"
+
 rest:
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_temperature
     headers:
@@ -1274,6 +1281,20 @@ command_line:
       payload_off: "OFF"
       scan_interval: 300
       command_timeout: 8
+
+  - sensor:
+      name: flood_hub_status
+      unique_id: flood_hub_status
+      icon: mdi:waves-arrow-up
+      command: >-
+        python3 -c 'import json,urllib.request;from datetime import datetime,timezone;d=json.load(urllib.request.urlopen(urllib.request.Request("http://100.102.134.91:11027/v1/get",data=json.dumps({"collection":"ada-cms-automation","key":"flood-hub-status","lang":"en"}).encode(),headers={"Content-Type":"application/json"}),timeout=20));j=json.loads(d.get("contentMd") or "{}");al=j.get("alertable") or [];rk={"EXTREME":3,"SEVERE":2,"ABOVE_NORMAL":1};worst=max([rk.get(r.get("severity"),0) for r in al] or [0]);gen=str(j.get("generated_at",""));age=(datetime.now(timezone.utc)-datetime.fromisoformat(gen.replace("Z","+00:00"))).total_seconds()/3600 if gen else 9999;sev="stale" if age>36 else {3:"EXTREME",2:"SEVERE",1:"ABOVE_NORMAL",0:"none"}[worst];top="; ".join("%s %s"%(r.get("severity"),r.get("siteName") or r.get("river") or r.get("gaugeId")) for r in sorted(al,key=lambda r:-rk.get(r.get("severity"),0))[:5]);print(json.dumps({"state":sev,"generated_at":gen,"alert_count":len(al),"top":top}))'
+      scan_interval: 1800
+      command_timeout: 30
+      value_template: "{{ value_json.state }}"
+      json_attributes:
+        - generated_at
+        - alert_count
+        - top
 
 automation:
   - id: mha_mirror_refresh
