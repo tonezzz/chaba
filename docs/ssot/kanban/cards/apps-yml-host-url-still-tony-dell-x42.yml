@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: review
-updated: 2026-11-24 22:19
+updated: 2026-11-24 22:23
 priority: medium
 tags:
 - ops
@@ -246,6 +246,10 @@ comms:
 - at: 2026-11-24 22:19
   from: chaba
   text: 'worktree kept: dirty — 16 uncommitted file(s)'
+- at: 2026-11-24 22:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-215344-migrate-the-42-entries-in-stac on tony-macbook still
+    dirty — 16 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
@@ -259,6 +263,8 @@ action:
   attempts: 1
   result: 'exit=0 /infrastructure/2026-11-24-apps-yml-host-url-migration.yml` and the dispatch-outcome doc. | devin-task-20261124-215344-migrate-the-42-entries-in-stac.service:
     Consumed 2min 2.740s CPU time over 21min 51.313s wall clock time, 1G memory peak.'
+  sweep:
+    dirty: 16
 claim:
   since: 2026-11-24 21:53
 review_kind: verify

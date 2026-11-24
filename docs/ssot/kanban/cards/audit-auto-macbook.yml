@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: doing
-updated: 2026-11-24 22:20
+updated: 2026-11-24 22:23
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -242,6 +242,10 @@ comms:
     it in ssot.audit.hosts.yml for macbook AND the same gap on idc02/con01/mn01, plus stick-announce expected_absent
     on macbook. Replayed diff_against_ssot: macbook clean, no new deltas. Trail: docs/ssot/jobs/infrastructure/2026-11-24-macbook-audit-drift-reconcile.yml
     + dispatch'
+- at: 2026-11-24 22:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-215924-2026-11-09-audit-runner-agent- no longer active on tony-dell but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -249,5 +253,7 @@ action:
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-24 22:23
 claim:
   since: 2026-11-24 21:58
