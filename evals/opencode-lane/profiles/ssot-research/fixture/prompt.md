@@ -9,6 +9,11 @@ Rules (profile ssot-research — enforced):
   memory.
 - Read with the `read`/`grep`/`glob`/`list` tools. You have NO shell.
 - Every factual claim in the answer must trace to a citation.
+- Every citation's `note` MUST contain a quoted string copied VERBATIM
+  from the cited file (double quotes, backticks, or single quotes,
+  >= 8 chars). The verifier re-checks each quote against the file —
+  a citation whose note has no quote that really appears in the file
+  FAILS, even if the path exists.
 - If the sources do not answer the question, put "not documented" (with
   what you did check) in `answer` — do not guess.
 
@@ -28,7 +33,9 @@ Checklist before you emit — the verifier fails ANY miss:
 [ ] `question` present, echoing the task
 [ ] `answer` present
 [ ] `citations` has >= 2 OBJECTS each with `path` that exists in this
-    checkout (put line numbers in `note`, NOT inside `path`)
+    checkout (put line numbers in `note`, NOT inside `path`), and each
+    `note` contains a verbatim quote (>= 8 chars) that really appears
+    in that file
 [ ] `sources_consulted` lists real paths, >= 1 under `docs/`
 [ ] `read_only` is the boolean true
 
