@@ -1,0 +1,150 @@
+title: Omen + OpenRouter JevTeam lanes — definition, preflight, held-out bench
+subtitle: Two new admission-pending lanes; decision envelope schema; gates block auto-routing
+icon: route
+version: 1
+
+card: jevteam-omen-or-lane-admission
+ref: BEN-1050
+date: 2026-11-24
+dispatch: 20261124-185813-define-and-benchmark-omen-and-
+
+question: |
+  Define and benchmark Omen and OpenRouter as separate JevTeam lanes.
+  Omen: local decision-plane scoring, lane classification, audit/replay,
+  privacy-sensitive async work; must not execute mutations. OpenRouter:
+  LiteLLM-controlled free and paid tiers with per-key/model budget, max
+  tokens, 401/402/429/timeout fallback, cost ledger, no secrets. Add
+  live preflight for Omen 8777/8778 and OR gateway/quota, matched
+  held-out benchmark against KK-Mac/OpenCode/Devin, and a normalized
+  decision envelope (executor/provider/model/lane/task_class/artifact/
+  expect/max_tokens/cost_budget/fallback). Do NOT enable automatic
+  production routing until health, verifier quality, and cost gates pass.
+
+method: |
+  - Lane definitions added to docs/ssot/infrastructure/
+    ssot.devnest-lanes.yml as `omen` (plane: decision, executor: NONE)
+    and `openrouter` (plane: work, via LiteLLM :4000 only), both
+    status=admission-pending; cross-ref added to
+    ssot.model-routing.yml t2-openrouter-free.
+  - Normalized decision envelope: schemas/
+    jevteam-decision-envelope.schema.json (draft 2020-12) +
+    scripts/jev/decision_envelope.py — stdlib validator mirroring the
+    schema (no jsonschema dep), card-action -> envelope normalizer,
+    decision-plane mutation refusal, paid-model/zero-budget check.
+    Selftest 7/7.
+  - Live preflight: scripts/jev/lane-preflight.py — read-only probes
+    (health/metrics/key-info + one bounded smoke call with --smoke);
+    fail-closed eligible/degraded/down verdicts, exit 0/1/2.
+  - Matched held-out benchmark: scripts/jev/lane-arena.py runs the
+    decision-arena v2 corpus (50 labeled cases: confirm/tool/pipe/stag)
+    through every arm — native /v1/systemone for omen :8777/:8778/:8779/
+    :8780 + jevos idc02:8777, OpenAI-compat chat arms for kk-mac
+    qwen3:8b, litellm/gemini-3.5-flash-lite (the OpenCode free-lane
+    brain), or-free-nemotron-35, or-deepseek-v4-flash. Devin arm
+    documented non-viable (agent runs, not completions).
+
+measured: |
+  Matched held-out benchmark — decision-arena v2 corpus, 50 labeled
+  cases (confirm/tool/pipe/stag), same prompt+parse path per arm.
+  Artifacts: evals/results/jev/lane-arena-*-20261124.{json,md}.
+
+    arm                  acc    n   p50 ms   notes
+    ------------------   -----  --  -------  -------------------------
+    oc-executor          0.90   50   5673    real `opencode run`
+                                          (litellm/gemini-3.5-flash-lite,
+                                          CHABA key) — best arm
+    oc-free-flashlite    0.86   50    785    same brain, chat-completions
+                                          path (no agent loop)
+    or-paid-deepseek     0.86   50   1150    LiteLLM alias or-deepseek-v4-
+                                          flash (paid leg, $ ledgered)
+    kkmac-qwen38b        0.80   50  21678    KK-Mac ollama qwen3:8b —
+                                          strong acc, slowest p50
+    omen-8780            0.48   50    118    confirm 1.00 / tool 0.06 —
+                                          confirm-gate domain lock
+    omen-8778            0.40   50  21494    gemma-3-1b student, weak
+                                          across all families
+    omen-8779            0.40   50   5764    student replica, same
+                                          profile as 8778
+    or-free-nemotron     SKIP        —       OR :free 429 (daily cap)
+    omen-8777 (w=3)      0.04   50  180108   47/50 timeout — CPU-bound
+                                          4B cannot serve 3-way
+                                          concurrency
+    omen-8777 (w=2)      0.00   12  180107   confirm-only subset —
+                                          all 12 timed out; even 2-way
+                                          concurrency exceeds 180s
+    omen-8777 (w=1)      0.25   12   73686   confirm-family sequential:
+                                          3/12 correct, 4 timeouts,
+                                          p50 74s/call — smoke noul
+                                          0.990 did NOT generalize;
+                                          miscalibrated on real cases
+    jevos-idc02          0.38   50  122101   incumbent baseline —
+                                          11 errors, all stag
+                                          family timed out
+
+  Per-family (fast batch): tool family is where chat arms dominate —
+  8780 scores 1/16 on tool cases (it only answers noul confirm-gate
+  questions); 8778/8779 get 3/16. KK-Mac and both OR/LiteLLM arms get
+  16/16 on tool. Stag is the discriminating family for mid-tier arms:
+  oc-executor/or-paid 1.00, kkmac 0.83, omen arms 0.42-0.68.
+
+  Devin arm: documented non-viable for this corpus — Devin is an
+  agent executor (session + repo), not a completion endpoint; a
+  matched run would need a full dispatch per case (~minutes each,
+  billed). oc-executor (real `opencode run`) is the literal
+  OpenCode-executor comparison the card asked for.
+
+  Preflight (2026-11-24 ~19:15 ICT, from tony-macbook):
+    omen: ELIGIBLE — all four endpoints /health 200
+      (8777 gemma-3-4b CPU, 8778 gemma-3-1b, 8779 student replica,
+      8780 jev-student-distilmulti). --smoke: 8777 noul=0.990 (48s),
+      8778 noul=0.835 (6.4s), 8779 noul=0.836 (26s), 8780 noul=0.006
+      (52ms — confirm-gate domain lock confirmed live: collapses on
+      non-confirm phrasing, keep it confirm-only).
+    openrouter: DEGRADED — gateway liveliness+readiness 200, BENCH key
+      headroom $1.83/$4.00 30d, but or-free leg HTTP 429 (OR :free
+      1000/day account cap exhausted by fleet traffic — same finding
+      as the iter-2 job doc). Exit 1, correctly refuses admission.
+
+verdict: |
+  DONE — all arms measured. Headline: on the matched 50-case
+  corpus, every chat/executor arm (0.80-0.90) beats every omen arm
+  measured so far — but the incumbent jevos baseline is WORSE than
+  the omen students (0.38, 11 timeouts, 122s p50), so "omen is
+  useless" is wrong: the whole local decision plane is currently
+  below the chat-tier floor, and jevos is degraded under load.
+
+  Lane reads:
+  - omen: health ELIGIBLE, quality NOT READY for ANY routing tier.
+    8780 is a confirm-gate specialist by architecture (confirm 1.00,
+    tool 0.06 — domain lock re-verified). 8778/8779 students ~0.40.
+    8777 (4B) fails both axes: cannot serve even 2-way concurrency
+    within 180s (all timeouts), and sequential confirm-family accuracy
+    is 0.25 with miscalibrated noul scores (smoke 0.990 was one easy
+    prompt, not representative). Omen's honest scope narrows to:
+    8780 confirm-gate assist + privacy-sensitive async scoring where
+    the CHAT arms are disqualified by data policy — accuracy there is
+    'acceptable for advisory gating', never autonomous decisions.
+  - openrouter: paid leg via LiteLLM is the strongest measured
+    lane (or-deepseek-v4-flash 0.86 @ 1.15s p50, cost-ledgered,
+    per-key budget enforced by gateway). :free leg is quota-blocked
+    (OR 1000/day cap, 429) — preflight correctly reports DEGRADED
+    and refuses admission until quota resets.
+  - OpenCode executor arm (real `opencode run`, 0.90) edges its own
+    chat brain (0.86) — agent loop helps on stag/pipe families.
+  - Devin: non-viable as a corpus arm (agent executor, not a
+    completion endpoint); oc-executor is the literal substitute.
+
+  Automatic production routing stays OFF for both lanes — matches
+  the card gate. Promotion path is in followups.
+
+followups: |
+  - Promotion path: when lane-arena shows an omen arm beating the
+    jevos per-family baseline AND preflight is green, flip lane
+    status admission-pending -> live for the DECLARED task_classes
+    only (e.g. omen-8778 for bounded classify assist) — never blanket.
+  - openrouter paid legs need an envelope cost_budget at claim time;
+    wire that check into whichever claimer adopts the lane.
+  - 8780 stays confirm-gate only — its choice head is dead and its
+    noul collapses outside the confirm domain (re-verified live).
+  - OR :free quota resets daily; re-run lane-preflight after reset for
+    a clean eligible reading.

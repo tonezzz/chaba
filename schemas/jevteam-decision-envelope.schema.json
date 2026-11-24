@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaba.local/schemas/jevteam-decision-envelope.schema.json",
+  "title": "JevTeam normalized decision envelope",
+  "description": "One request shape every JevTeam lane accepts for a bounded decision or bounded work item. Lane admission (ssot.devnest-lanes.yml omen/openrouter gates) and the verifiers key off these fields — a lane that cannot honor a field must refuse the envelope, not guess. Secrets never appear here: keys resolve from the runner env at call time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executor", "provider", "model", "lane", "task_class",
+    "artifact", "expect", "max_tokens", "cost_budget", "fallback"
+  ],
+  "properties": {
+    "executor": {
+      "type": "string",
+      "description": "Who runs it — catalog executor id (devin, opencode, kk_mac_local, script, nlm_batch, claude) or a decision-plane lane ref (omen, jevos). 'omen' is decision-plane only: it may fill artifact/expect for scoring tasks but must never carry mutation intent.",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "description": "Model/provider namespace — litellm, openrouter, ollama, omen-local, jev-student, devin, none (deterministic/script). Mirrors dispatch_repos.model_provider().",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "description": "Concrete model id the provider serves (e.g. litellm/or-deepseek-v4-flash, ollama/qwen3:8b, gemma-3-1b-it). Empty string = executor default.",
+      "maxLength": 120
+    },
+    "lane": {
+      "type": "string",
+      "description": "Catalog lane id from ssot.devnest-lanes.yml (omen, openrouter, kk_mac_local, free-opencode, paid_frontier, devin, manual, ...).",
+      "minLength": 1
+    },
+    "task_class": {
+      "type": "string",
+      "description": "Bounded task class — mirrors the lane's declared task_classes (e.g. summary, structured_extract, noul_gate, lane_classify, audit_replay, bursty_experiment).",
+      "minLength": 1
+    },
+    "artifact": {
+      "type": ["object", "null"],
+      "description": "Declared output the verifier checks. null only for pure decision calls that return an answer inline (noul/choice/score) with no persisted artifact.",
+      "properties": {
+        "path": {"type": "string", "description": "Repo-relative path the artifact must land at"},
+        "kind": {"type": "string", "description": "artifact kind hint (json, md, verdict)"}
+      },
+      "additionalProperties": false
+    },
+    "expect": {
+      "type": ["object", "null"],
+      "description": "Verifier contract — same shape as kk_mac action.expect: required_keys the JSON answer must contain, enums {key: [allowed]}, facts literal substrings that must appear. null when the lane's own verifier suffices.",
+      "properties": {
+        "required_keys": {"type": "array", "items": {"type": "string"}},
+        "enums": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+        "facts": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200000,
+      "description": "Hard output-token cap for the call. Required — reasoning models need headroom; unbounded calls are refused."
+    },
+    "cost_budget": {
+      "type": "object",
+      "description": "Spend ceiling for this envelope. usd=0 marks a free/local leg; paid legs must name a positive cap the claim-time key headroom can cover.",
+      "required": ["usd", "window"],
+      "properties": {
+        "usd": {"type": "number", "minimum": 0},
+        "window": {"type": "string", "enum": ["call", "day", "30d"]}
+      },
+      "additionalProperties": false
+    },
+    "fallback": {
+      "type": "object",
+      "description": "Ordered escape when the primary leg fails — lane id or 'manual'/'none'. on lists the trigger classes the lane must honor (401/402 auth+quota, 429 rate/quota, timeout, health_fail, verifier_fail).",
+      "required": ["lane", "on"],
+      "properties": {
+        "lane": {"type": "string", "minLength": 1},
+        "on": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["401", "402", "429", "timeout", "health_fail", "verifier_fail", "quota", "any"]},
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

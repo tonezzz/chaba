@@ -153,6 +153,150 @@ lanes:
       default, never None); classified-manual fails loudly and is never
       dispatched
 
+  omen:
+    label: Omen JevTeam decision lane — local /v1/systemone scorers
+    status: >-
+      admission-pending (card jevteam-omen-or-lane-admission,
+      2026-11-24) — lane is DEFINED and preflight/bench tooling exists,
+      but automatic routing stays OFF until the health, verifier-quality,
+      and cost gates in gates: below pass on recorded evidence.
+    plane: decision
+    executor: >-
+      NONE — decision plane only. The lane answers /v1/systemone
+      questions (noul/choice/score) and returns verdicts; it never
+      executes mutations, never writes work product, never holds card
+      workflow fields. Work that needs an executor goes through the
+      work-plane lanes; Omen only routes/gates/scores it.
+    endpoints:
+      - {id: omen-8777-heavy,   url: "http://100.75.102.88:8777",
+         service: open-jev.service,        model: "gemma-3-4b-it (torch CPU)",
+         role: "heavy scorer — noul-gate of record, ambiguous/audit calls"}
+      - {id: omen-8778-student, url: "http://100.75.102.88:8778",
+         service: open-jev-student.service, model: "gemma-3-1b-it (torch CPU)",
+         role: "hot bounded lane classification / noul pre-gate"}
+      - {id: omen-8779-student-b, url: "http://100.75.102.88:8779",
+         service: openjev-student quadlet, model: "gemma-3-1b-it",
+         role: "second student replica — nest distributed lane"}
+      - {id: omen-8780-confirm, url: "http://100.75.102.88:8780",
+         service: jev-student-distilmulti, model: "distilbert seq-cls",
+         role: "confirm-gate ONLY — noul head domain-locked; choice head
+                dead, do not route other question types here"}
+    task_classes:
+      - "lane classification assist (advisory — keyword layer still wins)"
+      - "noul pre-gates on destructive ops (8777 is the gate of record)"
+      - "scoring/ranking, audit/replay of recorded decisions"
+      - "privacy-sensitive async decisions — prompts never leave the tailnet"
+    must_not:
+      - "execute mutations or run work-plane tasks"
+      - "replace the deterministic keyword classifier without bench proof"
+      - "serve interactive latency paths — CPU-bound ~2-70s/call"
+    verifier: >-
+      scripts/jev/lane-preflight.py (health + systemone smoke, fail-closed)
+      + scripts/jev/lane-arena.py held-out corpus accuracy vs jevos and
+      the chat arms. Gate thresholds live in gates: below.
+    target_host: "tony-omen tailnet 100.75.102.88; reachable from any
+      tailnet host — bind is tailnet-only"
+    expected_cost: "$0 marginal — local CPU on tony-omen (electricity)"
+    expected_tokens: "n/a — local models, no metering; ~50-500 tok/call"
+    latency: "8780 ~40ms; 8778/8779 ~5-20s; 8777 ~55-110s/call SOLO
+      (measured 2026-11-24) and cannot serve ANY concurrency within
+      180s — serial batch/audit only, never interactive"
+    evidence_artifact: >-
+      evals/results/jev/lane-arena-<date>.json + lane-preflight-<date>.json
+      + docs/ssot/jobs/devnest/2026-11-24-omen-openrouter-jevteam-lanes.yml
+    gates:
+      health: "lane-preflight.py --lane omen exits 0 (all endpoints /health
+        200 + systemone smoke answered within timeout)"
+      verifier_quality: "lane-arena held-out accuracy >= jevos baseline
+        per question family, or documented per-family routing win"
+      cost: "$0 — trivially passes; the gate exists so a future paid
+        decision backend can't slip in unlabeled"
+    escalation: >-
+      endpoint down/stale/overloaded -> next decision backend in the
+      envelope's fallback (jevos idc02:8777 -> devin default); a wrong
+      answer is contained by the confidence gate (JEV_LANE_MIN_CONF)
+      and never reaches a mutation path — Omen has none.
+
+  openrouter:
+    label: OpenRouter lane via LiteLLM — free + paid tiers, budgeted
+    status: >-
+      admission-pending (card jevteam-omen-or-lane-admission,
+      2026-11-24) — defined + preflight/bench tooling exists; automatic
+      routing stays OFF until gates pass. Today OR legs are reachable
+      only as explicit model picks (or-free-*, or-deepseek-v4-flash)
+      inside existing chains — this lane formalizes that access.
+    plane: work
+    executor: >-
+      LiteLLM gateway http://100.102.134.91:4000 (OpenAI-compatible
+      /v1) — callers send litellm/<alias> or openrouter/<id>; the proxy
+      owns upstream selection, ordered fallbacks, and spend logging.
+      NEVER call openrouter.ai directly from fleet code — the gateway
+      is the single door (key rotation, budgets, ledger all live there).
+    tiers:
+      free: >-
+        or-free-* aliases (nemotron pool, gemma-4-31b) — $0 but
+        QUOTA-SHAPED: OR account cap ~1000 :free req/day shared fleet-
+        wide; measured exhausted 2026-11-24 (iter-2 job doc). Fine for
+        bursty/bench traffic, never a dependable always-on lane.
+      paid: >-
+        or-deepseek-v4-flash ($0.09/$0.18 per Mtok — benched 6/6 across
+        ops+code corpora ~$0.05 total, docs/ssot/jobs/models/
+        2026-11-24-inference-provider-iter2.yml) and future paid legs —
+        every paid call must carry a cost_budget in its decision
+        envelope; the LiteLLM virtual-key max_budget is the hard stop.
+    controls:
+      budgets: "per-virtual-key max_budget via /key/info (bench $4/30d,
+        chaba $40/30d, proxy cap $75/30d) — lane declares which key alias
+        (LITELLM_KEY_BENCH for bench/dev, LITELLM_KEY_CHABA for prod
+        batch)"
+      max_tokens: "every call carries an explicit cap from the envelope —
+        reasoning models (deepseek-v4.1-flash) return empty content under
+        small budgets; size for thinking headroom"
+      fallback: "401/402 -> key/quota problem: re-auth or rotate-or-key,
+        never silent retry; 429 -> next chain leg or defer to free/local;
+        timeout -> next envelope.fallback lane"
+      cost_ledger: "scripts/litellm/daily-ledger.py -> LiteLLM SpendLogs
+        -> llm-gateway-spend-ledger report; per-call cost must land in
+        the decision envelope record"
+      secrets: "NO secrets in repo/config/cards — keys resolve at runtime
+        from ~/.config/secrets/litellm-keys.env (LITELLM_KEY_*) or the
+        job env_file; OR upstream key lives only in the litellm container
+        env on idc03 (rotate-or-key.sh)"
+    task_classes:
+      - "bursty experiments and bench arms that tolerate rotation"
+      - "cheap paid code brain where local lanes fail quality (bounded)"
+      - "NOT scheduled/batch always-on work — quota-shaped free tier,
+        budget-capped paid tier"
+    must_not:
+      - "bypass the LiteLLM gateway with a direct OPENROUTER_API_KEY call"
+      - "run without a cost_budget envelope field on paid legs"
+      - "depend on :free quota for anything that must complete"
+    verifier: >-
+      lane-preflight.py --lane openrouter (gateway health + key budget +
+      live leg probe) + lane-arena chat-arm records + SpendLogs rows as
+      the cost evidence
+    target_host: "any tailnet host -> http://100.102.134.91:4000"
+    expected_cost: "$0 free tier (quota-capped); paid or-deepseek-v4-flash
+      ~$0.003-0.05/call bounded by key max_budget"
+    expected_tokens: "caller-declared via envelope.max_tokens"
+    evidence_artifact: >-
+      evals/results/jev/lane-arena-<date>.json chat-arm rows +
+      reports/lane-savings-*.json + LiteLLM SpendLogs
+    gates:
+      health: "lane-preflight.py --lane openrouter exits 0 (gateway
+        liveliness+readiness, key/info budget headroom, live leg probe
+        answered)"
+      verifier_quality: "lane-arena accuracy on held-out corpus within
+        the declared band for its task_class, or explicit per-class
+        restriction"
+      cost: "paid legs only with envelope.cost_budget.usd <= key
+        headroom at claim time; free legs never counted as dependable"
+    escalation: >-
+      402/quota -> paid_frontier budget check or defer; persistent 429 ->
+      the lane's ordered fallback (local ollama leg -> gemini paid leg
+      inside the job-class chain); key rotation -> rotate-or-key.sh on
+      idc03, never embed the new key anywhere.
+
   local-gpu-packs:
     label: Local / Colab-T4 GPU packs — ada-nest queue
     status: live
@@ -481,6 +625,10 @@ open_gaps:
   - OPS-0838 dispatch-classify-at-queue-time — classify inside board-api
     queue verb so every claimer sees action.lane/model (whack-a-mole fix
     for unpatched runners)
+  - "omen + openrouter lanes (card jevteam-omen-or-lane-admission,
+    2026-11-24) — DEFINED, status admission-pending; promote to live only
+    after lane-preflight health + lane-arena verifier-quality + cost
+    gates record a pass; no automatic routing before then"
   - OPENCODE_LANES=1 enablement beyond the supervised pilot host —
     OPS-0846 closeout proven 2026-10-26 (tony-dell probe); fleet-wide
     still pending the three-job savings pilot (card
@@ -503,6 +651,11 @@ references:
     (pilot classes, card contract, run-record schema, Devin baseline)
   - scripts/board/dispatch_repos.py (LANE_MODELS / LANE_KW / classify_lane)
   - scripts/board/runner-agent.py (start_opencode_lane, claim-time routing)
+  - scripts/jev/lane-preflight.py (omen + openrouter live admission probe)
+  - scripts/jev/lane-arena.py (matched held-out lane benchmark)
+  - "scripts/jev/decision_envelope.py + schemas/jevteam-decision-envelope.schema.json
+    (normalized decision envelope — executor/provider/model/lane/task_class/
+    artifact/expect/max_tokens/cost_budget/fallback)"
   - scripts/pattern-lib/router.py (codemod arm)
   - scripts/colab/packs/*/pack.yml (GPU pack contract)
   - >-
