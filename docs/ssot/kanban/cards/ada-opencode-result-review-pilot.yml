@@ -1,7 +1,7 @@
 id: ada-opencode-result-review-pilot
 title: Pilot Ada as a read-only OpenCode result reviewer
 column: doing
-updated: 2026-11-24 19:35
+updated: 2026-11-24 20:13
 brief: Evaluate Ada as an independent review-plane QA/QC stage for OpenCode-generated result bundles. Ada reviews;
   she does not execute or approve deployment.
 priority: medium
@@ -220,6 +220,13 @@ comms:
     + review schema + reviewer backends (litellm now, ada-ws gated) + frozen seeded-defect corpus under evals/ada-review/cases
     + metrics eval + tests + SSOT job doc. Live ada-dev lane is localhost-bound on idc03 so ada-ws path ships gated;
     litellm backend used for plumbing verification here.'
+- at: 2026-11-24 20:13
+  from: devin
+  text: 'DONE (eval-only pilot). Commit e274a6946f on dispatch branch. Built: allowlisted bundle assembler + ada-opencode-review/1
+    schema + backends (litellm baseline, gated ada-ws live lane, replay/stub) + 8-case frozen corpus (2 clean real
+    runs, 1 real FAIL run, 5 seeded defects) + shadow eval metrics. First numbers: gemini-3.5-flash-lite recall
+    0.5 (missed subtle defects); chat/gemini-3.5-flash 8/8 expected match, recall 1.0, FP 0, citations 1.0, p50
+    ~9s. result_ref: evals/ada-review/reports/20261124-'
 action:
   type: dispatch
   status: running
