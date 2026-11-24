@@ -1,7 +1,7 @@
 id: wire-hybrid-recall-t1-semantic-t2-keywor-ef89a0
 title: Wire hybrid recall (T1 semantic + T2 keyword) into notebooklm-recall.sh — prune prerequisite
-column: doing
-updated: 2026-11-24 16:08
+column: review
+updated: 2026-11-24 16:09
 priority: medium
 spec: 'bench-recall v2 verdict (session-mddb-recall-benchmark): sessions.db prune to T0 is AQ-safe ONLY if recall
   runs BOTH retrievals — T1 semantic (mddb devin-session/* docs, now enriched via --enrich) + T2 keyword over locally
@@ -206,9 +206,31 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-083038-bench-recall-v2-verdict-sessio on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 16:09
+  from: mn01
+  text: 'finished (ok): exit=0 aining step is the manual `scp` of `notebooklm-recall.sh` + `session_recall.py` together.
+    | devin-task-20261124-0'
+- at: 2026-11-24 16:09
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:09
+  from: chaba
+  text: 'session-end checkpoint 1432e25c: 1 leftover file(s) committed'
+- at: 2026-11-24 16:09
+  from: chaba
+  text: banked 206 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 16:09
+  from: chaba
+  text: pushed dispatch/20261124-083038-bench-recall-v2-verdict-sessio to origin
+- at: 2026-11-24 16:09
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 16:09
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: mn01
@@ -216,5 +238,9 @@ action:
   sweep:
     stale_running: 2026-11-24 16:08
     dirty: 1
+  result: 'exit=0 aining step is the manual `scp` of `notebooklm-recall.sh` + `session_recall.py` together. | devin-task-20261124-083038-bench-recall-v2-verdict-sessio.service:
+    Consumed 54.826s CPU time over 36min 51.555s wall clock time, 656.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-24 15:29
+review_kind: verify
