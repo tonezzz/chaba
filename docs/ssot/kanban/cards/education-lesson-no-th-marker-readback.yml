@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
-column: doing
-updated: 2026-11-24 17:35
+column: review
+updated: 2026-11-24 17:37
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -209,12 +209,36 @@ comms:
     v0.10.1 registers no_th type=boolean; DEPLOYED live via deploy-plugin-zip.sh on tony-omen — OPTIONS /wp/v2/lesson
     schema now exposes meta.no_th {type:boolean}. Note: wiki-primary store (current) already round-tripped no_th
     correctly; the WP leg is the frozen-archive/rollbac'
+- at: 2026-11-24 17:37
+  from: tony-macbook
+  text: 'finished (ok): exit=0 entry. Outcome doc: `dispatch-outcome-20261124-171704-investigate-why-a-lesson-writt.md`.
+    | devin-task-20261124-1'
+- at: 2026-11-24 17:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 17:37
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  pytest not installed — fast test gate skipped (close_out still gates the
+    merge)\n\U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/apps/ss"
+- at: 2026-11-24 17:37
+  from: chaba
+  text: pushed dispatch/20261124-171704-investigate-why-a-lesson-writt to origin
+- at: 2026-11-24 17:37
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-24 17:37
+  from: chaba
+  text: 'worktree kept: dirty — 7 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 entry. Outcome doc: `dispatch-outcome-20261124-171704-investigate-why-a-lesson-writt.md`. | devin-task-20261124-171704-investigate-why-a-lesson-writt.service:
+    Consumed 44.310s CPU time over 18min 45.020s wall clock time, 376.9M memory peak.'
 claim:
   since: 2026-11-24 17:16
+review_kind: verify
