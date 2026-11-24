@@ -2,14 +2,14 @@ id: logs-auto-tony-dell-silent
 title: logs `tony-dell` silent 7h
 brief: 'The log digest flagged something worth a look: logs `tony-dell` silent 7h. Read the note, then fix it or
   close the card.'
-column: done
+column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: medium
-note: 'Auto-recovered 2026-11-24: `tony-dell-silent` condition cleared — shipper healthy again.'
+note: last ship-state write 8h ago (limit 3.0h) — shipper stopped running
 help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
-updated: '2026-11-24'
+updated: 2026-11-24 08:12
 comms:
 - at: 2026-11-24 00:00
   from: chaba
@@ -18,4 +18,8 @@ comms:
 - at: 2026-11-24 00:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

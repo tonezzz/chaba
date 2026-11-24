@@ -2,15 +2,28 @@ id: logs-auto-coverage
 title: Log coverage gaps
 brief: 'The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the
   card.'
-column: done
+column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: medium
-note: 'Coverage clean 2026-11-24: all 6 expected hosts ship both journals.'
+note: 'Expected log sources vs what actually ships:
+
+
+  - `idc02` — ok [local]; shipped 44/404 matched
+
+  - `idc03` — ok [local]; shipped 45/2593 matched
+
+  - `mn01` — silent 7h [local]; shipped 10/354 matched
+
+  - `tony-dell` — silent 8h [local]; shipped 3/1210 matched
+
+  - `tony-omen` — ok [local]; shipped 56/1293 matched
+
+  - `michael-ha` — ok [ha-cli-ssh]; shipped 0/0 matched'
 help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps usually mean `journalctl --user`
   isn't permitted for the ssh login.
-updated: '2026-11-24'
+updated: 2026-11-24 08:12
 comms:
 - at: 2026-11-24 00:00
   from: chaba
@@ -19,4 +32,8 @@ comms:
 - at: 2026-11-24 00:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

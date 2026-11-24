@@ -8,15 +8,15 @@ program: chaba-ci
 area: dispatch
 priority: medium
 note: 'Failing: runner-agent: checkout sha 33a65f615c887eae != pin d9af2b9cd9410faf — chaba clone is stale/divergent;
-  ~/.local/bin/runner-agent sha d633fa5261a4c93c != pin d9af2b9cd9410faf — installed build is stale; dispatch-repos:
-  checkout sha 66f88802508179bb != pin 7cf6ed7af12c8877 — chaba clone is stale/divergent; ~/.local/bin/runner-agent
-  sha d633fa5261a4c93c != repo 33a65f615c887eae — installed copy drifted; redeploy. Info: chaba origin is fetch-only
-  (by design — no push creds); merge-sweep salvage path verified; sunsynk-card: push probe fails (?) — sunsynk-card
-  dispatches defer to a pushable host; stranded work relays via board-api; mddb-fork: push probe fails (remote:
-  Permission to tradik/mddb.git denied to tonezzz.
+  ~/.local/bin/runner-agent sha 33a65f615c887eae != pin d9af2b9cd9410faf — installed build is stale; dispatch-repos:
+  checkout sha 66f88802508179bb != pin 7cf6ed7af12c8877 — chaba clone is stale/divergent. Info: chaba origin is
+  fetch-only (by design — no push creds); merge-sweep salvage path verified; sunsynk-card: push probe fails (?)
+  — sunsynk-card dispatches defer to a pushable host; stranded work relays via board-api; mddb-fork: push probe
+  fails (remote: Permission to tradik/mddb.git denied to tonezzz.
 
   fat) — mddb-fork dispatches defer to a pushable host; stranded work relays via board-api; gods-eye-view: push
-  probe fails (?) — gods-eye-view dispatches defer to a pushable'
+  probe fails (?) — gods-eye-view dispatches defer to a pushable host; stranded work relays via board-api; ada-voice:
+  push probe fails (?) — ada-voice dispatches defer to a'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
@@ -39,7 +39,7 @@ help: 'Per-check fixes:
 
   - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
   scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: 2026-11-24 00:12
+updated: 2026-11-24 08:12
 review_kind: triage
 action:
   status: done
@@ -209,6 +209,10 @@ comms:
 - at: 2026-11-24 00:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 ref: OPS-0407
