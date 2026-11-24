@@ -1,7 +1,7 @@
 id: devin-usage-reduction
 title: Devin usage reduction roadmap (post-assessment follow-up)
 column: doing
-updated: 2026-11-24 22:43
+updated: 2026-11-24 22:54
 brief: 'Reduce Devin dispatch token/allowance burn: 148 sessions / ~657M prompt tokens over the last 30 days, all
   swe-2-high free tier, 97% cached; devin still the lane fallback for many multi-step shapes despite free-lane routing
   existing (OPS-0869/0885).'
@@ -163,6 +163,13 @@ comms:
     was a linked unit running a stale scripts/-only ; [audit-miss-unlanded-oct06-dispatch-artifacts] [verify-hold]
     Review pass 2026-11; [doc-draft-verifier-semantic-gap] primer injected 8 lesson(s): idc02''s kanban-di; [runner-agent-opencode-lane-profile-bug]
     dispatch picked up: '
+- at: 2026-11-24 22:54
+  from: devin
+  text: '2026-11-24 dispatch in progress (idc02): verified state — OPS-0838/0869/0885 all DONE (archived); classifier
+    reroute slices landed via DEV-0045/PR#199; devin-usage.py already reports window allowance-burn (added 11-23).
+    Remaining real gaps: (a) 61-card jevos-fallback devin cohort + audit/assess shape = 56.8M prompt/30d on idc02
+    alone — picked bounded read-only audit/assessment class as first re-route; (b) allowance REMAINING not machine-readable
+    (devin CLI has no usage cmd, transcripts carry tok'
 action:
   type: dispatch
   status: running
