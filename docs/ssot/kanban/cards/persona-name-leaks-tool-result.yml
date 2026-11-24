@@ -1,7 +1,7 @@
 id: persona-name-leaks-tool-result
 title: persona-name-leaks-tool-result
-column: backlog
-updated: 2026-11-24 15:13
+column: doing
+updated: 2026-11-24 15:14
 brief: 'Shared tool-result wording leaks Ada into non-Ada lanes: realtime_provider.py:5326 returns Ada is now <expr>
   for set_facial_expression; openrouter_provider.py:414 same pattern. On mn/Kraut lane the model sees Ada is now
   neutral (idc03 journal 2026-10-17 14:51). Fix: use ADA_PWA_NAME default Ada in result text. Same class as TG_PERSONA_NAME
@@ -381,13 +381,19 @@ comms:
 - at: 2026-11-24 15:13
   from: chaba
   text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 15:14
+  from: idc02
+  text: claimed
 spec: 'Goal: Redeploy the drifted runner-agent script from the local chaba repository to all affected hosts (tony-macbook,
   tony-dell, idc02, idc03). Host: tony-macbook, tony-dell, idc02, idc03. Repo: chaba. Constraints: Copy scripts/board/runner-agent.py
   to ~/.local/bin/runner-agent on each specified host using scp. Testable done-condition: Verify that the installed
   runner-agent matches the version in the chaba repository on all target hosts without drift.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-24 15:14
