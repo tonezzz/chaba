@@ -1,7 +1,7 @@
 id: idle-qa-and-backups-idc
 title: Move recurring QA + backups to idle idc hosts
 column: review
-updated: 2026-11-24 16:23
+updated: 2026-11-24 17:04
 priority: low
 note: 'ssot-validate/check-single-writer/session-audit/qc-scoreboard off dell -> idc02 audit box. Nightly pull-backups:
   WP DB+uploads dump, MDDB snapshots, repo mirror. IO-bound idle food.'
@@ -224,6 +224,10 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-152133-move-recurring-qa-backups-to-i on tony-macbook still
     dirty — 32 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
