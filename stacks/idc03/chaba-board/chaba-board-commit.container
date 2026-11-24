@@ -1,0 +1,14 @@
+[Unit]
+Description=Persist live kanban card edits to git — containerized kanban-commit.service
+
+[Container]
+Image=localhost/chaba-board:latest
+ContainerName=chaba-board-commit
+Network=host
+Volume=/home/tony:/home/tony
+Volume=/tmp:/tmp
+Environment=HOME=/home/tony
+Exec=/home/tony/.config/containers/chaba-board/run-commit.sh
+
+[Service]
+TimeoutStartSec=600
