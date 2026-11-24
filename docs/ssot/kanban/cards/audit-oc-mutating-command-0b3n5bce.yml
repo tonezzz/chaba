@@ -1,7 +1,7 @@
 id: audit-oc-mutating-command-0b3n5bce
 title: '[audit] mutating_command in opencode session 5pQF0B3N5BcE'
-column: doing
-updated: 2026-11-24 22:09
+column: review
+updated: 2026-11-24 22:12
 priority: medium
 program: ai-workforce
 tags:
@@ -221,12 +221,44 @@ comms:
     — zero bytes sent, session completed its fixture. Root cause: devin-executor RAILS (curl /comment instructions)
     was injected into the opencode lane prompt; fixed same-day by cb2d2f2c2d -> RAILS_OPENCODE. Verified: idc02
     runner-agent md5-matches repo, all profile prompt paths avoid d'
+- at: 2026-11-24 22:12
+  from: idc02
+  text: 'finished (ok): exit=0 s `0f8e5ac5c2` on the dispatch branch; progress and final verdict posted to the card
+    — recommend close. | devin-t'
+- at: 2026-11-24 22:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 22:12
+  from: chaba
+  text: banked 1 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 22:12
+  from: chaba
+  text: pushed dispatch/20261124-220219-auto-filed-by-opencode-session to origin
+- at: 2026-11-24 22:12
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 22:12
+  from: chaba
+  text: auto-merged b8202ab0 (dispatch/20261124-220219-auto-filed-by-opencode-session) → origin/master
+- at: 2026-11-24 22:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-220219-auto-filed-by-opencode-session,
+    branch dispatch/20261124-220219-auto-filed-by-opencode-session'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 s `0f8e5ac5c2` on the dispatch branch; progress and final verdict posted to the card — recommend
+    close. | devin-task-20261124-220219-auto-filed-by-opencode-session.service: Consumed 27.969s CPU time, 654.0M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-24 22:01
+review_kind: verify
