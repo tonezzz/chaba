@@ -129,8 +129,9 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   cancelled`; `comms`/`note` appends `{at,from,text}` to a JSON log in
   `meta.comms` (cap 200); `parent` accepts a post id or a sibling job slug
   (job trees). `from` accepts actors or daemon/host names (`queue-mgr`,
-  `tony-dell`). queue-mgr on dell mirrors `gdrive:ada-nest` queue/packs
-  state through this — Colab workers and watchers never write.
+  `tony-dell`). queue-mgr (`scripts/ops/queue-mgr.py`, tony-dell
+  `queue-mgr.timer` 5m) mirrors `gdrive:ada-nest` queue/packs state
+  through this — Colab workers and watchers never write.
 - **`/lesson`** — same semantics old `scripts/lesson-add.py` had (which is
   now a thin CLI client of this endpoint): upsert by topic slug,
   `learned_at`/`next_review`/`status` preserved on re-file, Thai section
