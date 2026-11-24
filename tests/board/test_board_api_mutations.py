@@ -398,6 +398,48 @@ class JobDoorTest(DoorTestBase):
             {"slug": "s", "status": "done"}, "queue-mgr"),
             "result_ref")
 
+    def test_meta_status_cannot_bypass_gates(self):
+        # meta.status rides the same JOB_META_KEYS merge — it must be
+        # folded into the gated `status`, not smuggle a bare done past
+        # the transition + evidence checks (OPS-0923 hardening)
+        wp = self._job_with_status("running")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "meta": {"status": "done",
+                                  "result_ref": "packs/s/done"}},
+            "queue-mgr"), "verified artifact evidence")
+        self.assertEqual(wp.posts, [])
+        # ...and an illegal jump via meta.status is caught too
+        wp = self._job_with_status("done")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "meta": {"status": "running"}},
+            "queue-mgr"), "invalid transition")
+        # a well-formed meta.status done still works (evidence inside
+        # meta counts — _job_done_evidence reads body.meta)
+        wp = self._job_with_status("running")
+        self.mod.wp_api = wp
+        res = self.mod.do_job(
+            {"slug": "s", "meta": {"status": "done",
+                                  "result_ref": "packs/s/done",
+                                  "evidence": ["packs/s/done"]}},
+            "queue-mgr")
+        self.assertEqual(res["action"], "updated")
+        self.assertEqual(wp.posts[-1][1]["meta"]["status"], "done")
+
+    def test_conflicting_status_rejected(self):
+        wp = self._job_with_status("running")
+        self.mod.wp_api = wp
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "status": "running",
+             "meta": {"status": "done"}}, "queue-mgr"),
+            "conflicting status")
+        self.assertEqual(wp.posts, [])
+        # bogus status hidden in meta is validated like top-level
+        self.rejects(lambda: self.mod.do_job(
+            {"slug": "s", "meta": {"status": "bogus"}}, "queue-mgr"),
+            "status must be one of")
+
     def test_comms_only_write_ignores_transitions(self):
         # no status in the body = annotation, never a transition —
         # a done job can still take comms/meta updates

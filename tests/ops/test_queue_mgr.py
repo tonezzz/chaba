@@ -144,6 +144,31 @@ class Derive(unittest.TestCase):
         sc["lease"]["ts"] = now - 99999
         self.assertEqual(mod.derive(sc)[mod.ROOT_SLUG]["runner"], "")
 
+    def test_done_posts_carry_evidence(self):
+        """OPS-0923: every done write must satisfy the board-api
+        terminal-done gate — result_ref plus evidence refs, or the
+        mirror post 400s and the tick wedges."""
+        sc = scan_fixture(packs={
+            "aaa-done": pack(done="42s"),
+            "bbb-claim": pack(claims=["w-1"])})
+        posts = mod.derive(sc)
+        self.assertEqual(posts["aaa-done"]["evidence"],
+                         ["gdrive:ada-nest/packs/aaa-done/done"])
+        self.assertNotIn("evidence", posts["bbb-claim"])
+        # env/work job done markers carry evidence too
+        sc2 = scan_fixture(jobs=[{"name": "j", "scope": "work"}],
+                           done_work={"j"})
+        self.assertEqual(mod.derive(sc2)["job-j"]["evidence"],
+                         ["gdrive:ada-nest/queue/done/j.done"])
+        # root done is derived — evidence = the children's done
+        # markers (capped at 10, queue dir as fallback)
+        sc3 = scan_fixture(packs={"a": pack(done="1s"),
+                                  "b": pack(done="2s")})
+        root = mod.derive(sc3)[mod.ROOT_SLUG]
+        self.assertEqual(root["status"], "done")
+        self.assertEqual(len(root["evidence"]), 2)
+        self.assertTrue(all("/done" in e for e in root["evidence"]))
+
 
 class Scan(unittest.TestCase):
     """scan() assembly over a faked rclone — inventory parsing, marker

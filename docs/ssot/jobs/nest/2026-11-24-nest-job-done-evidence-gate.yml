@@ -83,6 +83,21 @@ changes:
       board-api --selftest updated for the new contract.
     files: [tests/board/test_board_api_mutations.py,
             tests/board/test_publication.py, scripts/board/board-api.py]
+  hardening_attempt2:
+    what: >-
+      Review pass found two gaps in the attempt-1 gate: (a) do_job
+      read status only from the top-level field while meta.status
+      rode the JOB_META_KEYS merge ungated — a bare
+      {"meta":{"status":"done"}} write skipped transition AND
+      evidence checks; meta.status is now folded into the gated
+      status and disagreement is a 400. (b) queue-mgr's done writes
+      carried result_ref but no evidence — every pack completion
+      would 400 once the gate deployed; derive() now emits
+      evidence[] = the done marker (children) / child done markers
+      (root, cap 10).
+    files: [scripts/board/board-api.py, scripts/ops/queue-mgr.py,
+            tests/board/test_board_api_mutations.py,
+            tests/ops/test_queue_mgr.py]
   docs:
     what: >-
       job-package-status-sop.md gained section 5 "Enforcement at the
@@ -96,13 +111,28 @@ changes:
 deployment_notes:
   - >-
     REPO LANDING ONLY — board-api deploys separately; the gate
-    activates on deploy.
+    activates on deploy. queue-mgr runs from the tony-dell exec
+    checkout (`~/CascadeProjects/chaba`, synced hourly by
+    chaba-repo-sync.timer) so its evidence fix lands on the same
+    merge — but board-api deploy is a separate manual step, so there
+    is a window where the new gate is live and queue-mgr still posts
+    bare done writes (they 400 and retry next tick — self-healing,
+    but mirror rows lag until queue-mgr syncs).
   - >-
-    queue-mgr (external dell daemon, not in this repo) mirrors Drive
-    state through POST /job: its done writes MUST start sending
-    result_ref + evidence[]/verified or they will 400 once deployed.
-    Until then nest-job-reconcile.py DONE-NO-*/PACK-DONE-JOB-* findings
-    are the drift signal.
+    queue-mgr (scripts/ops/queue-mgr.py, in this repo) mirrors Drive
+    state through POST /job: attempt 2 added evidence[] = the pack
+    done marker on every done write (pack/env/work children; root
+    done aggregates up to 10 child done markers, queue dir fallback)
+    so its writes satisfy the gate. Other /job callers: none found —
+    queue-mgr is the only POST /job producer in the repo.
+  - >-
+    Attempt-2 review fixes on top of the cherry-picked attempt-1
+    commit: (a) do_job meta.status bypass closed — meta.status is
+    folded into the gated status and top-level/meta disagreement is
+    a 400 (previously {"meta":{"status":"done"}} skipped every
+    gate); (b) merge conflict in docs/kb/board-api-write-door.md
+    resolved against current master (kept master's queue-mgr.timer
+    wording + appended the OPS-0923 contract paragraph).
   - >-
     Pre-existing suite failures unrelated to this change:
     test_control_pane_projection (card YAML archived upstream) and

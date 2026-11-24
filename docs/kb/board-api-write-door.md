@@ -147,6 +147,10 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   `queued`/`failed`, and `done` requires `result_ref` plus verified
   artifact evidence (`evidence[]`, `verified:true`, or
   `confidence=verified`); violations are HTTP 400 before any WP write.
+  `meta.status` is an alternate carrier for the same field — it is
+  folded into the gated status (a top-level/meta disagreement is a
+  400), so it cannot bypass the contract. queue-mgr sends the pack
+  `done` marker as `evidence[]` on every done write.
   Accepted evidence persists to `meta.evidence` +
   `meta.artifact_verified`. Read side: `GET /nest-jobs?slug=&limit=
   &comms=1` lists the mirror for reconciliation

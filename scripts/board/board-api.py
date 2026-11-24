@@ -4567,6 +4567,19 @@ def do_job(body: dict, frm: str) -> dict:
     if not re.fullmatch(r"[a-z0-9-]{1,80}", slug):
         raise ValueError("slug must match [a-z0-9-]{1,80}")
     status = str(body.get("status") or "").strip()
+    extra = body.get("meta")
+    # meta.status is an alternate carrier for the same field (the
+    # extra-meta merge below persists JOB_META_KEYS) — fold it into
+    # `status` BEFORE the gates so it can't bypass them, and reject a
+    # top-level/meta disagreement rather than silently picking one.
+    meta_status = str(extra.get("status") or "").strip() \
+        if isinstance(extra, dict) else ""
+    if meta_status:
+        if status and meta_status != status:
+            raise ValueError(
+                "conflicting status: top-level status and "
+                "meta.status disagree")
+        status = status or meta_status
     if status and status not in JOB_STATUSES:
         raise ValueError(f"status must be one of {sorted(JOB_STATUSES)}")
     parent = body.get("parent")
@@ -4599,7 +4612,6 @@ def do_job(body: dict, frm: str) -> dict:
     if status == "done":
         ref = str(body.get("result_ref")
                   or meta.get("result_ref") or "").strip()
-        extra = body.get("meta")
         if not ref and isinstance(extra, dict):
             ref = str(extra.get("result_ref") or "").strip()
         if not ref:
@@ -4625,7 +4637,6 @@ def do_job(body: dict, frm: str) -> dict:
         v = body.get(k)
         if v is not None and str(v).strip() != "":
             meta[k] = str(v)[:300]
-    extra = body.get("meta")
     if isinstance(extra, dict):
         for k, v in extra.items():
             k = str(k)
