@@ -1,7 +1,7 @@
 id: ada-voice-rename-cleanup
 title: 'ada-voice rename cleanup: mn01 catch-up + retire ada-pi compat shims'
 column: doing
-updated: 2026-11-24 15:18
+updated: 2026-11-24 15:42
 spec: 'Residuals from card ada-pi-rename-ada-voice (job doc docs/ssot/jobs/infrastructure/2026-10-14-ada-pi-rename-ada-voice.yml):
 
 
@@ -201,6 +201,13 @@ comms:
   text: 'dispatch started on tony-dell. Fleet status: mn01 still has real ada-pi dir (rename pending), tony-macbook
     ssh denied, other 4 hosts renamed with ada-pi compat symlink. No live card carries action.repo: ada-pi (only
     done/archive history). Proceeding: mn01 rename, then shim retirement.'
+- at: 2026-11-24 15:42
+  from: devin
+  text: 'DONE. mn01 renamed (ada-voice@1c94657, pull --ff-only, 3 units + 6 wt-fixes, mn01-canary.sh reinstalled
+    — it still defaulted ADA_REPO=ada-pi). Compat shims retired fleet-wide: ~/CascadeProjects/ada-pi symlink removed
+    on all 6 hosts; ada-pi alias dropped from repos.conf (dell/idc03/macbook), BUILTIN_REPOS+REPO_TESTS, devin-dispatch.sh
+    + claude-dispatch.sh fallbacks, dispatch-repos.conf, deploy-diff.sh, backlog-spec-enrich.py. REPO_ALIASES kept
+    (credential canon — stray ada-pi cards still resolve)'
 action:
   type: dispatch
   status: running
