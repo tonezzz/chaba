@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: doing
-updated: 2026-11-24 08:01
+updated: 2026-11-24 08:03
 brief: probe
 ref: OPS-0812
 comms:
@@ -437,6 +437,13 @@ comms:
     exec-checkout == origin/master blob (sha256 33a65f61, last touched b58f75984e). 0 drift/traceback in 24h journals;
     tony-dell claimed kk-ha-degraded 08:00, macbook claimed this task 07:59. Re-asserting install -m0755 anyway,
     then verifying services.'
+- at: 2026-11-24 08:03
+  from: devin
+  text: 'DONE (attempt 3, tony-macbook): drift had already self-healed — installed ~/.local/bin/runner-agent ==
+    exec-checkout == origin/master blob 33a65f61 (b58f75984e) on idc03, idc02, tony-dell, tony-macbook (+mn01, tony-omen
+    spot-check MATCH). Re-asserted install -m0755 from each host checkout anyway. Post-install journals clean: idc02
+    claimed 2 cards 08:01, tony-dell claimed kk-ha-degraded 08:00, macbook claimed this task 07:59, idc03 finishing
+    every ~1min (claim pass gated by disk headroom ~1.4GB<2'
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
