@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: backlog
-updated: 2026-11-24 00:13
+updated: 2026-11-24 08:05
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -372,6 +372,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-24 08:05
+  from: tony
+  text: queued for processing
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
@@ -393,7 +399,7 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: queued
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
@@ -405,8 +411,6 @@ action:
     devin-task-20261123-202348-investigate-and-resolve-the-fa.service: Consumed 1min 49.288s CPU time over 20min
     48.215s wall clock time, 931.6M memory peak.'
   attempts: 2
-  verified: false
-  runner: tony-omen
   result: 'exit=1 61123-202348-investigate-and-resolve-the-fa.service: Failed with result ''exit-code''. | devin-task-20261123-202348-investigate-and-resolve-the-fa.service:
     Consumed 1min 49.288s CPU time over 20min 48.215s wall clock time, 931.6M memory peak.'
 spec: Investigate and resolve the failure of ada-scenario-casting.service on host idc03 during the weekly casting
@@ -416,4 +420,3 @@ spec: Investigate and resolve the failure of ada-scenario-casting.service on hos
   The done-condition is verified when ada-scenario-casting.service runs successfully on idc03 without failure logs.
 claim:
   since: 2026-11-23 20:22
-awaiting_action: true
