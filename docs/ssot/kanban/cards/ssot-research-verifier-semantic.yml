@@ -1,7 +1,7 @@
 id: ssot-research-verifier-semantic
 title: ssot-research verifier passes fabricated answers when cited paths exist (OPS-1017 twin)
-column: backlog
-updated: 2026-11-24 19:34
+column: doing
+updated: 2026-11-24 19:43
 spec: 'Evidence KNB-1029 (qwen3:8b, 2026-10-30): artifact answered kk-mac declarations with citations to AGENTS.md
   + ssot.mcp.yml — both paths exist so every check passed, but the answer was wrong (claimed /etc/hosts + MCP tools;
   truth is ssot.audit.hosts.yml + stacks/idc03/litellm/config.yaml). Citation-existence != answer-truth. Same class
@@ -191,9 +191,16 @@ comms:
   from: chaba
   text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 19:43
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: jevos
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-24 19:43
