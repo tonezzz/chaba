@@ -1,0 +1,51 @@
+{
+  "pack": "kk-mac-mlx-colab-scene0-control-20261124",
+  "created": "2026-11-24",
+  "card": "kk-mac-video-library-rerender",
+  "lane": "kk-mac-mlx",
+  "purpose": "control rerender of one old scene before any library enqueue; old outputs preserved untouched",
+  "old_project": {
+    "id": "colab-scene0 / golden-hour-catch",
+    "story": "Golden Hour Catch (ViMax story.txt, 2 scenes / 7 shots total)",
+    "old_artifacts": [
+      "gdrive:ada-nest/renders/ltx_shot0_colab_20261022-1151.mp4",
+      "gdrive:ada-nest/renders/ltx_shot1_colab_20261022-1151.mp4",
+      "gdrive:ada-nest/renders/ltx_shot2_colab_20261022-1151.mp4",
+      "gdrive:ada-nest/renders/ltx_shot3_colab_20261022-1151.mp4",
+      "gdrive:ada-nest/renders/ltx_s0shot0_cont_20261023-0409.mp4",
+      "gdrive:ada-nest/renders/ltx_s0shot1_cont_20261023-0409.mp4",
+      "gdrive:ada-nest/renders/ltx_s0shot2_cont_20261023-0409.mp4",
+      "gdrive:ada-nest/renders/ltx_s0shot3_cont_20261023-0409.mp4",
+      "gdrive:ada-nest/renders/golden-hour-catch-reference/full_story-original_20261026.mp4",
+      "gdrive:ada-nest/renders/golden-hour-catch-final/golden-hour-catch-teaser-v1.mp4"
+    ],
+    "local_archive": "tony-dell:~/CascadeProjects/tony-chaba-dell/archive/ada-nest-videos/colab-scene0/",
+    "old_render_params": {
+      "codec": "h264", "width": 640, "height": 384, "fps": 24,
+      "frames_per_shot": 49, "duration_s": 2.041667,
+      "pipeline": "diffusers LTXImageToVideoPipeline (CUDA T4), t2v",
+      "conditioning": "T5 prompt_embeds .pt (same files as inputs/)",
+      "seed": "unrecorded"
+    }
+  },
+  "mlx_render_params": {
+    "model": "LTX-Video 0.9.8-distilled 2B",
+    "port": "baisampayans/ltx-mlx (pure MLX)",
+    "checkpoint": "ltxv-2b-0.9.8-distilled.safetensors",
+    "model_dir_on_kk_mac": "~/kk-video/ltx-mlx/models/LTX",
+    "width": 640, "height": 384, "frames": 49, "fps": 24,
+    "steps": 8, "seed": 42,
+    "conditioning": "prompt_embeds injected per shot (T5 weights skipped); t2v",
+    "negative_embeds": "present in .pt but unused by MLX lane (same as proven preview-mac pack)"
+  },
+  "inputs": {
+    "shot0.pt": {"sha256": "e15135e78b74395e65acebb7292601323282b2ecd9afc11b93b025ca1b7bb23f", "source": "gdrive:ada-nest/renders/ltx-embeds/shot0.pt"},
+    "shot1.pt": {"sha256": "ddd28f4d9f1a403cac9ef14e8fc655a0e0b183c29ce4250ae8157e2faf0ed837", "source": "gdrive:ada-nest/renders/ltx-embeds/shot1.pt"},
+    "shot2.pt": {"sha256": "71010a0fc3917b400a39ec55a8f8c0379245cbb58ae0387ebf2a0dc4b6f6cc0e", "source": "gdrive:ada-nest/renders/ltx-embeds/shot2.pt"},
+    "shot3.pt": {"sha256": "2d362dcb3ce578221a8b6bbba318f9cd2500a7c0ad4bc191553563cceca04958", "source": "gdrive:ada-nest/renders/ltx-embeds/shot3.pt"}
+  },
+  "comparison_plan": "frame-level: duration/frames/resolution/fps via ffprobe; visual: PSNR/SSIM vs old mp4 + contact sheets; QC: non-black frame stats in batch-result.json; runtime: per-shot seconds vs ~5min/shots CUDA T4",
+  "gates": "pack.yml prep + ~/kk-video/run-mlx-control-gated.sh (owner-use HID idle>=600s, AC, mem>=40%, load<8, no llama-server, no creative apps, disk>=5GB)",
+  "queue": "gdrive:ada-nest/kk-mac-video-pilot/packs/ via nest-worker --once on kk-mac (serial, concurrency=1)",
+  "preserve": "no old artifact is read-write; old mp4s remain under renders/ and tony-dell archive"
+}
