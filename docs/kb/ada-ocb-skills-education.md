@@ -34,6 +34,7 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 | `health-check` | `.agents/skills` | user, model | Deprecated — use MCP health tools (`check_health`, `get_alerts`, `restart_service`) directly. |
 | `track4-smoke-test` | `.agents/skills` | user | Navigate to the Track4 test page for a quick smoke check. |
 | `overnight-assessment` | `.agents/skills` | user | Overnight Chaba assessment: health, GPU/queues, logs, SSOT check, report. |
+| `wiki-education-publish` | `.opencode/skills` | user, model | Card-gated render → `/publish` `wiki-education` → `/lesson source=wiki` verify → job-yml record; never direct MediaWiki API. Created 2026-11-24 from this session history with the `skill-creator` skill. |
 
 `auto-kb` and `overnight-assessment` gained `description` frontmatter on 2026-11-24 so OpenCode advertises them in this session; the test fixture still covers the frontmatter-less shape for legacy skills.
 
@@ -51,7 +52,9 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 - `test_wiki_export_shape_with_fixtures` — Education: template params, inventory table, categories and usage notes render offline.
 - `test_wiki_export_covers_all_explored_skills` — the generated page mentions all 11 skills.
 
-Run: `python3 -m pytest tests/test_agents_skills_explored.py -q` (6 passed at creation).
+Run: `python3 -m pytest tests/test_agents_skills_explored.py -q` (6 passed; still 6 passed on current master, which added `code-decision` — the pin is a subset assertion).
+
+`skill-creator` eval (2026-11-24): two simulated test cases (republish-after-change, verify-only-no-write), 3 assertions each, all 6 passed in an inline run; the four baseline subagents were unavailable due to model rate limits/cooldowns, so per skill-creator's no-subagent adaptation the baselines were skipped. Static review viewer: `/tmp/opencode/wiki-education-publish-review.html`. Human review: approved, no changes requested.
 
 ## Repositories explored
 
