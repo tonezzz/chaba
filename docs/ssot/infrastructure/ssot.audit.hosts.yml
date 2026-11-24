@@ -2243,8 +2243,12 @@ hosts:
          note: "OpenChamber ada-ocb pane — migrated tony-dell -> idc02 2026-11-18
           (card openchamber-migrate-tony-dell-to-idc02). Same recipe as dell:
           node24 (~/.local/node24/bin/node) running @openchamber/web@2.7.3 +
-          @opencode/cli@2.3.2 installed under ~/.local/node prefix, binds
-          127.0.0.1:3000, managed opencode child per session. Carries a
+          @opencode/cli@2.4.1 installed under ~/.local/node prefix, binds
+          127.0.0.1:3000, managed opencode child per session. CLI pin moved
+          2.3.2 -> 2.4.1 on 2026-11-24 (Tony decision, card ocb-cli-pin-drift):
+          the host update unit installs cli unpinned and 2.4.1 was accepted
+          after the live upgrade; opencode --version = 2.4.1, pane healthy.
+          Carries a
           hand-patch adding models.status action +
           /api/openchamber/models/status (LiteLLM gateway liveness probe;
           needs LITELLM_URL/LITELLM_KEY from litellm-ada.env) — durable
@@ -2256,7 +2260,9 @@ hosts:
           10-litellm-env.conf loads %h/.config/secrets/litellm-ada.env.
           Public edge ada-ocb.surf-thailand.com now proxies to local :3000
           (was dell tailscale :8443). claude-agent lane pending interactive
-          `claude auth login` on this host."}
+          `claude auth login` on this host. Verified 2026-11-24 by
+          ansible/playbooks/ada-ocb-verify.yml after the approved live upgrade
+          (card ada-ocb-ansible-upgrade)."}
       - {name: openchamber-update.service, type: service, scope: user,
          note: "oneshot — npm i -g @openchamber/web @opencode/cli, then
           ExecStartPost apply-models-status-patch.sh, then restarts
@@ -2268,7 +2274,10 @@ hosts:
           pristine node_modules. No '-' prefix on purpose: if the patch
           stops applying on a new upstream version the unit FAILS instead
           of silently dropping /api/openchamber/models/status (and the
-          restart is skipped, leaving the old process serving)."}
+          restart is skipped, leaving the old process serving). ExecStart
+          pins web@2.7.3 but installs @opencode/cli bare — accepted 2026-11-24
+          (card ocb-cli-pin-drift) rather than changed; cli float is expected
+          here and the declared pin tracks the installed 2.4.1."}
       - {name: openchamber-update.timer, type: timer, scope: user,
          note: "monthly 1st 06:30 OpenChamber+opencode update cadence
           (migrated tony-dell -> idc02 2026-11-18)"}

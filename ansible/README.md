@@ -77,9 +77,12 @@ ansible-playbook playbooks/ada-ocb-upgrade.yml -e ocb_change_approved=true
 - The `systemd` module cannot reach the user bus over SSH on idc02
   (`Failed to connect to bus`), hence the guarded `systemctl --user` shell
   path. Do not "improve" it back to the module without re-testing check mode.
-- Note: the host unit pins `@openchamber/web@2.7.3` but installs
-  `@opencode/cli` unpinned, while SSOT declares 2.3.2. That pin gap is a
-  separate host-unit decision — the playbook does not edit host units.
+- The host unit pins `@openchamber/web@2.7.3` but installs `@opencode/cli`
+  bare. On 2026-11-24 the live upgrade moved CLI 2.3.2 → 2.4.1 and Tony
+  **accepted 2.4.1** (DEV-0020) rather than changing the host unit. The
+  declared pin in `group_vars/ocb_pane.yml` and SSOT now tracks 2.4.1; the
+  playbook never edits host units. Expect CLI to float on future updates —
+  if the pane breaks, this pin is the first thing to re-check.
 
 ## Install ansible (once, on the controller — any tailnet host)
 

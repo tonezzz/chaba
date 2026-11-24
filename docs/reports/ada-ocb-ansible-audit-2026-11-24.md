@@ -34,7 +34,7 @@ Producer (idc02, primary):
 |---|---|---|
 | node | v24.14.0 | v24.14.0 |
 | `@openchamber/web` | 2.7.3 | 2.7.3 |
-| `@opencode/cli` | 2.3.2 | 2.3.2 |
+| `@opencode/cli` | 2.3.2 (pre-upgrade) | 2.3.2 at first run; 2.4.1 accepted after the upgrade — see resolution below |
 | 4 required units | active | active |
 | update timer next | Tue 2026-12-01 06:30:00 | monthly 1st 06:30 |
 | bind | 127.0.0.1:3000 | 127.0.0.1:3000 |
@@ -128,6 +128,30 @@ The approved command was run on idc02. Outcome:
   `11.9.0` (`EBADENGINE`: web 2.7.3 requires node `>=24.14.0`), despite the
   unit's `Environment=PATH` pointing at `~/.local/node24/bin`. The service is
   healthy now, but the install-time runtime is inconsistent.
+
+### Resolution — CLI 2.4.1 accepted (Tony decision, DEV-0020)
+
+Compatibility check: `~/.local/node/bin/opencode --version` → `v2.4.1`;
+`openchamber.service` journal shows normal session activity with no errors;
+local 200, edge 200, patch present, four units active. web 2.7.3 declares
+`opencode >=2.2.4`, which 2.4.1 satisfies.
+
+Per Tony's choice, the declaration now tracks the installed version:
+
+- `ssot.audit.hosts.yml` — CLI pin `2.3.2` → `2.4.1`, with a note recording
+  the decision and that the host unit installs CLI bare by design.
+- `ansible/inventory/group_vars/ocb_pane.yml` — `ocb_cli_version: "2.4.1"`.
+- `ansible/README.md` — documents that CLI may float on future updates.
+
+Post-change checks: `node scripts/ssot-validate-all.mjs` → 5641/5641 valid,
+0 errors; `ansible-playbook playbooks/ada-ocb-verify.yml` → **exit 0**,
+"Pins 2.7.3 / 2.4.1 are declared in ssot.audit.hosts.yml", producer contract
+OK on both hosts, edge OK. ADA-0015 can now be closed with this evidence.
+
+Residual risk: CLI floats on every monthly update, so a future upstream
+release can move it again; verify will catch that as drift and the decision
+recurs. The npm/node runtime mismatch during install remains a separate
+unexplained finding (service currently healthy).
 
 ## Out of scope / follow-ups
 

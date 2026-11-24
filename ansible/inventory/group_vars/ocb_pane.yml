@@ -4,7 +4,10 @@
 # here fails loudly instead of silently passing against outdated expectations.
 
 ocb_web_version: "2.7.3"
-ocb_cli_version: "2.3.2"
+# Accepted 2026-11-24 (Tony decision, DEV-0020): the host update unit installs
+# @opencode/cli unpinned, so the live upgrade moved 2.3.2 -> 2.4.1. SSOT
+# ssot.audit.hosts.yml carries the same pin; verify cross-checks both.
+ocb_cli_version: "2.4.1"
 ocb_bind: "127.0.0.1:3000"
 ocb_edge_url: "https://ada-ocb.surf-thailand.com/"
 # Force the public edge to the known front IP rather than controller DNS.
