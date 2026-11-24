@@ -33,6 +33,13 @@ PRICES = {
     "swe-2-medium": None,
     "swe-2-high": None,
     "swe-2-max": None,
+    # Free SWE-2 Flash family (verified in `devin models list` 2026-11-23:
+    # "[... Free]"). Without these, sessions show as "unknown" and drop
+    # out of free-tier allowance burn accounting. The *-lightning
+    # variants are PAID ($1/$5 per 1M) and are intentionally absent.
+    "swe-2-flash-medium": None,
+    "swe-2-flash-high": None,
+    "swe-2-flash-max": None,
     "adaptive": (0.5, 0.1, 2.0),
     "gpt-6-luna-none": (0.1, 0.01, 0.5),
     "gpt-6-luna-low": (0.1, 0.01, 0.5),
@@ -187,6 +194,16 @@ def main():
     tot_c = sum(r["cached"] for r in rows)
     tot_o = sum(r["completion"] for r in rows)
     tot_cost = sum(r["est_cost"] or 0 for r in rows)
+    # Free-tier allowance burn (added 2026-11-23, devin-usage-reduction
+    # DEV-0044): free = plan-included models (PRICES value None). The burn
+    # tracked for reduction purposes is tokens consumed against the plan
+    # allowance (prompt + completion; cached tokens ride along in the
+    # prompt count) — reported as allowance-bound, never invoiced.
+    free_rows = [r for r in rows if r["model_id"] in FREE]
+    f_sess = len(free_rows)
+    f_p = sum(r["prompt"] for r in free_rows)
+    f_o = sum(r["completion"] for r in free_rows)
+    f_tok = f_p + f_o
     unk = sorted({r["model_id"] for r in rows
                   if r["model_id"] not in PRICES})
     print("-" * 82)
@@ -194,6 +211,9 @@ def main():
           f"({100*tot_c/tot_p:.0f}%)" if tot_p else f"{tot_s} sessions")
     print(f"completion {tot_o:,} | est. paid spend ${tot_cost:.2f} "
           f"(free-tier sessions excluded — allowance-bound, not invoiced)")
+    print(f"free-tier allowance burn (window): {f_sess} sessions | "
+          f"prompt {f_p:,} + completion {f_o:,} = {f_tok:,} tokens "
+          f"(allowance-bound, not invoiced)")
     if unk:
         print(f"# unknown models (no price data): {', '.join(unk)}")
     print("# est $ = uncached*in + cached*cached + out*out per 1M;"
