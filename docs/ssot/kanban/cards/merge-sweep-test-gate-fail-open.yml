@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
 column: backlog
-updated: 2026-11-24 14:09
+updated: 2026-11-24 14:29
 priority: medium
 tags:
 - merge-sweep
@@ -648,6 +648,9 @@ comms:
 - at: 2026-11-24 14:09
   from: tony-macbook
   text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:29
+  from: tony
+  text: retry requested
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -664,17 +667,16 @@ requests:
   executed: 2026-11-19 queue
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: codemod
-  attempts: 2
+  attempts: 0
   sweep:
     stale_running: 2026-11-19 13:44
     dirty: 1
     zero_commit: 2026-11-19 16:55
     no_repo: 2026-11-19 16:59
-  result: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
+  last_failure: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
     Consumed 12min 53.877s CPU time over 17min 33.927s wall clock time, 938.1M memory peak.'
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-19 16:56
 review_kind: verify
