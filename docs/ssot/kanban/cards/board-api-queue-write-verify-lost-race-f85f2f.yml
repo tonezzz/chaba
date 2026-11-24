@@ -1,7 +1,7 @@
 id: board-api-queue-write-verify-lost-race-f85f2f
 title: board-api-queue-write-verify-lost-race
 column: doing
-updated: 2026-11-24 08:14
+updated: 2026-11-24 08:22
 spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
 
 
@@ -315,6 +315,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: devin
+  text: 'attempt 4 on idc02 — prior runs died on provider rate-limit before commits. RCA confirmed: autostash-pop
+    resolves card conflicts to HEAD dropping the raced board write. Implementing: (1) git-safe-pull preserves stash
+    side as .local-conflict → reconcile folds back; (2) board-api /action verify-or-loud (commit flush + re-read
+    + one re-apply); (3) dispatch_repos gate: timeout retry-once + docs-only timeout-override.'
 action:
   type: dispatch
   status: running
