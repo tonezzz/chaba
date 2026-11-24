@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: doing
-updated: 2026-11-24 22:17
+updated: 2026-11-24 22:24
 priority: medium
 tags:
 - embedding
@@ -238,6 +238,12 @@ comms:
     Merged to origin/master as 7d3196d24d; "test_merge_sweep fixture relied on global git identity — tony-dell has
     none (re; bench-edu-manage.py needs `/home/tony/reports/skills/{filing,ops,recall}.md` (ho; chaba merge test
     gate (240s smoke set) times out on loaded id'
+- at: 2026-11-24 22:24
+  from: devin
+  text: 'dispatch started (idc02): state verified — rerank endpoint live on omen :11555 (health ok, cuda, auth on),
+    shadow lane deployed+validated since Nov 19, prereq cards done, :11023 bge-m3 migration in review. Found a decision-critical
+    correction: live shadow rerank_ms was 1.1-1.4s for top-10 vs the 565ms eval estimate — sync top-10 lands ~1.3-1.8s
+    added, over the ~500ms voice budget. Building decision brief + board request.'
 action:
   type: dispatch
   status: running
