@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-11-24 15:55
+updated: 2026-11-24 15:57
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -248,6 +248,10 @@ comms:
 - at: 2026-11-24 15:55
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 15:57
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: queued

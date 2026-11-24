@@ -1,7 +1,7 @@
 id: tony-ha-cold-standby-config-sync-promote-d12293
 title: tony-ha cold standby — config sync + promote runbook
 column: backlog
-updated: 2026-11-24 15:55
+updated: 2026-11-24 15:57
 ref: HOM-0855
 comms:
 - at: 2026-10-25 13:55
@@ -170,6 +170,10 @@ comms:
 - at: 2026-11-24 15:55
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 15:57
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba repository.
   Constraints include adhering to existing infrastructure patterns without inventing hostnames or paths beyond what
   is established in the chaba repo. The testable done-condition is a documented and committed runbook in the repository
