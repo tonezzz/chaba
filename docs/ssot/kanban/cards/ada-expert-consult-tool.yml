@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-24 19:55
+updated: 2026-11-24 20:12
 priority: medium
 program: ai-workforce
 tags:
@@ -1263,6 +1263,13 @@ comms:
     in-worktree gaps I can close: tool_guide.yml entry for ada_consult (error-path narration during the refuse-until-key
     soak) + a tier:manual scenario-live smoke encoding the 3-call post-deploy check. Live smoke itself still blocked
     on LITELLM_KEY_CONSULT mint + ada-dev deploy.'
+- at: 2026-11-24 20:12
+  from: devin
+  text: 'attempt 2 done (tony-dell, commit aa429be on dispatch branch). Re-audited merged ada_consult vs spec —
+    channel gate, cost-rate order, alias passthrough, ada-dev double-gate all verified correct. Closed last repo-side
+    gaps: tool_guide.yml entry (pre-key refusals now carry narration guidance via _usage_hint), tests/scenarios-live/ada_consult_smoke.yaml
+    (tier:manual, 3 easy/ambiguous/hard turns asserting calls_any+ok result — the post-deploy smoke is now one command),
+    coverage_debt entry removed. G'
 action:
   type: dispatch
   repo: ada-voice
