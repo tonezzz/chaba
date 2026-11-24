@@ -128,6 +128,20 @@ class VcastScreensCard extends HTMLElement {
     if (s == null) return "";
     return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`;
   }
+  // A screen is a *current* cast target only while its display is really
+  // live. New relays send a derived `lifecycle`; older ones only send the
+  // `connected` flag, which lies for registry entries whose socket died
+  // (2026-11-24: screens 2/4 sat connected:true with ~18h-stale last_seen
+  // after the headless units died). last_seen is the honest clock — the
+  // display heartbeats state every ~30s; the relay calls >120s stale
+  // (VCAST_STALE_SEEN_MS), so 150s here is that plus margin.
+  static get OFFLINE_SEEN_MS() { return 150000; }
+  _liveScreen(s) {
+    if (s.lifecycle) return ["connected", "idle", "playing"].includes(s.lifecycle);
+    if (!s.connected) return false;
+    const seen = Date.parse(s.last_seen || 0);
+    return !seen || Date.now() - seen <= VcastScreensCard.OFFLINE_SEEN_MS;
+  }
   _lifecycle(s) {
     // derived server-side since the ux-flow rework; fall back to the
     // connected flag on older relays
@@ -147,7 +161,9 @@ class VcastScreensCard extends HTMLElement {
   _render(data) {
     const list = this._list;
     list.innerHTML = "";
-    const screens = (data && data.screens) || [];
+    const allScreens = (data && data.screens) || [];
+    const screens = allScreens.filter((s) => this._liveScreen(s));
+    const offline = allScreens.filter((s) => !this._liveScreen(s));
     const pending = (data && data.pending) || [];
     const h = (data && data.health) || null;
 
@@ -258,34 +274,30 @@ class VcastScreensCard extends HTMLElement {
         reBtn.onclick = () => this._pub(s.screen, { type: "unpaired" });
         row.appendChild(reBtn);
       } else {
-        const sw = this._btn("Sweep");
-        sw.title = "Free the name+slot now — the one-click fix for a dead-socket hold";
-        sw.onclick = async () => {
-          const r = await this._call("/sweep", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ screen: s.screen }),
-          });
-          if (r.error) alert("Sweep failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
-          this._poll();
-        };
-        row.appendChild(sw);
+        row.appendChild(this._sweepBtn(s));
       }
-      const del = this._btn("Release");
-      del.style.color = "var(--error-color,#f47067)";
-      del.onclick = async () => {
-        if (!confirm(`Release ${s.name}? The name is tombstoned (reserved 30d for reclaim).`)) return;
-        const r = await this._call("/release", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ screen: s.screen }),
-        });
-        if (r.error) alert("Release failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
-        else if (r.note) this._note(r.note);
-        this._poll();
-      };
-      row.appendChild(del);
+      row.appendChild(this._releaseBtn(s));
       list.appendChild(row);
+    }
+
+    // stale registry entries — dead displays the relay hasn't swept yet.
+    // Kept collapsed so the list above shows only real, current cast
+    // targets; rows retain Sweep/Release so cleanup stays one click away.
+    if (offline.length) {
+      const det = document.createElement("details");
+      det.style.cssText = "font-size:.78rem;color:var(--secondary-text-color)";
+      const sum = document.createElement("summary");
+      sum.style.cursor = "pointer";
+      sum.textContent =
+        `⚠ ${offline.length} offline registry entr${offline.length === 1 ? "y" : "ies"} — dead displays, not cast targets`;
+      det.appendChild(sum);
+      for (const s of offline) {
+        const seen = s.last_seen ? this._relTime(s.last_seen) : "never";
+        const row = this._row(`#${s.screen} ${s.label || s.name} — last seen ${seen}`, true);
+        row.append(this._sweepBtn(s), this._releaseBtn(s));
+        det.appendChild(row);
+      }
+      list.appendChild(det);
     }
 
     // released tombstones — names reserved for reclaim, informational
@@ -294,6 +306,37 @@ class VcastScreensCard extends HTMLElement {
         `🪦 ${t.name} — released · reserved until ${String(t.reclaim_until || "").slice(0, 10)}`, true);
       list.appendChild(row);
     }
+  }
+
+  _sweepBtn(s) {
+    const sw = this._btn("Sweep");
+    sw.title = "Free the name+slot now — the one-click fix for a dead-socket hold";
+    sw.onclick = async () => {
+      const r = await this._call("/sweep", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: s.screen }),
+      });
+      if (r.error) alert("Sweep failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
+      this._poll();
+    };
+    return sw;
+  }
+  _releaseBtn(s) {
+    const del = this._btn("Release");
+    del.style.color = "var(--error-color,#f47067)";
+    del.onclick = async () => {
+      if (!confirm(`Release ${s.name}? The name is tombstoned (reserved 30d for reclaim).`)) return;
+      const r = await this._call("/release", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: s.screen }),
+      });
+      if (r.error) alert("Release failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
+      else if (r.note) this._note(r.note);
+      this._poll();
+    };
+    return del;
   }
 
   _relTime(iso) {

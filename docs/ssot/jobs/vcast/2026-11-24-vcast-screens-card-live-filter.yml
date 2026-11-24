@@ -1,0 +1,76 @@
+title: vcast HA screens card — list only real, currently-registered cast targets
+subtitle: "Kanban card vcast-ha-screens (HOM-0112) — the card no longer presents dead registry entries as cast targets; staged on michael-dev, tony-ha promotion pending Tony approval"
+icon: monitor-dashboard
+
+planning:
+  goal: The tony-ha vcast-screens-card must list only real,
+    currently-registered cast targets — dead displays lingering in the
+    input-bridge registry must not appear as castable screens.
+  scope: "stacks/tony-dell/tony-ha/www/vcast-screens-card.js + new
+    vcast-screens-card-check.mjs. Out of scope: deploy to tony-ha (spec
+    requires explicit Tony approval), input-bridge server deploy on
+    idc03 (the live relay still serves the pre-ux-flow /displays shape —
+    the card handles both)."
+  success_criteria:
+    - screens render as cast targets only when live: relay `lifecycle`
+        in {connected,idle,playing} when present, else `connected` flag
+        AND last_seen heartbeat fresher than 150s (server STALE_SEEN_MS
+        is 120s; display heartbeats ~30s)
+    - stale/dead registry entries collapse into a '⚠ N offline registry
+        entries' <details> section with last-seen age + Sweep/Release —
+        the cleanup path stays one click away
+    - pending displays, released tombstones, fleet-health line unchanged
+  resources:
+    - live relay: https://idc02.taila0626a.ts.net/api/input-bridge/displays
+        (Caddy -> idc03 input-bridge :3010)
+    - registry ground truth: idc03 ~/.local/share/input-bridge/displays.json
+
+processing:
+  status: completed
+  steps:
+    - id: 1
+      label: card — live/offline partition
+      status: completed
+      notes: "_liveScreen() is the single gate; _render splits screens into
+        targets vs offline. Release/Sweep extracted to _releaseBtn/_sweepBtn
+        shared by both sections."
+    - id: 2
+      label: verify — fixture + live + real browser
+      status: completed
+      notes: "vcast-screens-card-check.mjs (DOM-stub, 3 cases) all pass;
+        --live against the real relay lists only screens 6/7 (fresh
+        last_seen) and collapses dead headless-2/4 (last_seen ~18h) into
+        the offline section; headless Chrome render of the staged file
+        confirms identical output."
+    - id: 3
+      label: stage — michael-dev
+      status: completed
+      notes: "scp'd to idc02:~/.config/michael-dev/www/vcast-screens-card.js
+        (md5 15ee4a3d… matches repo); /local/vcast-screens-card.js serves
+        200. No lovelace resource/dashboard references it on michael-dev —
+        staging is asset-only until promotion."
+
+findings:
+  - "Live registry drift found and confirmed: input-bridge on idc03 runs a
+      pre-ux-flow server.mjs — /displays returns only {screens,pending}
+      (no lifecycle/health/released/timeline). Screens 2/4 (headless-2/4)
+      are zombie entries: connected:true with last_seen ~18h stale after
+      the displays died; the old server has no grace sweep. Card now
+      filters them client-side; the durable fix is redeploying
+      stacks/web/input-bridge/server.mjs on idc03 + restart — separate
+      card-worthy item."
+  - "tony-ha still serves the OLD card (267 lines, pre-label/health
+      rework) at /local/vcast-screens-card.js — repo version is 395
+      lines. Promotion needs the www copy + ?v= bump on tony-ha AND
+      ada-ha dashboards."
+
+verification:
+  - "node stacks/tony-dell/tony-ha/www/vcast-screens-card-check.mjs — 14 assertions pass"
+  - "node stacks/tony-dell/tony-ha/www/vcast-screens-card-check.mjs --live — real relay: 2 targets (6,7), 2 offline (2,4)"
+  - "google-chrome --headless render of staged michael-dev file — only #6/#7 listed, offline section collapsed"
+  - "curl http://100.123.163.11:8124/local/vcast-screens-card.js → 200, md5 match"
+
+promotion:
+  - "Tony approval required before copying to tony-ha www (and ada-ha if
+      the card is registered there too) + bumping the lovelace resource
+      ?v=. Card JS has no build step — file copy + cache-bust only."
