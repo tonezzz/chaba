@@ -128,6 +128,9 @@ SKIP_FSTYPES = {
     "bpf", "hugetlbfs", "mqueue", "devpts", "proc", "sysfs", "cgroup",
     "cgroup2", "nsfs", "fusectl", "configfs", "shm", "none", "selinuxfs",
     "fuse.gvfsd-fuse", "fuse.portal", "fuse.rclone", "fuse.sshfs",
+    # macOS autofs maps ("map auto_home") are parsed as fstype=auto_home
+    # and report 0 blocks / 100% used — never a real disk alert.
+    "map", "auto_home",
 }
 SKIP_MOUNTS = ("/snap", "/var/snap", "/run", "/dev")
 
@@ -249,6 +252,9 @@ def parse_probe(out: str) -> dict:
         except ValueError:
             continue
         mount = tail[4]
+        if size_kb <= 0:
+            # synthetic/zero-capacity mount (autofs map, 0Bi) — skip.
+            continue
         if fstype:
             if fstype in SKIP_FSTYPES or fstype.startswith("fuse."):
                 continue

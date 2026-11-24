@@ -85,6 +85,26 @@ def page_freshness() -> dict[str, float]:
     return out
 
 
+def page_ts_for(slug: str) -> float | None:
+    """Targeted page timestamp — MDDB /search caps at 1000 docs and drops
+    older-but-live pages (cms-auto-news-flood false positive). /get works."""
+    if not slug:
+        return None
+    best = 0.0
+    for lang in ("en", "th", "ja", "zh"):
+        try:
+            d = _post("/get", {"collection": "ada-cms-pages",
+                               "key": slug, "lang": lang})
+        except Exception:
+            continue
+        if not isinstance(d, dict):
+            continue
+        ts = d.get("updatedAt")
+        if isinstance(ts, (int, float)):
+            best = max(best, float(ts))
+    return best or None
+
+
 def _parse_ts(raw) -> float | None:
     """Registry last_run can be epoch, naive local ISO, or tz-aware ISO
     (flood-news-update/roster-audit stamp UTC). mktime(strptime) treated
@@ -121,9 +141,14 @@ def judge(cfg: dict, now: float, page_ts: float | None = None) -> tuple[str, str
     if last_ts is None:
         if fresh_page:
             return "ok", "registry unrun but page regenerated recently"
+        if page_ts is not None:
+            return "ok", "registry unrun but page published (md5-gated)"
         return "dead", f"enabled every {interval}m but never ran"
     overdue_s = now - last_ts - interval * 60
-    if last_status and last_status != "ok":
+    # "no-items" means the producer ran and found nothing (flood RSS
+    # quiet day) — healthy, not an error. Other non-ok statuses still fail.
+    if last_status and last_status != "ok" and last_status not in (
+            "no-items", "no_items", "no-change", "unchanged"):
         return "error", f"last_status={last_status} — {last_error or 'no detail'}"
     if overdue_s > GRACE_S:
         if fresh_page:
@@ -159,7 +184,8 @@ def main() -> int:
         slug = cfg["_slug"]
         if not slug:
             continue
-        state, reason = judge(cfg, now, freshness.get(slug))
+        page_ts = freshness.get(slug) or page_ts_for(slug)
+        state, reason = judge(cfg, now, page_ts)
         path = card_path(slug)
         card = load_card(path)
         exists = path.exists()
