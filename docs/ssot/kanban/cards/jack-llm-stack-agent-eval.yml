@@ -1,7 +1,7 @@
 id: jack-llm-stack-agent-eval
 title: Evaluate OpenCode and Cline for Jack LLM-stack construction
 column: doing
-updated: 2026-11-24 17:35
+updated: 2026-11-24 19:19
 brief: Run a matched, gated evaluation of OpenCode and Cline building a disposable Jack LLM stack on a safe host.
 priority: high
 program: devnest
@@ -222,6 +222,13 @@ comms:
   text: 'S0 done: independent verifier (harness/verify_stack.py) accepts fixtures/reference (all checks pass) and
     rejects fixtures/bad (17 findings incl fake secret + prod refs). S1 running: OpenCode arm live on bench model
     (qwen2.5:32b kk-mac, $0), Cline arm queued next — same brief, same model, sequential for clean wall-time.'
+- at: 2026-11-24 19:19
+  from: devin
+  text: 'DONE — matched eval complete. Verdict: Cline wins this bounded build (one-shot 57s, verified, richer artifact
+    but hallucinated opencode.json schema) vs OpenCode (2 nudges, ~78min wall on premature model stops, thinner
+    artifact, correct opencode schema, polluting rollback). Both arms PASS independent verifier + own verify.sh
+    + idempotent rollback + clean safety scan; both share model-level infra bugs the mock path cannot catch (wrong
+    health endpoint, localhost api_base, fixed mock ports) — neithe'
 action:
   type: dispatch
   status: running
