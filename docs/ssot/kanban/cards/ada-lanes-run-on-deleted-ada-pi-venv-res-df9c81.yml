@@ -1,7 +1,7 @@
 id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
 title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
 column: doing
-updated: 2026-11-24 21:31
+updated: 2026-11-24 21:43
 priority: medium
 tags:
 - ada
@@ -81,6 +81,13 @@ comms:
     ada-kk (argv0 still ada-pi/.venv). Already clean: ada-ai-kraut + ada-kk-dev (post-repair restarts), all relays
     (explicit ada-voice python -m), bankq (open-jev venv). mn01 both lanes already on ada-voice path — likely no
     restart needed there; confirming no stray ada-pi procs.'
+- at: 2026-11-24 21:43
+  from: devin
+  text: 'DONE. idc03: restarted the 4 dirty lanes sequenced at zero-conn window — ada-chaba:8008, ada-kk:8007, ada-ha-ada:8006,
+    ada-ha-tony:8002 (21:34-21:41 +07). Each verified: /api/health 200, new pid cmdline argv0=ada-voice/.venv, 1-turn
+    scenario-live ws smoke PASS, 0 tracebacks/FileNotFoundError since restart. pgrep ada-pi/.venv on idc03 now =
+    0. mn01: NO restart needed — both lanes (ada-ha-tony 13:21 UTC, ada-ha-michael 08:44 UTC) already post-repair
+    on ada-voice path; card spec was stale there. Al'
 action:
   type: dispatch
   status: running
