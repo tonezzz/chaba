@@ -105,9 +105,29 @@ module cannot reach the user bus over SSH here (`Failed to connect to bus`),
 so the guarded `systemctl --user` shell path is used; check mode is enforced
 by `not ansible_check_mode`, not by module emulation.
 
-**Not done:** no prod write was executed. `@opencode/cli` is unpinned in the
-host unit despite the SSOT 2.3.2 declaration — flagged for a separate host-unit
-decision; this playbook does not edit host units.
+### Live execution (2026-11-24 08:25–08:26 +07, Tony-approved)
+
+The approved command was run on idc02. Outcome:
+
+- `openchamber-update.service` finished `Result=success`, `ExecMainStatus=0`
+  at 08:26:04. Journal: `changed 210 packages in 45s`, patch applied and
+  syntax-checked, then the unit completed.
+- Producer after the run: web **2.7.3** (correct), all four units active,
+  `127.0.0.1:3000`, local HTTP **200**, patch present, `startup.env` 600.
+  Consumer: public edge **200**. The transient 404 seen during the run was
+  mid-install, not a post-run failure.
+- **Post-gate FAILED (exit 2)**: `@opencode/cli` is **2.4.1**, while SSOT
+  declares **2.3.2**. Root cause is the host unit's `ExecStart` pinning only
+  `@openchamber/web@2.7.3` and installing `@opencode/cli` bare — the exact gap
+  flagged before execution. The gate did its job: fail loud, named assertion,
+  no silent "ok".
+- Card ADA-0015 stays in **review**; its done-condition (verify green) is not
+  met. Fix carded as **DEV-0020** (`ocb-cli-pin-drift`) with two options and a
+  recommendation. No further host writes were made.
+- Secondary finding: during install npm reported node `v22.22.1` / npm
+  `11.9.0` (`EBADENGINE`: web 2.7.3 requires node `>=24.14.0`), despite the
+  unit's `Environment=PATH` pointing at `~/.local/node24/bin`. The service is
+  healthy now, but the install-time runtime is inconsistent.
 
 ## Out of scope / follow-ups
 
