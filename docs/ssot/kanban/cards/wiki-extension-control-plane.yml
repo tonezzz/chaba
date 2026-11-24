@@ -1,7 +1,7 @@
 id: wiki-extension-control-plane
 title: Controlled MediaWiki extension management for Ada/OpenCode
 column: doing
-updated: 2026-11-24 19:42
+updated: 2026-11-24 19:43
 brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
   without arbitrary Springboard/API or shell access.
 priority: high
@@ -222,6 +222,13 @@ comms:
   from: devin
   text: 'raised request springboard-is-unusable-on-the-wiki-mw-1-2aa6f8: Springboard is unusable on the wiki (MW
     1.46.2): it validates sbname against $wgSpringboardURL YAML and the default conf'
+- at: 2026-11-24 19:43
+  from: devin
+  text: 'done in dispatch worktree (commit 3d8e721d4f + outcome doc). Deliverables: hardened /wiki/extension (confirm
+    gate, Special:Version before/after, receipts, honest failure), 9 unit tests green, write-door doc + SSOT trail.
+    Live: list verified, CategoryTree+Mermaid already installed, test pages + DevNest News render. Blocker: Springboard
+    rejects all sbname on MW 1.46 — $wgSpringboardURL needs LocalSettings fix (request raised on card). Not pushed/deployed
+    per dispatch rules.'
 action:
   type: dispatch
   status: running
