@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
 column: doing
-updated: 2026-11-24 08:15
+updated: 2026-11-24 08:18
 tags:
 - wiki
 - dispatch
@@ -473,5 +473,12 @@ comms:
     LiteLLM gemini-3.5-flash-lite classify (ada-code|no-response); opencode headless draft w/ LiteLLM generateContent
     fallback (opencode absent on idc03); signed replies via action=edit&section=new&appendtext as Ada bot; members-ns/public-ns
     visibility guard + leak scan; '
+- at: 2026-11-24 08:18
+  from: devin
+  text: 'DONE (pending merge): scripts/wiki/wiki-talk-watch.py built + verified — self-test 16/16, live authed dry-run
+    on idc03 walks 11 real talk-page rcids end-to-end (diff-extract -> LiteLLM gemini-3.5-flash-lite classify ->
+    litellm/opencode draft -> visibility guard=ok). ssot.jobs.yml wiki-talk-watch entry + rendered idc03 timer :07/:22/:37/:52
+    (offset from kanban-commit). Runbook docs/ssot/jobs/education/2026-11-24-wiki-talk-watch.yml. Post-merge: render-jobs.py
+    --host idc03 --ids wiki-talk-watch --'
 claim:
   since: 2026-11-24 07:58
