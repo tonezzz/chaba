@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 18:32
+updated: 2026-11-25 18:48
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -247,6 +247,16 @@ comms:
     now 15.8G used, disk swap down 16G -> 10.8G. Load 51/39/35, RAM 9G available. open-jev 8777 CPUQuota=200%, restarted
     16:57, health 200s; Netdata load alarm still routes to in'
 - at: 2026-11-25 18:32
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 18:48
+  from: tony
+  text: '18:47 +07: relaunched the v3 resshift eval as cpu-job-resshift-v3-s4-g128-rerun-20261125T114649Z.scope
+    via run-cpu-job.sh with CPU_JOB_TIMEOUT=14400 (4h), same 6 threads / chop_size 128 / seed 12345, writing to
+    the existing ../out/resshift-v3-s4-g128 dir. Verified Slice=cpu-jobs.slice and cgroup .../cpu-jobs.slice/...scope.
+    It shares the 600% aggregate cap with the running rsd-one-step-g128c job. Scheduled a completion check for 23:00
+    +07.'
+- at: 2026-11-25 18:48
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
 action:
