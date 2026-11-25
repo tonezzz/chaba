@@ -35,5 +35,8 @@ endpoints:
   admin_ui: http://100.102.134.91:4000/ui
 ledger:
   daily-ledger.py --publish writes ada-cms-pages/llm-gateway-spend-ledger.
-  litellm-ledger.timer ships here but stays disabled until this branch
-  merges — unit ExecStart points at ~/CascadeProjects/chaba.
+  litellm-ledger.timer enabled 2026-11-25 (card litellm-ledger-timer-enable)
+  — daily 07:10 +07; units live in ~/.config/systemd/user (deploy.sh installs
+  them there — plain user units do NOT belong in the containers/systemd
+  quadlet dir, where they sat inert from 2026-11-04). ExecStart points at
+  ~/CascadeProjects/chaba.

@@ -2071,6 +2071,8 @@ hosts:
       - {name: mddb-memory-standard.timer, type: timer, scope: user}
       - {name: mddb-restart.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: litellm-ledger.timer, type: timer, scope: user, note: "daily 07:10 +07 — publishes ada-cms-pages/llm-gateway-spend-ledger from LiteLLM_SpendLogs (stacks/idc03/litellm; card litellm-ledger-timer-enable, enabled 2026-11-25)"}
+      - {name: litellm-budget-watch.timer, type: timer, scope: user, note: "hourly — LiteLLM VerificationToken near-cap warn/alert (job litellm-budget-watch in ssot.jobs.yml; card litellm-budget-watch-enable, enabled 2026-11-25)"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
