@@ -1,7 +1,7 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
 column: backlog
-updated: 2026-11-24 21:12
+updated: 2026-11-25 07:45
 priority: medium
 tags:
 - idc03
@@ -157,8 +157,20 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-25 07:45
+  from: chaba
+  text: queued for processing
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
   run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
   The done-condition is verified when systemd user units on idc03 correctly reflect ADA_LIVE_URL=:8005 for the relevant
   scenario runner services.
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
