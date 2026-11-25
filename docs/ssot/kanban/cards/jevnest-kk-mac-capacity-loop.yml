@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-24 21:55
+updated: 2026-11-25 07:44
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -238,5 +238,9 @@ comms:
     CPU; worker denied nearly every pass with load_high/temp_high/node_busy:tmux_jobs. Root cause of 0 claims: the
     admission gate used an absolute load_1m<=4 (0.29/core on a 14-core Mac), not a per-core ceiling. Heartbeat froze
     at 14:27:10Z and is now >900s stale. Prepared on master (not depl'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
