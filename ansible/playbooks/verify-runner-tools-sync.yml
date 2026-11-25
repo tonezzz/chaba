@@ -11,6 +11,15 @@
 # controller. This complements playbooks/audit-runner-tools.yml (per-host
 # sha256 audit): the rsync preview is faster and shows which files would move.
 #
+# Tool classes — required vs leaf:
+#   scripts/devin/sync-runner-tools.sh installs a MISSING dest only for
+#   runner-agent and devin-dispatch (with provisioning evidence); the other
+#   four are leaf tools, update-only and never bootstrapped. Absence of a
+#   leaf tool is therefore normal on VPS hosts (idc02/idc03 CLAUDE_LANES=0,
+#   dispatch-queue is dell-local, prune is a dell-local timer, and
+#   dispatch_repos.py falls back to the checkout copy). Only required-tool
+#   drift fails the play; leaf drift is reported for information.
+#
 # Usage (from ansible/ on the controller):
 #   ansible-playbook playbooks/verify-runner-tools-sync.yml
 #   ansible-playbook playbooks/verify-runner-tools-sync.yml --limit idc03
@@ -34,13 +43,16 @@
       max_drift_files: 0
       tailnet_cidr: 100.64.0.0/10
 
-    # Same tool list as audit-runner-tools.yml; src is relative to the
-    # controller's chaba checkout (playbook_dir/../..).
-    runner_tools:
+    # Only these two are provisioned fleet-wide by sync-runner-tools.sh.
+    required_tools:
       - src: scripts/board/runner-agent.py
         dest: runner-agent
       - src: scripts/devin/devin-dispatch.sh
         dest: devin-dispatch
+
+    # Leaf tools: update-only, never bootstrapped. Absence is reported,
+    # not treated as drift.
+    leaf_tools:
       - src: scripts/devin/claude-dispatch.sh
         dest: claude-dispatch
       - src: scripts/devin/devin-dispatch-prune.sh
@@ -74,7 +86,7 @@
           — refusing to rsync
       when: ansible_host is defined
 
-    - name: Dry-run compare — controller checkout vs installed tool
+    - name: Dry-run compare — required tool
       ansible.posix.synchronize:
         src: "{{ playbook_dir }}/../../{{ item.src }}"
         dest: "/home/{{ ansible_user }}/.local/bin/{{ item.dest }}"
@@ -86,16 +98,41 @@
         rsync_opts:
           - --dry-run
           - --itemize-changes
-      loop: "{{ runner_tools }}"
+      loop: "{{ required_tools }}"
       loop_control:
         label: "{{ item.dest }}"
-      register: sync_preview
+      register: required_preview
       changed_when: false  # --dry-run never writes
 
-    - name: Collect drift lines from the rsync preview
+    - name: Dry-run compare — optional leaf tool (report only)
+      ansible.posix.synchronize:
+        src: "{{ playbook_dir }}/../../{{ item.src }}"
+        dest: "/home/{{ ansible_user }}/.local/bin/{{ item.dest }}"
+        mode: push
+        archive: false
+        checksum: true
+        compress: false
+        delete: false
+        rsync_opts:
+          - --dry-run
+          - --itemize-changes
+      loop: "{{ leaf_tools }}"
+      loop_control:
+        label: "{{ item.dest }}"
+      register: leaf_preview
+      changed_when: false
+
+    - name: Collect drift lines from both previews
       ansible.builtin.set_fact:
-        drift_lines: >-
-          {{ sync_preview.results
+        required_drift: >-
+          {{ required_preview.results
+             | map(attribute='stdout_lines')
+             | map('default', [])
+             | flatten
+             | select('search', '^[<>*]')
+             | list }}
+        leaf_drift: >-
+          {{ leaf_preview.results
              | map(attribute='stdout_lines')
              | map('default', [])
              | flatten
@@ -105,14 +142,16 @@
     - name: Report per-host drift
       ansible.builtin.debug:
         msg:
-          - "host={{ inventory_hostname }} drift={{ drift_lines | length }}"
-          - "{{ drift_lines }}"
+          - "host={{ inventory_hostname }} required={{ required_drift | length }} leaf={{ leaf_drift | length }} (informational)"
+          - "required: {{ required_drift }}"
+          - "leaf (informational): {{ leaf_drift }}"
 
-    - name: Fail when drift exceeds policy
+    - name: Fail when required drift exceeds policy
       ansible.builtin.assert:
         that:
-          - drift_lines | length <= runner_sync_policy.max_drift_files
+          - required_drift | length <= runner_sync_policy.max_drift_files
         fail_msg: >-
-          {{ drift_lines | length }} runner-tool file(s) would change on
-          {{ inventory_hostname }} (policy max
-          {{ runner_sync_policy.max_drift_files }}).
+          {{ required_drift | length }} required runner-tool file(s) would change
+          on {{ inventory_hostname }} (policy max
+          {{ runner_sync_policy.max_drift_files }}). Leaf-tool drift is
+          informational only.
