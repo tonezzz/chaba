@@ -1,7 +1,7 @@
 id: chore-excise-jules-lane-code
 title: Excise retired jules lane code from runner-agent/dispatch/board-api
 column: backlog
-updated: 2026-11-25 14:58
+updated: 2026-11-25 15:08
 ref: OPS-0026
 comms:
 - at: 2026-11-20 18:38
@@ -128,6 +128,10 @@ comms:
 - at: 2026-11-25 14:58
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.48 > 0.8)'
+- at: 2026-11-25 15:08
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-dispatch.py, dispatch_repos.py, board-api.py,
   and ssot.devnest-lanes.yml in the chaba repo, including associated tests and deployment. Host is tony-dell or
   idc02 where the installed runner-agent drifted from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
