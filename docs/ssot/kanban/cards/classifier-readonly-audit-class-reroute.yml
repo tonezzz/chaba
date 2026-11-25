@@ -1,7 +1,7 @@
 id: classifier-readonly-audit-class-reroute
 title: 'Classifier: route bounded read-only audit/assessment cards to free_lane (ops-readonly profile)'
 column: doing
-updated: 2026-11-25 09:33
+updated: 2026-11-25 10:12
 brief: 'DEV-0044 lever 1 first pick: bounded read-only audit/assessment/review/investigate cards -> free_lane. 56.8M
   prompt/30d on idc02 alone; ''audit'' is not a classifier keyword so these fall to jevos/devin.'
 priority: medium
@@ -109,5 +109,12 @@ comms:
     primer injected 8 lesson(s): [devin-session-aud; [fleet-jobs-report-and-ada-verb] Retry loop diagnosed 2026-11-20:
     executor=jules; [devin-usage-reduction] primer injected 8 lesson(s): [branch-code-s4-evidence-la; [dispatch-lane-classifier-codemod-keyword-false-positive]
     pri'
+- at: 2026-11-25 10:12
+  from: devin
+  text: DONE (dispatch 20261125-093311, commit 126be8990e5 on dispatch branch). classify_lane now routes titles
+    that LEAD with audit/assessment/review/investigate/sweep to free_lane (source kw:audit-ro, conf 1.0) at the
+    free_lane slot — after manual/compare/paid_frontier/codemod, before devin; explicit lane + timer-alert pin still
+    win. Title-scoped only, mutation-verb veto on title, NOT a LANE_KW entry. Hyphen-slug form needs >=2 hyphens
+    so component names (audit-cast) dont match — vcast-audit-cast veri
 claim:
   since: 2026-11-25 09:31
