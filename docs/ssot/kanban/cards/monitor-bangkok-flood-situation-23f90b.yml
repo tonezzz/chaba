@@ -41,3 +41,21 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 01:23
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-runner-agent-across-all-av-918c67
+  ask: The runner-agent across all available hosts (con01, tony-dell, mn01, tony-omen) is currently deferred
+    due to script drift from the repository version (/home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py),
+    preventing task execution. Before this monitoring card can be dispatched, the runner infrastructure
+    must be synchronized. Please choose how to proceed with the runner deployment and task assignment.
+  options:
+  - ★ Redeploy runner-agent to all hosts via scp and retry the monitor-bangkok-flood-situation-23f90b
+    card
+  - Postpone the Bangkok flood monitoring card until infrastructure drift is resolved separately
+  - Target the flood monitoring card specifically to tony-macbook (which is not currently reporting runner
+    drift)
+  status: open
+  at: 2026-11-26 01:23
+  from: backlog-spec-enrich
