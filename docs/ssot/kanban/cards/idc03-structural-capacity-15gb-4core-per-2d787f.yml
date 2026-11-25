@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
-column: doing
-updated: 2026-11-25 11:14
+column: review
+updated: 2026-11-25 11:23
 priority: medium
 tags:
 - idc03
@@ -312,18 +312,50 @@ comms:
     mode, plus a semantic fix the textual merge missed — live_probe now skips in remote mode (provider_alive is
     the liveness check; local ada-dev is intentionally stopped on idc03, else every remote run would gate infra).
     Verified: py_compile clean, 9/9 provider-gate unit tests pass, chec'
+- at: 2026-11-25 11:23
+  from: mn01
+  text: 'finished (ok): exit=0 capacity-twin-migration-boardapi-cap.yml`, with progress and outcome posted to card
+    comms. | devin-task-20261125-'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'session-end checkpoint 4dd91356: 1 leftover file(s) committed'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: banked 199 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:23
+  from: chaba
+  text: pushed dispatch/20261125-040717-idc03-runs-8-ada-services-4-5g to origin
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-040717-idc03-runs-8-ada-services-4-5g no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-040717-idc03-runs-8-ada-services-4-5g on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
-  result: 'exit=0 cap.yml`, `dispatch-outcome-20261125-090408-idc03-runs-8-ada-services-4-5g.md`, card comms posted.
-    | devin-task-20261125-090408-idc03-runs-8-ada-services-4-5g.service: Consumed 4min 56.602s CPU time, 419.3M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=0 capacity-twin-migration-boardapi-cap.yml`, with progress and outcome posted to card comms. | devin-task-20261125-040717-idc03-runs-8-ada-services-4-5g.service:
+    Consumed 32.191s CPU time over 8min 58.255s wall clock time, 656.5M memory peak.'
   sweep:
     conflict_sig: b54134f4ce42|scripts/ada/scenario-provider-gate.py
+    stale_running: 2026-11-25 11:23
+    dirty: 1
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 11:06
 review_kind: verify
