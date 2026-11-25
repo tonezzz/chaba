@@ -1,0 +1,162 @@
+date: 2026-11-25
+title: idc03 ada-hygiene reconcile — ada-pi checkout, ada-pi-pwa, :8002 lanes, dev-twin restarts
+domain: ada
+job: idc03-ada-hygiene-20261107
+cards: [idc03-ada-hygiene-20261107]
+refs: [ADA-1112, BEN-0573, OPS-0726]
+host: idc03
+repo: chaba
+summary: >
+  Verified all four leftovers from the 2026-11-07 scenario-smoke repair
+  card against live idc03 state. (a) ~/CascadeProjects/ada-pi is already
+  gone — retired 2026-11-24 by the ada-voice-rename-cleanup dispatch;
+  residual hits are inert (.bak quadlet, secrets env filename,
+  REPO_ALIASES canon). (b) ada-pi-pwa.service confirmed removed
+  2026-11-17 — no unit, no :8001 listener, SSOT already records it.
+  (c) :8002 is intentional: research/cms/reports/smoke ride the dev lane
+  (ada-dev, now ws://100.75.102.88:8005 on tony-omen after SYS-0151);
+  the remaining :8002 units (tools/memory/casting/full) are prod-persona
+  lanes gated by one-shot prod-allow-<tier> card sentinels.
+  (d) restarter = deploy-ada.sh (fleet SERVICES restart, stagger
+  offsets); today's 11:08 deploy also resurrected the "stopped" idc03
+  dev twins — the capacity reclaim regresses every deploy until
+  SERVICES is updated in the ada-voice repo.
+
+findings:
+  ada_pi_checkout:
+    verdict: already-retired
+    evidence: >
+      ~/CascadeProjects/ada-pi does not exist on idc03 (verified
+      2026-11-25). The compat symlink/dir was removed 2026-11-24 by
+      dispatch ada-voice-rename-cleanup (fleet-wide rm after [ -L ]
+      check). No live references: zero hits for the path in
+      ~/.config/systemd/user, ~/.config/containers/systemd (except one
+      inert .bak), crontab, or unit WorkingDirectories (all point at
+      ~/CascadeProjects/ada-voice). chaba-role stamps on idc03 verified:
+      chaba=exec, chaba-tony-dell=served, chaba-kanban-sync=job,
+      chaba-vault=job — one-checkout-per-role satisfied; ada-voice
+      checkout clean on main tracking origin/main.
+    residuals_inert:
+      - >-
+        ~/.config/containers/systemd/ada-scenario-full.container.bak-mig-20261023
+        — .bak quadlet backup (cannot load; host-hygiene says no .bak
+        units). Flagged twice already; left in place, deletion is
+        Tony's call.
+      - >-
+        ~/.local/bin/gemini-tier{,.bak,.bak-mig-20261023} reference
+        ada-pi-pwa.env — that is a secrets FILENAME deliberately
+        retained for legacy helpers (ssot.secrets.yml), not the
+        checkout.
+      - >-
+        ~/.local/bin/runner-agent{,.py} REPO_ALIASES={"ada-pi":
+        "ada-voice"} — intentional credential canonicalization, kept
+        by design in the rename cleanup.
+  ada_pi_pwa:
+    verdict: reconciled-removed
+    evidence: >
+      systemctl --user AND systemctl (system) both report
+      ada-pi-pwa.service "could not be found"; no unit files under
+      ~/.config/systemd/user or ~/.config/containers/systemd; nothing
+      listens on :8001; tailscale serve root on idc03 proxies to
+      127.0.0.1:8002 (ada-ha-tony). Unit was stopped/disabled/removed
+      2026-11-17 (commit 0048562f, grand-rename runbook live audit);
+      SSOT already records it — ssot.routes.yml "separate :8001 service
+      removed 2026-11-17", ssot.secrets.yml "service unit removed
+      2026-11-17; env file preserved", ssot.services.yml retired lane
+      registry. Only ~/.config/secrets/ada-pi-pwa.env remains —
+      deliberate.
+    loose_end: >
+      Local branch chore/retire-ada-pi-pwa (commit 5e1994e5117 + SSOT
+      edits) is NOT merged to origin/master but is now redundant —
+      stacks/idc03/ada-pi-pwa/ is already absent on master and the
+      retirement notes already landed via other commits. Branch
+      cleanup candidate, not a blocker.
+  scenario_8002:
+    verdict: intentional-gated-design
+    evidence: >
+      ada-scenario-research.service now runs
+      ADA_LIVE_URL=ws://100.75.102.88:8005/ws with EnvironmentFile
+      ada-dev.env — the FREE dev lane (BEN-0573 bench-off-paid-lanes,
+      done). Same for cms/reports/smoke. The remaining :8002 units —
+      ada-scenario-{tools,memory,casting,full} — target
+      ws://127.0.0.1:8002/ws = ada-ha-tony (verified: pid 1173854
+      uvicorn pwa_server:app --port 8002 under ada-ha-tony.service;
+      tailscale serve / -> :8002). Each carries ExecCondition
+      scenario-provider-gate.py --paid-allow-file
+      ~/.local/share/ada-scenario-runner/prod-allow-<tier>: a paid-lane
+      verdict parks the suite (exit 0, zero sessions) unless a fresh
+      one-shot sentinel names a card (default max age 168h). Only
+      prod-allow-casting exists, containing card id
+      ada-scenario-casting-service-failed-on-i-340465 (written
+      2026-11-24 09:13 by that card's dispatch) — authorized, not a
+      leak. scenario-suite-run.sh has a second paid-lane guard on
+      ADA_LIVE_URL port not in {8005,8009}.
+    note: >
+      ada-dev/ada-kk-dev migrated idc03 -> tony-omen 2026-11-18
+      (SYS-0151); scenario ADA_LIVE_URL was repointed
+      127.0.0.1:8005/:8009 -> 100.75.102.88:8005/:8009 accordingly.
+      tony-omen verified listening on tailnet :8005 (ada-dev) and
+      :8009 (ada-kk-dev), both enabled+healthy.
+  ada_dev_restarts:
+    verdict: deploy-ada.sh — plus two distinct today's events
+    evidence: >
+      Card's original 2026-11-07 finding (deploy-preflight.service ->
+      deploy-ada.sh restarting all lanes) re-verified live: the
+      mechanism is unchanged — ~/.local/bin/deploy-ada.sh SERVICES
+      default still lists ada-dev + ada-kk-dev, and deploy-preflight
+      invokes it for approved ada-voice-prod deploys.
+      Today on idc03: ada-voice reflog shows deploy-ada.sh ran
+      11:08:48 (snapshot wip/deploy-snapshot-20261125-110848, ff-merge
+      to 3a808ac = PR #24 kk-cms-only bench); fleet ActiveEnter
+      timestamps 11:12:55->11:14:29 match the declared stagger offsets
+      exactly (tony=0, kraut=35, kk=65, dev=95). deploy-preflight's
+      own 5-min polls all finished in ~4s — the deploy was invoked
+      directly, not through the gate.
+      REGRESSION: the 11:14 fleet restart resurrected ada-dev on
+      idc03 (UnitFileState=disabled but ActiveEnter 11:14:29) — the
+      "stopped+disabled ~656MB reclaimed" state from the capacity
+      card does not survive deploys while SERVICES still names the
+      twins. ada-kk-dev followed the same path at 14:09:26.
+      Second event, different cause: ada-kk-dev restarted alone at
+      14:09:26 via ssh session from idc02 (100.123.163.11). Root
+      cause found: kk-bench-env.py --apply run from idc02 worktree
+      ~/CascadeProjects/chaba-wt-kk-cms-memory (branch
+      bench/kk-cms-only-memory-20261124, commit 5a7273a821 "manage env
+      knobs; add ADA_SESSION_PRIME toggle"). It wrote a new managed
+      block into ~/.config/secrets/ada-kk-dev.env at 14:09
+      (ADA_SESSION_PRIME=0 under "# >>> chaba-rendered:
+      ada-env-knobs") with the .bak.20261125T070923Z timestamped
+      backup, then restarted ada-kk-dev.service — the script's
+      declared apply flow. Verified healthy after: 127.0.0.1:8009
+      /api/health ok:true, lane=kk-dev. This is deliberate bench-lane
+      management, not a rogue restart — bench_profiles.kk-cms-only
+      declares host: idc03 port: 8009.
+
+actionable_leftovers:
+  - >-
+    deploy-ada.sh SERVICES (ada-voice repo, ~/.local/bin/deploy-ada.sh
+    on idc03 dated 2026-11-18) still contains ada-dev + ada-kk-dev —
+    every ada-voice deploy restarts the retired idc03 twins (~750MB
+    RSS on an overloaded 4-core box) AND collides with scenario runs
+    (the original 2026-11-07 infra/skip-quota cascade). Fix needs an
+    ada-voice repo change (remove twins from SERVICES or gate on
+    UnitFileState) — outside this chaba worktree; filed as follow-up
+    card. Note ada-kk-dev on idc03:8009 is ALSO the declared
+    bench_profiles.kk-cms-only target, so "stop the twins" is not
+    purely residual for kk-dev — the decision needs the bench lane
+    map (idc03-local vs omen) settled first.
+  - >-
+    chore/retire-ada-pi-pwa branch unmerged-but-redundant — safe to
+    delete once someone confirms no unique hunks vs master.
+  - >-
+    ada-scenario-full.container.bak-mig-20261023 (.bak quadlet) still
+    on idc03 — host-hygiene violation, inert; delete or declare.
+
+verify_commands: |
+  ssh idc03 'ls -d ~/CascadeProjects/ada-pi'                       # expect: No such file
+  ssh idc03 'systemctl --user status ada-pi-pwa.service'          # expect: could not be found
+  ssh idc03 'systemctl --user cat ada-scenario-research.service | grep ADA_LIVE_URL'
+  ssh idc03 'systemctl --user show ada-dev ada-kk-dev -p ActiveEnterTimestamp,UnitFileState'
+  ssh idc03 'git -C ~/CascadeProjects/ada-voice reflog --date=iso | head -5'
+  ssh idc02 'cd ~/CascadeProjects/chaba-wt-kk-cms-memory && git log --oneline -3'
+rollback: n/a — read-only verification; no live state changed by this job.
