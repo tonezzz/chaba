@@ -1,7 +1,7 @@
 id: board-cli-request-ask-field
 title: Fix board-cli request subcommand — posts 'text' but API expects 'ask'
 column: done
-updated: 2026-11-26 03:51
+updated: 2026-11-26 03:59
 brief: 'board-cli.py request subcommand POSTs {text: ...} to /request, but do_request() reads body[''ask''] — every
   ''board-cli request'' returns HTTP 400 ''ask required''. Confirmed identical bug in dell and idc03 checkouts (line
   ~168). One-word fix in the payload dict. Requests meanwhile go via curl with ''ask'' — workaround proven 2026-11-09
@@ -341,6 +341,10 @@ comms:
 - at: 2026-11-26 03:51
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
