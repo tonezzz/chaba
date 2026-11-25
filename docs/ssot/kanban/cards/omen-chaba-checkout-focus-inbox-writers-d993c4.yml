@@ -1,7 +1,7 @@
 id: omen-chaba-checkout-focus-inbox-writers-d993c4
 title: 'omen chaba checkout: focus-inbox writers must use board-api /inbox, not local files'
 column: doing
-updated: 2026-11-25 08:25
+updated: 2026-11-25 08:30
 priority: medium
 tags:
 - chaba
@@ -224,6 +224,13 @@ comms:
     focus-dispatcher cli gate, overnight-focus-review chain, mcp-link-monitor, audit-watchdog.mjs, audits/run.mjs,
     mddb-binlog-canary, ha-auth-watch, board-invariants, check-serve-config, worktree-sync, promote-reports, playlive-hosts-loader,
     kanban-commit renders handoffs on served'
+- at: 2026-11-25 08:30
+  from: devin
+  text: 'done: guard pass complete. New scripts/lib/inbox_door.py (role check + board-api /inbox door; non-git dirs
+    = not writable). 20 writer sites guarded across py/mjs — alerts now POST /inbox or skip on exec/readonly/non-git
+    checkouts; served checkout keeps local writes. Covered all omen timers (focus-dispatcher, overnight chain, mcp-health-snapshot,
+    link-monitor, audit-watchdog, dispatch-watch, gh-runs, arp-scan). Verified: py_compile/node --check clean, role
+    matrix correct, board-api 200. NOT done:'
 action:
   type: dispatch
   status: running
