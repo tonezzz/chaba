@@ -11,8 +11,11 @@ and the lifecycle publish helper's never-raise contract.
 from __future__ import annotations
 
 import importlib.util
+import json
 import unittest
+import urllib.request
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -211,6 +214,29 @@ class TestPublish(unittest.TestCase):
     def test_bad_kind_rejected(self):
         self.assertFalse(wc.publish("http://127.0.0.1:1", "c", "bogus",
                                     "title"))
+
+    def test_publish_tags_chaba_project(self):
+        captured = {}
+
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def fake_urlopen(req, timeout=None):
+            captured["body"] = json.loads(req.data.decode())
+            return _Resp()
+
+        with mock.patch.object(urllib.request, "urlopen", fake_urlopen):
+            ok = wc.publish("http://board-api", "card-x", "milestone",
+                            "t", "b")
+        self.assertTrue(ok)
+        self.assertEqual(captured["body"].get("project"), "chaba")
+        self.assertEqual(captured["body"].get("card"), "card-x")
 
 
 if __name__ == "__main__":

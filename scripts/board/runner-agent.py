@@ -703,7 +703,7 @@ def _publish(card_id: str, kind: str, title: str, body: str = "") -> None:
     api("/publish", {"kind": kind, "title": title[:240],
                      "body": body[:2000], "source": "runner-lifecycle",
                      "confidence": "observed", "visibility": "members",
-                     "card": card_id,
+                     "card": card_id, "project": "chaba",
                      "meta": {"lane": "unattended", "host": HOST}})
 
 
