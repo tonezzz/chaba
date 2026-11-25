@@ -1,7 +1,7 @@
 id: board-api-wedged-8min-on-hung-outbound-h-389be8
 title: board-api wedged ~8min on hung outbound HTTPS while holding wp.lock + card flock — all endpoints timed out
-column: doing
-updated: 2026-11-25 12:54
+column: review
+updated: 2026-11-25 13:16
 priority: high
 tags:
 - bug
@@ -81,9 +81,37 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-122202-2026-11-25-09-59-10-07-idc03-c on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 13:16
+  from: tony-dell
+  text: 'finished (ok): exit=0 202-2026-11-25-09-59-10-07-idc03-c.md`; card comms posted. | devin-task-20261125-122202-2026-11-25-09-59-10-07-id'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-122202-2026-11-25-09-59-10-07-idc03-c'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: banked 652 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 13:16
+  from: chaba
+  text: pushed dispatch/20261125-122202-2026-11-25-09-59-10-07-idc03-c to origin
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/board/test_runner_tooling_contract.py::ToolingPinTest::test_pin_hashes_match_sources'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: auto-merged fe643fb7 (dispatch/20261125-122202-2026-11-25-09-59-10-07-idc03-c) → origin/master
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
@@ -91,5 +119,9 @@ action:
   sweep:
     stale_running: 2026-11-25 12:54
     dirty: 1
+  result: 'exit=0 202-2026-11-25-09-59-10-07-idc03-c.md`; card comms posted. | devin-task-20261125-122202-2026-11-25-09-59-10-07-idc03-c.service:
+    Consumed 16min 16.540s CPU time over 32min 31.020s wall clock time, 994.1M memory peak, 530.6M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 12:20
+review_kind: verify
