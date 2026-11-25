@@ -433,8 +433,12 @@ def _post(path: str, payload: dict, timeout: int = 15) -> bool:
         return False
 
 
-BATCH = 100  # docs per /v1/ingest call — measured ~1.8s fixed cost +
-             # ~0.09s/doc vs 2-6s/doc for single /add under load
+BATCH = 20  # docs per /v1/ingest call. 100 used to fit in ~11s when
+            # measured, but under current mddb-ops load a 100-doc batch
+            # takes ~35s and the server closes the connection (~30s
+            # cutoff) -> RemoteDisconnected -> 'mddb add failed —
+            # stopping' with no progress. 20 docs is ~13s with 2x
+            # headroom; ~0.65s/doc still beats per-doc /add (2-6s).
 
 # Set on SIGTERM/SIGINT — systemd kills oneshot services with TERM at
 # TimeoutStartSec; checking this between batches lets the loop stop
