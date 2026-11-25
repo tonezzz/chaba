@@ -1,0 +1,92 @@
+title: Session capture C.2 — capture-router CLI/lib events consumer (normalize+route+dedupe+audit)
+subtitle: >-
+  OPS-1354 / card session-capture-c2-router. Extended scripts/chaba/capture-router.py
+  with an events mode that consumes normalized C.1-contract events.jsonl spools
+  (producers: capture-event.py hooks C.3, capture-harvest.py C.4), normalizes each
+  event into a route() candidate, dedupes by event dedupe_key + router dedupe_key,
+  audits to router-audit.jsonl, and upserts new proposals into the runtime
+  capture-ledger.yml. Dry-run is the only posture — no canonical sink writes;
+  the single write-approved pair (kanban/create) still goes through
+  capture-apply.py -> board-api (OPS-0024).
+id: 2026-11-25-c2-capture-router-events
+status: done
+owner: devin-dispatch
+project: chaba
+card: session-capture-c2-router
+branch: dispatch/20261125-043641-goal-implement-capture-router-
+started: "2026-11-25"
+depends_on:
+  - session-capture-c1-spec (contract merged into docs/ssot/ssot.knowledge-capture.yml)
+  - session-capture-c3-hooks (events.jsonl producer, merged 0b3ddb2d)
+  - session-capture-c4-harvester (events.jsonl producer, merged 1a4f58467e)
+
+deliverables:
+  router:
+    path: scripts/chaba/capture-router.py
+    modes:
+      propose: >-
+        Unchanged read-only lib/CLI (--text/--input/--self-test); route()
+        stays pure, no I/O. harvester.py + capture-event.py imports unaffected.
+      events: >-
+        New consumer: --events/--events-dir (defaults: $CHABA_CAPTURE_OUT/
+        events.jsonl + reports/session-capture/events.jsonl when present),
+        --out-dir, --ledger/--no-ledger, --since, --limit. Bare invocation
+        with no propose input runs events mode over default spool paths.
+    pipeline: >-
+      events.jsonl -> event_to_candidate (summary+refs+evidence+where_filed+
+      open_asks -> text; source_id falls back to event dedupe_key; event_type
+      in FILED_TYPES -> already_filed) -> route() proposal -> dedupe ->
+      router-audit.jsonl + router-proposals.jsonl + router-state.json +
+      capture-ledger.yml entries upsert (applied: block preserved, atomic write).
+    dedupe_layers:
+      - event dedupe_key in router-state.json processed{} -> duplicate noop+audit
+      - within-run seen set (same file listed twice cannot double-count)
+      - router dedupe_key vs state.proposal_keys + ledger entries -> proposal-duplicate
+      - ledger merge upsert is itself idempotent (exact dedupe_key match)
+    audit: >-
+      router-audit.jsonl under out-dir: one run-start + per-event + run-done
+      record; every record carries dry_run=true, sink_write="none", and for
+      the approved pair an apply_path hint (capture-apply.py --key ... --apply
+      --confirm ...). Rejected events audit metadata only.
+    guards:
+      - missing dedupe_key -> rejected:no-dedupe-key
+      - invalid JSON line / unreadable file -> rejected:bad-json (counted, run continues)
+      - secret-shaped content re-scanned via capture-event._scan_secrets ->
+        rejected, content never persisted anywhere
+      - --since bounds on event as_of; --limit caps events per run
+  tests:
+    - "tests/test_capture_router_events.py (5 pytest cases: route+audit shape, idempotent rerun, no writes outside runtime dir, secret rejection, bad-envelope handling)"
+    - "capture-router.py --self-test now runs propose self-test (13/13) + events self-test (6/6)"
+
+acceptance_mapping:
+  idempotent_unit_tests: >-
+    pytest tests/test_capture_router_events.py 5/5 (venv); --self-test 19/19
+    combined; rerun verified: second consume -> new=0 duplicate=N
+    proposals_new=0 ledger_added=0, audit grows (noop+audit).
+  audit_jsonl: >-
+    router-audit.jsonl append-only; run + per-event records with
+    dedupe_status/result/target_sink/action/confidence/rule/
+    router_dedupe_key/dry_run.
+  no_unapproved_sink_writes: >-
+    The events mode contains no sink write code path at all — only runtime
+    artifacts under --out-dir plus the capture-ledger.yml proposal upsert
+    (runtime state, not a canonical sink; preserves applied: audit block).
+    pytest asserts no files appear outside the allowed runtime set.
+  respects_board_api_mutation_door: >-
+    Zero network calls in the router. kanban/create proposals land in the
+    ledger only as candidates; the sole write door remains
+    capture-apply.py --key <dedupe_key> --apply --confirm <key> -> board-api
+    (OPS-0024), which keeps its own gate chain (allowlist, source artifact
+    live, duplicate card check, GET verify, card-comm audit mirror).
+
+verification:
+  - python3 scripts/chaba/capture-router.py --self-test  # 13/13 + 6/6
+  - python3 -m pytest tests/test_capture_router_events.py -q  # 5/5
+  - python3 scripts/chaba/capture-event.py --self-test  # 10/10 (no regression)
+  - python3 scripts/chaba/harvester.py --self-test      # 5/5 (no regression)
+  - "CLI smoke: 2-event spool -> 2 proposals + 2 ledger entries; rerun -> all duplicate"
+
+notes:
+  - "events.jsonl remains the integration seam: producers (C.3 emitter, C.4 harvester) are untouched; the router consumes both envelope variants (capture-event events lack source_id -> dedupe_key fallback; harvest events carry source_id)."
+  - "Event sources outside the OPS-0016 scanner set (devin/opencode/script/manual/check) route through the same rules; kanban/create proposals from non-focus-inbox sources will be refused by capture-apply's source gate — proposals are recorded, never improvised into writes."
+  - "scheduler/timer wiring (who runs consume_events periodically) is a separate ops decision — the daily chaba-capture-harvest job on idc02 is the natural host; not installed by this change."

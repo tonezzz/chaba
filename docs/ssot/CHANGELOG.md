@@ -15,6 +15,12 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ### 2026-11-25
 
+- **File**: scripts/chaba/capture-router.py, tests/test_capture_router_events.py, docs/ssot/jobs/session-summary/2026-11-25-c2-capture-router-events.yml
+- **Change Type**: minor
+- **Description**: Session capture C.2 (OPS-1354) — capture-router.py gains an events-consumer mode: reads normalized C.1-contract events.jsonl spools (capture-event.py, capture-harvest.py), normalizes each event into a route() candidate, dedupes by event dedupe_key + router dedupe_key, appends router-audit.jsonl records (dry_run=true always), and upserts new proposals into the runtime capture-ledger.yml preserving the applied: audit block. No canonical sink writes and no network calls — the only write door remains capture-apply.py -> board-api (OPS-0024). route()/propose mode unchanged.
+- **Impact**: The C.3/C.4 event producers now have a consumer that bridges events into gated kanban/create proposals; rerun-safe (noop+audit on replay).
+- **Rollback**: git revert the C.2 commit; delete tests/test_capture_router_events.py and the job record. Runtime artifacts under ~/.local/share/chaba/capture (router-state.json, router-audit.jsonl, router-proposals.jsonl) are regenerable and safe to remove.
+
 - **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/infrastructure/ssot.jobs.yml, AGENTS.md, scripts/{chaba,devnest}/*, .devin/skills/*, .agents/skills/info-find/SKILL.md
 - **Change Type**: minor
 - **Description**: OPS-1368 Phase D follow-ups — (a) added "Phase D Refresh (2026-11-25)" section to ssot.knowledge-capture.yml recording the d1-metrics measurement and resolutions; (b) declared daily job chaba-capture-harvest (idc02 05:30) as the canonical capture-ledger regeneration + metrics refresh, rendered to systemd/generated/idc02/; (c) capture-apply.py now mirrors each applied audit to a card comm (board = durable record, ledger = regenerable cache); (d) info_find.py run audit renamed resolved_ref -> top_result_ref and record gained --elapsed-ms/--resolved; info-find.mjs emits the same typed contract; capture-metrics.py reports run_* vs session_* samples with top_result_pct/verified_resolved_pct; (e) pointer-stale-add.py wired into session-capture + both info-find skills; (f) AGENTS.md sweep duty gained a repeat-ask register freshness check (>14d stale_days).
