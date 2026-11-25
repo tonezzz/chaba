@@ -11,7 +11,7 @@ note: last `severe` lane run recorded 1 failed /add(s) to MDDB (mddb add failed)
   confirmed line, so later lines replay next run — but until MDDB recovers they never reach host-logs or the digest.
 help: Check http://100.102.134.91:11026/v1 health and free space, then retry `log-shipper.py --self --cursor-tag
   severe` on idc02. This card auto-closes when a clean state doc lands.
-updated: 2026-11-26 04:00
+updated: 2026-11-26 04:04
 comms:
 - at: 2026-11-26 03:52
   from: chaba
@@ -36,4 +36,8 @@ comms:
 - at: 2026-11-26 04:00
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
