@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
 column: doing
-updated: 2026-11-25 15:35
+updated: 2026-11-25 15:38
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -225,6 +225,13 @@ comms:
     at ToolRunner._execute_gated + gemini_pool.generate pre-flight, gemini aux calls now metered into usage.jsonl,
     ada_ops action=budget readout + conversation_health. 18 new tests green, 379 related tests green, tool-lint
     clean.'
+- at: 2026-11-25 15:38
+  from: devin
+  text: 'done. Deliverables: backend/tool_budget.py (caps+readout), enforcement in tool_runner._execute_gated +
+    gemini_pool.generate pre-flight, gemini_aux usage metering, ada_ops action=budget + conversation_health.tool_budget,
+    manifest daily_cap_usd (render_video 5.0, render_image 2.0). Tests: tests/test_tool_budget.py 18/18 green; 379
+    related tests green; tool-lint clean. Trail: docs/ssot/jobs/ada/2026-11-25-tool-daily-spend-caps.yml; outcome:
+    dispatch-outcome-20261125-152510-implement-per-tool-daily-'
 action:
   type: dispatch
   repo: ada-voice

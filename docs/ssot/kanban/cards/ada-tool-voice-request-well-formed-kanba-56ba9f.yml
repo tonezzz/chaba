@@ -1,7 +1,7 @@
 id: ada-tool-voice-request-well-formed-kanba-56ba9f
 title: 'Ada tool: voice request -> well-formed kanban card spec'
 column: review
-updated: 2026-11-25 15:37
+updated: 2026-11-25 15:38
 ref: ADA-1202
 comms:
 - at: 2026-11-08 13:52
@@ -250,6 +250,11 @@ comms:
 - at: 2026-11-25 15:37
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-25 15:38
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261125-152559-implement-the-ada-tool-capabil failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
 action:
   type: dispatch
   repo: ada-voice
@@ -262,6 +267,8 @@ action:
   result: 'exit=0 a/2026-11-25-kanban-voice-card-draft.yml`, and the card has been updated on the board. | devin-task-20261125-152559-implement-the-ada-tool-capabil.service:
     Consumed 1min 52.785s CPU time over 10min 10.005s wall clock time, 1.3G memory peak.'
   verified: false
+  sweep:
+    merge_err: 2026-11-25 15:38
 spec: Implement the Ada tool capability to convert a voice request into a well-formed kanban card spec in the ada-voice
   repository. The runner must deploy on host tony-dell, ensuring it operates within the local development environment
   without drifting from repository scripts. Constraints include using existing voice-to-text pipeline definitions
