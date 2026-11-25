@@ -1,7 +1,7 @@
 id: ada-engine-contract-suite
 title: Lane-contract conformance suite — tagged scenario pack every engine must pass
 column: doing
-updated: 2026-11-25 10:37
+updated: 2026-11-25 10:38
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): no named conformance pack exists. Tag a subset of ada-voice
   tests/scenarios-live as contract — ws auth + caller-key tier refusal, tool_call/tool_result trace events, [persona->sender]
@@ -201,6 +201,13 @@ comms:
     tagged contract:true (health, ws_auth, tool_surface, tool_trace, session_scope + doc_policy_gate), --tier contract
     selector in scenario-report, ws_auth/http_check/min_calls driver extensions, CONTRACT.md index. Full pytest
     suite green: 1983 passed. Committing next.'
+- at: 2026-11-25 10:38
+  from: devin
+  text: 'DONE: contract conformance pack landed in ada-voice worktree ~/CascadeProjects/ada-voice-wt-engine-contract,
+    branch dispatch/engine-contract-suite, commit a3807da (not pushed per rails). 6 scenarios tagged contract:true
+    covering all contract_v1 items — health, ws_auth, tool_surface (loud failure), tool_trace (min_calls/min_results),
+    session_scope, doc_policy_gate. Driver gained ws_auth turn type, http_check status-list/method/body/headers
+    + HTTPError-assert, {http_base}/{api_key} tokens, min_cal'
 action:
   type: dispatch
   status: running
