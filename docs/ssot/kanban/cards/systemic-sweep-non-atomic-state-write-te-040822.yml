@@ -1,7 +1,7 @@
 id: systemic-sweep-non-atomic-state-write-te-040822
 title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
 column: doing
-updated: 2026-11-25 15:22
+updated: 2026-11-25 15:29
 priority: low
 tags:
 - ops
@@ -85,6 +85,11 @@ comms:
   text: claimed by dispatch-wt-20261125-151847. Auditing scripts/ for non-atomic JSON state saves; already-atomic
     tmp+replace helpers (wiki-talk-watch, telegram-webhook-watch, cline-review-feed, model-cache index, wp-comment-sync,
     lane-retention) noted. Will convert the rest to tmp+fsync+os.replace.
+- at: 2026-11-25 15:29
+  from: devin
+  text: 'progress: scripts/ops/ done (15 files: 11 save_state conversions + kanban-notify helper + 2 fsync additions
+    + yt-vtt-translate cache + yt-live.sh meta.json x2). All py_compile clean. Continuing: report/litellm/audits/cam-wall,
+    then ada/board/devnest/misc.'
 action:
   type: dispatch
   status: running
