@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
 column: doing
-updated: 2026-11-25 19:31
+updated: 2026-11-25 19:49
 program: infrastructure
 tags:
 - ops
@@ -245,6 +245,13 @@ comms:
     byte-identical to pinned master (sha256 1514c75c) on ALL runner hosts incl. idc02/idc03/tony-macbook/tony-dell
     — drift self-healed via sync-runner-tools; reinstalled -m0755 anyway per spec. Nodes: audit-hosts/macbook healed
     (ran fresh audit on con01 — was asleep at last render, now delt'
+- at: 2026-11-25 19:49
+  from: devin
+  text: 'DONE. Chain verified healthy — it self-healed since the Nov-10 capture: con01 chaba-system-report runs
+    clean (timer + on-demand refreshes), idc02 system-report.yml generated_at advancing (13:36+01 at last check,
+    minutes old vs 26h threshold). runner-agent: zero drift fleet-wide — installed==checkout==origin/master==manifest
+    pin (sha256 1514c75c) on idc02/idc03/tony-macbook/tony-dell (+omen/mn01/con01/kk-mac); reinstalled -m0755 on
+    the 4 spec hosts anyway, verified. Nodes: audit-hosts/macbook hea'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
