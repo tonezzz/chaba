@@ -309,14 +309,88 @@ def _outcome_file_slug(idx: dict, slug: str):
     return None
 
 
+# devin-task-<id> recovery — mirrors merge-sweep.TASK_ID_RE. Runner-agent
+# claims never stamp action.task_id or claim.session (the git chips went
+# dead when the runner-agent era replaced kanban-dispatch's
+# start_pending), so the task id is recovered from card-local evidence
+# only: comms 'started devin-task-<id>' lines (every lane posts one at
+# claim) and the action.result finish text.
+_TASK_ID_RE = re.compile(
+    r"devin-task-((?:[0-9]{8}-[0-9]{6}|[a-z0-9][a-z0-9-]*?[0-9]{9,})"
+    r"[a-z0-9-]*)")
+
+
+def _task_id_for(c: dict) -> str:
+    """action.task_id -> claim.session -> newest comms devin-task line
+    -> action.result. The card-local legs of merge-sweep.task_id_for;
+    its runner state.json leg is skipped on purpose — per-card ssh is
+    exactly the subprocess cost this render path exists to avoid."""
+    _a = c.get("action")
+    a = _a if isinstance(_a, dict) else {}
+    tid = str(a.get("task_id") or "").strip()
+    if tid:
+        return tid
+    _cl = c.get("claim")
+    cl = _cl if isinstance(_cl, dict) else {}
+    tid = str(cl.get("session") or "").strip()
+    if tid:
+        return tid
+    # The heuristic legs are dispatch-only: a non-dispatch card that
+    # merely mentions devin-task-<id> in comms/result is talking ABOUT
+    # a run, not claiming one — recovering its slug would borrow that
+    # run's chips (cms-auto-nest-tony-macbook et al. hit this).
+    if str(a.get("type") or "") != "dispatch":
+        return ""
+    # newest comms first — a retried card's earlier attempt ids are dead;
+    # the latest devin-task line is the live session (merge-sweep parity)
+    tids = []
+    for m in reversed([m for m in (c.get("comms") or [])
+                       if isinstance(m, dict)]):
+        hit = _TASK_ID_RE.search(str(m.get("text") or ""))
+        if hit and hit.group(1) not in tids:
+            tids.append(hit.group(1))
+    if tids:
+        # finish/merge-sweep comms truncate embedded ids (text caps), so
+        # the newest mention can be a strict prefix of the same run's
+        # full id that the 'started devin-task-<id>' line recorded.
+        # Extend with the longest same-run variant; different runs
+        # differ at the timestamp/epoch and never prefix-match.
+        best = tids[0]
+        for t in tids:
+            if len(t) > len(best) and t.startswith(best):
+                best = t
+        return best
+    # action.result is board-api-capped at 300 chars — the unit name in
+    # the finish journal tail can be truncated mid-id; _runs_for_slug
+    # absorbs that for the branch lookup and _outcome_file's prefix
+    # match absorbs it for the outcome lookup.
+    hit = _TASK_ID_RE.search(str(a.get("result") or ""))
+    return hit.group(1) if hit else ""
+
+
+def _runs_for_slug(runs_by_slug: dict, slug: str) -> list:
+    runs = runs_by_slug.get(slug, []) if slug else []
+    if runs or not slug:
+        return runs
+    # A result-sourced tid can arrive truncated (action.result[:300]),
+    # leaving a slug that is a PREFIX of the real branch slug. Adopt the
+    # match only when exactly one slug key qualifies — an ambiguous
+    # prefix must never borrow another run's chips. Cards dispatched to
+    # a non-chaba repo have no branches here at all; their full slug
+    # prefix-matching a chaba branch is the same false-positive the
+    # exact lookup already allowed, so no extra repo gate is needed.
+    keys = [s for s in runs_by_slug if s.startswith(slug)]
+    return sorted(runs_by_slug[keys[0]]) if len(keys) == 1 else []
+
+
 def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
     """Per-card verification chips; only for cards that had a dispatch run
     — or that already carry pipeline.verify goal evidence."""
     _a = c.get("action")
     a = _a if isinstance(_a, dict) else {}
-    tid = str(a.get("task_id") or "")
+    tid = _task_id_for(c)
     slug = _TASK_TS.sub("", tid) if tid else ""
-    runs = runs_by_slug.get(slug, []) if slug else []
+    runs = _runs_for_slug(runs_by_slug, slug)
     # pipeline.verify goal results — executable acceptance evidence beats
     # the outcome/deploy comms heuristics (a goal that ran is real signal;
     # a comms regex is a claim)
