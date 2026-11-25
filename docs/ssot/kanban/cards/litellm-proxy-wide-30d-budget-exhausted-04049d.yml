@@ -1,7 +1,7 @@
 id: litellm-proxy-wide-30d-budget-exhausted-04049d
 title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
 column: doing
-updated: 2026-11-25 19:07
+updated: 2026-11-25 19:13
 tags:
 - litellm
 - budget
@@ -96,6 +96,13 @@ comms:
     have a verification blind spot: both agents "passed" stack; [dedicated-openrouter-key-for-bench-eval-7ff299]
     primer injected 8 lesson(s): Li; [devin-taskdir-gc-dispatch-hosts] DONE (dispatch 20261125-094030). Survey:
     idc02; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, ton'
+- at: 2026-11-25 19:13
+  from: devin
+  text: 'Dispatch started (tony-dell worktree). Verified live state: someone already raised live ~/.config/litellm/config.yaml
+    to max_budget=75 at 18:28 + restarted litellm container — proxy is serving 200s again. DB shows proxy-budget
+    row spend=$62.01 in the Nov1-Dec1 window vs cap $75 → only ~$13 headroom at ~$8/day recent burn, likely re-caps
+    before the 2026-12-01 reset. Plan: raise cap to $120 (covers projected ~$110 window spend, still below ~$150
+    sum of per-key caps, bounds the uncapped LITELLM_KEY'
 action:
   type: dispatch
   status: running
