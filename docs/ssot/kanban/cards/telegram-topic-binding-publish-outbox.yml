@@ -1,7 +1,7 @@
 id: telegram-topic-binding-publish-outbox
 title: Fix telegram topic bindings — publish outbox stuck
-column: review
-updated: 2026-11-25 12:36
+column: done
+updated: 2026-11-25 12:39
 brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
   retries cannot clear them until project/card topic bindings exist.'
 priority: medium
@@ -109,6 +109,16 @@ comms:
 - at: 2026-11-25 12:36
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep: merged dc5af04f (dispatch/20261125-122415-verified-2026-11-25-on-idc03-l from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-122415-verified-2026-11-25-on-idc03-l.md)
+    — auto-closed'
+- at: 2026-11-25 12:39
+  from: local
+  text: 'pub milestone: card verified: telegram-topic-binding-publish-outbox on idc03 — merged dc5af04f (dispatch/20261125-122415-verified-2026-11-25-on-idc03-l
+    from idc02) -> origin/master — verified — auto- — merged dc5af04f (dispatch/20261125-122415-verified-2026-11-25-on-idc03-l
+    from idc02) -> origin/master — verified — auto-closed [evt-1f0b6584ab71388b]'
 action:
   type: dispatch
   status: done
@@ -119,6 +129,11 @@ action:
   result: 'exit=0  alarm, a few per day. Outcome written to `dispatch-outcome-20261125-122415-verified-2026-11-25-on-idc03-l.md`
     and the card has full comms. | devin-task-20261125-122415-verified-2026-11-25-on-idc03-l.service: Consumed 1min
     41.415s CPU time.'
+  verified: true
 claim:
   since: 2026-11-25 12:23
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 12:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-122415-verified-2026-11-25-on-idc03-l.md
