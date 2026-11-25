@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code — investigate journal: `journalctl
-  --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code — investigate journal:
+  `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: MEM-1341
 comms:
 - at: 2026-11-25 04:34
@@ -16,9 +16,17 @@ comms:
   text: card captured via board-api
 - at: 2026-11-25 04:44
   from: devin
-  text: '[still suspicious] Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code — investigate
-    journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
+  text: '[still suspicious] Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `mddb-backup.service` on `idc02` by inspecting the user journal via `journalctl
+  --user -u mddb-backup.service` on host `idc02`. Target repo is `chaba` for runner alignment if needed,
+  following the CMS timeline `timer-timeline-idc02`. The runner must diagnose the exit-code failure and
+  verify the root cause from the logs. Done-condition is met when the failure reason is identified in
+  the journal and documented on the card with a clear remediation path.
