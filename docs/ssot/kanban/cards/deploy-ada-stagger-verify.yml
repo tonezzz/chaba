@@ -1,7 +1,7 @@
 id: deploy-ada-stagger-verify
 title: deploy-ada.sh exits 7 when staggered units are still in start-pre
 column: doing
-updated: 2026-11-25 19:09
+updated: 2026-11-25 19:10
 brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
   9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
   post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
@@ -331,6 +331,9 @@ comms:
 - at: 2026-11-25 19:09
   from: tony-macbook
   text: claimed
+- at: 2026-11-25 19:10
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
 action:
   type: dispatch
   status: running
