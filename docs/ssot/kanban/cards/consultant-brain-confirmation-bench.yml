@@ -1,7 +1,7 @@
 id: consultant-brain-confirmation-bench
 title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
 column: doing
-updated: 2026-11-25 17:13
+updated: 2026-11-25 17:21
 priority: medium
 tags:
 - ada
@@ -324,6 +324,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:21
+  from: devin
+  text: '[progress] qwen3:8b x3 COMPLETE on corrected corpus: all 3 pass metric bars (r1 .904/.926/.882, r2 .904/.957/.857,
+    r3 .851/.915/.811) — but EVERY run has defer-gold over-act misses (3/3/7; defer-027->act + defer-009->correct
+    recur in all 3). Per the card rule (no defer->act/correct = disqualifying direction) qwen3:8b is NOT certified.
+    qwen2.5:32b run1 was a clean PASS with zero over-act — runs 2-3 now executing for the streak.'
 action:
   type: dispatch
   status: running
