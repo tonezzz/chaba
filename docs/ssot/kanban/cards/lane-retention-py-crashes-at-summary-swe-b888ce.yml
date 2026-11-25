@@ -1,7 +1,7 @@
 id: lane-retention-py-crashes-at-summary-swe-b888ce
 title: lane-retention.py crashes at summary — sweep_ops returns tuples, regex expects strings
-column: doing
-updated: 2026-11-25 12:33
+column: review
+updated: 2026-11-25 12:35
 priority: medium
 tags:
 - bug
@@ -60,9 +60,36 @@ comms:
     that reproduces the exact TypeError red-first (verified: fails pre-fix, green post-fix; 28/28 pass). NOTE: git
     history shows NO tuple path on master — prune.sweep has always returned str — so the 09:57 crash implies idc03''s
     deployed ~/CascadeProjects/chaba diverges from origin (uncom'
+- at: 2026-11-25 12:35
+  from: idc02
+  text: 'finished (ok): exit=0 ispatch-outcome-20261125-122149-scripts-ada-lane-retention-py-.md`; final comms posted
+    to the card. | devin-task-'
+- at: 2026-11-25 12:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 12:35
+  from: chaba
+  text: banked 651 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 12:35
+  from: chaba
+  text: pushed dispatch/20261125-122149-scripts-ada-lane-retention-py- to origin
+- at: 2026-11-25 12:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 12:35
+  from: chaba
+  text: auto-merged 31f6ef28 (dispatch/20261125-122149-scripts-ada-lane-retention-py-) → origin/master
+- at: 2026-11-25 12:35
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-122149-scripts-ada-lane-retention-py-,
+    branch dispatch/20261125-122149-scripts-ada-lane-retention-py-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
@@ -70,5 +97,10 @@ action:
   sweep:
     stale_running: 2026-11-25 12:24
     no_repo: 2026-11-25 12:24
+  result: 'exit=0 ispatch-outcome-20261125-122149-scripts-ada-lane-retention-py-.md`; final comms posted to the
+    card. | devin-task-20261125-122149-scripts-ada-lane-retention-py-.service: Consumed 1min 7.134s CPU time, 541.8M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 12:20
+review_kind: verify
