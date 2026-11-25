@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-25 09:10
+updated: 2026-11-25 09:12
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -363,6 +363,13 @@ comms:
   from: devin
   text: 'raised request phase-0-soak-review-done-6d-idc02-con01-d5e260: Phase-0 soak review done (6d, idc02/con01/mn01,
     recommend mode): detection/gating/audit all correct, zero executions by '
+- at: 2026-11-25 09:12
+  from: devin
+  text: 'dispatch done (tony-dell). Deliverables in worktree commit 0e8730d0e8e (not pushed): ghost-prune fix in
+    nest-mgr.py (actuation.units now drops units absent from discovery >30 ticks; held clears on recovery) + 4 tests
+    (31/31 pytest, 21/21 gate) + soak evidence doc docs/ssot/jobs/devnest/2026-11-25-nest-mgr-v2-recommend-soak.yml
+    + dispatch-outcome md. Soak verdict: recommend mode healthy on all 3 pilots, zero drift, gates correct; guarded
+    is currently a no-op (nothing allowlisted). Decision reques'
 action:
   type: dispatch
   status: running
