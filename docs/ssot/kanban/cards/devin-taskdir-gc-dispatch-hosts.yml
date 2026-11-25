@@ -1,7 +1,7 @@
 id: devin-taskdir-gc-dispatch-hosts
 title: 'Dispatch task-dir GC gap: hosts accumulate ~/.local/share/devin-dispatch/tasks forever (idc02: 917 dirs)'
 column: done
-updated: 2026-11-26 03:52
+updated: 2026-11-26 04:00
 brief: 'DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed — devin-cleanup
   declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.'
 priority: medium
@@ -212,6 +212,10 @@ comms:
 - at: 2026-11-26 03:52
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-11-25 09:39
