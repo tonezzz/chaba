@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
 column: doing
-updated: 2026-11-25 19:22
+updated: 2026-11-25 19:26
 priority: low
 tags:
 - embedding
@@ -433,6 +433,13 @@ comms:
     primer injected 8 lesson(s): member-device lanes (kk; [bge-m3-distillation-pilot-train-local-em-d85919] banked
     85 outcome lesson(s) → ; [bge-m3-distillation-pilot-train-local-em-d85919] primer injected 8 lesson(s): e; runbook
     docs/kb/new-host-onboarding.md: New Host Onboarding —'
+- at: 2026-11-25 19:26
+  from: devin
+  text: 'attempt2 on tony-macbook: confirmed Tony answered proceed = authorize rebuild + full SBERT fine-tune. State:
+    /tmp/embedeval gone fleet-wide (teacher vecs + judged qrels lost); omen GPU is GTX1650 4GB but torch is +cpu
+    wheel and VRAM 75% committed; con01 is cleanest CPU worker (8c/23GB); kk-mac offline. Plan: rebuild teacher
+    fixture on idc03 (fetch+gemini re-embed ~8.1k docs), write bge-distill-ft.py, launch detached CPU fine-tune
+    on con01, eval = offline cosine vs teacher + qrels rerun follow-up'
 action:
   type: dispatch
   status: running
