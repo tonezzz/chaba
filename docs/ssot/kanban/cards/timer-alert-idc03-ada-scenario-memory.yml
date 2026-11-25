@@ -1,14 +1,14 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-25 17:43
+updated: 2026-11-25 19:39
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate journal:
-  `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate journal: `journalctl
+  --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: ADA-1346
 comms:
 - at: 2026-11-25 06:14
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-25 06:24
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -52,21 +52,28 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-25 17:43
   from: tony
-  text: '2026-11-25: blocked — systemd cannot start because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
-    is absent on idc03. Backups exist, but this is the parked paid-lane credential set (bench-off-paid-lanes);
-    restoring keys needs an explicit decision.'
+  text: '2026-11-25: blocked — systemd cannot start because EnvironmentFile ~/.config/secrets/ada-ha-tony.env is
+    absent on idc03. Backups exist, but this is the parked paid-lane credential set (bench-off-paid-lanes); restoring
+    keys needs an explicit decision.'
 - at: 2026-11-25 19:23
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-25 19:39
+  from: tony
+  text: '2026-11-25 19:50 (+07): STILL BLOCKED — not a code defect. Unit requires EnvironmentFile=~/.config/secrets/ada-ha-tony.env
+    (absent on idc03 AND every other fleet host) and ExecCondition gate needs ~/.local/share/ada-scenario-runner/prod-allow-memory
+    (also absent), so systemd result=resources before ExecStart. Five stale ada-ha-tony.env.bak-* files exist (Oct
+    2026) but none is a live credential. Needs Tony''s decision: retire the paid memory lane, or provision a current
+    env + prod-allow file.'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
-  ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile
-    ~/.config/secrets/ada-ha-tony.env is absent on idc03, reflecting the parked paid-lane credential set
-    (bench-off-paid-lanes). Restoring these keys requires an explicit decision from the owner.
+  ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
+    is absent on idc03, reflecting the parked paid-lane credential set (bench-off-paid-lanes). Restoring these keys
+    requires an explicit decision from the owner.
   options:
   - ★ Restore the missing paid-lane credential file on idc03 and re-enable the timer
-  - Disable or mask the ada-scenario-memory.service timer on idc03 to stop recurring alert failures while
-    staying parked
+  - Disable or mask the ada-scenario-memory.service timer on idc03 to stop recurring alert failures while staying
+    parked
   - Postpone investigation until paid-lane credentials are systematically re-evaluated
   status: open
   at: 2026-11-25 19:23
