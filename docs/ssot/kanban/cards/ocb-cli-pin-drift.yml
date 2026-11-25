@@ -1,7 +1,7 @@
 id: ocb-cli-pin-drift
 title: 'idc02 openchamber: pin @opencode/cli to declared 2.3.2 (gate failing)'
 column: done
-updated: 2026-11-25 16:57
+updated: 2026-11-25 17:12
 brief: 'ADA-0015''s live upgrade completed successfully, but the post-gate fails: @opencode/cli is 2.4.1 while SSOT
   declares 2.3.2. Root cause: host unit ExecStart pins only @openchamber/web@2.7.3 and installs @opencode/cli bare.
   Needs Tony''s decision: restore pin+reinstall 2.3.2, or accept 2.4.1 and update SSOT.'
@@ -112,6 +112,10 @@ comms:
 - at: 2026-11-25 16:57
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
