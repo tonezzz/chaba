@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: backlog
-updated: 2026-11-25 07:47
+updated: 2026-11-25 08:59
 priority: medium
 tags:
 - idc03
@@ -179,8 +179,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 08:59
+  from: chaba
+  text: classified as devin (fallback conf 0.15)
+- at: 2026-11-25 08:59
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
-  lane: manual
-  lane_source: kw
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
