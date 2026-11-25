@@ -1,6 +1,6 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: backlog
+column: done
 updated: 2026-11-25 19:13
 priority: high
 tags:
@@ -453,6 +453,9 @@ comms:
     ref=ADA-1110, col=backlog) but took 8.487s against the global CALL_LIMIT_S=8.0, so it was flagged SLOW. Added
     a per-check limit=15 on idc02 ~/CascadeProjects/ada-voice/scripts/ocb-smoke.py (backup .bak-20261125), same
     treatment previously given ada_context_pack. Rerun result=success exit=0; all checks PASS, benchmark written.'
+- at: 2026-11-25 19:13
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
@@ -460,3 +463,4 @@ spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checki
   scripts/board/runner-agent.py to ~/.local/bin/runner-agent. The target host is idc02 and the relevant repository
   is chaba. The done-condition is verified when the runner-agent is updated on idc02 and the service failure root
   cause is investigated and resolved.
+claim: {}
