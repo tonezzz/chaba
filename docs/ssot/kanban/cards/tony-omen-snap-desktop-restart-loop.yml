@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 14:56
+updated: 2026-11-25 14:57
 priority: medium
 tags:
 - tony-omen
@@ -272,6 +272,10 @@ comms:
     left them untracked — that was the merge failure). Only remaining: post-reboot NRestarts check. Host is busy
     (devin-desktop session, llama-server, docker) so no unattended reboot — request snap-reboot-verify-window open
     with options reboot-now/wait-natural/tony-reboots. needs-input.txt'
+- at: 2026-11-25 14:57
+  from: chaba
+  text: 'needs input: Reboot tony-omen now to finish the snapd-desktop-integration post-boot check, or wait for
+    a natural reboot?'
 action:
   type: dispatch
   status: running
@@ -318,3 +322,4 @@ requests:
     label: Tony reboots at his convenience — card notes the check command
     action: hold
   suggested: wait-natural
+awaiting_action: true

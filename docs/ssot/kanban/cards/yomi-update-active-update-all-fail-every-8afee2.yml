@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: doing
-updated: 2026-11-25 14:55
+column: review
+updated: 2026-11-25 14:57
 priority: medium
 tags:
 - bug
@@ -143,9 +143,33 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-144959-idc03-yomi-update-active-servi on tony-omen still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 14:57
+  from: tony-omen
+  text: 'finished (ok): exit=0 4959-idc03-yomi-update-active-servi.md` in this worktree; final status posted to
+    the card. | devin-task-20261125-'
+- at: 2026-11-25 14:57
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 14:57
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-144959-idc03-yomi-update-active-servi
+    is 34 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 14:57
+  from: chaba
+  text: banked 221 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 14:57
+  from: chaba
+  text: pushed dispatch/20261125-144959-idc03-yomi-update-active-servi to origin
+- at: 2026-11-25 14:57
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 14:57
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -154,5 +178,8 @@ action:
   sweep:
     stale_running: 2026-11-25 14:55
     dirty: 2
+  result: 'exit=0 4959-idc03-yomi-update-active-servi.md` in this worktree; final status posted to the card. | devin-task-20261125-144959-idc03-yomi-update-active-servi.service:
+    Consumed 59.083s CPU time over 3min 57.228s wall clock time, 830.3M memory peak.'
 claim:
   since: 2026-11-25 14:47
+review_kind: verify
