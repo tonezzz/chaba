@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: doing
-updated: 2026-11-25 10:32
+updated: 2026-11-25 10:49
 priority: medium
 tags:
 - ops
@@ -247,6 +247,13 @@ comms:
   text: SSH credentials template for the Plesk admin is at ~/.config/secrets/plesk-ssh.env (mode 600; blanks for
     PLESK_HOST, PLESK_USER, PLESK_PASSWORD). Fill it locally — do not paste credentials in chat. The maintenance
     request form remains at ~/.config/secrets/plesk-cargo-maintenance-request.md.
+- at: 2026-11-25 10:49
+  from: devin
+  text: 'DONE: ssot.jobs.yml jittered (32 timers regenerated), 29 units installed+verified on idc03, next elapses
+    staggered 10:04-10:48+. runner-agent redeployed sha256 0bc62e20 match, firing clean every 60s. Staggered runs
+    10:06-10:48 all result=success, no board-api/CMS RemoteDisconnected/timeouts. Caveats: timer restart caused
+    a one-time Persistent catch-up wave at 09:57 (stopped leftover catch-up services; board-api wedged on hung WP
+    call, restarted 10:07); wiki-talk-watch + wp-news-morning-brief rem'
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
