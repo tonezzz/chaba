@@ -80,7 +80,7 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
           base: str = MDDB) -> str:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     t0 = time.monotonic()
-    skip, deleted, scanned = 0, 0, 0
+    skip, deleted, scanned, expired_seen = 0, 0, 0, 0
     while True:
         try:
             page = post("/search", {"collection": collection, "query": "",
@@ -98,6 +98,7 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
                 expired.append(d)
             else:
                 kept += 1
+        expired_seen += len(expired)
         if dry:
             deleted += len(expired)
             kept += len(expired)
@@ -121,7 +122,8 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
         skip += kept
     verb = "would delete" if dry else "deleted"
     host = base.split("//", 1)[-1].split("/", 1)[0]
-    return (f"{collection}: {verb} {deleted}/{scanned} "
+    return (f"{collection}: expired {expired_seen}, {verb} "
+            f"{deleted}/{scanned} "
             f"(>{days}d on {ts_key} @{host}) "
             f"in {time.monotonic() - t0:.0f}s")
 
