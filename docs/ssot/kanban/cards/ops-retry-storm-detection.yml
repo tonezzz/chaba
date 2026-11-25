@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
-column: review
-updated: 2026-11-25 11:05
+column: done
+updated: 2026-11-25 11:10
 priority: medium
 tags:
 - observability
@@ -316,6 +316,11 @@ comms:
 - at: 2026-11-25 11:05
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 11:10
+  from: chaba
+  text: 'merge-sweep: merged 7b57df78 (dispatch/20261125-035625-the-mddb-embed-openrouter-retr from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-035625-the-mddb-embed-openrouter-retr.md)
+    — auto-closed'
 action:
   type: dispatch
   status: done
@@ -330,7 +335,11 @@ action:
     stale_running: 2026-11-25 09:24
     dirty: 16
   runner: mn01
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 10:55
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 11:09
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-035625-the-mddb-embed-openrouter-retr.md
