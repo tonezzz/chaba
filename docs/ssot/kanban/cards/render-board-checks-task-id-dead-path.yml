@@ -1,7 +1,7 @@
 id: render-board-checks-task-id-dead-path
 title: compute_checks git chips are dead code — action.task_id is never populated anymore
-column: review
-updated: 2026-11-25 21:07
+column: done
+updated: 2026-11-25 21:09
 brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
   so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
   cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
@@ -133,6 +133,9 @@ comms:
 - at: 2026-11-25 21:07
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -146,3 +149,7 @@ action:
 claim:
   since: 2026-11-25 19:07
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 21:09
+  note: verified — evidence checks green, closing itself
