@@ -1,0 +1,40 @@
+id: dispatch-queue-approval-gate
+title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
+column: backlog
+updated: 2026-11-25 21:05
+priority: medium
+tags:
+- dispatch
+- ops
+- security
+spec: 'Follow-up from card awx-aap-rbac-approval-gates (decision: do-not-adopt-AWX). Decision record: docs/ssot/jobs/infrastructure/2026-11-25-awx-aap-rbac-approval-gates-decision.yml.
+
+
+  Target: /home/tony/ansible on idc02 — NOTE queue/, scripts/, playbooks/dispatch_job.yml, playbooks/queue_operations.yml
+  are UNTRACKED and repo has no remote; git init + remote first so changes are reviewable.
+
+
+  Changes:
+
+  1. queue/queue_manager.py — enqueue() resolves user from getpass.getuser()/SUDO_USER (reject --user mismatch unless
+  explicit override); add approve/reject/pending subcommands; approval fields approval_state/approved_by/approved_at/approval_reason
+  on queue:job:{id}; pending jobs live in queue:pending:{priority}, LPUSH to queue:jobs:{priority} only on approve.
+
+  2. approval_policy.yml at repo root — require_approval_when: job_gpus>0 OR priority<=2 OR ''gpu'' in require_tags.
+
+  3. queue/scheduler.py — expiry sweep in _tick: pending > approval_ttl_sec (24h) -> approval_state=expired + queue:events
+  publish. No dequeue() change needed.
+
+  4. playbooks/queue_operations.yml — operation=approve/reject/pending mapped to the CLI.
+
+
+  Verify (card spec): dry-run-gated path with one approved + one rejected job — enqueue gpu job -> awaiting_approval,
+  queue stays empty; approve -> scheduler dispatches; second job reject -> never dispatched, visible via list --status
+  rejected.'
+note: Spawned by awx-aap-rbac-approval-gates decision record. AWX survey found zero AWX/AAP on fleet; enforcement
+  must live in the queue itself.
+ref: OPS-1411
+comms:
+- at: 2026-11-25 21:05
+  from: devin
+  text: card captured via board-api
