@@ -104,6 +104,18 @@ class DoArchiveTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mod.do_archive(_card(column="review"), "devin", min_days=0)
 
+    def test_date_only_updated_parses(self):
+        # auto-generated cards (runner-auto-*, disk-auto-*, cms-auto-*)
+        # stamp updated date-only '%Y-%m-%d' — the door must not reject
+        # them as unparseable or they can never archive (KNB-1178)
+        old = (dt.datetime.now() - dt.timedelta(days=30)).strftime(
+            "%Y-%m-%d")
+        self.assertIn("archived", self.mod.do_archive(
+            _card(updated=old), "devin"))
+        fresh = dt.datetime.now().strftime("%Y-%m-%d")
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(updated=fresh), "devin")
+
 
 class SweepPlanTest(unittest.TestCase):
     """archive-done.py plan(): verified first, then oldest done to cap."""
@@ -137,6 +149,22 @@ class SweepPlanTest(unittest.TestCase):
             self.assertEqual(total, 5)
             self.assertEqual([c["id"] for c in verified], ["v1"])
             self.assertEqual([c["id"] for c in capped], ["u-old", "u-mid"])
+
+    def test_date_only_updated_is_a_candidate(self):
+        # auto-card date-only stamps must not be invisible to the sweep
+        with tempfile.TemporaryDirectory() as td:
+            old = (dt.datetime.now() - dt.timedelta(days=30)).strftime(
+                "%Y-%m-%d")
+            c = _card(updated=old)
+            c["id"] = "auto-old"
+            Path(td, "auto-old.yml").write_text(yaml.safe_dump(c))
+            mod = self._sweep(td)
+            try:
+                total, verified, capped = mod.plan(7.0, 600)
+            finally:
+                os.environ.pop("KANBAN_CARD_DIR", None)
+            self.assertEqual(total, 1)
+            self.assertEqual([c["id"] for c in verified], ["auto-old"])
 
     def test_request_carries_days_to_the_write_door(self):
         with tempfile.TemporaryDirectory() as td:

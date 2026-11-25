@@ -275,6 +275,45 @@ class GetRoutingTest(unittest.TestCase):
         self.assertNotIn("comms", first)
         self.assertEqual(first["action_status"], "queued")
 
+    def test_cards_id_resolves_archived_card(self):
+        # KNB-1178 — archived cards leave the live board set but an
+        # id= lookup still resolves them via the archive index, the
+        # same contract /card/<id> honours.
+        adir = self.mod.CARD_DIR / "archive"
+        adir.mkdir(exist_ok=True)
+        arch = {"id": "c-arch", "title": "Old", "column": "done",
+                "ref": "OPS-9", "updated": "2026-09-01 00:00",
+                "comms": [{"at": "t", "from": "a", "text": "arch"}]}
+        (adir / "c-arch.yml").write_text(json.dumps(arch))
+        self.addCleanup(
+            lambda: ((adir / "c-arch.yml").unlink(missing_ok=True),
+                     adir.rmdir(),
+                     self.mod._ARCHIVE_INDEX.update(t=0.0)))
+        self.mod._ARCHIVE_INDEX["t"] = 0.0  # force index rebuild
+
+        st, body = self.get("/cards?id=c-arch")
+        self.assertEqual(st, 200)
+        self.assertEqual(body["total"], 1)
+        self.assertEqual(body["cards"][0]["id"], "c-arch")
+        self.assertEqual(body["cards"][0]["title"], "Old")
+
+        # ref-key resolution matches /card/<id> archive-index semantics
+        st, body = self.get("/cards?id=OPS-9&compact=1")
+        self.assertEqual(body["cards"][0]["id"], "c-arch")
+        self.assertNotIn("comms", body["cards"][0])
+
+        # remaining filters still apply to the archived hit
+        st, body = self.get("/cards?id=c-arch&column=review")
+        self.assertEqual(body["total"], 0)
+        st, body = self.get("/cards?id=c-arch&column=done")
+        self.assertEqual(body["total"], 1)
+
+        # live id and unknown id behaviour unchanged
+        st, body = self.get("/cards?id=c-one")
+        self.assertEqual(body["cards"][0]["id"], "c-one")
+        st, body = self.get("/cards?id=nosuch")
+        self.assertEqual(body["total"], 0)
+
     def test_gzip_when_client_accepts(self):
         st, h, raw = self.get_raw("/cards", {"Accept-Encoding": "gzip"})
         self.assertEqual(st, 200)

@@ -40,6 +40,18 @@ def _act(card: dict) -> dict:
     a = card.get("action")
     return a if isinstance(a, dict) else {}
 
+
+def _parse_updated(upd: str):
+    """Hand-edited cards stamp updated '%Y-%m-%d %H:%M'; auto-generated
+    cards (runner-auto-*, disk-auto-*, cms-auto-*) stamp date-only
+    '%Y-%m-%d' — both parse. Anything else returns None (skipped)."""
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return dt.datetime.strptime(upd, fmt)
+        except ValueError:
+            continue
+    return None
+
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR = Path(os.environ.get(
     "KANBAN_CARD_DIR", REPO / "docs/ssot/kanban/cards"))
@@ -63,11 +75,8 @@ def scan(days: float) -> tuple[int, list[dict]]:
         if c.get("column") != "done":
             continue
         upd = str(c.get("updated") or "")
-        try:
-            when = dt.datetime.strptime(upd, "%Y-%m-%d %H:%M")
-        except ValueError:
-            continue
-        if when >= cutoff:
+        when = _parse_updated(upd)
+        if when is None or when >= cutoff:
             continue
         open_req = any(not r.get("answer") for r in (c.get("requests") or [])
                        if isinstance(r, dict))

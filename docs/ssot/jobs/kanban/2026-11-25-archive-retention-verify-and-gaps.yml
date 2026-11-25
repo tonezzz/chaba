@@ -1,0 +1,98 @@
+title: KNB-1178 archive retention — verify lane, close /cards?id= gap, date-only updated tolerance
+subtitle: Dispatch re-queue audit of the done-card archive lane; two small fixes landed
+icon: archive
+version: 1
+
+card: kanban-retention-archive-done-cards-olde-bba115
+date: 2026-11-25
+dispatch: 20261125-155532-proposal-devin-2026-11-08-disc
+
+summary: |
+  The card was re-queued by the overnight dispatcher although the archive
+  lane shipped 2026-11-08 (PRs #120/#121) and was extended 2026-11-09
+  (card cap, commit 2049bf1d76). This run verified the whole lane end to
+  end and fixed the two real gaps found:
+
+  1. /cards?id=<archived> returned an empty page even though /card/<id>
+     resolved archived cards via the 60s archive index — the spec's
+     "archive stays searchable" clause only half-held. do_GET /cards now
+     falls back to _archive_index() on an id= miss and re-runs
+     card_query over the archived card with the id param removed, so
+     column/action_status/since/fields/comms_tail filters still apply.
+  2. Auto-generated cards (runner-auto-*, disk-auto-*, cms-auto-*,
+     audit-auto-*) stamp `updated` date-only ('%Y-%m-%d') — archive-done.py
+     scan() skipped them as unparseable and do_archive rejected them, so
+     they could NEVER archive. Both sides now accept '%Y-%m-%d' in
+     addition to '%Y-%m-%d %H:%M' (mirrored _parse_updated helpers).
+
+state_verified:
+  - scripts/board/archive-done.py — daily sweep, --apply via board-api
+    /action do=archive; --cap 600 archives oldest done >7d verified-or-not
+    (never cards with unanswered requests); dry-run default
+  - board-api do=archive/do=unarchive + _archive_move/_unarchive_move +
+    _archive_index (60s TTL, id/ref/stem keys) — reversible, comms-audited
+  - systemd/chaba-kanban-archive.timer — daily 04:20 + 300s jitter,
+    installed on idc03 served checkout
+  - docs/ssot/kanban/cards/archive/ — 1176 archived cards (off-board,
+    non-recursive glob, still in git)
+  - render-board2.py writes cards.json (799 live) + archive.json (1176) +
+    archive.html standalone browser; board2 nav has the archive link;
+    done column pages at 100 + show-more (PR #125 — spec Phase 3)
+  - live checks: /health ok; /card/ada-acl-explain (archived) resolves;
+    /cards?limit=1 total=799 matches local render count
+
+findings:
+  starvation_window: |
+    Dry-run today: 0 verified + 0 cap candidates — every parseable done
+    card (640/646) has updated <24h old. Cause: this morning's batch of
+    "<host> defers: installed runner-agent drifted" comms (07:43-07:51,
+    con01 et al.) — stale runner-agent snapshots lacked the KNB-0036
+    off-queue gate and noted defer reasons on done cards; every comm
+    bumps `updated`, resetting the 7d archive clock. The drift itself
+    converged ~15:42 (dispatch outcome 20261025-154725: all fleet hosts
+    byte-match the pin), and current runner-agent code skips
+    non-backlog/doing columns for defer notes, so the spam source is
+    gone. Expect candidates to re-appear as stamps age past 7d
+    (~2026-12-01+). If a faster catch-up is wanted, archive-done.py
+    --days N is the bounded recovery pass (do_archive min_days door).
+  precedent: |
+    Same starvation happened 2026-11-21 when a bulk YAML rewrite stamped
+    `updated` on every card — the min_days/--days escape hatch was added
+    for exactly this (see do_archive docstring).
+  auto_cards: |
+    6-11 done auto-cards (runner-auto-*, disk-auto-*, cms-auto-where-*)
+    carry date-only updated stamps from runner-fleet-health.py /
+    disk-trend-watch.py `today = strftime('%Y-%m-%d')` — now archivable
+    once they age past the threshold.
+
+decisions:
+  - archive-via-file-move over archive-column-value — shipped design
+    (cards/archive/*.yml) beats the spec's literal column=archive +
+    lazy archive.json: payload shrinks harder and /card/<id> + mutations
+    stay resolvable through the index; archive.html covers deep browsing
+  - /cards?id= fallback scoped to id-lookups only — column/status/since
+    filters remain live-board queries; archived cards keep column=done
+    in YAML so set-filters would mislead
+  - reader-side date tolerance over producer format change — the auto
+    producers' date-only stamp is load-bearing for their opened-age
+    logic (runner-fleet-health upsert_card parses '%Y-%m-%d')
+
+verify: |
+  python3 -m pytest tests/board/test_archive.py \
+      tests/board/test_board_api_reads.py -x -q   # 59 passed
+  python3 -m pytest tests/board/ -x -q           # 1040 passed
+  python3 scripts/render-board2.py               # writes cards.json +
+                                                 # archive.json + archive.html
+  python3 scripts/board/archive-done.py          # dry-run candidate list
+  live (post-merge): GET /cards?id=<archived-slug> returns the card;
+  GET /cards?id=<archived>&column=review returns total 0.
+
+lessons:
+  - defer-note comms bump `updated` — automated noise on done cards
+    resets the archive age clock; off-queue cards must never get
+    producer comms (KNB-0036 gate exists in current runner-agent; stale
+    snapshots predate it)
+  - auto-card producers stamp `updated` date-only — any age-gated sweep
+    must parse '%Y-%m-%d' as well as '%Y-%m-%d %H:%M'
+  - card re-queues can be stale action flags — verify shipped state
+    before re-implementing; this card's lane was live since 11-08

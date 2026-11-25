@@ -1691,6 +1691,19 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     return f"moved to {col}"
 
 
+def _parse_updated(upd: str):
+    """Card `updated` stamps: hand-edited cards carry '%Y-%m-%d %H:%M';
+    auto-generated cards (runner-auto-*, disk-auto-*, cms-auto-*) stamp
+    date-only '%Y-%m-%d'. Both parse — mirrors archive-done.py's
+    _parse_updated so the sweep's candidates pass this door."""
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(upd, fmt)
+        except ValueError:
+            continue
+    return None
+
+
 def do_archive(card: dict, frm: str, cap: bool = False,
                min_days: float | None = None) -> str:
     """Eligibility gate for /action do=archive — the file move itself is
@@ -1714,11 +1727,10 @@ def do_archive(card: dict, frm: str, cap: bool = False,
                    if isinstance(r, dict)):
         raise ValueError("cap archive skips cards with unanswered requests")
     upd = str(card.get("updated") or "")
-    try:
-        dt = datetime.strptime(upd, "%Y-%m-%d %H:%M")
-    except Exception:
+    when = _parse_updated(upd)
+    if when is None:
         raise ValueError(f"unparseable updated: {upd!r}")
-    age = (datetime.now() - dt).days
+    age = (datetime.now() - when).days
     floor = ARCHIVE_MIN_DAYS if min_days is None else float(min_days)
     if age < floor:
         raise ValueError(
@@ -6041,8 +6053,25 @@ class H(BaseHTTPRequestHandler):
             q = parse_qs(url.query)
             if not q:
                 return self._send(200, payload)
-            return self._send(
-                200, card_query(payload.get("cards") or [], q))
+            res = card_query(payload.get("cards") or [], q)
+            # Archived cards leave the live board set — an id= lookup
+            # that misses still resolves them through the archive index,
+            # the same contract /card/<id> already honours (KNB-1178).
+            cid = _q1(q, "id")
+            if cid and not res.get("cards"):
+                ap = _archive_index().get(cid)
+                hit = None
+                if ap is not None:
+                    try:
+                        hit = load(ap)
+                    except Exception:
+                        hit = None
+                if hit is not None:
+                    hit.setdefault("id", ap.stem)
+                    q2 = dict(q)
+                    q2.pop("id", None)  # resolved — remaining filters apply
+                    res = card_query([hit], q2)
+            return self._send(200, res)
         if path == "/card" or path == "/card/":
             return self._send(400, {
                 "error": "missing card id",
