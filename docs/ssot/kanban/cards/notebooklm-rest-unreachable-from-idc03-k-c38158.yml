@@ -1,7 +1,7 @@
 id: notebooklm-rest-unreachable-from-idc03-k-c38158
 title: NotebookLM REST unreachable from idc03 (kraut session-close failures)
 column: doing
-updated: 2026-11-25 19:07
+updated: 2026-11-25 19:08
 spec: 'Revalidated 2026-11-20; this is still live, not superseded by the service move. The idc03 ada-ai-kraut service
   is active, but its EnvironmentFile ~/.config/secrets/michael-ha/backend.env sets NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1
   (tony-dell). From idc03, GET http://100.68.142.13:3011/health/auth fails to connect (HTTP 000). The service is
@@ -160,6 +160,16 @@ comms:
 - at: 2026-11-25 19:07
   from: mn01
   text: claimed
+- at: 2026-11-25 19:08
+  from: chaba
+  text: started devin-task-20261125-120821-revalidated-2026-11-20-this-is on mn01 (dispatch)
+- at: 2026-11-25 19:08
+  from: chaba
+  text: 'primer injected 8 lesson(s): [devin-session-audit-2026-10-29] AUD-0021 complete: OPS-0732 was revalidated
+    as ; [notebooklm-rest-base-url-points-at-dead-b8ef61] primer injected 8 lesson(s): La; Card specs go stale across
+    the grand-rename — always recon the live unit name + ; Gated only lanes whose env actually has NOTEBOOKLM_REST_BASE_URL
+    (grep ~/.config; Lane env `NOTEBOOKLM_REST_BASE_URL` points at a masked-dead service on tony-dell; Verify-by-surface:
+    /status 200 was true while the cast path w'
 action:
   type: dispatch
   status: running
