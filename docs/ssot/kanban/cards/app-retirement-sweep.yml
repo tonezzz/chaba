@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
-column: backlog
-updated: 2026-11-25 07:35
+column: done
+updated: 2026-11-25 07:38
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -269,9 +269,12 @@ comms:
 - at: 2026-11-25 07:35
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 07:38
+  from: chaba
+  text: 'answer-sweep: executed ''retire-as-proposed'' -> moved to done'
 action:
   type: dispatch
-  status: idle
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-omen
@@ -297,6 +300,7 @@ requests:
   - hold
   suggested: retire-as-proposed
   answer: retire-as-proposed
+  executed: 2026-11-25 close
 - id: job-input-app-retirement-sweep
   ask: 'Job needs your input: Approve the app-retirement retire/keep list on card app-retirement-sweep?'
   status: open
