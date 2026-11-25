@@ -1,7 +1,7 @@
 id: idc02-audit-census-reconcile
 title: idc02 audit-hosts census reconcile — expected_services drift red
-column: doing
-updated: 2026-11-25 14:43
+column: review
+updated: 2026-11-25 14:49
 priority: low
 tags:
 - audit
@@ -92,12 +92,41 @@ comms:
     retired per camwall-retire-to-wiki, vcast-real-macbook superseded by vcast-real@6/@7, 6 retired ada-code/jack
     quadlets, mddb-lab-pull.timer), 8 OPS-0725 migration services declared, 3 oneshots retyped, ada-stt -> expected_state:inactive,
     7 failed oneshots whitelisted in known'
+- at: 2026-11-25 14:49
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-141240-found-during-idc02-second-ada-.service:
+    Failed to ope'
+- at: 2026-11-25 14:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 14:49
+  from: chaba
+  text: 'session-end checkpoint 5e249817: 4 leftover file(s) committed'
+- at: 2026-11-25 14:49
+  from: chaba
+  text: banked 664 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 14:49
+  from: chaba
+  text: pushed dispatch/20261125-141240-found-during-idc02-second-ada- to origin
+- at: 2026-11-25 14:49
+  from: chaba
+  text: "auto-merge not done: push: To github.com:tonezzz/chaba.git\n ! [rejected]              HEAD -> master (fetch
+    first)\nerror: failed to push some refs to 'github.com:tonezzz/chaba.git'\nhint: Updates were rejected because
+    the remote — close will block until merged"
+- at: 2026-11-25 14:49
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-141240-found-during-idc02-second-ada-,
+    branch dispatch/20261125-141240-found-during-idc02-second-ada-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-141240-found-during-idc02-second-ada-.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-141240-found-during-idc02-second-ada-.service:
+    No such file or directory'
 claim:
   since: 2026-11-25 14:11
+review_kind: verify
