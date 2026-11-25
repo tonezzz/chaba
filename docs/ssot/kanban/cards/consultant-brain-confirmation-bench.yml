@@ -223,14 +223,16 @@ comms:
 - at: 2026-11-25 14:43
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 14:43
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: mn01
-  attempts: 1
+  attempts: 0
   sweep:
     stale_running: 2026-11-24 23:24
     dirty: 1
@@ -252,4 +254,3 @@ requests:
     action: hold
   escalated_at: 2026-11-25 11:23
   answer: answer
-awaiting_action: true
