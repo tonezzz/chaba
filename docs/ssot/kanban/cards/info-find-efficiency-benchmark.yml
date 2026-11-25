@@ -1,0 +1,25 @@
+id: info-find-efficiency-benchmark
+title: Decide info-find usage from efficiency benchmark
+column: done
+updated: 2026-11-25 09:25
+brief: 'Benchmark #219: direct bounded grep beat info-find on all 8 tasks; keep info-find optional, no enforcement.'
+priority: low
+program: chaba-ci
+tags:
+- benchmark
+- opencode
+- info-find
+spec: 'Evidence: evals/info-find-efficiency/{tasks.json,run.py,results.json,report.md,README.md}; PR #219 squash-merged
+  (7f448d70b9); 4 grader tests pass. Medians: narrow info-find 1703 tok/7616ms vs direct 92 tok/18ms; cross info-find
+  1699 tok/5487ms vs direct 825 tok/304ms; correctness 0/8 vs 8/8. Decision rule (cross adopt only at <=70% tokens
+  with equal correctness) not met. Outcome: keep direct tools for narrow lookups; leave info-find optional for cross-source
+  discovery pending better routing/queries.'
+ref: BEN-1359
+comms:
+- at: 2026-11-25 09:25
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 09:25
+  from: devin
+  text: 'DONE 2026-11-25: benchmark built and run; decision = no enforcement, keep info-find optional. See PR #219
+    and evals/info-find-efficiency/report.md. Directional evidence only (8 tasks, offline, bytes/4 token proxy).'
