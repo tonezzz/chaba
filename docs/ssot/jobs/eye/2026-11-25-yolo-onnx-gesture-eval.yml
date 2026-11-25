@@ -1,0 +1,135 @@
+title: eye — YOLO-vs-MediaPipe eval, in-browser ONNX Runtime Web prototype
+subtitle: >
+  Card explore-yolo-for-gesture-control-in-apps-8e27eb (OPS-1392). Prototype
+  landed: /apps/eye/?det=yolo runs a YOLO26n HaGRID hand-gesture model
+  entirely in-browser via vendored onnxruntime-web (WebGPU EP preferred,
+  WASM EP fallback). Default det=mediapipe is unchanged.
+icon: eye
+
+planning:
+  goal: >
+    Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime
+    Web/WebGPU) for hand gesture detection in /apps/eye/. Done-condition:
+    working prototype integrated into /apps/eye/ running YOLO gesture
+    detection locally via ORT Web/WebGPU + documented perf eval vs
+    MediaPipe. Local execution, no external API.
+  scope: >
+    chaba repo only — stacks/web/public/apps/eye/, apps/vendor/onnxruntime-web/.
+    Deploy to tony-dell edge NOT done (dispatch constraint: worktree only,
+    no push/deploy) — files verified via local static server + headless
+    Chrome on the dispatch host.
+
+processing:
+  status: completed
+  started_at: "2026-11-25T20:20+07"
+  steps:
+    - id: 1
+      label: model selection
+      status: done
+      notes: >
+        First pick Neural-Hacker/hand_gesture_yolo (YOLOv8n INT8 ONNX,
+        3.2MB) — REJECTED: its QDQ graph casts activations to float16 and
+        feeds fp16 into DynamicQuantizeLinear; ORT rejects it at session
+        create ("INVALID_GRAPH", verified with onnxruntime 1.32 CPU too —
+        the file is broken for every ORT consumer, not just web).
+        Second pick: SuperSura/hand-gesture-yolo26n (.pt, Apache-2.0,
+        YOLO26n on HaGRID 12 gesture classes, mAP50 0.994 claimed) —
+        exported locally: ultralytics 8.4.218, opset 12, imgsz 640,
+        simplify=True → model-yolo.onnx (9.8MB FP32, out [1,16,8400],
+        scores already probabilities — no sigmoid in postprocess).
+        Classes: like palm fist peace ok one three four call point grip
+        middle_finger.
+    - id: 2
+      label: runtime vendoring
+      status: done
+      notes: >
+        onnxruntime-web@1.31.1 → apps/vendor/onnxruntime-web/: bundle
+        ort.webgpu.bundle.min.mjs + wasm binaries the bundle actually
+        fetches (ort-wasm-simd-threaded.asyncify.{mjs,wasm} for the WASM
+        EP — NOT the plain .wasm, and .jsep.{mjs,wasm} for WebGPU EP).
+        ~70MB vendored. Gotcha: ort.webgpu.bundle.min.mjs references only
+        the asyncify build by literal name; missing it surfaces as
+        "previous call to 'initWasm()' failed".
+    - id: 3
+      label: integration
+      status: done
+      notes: >
+        eye-yolo.js exports createYoloDetector() mirroring the
+        ObjectDetector slice eye.js uses; eye.js gained ?det=yolo
+        (default mediapipe unchanged), awaits detectForVideo (yolo is
+        async), MODEL string gains -<variant>/<ep>. New ?src=img:<path>
+        loads a static file under /apps/eye/ for camera-free bench/det
+        checks; eye/test/hagrid-*.jpg are 4 HaGRID samples (call/stop).
+        Letterbox 640 + NCHW /255 preprocess, greedy per-class NMS
+        (IoU 0.5, score 0.35, max 12) in JS.
+    - id: 4
+      label: verification + bench
+      status: done
+      notes: >
+        Headless Chrome (real time, puppeteer-core) on dispatch host
+        (i7-6700HQ-class, no COOP/COEP → ORT wasm numThreads falls back
+        to 1): hagrid-call-0/2 → "call 0.88–0.90" single box — real
+        gesture detection confirmed end-to-end. WebGPU EP path also
+        verified functional under SwiftShader flags (correct EP selected,
+        session+run ok; 15s/frame is software-rendering noise, not a GPU
+        number). MDDB POST 501s locally — expected, no edge route on a
+        bare static server.
+
+decisions:
+  - label: keep MediaPipe as default; YOLO behind ?det=yolo
+    rationale: >
+      Measured on the only benchable host: WASM-EP YOLO26n-fp32 p50
+      ~410–420ms vs MediaPipe efficientdet-lite0-int8 p50 ~103–116ms
+      (~3.5–4x slower, ~2.4fps vs ~9fps). MediaPipe also detects 80
+      COCO object classes; the YOLO model knows 12 hand gestures —
+      different semantics, not a drop-in replacement. WebGPU EP numbers
+      on real GPUs are unmeasured (no GPU on dispatch host) — that's the
+      open question for a follow-up on tony-dell/omen hardware.
+    alternatives_considered: >
+      dynamic-INT8 ONNX (quantize_dynamic, 2.8MB): REJECTED by
+      measurement — ORT-web WASM pays DynamicQuantizeLinear per
+      activation, p50 2665ms ≈ 6.5x slower than FP32. Static-QDQ INT8
+      (ConvInteger path) remains a possible future win but needs
+      calibration data; the one ready HF QDQ model was fp16-broken.
+  - label: YOLO26n/HaGRID over yolov8-family gesture models on HF
+    rationale: >
+      The HF ONNX gesture models are either broken (Neural-Hacker fp16
+      QDQ) or impractically large (lewiswatson yolov8x ~130MB). The
+      SuperSura .pt is small (5.4MB), Apache-2.0, 12 real gesture
+      classes, and ultralytics exports clean FP32 ONNX.
+    alternatives_considered: >
+      cj-mills/yolox-hagrid-onnx (YOLOX-tiny, MIT, ready ONNX, 18
+      HaGRID classes) — viable fallback but different architecture/
+      decode and only 'tiny'; kept in pocket.
+
+results:
+  bench_host: dispatch host (Linux x86_64, i7-6700HQ, headless Chrome,
+    single-thread wasm — no COOP/COEP so ORT numThreads=1)
+  src: img:test/hagrid-*.jpg, n=12 frames each
+  yolo26n-fp32/wasm: { infer_p50_ms: 419, infer_p95_ms: 632, fps: 2.4,
+    load_ms: 1263, model_mb: 9.8 }
+  yolo26n-fp32/wasm (2nd img): { infer_p50_ms: 410, infer_p95_ms: 633,
+    fps: 2.4, load_ms: 1280 }
+  mediapipe efficientdet-lite0-int8: { infer_p50_ms: 103, infer_p95_ms: 262,
+    fps: 9.7, load_ms: 277, model_mb: 4.4 }
+  mediapipe (2nd img): { infer_p50_ms: 116, infer_p95_ms: 247, fps: 8.6,
+    load_ms: 294 }
+  webgpu_ep_swiftshader: { infer_p50_ms: 15258, note: "software
+    rasterizer — functional proof only, not a GPU datapoint" }
+  verdict: >
+    On CPU/WASM the YOLO prototype runs correctly but is ~4x slower than
+    the MediaPipe baseline — not a replacement on weak edge CPUs. Its
+    value is gesture semantics (12 hand-gesture classes vs COCO objects)
+    and the WebGPU EP path, which needs a real-GPU bench on tony-dell or
+    omen before any cutover decision. Recommended next step: re-run
+    ?det=yolo&bench=60 on a WebGPU host and compare; only then consider
+    swapping the default.
+
+followups:
+  - "Real-GPU WebGPU bench of ?det=yolo on tony-dell/tony-omen (card or
+     quick manual run) — the number that decides replace-vs-keep."
+  - "If WebGPU wins: consider static-QDQ INT8 export for smaller/faster
+     WASM fallback; dynamic quant measured slower."
+  - "Deploy note: ~70MB vendored ORT wasm is heavy first-load on slow
+     links — wasmPaths are fetched lazily per EP, but jsep.wasm (29MB)
+     only downloads when navigator.gpu exists."

@@ -9,6 +9,7 @@
  *   ?src=vms:<channel>   fresh xmeye frame via /apps/vms-snap proxy
  *                        (mn01 shim ~10s/capture; serial polling)
  *   ?src=test            synthetic frames — no camera needed
+ *   ?src=img:<path>      static image under /apps/eye/ (bench/det checks)
  *
  * Detection: MediaPipe tasks-vision ObjectDetector, efficientdet-lite0
  * int8 (~4.4MB), VIDEO mode, drawn on an overlay canvas. Runs entirely
@@ -24,12 +25,17 @@
  * Off by default; point a cast at ?src=...&pub=10 to give Ada eyes.
  */
 import { FilesetResolver, ObjectDetector } from '../vendor/mediapipe/vision_bundle.mjs';
+import { createYoloDetector } from './eye-yolo.js';
 
 const params = new URLSearchParams(location.search);
 const src = params.get('src') || 'me';
 const benchN = parseInt(params.get('bench') || '0', 10);
 const pubSec = parseFloat(params.get('pub') || '0');
-const MODEL = 'efficientdet_lite0_int8';
+// ?det=yolo swaps MediaPipe ObjectDetector for an in-browser YOLO26n
+// hand-gesture model via ONNX Runtime Web (WebGPU EP, WASM fallback) —
+// see eye-yolo.js. Default stays mediapipe (unchanged behaviour).
+const DET = params.get('det') === 'yolo' ? 'yolo' : 'mediapipe';
+let MODEL = DET === 'yolo' ? 'yolo26n-handgesture' : 'efficientdet_lite0_int8';
 // Same-origin MDDB write lane (edge route eye-mddb -> mddb /v1/add,
 // tailnet-identity gated). Cross-origin to idc03 never worked — there is
 // no /mddb mount on that edge.
@@ -47,13 +53,18 @@ let bench = null;
 
 async function loadDetector() {
   const t0 = performance.now();
-  const vision = await FilesetResolver.forVisionTasks('/apps/vendor/mediapipe/');
-  detector = await ObjectDetector.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: '/apps/eye/model.tflite' },
-    scoreThreshold: 0.35,
-    runningMode: 'VIDEO',
-    maxResults: 12,
-  });
+  if (DET === 'yolo') {
+    detector = await createYoloDetector();
+    if (detector.ep) MODEL += `-${detector.variant}/${detector.ep}`;
+  } else {
+    const vision = await FilesetResolver.forVisionTasks('/apps/vendor/mediapipe/');
+    detector = await ObjectDetector.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: '/apps/eye/model.tflite' },
+      scoreThreshold: 0.35,
+      runningMode: 'VIDEO',
+      maxResults: 12,
+    });
+  }
   return Math.round(performance.now() - t0);
 }
 
@@ -100,6 +111,11 @@ async function startStream() {
     const name = src.slice(4);
     srcEl.textContent = `source: vms:${name} (fresh xmeye snap)`;
     return `vms:${name}`;
+  } else if (src.startsWith('img:')) {
+    // Static image (e.g. a downloaded hand photo under eye/test/) —
+    // bench/det verification without a camera or stream.
+    srcEl.textContent = `source: img:${src.slice(4)}`;
+    return `img:${src.slice(4)}`;
   } else if (src.startsWith('snap:')) {
     const name = src.slice(5);
     // Snapshot refresh -> draw frames onto a synthetic video-like path:
@@ -111,7 +127,7 @@ async function startStream() {
     return name;
   }
   throw new Error(`unknown src "${src}" — me | cam:<name> | ` +
-    `snap:<name|zone/key> | vms:<channel> | test`);
+    `snap:<name|zone/key> | vms:<channel> | img:<path> | test`);
 }
 
 let snapImg = null;
@@ -146,7 +162,10 @@ async function snapFrame(name) {
     document.getElementById('stage').insertBefore(snapImg, overlay);
   }
   let url;
-  if (name.startsWith('vms:')) {
+  if (name.startsWith('img:')) {
+    // Static file relative to /apps/eye/ — loaded once, no cache-bust.
+    url = `/apps/eye/${name.slice(4)}`;
+  } else if (name.startsWith('vms:')) {
     // Fresh xmeye capture through the same-origin vms-snap proxy
     // (mn01 shim clicks the channel in the VMS desktop ~10s/frame).
     url = `/apps/vms-snap/snap?ch=${encodeURIComponent(name.slice(4))}&native=1&r=${Date.now()}`;
@@ -281,8 +300,9 @@ async function loop(snapName, modelLoadMs) {
                 : (vid.readyState >= 2 && vid.videoWidth > 0);
     if (ready) {
       const t0 = performance.now();
-      // VIDEO-mode API accepts any ImageSource (video/img/canvas).
-      const res = detector.detectForVideo(srcEl2, t0);
+      // VIDEO-mode API accepts any ImageSource (video/img/canvas);
+      // the yolo adapter is async — await covers both.
+      const res = await detector.detectForVideo(srcEl2, t0);
       const ms = performance.now() - t0;
       const dets = res.detections || [];
       draw(dets);

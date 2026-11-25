@@ -42,9 +42,13 @@ whoever displays the page does the compute.
 | `snap:<zone>/<key>` | camwall last-good thumb 2s poll | **xmeye/DVR channels** (vms-noble-club, vms-noble-a, ...) + every pulled zone |
 | `vms:<channel>` | fresh xmeye frame via `/apps/vms-snap` proxy | ~10s/capture on mn01 VMS desktop, serial |
 | `test` | synthetic animated frames | no camera needed; bench-safe |
+| `img:<path>` | static file under `/apps/eye/` | bench/det checks without a camera (e.g. `img:test/hagrid-call-0.jpg`) |
 
 Other params: `?bench=N` (N-frame bench → MDDB `bench/edge-*`),
-`?pub=N` (rewrite `eye/latest` every N s for ada_look).
+`?pub=N` (rewrite `eye/latest` every N s for ada_look),
+`?det=yolo` (experimental YOLO26n hand-gesture detector via vendored
+onnxruntime-web — WebGPU EP preferred, WASM fallback; eval + numbers in
+`docs/ssot/jobs/eye/2026-11-25-yolo-onnx-gesture-eval.yml`).
 
 ## Lanes
 
