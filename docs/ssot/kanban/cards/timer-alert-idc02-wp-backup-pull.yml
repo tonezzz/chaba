@@ -1,14 +1,14 @@
 id: timer-alert-idc02-wp-backup-pull
 title: Timer wp-backup-pull on idc02 failing
 column: backlog
-updated: 2026-11-25 07:45
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 05:30) of `wp-backup-pull.service` on `idc02` result=exit-code — investigate journal:
-  `journalctl --user -u wp-backup-pull.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-25 05:30) of `wp-backup-pull.service` on `idc02` result=exit-code — investigate journal: `journalctl
+  --user -u wp-backup-pull.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: OPS-1344
 comms:
 - at: 2026-11-25 05:44
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-25 05:54
   from: devin
-  text: '[still suspicious] Last run (11-25 05:30) of `wp-backup-pull.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u wp-backup-pull.service` on the host. See CMS `timer-timeline-idc02`.'
+  text: '[still suspicious] Last run (11-25 05:30) of `wp-backup-pull.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u wp-backup-pull.service` on the host. See CMS `timer-timeline-idc02`.'
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -25,8 +25,12 @@ comms:
 - at: 2026-11-25 13:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Goal is to investigate and resolve the failure of the `wp-backup-pull.service` timer on `idc02`
-  that resulted in an exit-code on 11-25 05:30. The runner must log into `idc02`, inspect the user journal
-  using `journalctl --user -u wp-backup-pull.service`, and check the CMS `timer-timeline-idc02`. The done-condition
-  is verified when the root cause of the timer failure is identified and documented on the card, or when
-  a successful manual run of `wp-backup-pull.service` completes with exit status 0.
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Goal is to investigate and resolve the failure of the `wp-backup-pull.service` timer on `idc02` that resulted
+  in an exit-code on 11-25 05:30. The runner must log into `idc02`, inspect the user journal using `journalctl --user
+  -u wp-backup-pull.service`, and check the CMS `timer-timeline-idc02`. The done-condition is verified when the
+  root cause of the timer failure is identified and documented on the card, or when a successful manual run of `wp-backup-pull.service`
+  completes with exit status 0.

@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-agent-converge
 title: Timer runner-agent-converge on tony-dell failing
 column: done
-updated: 2026-11-25 16:39
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
@@ -103,6 +103,9 @@ comms:
   from: tony
   text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
     and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
