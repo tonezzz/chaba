@@ -1,0 +1,23 @@
+id: telegram-topic-binding-publish-outbox
+title: Fix telegram topic bindings — publish outbox stuck
+column: backlog
+updated: 2026-11-25 11:04
+brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
+  retries cannot clear them until project/card topic bindings exist.'
+priority: medium
+program: chaba-ci
+tags:
+- board-api
+- telegram
+- outbox
+spec: 'Verified 2026-11-25 on idc03: ~/.local/state/board-api-publish/{outbox,dead}.jsonl has 7 retrying + 22 dead,
+  all sink=telegram, all last_error "telegram relay -> 404: no active topic bound for project=... card=..." (e.g.
+  trade-docs-education-migration, classifier-readonly-audit-class-reroute, ada-engine-contract-suite). POST /publish
+  {op:drain} -> 0 delivered, 7 retrying, 7 pending. State backed up to /tmp/opencode/board-api-publish-backup-20261125/.
+  Fix: bind active telegram topics for the affected projects/cards (or accept/dead-letter deliberately via the owner),
+  then drain again. Do not hand-edit state files without a backup. No credential values were touched.'
+ref: OPS-1386
+comms:
+- at: 2026-11-25 11:04
+  from: tony
+  text: card captured via board-api
