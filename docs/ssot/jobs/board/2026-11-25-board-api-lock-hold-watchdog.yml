@@ -1,0 +1,103 @@
+id: board-api-lock-hold-watchdog-20261125
+title: board-api lock-hold watchdog + bounded flocks + remote-write deadline
+date: 2026-11-25
+card: board-api-wedged-8min-on-hung-outbound-h-389be8
+ref: KNB-1371
+host: idc03 (fix authored in dispatch worktree on tony-dell)
+status: landed-on-dispatch-branch
+
+goal: >
+  2026-11-25 ~09:59-10:07 idc03: chaba-board-api (pid 767125) held
+  FLOCK WRITE on /tmp/board-api.lock AND /tmp/board-api-wp.lock with
+  an ESTABLISHED outbound HTTPS connection to 103.99.11.249:443 (the
+  h3 Plesk WP/MediaWiki origin; 213KB sent, no response). All 51
+  threads parked in futex_wait; GET /cards and /health timed out ~8min
+  until `systemctl --user restart chaba-board-api`.
+
+root-cause: >
+  Every urllib call in the write path already carries a per-socket-op
+  timeout (20-45s), but that is NOT a deadline: a peer that trickles
+  bytes, or a sequential fan-out (/publish drains the whole outbox;
+  /lesson does wp+wiki+mddb), can hold WP_LOCK for minutes-to-forever.
+  Compounding it, render() and the publication outbox/jsonl appends
+  used unbounded blocking fcntl.flock(LOCK_EX) — on py<=3.13 flock
+  holds the GIL while blocked, which freezes EVERY thread including
+  lock-free /health (verified: py3.14 flock does NOT hold the GIL, so
+  the freeze implicates an in-process GIL-holding block, not the
+  socket itself).
+
+what-landed:
+  scripts/board/board-api.py:
+    - >-
+      acquire_lock() returns a _TrackedLock; every held flock is
+      recorded in _held_locks. A daemon watchdog thread
+      (_lock_watchdog_loop, BOARD_API_LOCK_WATCHDOG_S=5) dumps all
+      thread stacks via faulthandler to the journal once per hold
+      episode past BOARD_API_LOCK_HOLD_ALERT_S=120 — the next wedge
+      names its culprit instead of needing a live py-spy mid-outage.
+      /lock-stats now reports held_now + lock_hold_alert_s.
+    - >-
+      render() takes /tmp/board-render.lock (git-safe-pull pull phase
+      + board-render-guard serialize on it) via bounded acquire_lock
+      (BOARD_API_RENDER_LOCK_WAIT_S=30); a busy lock skips the pass —
+      the 60s chaba-board-render timer is the backstop.
+    - >-
+      REMOTE_WRITE_PATHS dispatch extracted to _remote_dispatch() and
+      run under pub.run_bounded(REMOTE_WRITE_DEADLINE_S=300,
+      BOARD_API_REMOTE_DEADLINE_S); deadline -> 504. The orphan
+      finishes lock-free; upsert semantics make late completion +
+      client retry converge.
+    - >-
+      do_publish piggyback drain bounded by PUB_DRAIN_BUDGET_S=60
+      (op:"drain" gets 5x); unreached entries stay pending.
+  scripts/board/publication.py:
+    - >-
+      run_bounded(fn, timeout_s, label): daemon-thread wrapper raising
+      DeadlineError on expiry — the missing total-deadline layer over
+      per-socket-op urllib timeouts.
+    - >-
+      PUB_SINK_DEADLINE_S=240 wraps every sink.publish in
+      publish_event AND Outbox.drain — one hung sink can no longer
+      park WP_LOCK for the whole fan-out; deadline hits land in the
+      outbox like any DeliveryError.
+    - >-
+      Outbox.drain(budget_s=...) caps how long drain keeps launching
+      entries; deferred entries stay pending (res.deferred).
+    - >-
+      _flock_bounded (LOCK_NB + 10s deadline) replaces unbounded
+      fcntl.flock(LOCK_EX) in JsonSink.publish and Outbox._append —
+      ledger appends can no longer GIL-freeze the process.
+  tests/board/test_publication.py: DeadlineTest — run_bounded
+    timeout, hung sink -> queued receipt + outbox entry, drain
+    budget deferral, _flock_bounded timeout.
+  board-api --selftest: hold tracking mark/unmark, watchdog single
+    dump per episode, render() busy-lock skip.
+
+env-knobs:
+  BOARD_API_LOCK_HOLD_ALERT_S: "120 — journal stack dump threshold"
+  BOARD_API_LOCK_WATCHDOG_S: "5 — watchdog tick"
+  BOARD_API_RENDER_LOCK / _WAIT_S: "/tmp/board-render.lock / 30"
+  BOARD_API_REMOTE_DEADLINE_S: "300 — whole remote-write request"
+  PUB_SINK_DEADLINE_S: "240 — per sink delivery"
+  PUB_DRAIN_BUDGET_S: "60 — piggyback drain (drain op: 300)"
+
+verify: >-
+  python3 scripts/board/board-api.py --selftest  # selftest ok
+  python3 -m pytest tests/board/test_publication.py  # 84 passed
+  python3 -m pytest tests/board/test_board_api_mutations.py  # 37 passed
+  python3 -m pytest tests/board/  # 1 unrelated env failure:
+  # test_control_pane_projection needs gitignored generated
+  # stacks/web/public/apps/board2/index.html (render-board2 output)
+
+follow-ups:
+  - >-
+    Other scripts still use unbounded flock(LOCK_EX) but they are
+    separate processes, not the board-api wedge class:
+    board-render-guard.py:83 (alert-card upsert), request-sweep.py,
+    merge-sweep.py, kanban-dispatch.py, answer-sweep.py,
+    review-digest.py, deploy-preflight.py. If any runs inside a
+    long-lived process, bound it the same way.
+  - >-
+    Orphan remote-dispatch threads (post-deadline) can overlap a
+    retry — mitigated by upsert/idempotency-key convergence; watch
+    delivered.jsonl for double deliveries if 504s become common.
