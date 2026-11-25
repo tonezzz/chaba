@@ -1,7 +1,7 @@
 id: board-api-wedged-8min-on-hung-outbound-h-389be8
 title: board-api wedged ~8min on hung outbound HTTPS while holding wp.lock + card flock — all endpoints timed out
 column: doing
-updated: 2026-11-25 12:22
+updated: 2026-11-25 12:31
 priority: high
 tags:
 - bug
@@ -59,6 +59,13 @@ comms:
     [still suspicious] Last run (11-14 07:50; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run
     (11-24 07:50; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run (11-11 07:45; [timer-alert-idc03-chaba-lessons-audit]
     [still suspicious] La'
+- at: 2026-11-25 12:31
+  from: devin
+  text: 'investigating: all urllib write-path calls already carry socket timeouts (20-45s); the freeze signature
+    (all threads futex_wait, both flocks held, /health dead) points at an in-process GIL-holding block, not the
+    socket itself. Found unbounded blocking fcntl.flock(LOCK_EX) in render() (/tmp/board-render.lock, contended
+    by git-safe-pull pull phases + render-guard) and in publication.py outbox/jsonl appends — on py<=3.13 flock
+    holds the GIL, freezing every thread. Fix plan: bounded LOCK_NB everywhe'
 action:
   type: dispatch
   status: running
