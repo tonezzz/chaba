@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
-column: doing
-updated: 2026-11-25 22:06
+column: review
+updated: 2026-11-25 22:16
 priority: low
 tags:
 - embedding
@@ -447,18 +447,42 @@ comms:
     rebuilt: 4,800 judgments; new bge_dense baseline r@5 .315/MRR .656 (not comparable to Nov-7 gate — corpus+qrels
     changed; student-vs-gemini on new qrels is the honest gate). Training: BGE-M3 top-12-layers+head, MSE on teacher,
     con01 CPU detached (~20h, freeze-12 after full-FT OOM'
+- at: 2026-11-25 22:16
+  from: tony-macbook
+  text: 'finished (ok): exit=0 judging, full-FT-on-GPU if promising) are documented in the job doc and card comms.
+    | devin-task-20261125-192217-'
+- at: 2026-11-25 22:16
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 22:16
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-192217-distillation-experiment-option
+    is 296 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 22:16
+  from: chaba
+  text: banked 707 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 22:16
+  from: chaba
+  text: pushed dispatch/20261125-192217-distillation-experiment-option to origin
+- at: 2026-11-25 22:16
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 22:16
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   attempts: 2
-  result: 'exit=0 h-outcome-20261125-164653-distillation-experiment-option.md`. | devin-task-20261125-164653-distillation-experiment-option.service:
-    Consumed 5min 13.552s CPU time over 16min 29.468s wall clock time, 1.1G memory peak, 545.8M memory swap peak.'
+  result: 'exit=0 judging, full-FT-on-GPU if promising) are documented in the job doc and card comms. | devin-task-20261125-192217-distillation-experiment-option.service:
+    Consumed 4min 13.613s CPU time over 2h 52min 22.276s wall clock time, 1.2G memory peak.'
   sweep:
     no_repo: 2026-11-25 17:09
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-25 19:21
 requests:
