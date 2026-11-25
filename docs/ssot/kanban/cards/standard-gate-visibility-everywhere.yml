@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
-column: doing
-updated: 2026-11-25 09:39
+column: review
+updated: 2026-11-25 09:40
 priority: medium
 tags:
 - standard
@@ -227,9 +227,33 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-093530-ops-1097-fixed-per-card-unclai on tony-omen still dirty
     — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:40
+  from: tony-omen
+  text: 'finished (ok): exit=0 ; outcome doc at `dispatch-outcome-20261125-093530-ops-1097-fixed-per-card-unclai.md`.
+    | devin-task-20261125-0935'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-093530-ops-1097-fixed-per-card-unclai'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 4 le'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: banked 225 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:40
+  from: chaba
+  text: pushed dispatch/20261125-093530-ops-1097-fixed-per-card-unclai to origin
+- at: 2026-11-25 09:40
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -238,5 +262,8 @@ action:
   sweep:
     stale_running: 2026-11-25 09:39
     dirty: 4
+  result: 'exit=0 ; outcome doc at `dispatch-outcome-20261125-093530-ops-1097-fixed-per-card-unclai.md`. | devin-task-20261125-093530-ops-1097-fixed-per-card-unclai.service:
+    Consumed 1min 27.232s CPU time over 3min 4.505s wall clock time, 904.8M memory peak.'
 claim:
   since: 2026-11-25 09:33
+review_kind: verify
