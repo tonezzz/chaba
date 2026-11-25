@@ -1,7 +1,7 @@
 id: ada-lane-health-gate-misses-notebooklm-dep
 title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
 column: doing
-updated: 2026-11-25 15:11
+updated: 2026-11-25 15:12
 brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
   NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
   covered by no gate on any lane. Dead dell:3011 ran ~5 weeks (2026-10-17 migration -> 2026-11-25 repoint) with
@@ -68,6 +68,16 @@ comms:
 - at: 2026-11-25 15:11
   from: idc02
   text: claimed
+- at: 2026-11-25 15:12
+  from: chaba
+  text: started devin-task-20261125-151222-found-during-notebooklm-rest-b on idc02 (dispatch)
+- at: 2026-11-25 15:12
+  from: chaba
+  text: 'primer injected 8 lesson(s): [notebooklm-rest-base-url-points-at-dead-b8ef61] primer injected 8 lesson(s):
+    La; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [timer-alert-tony-dell-bank-inspect]
+    2026-11-25 14:35 (+07): Bank-inspect reads ; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] checkpoint failed:
+    commit: ⚠️ ; [doc-draft-verifier-semantic-gap] primer injected 8 lesson(s): idc02''s kanban-di; [runner-per-executor-caps]
+    primer injected 8 lesson(s): Check'
 action:
   type: dispatch
   status: running
