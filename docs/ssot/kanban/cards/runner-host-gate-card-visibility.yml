@@ -1,7 +1,7 @@
 id: runner-host-gate-card-visibility
 title: host-level claim gates skip before per-card eval — no defer note reaches the card
 column: doing
-updated: 2026-11-25 09:27
+updated: 2026-11-25 09:32
 priority: medium
 tags:
 - runner-agent
@@ -208,6 +208,11 @@ comms:
     Follow-through on PR #204: found the same off-queu; [unattended-pilot-health-probe] first live gate run: claimed
     on idc03 12:45 once; `_self_stale_check`/`_claimable` gate every claim on installed==checkout-ref byt; tony-dell
     runner gates heavy claims at 5m load/core > 0.85 ("'
+- at: 2026-11-25 09:32
+  from: devin
+  text: 'investigating: runner-agent already notes capacity-gate skips via _note_capacity_skip (e353fc8359); gap
+    is kanban-dispatch claim_pass_gate (load/kill/quiet-hours/preflight/ratelimit) + per-card budget/host-cap skips
+    which go silent. Implementing rate-limited pass-gate defer notes there.'
 action:
   type: dispatch
   status: running
