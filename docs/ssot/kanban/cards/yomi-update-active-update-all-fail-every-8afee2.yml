@@ -1,0 +1,20 @@
+id: yomi-update-active-update-all-fail-every-8afee2
+title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
+  on idc03
+column: backlog
+updated: 2026-11-25 10:26
+priority: medium
+tags:
+- bug
+- yomi
+- idc03
+spec: 'idc03: yomi-update-active.service (every 15m) and yomi-update-all.service (hourly :48) both exec podman run
+  --network=container:yomi-api ... and fail status=125: "no container with name or ID yomi-api found". `podman ps
+  -a` shows no yomi-api container; no yomi-api quadlet/service unit exists. Either the yomi-api workload moved/was
+  retired (then retire or re-point these ssot.jobs.yml jobs) or the quadlet needs reinstalling. Observed failing
+  every 15min since at least 2026-11-25 10:08; unrelated to stagger-idc03-timer-herd.'
+ref: OPS-1382
+comms:
+- at: 2026-11-25 10:26
+  from: devin
+  text: card captured via board-api
