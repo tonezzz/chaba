@@ -1,7 +1,7 @@
 id: litellm-budget-watch-enable
 title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
-column: doing
-updated: 2026-11-25 10:27
+column: review
+updated: 2026-11-25 10:30
 spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
   on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
   caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
@@ -11,9 +11,13 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  result: 'exit=0 1-25-litellm-budget-watch-timer.yml`, and `dispatch-outcome-20261125-102426-the-near-cap-watcher-scripts-l.md`;
+    final status posted to the card. | devin-task-20261125-102426-the-near-cap-watcher-scripts-l.service: Consumed
+    19.353s CPU time.'
+  verified: true
 ref: OPS-1360
 comms:
 - at: 2026-11-25 09:29
@@ -79,5 +83,33 @@ comms:
     units committed on dispatch branch; installed live on idc03 ~/.config/systemd/user and enabled. First timer
     run already fired on enable: exit 0, psql source postgres:VerificationToken, verdict ok (0 alert/0 warn), ops-event
     emitted to ada-ha-events-tony. --selftest OK and --dry-run OK on idc03; 13 unit tests green. Trail: docs/ssot/jobs/infrastructure/2026-11-25-litellm-budget-watch-timer.yml;'
+- at: 2026-11-25 10:30
+  from: idc02
+  text: 'finished (ok): exit=0 1-25-litellm-budget-watch-timer.yml`, and `dispatch-outcome-20261125-102426-the-near-cap-watcher-scripts-l.md`;
+    f'
+- at: 2026-11-25 10:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:30
+  from: chaba
+  text: banked 271 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:30
+  from: chaba
+  text: pushed dispatch/20261125-102426-the-near-cap-watcher-scripts-l to origin
+- at: 2026-11-25 10:30
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:30
+  from: chaba
+  text: auto-merged 4b387c33 (dispatch/20261125-102426-the-near-cap-watcher-scripts-l) → origin/master
+- at: 2026-11-25 10:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-102426-the-near-cap-watcher-scripts-l,
+    branch dispatch/20261125-102426-the-near-cap-watcher-scripts-l'
 claim:
   since: 2026-11-25 10:23
+review_kind: verify

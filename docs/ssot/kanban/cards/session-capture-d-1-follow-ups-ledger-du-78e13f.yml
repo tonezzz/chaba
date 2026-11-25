@@ -1,7 +1,7 @@
 id: session-capture-d-1-follow-ups-ledger-du-78e13f
 title: 'Session capture D.1 follow-ups: ledger durability, pointer-log adoption, resolved_ref semantics'
 column: doing
-updated: 2026-11-25 10:20
+updated: 2026-11-25 10:30
 priority: medium
 tags:
 - knowledge-capture
@@ -71,6 +71,13 @@ comms:
     (metrics report, job doc, SSOT Phase D refresh, dispatch-outcome — prior run verified ok but never committed).
     Now implementing the 5 follow-ups: ledger job declaration + applied-audit durability, pointer-stale wiring,
     resolved_ref rename, register freshness check, skill-path instrumentation.'
+- at: 2026-11-25 10:30
+  from: devin
+  text: 'DONE (OPS-1368). Two premise corrections: (1) d1-metrics deliverables were never lost — recovered uncommitted
+    files from its tony-macbook worktree and landed them here; (2) the canonical capture ledger was never missing
+    — the d1 sweep skipped idc02, where ~/.local/share/chaba/capture/ holds the real 2026-11-23 baseline + applied:
+    history. Resolutions: chaba-capture-harvest declared on idc02 (05:30, units rendered — install post-merge via
+    render-jobs --host idc02 --install); capture-apply now mir'
 action:
   type: dispatch
   status: running
