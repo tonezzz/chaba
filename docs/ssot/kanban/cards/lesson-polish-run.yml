@@ -1,0 +1,61 @@
+id: lesson-polish-run
+title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
+column: backlog
+updated: 2026-11-25 17:26
+brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
+  each audit run (AUD-0831 loop).
+priority: medium
+program: chaba-ci
+tags:
+- lesson
+- education
+- polish
+- scheduled
+spec: "Recurring lesson-polish pass — queued automatically by the\nchaba-lessons-audit job (ssot.jobs.yml job chaba-lessons-audit,
+  daily\n07:40 on idc03) whenever the deterministic audit finds R1/R3/R4 policy\nflags. STANDING card: each audit
+  run re-arms it; this spec never\nchanges. The flagged list for the current run is the newest\n'lesson-audit' comm
+  on this card, and the full report is\ndocs/reports/lesson-audit/latest.json in the served checkout\n(idc03 ~/CascadeProjects/chaba-tony-dell).\n\nProcedure:\n1.
+  Refresh flags yourself — POST https://idc03.taila0626a.ts.net:10000/lesson/lesson\n   {\"op\":\"list\",\"content\":1}
+  (one call returns every lesson WITH\n   body; per-slug op=get rescans the whole wiki namespace and is too\n   slow
+  for a full pass), then apply\n   scripts/lessons-audit.py:audit_one (or read the latest audit JSON).\n   Act ONLY
+  on R1/R3/R4 flags. R2 thin/junk and R5 Thai are out of\n   scope: junk deletion is human-gated, and Thai exemptions
+  live in\n   scripts/lesson-thai-exceptions.yml + meta.no_th.\n2. Polish each flagged lesson per the 7-dimension
+  policy\n   (docs/ssot/jobs/education/2026-10-24-lesson-polish.yml + AGENTS.md\n   lesson-capture/split-rule duties):\n
+  \  - R3:no-pointer — decision/verdict content needs an SSOT/KB pointer\n     inside the EN body, BEFORE the <h3>ไทย</h3>
+  section (pointers\n     tail-appended after Thai get dropped on re-file).\n   - R4:orphan — family lessons (ada-nest-*/trade-*/voice-*/ai-*)
+  need\n     a hub/sibling pointer line (\"<fam> series — hub: <link>\").\n   - R1:overdue / no-next-review / level-invalid
+  — review the lesson,\n     then re-file via POST /lesson upsert with corrected meta\n     (level in intro|working|deep;
+  fresh next_review per spaced\n     repetition — re-file preserves old dates by design, pass an\n     explicit
+  next_review override).\n3. Fable lane for prose rewrites: LiteLLM gateway\n   http://100.102.134.91:4000, model
+  consult-claude\n   (openrouter/anthropic/claude-fable-5.1) — scripts/ada/litellm_chat.py\n   resolves LITELLM_URL/LITELLM_KEY
+  from\n   ~/.config/secrets/mddb-gemini.env. Keep edits additive: never drop\n   existing pointers, Thai sections,
+  or first-learn provenance.\n4. Write ONLY through POST https://idc03.taila0626a.ts.net:10000/lesson/lesson (the
+  board-api door) — no WP\n   creds, no direct CPT writes, no deletes (human-gated).\n5. Re-run the audit when done;
+  post before/after flag counts and the\n   per-lesson action list to this card AND to card lesson-audit-scheduled."
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-1403
+comms:
+- at: 2026-11-25 17:26
+  from: chaba
+  text: auto-queued by chaba-lessons-audit job
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'lesson-audit 2026-11-25: 190 lesson(s) with R1/R3/R4 flags -> new-flags (lesson-polish-run)
+
+    flagged:
+
+    - `lesson-00750611bace` devnest-host-assessment — `R1:overdue`
+
+    - `lesson-0123c7195a0e` PolityAI — favorite civic-intelligence app — `R1:overdue`
+
+    - `lesson-01ce25840fd0` education-wiki-cutover-runbook — `R1:overdue`
+
+    - `lesson-021a96fe34da` claude-code-install — `R3:no-pointer`
+
+    - `lesson-021c1115f64a` kk-mac-video-readiness-package-inventory — `R1:overdue`
+
+    - `lesson-03b1c122702c` ai-lane-delegation'
