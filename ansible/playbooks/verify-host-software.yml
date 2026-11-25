@@ -55,6 +55,9 @@
       tony-macbook: kk-macbook
     probe_timeout: "{{ host_sw_probe_timeout | default(20) }}"
     probe_timeout_python_ml: "{{ host_sw_probe_timeout_python_ml | default(90) }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
 
   pre_tasks:
     - name: Report controller detection
@@ -183,5 +186,202 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute host-software alert summary and fingerprint
+      ansible.builtin.set_fact:
+        host_sw_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- set fc = y.get('failed_count', 0) | int -%}
+              {%- if s.startswith('fail') or s.startswith('unreachable') or fc > 0 -%}
+                {%- set kind = 'unreachable' if s.startswith('unreachable') else 'fail' -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'failed': fc, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        host_sw_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- set fc = y.get('failed_count', 0) | int -%}
+              {%- if s.startswith('fail') or s.startswith('unreachable') or fc > 0 -%}
+                {%- set kind = 'unreachable' if s.startswith('unreachable') else 'fail' -%}
+                {%- set _ = out.append(h ~ ':' ~ kind ~ ':' ~ fc) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when host-software alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-host-software-alert
+          title: "Ansible audit: host software capability drift/fail"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible verify-host-software detected capability failures/unreachable hosts
+            vs ssot.host-software.yml. Hosts: {{ host_sw_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/host-software/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+      register: host_sw_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected host-software alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ host_sw_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+        - host_sw_alert_card.status not in [200, 201]
+        - "'already exists' not in (host_sw_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch host-software alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-host-software-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: host_sw_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+
+    - name: Compute host-software alert comment dedupe
+      ansible.builtin.set_fact:
+        host_sw_alert_comment_text: >-
+          ansible verify-host-software: {{ host_sw_alert_hosts | length }} host(s) alerting.
+          fp={{ host_sw_alert_fingerprint }}. {{ host_sw_alert_hosts | to_json }}
+        host_sw_alert_comment_is_dup: >-
+          {{
+            (host_sw_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((host_sw_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (host_sw_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+
+    - name: Comment host-software alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-host-software-alert
+          from: "{{ board_from }}"
+          text: "{{ host_sw_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+        - not (host_sw_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch host-software alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-host-software-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: host_sw_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+
+    - name: Compute host-software alert cleared comment
+      ansible.builtin.set_fact:
+        host_sw_alert_cleared_comment: >-
+          ansible verify-host-software: all clear, no alert hosts. fp=cleared.
+        host_sw_alert_cleared_needed: >-
+          {{
+            (host_sw_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (host_sw_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (host_sw_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+
+    - name: Comment host-software alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-host-software-alert
+          from: "{{ board_from }}"
+          text: "{{ host_sw_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+        - host_sw_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ host_sw_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ host_sw_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ host_sw_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
       delegate_to: localhost
       run_once: true

@@ -1,7 +1,7 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
-column: backlog
-updated: 2026-11-25 15:13
+column: done
+updated: 2026-11-25 17:40
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
 priority: low
@@ -69,9 +69,108 @@ comms:
 - at: 2026-11-25 15:13
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:26
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 15:34
+  from: idc02
+  text: claimed
+- at: 2026-11-25 15:34
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.57 > 0.7)'
+- at: 2026-11-25 15:35
+  from: chaba
+  text: started devin-task-20261125-153507-do-not-start-until-python3-scr on idc02 (dispatch)
+- at: 2026-11-25 15:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
+    ; [ada-capability-verb-wiring] primer injected 8 lesson(s): [board-api-wiki-read-s; [fleet-jobs-report-and-ada-verb]
+    Retry loop diagnosed 2026-11-20: executor=jules; MediaWiki wikitext needs `[[Title|text]]` links — markdown
+    `[t](url)` does not r; [ai-news-education-morning-brief] done — commit eb8855020d on dispatch branch. D; [cf-ssl-strict-migrate-idc02-edge-origin-3fa959]
+    auto-merge n'
+- at: 2026-11-25 15:38
+  from: devin
+  text: 'BLOCKED at spec gate (2026-11-25 ~15:45 idc02): python3 scripts/wiki-cargo-check.py exits 1 — action=cargotables=[]
+    and cargoquery Education -> Table Education not found (MW 1.46.2). Host-owned OPS-1322 Plesk maintenance still
+    pending; DO-NOT-START honoured, no wiki writes. Template แม่แบบ:Education clean at revid 483; Education:Ada-Ocb-Skills
+    live via /lesson source=wiki. Trail: BLOCKED entry in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml
+    + dispatch-outcome doc. Re-dispatch af'
+- at: 2026-11-25 15:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-153507-do-not-start-until-python3-scr no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 15:39
+  from: chaba
+  text: 'merge-sweep: merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-153507-do-not-start-until-python3-scr.md)
+    — auto-closed'
+- at: 2026-11-25 15:39
+  from: local
+  text: 'pub milestone: card verified: wiki-education-cargo-declare-verify on idc03 — merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr
+    from idc02) -> origin/master — verified — auto- — merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr
+    from idc02) -> origin/master — verified — auto-closed [evt-07ab4edbbd197847]'
+- at: 2026-11-25 15:39
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-153507-do-not-start-until-python3-scr,
+    branch dispatch/20261125-153507-do-not-start-until-python3-scr on idc02'
+- at: 2026-11-25 15:40
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:40
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261125-153507-do-not-start-until-python3-scr — close will block
+    until merged'
+- at: 2026-11-25 15:48
+  from: devin
+  text: 'COMPLETED by wiki-education-cargo-table-setup dispatch (2026-11-25): gate passed — python3 scripts/wiki-cargo-check.py
+    exits 0 (Education table present, topic ada-ocb-skills found, 229 rows). Declare/store re-applied to แม่แบบ:Education
+    (revid 525, same wikitext as reverted revid 481), table created via CargoUtils::recreateDBTablesForTemplate
+    through FTP-placed PHP helper, all 228 template links populated via CargoPopulateTableJob. No purge needed —
+    populate jobs do the storing; future lesson sa'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: queued
+  status: done
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 15:39
+  verified: true
+claim:
+  since: 2026-11-25 15:34
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 15:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-153507-do-not-start-until-python3-scr.md

@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-lessons-due
 title: Timer chaba-lessons-due on idc03 failing
-column: backlog
-updated: 2026-11-25 10:24
+column: done
+updated: 2026-11-25 17:38
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,45 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:58) of `chaba-lessons-due.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 16:29
+  from: tony
+  text: '2026-11-25 16:31 (+07): RESOLVED — the 09:58 run died on an HTTPS read TimeoutError while publishing to
+    the wiki/WP door, during the same backend-degradation window. Board endpoint now responds in ~0.36s and ~/.config/secrets/wp-boards.env
+    is present. Dry-run succeeded (source=wiki, due=170, upcoming=57); real unit run Result=success, ExecMainStatus=0
+    at 16:29:03. No code/timeout change needed — transient upstream failure.'
+- at: 2026-11-25 16:32
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 16:29 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 16:32
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

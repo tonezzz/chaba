@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 09:46
+updated: 2026-11-25 17:39
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -81,3 +81,59 @@ comms:
     fixed it with qwen3:0.6b digest 7df6b6e0... + format:json: 36/36 parseable glue, 9/12 Jev Choice ok (3 local
     4b CPU timeouts fell back to hand-labelled block, recorded). 144 rows, replay PASS (0 identity mismatches, 0
     provider calls at replay), 0 guard violations. A_jev_llm_glue '
+- at: 2026-11-25 15:35
+  from: devin
+  text: 'Baseline robustness check done — INCONCLUSIVE. Re-ran arm A at seed 42 with pinned qwen3:4b (digest 359d7dd4...)
+    + JSON mode, num_predict 128: 11/12 calls hit the 180s cap on the local CPU host; the single completed call
+    scored fidelity 0.5368 vs 0.467 for qwen3:0.6b — both far below the 0.75 floor. So there is no evidence a stronger
+    local model would close the gap, but n=1 cannot validate the Phase B +1.000 delta. Recommendation: treat Phase
+    B as watch/unvalidated; do NOT cite +1.000 as an NCM '
+- at: 2026-11-25 15:53
+  from: devin
+  text: 'Baseline robustness follow-up with pinned llama3.2:3b (digest a80c4f17...) aborted: 2 consecutive 240s
+    timeouts and one 165s completion before manual stop. Root cause is host saturation, not model quality: tony-omen
+    load average 43-52, 15Gi swap fully used, ~1Gi free RAM of 30Gi. Previously qwen3:4b hit 180s cap on 11/12 calls;
+    only qwen3:0.6b is runnable there today. Conclusion: the stronger-baseline check cannot be completed on this
+    host under current load; Phase B stays watch/unvalidated and '
+- at: 2026-11-25 16:15
+  from: devin
+  text: 'External research precedent for OPS-1325 (Google/GitHub, 2026-11-25; full citations in docs/kb/ncm-code-blocks-external-ideas.md).
+    Top ideas, cheap-first: (1) MBR / verifier-best-of-k — sample k skeletons from the P1″ denoiser and pick by
+    the deterministic verifier; NCM authors cite MBR as their test-time scaling win. (2) Adaptive depth — accept
+    at L1 when verifier passes, refine to L3 only on rejection; authors explicitly call for computation adapted
+    to difficulty. (3) Per-level error compoundi'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:24
+  from: devin
+  text: 'Status: external repo resets deleted the NCM harnesses/packets a second time; the surviving work was moved
+    to a stable workspace at /home/tony/tony-projects/ncm-code-blocks/ (README, external-ideas doc, self-contained
+    bestofk.py). The cheap best-of-k/adaptive-depth probe was attempted there but aborted after 7 Ollama calls:
+    tony-omen load average reached 75.9, pinned qwen3:0.6b took 38-120s and 4/7 calls hit the cap. No result claimed;
+    script resumes from corpus/live.json when the host is quiet.'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

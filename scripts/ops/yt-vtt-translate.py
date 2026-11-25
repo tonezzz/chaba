@@ -240,8 +240,12 @@ def groups_mode(a):
     if key and not cache.exists():
         try:
             GROUP_CACHE.mkdir(parents=True, exist_ok=True)
-            cache.write_text(json.dumps(out, ensure_ascii=False, indent=1),
-                             encoding="utf-8")
+            tmp = cache.with_name(cache.name + ".tmp")
+            with tmp.open("w", encoding="utf-8") as f:
+                f.write(json.dumps(out, ensure_ascii=False, indent=1))
+                f.flush()
+                os.fsync(f.fileno())
+            tmp.replace(cache)
         except Exception as e:
             print(f"warn: group cache write failed ({e})", file=sys.stderr)
     print(f"wrote {a.dst} ({len(out)} groups, lang={a.target})",

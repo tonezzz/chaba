@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
 column: backlog
-updated: 2026-11-25 07:51
+updated: 2026-11-25 17:50
 program: infrastructure
 tags:
 - ops
@@ -163,9 +163,70 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-25 17:02
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: '[auto-dispatch] wave 5 (2026-11-25 17:03): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.64 > 0.8)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.07 > 0.7)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
   on idc02, idc03, tony-macbook, and tony-dell by scp-ing scripts/board/runner-agent.py from the chaba repo to ~/.local/bin/runner-agent
   on each host. The done-condition is verified when the runner-agent is updated on all drifting hosts, the system-report
   generator on idc02 resumes normal execution, and the generated_at timestamp advances past the stale threshold.
+action:
+  type: dispatch
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+claim: {}

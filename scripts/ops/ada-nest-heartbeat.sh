@@ -96,13 +96,35 @@ cpu_cores() {
   esac
 }
 
+# smctemp occasionally emits 0.0 with a "could not get valid sensor value"
+# hint — retry briefly and reject implausible readings instead of posting
+# null on a transient SMC miss.
+smctemp_read() {
+  flag=${2:--c}
+  n=0
+  while [ "$n" -lt 3 ]; do
+    v=$("$1" "$flag" 2>/dev/null | head -1)
+    case "$v" in
+      ''|*[!0-9.]*) ;;
+      *) awk -v v="$v" 'BEGIN{exit !(v>0 && v<150)}' && { echo "$v"; return 0; } ;;
+    esac
+    n=$((n+1))
+    [ "$n" -lt 3 ] && sleep 0.4
+  done
+  return 1
+}
+
 cpu_temp_c() {
-  # Apple Silicon: smctemp (user-built, no root). Linux: first thermal
-  # zone with a sane value, no root needed.
+  # Apple Silicon: smctemp (user-built, no root). launchd gives a minimal
+  # PATH that omits ~/.local/bin — check the absolute path independently
+  # of `command -v` so a beat under launchd still carries a number.
   if command -v smctemp >/dev/null 2>&1; then
-    smctemp -c 2>/dev/null && return
-    [ -x "$HOME/.local/bin/smctemp" ] && "$HOME/.local/bin/smctemp" -c 2>/dev/null && return
-  elif [ "$(uname -s)" = "Linux" ]; then
+    smctemp_read smctemp && return
+  fi
+  if [ -x "$HOME/.local/bin/smctemp" ]; then
+    smctemp_read "$HOME/.local/bin/smctemp" && return
+  fi
+  if [ "$(uname -s)" = "Linux" ]; then
     for z in /sys/class/thermal/thermal_zone*/temp; do
       [ -r "$z" ] || continue
       t=$(cat "$z" 2>/dev/null) || continue
@@ -112,12 +134,25 @@ cpu_temp_c() {
   echo "null"
 }
 
+gpu_temp_c() {
+  # Under ollama/Metal the GPU runs hotter than the CPU — carry both so the
+  # admission gate can use max(cpu_temp_c, gpu_temp_c) without a second
+  # read on the receiving side. On Linux without smctemp this is null.
+  if command -v smctemp >/dev/null 2>&1; then
+    smctemp_read smctemp -g && return
+  fi
+  if [ -x "$HOME/.local/bin/smctemp" ]; then
+    smctemp_read "$HOME/.local/bin/smctemp" -g && return
+  fi
+  echo "null"
+}
+
 EXTRA=""
 [ -n "${HEARTBEAT_EXTRA_CMD:-}" ] && EXTRA="\"extra\": $(sh -c "$HEARTBEAT_EXTRA_CMD" 2>/dev/null || echo null),"
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_cores\":$(cpu_cores),\"cpu_temp_c\":$(cpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_cores\":$(cpu_cores),\"cpu_temp_c\":$(cpu_temp_c),\"gpu_temp_c\":$(gpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )

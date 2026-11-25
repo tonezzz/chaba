@@ -120,7 +120,12 @@ def load_state(path: Path) -> dict:
 
 def save_state(path: Path, st: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(st))
+    tmp = path.with_name(path.name + ".tmp")
+    with tmp.open("w") as f:
+        f.write(json.dumps(st))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(path)
 
 
 def recently_alerted(st: dict, cond: str, repeat_h: float) -> bool:

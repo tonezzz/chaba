@@ -188,23 +188,33 @@ def snapshot(
             result["reasons"].append("load_high")
     except (KeyError, TypeError, ValueError):
         result["reasons"].append("load_unknown")
-    try:
-        temp = body.get("cpu_temp_c")
-        if temp is None and ssh_fallback and not result["reasons"]:
-            # heartbeat body lacks temp (root-owned adanest script) —
-            # same read-only fallback pattern as the load probe.
-            t = subprocess.run(
+    # Gate on the hotter of CPU and GPU: under ollama/Metal inference the
+    # GPU runs hotter than the CPU, so a cool CPU sensor can otherwise admit
+    # a pack that reheats the whole SoC (55C limit).
+    cpu_temp = _as_temp(body.get("cpu_temp_c"))
+    gpu_temp = _as_temp(body.get("gpu_temp_c"))
+    if (cpu_temp is None or gpu_temp is None) and ssh_fallback \
+            and not result["reasons"]:
+        # heartbeat may lack either field (root-owned adanest script) —
+        # same read-only fallback pattern as the load probe.
+        host = os.environ.get("KK_MAC_SSH_HOST", "kk-mac")
+        for flag, slot in (("-c", "cpu"), ("-g", "gpu")):
+            out = _run_text(
                 ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                 os.environ.get("KK_MAC_SSH_HOST", "kk-mac"),
-                 "~/.local/bin/smctemp -c"],
-                capture_output=True, text=True, timeout=12)
-            if t.returncode == 0 and t.stdout.strip():
-                temp = float(t.stdout.strip())
-        result["cpu_temp_c"] = temp
-        if temp is not None and float(temp) > max_temp_c:
-            result["reasons"].append("temp_high")
-    except (TypeError, ValueError):
-        pass
+                 host, "~/.local/bin/smctemp " + flag],
+                timeout=12)
+            if not out:
+                continue
+            parsed = _as_temp(out.strip().splitlines()[0])
+            if slot == "cpu" and cpu_temp is None:
+                cpu_temp = parsed
+            elif slot == "gpu" and gpu_temp is None:
+                gpu_temp = parsed
+    temps = [t for t in (cpu_temp, gpu_temp) if t is not None]
+    result["cpu_temp_c"] = max(temps) if temps else None
+    result["gpu_temp_c"] = gpu_temp
+    if result["cpu_temp_c"] is not None and result["cpu_temp_c"] > max_temp_c:
+        result["reasons"].append("temp_high")
     # Overload gate: KK-Mac is an owner-first box — a busy node defers
     # the opportunistic lane. Signals, best available first: tmux_jobs
     # non-empty (work is running on the node), an explicit load_ok flag,
@@ -282,6 +292,15 @@ def _run_text(cmd: list[str], timeout: int = 10) -> str | None:
         return None
 
 
+def _as_temp(value) -> float | None:
+    """Coerce a sensor reading to a plausible celsius value."""
+    try:
+        t = float(value)
+    except (TypeError, ValueError):
+        return None
+    return t if 0 < t < 150 else None
+
+
 def _local_load_1m() -> float | None:
     if os.uname().sysname == "Darwin":
         sysctl = _which("sysctl") or "/usr/sbin/sysctl"
@@ -312,10 +331,16 @@ def _local_temp_c() -> float | None:
     if not smctemp:
         return None
     out = _run_text([smctemp, "-c"])
-    try:
-        return float((out or "").strip())
-    except ValueError:
+    return _as_temp(out.strip().splitlines()[0]) if out else None
+
+
+def _local_gpu_temp_c() -> float | None:
+    """GPU temperature — hotter than CPU under ollama/Metal inference."""
+    smctemp = _which("smctemp")
+    if not smctemp:
         return None
+    out = _run_text([smctemp, "-g"])
+    return _as_temp(out.strip().splitlines()[0]) if out else None
 
 
 def local_snapshot(
@@ -335,7 +360,7 @@ def local_snapshot(
     of the MDDB heartbeat, so a worker sitting on the node itself gates
     on what is true right now, not on a heartbeat up to 15 min old.
     Read-only probes only: ollama /api/version, loadavg, statvfs,
-    smctemp, tmux ls."""
+    smctemp -c/-g, tmux ls."""
     result = {
         "host": host,
         "eligible": False,
@@ -349,6 +374,7 @@ def local_snapshot(
         "cpu_cores": None,
         "load_limit": None,
         "cpu_temp_c": None,
+        "gpu_temp_c": None,
         "node_busy": None,
     }
     try:
@@ -381,9 +407,14 @@ def local_snapshot(
         result["reasons"].append("load_unknown")
     elif load > limit:
         result["reasons"].append("load_high")
-    temp = _local_temp_c()
-    result["cpu_temp_c"] = temp
-    if temp is not None and temp > max_temp_c:
+    cpu_temp = _local_temp_c()
+    gpu_temp = _local_gpu_temp_c()
+    temps = [t for t in (cpu_temp, gpu_temp) if t is not None]
+    # cpu_temp_c stays the gate field for existing consumers but carries
+    # the hotter sensor — the GPU is what heats under local inference.
+    result["cpu_temp_c"] = max(temps) if temps else None
+    result["gpu_temp_c"] = gpu_temp
+    if result["cpu_temp_c"] is not None and result["cpu_temp_c"] > max_temp_c:
         result["reasons"].append("temp_high")
     busy = []
     if require_idle:

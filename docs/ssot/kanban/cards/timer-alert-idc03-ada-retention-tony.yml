@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-retention-tony
 title: Timer ada-retention-tony on idc03 failing
-column: backlog
-updated: 2026-11-25 10:24
+column: done
+updated: 2026-11-25 17:38
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,46 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:58) of `ada-retention-tony.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u ada-retention-tony.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 15:31
+  from: tony
+  text: '2026-11-25 15:31 (+07): VERIFIED RESOLVED — no new code change was needed. The shared TypeError in sweep_ops
+    was already fixed (commit 2a4f3f2033, deployed on idc03 12:38) but the four units were never rerun, so the cards
+    kept the stale 09:57 exit-code. This session ran full dry-runs for all four lanes (rc=0), then started the real
+    units: dev/kk/michael/tony all Result=success, ExecMainStatus=0. tony lane: 3 extract groups -> canonical, 7
+    superseded; 0 transcript uploads, 0 ops docs swept. Force'
+- at: 2026-11-25 15:32
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 15:28 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 15:32
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

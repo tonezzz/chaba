@@ -304,7 +304,12 @@ def main() -> int:
             print(f"settings write {zone} failed: {exc}", file=sys.stderr)
 
     try:
-        STATE.write_text(json.dumps(state))
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(state))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(STATE)
     except Exception as exc:
         print(f"state write failed: {exc}", file=sys.stderr)
 

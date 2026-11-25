@@ -104,6 +104,9 @@
                    ~ '/var/chaba/health/disk-trend.jsonl', true) }}
     probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
     probe_epoch: "{{ now().timestamp() | int }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
 
   pre_tasks:
     - name: Report controller detection
@@ -221,5 +224,200 @@
         # only hosts disk-trend-watch.py also samples (keyed by the
         # ssot.audit.hosts.yml name) — keeps one series per host
         - ssot_key_map.get(item, item) in (audit_ssot['hosts'] | default({}))
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute disk-headroom alert summary and fingerprint
+      ansible.builtin.set_fact:
+        disk_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('CRIT') or s.startswith('warn') or s.startswith('unreachable') -%}
+                {%- set kind = 'crit' if s.startswith('CRIT') else ('warn' if s.startswith('warn') else 'unreachable') -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        disk_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('CRIT') or s.startswith('warn') or s.startswith('unreachable') -%}
+                {%- set kind = 'crit' if s.startswith('CRIT') else ('warn' if s.startswith('warn') else 'unreachable') -%}
+                {%- set _ = out.append(h ~ ':' ~ kind) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when disk headroom alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-disk-headroom-alert
+          title: "Ansible audit: disk headroom alert"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts.
+            Hosts: {{ disk_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/disk/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+      register: disk_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected disk alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ disk_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+        - disk_alert_card.status not in [200, 201]
+        - "'already exists' not in (disk_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch disk alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-disk-headroom-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: disk_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+
+    - name: Compute disk alert comment dedupe
+      ansible.builtin.set_fact:
+        disk_alert_comment_text: >-
+          ansible disk-headroom: {{ disk_alert_hosts | length }} host(s) alerting.
+          fp={{ disk_alert_fingerprint }}. {{ disk_alert_hosts | to_json }}
+        disk_alert_comment_is_dup: >-
+          {{
+            (disk_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((disk_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (disk_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+
+    - name: Comment disk alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-disk-headroom-alert
+          from: "{{ board_from }}"
+          text: "{{ disk_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+        - not (disk_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch disk alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-disk-headroom-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: disk_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+
+    - name: Compute disk alert cleared comment
+      ansible.builtin.set_fact:
+        disk_alert_cleared_comment: >-
+          ansible disk-headroom: all clear, no alert hosts. fp=cleared.
+        disk_alert_cleared_needed: >-
+          {{
+            (disk_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (disk_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (disk_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+
+    - name: Comment disk alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-disk-headroom-alert
+          from: "{{ board_from }}"
+          text: "{{ disk_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+        - disk_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ disk_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ disk_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ disk_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
       delegate_to: localhost
       run_once: true

@@ -1,14 +1,14 @@
 id: timer-alert-idc02-fleet-restic-backup
 title: Timer fleet-restic-backup on idc02 failing
-column: backlog
-updated: 2026-11-25 07:45
+column: done
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 04:45) of `fleet-restic-backup.service` on `idc02` result=exit-code — investigate
-  journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-25 04:45) of `fleet-restic-backup.service` on `idc02` result=exit-code — investigate journal:
+  `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: OPS-1343
 comms:
 - at: 2026-11-25 05:04
@@ -25,9 +25,48 @@ comms:
 - at: 2026-11-25 13:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of the user systemd timer fleet-restic-backup.service on idc02 by inspecting
-  its journal logs via journalctl --user -u fleet-restic-backup.service and cross-referencing CMS timer-timeline-idc02.
-  The target host is idc02 and the repository context is chaba. Fix the underlying backup failure so that
-  a manual or subsequent timer run exits successfully. The done-condition is verified when journal logs
-  confirm a successful backup execution (result=success, exit status 0) for fleet-restic-backup.service
-  on idc02.
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 16:56 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: snapshot saved, then failed on stale restic lock PID 645571 created 11-24 14:14. PID
+    confirmed dead, `restic unlock` removed 1 lock, rerun Result=success 16:56.'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the failure of the user systemd timer fleet-restic-backup.service on idc02 by inspecting its journal
+  logs via journalctl --user -u fleet-restic-backup.service and cross-referencing CMS timer-timeline-idc02. The
+  target host is idc02 and the repository context is chaba. Fix the underlying backup failure so that a manual or
+  subsequent timer run exits successfully. The done-condition is verified when journal logs confirm a successful
+  backup execution (result=success, exit status 0) for fleet-restic-backup.service on idc02.
+action:
+  status: done

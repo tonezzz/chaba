@@ -1,0 +1,28 @@
+id: ada-dep-gate
+host: tony-omen
+description: >-
+  Dependency health gate for the tony-omen ada lab lanes (ada-dev,
+  ada-kk-dev — migrated from idc03 2026-11-18 per SYS-0151). The
+  migration carried the unit files but NOT the idc03 drop-ins: these
+  lanes run with no stagger and no health gate. dep-gate.conf adds an
+  ExecStartPre that waits fail-closed until both hard runtime deps
+  answer their unauthenticated /health endpoints: MDDB leader
+  http://100.102.134.91:11023/health and notebooklm-rest
+  http://100.123.163.11:3011/health (idc02 — ConversationMemory ->
+  NotebooklmClient). Companion to stacks/idc03/ada-dep-gate.
+verify: >-
+  systemctl --user cat ada-dev.service | grep -q '3011/health' &&
+  systemctl --user cat ada-kk-dev.service | grep -q '3011/health'
+files:
+  - "~/.config/systemd/user/<unit>.service.d/dep-gate.conf — dual-dep ExecStartPre gate + TimeoutStartSec=300"
+units:
+  - ada-dev
+  - ada-kk-dev
+notes: >-
+  These lanes have no stagger.conf (fleet stagger is an idc03 deploy
+  concern — deploy-ada.sh targets idc03). TimeoutStartSec=300 lives in
+  dep-gate.conf itself since no later drop-in overrides it here.
+  install.sh is the canonical writer; do not hand-edit live drop-ins.
+related_cards: [ada-lane-health-gate-misses-notebooklm-dep]
+status: deployed
+deployed: 2026-11-25

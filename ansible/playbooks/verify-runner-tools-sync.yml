@@ -30,11 +30,14 @@
 # Controller requirements: see ../requirements.yml (ansible.posix,
 # ansible.utils) plus Python packages jsonschema>=4 and netaddr>=0.10.1.
 #
-# Host scope: baseline only (no macOS, no laptops). kk-mac and idc01 are
-# excluded by the pattern; portable hosts need an explicit --limit.
+# Host scope: baseline only (no macOS, no laptops, no con01). kk-mac and
+# idc01 are excluded by the pattern; portable hosts need an explicit --limit.
+# con01 is the absorber tier, not a runner host — runner-fleet-health.py
+# excludes it (FALLBACK_HOSTS + fleet regex) and it has no devin-dispatch
+# provisioning evidence, so it must not fail the required-tool assertion.
 
 - name: Preview runner-tool drift with rsync dry-run
-  hosts: baseline:!disabled:!macos
+  hosts: baseline:!disabled:!macos:!con01
   gather_facts: false
   become: false  # installed tools live in the login user's home — no sudo
   vars:

@@ -61,12 +61,14 @@ fix_live_state:
       topic) and tg:101 (education lessons). outbox.jsonl now empty.
 
 fix_code:
-  - scripts/board/waiting_cards.py publish(): event gains
-    "project": "chaba" — covers notify_lifecycle callers
-    (kanban-dispatch, merge-sweep).
-  - scripts/board/runner-agent.py _publish(): same field — runner-agent
-    deploys standalone and cannot import waiting_cards.
-  - tests/board/test_waiting_cards.py: new test_publish_tags_chaba_project
+  - >-
+    scripts/board/waiting_cards.py publish(): event gains "project": "chaba" —
+    covers notify_lifecycle callers (kanban-dispatch, merge-sweep).
+  - >-
+    scripts/board/runner-agent.py _publish(): same field — runner-agent deploys
+    standalone and cannot import waiting_cards.
+  - >-
+    tests/board/test_waiting_cards.py: new test_publish_tags_chaba_project
     locks the contract (27/27 pass).
   - >-
     Side benefit: topic_key collapses from per-card to 'chaba', so the

@@ -5,7 +5,13 @@ review_kind: verify
 tags:
 - kanban
 - digest
-note: '**14 in review:**
+note: '**21 in review:**
+
+  MEM-1083 · BGE-M3 distillation pilot — train local embedder on Gemini vector targets
+
+  KNB-0142 · board2: Start button renders on review/done cards and re-queues verified work
+
+  ADA-1401 · budget-watch: ada-dev-2 at cap — ada-dev-2: $10.004/$10 (100%), reset 2026-12-01 00
 
   DEV-1004 · PILOT: Cline proposal analysis on no_th snapshot v1
 
@@ -13,9 +19,15 @@ note: '**14 in review:**
 
   ---- · CMS automation `nest-tony-dell` stale
 
-  ---- · CMS automation `where-things-go` stale
-
   ---- · Disk kk-mac /System/Volumes/Data critical
+
+  OPS-0292 · Disk tony-dell / over limit
+
+  KNB-1178 · Kanban retention: archive done cards older than 7 days
+
+  MEM-0070 · mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction
+
+  AUD-1399 · mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
 
   OPS-1325 · NCM code-block composer — detail by layer (Variant B, review)
 
@@ -23,19 +35,12 @@ note: '**14 in review:**
 
   nest-manager-node · Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 
-  KNB-0309 · kanban-commit blocked: unsafe staged state
+  OPS-1038 · Test OpenChamber Session Goals for Adobe Stock reuse QC
 
-  OPS-0526 · local-conflict reconcile failed
+  … +6 more
 
-  OPS-0406 · Runner host `idc02` fails 1 dispatch bootstrap check(s)
-
-  ---- · 1 queued card(s) unsatisfiable by the live runner fleet
-
-  ---- · Runner host `tony-macbook` fails 2 dispatch bootstrap check(s)
-
-  OPS-1382 · yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container
-  exists on idc03'
-updated: 2026-11-25 15:15
+  **2 unanswered request(s):** bge-m3-distillation-pilot-train-local-em-d85919, mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32'
+updated: 2026-11-25 17:40
 ref: KNB-0453
 comms:
 - at: 2026-10-11 10:15
@@ -209,6 +214,34 @@ comms:
 - at: 2026-11-25 07:52
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done

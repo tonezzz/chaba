@@ -1,0 +1,176 @@
+id: 2026-11-25-mn01-mn-ha-dev-earlyoom-kills
+title: mn-ha-dev restart-looped 43x on mn01 — earlyoom SIGTERM kills under no-swap memory pressure
+date: 2026-11-25
+host: mn01
+card: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
+ref: AUD-1399
+dispatch: dispatch-wt-20261125-154657-found-during-mn01-yolo-xiaomi-
+
+summary: >
+  mn-ha-dev.service on mn01 restart-looped after the idc02->mn01 migration
+  (~01:30 UTC): NRestarts reached 43 by 09:32 UTC and is STILL climbing.
+  Root cause is NOT HA, podman, or the sqlite DB: userspace earlyoom
+  (earlyoom.service, default thresholds SIGTERM@mem<=10% AND swap<=10%)
+  SIGTERMs `python3 -P -m homeassistant` every time MemAvailable dips
+  below ~10% of 7.3GB. mn01 has ZERO swap, so the swap arm of the
+  condition is permanently true; HA python (~450-840MB RSS,
+  oom_score_adj=200 from the podman unit) is consistently the highest
+  oom_score victim while devin dispatch tasks, the yolo stack, gnome,
+  ada-voice standby, netdata, and the XMEye VMS all share the box.
+  HA handles SIGTERM gracefully (exit 0 -> s6 "finish process exit
+  code 0" -> container dies -> Restart=always), which is why every
+  exit looked "clean". The intermittent "received signal 15" /
+  recorder closed_incorrect=1 runs are the same kills landing while
+  shutdown was already in flight. earlyoom also killed VMS.exe x5,
+  vms-snap.py, a yolo server.py, and a chrome OAuth proc in the same
+  window — this is a host-capacity problem, not an HA defect.
+
+timeline_utc:
+  - at: "2026-11-24 10:44"
+    event: >-
+      home-assistant_v2.db found corrupt on prior host; fresh DB
+      started (963MB .corrupt.* file kept alongside). All recorder_runs
+      in the incident DB begin here.
+  - at: "2026-11-25 ~01:04-01:16"
+    event: >-
+      mn-ha-dev first boots on mn01; container healthcheck reports
+      unhealthy streaks; two explicit `systemctl --user stop` events
+      (migration fiddling), then auto-restarts begin.
+  - at: "2026-11-25 01:30"
+    event: idc02->mn01 migration completes (card michael-dev-migrate-mn01)
+  - at: "2026-11-25 01:37-02:12"
+    event: >-
+      rapid loop: earlyoom kills HA python at 01:39:11, 02:04:37,
+      02:05:25, then every ~30-40s through 02:12 — MemAvailable pinned
+      at 9.8-10.0% while devin-task units churn on mn01.
+  - at: "2026-11-25 02:31-02:40"
+    event: >-
+      earlyoom switches victims under extreme pressure: vms-snap.py
+      (02:31:34), chrome OAuth (02:34:53), yolo server.py (02:38:22),
+      plus continued HA kills. yolo-xiaomi.service exited clean
+      (Result=success) at 02:38:22 — previously attributed to manual
+      crisis triage; it was earlyoom. Restart=on-failure did not
+      revive it (clean exit), matching the observed dead-until-restart.
+  - at: "2026-11-25 02:49-04:47"
+    event: 2h stable — dispatch lane quieted, MemAvailable recovered.
+  - at: "2026-11-25 04:47-05:42"
+    event: second loop — kills at 04:47:49, then 05:25:06, 05:27:39,
+      05:30:12, 05:32:34, 05:34:41, 05:35:30, 05:42:49.
+  - at: "2026-11-25 05:43"
+    event: '"stabilized" — actually just the next quiet window.'
+  - at: "2026-11-25 07:20:48"
+    event: earlyoom kills VMS.exe (713MB) — XMEye VMS collateral.
+  - at: "2026-11-25 08:02:09 / 09:05:31 / 09:32:15"
+    event: >-
+      three more HA kills in otherwise-'stable' periods; NRestarts=43,
+      still recurring whenever a dispatch task or desktop workload
+      pushes MemAvailable under 10%.
+
+findings:
+  - >-
+    SMOKING GUN: `journalctl -u earlyoom` shows `sending SIGTERM to
+    process <pid> "python3" ... cmdline "python3 -P -m homeassistant
+    --config /config"` at every mn-ha-dev exit timestamp; 44 of 51
+    earlyoom kills since 2026-11-24 were HA python. MemAvailable at kill
+    time: 576-625MiB of ~6.0-6.3GiB (9.8-10.0%).
+  - >-
+    Exit-code-0 vs signal-15 split is a race, not two causes: SIGTERM to
+    python -> HA graceful stop -> recorder closes (closed_incorrect=0,
+    "finish process exit code 0"); when the signal lands during an
+    in-flight shutdown or hits the s6 run script, the finish process
+    reports signal 15 / exit 256 and the recorder run is marked
+    closed_incorrect=1 — exactly the runs that produced the repeated
+    "sqlite3 database was shutdown cleanly" warnings.
+  - >-
+    No call_service events for domain=homeassistant exist all-time in
+    home-assistant_v2.db — the `homeassistant.restart`/`stop` service
+    path was never used. automations.yaml is `[]`, scripts.yaml empty;
+    the only custom integration (ha_mcp_tools) never calls
+    hass.async_stop. HA-side stop theories are ruled out.
+  - >-
+    No kernel oom-kill, no systemd-oomd kills (journal empty), no
+    MemoryMax/cgroup limit on the unit — all consistent with userspace
+    earlyoom being the only killer active.
+  - >-
+    mn01 workload: 7.3GB RAM, 0 swap; resident set includes gnome-shell
+    x2 + Xorg (desktop), 3x yolo server.py (~600MB combined),
+    ada-voice uvicorn x2, netdata, xmeye-vms-stack (VMS.exe + vms-snap),
+    playwright-server, antigravity-ide, devin CLI + dispatch tasks
+    (~300-800MB each, lane cap ~2), and mn-ha-dev (~450-840MB).
+  - >-
+    earlyoom config: /etc/default/earlyoom has only `-r 3600`
+    (report interval); thresholds are upstream defaults — SIGTERM at
+    mem<=10% AND swap<=10%, SIGKILL at 5%. With swap=0 the swap arm is
+    permanently armed.
+  - >-
+    Precedent: tony-dell runs `zram-swap.service` (8G zstd zram,
+    priority 100) + 8G partition swap; the 2026-10-16 collapse job
+    records earlyoom+zram as the in-house fix pattern. mn01 has neither.
+
+answers_to_card_questions:
+  issuer: >-
+    earlyoom.service (userspace OOM killer), SIGTERM to the HA python
+    process — not an HA-side stop call, not recorder/DB fault, not s6,
+    not podman, not kernel OOM.
+  tuning_verdict: >-
+    Do NOT add MemoryMax to mn-ha-dev — a cgroup OOM would SIGKILL
+    python mid-checkpoint and manufacture exactly the sqlite
+    closed_incorrect corruption already seen. Restart=always /
+    RestartSec=10 are working correctly; leave them.
+  footprint: >-
+    HA at ~700-840MB peak is normal for this config; shrinking it is not
+    the lever. The lever is host memory headroom (swap) or fewer
+    concurrent memory hogs on mn01.
+  stability: >-
+    NOT stable — NRestarts=43 at 09:32 UTC, kills continue on every
+    MemAvailable<10% excursion. "Stable since 05:43" was a quiet window,
+    not a fix.
+
+recommendation:
+  primary: >-
+    Add zram swap on mn01 — mirror tony-dell's /etc/systemd/system/
+    zram-swap.service but sized ~4G (box has 7.3GB vs dell's 16GB;
+    zstd ~2-3x compression means ~1.5-2GB RAM cost). 140GB free on
+    /dev/sda2 means a disk swapfile is also viable, but zram is the
+    proven in-house pattern and needs no disk wear. This disarms
+    earlyoom's permanently-true swap arm and absorbs dispatch-task
+    spikes.
+  secondary_options:
+    - >-
+      earlyoom -m 5 (SIGTERM only below 5% mem) in /etc/default/earlyoom —
+      halves kill frequency but does not fix pressure; victims just get
+      killed later and harder.
+    - >-
+      OOMScoreAdjust on mn-ha-dev unit — RAISING HA's score is wrong;
+      LOWERING it (e.g. -500) would spare HA but shift kills onto
+      devin-task pythons (losing dispatch work) — policy call for Tony.
+    - >-
+      Reduce mn01 load: dispatch lane cap 2->1, consolidate the 3 yolo
+      server.py instances, or move mn-ha-dev back off mn01.
+  do_not: >-
+    MemoryMax/MemoryHigh on the quadlet; earlyoom --avoid 'homeassistant'
+    (just relocates the kills).
+
+followups:
+  - >-
+    DECISION NEEDED (board request on the card): add zram swap vs tune
+    earlyoom vs reduce mn01 footprint vs accept periodic restarts.
+  - >-
+    If swap is added, re-audit earlyoom victims afterwards — VMS.exe,
+    vms-snap.py, yolo server.py and chrome are all being killed too;
+    the camera-wall stack on mn01 is silently degrading.
+  - >-
+    ha_mcp_tools _force_install_package runs `uv pip install` inside HA
+    at boot on this loaded box (seen stuck in a SyncWorker at shutdown)
+    — worth a look if boot-time memory/latency matters, unrelated to
+    the kill loop.
+  - >-
+    The 963MB home-assistant_v2.db.corrupt.* file on mn01 can be
+    deleted once Tony confirms no forensic need (housekeeping).
+
+verification:
+  - "ssh mn01 'journalctl -u earlyoom.service --since \"2026-11-25\" | grep \"sending SIGTERM\"'  — every HA exit has a matching kill line"
+  - "ssh mn01 'systemctl --user show mn-ha-dev.service -p NRestarts'  — was 43 at 09:32 UTC"
+  - "ssh mn01 'python3 -c \"import sqlite3;print(sqlite3.connect('/home/tony/.config/mn-ha-dev/home-assistant_v2.db').execute('select count(*) from events where event_type_id in (select event_type_id from event_types where event_type=\\\"call_service\\\")').fetchone())\"' — no homeassistant-domain service calls exist"
+  - "ssh mn01 'swapon -s; free -m'  — Swap: 0 total"
+  - "ssh mn01 'systemctl cat earlyoom.service; cat /etc/default/earlyoom'  — only -r 3600"

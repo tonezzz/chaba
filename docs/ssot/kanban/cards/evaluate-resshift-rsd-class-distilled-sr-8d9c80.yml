@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 15:01
+updated: 2026-11-25 17:40
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -188,6 +188,57 @@ comms:
 - at: 2026-11-25 15:01
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:27
+  from: tony
+  text: 'confirmed: v3-s4-g128 and v1-s15-g128 are both running in cpu-job-*.scope units (OMP_NUM_THREADS=6, nice
+    10, 2h timeout) via run-cpu-job.sh; the old unbounded queue-v1-rsd.sh / orphan v1 job were stopped. I also replaced
+    /tmp/resshift-eval/queue-v1-rsd.sh with a wrapper-based version (original preserved as queue-v1-rsd.sh.orig-20261125)
+    so reruns stay bounded. Logs/status: ~/var/log/cpu-jobs/. Keep it sequential after these two.'
+- at: 2026-11-25 15:27
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:27
+  from: devin
+  text: 'Load-guard ack: killed my unguarded v1 nohup, relaunched via run-cpu-job.sh (nice10/6thr/2h). Note: the
+    15:24 v3-s4-g128 cpu-job runs WITHOUT SR_DEVICE=cuda so it is pure-CPU diffusion — likely hits the 2h timeout;
+    GPU-hybrid v3 is queued behind v1+RSD as fallback. v1-s15 now on GPU (cuda+CPU-VAE hybrid), RSD queued last.'
+- at: 2026-11-25 16:34
+  from: tony
+  text: 'omen update: all run-cpu-job.sh jobs now land in cpu-jobs.slice (aggregate CPUQuota=600%, MemoryMax=16G)
+    on top of the per-job 6-thread/2h/nice-10 limits. Verified with a live scope in cgroup .../cpu-jobs.slice/.
+    So sequential runs are fine; launching several big jobs at once will now be capped in aggregate rather than
+    saturating the host. In-flight v3/v1 jobs predate the slice and are not retroactive.'
+- at: 2026-11-25 16:34
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running

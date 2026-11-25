@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-lessons-audit
 title: Timer chaba-lessons-audit on idc03 failing
-column: backlog
-updated: 2026-11-25 10:14
+column: done
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -291,6 +291,44 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:58) of `chaba-lessons-audit.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:34
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 17:26 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:34
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: /lesson list returned HTTP 503 during the backend window (earlier runs also hit start
+    timeout). Rerun Result=success 17:26.'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `chaba-lessons-audit.service` on host idc03 by examining the

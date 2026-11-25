@@ -511,10 +511,10 @@ execution:
                cap: pin cards via action.host or match labels —
                unpinned queued cards already flow to any host under cap
                and under its load gate."
-    runner_fleet: "as of 2026-11-24 (idc caps re-audited live 2026-10-27,
+    runner_fleet: "as of 2026-11-25 (idc caps re-audited live 2026-10-27,
                card dispatch-concurrency-bump-idc — both already at 3;
                4 refused: ~3.5GB/session vs ~5G available on idc03) —
-               tony-dell: runner-agent cap 3 gate 0.85 labels
+               tony-dell: runner-agent cap 3 gate 1.0 labels
                desktop,cpu,push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,
                push:gods-eye-view (dispatch+script — unit restored
                2026-11-13 after OPS-0725 parked it; claims via 60s timer); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
@@ -531,7 +531,7 @@ execution:
                ssd,always-on,ada,cpu,small (dispatch+container+script);
                mn01: cap 1
                labels low-mem,edge,small (dispatch+container+script — devin CLI
-               IS present; RAM-tight so cap stays 1); con01: cap 1 RUNNER_MAX_LOAD_PC=1.6
+               IS present; RAM-tight so cap stays 1); con01: cap 4 RUNNER_MAX_LOAD_PC=1.6
                labels push:chaba,container,script (script+container only — no devin
                CLI; onboarded 2026-11-24, runner-agent service+timer installed and
                push:chaba probe verified, e2e card con01-script-smoke claimed and

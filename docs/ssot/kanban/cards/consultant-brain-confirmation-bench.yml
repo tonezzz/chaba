@@ -1,7 +1,7 @@
 id: consultant-brain-confirmation-bench
 title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
-column: backlog
-updated: 2026-11-25 15:13
+column: doing
+updated: 2026-11-25 17:39
 priority: medium
 tags:
 - ada
@@ -276,18 +276,82 @@ comms:
 - at: 2026-11-25 15:13
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:23
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 15:24
+  from: chaba
+  text: started devin-task-20261125-152415-follow-up-to-ada-consultant-ti on tony-macbook (dispatch)
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'primer injected 8 lesson(s): [consultant-brain-confirmation-bench] [blocked->needs-input] Prep complete
+    on di; [consultant-brain-confirmation-bench] primer injected 8 lesson(s): [ada-consulta; [ada-consultant-tier]
+    primer injected 8 lesson(s): [kk-mac-local-llm-lane] Addit; idc02''s kanban-dispatch.service was a linked unit
+    running a stale scripts/-only ; [kk-mac-extract-brief-class-eval] Restarted on tony-dell. Recovered the lost
+    202; [ops-retry-storm-detection] DONE: retry-storm-watch delivered'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-155153-follow-up-to-ada-consultant-ti'
+- at: 2026-11-25 15:25
+  from: devin
+  text: '[progress] picked up on tony-macbook dispatch wt. State check: corrected corpus + score.py --max-tokens
+    live only on unmerged branch dispatch/20261119-130719 (commit 2ad449c283) — porting the 2-file relabel + flag
+    into this worktree, then running qwen3:8b x3 vs kk-mac ollama. Note: consultant LANE itself is also unmerged
+    — activation step will need that branch landed first.'
+- at: 2026-11-25 16:43
+  from: devin
+  text: '[progress] Series running on kk-mac (awake again). run1 done: qwen3:8b PASS on bars (acc .904 def .926
+    prec .882) BUT 3 defer-gold over-act misses (defer-027->act, defer-013/009->correct) — disqualifying direction
+    already tripped. qwen2.5:32b run1: clean PASS (.894/.947/.857), zero defer->act/correct — now the lead candidate;
+    queued runs 2-3 after the 8b series. Artifacts: scripts/bench/card-judgment/consultant-confirm-*.{md,json}'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:21
+  from: devin
+  text: '[progress] qwen3:8b x3 COMPLETE on corrected corpus: all 3 pass metric bars (r1 .904/.926/.882, r2 .904/.957/.857,
+    r3 .851/.915/.811) — but EVERY run has defer-gold over-act misses (3/3/7; defer-027->act + defer-009->correct
+    recur in all 3). Per the card rule (no defer->act/correct = disqualifying direction) qwen3:8b is NOT certified.
+    qwen2.5:32b run1 was a clean PASS with zero over-act — runs 2-3 now executing for the streak.'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 0
+  attempts: 1
   sweep:
     stale_running: 2026-11-24 23:24
     dirty: 1
+    no_repo: 2026-11-25 15:24
+  runner: tony-macbook
 claim:
-  since: 2026-11-24 22:51
+  since: 2026-11-25 15:23
 requests:
 - id: job-input-consultant-brain-confirmation-bench
   ask: 'Job needs your input: kk-mac is asleep — wake it (or approve a degraded omen run) so the qwen3:8b x3 confirmation

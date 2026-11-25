@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-deploy
 title: Deploy ada-voice CMS-only bench harness
 column: done
-updated: 2026-11-25 14:59
+updated: 2026-11-25 17:40
 spec: Merged PR bench/kk-cms-only-seed-20261124. deploy-ada.sh on idc03; verify http://127.0.0.1:8002/api/health.
 action:
   type: manual
@@ -87,6 +87,34 @@ comms:
     env knobs. Full prime-off regressed to 0.5 (no CMS catalog prompt); fine-grained skip restores it. Final runs
     14:42=1.0, 14:44=0.833, 14:56=0.833 — seeded_recall green; residual flakes are benign live-state tool calls
     (tasks/ada_persona), no bank recall or fabricated answer. Dev lane healthy, prod profile unchanged.'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: deploy-kk-cms-only-memory-deploy
   ask: 'Deploy kk-cms-only-memory-deploy to ada-voice-prod?

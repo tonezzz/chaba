@@ -1,0 +1,44 @@
+---
+# zram-swap.yml — enable the existing fleet-standard compressed-swap service
+# on tony-omen after the 2026-11-25 load incident (load ~45-54, disk swap
+# 16/16 GiB). Reuses /etc/systemd/system/zram-swap.service and its existing
+# setup/teardown scripts rather than inventing another mechanism.
+#
+# The host's setup script creates a 24 GiB zram device with 4 compression
+# streams at swap priority 100, ahead of the 16 GiB disk /swapfile. The device
+# is virtual until pages are swapped in, so it does not immediately consume
+# 24 GiB of RAM.
+#
+# Rollback:
+#   ansible-playbook playbooks/zram-swap.yml --limit tony-omen -e zram_enabled=false
+#   or on the host: systemctl disable --now zram-swap.service
+#
+# Usage:
+#   ansible-playbook playbooks/zram-swap.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/zram-swap.yml --limit tony-omen
+
+- name: Enable compressed zram swap
+  hosts: tony-omen
+  gather_facts: false
+  become: true
+
+  vars:
+    zram_enabled: true
+
+  tasks:
+    - name: Ensure zram swap service is in the requested state
+      ansible.builtin.systemd:
+        name: zram-swap.service
+        enabled: "{{ zram_enabled }}"
+        state: "{{ zram_enabled | ternary('started', 'stopped') }}"
+        daemon_reload: true
+      register: zram_service
+
+    - name: Read active swap devices
+      ansible.builtin.command: swapon --show=NAME,TYPE,SIZE,PRIO
+      changed_when: false
+      register: swap_state
+
+    - name: Report active swap devices
+      ansible.builtin.debug:
+        var: swap_state.stdout_lines

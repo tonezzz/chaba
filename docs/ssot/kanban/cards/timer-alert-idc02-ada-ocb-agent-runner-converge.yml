@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
-column: backlog
-updated: 2026-11-25 14:41
+column: done
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -31,9 +31,49 @@ comms:
     a systemd --USER unit (~/.config/systemd/user/ada-ocb-agent-runner-converge.service), which is invalid; user
     manager cannot set supplementary groups. Fix = drop the User= line in the unit source (likely ansible/playbooks/agent-runner.yml
     in ada-ocb repo) + daemon-reload. Whitelisted in ssot.audit.hosts.yml known_failed meanwhile.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 16:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: unit had User=tony inside a --user unit (216/GROUP). Removed the directive from ~/.config/systemd/user/ada-ocb-agent-runner-converge.service
+    (backup .bak-20261125), daemon-reload, rerun Result=success 16:48.'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
   exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
   from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs to be redeployed.
   The done-condition is verified when scripts/board/runner-agent.py is successfully copied to idc02 (~/.local/bin/runner-agent)
   and a manual run or subsequent timer execution of ada-ocb-agent-runner-converge.service on idc02 succeeds without
   exit-code errors in journalctl.
+action:
+  status: done

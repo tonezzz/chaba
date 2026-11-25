@@ -1,7 +1,7 @@
 id: yomi-line-session-expired-idc03
 title: 'idc03: yomi LINE session expired — update-conversations writes 0 chats'
-column: backlog
-updated: 2026-11-25 14:53
+column: done
+updated: 2026-11-25 17:39
 priority: medium
 tags:
 - yomi
@@ -17,3 +17,157 @@ comms:
 - at: 2026-11-25 14:53
   from: devin
   text: card captured via board-api
+- at: 2026-11-25 15:45
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 15:45
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.7)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.87 > 0.8)'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:47
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 16:04
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 16:05
+  from: chaba
+  text: started devin-task-20261125-160455-yomi-update-all-service-on-idc on tony-macbook (dispatch)
+- at: 2026-11-25 16:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [yomi-update-active-update-all-fail-every-8afee2] DONE: root cause = yomi-api.se;
+    [yomi-update-active-update-all-fail-every-8afee2] primer injected 8 lesson(s): [; runbook docs/kb/yomi-troubleshooting.md:
+    Troubleshooting — - `mcp0_list_conversa; [ada-expert-consult-tool] finished (failed): no exit record — unit
+    not-found rep; [ada-expert-consult-tool] finished (failed): no exit record — unit not-found rep; [ada-tool-consolidation-merge-overlapping-615ba9]
+    merge-sweep'
+- at: 2026-11-25 16:09
+  from: devin
+  text: 'raised request line-re-login-needs-your-phone-3min-wind-c11696: LINE re-login needs your phone (~3min window).
+    On idc03 run: node /home/tony/.yomi/mcpb/run.mjs login --phone +668090068'
+- at: 2026-11-25 16:09
+  from: devin
+  text: 'Diagnosed two-layer failure. (1) Plumbing bug: podman one-shots run as root -> homedir()=/root -> yomi
+    data dir /root/.local/share/yomi unmounted, so credentials were invisible (no_saved_auth_token) — NOT just expired
+    session. Fixed: -e HOME=/home/tony added to yomi-update-all/yomi-update-active in ssot.jobs.yml + interim .d/home.conf
+    drop-ins live on idc03; HOME=/home/tony added to yomi-api.env and yomi-api restarted (session-status now answers
+    valid:false). Verified: manual run now finds creds'
+- at: 2026-11-25 16:14
+  from: tony-macbook
+  text: 'finished (ok): exit=0 dir.yml`, outcome at `dispatch-outcome-20261125-160455-yomi-update-all-service-on-idc.md`.
+    | devin-task-20261125-'
+- at: 2026-11-25 16:14
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:14
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-160455-yomi-update-all-service-on-idc
+    is 16 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 16:14
+  from: chaba
+  text: banked 9 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:14
+  from: chaba
+  text: pushed dispatch/20261125-160455-yomi-update-all-service-on-idc to origin
+- at: 2026-11-25 16:14
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:14
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 16:25
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-160455-yomi-update-all-service-on-idc on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 68b7e16e0aa0
+    (generated SSOT snapshots kept from master, substantive code from branch). Deliverable: yomi idc03 home data-dir
+    config (3 files). Closing.'
+- at: 2026-11-25 17:00
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 dir.yml`, outcome at `dispatch-outcome-20261125-160455-yomi-update-all-service-on-idc.md`. | devin-task-20261125-160455-yomi-update-all-service-on-idc.service:
+    Consumed 35.141s CPU time over 8min 13.802s wall clock time, 716.8M memory peak.'
+  verified: false
+  sweep:
+    dirty: 1
+claim:
+  since: 2026-11-25 16:04
+requests:
+- id: line-re-login-needs-your-phone-3min-wind-c11696
+  ask: 'LINE re-login needs your phone (~3min window). On idc03 run: node /home/tony/.yomi/mcpb/run.mjs login --phone
+    +66809006872 --region TH — it prints a PIN; enter it in the LINE app on your phone to approve. Plumbing is already
+    fixed (HOME=/home/tony drop-ins live + ssot.jobs.yml), so once creds refresh the next hourly yomi-update-all
+    writes rows. Full runbook: docs/ssot/jobs/infrastructure/2026-11-25-yomi-idc03-home-data-dir.yml'
+  status: open
+  at: 2026-11-25 16:09
+  from: devin
+  options:
+  - proceed
+  - hold
+review_kind: verify

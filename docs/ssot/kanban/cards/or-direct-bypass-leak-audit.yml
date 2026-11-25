@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
 column: backlog
-updated: 2026-11-25 07:51
+updated: 2026-11-25 17:50
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -180,3 +180,68 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: classified as free_lane (kw:audit-ro conf 1.00)
+- at: 2026-11-25 17:01
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.19 > 0.7)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: '[auto-dispatch] wave 5 (2026-11-25 17:03): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.64 > 0.8)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}

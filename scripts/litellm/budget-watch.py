@@ -292,7 +292,12 @@ def load_state() -> dict:
 
 def save_state(st: dict) -> None:
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(st, indent=1))
+    tmp = STATE.with_name(STATE.name + ".tmp")
+    with tmp.open("w") as f:
+        f.write(json.dumps(st, indent=1))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(STATE)
 
 
 def main() -> int:

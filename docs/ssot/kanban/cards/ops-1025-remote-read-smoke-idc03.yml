@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: backlog
-updated: 2026-11-25 15:21
+updated: 2026-11-25 17:39
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,10 +69,14 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: queued
-  attempts: 0
-  last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795594288.service: Main
-    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795594288.service:
+  status: failed
+  attempts: 1
+  last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service: Main
+    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service:
+    Failed with result ''exit-code''.'
+  runner: idc02
+  result: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service: Main process
+    exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service:
     Failed with result ''exit-code''.'
 ref: OPS-0245
 comms:
@@ -649,5 +653,50 @@ comms:
 - at: 2026-11-25 15:21
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:34
+  from: idc02
+  text: claimed
+- at: 2026-11-25 15:34
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795595650 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-25 15:35
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 15:35
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-25 16:05'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
-  since: 2026-11-25 15:11
+  since: 2026-11-25 15:34

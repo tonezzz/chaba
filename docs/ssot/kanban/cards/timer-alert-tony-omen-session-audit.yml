@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-session-audit
 title: Timer session-audit on tony-omen failing
-column: backlog
-updated: 2026-11-25 07:44
+column: done
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -61,7 +61,48 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:55
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 16:43 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 16:55
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: service/timer unit files were missing from ~/.config/systemd/user although the script
+    exists. Reinstalled via `render-jobs.py --host tony_omen --install --ids session-audit`; rerun Result=success
+    16:49.'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of session-audit.service on host tony-omen by inspecting the systemd user journal
   using journalctl --user -u session-audit.service. Resolve the root cause of the exit-code failure and ensure the
   service runs successfully. The done-condition is verified when journalctl confirms a subsequent successful execution
   of session-audit.service on tony-omen without exit-code errors.
+action:
+  status: done

@@ -134,7 +134,12 @@ def load_state():
 
 def save_state(seen):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps({"seen": sorted(seen)[-500:]}))
+    tmp = STATE_FILE.with_name(STATE_FILE.name + ".tmp")
+    with tmp.open("w") as f:
+        f.write(json.dumps({"seen": sorted(seen)[-500:]}))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(STATE_FILE)
 
 
 def alert_yaml(inst, src, ts, line):

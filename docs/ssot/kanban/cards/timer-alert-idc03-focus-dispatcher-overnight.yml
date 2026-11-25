@@ -1,7 +1,7 @@
 id: timer-alert-idc03-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on idc03 failing
-column: backlog
-updated: 2026-11-25 10:14
+column: done
+updated: 2026-11-25 17:38
 priority: high
 tags:
 - timer-alert
@@ -1188,6 +1188,47 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:59) of `focus-dispatcher-overnight.service` on `idc03` result=signal
     — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 15:54
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 15:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 15:54
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:21
+  from: tony
+  text: '2026-11-25 16:22 (+07): RESOLVED + VERIFIED. Two causes: (1) the 09:59 status=signal was collateral from
+    the earlier MDDB/Ollama SIGTERM cluster; (2) the overnight job''s SSOT pre-validation aborts on any invalid
+    YAML. Found jobs/devnest/2026-11-25-adobe-stock-multirun-opencode-models.yml with an unquoted '': '' in a findings
+    bullet (commit 9c677a6564, 14:46). Converted the bullet to a folded block (wording unchanged), deployed to both
+    idc03 checkouts (backups .bak-20261125-154735); validator now 0'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of focus-dispatcher-overnight.service on idc03 from the 11-08 03:00 run, which exited
   with code 1 during the mddb-embed runaway window. Examine the journal via journalctl --user -u focus-dispatcher-overnight.service
   on idc03 and cross-reference CMS timer-timeline-idc03. The done-condition is confirming successful completion

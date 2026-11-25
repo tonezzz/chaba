@@ -1,7 +1,7 @@
 id: chaba-nest-hosts-view-replace-tony-ha-if-053226
 title: chaba-nest hosts view — replace tony-ha iframe with native/mobile-friendly cards
 column: done
-updated: 2026-11-25 07:45
+updated: 2026-11-25 17:39
 priority: medium
 spec: 'https://ada-ha.surf-thailand.com/chaba-nest/hosts is a panel view with one iframe -> https://tony-ha.surf-thailand.com/chaba-admin/hosts
   (lovelace.chaba_nest on ada-ha :8125). Problems: (1) double sidebar — full HA page iframed inside HA; (2) iframe
@@ -218,6 +218,46 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 15:47
+  from: tony
+  text: '[verify 2026-11-25] Live ada-ha chaba-nest /hosts + /services are now native masonry views (9 hosts cards
+    / 8 service cards, zero iframes, zero tony-ha.surf-thailand.com refs); /or-panel iframe repointed to the Access-free
+    idc02 origin. Re-applied via chaba-nest-build.py --apply after finding the 2026-11-17 dispatch work (cbad05009b)
+    was never merged to master — it is now landed as 132f263e14 on origin/master. kk-mac telemetry fixed: ~/.local/bin/smctemp
+    preferred over osx-cpu-temp (0.0C) in dev'
+- at: 2026-11-25 16:09
+  from: tony
+  text: '[verify follow-up] kk-mac temp path hardened: smctemp transient 0.0 reads now get a bounded 3x retry and
+    a 15-min last-good cache (temp_source recorded in the telemetry doc); deployed on kk-mac and confirmed sensor.kk_mac_temp
+    / kk_mac_temps stay numeric. Re-applying verified stamp after it was reverted by an autostash on the exec checkout.'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
@@ -225,8 +265,8 @@ action:
   runner: tony-omen
   result: 'exit=0 `docs/ssot/jobs/home-assistant/2026-11-17-chaba-nest-hosts-native.yml`; board updated. | devin-task-20261117-185227-https-ada-ha-surf-thailand-com.service:
     Consumed 4min 54.361s CPU time over 14min 32.831s wall clock time, 1.1G memory peak.'
-  verified: false
+  verified: true
   sweep:
-    dirty: 1
+    dirty: 0
 review_kind: verify
 claim: {}

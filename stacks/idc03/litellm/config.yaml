@@ -3,6 +3,7 @@
 # Env (all via ~/.config/secrets on idc03, never committed):
 #   GEMINI_API_KEY_PAID / GEMINI_API_KEY_FREE  (gemini-keys.env)
 #   OPENROUTER_API_KEY                          (mddb-gemini.env)
+#   OPENROUTER_BENCH_API_KEY                   (litellm.env — bench/eval or-* chat routes)
 #   LITELLM_MASTER_KEY / DATABASE_URL           (litellm.env)
 
 model_list:
@@ -19,7 +20,7 @@ model_list:
   - model_name: or-gemini-2.5-flash
     litellm_params:
       model: openrouter/google/gemini-2.5-flash
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   - model_name: gemini-2.5-flash-lite
@@ -29,7 +30,7 @@ model_list:
   - model_name: or-gemini-2.5-flash-lite
     litellm_params:
       model: openrouter/google/gemini-2.5-flash-lite
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   - model_name: gemini-3.5-flash
@@ -43,7 +44,7 @@ model_list:
   - model_name: or-gemini-3.5-flash
     litellm_params:
       model: openrouter/google/gemini-3.5-flash
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   - model_name: gemini-3.5-flash-lite
     litellm_params:
@@ -56,19 +57,19 @@ model_list:
   - model_name: or-gemini-3.5-flash-lite
     litellm_params:
       model: openrouter/google/gemini-3.5-flash-lite
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   # ── supervised strong-model benchmark routes ────────────────────
   - model_name: or-claude-fable-5.1
     litellm_params:
       model: openrouter/anthropic/claude-fable-5.1
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   - model_name: or-gemini-3.1-pro-preview
     litellm_params:
       model: openrouter/google/gemini-3.1-pro-preview
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   # native Gemini strong-tier (OPS-1039 answered route: gemini-3-pro) —
   # paid key primary, free key fallback variant, OR variant above.
@@ -338,7 +339,7 @@ model_list:
   - model_name: or-deepseek-v4-flash
     litellm_params:
       model: openrouter/deepseek/deepseek-v4-flash
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
 router_settings:

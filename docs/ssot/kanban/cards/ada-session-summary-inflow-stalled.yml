@@ -1,7 +1,7 @@
 id: ada-session-summary-inflow-stalled
 title: Ada session-summary feed stalled — recall-summary collections get no new docs since early Oct
-column: review
-updated: 2026-11-25 15:17
+column: backlog
+updated: 2026-11-25 17:39
 spec: 'Found while shipping memory-extract-merge-proposals (2026-11-18): memory-distill.timer runs Sun 09:45 on
   idc03 and exits SUCCESS but reports 0 new session summary docs in every ada-ha-recall-summary-* collection. Verified
   newest docs: ada-ha-recall-summary-tony=2026-10-03, -dev=2026-10-09, -kk=2026-10-13, -ada-dev=empty. Downstream
@@ -191,15 +191,56 @@ comms:
 - at: 2026-11-25 15:17
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-150157-found-while-shi'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced NO commits — the branch head
+    was just an old base commit (merge-sweep: ''NOT verified''). Dirty worktree files were left uncommitted and
+    no deliverable landed in origin/master. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 17:00
+  from: tony
+  text: put on hold
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
   attempts: 1
   result: 'exit=0 dispatch-outcome-20261125-150157-found-while-shipping-memory-ex.md`. | devin-task-20261125-150157-found-while-shipping-memory-ex.service:
     Consumed 37.698s CPU time over 13min 15.427s wall clock time, 1G memory peak, 372.2M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-25 15:24
 claim:
   since: 2026-11-25 15:01
 review_kind: verify

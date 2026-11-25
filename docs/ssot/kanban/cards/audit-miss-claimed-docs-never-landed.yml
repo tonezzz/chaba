@@ -1,7 +1,7 @@
 id: audit-miss-claimed-docs-never-landed
 title: Claimed reports/KB docs never landed
-column: backlog
-updated: 2026-11-25 15:13
+column: done
+updated: 2026-11-25 17:40
 brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
   on master or any located copy.'
 priority: low
@@ -202,9 +202,147 @@ comms:
 - at: 2026-11-25 15:13
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.7)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:26
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:34
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.57 > 0.7)'
+- at: 2026-11-25 15:35
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 15:37
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:42
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 5.29 > 0.8)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 16:27
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 16:28
+  from: chaba
+  text: started devin-task-20261125-162817-docs-reports-ops0790-rollout-i on tony-macbook (dispatch)
+- at: 2026-11-25 16:28
+  from: chaba
+  text: 'primer injected 8 lesson(s): [audit-miss-remote-eval-results-not-landed] primer injected 8 lesson(s): [devin-;
+    [audit-miss-cms-page-devin-session-audit-2026-10-17] session produced no commits; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    session produced no commits — ; [devin-session-audit-2026-10-29] AUD-0973 CLOSED 2026-11-20 ~20:0x ICT: full
+    art; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; [devin-session-audit-2026-10-29]
+    FINAL: full artifact-landing'
+- at: 2026-11-25 16:39
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 16:49
+  from: devin
+  text: 'DONE: all three missing docs landed on dispatch branch (commit b7d75781ff4). docs/kb/edge-add-public-host.md
+    written — the edge-add-host procedure really did run 2026-10-07/08 (ha-public-urls-cf-access comms: CF proxied
+    CNAME -> idc02 caddy-edge vhost tls internal -> CF Access app); registry entry was right, body was never committed
+    — reconstructed runbook now matches it. docs/reports/ops0790-rollout-idc03.md reconstructed from card DONE comms
+    (3 timers armed+verified 2026-11-07, embed-lane-news'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 o `dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md` with lessons.
+    | devin-task-20261125-162817'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:54
+  from: chaba
+  text: pushed dispatch/20261125-162817-docs-reports-ops0790-rollout-i to origin
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-162817-docs-reports-ops0790-rollout-i no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-162817-docs-reports-ops0790-rollout-i,
+    branch dispatch/20261125-162817-docs-reports-ops0790-rollout-i on tony-macbook'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep: merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md)
+    — auto-closed'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-162817-docs-reports-ops0790-rollout-i already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md) — auto-closed'
+- at: 2026-11-25 16:55
+  from: local
+  text: 'pub milestone: card verified: audit-miss-claimed-docs-never-landed on idc03 — merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    from tony-macbook) -> origin/master — verified — merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-ed7319778f9c18eb]'
+- at: 2026-11-25 16:56
+  from: local
+  text: 'pub milestone: card verified: audit-miss-claimed-docs-never-landed on idc03 — dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    already in origin/master — verified — auto-closed — dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    already in origin/master — verified — auto-closed [evt-150a0d06ede9b8d2]'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: queued
+  status: done
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 o `dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md` with lessons. | devin-task-20261125-162817-docs-reports-ops0790-rollout-i.service:
+    Consumed 1min 53.462s CPU time over 24min 44.713s wall clock time, 778.6M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-25 16:55
+claim:
+  since: 2026-11-25 16:27
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 16:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md

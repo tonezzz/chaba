@@ -11,6 +11,19 @@ def doc(body):
 
 
 class KkMacAdmissionTests(unittest.TestCase):
+    def setUp(self):
+        # snapshot()'s SSH temp fallback would otherwise probe the real
+        # kk-mac (and its hot GPU) from unit tests. Keep it deterministic.
+        probe = patch(
+            "scripts.devnest.kk_mac_admission._run_text",
+            side_effect=lambda cmd, **kw: (
+                "40.0\n" if "smctemp -c" in str(cmd) else
+                "42.0\n" if "smctemp -g" in str(cmd) else None
+            ),
+        )
+        probe.start()
+        self.addCleanup(probe.stop)
+
     def test_fresh_healthy_heartbeat_is_eligible(self):
         now = time.time()
         with patch(
@@ -287,6 +300,9 @@ class LocalAdmissionLoadTests(unittest.TestCase):
             "scripts.devnest.kk_mac_admission._local_temp_c",
             return_value=40.0,
         ), patch(
+            "scripts.devnest.kk_mac_admission._local_gpu_temp_c",
+            return_value=None,
+        ), patch(
             "scripts.devnest.kk_mac_admission._local_tmux_jobs",
             return_value="",
         ):
@@ -308,6 +324,102 @@ class LocalAdmissionLoadTests(unittest.TestCase):
         self.assertFalse(result["eligible"])
         self.assertIn("load_high", result["reasons"])
         self.assertEqual(result["load_limit"], 4.0)
+
+
+class ThermalGateTests(unittest.TestCase):
+    """The 55C gate must see the hotter of CPU and GPU sensors."""
+
+    def _local(self, cpu, gpu):
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        stat = type("Stat", (), {"f_bavail": 100, "f_frsize": 10 ** 9})()
+        with patch(
+            "scripts.devnest.kk_mac_admission.urllib.request.urlopen",
+            return_value=_Resp(),
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.statvfs", return_value=stat
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_load_1m",
+            return_value=1.0,
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.cpu_count",
+            return_value=14,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_temp_c",
+            return_value=cpu,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_gpu_temp_c",
+            return_value=gpu,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_tmux_jobs",
+            return_value="",
+        ):
+            return local_snapshot()
+
+    def test_local_gpu_hot_denies_when_cpu_cool(self):
+        result = self._local(40.0, 72.3)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_local_cpu_hotter_wins(self):
+        result = self._local(66.6, 40.0)
+        self.assertEqual(result["cpu_temp_c"], 66.6)
+        self.assertIn("temp_high", result["reasons"])
+
+    def test_local_both_cool_admits(self):
+        result = self._local(40.0, 42.0)
+        self.assertTrue(result["eligible"], result["reasons"])
+
+    def test_snapshot_uses_hotter_heartbeat_field(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+                "cpu_temp_c": 40.0,
+                "gpu_temp_c": 72.3,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_snapshot_ssh_fallback_probes_both_sensors(self):
+        now = time.time()
+        readings = {"-c": "40.0\n", "-g": "72.3\n"}
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+            })],
+        ), patch(
+            "scripts.devnest.kk_mac_admission._run_text",
+            side_effect=lambda cmd, **kw: readings.get(cmd[-1].split()[-1]),
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
 
 
 class QuietHoursTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 id: timer-alert-idc02-kk-mac-model-status
 title: Timer kk-mac-model-status on idc02 failing
-column: backlog
-updated: 2026-11-25 09:09
+column: done
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -29,3 +29,44 @@ comms:
     on idc02 checkout (never committed or removed). Every run exits 2/INVALIDARGUMENT. Not a kk-mac reachability
     issue — python cannot open the file at all. Fix = write the script + commit, or remove the orphaned unit+timer
     on idc02. nest-mgr correctly refuses to auto-restart it (not-allo'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 17:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: ExecStart script existed only on unmerged branch dispatch/20261124-kkmac-gate-visibility.
+    Restored scripts/devnest/kk_mac_model_status.py to master (commit 694b6d0d), deployed to idc02. Unit success
+    16:55; picker now shows kk-mac temp_high from live shim.'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

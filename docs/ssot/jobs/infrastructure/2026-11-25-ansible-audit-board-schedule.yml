@@ -1,0 +1,80 @@
+title: Phase 2 — timerized read-only Ansible audits feeding board-api
+subtitle: Daily controller-side audits with fp-deduped kanban evidence; no remediation
+icon: calendar
+
+card: ansible-audit-board-schedule
+date: 2026-11-25
+status: proposed
+owner: devin
+
+context: |
+  Phase 0+1+1.1 landed (KNB-1353, master@5d37f2f71b): read-only audit playbooks can
+  optionally notify board-api with idempotent card creation and fingerprint-deduped
+  comments. Notify+dedupe extended to audit-fleet-services, disk-headroom,
+  verify-host-software (master@184c4f4fdc). Pilots: stale-checkouts 2e PASS,
+  fleet-services live pilot created ansible-fleet-service-drift card.
+
+  Gap: audits are manual. Phase 2 makes them scheduled, read-only, and low-noise.
+
+design:
+  scope:
+    audits:
+      - ansible/playbooks/audit-stale-checkouts.yml
+      - ansible/playbooks/audit-runner-tools.yml
+      - ansible/playbooks/audit-fleet-services.yml
+      - ansible/playbooks/disk-headroom.yml
+      - ansible/playbooks/verify-host-software.yml
+    mode: read-only
+    board_notify: true
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+
+  cadence:
+    default: daily
+    suggested_time: "06:30 Asia/Bangkok"
+    host: idc03   # controller with board-api localhost access; confirm before enabling
+
+  noise_controls:
+    - "Fingerprint dedupe already implemented: skip comment if same from+fp exists in card comms."
+    - "Card creation idempotent (already exists = ok)."
+    - "No comment on unchanged fp = no persistent-drift spam."
+    - "Gap: no 'resolved' comment when drift clears; add in follow-up (fp transitions to empty)."
+    - "Gap: --limit runs rewrite report dir for all audited_hosts in some playbooks; schedule full-fleet runs or isolate report dirs per run."
+
+  artifacts:
+    - "reports/ansible-benchmark/stale-checkouts/<host>.yml"
+    - "reports/ansible-benchmark/services/<host>.yml"
+    - "reports/ansible-benchmark/disk/<host>.yml"
+    - "reports/ansible-benchmark/host-software/<host>.yml"
+    - "Controller logs under ~/var/log/ or systemd journal for the timer unit."
+
+  safety:
+    - "Read-only audits only; no remediation tasks, no --tags remediate, no board_notify-driven mutations beyond card/comment/request."
+    - "No direct edits to docs/ssot/kanban/cards/*.yml."
+    - "board-api is the only card write door."
+    - "Destructive remediation remains explicit-approval only and out of scope."
+
+  implementation_options:
+    A:
+      label: "systemd --user timer on idc03 (recommended)"
+      pros: ["simple", "journaled", "host-local controller", "board-api on localhost"]
+      cons: ["single-host controller dependency"]
+    B:
+      label: "kanban/job-run scheduled wrapper"
+      pros: ["visible in job system", "fits existing dispatch patterns"]
+      cons: ["more moving parts"]
+    C:
+      label: "CI/scheduled pipeline"
+      pros: ["centralized logs"]
+      cons: ["needs SSH/secret plumbing, heavier"]
+
+verification:
+  - "Dry-run: run each audit with board_notify=false; confirm reports written, no board writes."
+  - "Notify dry-run: run with board_notify=true on a single known-alert host; confirm card+fp comment; rerun confirms dedupe."
+  - "Timer dry-run: systemd-run --user or manual timer trigger; confirm journal output and report artifacts."
+  - "Noise check: two consecutive runs with unchanged drift produce at most one fp comment per fp."
+
+caveats:
+  - "audit-fleet-services controller play currently renders reports for all audited_hosts; limited runs can mark unprobed hosts as unreachable in reports. Schedule full-fleet runs."
+  - "request.to readback showed None in 2e pilot; confirm board-api field mapping before relying on it for routing."
+  - "Resolved-drift (fp -> empty) does not currently post a 'cleared' comment; add as Phase 2.1."

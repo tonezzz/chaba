@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-25 12:28
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -2120,6 +2120,50 @@ comms:
     tony-ha fails at the websocket save with RuntimeError: Save failed: {''code'': ''unauthorized'', ''message'':
     ''Unauthorized''} — the HA token in the configured token_file is stale/revoked. The failed --push also left
     the rebuilt stacks/web/public/apps/ha/ssot.ui.ha.yml d'
+- at: 2026-11-25 15:32
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 15:32
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 15:33
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 15:33
+  from: tony
+  text: '2026-11-25 15:34 (+07): REOPENED — the 15:32 auto-close was a false heal, not a fix. Live check on tony-dell:
+    ActiveState=failed, Result=exit-code, ExecMainExitTimestamp=15:29:25, build-dossier-devices.py still dies on
+    the unauthorized tony-ha token (SYS-0665). The collector sampled the unit mid-restart at 15:29:06Z and recorded
+    Result=success with last=''-'' / last_us=0. Patched timer-sentinel._heal_reason so a success heal requires an
+    observed run (last or last_us), and deployed to tony-omen (ba'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done

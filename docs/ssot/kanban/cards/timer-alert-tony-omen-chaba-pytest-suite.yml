@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-pytest-suite
 title: Timer chaba-pytest-suite on tony-omen failing
 column: backlog
-updated: 2026-11-25 07:45
+updated: 2026-11-25 17:43
 priority: high
 tags:
 - timer-alert
@@ -157,6 +157,41 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:43
+  from: tony
+  text: '2026-11-25: fixed the 6 kk-mac-image-render-poc failures (checked-in request had been flipped to an armed/expired
+    approval with a truncated model revision; restored fail-closed template, tests 8/8 pass locally and on tony-omen).
+    Full suite rerun still reports 9 other failures; 8 of them pass on the local checkout — tony-omen''s chaba is
+    364 commits behind origin/master and has locally modified backup JSONs. Needs a controlled checkout sync, not
+    another code change.'
 spec: Investigate the failure of the chaba-pytest-suite.service systemd user timer on the tony-omen host, where
   the last run at 03:57 on 11-21 exited with an error code. Access the host systemd journal using `journalctl --user
   -u chaba-pytest-suite.service` and review the timer-timeline-tony-omen CMS entry to identify the root cause of
