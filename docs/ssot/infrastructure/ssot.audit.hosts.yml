@@ -1951,9 +1951,17 @@ hosts:
       - name: ada-bench-casting.timer
         type: timer
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: Daily 02:00 preflight gate -> OnSuccess ada-scenario-casting.service
+        note: "Daily 02:00 preflight gate -> OnSuccess ada-scenario-casting.service.
+          Masked 2026-11-25: preflight-bench.sh's load<2 gate can never pass
+          on idc03 (sustained load 4-8 from mddb/tailscale/board-api), so the
+          unit exited 1 every run and timer-sentinel reopened its card daily
+          even though the gate was correctly refusing to launch the paid
+          casting lane. Lane is parked on prod (bench-off-paid-lanes); the
+          separate Sat ada-scenario-casting.timer still covers the weekly
+          suite. Unmask only when prod-allow-casting is authorized and host
+          load is durably <2."
       - name: ada-embed-bench.timer
         type: timer
         scope: user
