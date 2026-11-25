@@ -1,7 +1,7 @@
 id: awx-aap-rbac-approval-gates
 title: AWX/AAP integration for RBAC and approval gates
 column: review
-updated: 2026-11-25 21:09
+updated: 2026-11-26 03:58
 brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
   and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
   without breaking the current scheduler.
@@ -142,6 +142,10 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-210313-context-home-tony-ansible-disp on tony-macbook still
     dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-1408
 claim:
   since: 2026-11-25 21:02

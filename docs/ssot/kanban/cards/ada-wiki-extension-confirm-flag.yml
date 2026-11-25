@@ -1,7 +1,7 @@
 id: ada-wiki-extension-confirm-flag
 title: ada-voice wiki_extension tool must pass confirm=true on mutations
 column: done
-updated: 2026-11-26 03:50
+updated: 2026-11-26 03:57
 brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
   ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
   door deploys.'
@@ -182,6 +182,10 @@ comms:
 - at: 2026-11-26 03:50
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

@@ -1,7 +1,7 @@
 id: omen-tmp-quota-reclaim
 title: tony-omen /tmp tmpfs usrquota exhausted — reclaim stale files
 column: done
-updated: 2026-11-26 03:55
+updated: 2026-11-26 03:58
 spec: 'tony-omen /tmp is tmpfs 16G mounted with usrquota; uid tony is over quota (Errno 122 EDQUOT). Discovered
   2026-11-14 during kk-mac-continuous-llm-worker: pre-commit pytest gate failed writing artifact tempfiles. Biggest
   consumers: /tmp/pytest-of-tony ~6.1G (stale pytest tempdirs), /tmp/upsc-eval ~5.5G (torch venv from Nov 9), /tmp/chaba-gh-radar-pr
@@ -192,6 +192,14 @@ comms:
 - at: 2026-11-26 03:55
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done

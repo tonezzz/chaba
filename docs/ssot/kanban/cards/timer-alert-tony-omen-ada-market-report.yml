@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ada-market-report
 title: Timer ada-market-report on tony-omen failing
 column: done
-updated: 2026-11-26 03:50
+updated: 2026-11-26 03:58
 priority: high
 tags:
 - timer-alert
@@ -115,6 +115,14 @@ comms:
 - at: 2026-11-26 03:50
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the ada-market-report.service timer on tony-omen by checking the systemd journal
   logs using 'journalctl --user -u ada-market-report.service' on the host and reviewing the CMS timer-timeline-tony-omen.
