@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
 column: done
-updated: 2026-11-25 16:58
+updated: 2026-11-25 17:02
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -245,6 +245,10 @@ comms:
 - at: 2026-11-25 16:58
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
