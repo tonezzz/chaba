@@ -1,7 +1,7 @@
 id: devin-usage-allowance-visibility
 title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
 column: doing
-updated: 2026-11-25 09:41
+updated: 2026-11-25 09:45
 brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
   window burn but not plan allowance remaining.'
 priority: medium
@@ -103,5 +103,11 @@ comms:
     was a linked unit running a stale scripts/-only ; [michael-dev-migrate-mn01] DONE: mn-ha-dev moved idc02 ->
     mn01. Verified: https:; runbook docs/kb/devnest-model-cache.md: DevNest model cache — fetch once on a fa; "The
     render_job writer" is NOT in chaba — writers are ada-voi'
+- at: 2026-11-25 09:45
+  from: devin
+  text: 'DONE: authoritative allowance source found = Connect RPC SeatManagementService/GetUserStatus on server.codeium.com
+    (api_key in metadata, no auth header). api.devin.ai has no usage endpoints (all 404). devin-usage.py now prints
+    real quota footer (Pro: daily 100% / weekly 96%, resets, overage $3.55) + --json allowance block; 6 unittests
+    pass. Job doc: docs/ssot/jobs/devnest/2026-11-25-devin-usage-allowance.yml'
 claim:
   since: 2026-11-25 09:40
