@@ -1,7 +1,7 @@
 id: reconcile-local-conflicts-expire-stale-n-00974b
 title: 'reconcile-local-conflicts: expire stale non-card .local-conflict files'
 column: doing
-updated: 2026-11-25 10:57
+updated: 2026-11-25 10:59
 priority: medium
 tags:
 - chaba
@@ -285,6 +285,13 @@ comms:
     ROOT CAUSE found + cleared (2026-10-21): the served c; [video-render-dispatcher] STALE CLAIM CLEANUP COMPLETED
     per claim-lifecycle proc; The live `~/CascadeProjects/ada-voice` checkout may sit on someone else''s featur;
     [ada-memory-sync-transient-mddb-hardening] Merged to origin/m'
+- at: 2026-11-25 10:59
+  from: devin
+  text: 'attempt 2: cherry-picked e405de247b (expire_noncard impl) + fixed a real bug — --selftest was non-idempotent
+    (FLAG_STATE dedup leaked between runs, suppressed flag writes, crashed on missing alert card). Selftest now
+    stubs FLAG_STATE; added tests/board/test_reconcile_local_conflicts.py. Selftest passes twice consecutively.
+    Note: prior merge was held by test gate — pytest unavailable on tony-macbook (fail-closed OPS-1191); if merge
+    routes there again it will hold regardless of code.'
 action:
   type: dispatch
   status: running
