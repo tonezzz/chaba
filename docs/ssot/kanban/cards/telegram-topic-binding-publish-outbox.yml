@@ -1,7 +1,7 @@
 id: telegram-topic-binding-publish-outbox
 title: Fix telegram topic bindings — publish outbox stuck
 column: backlog
-updated: 2026-11-25 11:04
+updated: 2026-11-25 12:20
 brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
   retries cannot clear them until project/card topic bindings exist.'
 priority: medium
@@ -25,3 +25,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as devin (fallback conf 0.35)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
