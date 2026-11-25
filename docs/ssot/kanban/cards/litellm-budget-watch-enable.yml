@@ -1,7 +1,7 @@
 id: litellm-budget-watch-enable
 title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
 column: done
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:07
 spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
   on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
   caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
@@ -124,6 +124,10 @@ comms:
 - at: 2026-11-25 17:02
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-11-25 10:23
