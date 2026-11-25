@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper
 title: Timer log-shipper on tony-dell failing
 column: backlog
-updated: 2026-11-25 23:14
+updated: 2026-11-25 23:47
 priority: high
 tags:
 - timer-alert
@@ -1356,6 +1356,11 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 22:49) of `log-shipper.service` on `tony-dell` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 23:47
+  from: tony
+  text: '2026-11-25 23:20 (+07): SELF-RECOVERED — an earlier run hit a 10m timeout; the current unit Result=success
+    exit=0 and the timeline sweep is clean. tony-dell runs the older per-doc /add path (no batched ingest), so the
+    mddb-ops ~30s batch cutoff that affected tony-omen/idc03/mn01 does not apply here. Closing.'
 action:
   status: done
 spec: Investigate the recurring timeout failures of log-shipper.service on tony-dell by inspecting the user journal
