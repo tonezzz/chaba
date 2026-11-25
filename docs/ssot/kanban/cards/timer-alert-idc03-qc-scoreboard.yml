@@ -1,7 +1,7 @@
 id: timer-alert-idc03-qc-scoreboard
 title: Timer qc-scoreboard on idc03 failing
 column: done
-updated: 2026-11-25 17:27
+updated: 2026-11-25 17:39
 priority: high
 tags:
 - timer-alert
@@ -90,6 +90,10 @@ comms:
 - at: 2026-11-25 17:27
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of qc-scoreboard.service on idc03 by checking the journal logs via 'journalctl --user
   -u qc-scoreboard.service' and cross-referencing CMS timer-timeline-idc03. Prior to executing the task, redeploy
