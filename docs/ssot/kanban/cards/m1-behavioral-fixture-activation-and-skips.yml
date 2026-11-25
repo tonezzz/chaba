@@ -1,7 +1,7 @@
 id: m1-behavioral-fixture-activation-and-skips
 title: Activate prepared M1 fixture hook and expose skipped required tests
 column: review
-updated: 2026-11-25 08:01
+updated: 2026-11-25 08:08
 brief: OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still
   skips its fourth required idle-follower case.
 priority: medium
@@ -246,6 +246,10 @@ comms:
 - at: 2026-11-25 08:01
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 08:08
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-074902-actual-consumer-home-tony-eval on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -258,6 +262,8 @@ action:
     devin-task-20261125-074902-actual-consumer-home-tony-eval.service: Consumed 36.438s CPU time over 10min 15.480s
     wall clock time, 331M memory peak.'
   verified: false
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-25 07:48
 review_kind: verify
