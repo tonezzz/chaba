@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
-column: review
-updated: 2026-11-24 22:23
+column: backlog
+updated: 2026-11-25 07:31
 priority: medium
 tags:
 - ops
@@ -250,13 +250,21 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-215344-migrate-the-42-entries-in-stac on tony-macbook still
     dirty — 16 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 07:31
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 07:31
+  from: tony
+  text: put on hold
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
   reference tony-dell.taila0626a.ts.net and the consumer canary successfully greps the deployed apps index.
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: devin
   lane_source: fallback
   runner: tony-macbook
