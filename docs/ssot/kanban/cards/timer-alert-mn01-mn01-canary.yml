@@ -1,7 +1,7 @@
 id: timer-alert-mn01-mn01-canary
 title: Timer mn01-canary on mn01 failing
-column: backlog
-updated: 2026-11-25 17:39
+column: done
+updated: 2026-11-25 19:01
 priority: high
 tags:
 - timer-alert
@@ -56,3 +56,16 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: '2026-11-25 18:58 (+07): FIXED — stale fixture in mn01-canary.sh checked retired ada-pi-pwa (SSOT expected_absent
+    since 11-17) and parked ada-ha-michael (no live unit/env on idc03); it now checks the one live critical service,
+    ada-ha-tony. Pulled the standby ada-voice checkout 678b960 -> 8a31a71 (clean tree, ff-only) to clear behind-origin.
+    Rerun result=success exit=0. Updated repo scripts/ops/mn01-canary.sh and live ~/.local/bin/mn01-canary.sh (live
+    backed up).'
+- at: 2026-11-25 19:01
+  from: tony
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}
