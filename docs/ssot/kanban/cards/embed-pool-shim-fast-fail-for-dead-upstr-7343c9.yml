@@ -1,7 +1,7 @@
 id: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
 title: embed-pool-shim fast-fail for dead upstreams (member loss costs 17x latency)
-column: doing
-updated: 2026-11-25 12:39
+column: review
+updated: 2026-11-25 12:42
 priority: low
 tags:
 - ops
@@ -231,15 +231,48 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-122952-soak-2026-11-08-con01-dropped- on tony-dell still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 12:42
+  from: tony-dell
+  text: 'finished (ok): exit=0 ial MCP Server, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server)
+    | devin-task-20261125-122'
+- at: 2026-11-25 12:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 12:42
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-122952-soak-2026-11-08-con01-dropped-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 12:42
+  from: chaba
+  text: banked 652 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 12:42
+  from: chaba
+  text: pushed dispatch/20261125-122952-soak-2026-11-08-con01-dropped- to origin
+- at: 2026-11-25 12:42
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-25 12:42
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/board/test_runner_tooling_contract.py::ToolingPinTest::test_pin_hashes_match_sources'
+- at: 2026-11-25 12:42
+  from: chaba
+  text: auto-merged 3c8b9987 (dispatch/20261125-122952-soak-2026-11-08-con01-dropped-) → origin/master
+- at: 2026-11-25 12:42
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
   sweep:
-    stale_running: 2026-11-25 12:38
+    stale_running: 2026-11-25 12:39
     dirty: 2
+  result: 'exit=0 ial MCP Server, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261125-122952-soak-2026-11-08-con01-dropped-.service:
+    Consumed 2min 22.337s CPU time over 7min 34.779s wall clock time, 1.2G memory peak.'
+  verified: true
 claim:
   since: 2026-11-25 12:29
+review_kind: verify
