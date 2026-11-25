@@ -109,8 +109,9 @@ providers:
     scripts/devnest/kk_mac_admission.snapshot(): 503s instantly when the
     heartbeat is stale (>900s), ollama unhealthy, disk <20G, load_1m >4,
     max(cpu_temp_c, gpu_temp_c) >55 (smctemp -c/-g; the GPU runs hotter
-    under ollama/Metal), or the node is busy (tmux_jobs/load_ok/load1-per-core
-    >1.0) — member device is owner-first, LiteLLM falls back to the paid
+    under ollama/Metal; sticky temp_cooldown until <=50C), or the node is
+    busy (tmux_jobs/load_ok/load1-per-core >1.0) — member device is owner-first,
+    LiteLLM falls back to the paid
     leg instead of queueing slow calls. GET /health exposes the snapshot;
     drain switch: touch the file at KK_ADMISSION_FORCE_DENY.
   ollama-idc02: >-

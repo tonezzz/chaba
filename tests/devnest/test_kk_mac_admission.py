@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 import time
 import unittest
 from unittest.mock import patch
@@ -10,8 +12,24 @@ def doc(body):
     return {"contentMd": json.dumps(body)}
 
 
-class KkMacAdmissionTests(unittest.TestCase):
+class TempStateIsolated(unittest.TestCase):
+    """Keep thermal hysteresis state out of the real user's cache."""
+
     def setUp(self):
+        fd, path = tempfile.mkstemp(prefix="kk-admission-state-")
+        os.close(fd)
+        os.unlink(path)
+        state = patch(
+            "scripts.devnest.kk_mac_admission.TEMP_STATE_PATH", path
+        )
+        state.start()
+        self.addCleanup(state.stop)
+        self.addCleanup(lambda: os.path.exists(path) and os.unlink(path))
+
+
+class KkMacAdmissionTests(TempStateIsolated):
+    def setUp(self):
+        super().setUp()
         # snapshot()'s SSH temp fallback would otherwise probe the real
         # kk-mac (and its hot GPU) from unit tests. Keep it deterministic.
         probe = patch(
@@ -271,7 +289,7 @@ class KkMacAdmissionTests(unittest.TestCase):
         self.assertIn("node_busy:load1", result["reasons"])
 
 
-class LocalAdmissionLoadTests(unittest.TestCase):
+class LocalAdmissionLoadTests(TempStateIsolated):
     """On-host worker gate must use the same per-core ceiling."""
 
     def _snapshot(self, load, cores):
@@ -326,7 +344,7 @@ class LocalAdmissionLoadTests(unittest.TestCase):
         self.assertEqual(result["load_limit"], 4.0)
 
 
-class ThermalGateTests(unittest.TestCase):
+class ThermalGateTests(TempStateIsolated):
     """The 55C gate must see the hotter of CPU and GPU sensors."""
 
     def _local(self, cpu, gpu):
@@ -420,6 +438,43 @@ class ThermalGateTests(unittest.TestCase):
         self.assertIn("temp_high", result["reasons"])
         self.assertEqual(result["cpu_temp_c"], 72.3)
         self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_snapshot_hysteresis_holds_until_resume_temp(self):
+        now = time.time()
+
+        def snap(temp):
+            with patch(
+                "scripts.devnest.kk_mac_admission._search",
+                return_value=[doc({
+                    "host": "KKs-Mac-Studio",
+                    "ts": now - 30,
+                    "ollama_ok": True,
+                    "disk_free_gb": 78,
+                    "load_1m": 1.2,
+                    "cpu_temp_c": temp,
+                    "gpu_temp_c": temp,
+                })],
+            ):
+                return snapshot(now=now)
+
+        hot = snap(60.0)
+        self.assertIn("temp_high", hot["reasons"])
+        warm = snap(52.0)
+        self.assertFalse(warm["eligible"])
+        self.assertIn("temp_cooldown", warm["reasons"])
+        self.assertTrue(warm["temp_cooling"])
+        cool = snap(48.0)
+        self.assertTrue(cool["eligible"], cool["reasons"])
+        self.assertFalse(cool["temp_cooling"])
+
+    def test_local_hysteresis_holds_until_resume_temp(self):
+        hot = self._local(60.0, None)
+        self.assertIn("temp_high", hot["reasons"])
+        warm = self._local(52.0, None)
+        self.assertFalse(warm["eligible"])
+        self.assertIn("temp_cooldown", warm["reasons"])
+        cool = self._local(48.0, None)
+        self.assertTrue(cool["eligible"], cool["reasons"])
 
 
 class QuietHoursTests(unittest.TestCase):

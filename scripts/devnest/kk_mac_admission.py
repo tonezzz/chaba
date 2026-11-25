@@ -17,6 +17,14 @@ import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+# After a thermal deny, hold the lane closed until the node has visibly
+# cooled past this point. Without hysteresis a 54.9C reading admits a burst
+# of embed/chat work that immediately reheats the GPU past 55C again.
+TEMP_STATE_PATH = os.environ.get(
+    "KK_ADMISSION_TEMP_STATE",
+    os.path.expanduser("~/.cache/kk-mac-admission/temp-state.json"))
+TEMP_RESUME_C = float(os.environ.get("KK_ADMISSION_RESUME_C", "50.0"))
+
 
 def _search(url: str) -> list[dict]:
     req = urllib.request.Request(
@@ -89,8 +97,11 @@ def snapshot(
     # Fallback only: used when the heartbeat has no cpu_cores field.
     max_load_1m: float = 4.0,
     max_load_per_core: float = 1.0,
-    # Tony 2026-11-09: KK runs hot under load — hold new work at 55C.
+    # Tony 2026-11-09: KK runs hot under load — hold new work at 55C,
+    # and do not re-admit until it has cooled to 50C (hysteresis).
     max_temp_c: float = 55.0,
+    resume_temp_c: float = TEMP_RESUME_C,
+    state_path: str | None = None,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
@@ -213,8 +224,12 @@ def snapshot(
     temps = [t for t in (cpu_temp, gpu_temp) if t is not None]
     result["cpu_temp_c"] = max(temps) if temps else None
     result["gpu_temp_c"] = gpu_temp
-    if result["cpu_temp_c"] is not None and result["cpu_temp_c"] > max_temp_c:
-        result["reasons"].append("temp_high")
+    path = state_path or TEMP_STATE_PATH
+    reason = _thermal_reason(result["cpu_temp_c"], max_temp_c,
+                             resume_temp_c, path)
+    if reason:
+        result["reasons"].append(reason)
+    result["temp_cooling"] = _cooling_active(path)
     # Overload gate: KK-Mac is an owner-first box — a busy node defers
     # the opportunistic lane. Signals, best available first: tmux_jobs
     # non-empty (work is running on the node), an explicit load_ok flag,
@@ -301,6 +316,42 @@ def _as_temp(value) -> float | None:
     return t if 0 < t < 150 else None
 
 
+def _cooling_active(state_path: str) -> bool:
+    try:
+        with open(state_path) as f:
+            return json.load(f).get("cooling") is True
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
+
+
+def _set_cooling(state_path: str, cooling: bool) -> None:
+    try:
+        parent = os.path.dirname(state_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        tmp = state_path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"cooling": cooling, "ts": time.time()}, f)
+        os.replace(tmp, state_path)
+    except OSError:
+        pass
+
+
+def _thermal_reason(temp: float | None, max_temp_c: float,
+                    resume_temp_c: float, state_path: str) -> str | None:
+    """Deny while hot, and keep denying until visibly cool again."""
+    cooling = _cooling_active(state_path)
+    if temp is not None and temp > max_temp_c:
+        _set_cooling(state_path, True)
+        return "temp_high"
+    if cooling:
+        if temp is not None and temp <= resume_temp_c:
+            _set_cooling(state_path, False)
+            return None
+        return "temp_cooldown"
+    return None
+
+
 def _local_load_1m() -> float | None:
     if os.uname().sysname == "Darwin":
         sysctl = _which("sysctl") or "/usr/sbin/sysctl"
@@ -351,6 +402,8 @@ def local_snapshot(
     max_load_1m: float = 4.0,
     max_load_per_core: float = 1.0,
     max_temp_c: float = 55.0,
+    resume_temp_c: float = TEMP_RESUME_C,
+    state_path: str | None = None,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     ollama_url: str = "http://127.0.0.1:11434",
@@ -414,8 +467,12 @@ def local_snapshot(
     # the hotter sensor — the GPU is what heats under local inference.
     result["cpu_temp_c"] = max(temps) if temps else None
     result["gpu_temp_c"] = gpu_temp
-    if result["cpu_temp_c"] is not None and result["cpu_temp_c"] > max_temp_c:
-        result["reasons"].append("temp_high")
+    path = state_path or TEMP_STATE_PATH
+    reason = _thermal_reason(result["cpu_temp_c"], max_temp_c,
+                             resume_temp_c, path)
+    if reason:
+        result["reasons"].append(reason)
+    result["temp_cooling"] = _cooling_active(path)
     busy = []
     if require_idle:
         tmux = _local_tmux_jobs()
