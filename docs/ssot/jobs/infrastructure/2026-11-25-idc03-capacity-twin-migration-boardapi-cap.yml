@@ -1,0 +1,74 @@
+title: idc03 capacity — finish twin migration to omen, cap board-api leak, repoint scenario/LINE consumers
+card: idc03-structural-capacity-15gb-4core-per-2d787f
+date: 2026-11-25
+executor: devin-dispatch
+pattern: "idc03 15GB at ~13-14GB, dispatch load-gate starves kanban queue"
+summary: >-
+  Assessment + non-spend remediation for idc03 memory pressure. Phase-1
+  (2026-11-18) had already moved jev-student + ada-dev/ada-kk-dev to
+  tony-omen, but the twins were still active on idc03 (~656MB residual)
+  and — discovered this session — the omen copies bound 127.0.0.1 only,
+  so they were unreachable from idc03 since migration day and had never
+  actually served a scenario. This session: rebound omen twins to the
+  tailnet IP, repaired a broken relocated venv (shebangs pointed at the
+  deleted ada-pi/.venv), repointed all idc03 consumers (4 scenario
+  units + LINE bot name backends), stopped the idc03 twins, capped the
+  board-api RSS ratchet with a systemd MemoryMax drop-in, and landed a
+  load_cards() payload-cache fix on the dispatch branch. MemAvailable
+  went ~4.4Gi -> ~6.9Gi. VPS resize (option a) is NOT needed now;
+  documented as deferred.
+pre_state:
+  - "idc03: 15Gi total, ~11Gi used, available ~4.4Gi, swap 4Gi 100% used, load5 ~12 on 4 cores"
+  - "board-api cgroup 2.07GB after only 13h uptime (~150MB/h ratchet); writes are atomic (card_io.atomic_write_text) so OOM restart is safe"
+  - "ada-dev 345MB + ada-kk-dev 311MB still active on idc03 (disabled but restarted by every deploy-ada.sh run — SERVICES default still lists them)"
+  - "omen ada-dev/ada-kk-dev active but bound 127.0.0.1:8005/:8009 — connection refused from idc03 since 2026-11-18 (prior comms flagged this)"
+  - "omen ada-voice/.venv was relocated from ada-pi; all 24 console-script shebangs pointed at deleted /home/tony/CascadeProjects/ada-pi/.venv — any restart would 203/EXEC (latent outage, caught before it bit)"
+  - "mn01 rejected as migration target: 684Mi available of 7.1Gi"
+  - "MDDB real RSS: mddb 1.46G + mddb-cms 1.72G + mddb-ops 0.40G + panel ~0 — systemd MemoryCurrent for mddb-ops showed 2.95G but that is page-cache-inflated (anon only 71MB)"
+steps_done:
+  omen_twins:
+    - "edited ~/.config/systemd/user/ada-{dev,kk-dev}.service ExecStart --host 127.0.0.1 -> --host 100.75.102.88 (tailnet IP only, not 0.0.0.0)"
+    - "fixed 24 shebangs in ~/CascadeProjects/ada-voice/.venv/bin/* ada-pi/.venv -> ada-voice/.venv; uvicorn --version verified"
+    - "daemon-reload + restart -> both active, listening 100.75.102.88:8005/:8009"
+    - "verified from idc03: GET / 200 in ~30ms; /ws 403 = same auth-gated response as the local twin (parity)"
+    - "secrets parity proven: md5 of ADA_API_KEY/ADA_API_KEYS/ADA_INSTANCE_ID/ADA_JEV_URL identical idc03 vs omen ada-dev.env"
+  idc03_consumers:
+    - "ADA_LIVE_URL repointed ws://127.0.0.1:8005/ws -> ws://100.75.102.88:8005/ws in: ada-scenario-smoke.container (quadlet), ada-scenario-{cms,reports,research}.service; daemon-reload regenerated smoke unit — verified"
+    - "line-bot.env LINE_NAME_BACKENDS: kaewta-cms/kaewta-dev -> :8009 and ada-dev/chaba-dev -> :8005 now point at ws://100.75.102.88 (backup .bak-pre-omen-twin-20261125); ada-line-relay.service restarted active"
+    - "ada-kk-dev had ZERO consumers (only its own unit referenced :8009)"
+    - "paid-lane guard in scenario-suite-run.sh keys on URL port only — ws://100.75.102.88:8005 still classifies as FREE dev lane (verified by reading the port-extraction logic)"
+  idc03_reclaim:
+    - "systemctl --user stop+disable ada-dev.service ada-kk-dev.service -> inactive/disabled (~656MB)"
+    - "guard comments added inside both unit files warning deploy-ada.sh SERVICES still lists them"
+    - "chaba-board-api.service.d/memory-cap.conf: MemoryHigh=1600M MemoryMax=2200M; service restarted 2.07GB -> 34MB fresh"
+  provider_gate:
+    - "FOUND+FIXED: scenario-provider-gate.py ExecCondition (smoke/cms/reports/research) requires `systemctl --user is-active ada-dev` — stopping the twin would gate every dev-lane suite 'infra' forever"
+    - "added --live-url to scripts/ada/scenario-provider-gate.py (dispatch branch): remote mode probes the provider over HTTP, skips the local-journal quota check (no local journal for a remote backend; in-suite outage sentinel is the backstop), keeps the free-lane sha check against the local secrets env"
+    - "deployed patched copy to idc03:~/.local/share/ada-scenario-runner/scenario-provider-gate.py and repointed the 4 ExecConditions to it with --live-url http://100.75.102.88:8005 (backups *.bak-premote-gate-20261125); repo path keeps working once the branch merges — repoint back then or keep the runner-dir copy"
+    - "first post-change smoke run gated 'infra' under the OLD script (honest skip, 7/47 infra records); new gate verified --dry-run ok + live run started 09:35 with ExecCondition status=0"
+  code_fix:
+    - "scripts/board/board-api.py: new _cards_json_payload() caches the ~14MB cards.json parse by (mtime_ns,size) signature — every /cards|/card/*|/queue call previously re-read+re-parsed it (~150MB transient allocs/call drove the RSS ratchet); failed reads are NOT cached; returns a shallow copy so callers cannot mutate the cache"
+    - "tests: tests/board reads+mutations+action_persistence+jobs_evidence = 94 passed; full tests/board 226 pass / 1 unrelated env failure (board2/index.html is gitignored, absent in worktree)"
+verification:
+  - "idc03 free -m: available 4480MB -> 6934MB; used 11.5G -> 9.1G"
+  - "board-api MemoryCurrent 2.07GB -> 0.5GB post-restart, capped at 2.2GB"
+  - "omen twins active on tailnet IP; idc03->omen :8005/:8009 HTTP 200"
+  - "scenario-provider-gate --dry-run --live-url http://100.75.102.88:8005 -> 'ok — provider healthy', free_lane=free, exit 0"
+  - "ada-scenario-smoke.service manual run 09:35: ExecCondition status=0/SUCCESS, container Up, suite running vs omen (end-to-end verification in progress at write time; hourly timer also fires 10:00)"
+gotchas_hit:
+  - "systemd --user MemoryCurrent for quadlet containers includes page cache charged to the cgroup — mddb-ops read 2.95G but real anon RSS is 71MB. Always check /proc/<pid>/smaps_rollup Anonymous before believing cgroup memory."
+  - "venv relocation breaks console-script shebangs silently — processes keep running on the old interpreter until restart, then 203/EXEC. After moving/renaming a venv, grep .venv/bin/* for the old path."
+  - "uvicorn --host 127.0.0.1 makes a 'migration' cosmetic — the service answers locally but is unreachable from the tailnet; verify from the CONSUMER host, not localhost."
+  - "LINE_NAME_BACKENDS in line-bot.env is a second consumer surface for the dev twins — scenario units were not the only 127.0.0.1:8005/8009 references."
+  - "ada-scenario-smoke 'Failed with result timeout' after a completed run is a pre-existing TimeoutStartSec quirk — the suite finishes its report then gets SIGKILLed; findings still publish."
+open_items:
+  - "deploy-ada.sh SERVICES default still lists ada-dev ada-kk-dev — next fleet deploy on idc03 resurrects ~656MB. RECOMMENDED PATCH (ada-voice repo, could not push from dispatch): change line 33 default to drop the twins — the default is documented as the idc03 set and omen deploys already must pass ADA_SERVICES (omen lacks the other units). One-line diff: SERVICES=\"${ADA_SERVICES:-ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-kk ada-line-relay ada-tg-relay}\""
+  - "board-api payload-cache + gate --live-url fixes ride the dispatch branch -> master merge -> idc03 exec/served-checkout pull (~15-60min) -> board-api needs a restart to load the cache fix; gate ExecConditions already run the runner-dir copy so suites are unblocked NOW"
+  - "after merge, optionally repoint the 4 ExecConditions from ~/.local/share/ada-scenario-runner/scenario-provider-gate.py back to %h/CascadeProjects/chaba/scripts/ada/scenario-provider-gate.py (repo copy will then understand --live-url)"
+  - "swap still 100% used (4Gi) — left alone; pages fault back on demand, swapoff would add I/O pressure under load8-12"
+  - "omen load average ~66 already — twin hosting is fine memory-wise (12Gi avail) but adds to its CPU contention; watch if omen becomes the next bottleneck"
+decision:
+  resize_vps: "NOT NEEDED — non-spend options recovered ~2.5Gi+ headroom (available 4.4->6.9Gi, done-condition >=4GB met). Revisit only if board-api regrowth or new residents eat the margin; the MemoryMax cap makes board-api self-limiting meanwhile."
+  mn01_migration: "rejected — 684Mi available, cannot host even one twin"
+  mddb_consolidation: "not feasible cheaply — mddb (1.46G) + mddb-cms (1.72G) are separate 4.8G/18G databases; merging is a migration project, not a dispatch fix; mddb-ops is only 400MB real"
+  doc_archive_move: "assessed, skipped — 331MB for the complexity of repointing devin-dispatch.sh + host-services-cms consumers to omen"
