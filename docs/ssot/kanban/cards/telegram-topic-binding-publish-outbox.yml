@@ -82,6 +82,13 @@ comms:
   text: 'pub milestone: telegram topic binding verified: chaba ops topic live — OPS-1386 fix verification — project=chaba
     routes to PRJ chaba — board ops (thread 100); project=education to thread 101. Publish outbox drained 33/33.
     [evt-e352bf8cdb9988e2]'
+- at: 2026-11-25 12:33
+  from: devin
+  text: 'DONE. Root cause: e4bf0d6 made TelegramSink forward project/card/job refs to the relay, which fails closed
+    on unbound refs — every card-scoped lifecycle milestone (runner-agent + waiting_cards/notify_lifecycle producers
+    send card= only, no project) started 404ing into the outbox. Live fix on idc03: created+bound PRJ topics chaba=thread100,
+    education=thread101 via project manifests (relay self-registered, no restart); patched outbox+dead (project=chaba
+    injected into project-less events, dead requ'
 action:
   type: dispatch
   status: running
