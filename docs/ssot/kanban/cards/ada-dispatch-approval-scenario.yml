@@ -1,7 +1,7 @@
 id: ada-dispatch-approval-scenario
 title: 'Live scenario: ask->respond->dispatch approval handshake'
 column: backlog
-updated: 2026-11-25 07:52
+updated: 2026-11-25 09:22
 priority: low
 tags:
 - ada
@@ -162,3 +162,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: classified as devin (fallback conf 0.15)
+- at: 2026-11-25 09:22
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
