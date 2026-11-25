@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: doing
-updated: 2026-11-25 09:04
+updated: 2026-11-25 09:11
 priority: medium
 tags:
 - infra
@@ -216,6 +216,13 @@ comms:
     ROOT CAUSE found + cleared (2026-10-21): the served c; Drift flags flap transiently: chaba-repo-sync updates
     the checkout copy, and unt; The rename script patches systemd units + worktree `.git` files but NOT `~/.loca;
     [positive-signal-primer] merge-sweep: worktree dispatch-wt-20'
+- at: 2026-11-25 09:11
+  from: devin
+  text: 'Fixed in dispatch worktree (branch dispatch/20261125-020433-goal-prevent-git-safe-pull-aut, commit 8f691c3074):
+    git-safe-pull now resolves EVERY autostash-pop conflict to HEAD via _pop_resolve_to_head() — stash side preserved
+    as <path>.local-conflict-<ts> for all paths (was cards-only). Non-generated conflicts + any retained pull-created
+    autostash (_autostash_pending) now exit 1, so chaba-repo-sync/git-safe-push report failure instead of success.
+    tests/test-kanban-commit.sh section M reproduces '
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
