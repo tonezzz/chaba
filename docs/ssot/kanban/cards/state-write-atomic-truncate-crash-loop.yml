@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
 column: doing
-updated: 2026-11-25 09:29
+updated: 2026-11-25 09:32
 priority: medium
 tags:
 - ops
@@ -204,6 +204,11 @@ comms:
     primer injected 8 lesson(s): [embed-l; "mutations: net_writes" in the session audit can be an attempted-and-denied
     call; Merge-sweep "verified gate" requires at least one commit on the dispatch branch ; `scenario-provider-gate.py`
     is an ExecCondition with side eff'
+- at: 2026-11-25 09:32
+  from: devin
+  text: 'investigating: all 3 state files confirmed 0-byte on idc03 (chaba-nag.json, wp-timeline-state.json, rika-wx-alert/state.json).
+    Fixing repo copies (chaba-nag.py, line-chat-timeline.py) + bringing unversioned rika-wx-alert.py into the repo,
+    then deploying to idc03 ~/.local/bin and repairing state files.'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
