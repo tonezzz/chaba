@@ -1,7 +1,7 @@
 id: michael-dev-migrate-mn01
 title: Migrate michael-dev HA instance from idc02:8124 to mn01
-column: doing
-updated: 2026-11-25 08:17
+column: review
+updated: 2026-11-25 08:20
 brief: 'Tony 2026-11-09: move michael-dev to mn01 (currently on idc02 since 2026-10-26 migration).'
 priority: medium
 tags:
@@ -213,12 +213,42 @@ comms:
     michael-dev.surf-thailand.com repointed (CF-gated), /apps/ha/* redirects on idc02 web + mn01 caddy -> mn01,
     mcp_config.json x3 hosts -> mn01:9585. idc02 parked: mn-ha-dev masked + mha-state-push disabled, config intact
     24h rollback. GOTCHA: quadlet must NOT PublishPort tailnet-IP :812'
+- at: 2026-11-25 08:20
+  from: tony-dell
+  text: 'finished (ok): exit=0 ichael-dev-currently-listens-.md` (with lessons) are in place. | devin-task-20261125-074808-michael-dev-currently'
+- at: 2026-11-25 08:20
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 08:20
+  from: chaba
+  text: banked 567 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 08:20
+  from: chaba
+  text: pushed dispatch/20261125-074808-michael-dev-currently-listens- to origin
+- at: 2026-11-25 08:20
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 08:20
+  from: chaba
+  text: auto-merged 6185cca1 (dispatch/20261125-074808-michael-dev-currently-listens-) → origin/master
+- at: 2026-11-25 08:20
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-074808-michael-dev-currently-listens-,
+    branch dispatch/20261125-074808-michael-dev-currently-listens-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 ichael-dev-currently-listens-.md` (with lessons) are in place. | devin-task-20261125-074808-michael-dev-currently-listens-.service:
+    Consumed 1min 26.063s CPU time over 30min 3.619s wall clock time, 1.1G memory peak, 570.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 07:47
+review_kind: verify
