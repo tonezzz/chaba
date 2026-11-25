@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
 column: backlog
-updated: 2026-11-25 07:50
+updated: 2026-11-25 08:23
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -276,13 +276,18 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 08:23
+  from: chaba
+  text: classified as free_lane (kw:documentation conf 1.00)
+- at: 2026-11-25 08:23
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-omen
   attempts: 1
   sweep:
     stale_running: 2026-11-24 23:09
@@ -322,4 +327,3 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
-awaiting_action: true
