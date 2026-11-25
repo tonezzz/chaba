@@ -1,7 +1,7 @@
 id: dispatch-prompt-budget-measure
 title: 'Dispatch session bloat: measure per-session prompt-token drivers and propose caps'
 column: doing
-updated: 2026-11-25 10:07
+updated: 2026-11-25 10:09
 brief: DEV-0044 lever 4. Avg dispatch session ~4.4M prompt tokens, top decile 10-17M, 97% cached — burn scales with
   turns x context size. Nothing measures the drivers yet.
 priority: medium
@@ -43,6 +43,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:09
 ref: DEV-1334
 comms:
 - at: 2026-11-24 22:59
@@ -100,5 +102,9 @@ comms:
     all r<0.15. Fixed per-step context floor 22-32k tok/step = ~36% of burn. Top decile = long sessions (steps p50=112).
     Non-landing outcomes ~19% of sampled tokens. Proposals: step-budget gate (>100 steps excess 84.7M/30d=4.5%),
     dispatch-lite context profile (-20KB ~140M/30'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-093438-parent-card-devin-usage-reduct no longer active on tony-dell but
+    card still says running — sweeping its branch'
 claim:
   since: 2026-11-25 09:33
