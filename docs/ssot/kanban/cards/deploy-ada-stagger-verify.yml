@@ -1,7 +1,7 @@
 id: deploy-ada-stagger-verify
 title: deploy-ada.sh exits 7 when staggered units are still in start-pre
 column: backlog
-updated: 2026-11-25 16:38
+updated: 2026-11-25 16:39
 brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
   9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
   post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
@@ -277,9 +277,14 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 16:39
+  from: tony
+  text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
+    and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
 action:
   type: dispatch
   status: queued
   lane: free_lane
   lane_source: kw
+  executor: devin
 claim: {}
