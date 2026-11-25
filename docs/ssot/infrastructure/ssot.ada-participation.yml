@@ -139,10 +139,13 @@ consultant_tier:
     holds action_accuracy>=0.85 + appropriate_deference>=0.90 for 3
     consecutive card-judgment bench runs becomes the consultant brain —
     consultant-* run artifacts in scripts/bench/card-judgment/.
-  status: shadow     # lane machinery built + e2e-verified 2026-11-09;
-                     # flag stays OFF — no brain qualified yet
-                     # (qwen3:8b straddles gate, qwen2.5:32b misses both
-                     # bars deterministically; see bench trail yml)
+  status: certified-pending-activation   # lane machinery built +
+                     # e2e-verified 2026-11-09; qwen2.5:32b CERTIFIED
+                     # 2026-11-25 — 3 consecutive clean passes, zero
+                     # defer->act/correct over-act (qwen3:8b disqualified:
+                     # passes bars but over-acts every run). Flag flip +
+                     # idc03 unit install execute post-merge per
+                     # docs/ssot/jobs/bench/2026-11-25-consultant-confirmation-bench.yml
   metric: >-
     Tony-deferral rate — fraction of lane deferrals that reach to:tony
     after consultant review. Lower is the win; every escalation should

@@ -235,8 +235,9 @@ model_list:
   # them — consultant_worker.py drains to:consultant board requests.
   # Same kk-mac admission-shim path as the other kk-mac routes
   # (:11445 ssh tunnel retired 2026-11-17 — all kk-mac traffic gates
-  # through :11447); swapped for whichever bench-qualified brain wins
-  # (acc>=0.85 + def>=0.90, 3x consecutive — none qualified yet).
+  # through :11447); qwen2.5:32b certified 2026-11-25 — 3 consecutive
+  # clean card-judgment passes, zero defer->act/correct over-act
+  # (docs/ssot/jobs/bench/2026-11-25-consultant-confirmation-bench.yml).
   - model_name: consultant
     litellm_params:
       model: ollama_chat/qwen2.5:32b
