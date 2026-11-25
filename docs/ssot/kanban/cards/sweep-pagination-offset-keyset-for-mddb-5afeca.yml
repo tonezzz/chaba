@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: backlog
-updated: 2026-11-25 16:39
+updated: 2026-11-25 16:40
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -241,6 +241,10 @@ comms:
   from: tony
   text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
     and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
+- at: 2026-11-25 16:40
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
 action:
   type: dispatch
   status: queued
