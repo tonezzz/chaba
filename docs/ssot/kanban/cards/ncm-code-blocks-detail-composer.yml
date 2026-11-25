@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 15:53
+updated: 2026-11-25 16:15
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -95,3 +95,10 @@ comms:
     load average 43-52, 15Gi swap fully used, ~1Gi free RAM of 30Gi. Previously qwen3:4b hit 180s cap on 11/12 calls;
     only qwen3:0.6b is runnable there today. Conclusion: the stronger-baseline check cannot be completed on this
     host under current load; Phase B stays watch/unvalidated and '
+- at: 2026-11-25 16:15
+  from: devin
+  text: 'External research precedent for OPS-1325 (Google/GitHub, 2026-11-25; full citations in docs/kb/ncm-code-blocks-external-ideas.md).
+    Top ideas, cheap-first: (1) MBR / verifier-best-of-k — sample k skeletons from the P1″ denoiser and pick by
+    the deterministic verifier; NCM authors cite MBR as their test-time scaling win. (2) Adaptive depth — accept
+    at L1 when verifier passes, refine to L3 only on rejection; authors explicitly call for computation adapted
+    to difficulty. (3) Per-level error compoundi'
