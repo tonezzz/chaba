@@ -1,7 +1,7 @@
 id: tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302
 title: 'tony-ha: svc-chaba-scripts lost admin — lovelace saves unauthorized'
 column: doing
-updated: 2026-11-25 19:12
+updated: 2026-11-25 19:13
 program: infrastructure
 tags:
 - ops
@@ -240,6 +240,13 @@ comms:
   text: 'investigating: tony-ha on tony-omen (HA 2026.8.3, host net :8123). svc-chaba-scripts is in system-users
     group; admin needs system-admin. Found config/auth/update WS command (live, no restart). Have admin token candidate
     telemetry-ha-push.env on omen. Proceeding to promote + verify.'
+- at: 2026-11-25 19:13
+  from: devin
+  text: 'DONE: promoted svc-chaba-scripts user to system-admin via WS config/auth/update on tony-omen (live, persisted
+    to .storage/auth, no restart). Verified: auth/current_user admin=True; ssh tony-dell build-dossier-devices.py
+    tony-ha -> Pushed Devices view (50 rows) — lovelace/config/save now succeeds. All 4 scripts-<host> LLATs inherit
+    admin; other svc users stay non-admin. Trail: docs/ssot/jobs/home-assistant/2026-11-25-svc-chaba-scripts-admin-promotion.yml;
+    secrets+isolation docs annotated. Outcome'
 spec: Fix the Home Assistant admin permission issue for the svc-chaba-scripts user on tony-omen HA so that Lovelace
   dashboard and configuration saves succeed without unauthorized errors. The target host is tony-omen and the relevant
   repo context involves the chaba infrastructure scripts. The runner must verify that the token or user account
