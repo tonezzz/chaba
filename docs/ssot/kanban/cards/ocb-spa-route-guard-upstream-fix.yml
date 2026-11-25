@@ -1,7 +1,7 @@
 id: ocb-spa-route-guard-upstream-fix
 title: 'Remove caddy SPA route guard when opencode ships #61001 fix'
 column: doing
-updated: 2026-11-25 14:20
+updated: 2026-11-25 14:24
 brief: 'idc02 caddy-edge carries a temporary redirect guard (@ocbUnknownRoute) on ada-code.surf-thailand.com + opencode-ada.surf-thailand.com
   that bounces document requests for unknown SPA paths to / — workaround for upstream opencode web crash anomalyco/opencode#61001
   (SPA dies ''Cannot read properties of undefined (reading type)'' when mounted on unrecognised path, e.g. post-login
@@ -124,6 +124,13 @@ comms:
     Live opencode is now host binary v2.4.1 via opencode-serve.service on tailnet :4096. Upstream #61001 still unfixed
     (issue+PR #61017 open; v2.4.1 still throws) — moot for the public edge. Checking consumer drift before closing
     out.'
+- at: 2026-11-25 14:24
+  from: devin
+  text: 'DONE — verified MOOT, no live changes needed. (1) Guard already gone: @ocbUnknownRoute left idc02 caddy-edge
+    2026-11-24 with the opencode public-edge retirement (ada-code/opencode-ada/opencode-jack site blocks + enroll
+    quadlets :8377/:8378 all removed; block preserved in Caddyfile.bak-retired-opencode-20261124). Live Caddyfile
+    has zero ocbUnknownRoute refs outside backups. (2) Upstream still unfixed anyway: anomalyco/opencode#61001 open,
+    PR #61017 open+incomplete, dev and latest release v2.4.1 s'
 action:
   type: dispatch
   status: running
