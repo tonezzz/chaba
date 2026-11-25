@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-25 19:38
 priority: high
 tags:
@@ -2056,6 +2056,9 @@ comms:
     root authorized_keys via tony-dell (backup ~/.ssh/authorized_keys.bak-20261125-mesh), added Host michael-ha
     stanza (User root, IdentityFile ~/.ssh/id_ed25519) on idc03 with config backup + hashed known_hosts. Reran mcp-fleet-report:
     success, meta now status=no-config/reachabl'
+- at: 2026-11-25 19:38
+  from: tony
+  text: moved backlog -> done
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
@@ -2064,3 +2067,4 @@ spec: Investigate the failing systemd user service `system-report-watchdog.servi
   a successful run without exiting with an error code.
 action:
   status: done
+claim: {}
