@@ -1,7 +1,7 @@
 id: wiki-education-cargo-table-setup
 title: 'Set up Cargo table for Education: lessons on wiki.h3'
 column: backlog
-updated: 2026-11-25 14:08
+updated: 2026-11-25 14:46
 brief: 'Unblock optional on-wiki Cargo queries for Education lessons: a Cargo table must be created by host-level
   maintenance before the declare/store template edit can be retried.'
 priority: low
@@ -51,3 +51,15 @@ comms:
     (SSH 22/2222 is blocked from our hosts; FTP 21 works if a helper file is needed). From the wiki docroot /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com
     run php maintenance/run.php Cargo:rebuildCargoTables, or the extension-script variant listed in the form; if
     sh'
+- at: 2026-11-25 14:46
+  from: chaba
+  text: classified as devin (fallback conf 0.04)
+- at: 2026-11-25 14:46
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
