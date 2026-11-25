@@ -1,7 +1,7 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
-column: backlog
-updated: 2026-11-25 15:26
+column: doing
+updated: 2026-11-25 15:34
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
 priority: low
@@ -75,9 +75,15 @@ comms:
 - at: 2026-11-25 15:26
   from: chaba
   text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 15:34
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-25 15:34
