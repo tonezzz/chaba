@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
 column: backlog
-updated: 2026-11-25 14:03
+updated: 2026-11-25 14:11
 priority: medium
 tags:
 - standard
@@ -345,9 +345,12 @@ comms:
 - at: 2026-11-25 14:03
   from: tony
   text: put on hold
+- at: 2026-11-25 14:11
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
 action:
   type: dispatch
-  status: idle
+  status: failed
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -359,6 +362,7 @@ action:
     Consumed 26.151s CPU time over 7min 47.474s wall clock time, 382.1M memory peak.'
   runner: mn01
   verified: true
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-25 12:31
 review_kind: verify
