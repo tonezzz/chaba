@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-deploy
 title: Deploy ada-voice CMS-only bench harness
 column: done
-updated: 2026-11-25 07:52
+updated: 2026-11-25 09:14
 spec: Merged PR bench/kk-cms-only-seed-20261124. deploy-ada.sh on idc03; verify http://127.0.0.1:8002/api/health.
 action:
   type: manual
@@ -76,6 +76,11 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:14
+  from: devin
+  text: 'Bench hygiene follow-up 2026-11-25: evict stale October CMS page before seeding and judge the repeated
+    ask on correctness rather than a second tool call. Runs 09:10=0.833, 09:13=1.000 (6 harness tests pass). ada-voice
+    commit a1e00ea; deploy unchanged at 678b960.'
 requests:
 - id: deploy-kk-cms-only-memory-deploy
   ask: 'Deploy kk-cms-only-memory-deploy to ada-voice-prod?
