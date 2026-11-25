@@ -2,7 +2,7 @@ id: land-stranded-fix-ada-devnest-tab-render-05b20f
 title: Land stranded fix/ada-devnest-tab-render artifacts — missed-job-sweep runbook + devnest-tab mutate script
   never reached master
 column: doing
-updated: 2026-11-25 09:04
+updated: 2026-11-25 09:06
 brief: 'Commit dd8a1684d2 (2026-10-29, ''fix(ha): render DevNest report and audit missed jobs'') exists only on
   origin/fix/ada-devnest-tab-render — it never merged to master. Verified 2026-11-24 during audit-miss-education-lesson-write-timeout:
   master lacks docs/kb/missed-job-sweep.md, the ssot.procedures.yml missed-job-sweep entry, ssot.repeat-asks.yml
@@ -73,6 +73,13 @@ comms:
     primer injected 8 lesson(s): [kk-mac-live-m; [audit-miss-education-lesson-write-timeout] DONE. Lesson upsert
     retried and land; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] checkpoint failed: commit: ⚠️ ; [education-maintenance-consolidated-report]
     SHIPPED on dispat'
+- at: 2026-11-25 09:06
+  from: devin
+  text: 'DONE: cherry-picked dd8a1684d2 onto master as 0bc5ea2657 (11 files: missed-job-sweep.md runbook, devnest
+    tab mutator+test, job records, SSOT updates). Resolved instances.yml conflict by keeping the newer dashboards.yml
+    delegation; dashboard JSON hunk already landed in the 2026-11-24 snapshot regen. Verified: ssot-prose-smell
+    0 flags, test_ada_ha_devnest_dashboard 3/3 OK. Lesson lesson-4dd48148b1be pointers now valid on merge. Outcome
+    doc committed.'
 action:
   type: dispatch
   status: running
