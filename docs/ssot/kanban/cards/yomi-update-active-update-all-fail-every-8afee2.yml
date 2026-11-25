@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: review
-updated: 2026-11-25 19:28
+column: backlog
+updated: 2026-11-25 19:32
 priority: medium
 tags:
 - bug
@@ -271,9 +271,17 @@ comms:
 - at: 2026-11-25 19:28
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 19:32
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced NO commits — branch head is an
+    old base commit (ahead=0, merge-sweep ''NOT verified''). Dirty worktree files left uncommitted; no deliverable
+    landed in origin/master. Holding to backlog for re-dispatch, not closing as done.'
+- at: 2026-11-25 19:32
+  from: tony
+  text: put on hold
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
