@@ -1,7 +1,7 @@
 id: omen-sdxl-full-model-experiment
 title: Test non-Lightning SDXL checkpoint on omen sd-server
-column: doing
-updated: 2026-11-25 09:37
+column: review
+updated: 2026-11-25 09:46
 brief: Determine whether omen painterly output is the Lightning checkpoint or Q4 quantization.
 priority: medium
 program: adobe-stock
@@ -212,12 +212,43 @@ comms:
     sha 13ab4de2, qc pending_tony). VERDICT: painterly = Lightning distillation, NOT Q4 quantization — Q8 gives
     +26-37% Laplacian detail (C 1218/D 1670/H 1531) but CPU SDXL still not stock-photo. omen sd lane = ILLUSTRATION-TIER.
     GATE: no hot model swap in sd-server (single -m,'
+- at: 2026-11-25 09:46
+  from: tony-dell
+  text: 'finished (ok): exit=0 -job-6aeea32e-rende.md`; final comms posted to the card. | devin-task-20261125-074901-candidate-c-job-6aeea32e-re'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-074901-candidate-c-job-6aeea32e-rende'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: pushed dispatch/20261125-074901-candidate-c-job-6aeea32e-rende to origin
+- at: 2026-11-25 09:46
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 09:46
+  from: chaba
+  text: auto-merged 2834e23a (dispatch/20261125-074901-candidate-c-job-6aeea32e-rende) → origin/master
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 -job-6aeea32e-rende.md`; final comms posted to the card. | devin-task-20261125-074901-candidate-c-job-6aeea32e-rende.service:
+    Consumed 3min 31.674s CPU time over 1h 52min 52.973s wall clock time, 889.3M memory peak, 438.7M memory swap
+    peak.'
+  verified: true
 claim:
   since: 2026-11-25 07:48
+review_kind: verify
