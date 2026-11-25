@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
-column: doing
-updated: 2026-11-25 12:07
+column: done
+updated: 2026-11-25 12:09
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -161,9 +161,19 @@ comms:
     sim card -> 0 warnings; 3824-line card still fires hard warning; full optimize+gate green (139 warnings, all
     baselined). Baseline refreshed + trail doc docs/ssot/jobs/kanban/2026-11-25-ssot-baseline-board-drift-race.yml.
     Commit 41986aec99 on dispatch/20261125-044950-observed-2026-11-24-a'
+- at: 2026-11-25 12:09
+  from: chaba
+  text: 'merge-sweep: merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2 from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-044950-observed-2026-11-24-after-pr-2.md)
+    — auto-closed'
+- at: 2026-11-25 12:09
+  from: local
+  text: 'pub milestone: card verified: ssot-baseline-board-drift-race on idc03 — merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2
+    from mn01) -> origin/master — verified — auto-c — merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2
+    from mn01) -> origin/master — verified — auto-closed [evt-2103cc351f19a639]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -178,5 +188,10 @@ action:
     stale_running: 2026-11-25 09:39
     fetch_failed: 2026-11-25 09:39
   runner: mn01
+  verified: true
 claim:
   since: 2026-11-25 11:48
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 12:09
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-044950-observed-2026-11-24-after-pr-2.md
