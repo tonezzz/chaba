@@ -1,0 +1,19 @@
+id: litellm-budget-watch-enable
+title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
+column: backlog
+updated: 2026-11-25 09:29
+spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
+  on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
+  caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
+  Enable its timer on idc03 so near-cap budgets warn/alert before a 422 blocks calls. DONE when the timer is installed
+  and a --selftest/--dry-run passes on idc03.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-1360
+comms:
+- at: 2026-11-25 09:29
+  from: tony
+  text: Enable the near-cap watcher so per-key budgets alert.

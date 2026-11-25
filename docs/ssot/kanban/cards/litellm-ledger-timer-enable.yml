@@ -1,0 +1,18 @@
+id: litellm-ledger-timer-enable
+title: Enable the litellm-ledger timer on idc03
+column: backlog
+updated: 2026-11-25 09:29
+spec: The published spend ledger (source ada-cms-pages/llm-gateway-spend-ledger) is stale — the report age was ~11.8
+  days as of 2026-11-13, and litellm-ledger.timer is 'kept disabled until branch merges'. Enable litellm-ledger.timer
+  so scripts/litellm/daily-ledger.py publishes daily from LiteLLM_SpendLogs to the CMS page. DONE when the timer
+  is installed and the page updates after the timer fires.
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-1361
+comms:
+- at: 2026-11-25 09:29
+  from: tony
+  text: Enable the daily ledger publish.
