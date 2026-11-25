@@ -1,7 +1,7 @@
 id: systemic-sweep-non-atomic-state-write-te-040822
 title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
 column: doing
-updated: 2026-11-25 15:18
+updated: 2026-11-25 15:22
 priority: low
 tags:
 - ops
@@ -80,6 +80,11 @@ comms:
     split, any long-lived script with a hardcoded :11023 def; no chaba-audit.service/chaba-audit-full.service entries
     exist in ssot.audit.host; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha;
     [devin-session-audit-2026-10-29] primer injected 8 lesson(s):'
+- at: 2026-11-25 15:22
+  from: devin
+  text: claimed by dispatch-wt-20261125-151847. Auditing scripts/ for non-atomic JSON state saves; already-atomic
+    tmp+replace helpers (wiki-talk-watch, telegram-webhook-watch, cline-review-feed, model-cache index, wp-comment-sync,
+    lane-retention) noted. Will convert the rest to tmp+fsync+os.replace.
 action:
   type: dispatch
   status: running
