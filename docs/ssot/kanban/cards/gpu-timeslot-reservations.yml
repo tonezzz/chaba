@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
-column: backlog
-updated: 2026-11-25 20:24
+column: doing
+updated: 2026-11-25 20:35
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -32,9 +32,11 @@ spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPA
   Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-dell
+  attempts: 1
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -67,4 +69,9 @@ comms:
 - at: 2026-11-25 20:24
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
+- at: 2026-11-25 20:35
+  from: tony-dell
+  text: claimed
 ref: OPS-1407
+claim:
+  since: 2026-11-25 20:35
