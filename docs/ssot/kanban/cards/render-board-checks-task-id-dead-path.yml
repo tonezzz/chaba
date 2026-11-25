@@ -1,7 +1,7 @@
 id: render-board-checks-task-id-dead-path
 title: compute_checks git chips are dead code — action.task_id is never populated anymore
 column: doing
-updated: 2026-11-25 19:30
+updated: 2026-11-25 20:58
 brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
   so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
   cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
@@ -97,6 +97,13 @@ comms:
     lines cover 391, action.result adds 1 more; merge-sweep task_id_for state.json leg needs per-card ssh (wrong
     for render). Plan: card-local fallback chain task_id->claim.session->comms(newest)->result inside compute_checks,
     plus prefix-tolerant slug match for result[:300] truncation.'
+- at: 2026-11-25 20:58
+  from: devin
+  text: 'DONE on dispatch/20261125-190842-decide-how-compute-checks-shou (c00b36f77c6). Decision: card-local merge-sweep
+    task_id_for chain — action.task_id -> claim.session -> comms devin-task-<id> (newest, prefix-extended for comms
+    truncation) -> action.result — gated to action.type=dispatch, zero subprocesses; rejected state.json ssh leg
+    and chip deletion. Live corpus: 0 -> 76 code chips (51 merged/25 not-merged); verified card ada-session-summary-inflow-stalled
+    renders code=ok on its merged branch. +7'
 action:
   type: dispatch
   status: running
