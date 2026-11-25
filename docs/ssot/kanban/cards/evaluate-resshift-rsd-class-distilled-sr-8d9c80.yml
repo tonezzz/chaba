@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 12:43
+updated: 2026-11-25 13:26
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -160,6 +160,13 @@ comms:
   text: dispatch started on idc02 -> executing benchmark on tony-omen GTX1650. Source asset + OPS-1077 receipts
     pulled from gdrive campaign 60-upscale-eval. Setting up ResShift (zsyOAOA) + RSD (Selikhanovych, 1-step distill)
     inference env; GPU currently ~1.3GB free (bge-rerank + ollama resident) so will run amp/chopped.
+- at: 2026-11-25 13:26
+  from: devin
+  text: 'progress: env built on omen (torch2.5.1+cu121 venv, repos patched for modern deps). GPU blocked: only ~970MiB
+    VRAM free (bge-rerank 2.2GB + ollama 0.5GB resident) — ResShift fp16 weights+activations need ~1.5GB; even chop-tiled
+    it OOMs in VQGAN encode conv. Running CPU path instead (chop256). RSD one-step in flight; ResShift v3(4-step)/v1(15-step)
+    queued next. Added --backend precomputed to upscale-eval.py so external-engine outputs score through the same
+    metric matrix.'
 action:
   type: dispatch
   status: running
