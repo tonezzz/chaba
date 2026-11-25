@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
 column: done
-updated: 2026-11-26 04:00
+updated: 2026-11-26 04:01
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -301,6 +301,10 @@ comms:
 - at: 2026-11-26 04:00
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
