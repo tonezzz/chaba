@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: review
-updated: 2026-11-25 10:58
+updated: 2026-11-25 11:11
 priority: medium
 tags:
 - ops
@@ -296,6 +296,11 @@ comms:
   text: 'Maintenance request template updated 2026-11-25 to the verified access path: Plesk panel on https://h3.gizmo-thailand.com:8443
     (Terminal or Scheduled Tasks/Cron), FTP 21 fallback; SSH 22/2222 blocked. File: ~/.config/secrets/plesk-cargo-maintenance-request.md
     (mode 600). Credentials in ~/.config/secrets/plesk-ssh.env verified over FTP. No values stored in repo/card.'
+- at: 2026-11-25 11:11
+  from: devin
+  text: 'NOTE 2026-11-25: comments added earlier today about Cargo/Plesk/wiki credentials were misdirected here
+    because ref OPS-0038 was reused. They belong on wiki-education-cargo-table-setup (now OPS-1322). Please ignore
+    them for this card.'
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
