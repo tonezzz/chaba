@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
-column: review
-updated: 2026-11-25 12:42
+column: done
+updated: 2026-11-25 12:55
 priority: medium
 tags:
 - standard
@@ -323,6 +323,16 @@ comms:
 - at: 2026-11-25 12:42
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 12:55
+  from: chaba
+  text: 'merge-sweep: merged b72674cd (dispatch/20261125-053219-ops-1097-fixed-per-card-unclai from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-053219-ops-1097-fixed-per-card-unclai.md)
+    — auto-closed'
+- at: 2026-11-25 12:55
+  from: local
+  text: 'pub milestone: card verified: standard-gate-visibility-everywhere on idc03 — merged b72674cd (dispatch/20261125-053219-ops-1097-fixed-per-card-unclai
+    from mn01) -> origin/master — verified — auto-c — merged b72674cd (dispatch/20261125-053219-ops-1097-fixed-per-card-unclai
+    from mn01) -> origin/master — verified — auto-closed [evt-93bf29818e65e947]'
 action:
   type: dispatch
   status: done
@@ -336,7 +346,11 @@ action:
   result: 'exit=0 ). Card comms posted; SSOT pre-commit validation passed; no code or deploy changes needed. | devin-task-20261125-053219-ops-1097-fixed-per-card-unclai.service:
     Consumed 26.151s CPU time over 7min 47.474s wall clock time, 382.1M memory peak.'
   runner: mn01
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 12:31
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 12:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-053219-ops-1097-fixed-per-card-unclai.md
