@@ -306,6 +306,7 @@ hosts:
       - {name: chaba-tony-ideas.timer, scope: user}
       - {name: daily-brief.timer, scope: user}
       - {name: dev-miniapp-v0.service, scope: user}
+      - {name: devin-bank-distill.timer, scope: user, note: "shed to con01 2026-10-26 (jobs b221da077) — stale unit files removed from dell 2026-11-25"}
       - {name: focus-dispatcher-overnight.timer, scope: user}
       - {name: kanban-commit.timer, scope: user}
       - {name: kanban-dispatch.timer, scope: user}
@@ -449,14 +450,6 @@ hosts:
           sessions don't write history_*.md, so this is the only outcome path).
           Units in chaba/systemd/devin-dispatch-watch.{service,timer},
           script scripts/devin/devin-dispatch-watch.sh."
-      - name: devin-bank-distill.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Sun 10:15 — distills completed ISO weeks of raw devin-session docs
-          into devin/weekly-* digests and supersedes sources. Units in
-          chaba/systemd/devin-bank-distill.{service,timer}."
       - name: xdg-document-portal.service
         reason: Document portal fails when no matching desktop session is
           active — same class as the existing xdg-desktop-portal entries.
@@ -874,12 +867,6 @@ hosts:
         expected_state: active
         critical: false
         note: Hourly — renders /local/chaba-report.json (focus SSOT + ada-review) and scp's to tony-dell HA www; units chaba/systemd/chaba-report-feed.{service,timer}
-      - name: devin-bank-distill.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
       - name: clip-sync-dell.service
         type: service
         scope: user
@@ -1000,6 +987,14 @@ hosts:
         note: "retired with the suite move — watchdog is undeclared in
           ssot.jobs.yml on every host (suite-freshness coverage now rests on
           card job-health-sweep-consecutive-failure-alerts)"
+      - name: devin-bank-distill.timer
+        scope: user
+        note: "shed to con01 2026-10-26 (jobs b221da077) — stale duplicate
+          still firing on omen; every run failed 401 ACCESS_TOKEN_TYPE_UNSUPPORTED
+          on a dead GEMINI_API_KEY in ada-pi-pwa.env. Units removed 2026-11-25
+          (card devin-bank-distill-oauth-token-type); the env file itself was
+          kept — ada-memory-rollup.service still sources it and was repaired
+          by rotating the key to the ada-paid slot."
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
