@@ -1,0 +1,98 @@
+# SSOT Job Lifecycle: devin-bank-distill stale duplicates removed (omen+dell), dead GEMINI_API_KEY rotated on omen
+# Card: devin-bank-distill-oauth-token-type (ref SEC-1165).
+# Reported 2026-11-25: devin-bank-distill.service on tony-omen fails every run —
+# "Google API error ACCESS_TOKEN_TYPE_UNSUPPORTED — 0 weeks distilled, 2 failed".
+
+title: devin-bank-distill omen/dell stale duplicates removed; ada-pi-pwa.env key rotated
+subtitle: ACCESS_TOKEN_TYPE_UNSUPPORTED was a dead Gemini API key, not an OAuth flow bug — and it was silently breaking omen's nightly memory rollup too
+icon: key
+
+context:
+  reported_symptom: |
+    devin-bank-distill.service on tony-omen failed every weekly run with
+    Google API error ACCESS_TOKEN_TYPE_UNSUPPORTED ("0 weeks distilled,
+    2 failed"). Card spec guessed an OAuth token-type/scope problem
+    (service-account vs user creds, expired grant).
+  actual_topology: |
+    ssot.jobs.yml `devin-bank-distill` has ONE canonical home: con01
+    (migrated tony_dell -> idc02 2026-10-04 -> con01 2026-10-26 batch
+    shed). ssot.automation.yml already flagged the omen copy as a
+    "STALE DUPLICATE still firing". tony-dell and tony-omen both still
+    had unit files; omen's timer was live, dell's was disabled.
+    con01's own runs were healthy (last run 2026-11-22 distilled a week).
+  root_cause: |
+    NOT OAuth. The omen unit's EnvironmentFile
+    ~/.config/secrets/ada-pi-pwa.env (dated 2026-09-21, single line
+    GEMINI_API_KEY=AQ.Ab8RN6KKS...) held a dead Gemini API key. Google
+    answers an unrecognized/revoked AQ.* key with HTTP 401
+    "API key not valid" + reason ACCESS_TOKEN_TYPE_UNSUPPORTED —
+    reproduced verbatim with a one-shot generateContent probe.
+    Same dead value also sat in yomi-api.service.d/override.conf on
+    omen (the secrets registry listed ada-pi-pwa.env as a "local copy"
+    of that yomi free-tier slot; yomi-api itself is inactive).
+  blast_radius_found: |
+    ada-pi-pwa.env is sourced by THREE omen user units:
+      - ada-memory-rollup.service — LIVE nightly timer (canonical job,
+        ssot.automation.yml). Its 2026-11-25 03:45 run showed the same
+        401 ACCESS_TOKEN_TYPE_UNSUPPORTED — rollups were silently
+        degrading every night, not just the weekly distill.
+      - devin-bank-distill.service — stale duplicate (removed, below).
+      - ada-pi-pwa.service — unit dead on omen (PWA lives elsewhere;
+        chaba-guest.service uses chaba-guest.env, unaffected).
+
+fix:
+  key_rotation: |
+    On tony-omen: backed up ada-pi-pwa.env to
+    ada-pi-pwa.env.bak-20261125-distill, rewrote GEMINI_API_KEY to the
+    value of ~/.config/secrets/ada-paid (verified HTTP 200 against
+    generativelanguage.googleapis.com before AND after install; mode
+    kept 600). Chose the paid slot over ada-free/ada-dev (also valid,
+    HTTP 200) because rollup is a nightly batch job and the free key is
+    shared with omen's dev lanes — secrets.yml documents a free-tier
+    429 brownout history. ssot.secrets.yml gemini-yomi slot updated to
+    record the rotation and the dead yomi override.conf key.
+  stale_units_removed: |
+    - tony-omen: `systemctl --user disable --now devin-bank-distill.timer`,
+      stopped the service, deleted
+      ~/.config/systemd/user/devin-bank-distill.{service,timer},
+      daemon-reload. `list-timers` now shows 0 distill entries.
+    - tony-dell: same two unit files deleted (timer was already
+      disabled/inactive; files used an even older gemini-api-key.env).
+      daemon-reload done.
+    - idc02/con01 untouched — idc02 was already clean, con01 is the
+      canonical host (generated unit from ssot.jobs.yml, env
+      chaba-paid.env).
+  ssot_updates: |
+    - ssot.audit.hosts.yml: devin-bank-distill.timer moved from
+      expected_services to expected_absent on BOTH tony-dell and
+      tony-omen with shed notes (dell's expected_state:active entry was
+      itself stale drift — the timer has been disabled there).
+    - ssot.automation.yml: "STALE DUPLICATE still firing on omen" note
+      updated to record the 2026-11-25 removal.
+    - ssot.secrets.yml: gemini-yomi slots on omen annotated (dead yomi
+      key; ada-pi-pwa.env rotated to ada-paid value).
+
+evidence:
+  - "Reproduced on omen pre-fix: x-goog-api-key=<dead key> -> HTTP 401 {\"reason\":\"ACCESS_TOKEN_TYPE_UNSUPPORTED\"}"
+  - "Same probe with con01 chaba-paid.env key and omen ada-dev.env/ada-paid keys -> HTTP 200"
+  - "Post-fix `systemctl --user start ada-memory-rollup.service` on omen: Result=success, 0 auth failures, 35 rollup docs written (weekly-2026W41/W42, monthly-2026-10 across 5 banks) — the periods that failed at 03:45 were regenerated"
+  - "omen `systemctl --user list-timers --all | grep distill` -> 0; dell unit files gone"
+  - "con01 devin-bank-distill.timer still scheduled Sun 10:15 CET — canonical path untouched"
+
+followups:
+  - >-
+    yomi free-tier key (AQ.Ab8RN6KKS...) is dead fleet-wide wherever it
+    was copied — omen's yomi-api override.conf still holds it. If yomi
+    is revived on omen, mint/copy a fresh free key first. Worth a
+    secrets-hygiene sweep: grep all hosts' secrets dirs for the dead
+    prefix AQ.Ab8RN6KKS.
+  - >-
+    ada-pi-pwa.service unit on omen is dead weight (PWA moved; the live
+    guest path is chaba-guest.service on chaba-guest.env). Candidate
+    for the same declared-or-dead cleanup in a later sweep.
+  - >-
+    ACCESS_TOKEN_TYPE_UNSUPPORTED is Google-speak for "credential isn't
+    a usable API key / wrong token type" — it is NOT specific to OAuth
+    flows. Future triage of this error should check the key value's
+    validity first (one curl probe) before theorizing about token
+    type/scope.
