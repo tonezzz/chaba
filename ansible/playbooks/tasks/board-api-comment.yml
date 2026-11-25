@@ -1,0 +1,34 @@
+---
+# board-api-comment.yml — post evidence/comment to a kanban card via board-api.
+#
+# Required vars:
+#   board_api_base  - e.g. https://idc03.taila0626a.ts.net:10000
+#   board_card_id   - existing card id
+#   board_from      - ada|chaba|devin|tony
+#   board_comment_text
+#
+# Optional vars:
+#   board_notify_when - bool, default true
+#   board_delegate_to - default localhost
+#   board_run_once    - default false
+
+- name: Skip board-api comment when disabled
+  ansible.builtin.meta: end_host
+  when: not (board_notify_when | default(true) | bool)
+
+- name: Comment on kanban card
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/comment"
+    method: POST
+    body_format: json
+    body:
+      id: "{{ board_card_id }}"
+      from: "{{ board_from }}"
+      text: "{{ board_comment_text }}"
+    status_code: [200, 201]
+    return_content: true
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+  when:
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0

@@ -1,0 +1,87 @@
+---
+# board-api-card-notify.yml — idempotent kanban card create-or-comment helper.
+#
+# Board-api is the only card write door (docs/kb/board-api-write-door.md).
+# This task file never edits docs/ssot/kanban/cards/*.yml directly.
+#
+# Required vars:
+#   board_api_base   - e.g. https://idc03.taila0626a.ts.net:10000
+#   board_card_id    - stable slug/id (dedupe key)
+#   board_card_title - used only when creating
+#   board_from       - board-api sender (ada|chaba|devin|tony)
+#
+# Optional vars:
+#   board_card_column  - default backlog
+#   board_card_spec    - card spec on create
+#   board_card_action  - dict, e.g. {type: manual}
+#   board_comment_text - if set, POST /comment (caller decides when to avoid noise)
+#   board_notify_when  - bool, default true; set false to skip all writes
+#
+# Behavior:
+#   - GET /card/<id> (or /cards?id=...) to detect existence.
+#   - If missing and create enabled: POST /card.
+#   - If board_comment_text is set: POST /comment.
+#   - Caller owns state-change detection/dedupe to avoid noisy comments.
+
+- name: Skip board-api notify when disabled
+  ansible.builtin.meta: end_host
+  when: not (board_notify_when | default(true) | bool)
+
+- name: Check whether kanban card exists
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/card/{{ board_card_id }}"
+    method: GET
+    return_content: true
+    status_code: [200, 404]
+    validate_certs: true
+  register: board_card_lookup
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+
+- name: Create kanban card when missing
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/card"
+    method: POST
+    body_format: json
+    body:
+      id: "{{ board_card_id }}"
+      title: "{{ board_card_title }}"
+      column: "{{ board_card_column | default('backlog') }}"
+      spec: "{{ board_card_spec | default('') }}"
+      action: "{{ board_card_action | default({'type': 'manual'}) }}"
+      from: "{{ board_from }}"
+    status_code: [200, 201, 400]
+    return_content: true
+  register: board_card_create
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+  when:
+    - board_card_lookup.status == 404
+    - board_card_title is defined
+    - (board_card_title | length) > 0
+
+- name: Fail on unexpected card create error
+  ansible.builtin.fail:
+    msg: "board-api /card create failed for {{ board_card_id }}: {{ board_card_create.content | default('') }}"
+  when:
+    - board_card_lookup.status == 404
+    - board_card_create.status is defined
+    - board_card_create.status not in [200, 201]
+    - "'already exists' not in (board_card_create.content | default(''))"
+
+- name: Comment on kanban card
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/comment"
+    method: POST
+    body_format: json
+    body:
+      id: "{{ board_card_id }}"
+      from: "{{ board_from }}"
+      text: "{{ board_comment_text }}"
+    status_code: [200, 201]
+    return_content: true
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+  when:
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0

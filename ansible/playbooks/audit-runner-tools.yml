@@ -105,3 +105,79 @@
         mode: "0755"
       loop: "{{ sync_tools }}"
       when: sync_mode | default(false) | bool
+
+# ---------------------------------------------------------------- kanban notify
+# Optional read-only board-api notification. Never edits card YAML directly.
+- name: Report runner-tool drift to kanban (optional)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+    audited_hosts: "{{ groups['all'] | difference(groups['disabled'] | default([])) | sort }}"
+  tasks:
+    - name: Compute drift hosts
+      ansible.builtin.set_fact:
+        runner_drift_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set lines = (hostvars[h].audit.stdout_lines | default([])) if (h in hostvars and hostvars[h].audit is defined) else [] -%}
+            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST|MISSING-SRC|NO-CHECKOUT)') | list -%}
+            {%- if bad | length > 0 -%}{%- set _ = out.append({'host': h, 'issues': bad}) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+
+    - name: Create/update drift card
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-runner-tools-drift
+          title: "Ansible audit: runner tool drift detected"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-runner-tools detected drift/missing runner tools.
+            Re-run playbooks/audit-runner-tools.yml; inspect reports or stdout; converge via approved sync flow.
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+      register: runner_drift_card
+
+    - name: Fail on unexpected drift card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ runner_drift_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+        - runner_drift_card.status not in [200, 201]
+        - "'already exists' not in (runner_drift_card.content | default(''))"
+
+    - name: Comment drift summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-runner-tools-drift
+          from: "{{ board_from }}"
+          text: >-
+            ansible audit-runner-tools: {{ runner_drift_hosts | length }} host(s) with drift/missing tools.
+            {{ runner_drift_hosts | to_json }}
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          drift_hosts: "{{ runner_drift_hosts | map(attribute='host') | list }}"
+      when: board_notify | bool
