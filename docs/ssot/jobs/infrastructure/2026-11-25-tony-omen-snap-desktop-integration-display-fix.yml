@@ -2,7 +2,7 @@ title: tony-omen snapd-desktop-integration restart loop — CRD session env neve
 date: 2026-11-25
 card: tony-omen-snap-desktop-restart-loop
 ref: OPS-1323
-status: fix-applied-verified-live-17h; post-boot auto-verifier armed via self-removing @reboot cron (attempt 3)
+status: fix-applied-verified-live-~18h; post-boot auto-verifier armed via self-removing @reboot cron (attempt 3); reboot deferred — active GPU eval queue on host (attempt 4)
 host_scope: fix on tony-omen only (~/.config/systemd/user drop-in); read-only elsewhere
 
 context:
@@ -128,6 +128,25 @@ attempt_3_findings: |
       it self-destructs on first real boot; to cancel early:
       `crontab -l | grep -v snap-boot-verify-ops1323 | crontab - &&
       rm ~/.local/bin/snap-boot-verify-ops1323.sh`.
+
+attempt_4_findings: |
+    (2026-11-25 ~15:25 +07)
+    - Re-verified: unit active/running, NRestarts=2 (the two legit
+      CRD-churn reconnects from attempt 3, stable since 15:08:39),
+      zero "Failed to open display" journal lines since 10:00, drop-in
+      intact in DropInPaths, `snap list` untouched (firefox,
+      snap-store, gemini-desktop etc. all still enabled).
+    - Reboot decision: Tony answered reboot-now at 15:02, but
+      tony-omen is running an active upscale-eval queue in
+      /tmp/resshift-eval — queue-v1-rsd.sh (PPID 1) chains
+      resshift-v3-s4-g128 (finished ~15:24) -> resshift-v1-s15-g128
+      (running) -> rsd-one-step-gpu, ~1.5h+ of GPU/CPU work remaining,
+      plus llama-server and openjev services; 12 cores at load ~66.
+      Rebooting now would destroy that queue for a verification the
+      armed @reboot script performs automatically on the next natural
+      boot. Deferred reboot; verifier remains the close-out path.
+      If Tony wants instant post-boot proof anyway: reboot tony-omen,
+      the script posts the verdict to this card ~5min after boot.
 
 post_reboot: |
     COVERED AUTOMATICALLY (attempt 3) — no reboot window needed from
