@@ -1,7 +1,7 @@
 id: board-api-wedged-8min-on-hung-outbound-h-389be8
 title: board-api wedged ~8min on hung outbound HTTPS while holding wp.lock + card flock — all endpoints timed out
 column: doing
-updated: 2026-11-25 12:53
+updated: 2026-11-25 12:54
 priority: high
 tags:
 - bug
@@ -73,6 +73,14 @@ comms:
     unbounded flock(LOCK_EX) which holds the GIL on py<=3.13 (frozen /health incl.). Fix: acquire_lock now tracks
     holds + daemon watchdog dumps all thread stacks to journal past 120s (BOARD_API_LOCK_HOLD_ALERT_S); /lock-stats
     exposes held_now. render() + all ledger appends use bounded LOC'
+- at: 2026-11-25 12:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-122202-2026-11-25-09-59-10-07-idc03-c no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 12:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-122202-2026-11-25-09-59-10-07-idc03-c on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -80,5 +88,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 12:54
+    dirty: 1
 claim:
   since: 2026-11-25 12:20
