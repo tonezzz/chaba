@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: doing
-updated: 2026-11-25 09:07
+updated: 2026-11-25 09:24
 priority: medium
 tags:
 - idc03
@@ -213,6 +213,13 @@ comms:
   text: dispatch 20261125-090408 picked up (running on idc02, driving idc03 over ssh). Phase-1 already moved jev-student+ada
     twins to omen; residual ~750MB twins still active on idc03. Now gathering real RSS numbers per unit + target-host
     capacity, then implementing non-spend reclaims (twin residual, board-api leak, MDDB count).
+- at: 2026-11-25 09:24
+  from: devin
+  text: 'Progress: (1) twins fully migrated — omen ada-dev/ada-kk-dev were localhost-bound (unreachable since 11-18);
+    rebound to tailnet IP, fixed broken venv shebangs (ada-pi/.venv deleted), verified ws parity from idc03. idc03
+    ada-dev+ada-kk-dev now stopped+disabled (~656MB reclaimed). Scenario units smoke/cms/reports/research repointed
+    to ws://100.75.102.88:8005. kk-dev had zero consumers. (2) board-api restarted fresh (2.07GB->34MB) + MemoryHigh=1600M/MemoryMax=2200M
+    drop-in; root-cause fix (14MB car'
 action:
   type: dispatch
   status: running
