@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
-column: doing
-updated: 2026-11-25 20:30
+column: review
+updated: 2026-11-25 20:35
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -272,13 +272,40 @@ comms:
     …35b DELETED via OR provisioning API. gemini-ollama-proxy OR backup leg repointed to LiteLLM embedding alias
     (EMBED_GATEWAY_*); mddb-gemini.env OR key removed; omen on dedicated tony-omen-openclaw-free $0.50/wk; dell
     stripped. Also fixed: OR embeddings needed provider pin [Google] — A'
+- at: 2026-11-25 20:35
+  from: tony-macbook
+  text: 'finished (ok): exit=0 quota is exhausted until ~07:00 ICT reset (pre-existing, unrelated to the rotation).
+    | devin-task-20261125-190856'
+- at: 2026-11-25 20:35
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 20:35
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-190856-or-auth-key-usage-daily-1-00-d
+    is 260 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 20:35
+  from: chaba
+  text: banked 703 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:35
+  from: chaba
+  text: pushed dispatch/20261125-190856-or-auth-key-usage-daily-1-00-d to origin
+- at: 2026-11-25 20:35
+  from: chaba
+  text: 'auto-merge conflicts: reports/SSOT_OPTIMIZATION_WARNINGS.json — card stays in review for manual resolution'
+- at: 2026-11-25 20:35
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 quota is exhausted until ~07:00 ICT reset (pre-existing, unrelated to the rotation). | devin-task-20261125-190856-or-auth-key-usage-daily-1-00-d.service:
+    Consumed 3min 49.645s CPU time over 1h 24min 1.590s wall clock time, 832M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 19:08
+review_kind: verify
