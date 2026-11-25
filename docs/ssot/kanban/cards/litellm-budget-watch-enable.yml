@@ -1,7 +1,7 @@
 id: litellm-budget-watch-enable
 title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
-column: review
-updated: 2026-11-25 10:30
+column: done
+updated: 2026-11-25 10:38
 spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
   on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
   caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
@@ -110,6 +110,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-102426-the-near-cap-watcher-scripts-l,
     branch dispatch/20261125-102426-the-near-cap-watcher-scripts-l'
+- at: 2026-11-25 10:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-25 10:23
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 10:38
+  note: verified — evidence checks green, closing itself
