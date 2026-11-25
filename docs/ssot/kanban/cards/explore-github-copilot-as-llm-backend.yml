@@ -1,7 +1,7 @@
 id: explore-github-copilot-as-llm-backend
 title: Explore Copilot Pro ($10) as LLM/agent backend for infra
 column: doing
-updated: 2026-11-25 07:59
+updated: 2026-11-25 08:08
 priority: medium
 tags:
 - infra
@@ -232,6 +232,10 @@ comms:
   text: 'Done: SDK verified end-to-end (16 models, sendAndWait ~5s claude-sonnet-5.5), credit metering via rpc.usage.getMetrics/rpc.quota.get
     (~10.9 AIU/trivial turn, ~35k-token agentic floor), BYOK->LiteLLM proven to reach proxy (blocked only by litellm
     $50 budget cap). Verdict: agent/IDE surface, NOT an LLM backend for Ada/litellm. KB: docs/kb/github-copilot-pro-backend-eval.md'
+- at: 2026-11-25 08:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-074751-context-github-models-service- no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -240,5 +244,7 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 08:08
 claim:
   since: 2026-11-25 07:46
