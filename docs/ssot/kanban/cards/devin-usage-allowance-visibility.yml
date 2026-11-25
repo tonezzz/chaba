@@ -1,7 +1,7 @@
 id: devin-usage-allowance-visibility
 title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
 column: review
-updated: 2026-11-25 09:46
+updated: 2026-11-25 09:55
 brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
   window burn but not plan allowance remaining.'
 priority: medium
@@ -46,6 +46,8 @@ action:
     devin-task-20261125-094133-parent-card-devin-usage-reduct.service: Consumed 44.869s CPU time over 3min 53.142s
     wall clock time, 538.8M memory peak.'
   verified: false
+  sweep:
+    dirty: 3
 ref: DEV-1332
 comms:
 - at: 2026-11-24 22:59
@@ -133,6 +135,10 @@ comms:
 - at: 2026-11-25 09:46
   from: chaba
   text: 'worktree kept: dirty — 3 uncommitted file(s)'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-094133-parent-card-devin-usage-reduct on tony-macbook still
+    dirty — 3 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-25 09:40
 review_kind: verify

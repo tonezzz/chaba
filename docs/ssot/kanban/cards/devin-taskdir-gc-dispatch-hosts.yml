@@ -1,7 +1,7 @@
 id: devin-taskdir-gc-dispatch-hosts
 title: 'Dispatch task-dir GC gap: hosts accumulate ~/.local/share/devin-dispatch/tasks forever (idc02: 917 dirs)'
-column: doing
-updated: 2026-11-25 09:52
+column: review
+updated: 2026-11-25 09:55
 brief: 'DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed — devin-cleanup
   declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.'
 priority: medium
@@ -43,12 +43,18 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:55
+    dirty: 1
+  result: 'exit=0 ail in `docs/ssot/jobs/devnest/2026-11-25-devin-taskdir-gc.yml` and the outcome file. | devin-task-20261125-094030-parent-card-devin-usage-reduct.service:
+    Consumed 1min 50.961s CPU time over 13min 7.218s wall clock time, 591.9M memory peak.'
+  verified: false
 ref: DEV-1333
 comms:
 - at: 2026-11-24 22:59
@@ -113,5 +119,37 @@ comms:
     bug: ~/.local/bin copy GCd task dirs at 7d retention, corrupting the 30d usage window — fixed). con01 excluded:
     no devin CLI/registry, not dispatch-capable. idc01 declared, host offline ~34d. Changes: new scripts/devin/taskdir-prune.py
     (45d finished retention >=30d window + durable ta'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094030-parent-card-devin-usage-reduct no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ail in `docs/ssot/jobs/devnest/2026-11-25-devin-taskdir-gc.yml` and the outcome file.
+    | devin-task-20261125-09403'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:55
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 09:55
+  from: chaba
+  text: banked 7 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-094030-parent-card-devin-usage-reduct on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: pushed dispatch/20261125-094030-parent-card-devin-usage-reduct to origin
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 claim:
   since: 2026-11-25 09:39
+review_kind: verify
