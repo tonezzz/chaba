@@ -221,7 +221,35 @@ release_model:
     DIFFERENT engine versions simultaneously. Parallel engine versions
     (the whole point of lines) need per-engine runtimes: own
     checkout+venv or quadlet image per <line>@<version>. One-time infra,
-    not per-release — see gaps.
+    not per-release — see gaps. RESOLVED 2026-11-25 (card
+    ada-engine-runtimes): runtime slot model designed + tooling shipped —
+    docs/kb/ada-engine-runtimes.md + scripts/ada/engine-runtime.sh
+    (provision/bind/lane/status). Remaining: actually standing up the
+    first non-ada-1 runtime when ada-2 lands.
+
+runtime_model:
+  layout: |
+    Per-engine runtime dir ~/CascadeProjects/ada-engines/<engine-id>/ on
+    idc03 — a pinned ada-voice checkout + its own .venv. Engine id =
+    <line>-<version> (e.g. ada-2.0); dir name IS the id. ada-1.x has no
+    dir: the shared ~/CascadeProjects/ada-voice checkout is its runtime.
+    Runtimes hold code only — lane env/keys/banks/ports stay with the
+    lane. Tooling: scripts/ada/engine-runtime.sh.
+  binding: |
+    Lane→engine is a systemd drop-in
+    (~/.config/systemd/user/<unit>.service.d/engine-<id>.conf) rewriting
+    WorkingDirectory + ExecStart paths — daemon-reload + restart applies,
+    unbind restores ada-1 instantly. Same reversibility class as the
+    relay pointer flips. Quadlet image per engine is the deferred
+    hardening step (host-hygiene R5); the binding point is
+    engine-source-agnostic so a container slot can replace a checkout
+    dir without lane changes.
+  hygiene: |
+    Caps unchanged — existing isolation.conf (MemoryMax=2G,
+    CPUQuota=150%) and stagger.conf drop-ins compose with the engine
+    drop-in. New variant lanes get both at scaffold time. Every runtime
+    + binding must be declared (stack.yml state, ssot.audit.hosts.yml)
+    per host-hygiene R1.
 
 versioning:
   scheme: |
@@ -264,6 +292,9 @@ gaps_to_card:
       Parallel engine versions need per-engine runtime dirs or quadlet
       images (one shared checkout = one version fleet-wide today).
       Host-hygiene: declared units, cgroup caps per ha-ada-isolation.
+      DONE 2026-11-25 — checkout+venv runtime slots designed + shipped
+      (docs/kb/ada-engine-runtimes.md, scripts/ada/engine-runtime.sh);
+      quadlet image deferred as hardening. See runtime_model.
   existing_related:
     - persona-ab-split-routing-relay — per-caller engine pinning
     - persona-eval-ab.md — the variant/A-B/adopt loop this model formalizes

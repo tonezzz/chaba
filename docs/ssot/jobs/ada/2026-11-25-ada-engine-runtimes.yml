@@ -1,0 +1,57 @@
+id: 2026-11-25-ada-engine-runtimes
+title: Per-engine runtimes — checkout+venv slots + lane→engine binding shipped
+card: ada-engine-runtimes
+date: '2026-11-25'
+runner: dispatch-wt (mn01 host)
+kind: infra-design + tooling
+summary: >-
+  Closed the "one shared ada-voice checkout = one engine version
+  fleet-wide" gap from ssot.apps.ada-engines.yml. Chose per-engine
+  checkout+venv runtime slots over quadlet images (smaller change;
+  quadlet deferred as hardening — binding point is
+  engine-source-agnostic). Shipped design runbook + idempotent
+  provisioner/binder script; SSOT updated. No live changes made —
+  runtimes are provisioned on idc03 on demand when the first non-ada-1
+  engine (ada-2) lands.
+
+decision:
+  chosen: checkout+venv runtime slot per <line>-<version>
+  layout: "~/CascadeProjects/ada-engines/<engine-id>/ = pinned ada-voice
+    checkout + own .venv; ada-1.x implicit via shared
+    ~/CascadeProjects/ada-voice"
+  binding: >-
+    systemd drop-in <unit>.service.d/engine-<id>.conf rewriting
+    WorkingDirectory + ExecStart paths (handles %h/~/$HOME spellings);
+    unbind = instant rollback to ada-1. Lane env/keys/banks/ports
+    untouched — runtimes are code-only.
+  deferred: >-
+    quadlet/podman image per engine (host-hygiene R5). ada-voice is not
+    containerized today; image-ifying is a separate project. The
+    ExecStart-level binding means a container slot can replace a
+    checkout dir later without lane/contract changes.
+  rejected_alternative: >-
+    per-lane duplicated checkouts — N lanes × M versions explodes;
+    runtime-per-engine + lane-binding scales as engines×1 not lanes×engines.
+
+artifacts:
+  - docs/kb/ada-engine-runtimes.md — design + runbook (layout, binding,
+    caps, secrets, ada-2 onboarding procedure, non-goals)
+  - scripts/ada/engine-runtime.sh — provision/bind/unbind/lane/status,
+    idempotent, bash -n clean
+  - docs/ssot/apps/ssot.apps.ada-engines.yml — runtime_model section +
+    gap marked resolved
+  - this record
+
+verification:
+  - "bash -n scripts/ada/engine-runtime.sh — syntax clean"
+  - "engine-runtime.sh status runs (empty state on non-idc03 host)"
+  - "NOT verified on idc03 — no live unit was touched; first real
+    provision/bind is the acceptance test when ada-2 work starts"
+
+followups:
+  - "Stand up first runtime when ada-2 has a ref:
+    provision ada-2.0 --ref <ref>; lane ada-2.0 <test-lane> <port>
+    --from ada-dev; bind; contract suite per ada-engine-contract-suite"
+  - "deploy-ada.sh intentionally untouched — it owns ada-1 fleet deploys;
+    engine runtimes are pinned refs outside the fleet-wide path"
+  - "quadlet image per engine remains available as future hardening"
