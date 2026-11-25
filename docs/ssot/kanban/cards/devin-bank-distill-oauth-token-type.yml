@@ -1,7 +1,7 @@
 id: devin-bank-distill-oauth-token-type
 title: devin-bank-distill fails — ACCESS_TOKEN_TYPE_UNSUPPORTED (Google OAuth)
-column: doing
-updated: 2026-11-25 10:55
+column: review
+updated: 2026-11-25 11:07
 priority: low
 tags:
 - oauth
@@ -231,9 +231,36 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261125-103904-devin-bank-distill-service-on-:
     2 commit(s) conflict with origin/master '
+- at: 2026-11-25 11:07
+  from: idc02
+  text: 'finished (ok): exit=0 up-cleanup.yml`; two commits (`c435b71238`, `220c64fde1`) sit on the dispatch branch,
+    card comms posted, and the '
+- at: 2026-11-25 11:07
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 11:07
+  from: chaba
+  text: banked 528 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:07
+  from: chaba
+  text: pushed dispatch/20261125-103904-devin-bank-distill-service-on- to origin
+- at: 2026-11-25 11:07
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 11:07
+  from: chaba
+  text: auto-merged 5eedf2c0 (dispatch/20261125-103904-devin-bank-distill-service-on-) → origin/master
+- at: 2026-11-25 11:07
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-103904-devin-bank-distill-service-on-,
+    branch dispatch/20261125-103904-devin-bank-distill-service-on-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
@@ -241,6 +268,10 @@ action:
   sweep:
     stale_running: 2026-11-25 10:55
     conflict_sig: 220c64fde14b|docs/ssot/infrastructure/ssot.audit.hosts.yml
+  result: 'exit=0 up-cleanup.yml`; two commits (`c435b71238`, `220c64fde1`) sit on the dispatch branch, card comms
+    posted, and the outcome doc is in the worktree. | devin-task-20261125-103904-devin-bank-distill-service-on-.service:
+    Consumed 38.847s CPU time.'
+  verified: true
 claim:
   since: 2026-11-25 10:38
 requests:
@@ -262,3 +293,4 @@ requests:
     action: hold
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
+review_kind: verify
