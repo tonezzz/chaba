@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
 column: done
-updated: 2026-11-25 07:43
+updated: 2026-11-25 16:49
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -261,6 +261,10 @@ comms:
 - at: 2026-11-25 07:43
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
