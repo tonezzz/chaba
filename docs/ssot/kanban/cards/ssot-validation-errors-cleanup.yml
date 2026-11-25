@@ -1,7 +1,7 @@
 id: ssot-validation-errors-cleanup
 title: Fix 5 pre-existing SSOT validation errors
-column: doing
-updated: 2026-11-25 09:36
+column: review
+updated: 2026-11-25 09:46
 brief: 'ssot-validate-all.mjs reports 5 errors unrelated to the skills/wiki work: missing title in 4 cards and a
   YAML syntax error in ssot.devnest-lanes.yml.'
 priority: medium
@@ -89,13 +89,38 @@ comms:
   from: devin
   text: 'Validation re-run on dispatch worktree: node scripts/ssot-validate-all.mjs reports 0 errors across 6,417
     files — the listed focus-inbox/job/lane errors are already resolved upstream. No changes needed; worktree clean.'
+- at: 2026-11-25 09:46
+  from: tony-omen
+  text: 'finished (ok): exit=0 te the outcome to `dispatch-outcome-20261125-093332-errors-focus-inbox-2026-11-19-.md`.
+    | devin-task-20261125-093'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'session-end checkpoint a087c2bb: 1 leftover file(s) committed'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: pushed dispatch/20261125-093332-errors-focus-inbox-2026-11-19- to origin
+- at: 2026-11-25 09:46
+  from: chaba
+  text: "auto-merge not done: push: To github-chaba:tonezzz/chaba.git\n ! [rejected]              HEAD -> master
+    (fetch first)\nerror: failed to push some refs to 'github-chaba:tonezzz/chaba.git'\nhint: Updates were rejected
+    because the re — close will block until merged"
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-093332-errors-focus-inbox-2026-11-19-,
+    branch dispatch/20261125-093332-errors-focus-inbox-2026-11-19-'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 te the outcome to `dispatch-outcome-20261125-093332-errors-focus-inbox-2026-11-19-.md`. | devin-task-20261125-093332-errors-focus-inbox-2026-11-19-.service:
+    Consumed 2min 41.203s CPU time over 7min 34.899s wall clock time, 1.1G memory peak.'
 claim:
   since: 2026-11-25 09:32
+review_kind: verify
