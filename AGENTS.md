@@ -232,9 +232,9 @@ the reported failure first.
 ## Key URLs
 
 - tony-ha: `https://tony-omen.taila0626a.ts.net:8123` (tailnet — on tony-omen since ph5; stable front `http://idc02.taila0626a.ts.net:8123` shadow; public `https://tony-ha.surf-thailand.com`)
-- mn-ha-dev: `https://idc02.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26; physical rename michael-dev -> mn-ha-dev 2026-11-24; `127.0.0.1:8124` refers to idc02)
+- mn-ha-dev: `https://mn01.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25; physical rename michael-dev -> mn-ha-dev 2026-11-24; `127.0.0.1:8124` refers to mn01)
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/` / public `https://mn-ha.surf-thailand.com` (renamed from michael-ha.surf-thailand.com 2026-10-16)
-- tony-test views: `https://idc02.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}` (mn-ha-dev instance)
+- tony-test views: `https://mn01.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}` (mn-ha-dev instance)
 
 ## Token files
 

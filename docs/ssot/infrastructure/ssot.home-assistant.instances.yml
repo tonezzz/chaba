@@ -45,18 +45,18 @@ instances:
   mn-ha-dev:
     id: mn-ha-dev
     base: michael
-    host: idc02     # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 (capacity)
+    host: mn01     # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25 (card michael-dev-migrate-mn01)
     runtime: rootless podman
     network: podman (was host-net on tony-dell)
     container: mn-ha-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     port: 8124
     host_port: 127.0.0.1:8124
-    config: /home/tony/.config/mn-ha-dev    # now on idc02
+    config: /home/tony/.config/mn-ha-dev    # now on mn01
     url:
       local: http://127.0.0.1:8124
-      tailscale: https://idc02.taila0626a.ts.net:8124
-      public: https://michael-dev.surf-thailand.com   # idc02 edge -> local :8124 + CF Access gate
+      tailscale: https://mn01.taila0626a.ts.net:8124
+      public: https://michael-dev.surf-thailand.com   # idc02 edge -> mn01 tailnet :8124 + CF Access gate
     migration_notes: >-
       .storage/http had server_port 8124 (host-net legacy) — quadlet maps
       8124->8124 (not :8123). server_host was 127.0.0.1 — removed so the
@@ -67,6 +67,18 @@ instances:
       on both hosts (values::paths.podman_bridge_subnet) so trusted_proxies
       carried over unchanged. idc03 quadlet
       masked+stopped — parked 24h for rollback (unmask+start to restore).
+      2026-11-25 mn01 move: same recipe — config rsynced whole idc02->mn01,
+      internal_url patched to https://mn01.taila0626a.ts.net:8124, tailscale
+      serve --https=8124 on mn01. GOTCHA hit live: the quadlet must NOT
+      PublishPort the tailnet IP for :8124 — tailscale serve binds
+      100.x:8124 itself and the podman publish conflicts (bind: address
+      already in use crash-loop). idc02's https://...:8124 had in fact been
+      dead since the 2026-11-24 tailnet-IP :8124 publish was added (serve
+      mount lost the port) — only http://idc02:8124 worked; mn01 restores
+      real HTTPS via serve. 9585 keeps its tailnet-IP publish (no serve).
+      podman bridge subnet identical again (10.88.0.0/16) — trusted_proxies
+      unchanged. idc02 unit masked+stopped, parked for rollback
+      (unmask+start + Caddyfile restore to restore).
     ssot: docs/ssot/infrastructure/ssot.home-assistant.mn-ha-dev.yml
     mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.mn_ha_dev
     dashboards:
@@ -295,5 +307,6 @@ status:
     tony-ha HA core container is healthy on port 8123 on tony-omen, bound to 127.0.0.1:8123
     and exposed via Tailscale HTTPS at https://tony-omen.taila0626a.ts.net:8123 (evacuated
     tony-dell 2026-10-19/20; mn-ha-dev's stale omen container was parked for the :8123 port).
-    mn-ha-dev HA core container is healthy on port 8124 on idc02, exposed via
-    Tailscale HTTPS at https://idc02.taila0626a.ts.net:8124 (moved from idc03 2026-10-26).
+    mn-ha-dev HA core container is healthy on port 8124 on mn01, exposed via
+    Tailscale HTTPS at https://mn01.taila0626a.ts.net:8124 (moved idc02 -> mn01
+    2026-11-25; idc02 copy parked masked+stopped for rollback).

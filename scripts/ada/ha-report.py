@@ -27,7 +27,7 @@ OUT = REVIEW_DIR / "ha-ops.jsonl"
 # host -> podman containers holding a HA instance
 HA_HOSTS = {
     "tony-omen": ["tony-ha"],
-    "idc02": ["mn-ha-dev"],
+    "mn01": ["mn-ha-dev"],
 }
 
 RX_TS = re.compile(r"^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2})")
@@ -50,7 +50,7 @@ HA_HOSTS = {
     "tony-omen": [
         ("tony-ha", "~/.config/home-assistant"),
     ],
-    "idc02": [
+    "mn01": [
         ("mn-ha-dev", "~/.config/mn-ha-dev"),
     ],
 }

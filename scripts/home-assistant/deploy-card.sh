@@ -26,7 +26,7 @@ if [ "${1:-}" = "--check" ]; then
   LOCAL_MD5=$(md5sum "$CARD_REPO/dist/pfg3d-card.js" | cut -d' ' -f1)
   for host in mn-ha-dev michael-ha; do
     case "$host" in
-      mn-ha-dev) SSH=idc02; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
+      mn-ha-dev) SSH=mn01; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
       michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
     esac
     FILE=$(ssh "$SSH" "grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1" || true)
@@ -42,7 +42,7 @@ fi
 if [ "${1:-}" = "--prune" ]; then
   for host in mn-ha-dev michael-ha; do
     case "$host" in
-      mn-ha-dev) SSH=idc02; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
+      mn-ha-dev) SSH=mn01; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
       michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
     esac
     ssh "$SSH" "cd '$WWW' && ACTIVE=\$(grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1) && KEEP=\$(ls -t ${BASE}-v*.js 2>/dev/null | grep -v \"^\$ACTIVE\$\" | head -1) && echo \"[$host] active=\$ACTIVE backup=\$KEEP\" && ls -t ${BASE}-v*.js | grep -v \"^\$ACTIVE\$\" | grep -v \"^\$KEEP\$\" | xargs -r rm -f && ls ${BASE}-v*.js"
@@ -64,7 +64,7 @@ deploy_to() {
   local host="$1" SSH WWW RES RESTART TEST_URL TEST_SSH
   case "$host" in
     mn-ha-dev)
-      SSH=idc02; WWW=/home/tony/.config/mn-ha-dev/www
+      SSH=mn01; WWW=/home/tony/.config/mn-ha-dev/www
       RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources
       RESTART="systemctl --user restart mn-ha-dev.service"
       TEST_URL="http://127.0.0.1:8124"; TEST_SSH=1 ;;

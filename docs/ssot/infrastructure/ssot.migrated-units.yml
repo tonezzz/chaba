@@ -68,22 +68,11 @@ hosts:
         unit_file: "%h/.config/systemd/user/trade-api.service"
         secrets_env: "%h/CascadeProjects/trade/.env"
         front_name: "idc03 tailnet-serve :9002 → edge /apps/trade/api/* + /api/ws/*"
-      mha-state-push:
-        data_dirs: []
-        unit_file: "%h/.config/systemd/user/mha-state-push.service"
-        secrets_env: "%h/.venvs/mha-push env (tokens copied 2026-10-17)"
-        front_name: null
-        note: "Pushes 60 entities to michael-ha."
       input-bridge:
         data_dirs: []
         unit_file: "%h/.config/systemd/user/input-bridge.service"
         secrets_env: "%h/.config/secrets/input-bridge.env"
         front_name: "100.102.134.91:3010 → edge /api/input-bridge/*"
-      mn-ha-dev:                                           # moved earlier (2026-10-09)
-        data_dirs: ["%h/.config/mn-ha-dev"]
-        unit_file: "%h/.config/systemd/user/mn-ha-dev.service"
-        secrets_env: "%h/.config/secrets/ha-mn-ha-dev.env"
-        front_name: "https://idc02.taila0626a.ts.net:8124 + https://michael-dev.surf-thailand.com"
       mddb:                                                  # pre-existing leader, unchanged by migration
         data_dirs: ["%h/.config/containers/mddb/data"]
         unit_file: "%h/.config/systemd/user/mddb.service"
@@ -195,6 +184,21 @@ hosts:
         unit_file: null                                      # snapshot landed in web-srv mount
         secrets_env: null
         front_name: "edge /apps/yt-cache"
+
+  mn01:   # mn-home node — mn-ha-dev landed here 2026-11-25
+    tailnet_ip: "100.106.196.22"
+    units:
+      mn-ha-dev:                                           # tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25
+        data_dirs: ["%h/.config/mn-ha-dev"]
+        unit_file: "%h/.config/systemd/user/mn-ha-dev.service"
+        secrets_env: "%h/.config/secrets/ha-mn-ha-dev.env"
+        front_name: "https://mn01.taila0626a.ts.net:8124 (tailscale serve) + https://michael-dev.surf-thailand.com (idc02 edge -> mn01 tailnet)"
+      mha-state-push:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/mha-state-push.service"
+        secrets_env: "%h/.venvs/mha-push env + %h/.local/share/home-assistant-michael/ha-token (tokens copied 2026-11-25)"
+        front_name: null
+        note: "Pushes 60 entities to mn-ha-dev /api/states (follows the dev instance it feeds; was idc03 -> idc02 2026-10-26 -> mn01 2026-11-25)."
 
   tony-omen:   # LAN cohort (moved last — most user-facing)
     tailnet_ip: "100.75.102.88"

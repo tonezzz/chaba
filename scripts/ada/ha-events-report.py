@@ -30,7 +30,7 @@ INSTANCES = {
     "tony-ha": ("https://tony-dell.taila0626a.ts.net:8123",
                 ("HASS_TOKEN", "HA_LONG_LIVED_TOKEN"),
                 "~/.config/secrets/home-assistant-token.env"),
-    "mn-ha-dev": ("https://idc02.taila0626a.ts.net:8124",
+    "mn-ha-dev": ("https://mn01.taila0626a.ts.net:8124",
                     ("HASS_TOKEN", "HA_LONG_LIVED_TOKEN"),
                     "~/.config/secrets/ha-mn-ha-dev.env"),
     "michael-ha": ("http://100.80.105.88:8123",

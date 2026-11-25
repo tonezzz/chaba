@@ -31,7 +31,7 @@ INSTANCES = {
     },
     "mn-ha-dev": {
         "url_env": "DEV_URL",
-        "default_url": "https://idc02.taila0626a.ts.net:8124",
+        "default_url": "https://mn01.taila0626a.ts.net:8124",
         "token_envs": ["DEV_TOKEN", "HASS_TOKEN"],
         "token_files": ["~/.config/secrets/ha-mn-ha-dev.env"],
     },

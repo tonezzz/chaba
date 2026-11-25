@@ -5,7 +5,7 @@ Subscribes to state_changed on michael-ha over websocket and POSTs each
 changed entity's state to mn-ha-dev's /api/states/<entity_id>. Only
 entities listed in the dev-mocks rest: mirror set are pushed.
 
-Run on idc02 as systemd user service mha-state-push.service (moved with the dev instance 2026-10-26).
+Run on mn01 as systemd user service mha-state-push.service (moved with the dev instance 2026-10-26 -> mn01 2026-11-25).
 Tokens:
   HA_TOKEN  (michael-ha)   ~/.local/share/home-assistant-michael/ha-token
   DEV_TOKEN (mn-ha-dev)  ~/.config/secrets/ha-mn-ha-dev.env  (HASS_TOKEN=)

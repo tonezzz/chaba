@@ -95,6 +95,12 @@ backend should come back or the edge should drop:
   serve `:8124` mount the route registry expects was never added/is gone.
   Fix = `tailscale serve --bg --https=8124 http://127.0.0.1:8124` on idc02
   or repoint the upstream to `http://`.
+  **RESOLVED 2026-11-25** (card michael-dev-migrate-mn01): instance moved
+  idc02 -> mn01; upstream now `https://mn01.taila0626a.ts.net:8124` and
+  mn01 runs `tailscale serve --bg --https=8124 http://127.0.0.1:8124`.
+  Root cause of the dead serve mount: a podman `PublishPort` on the
+  tailnet-IP :8124 (added 2026-11-24) conflicts with serve's bind — the
+  quadlet now publishes :8124 on 127.0.0.1 only.
 - `web-srv -> frigate:5000` — container-net name, no frigate container on
   idc02 (the /frigate/* route 502s; likely never re-pointed after the
   2026-10-19 web origin migration off tony-dell).
