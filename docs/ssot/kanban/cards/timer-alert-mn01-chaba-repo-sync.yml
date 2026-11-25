@@ -1,7 +1,7 @@
 id: timer-alert-mn01-chaba-repo-sync
 title: Timer chaba-repo-sync on mn01 failing
 column: backlog
-updated: 2026-11-25 23:34
+updated: 2026-11-25 23:47
 priority: high
 tags:
 - timer-alert
@@ -335,6 +335,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 16:00) of `chaba-repo-sync.service` on `mn01` result=exit-code — investigate
     journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-25 23:47
+  from: tony
+  text: '2026-11-25 23:20 (+07): SELF-RECOVERED — the failing run hit a git-safe-pull autostash pop conflict on
+    locally-generated handoff SSOT files (local sides preserved as .local-conflict-* and stash retained). The next
+    run at ~23:19 completed result=success exit=0; timeline sweep now success failed_now=false. Timer is healthy;
+    the recurring local board-generated-file conflicts are a separate hygiene item (146 locally modified files on
+    mn01) — closing.'
 action:
   status: done
 spec: Investigate the recurring failure of chaba-repo-sync.service on host mn01 by checking the systemd user journal
