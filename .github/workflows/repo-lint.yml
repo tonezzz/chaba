@@ -54,7 +54,7 @@ jobs:
           done < <(find scripts -name "*.mjs" -not -path "*/node_modules/*")
           exit $FAIL
 
-  # Drift guards from the 2026-11-20 Jules half-purge: a lane marked
+  # Drift guards from the 2026-11-20 lane half-purge: a lane marked
   # retired in the SSOT must not survive in an executor allowlist, and a
   # deployed tool must be byte-identical to its committed sha256 pin.
   # Keep this next to the cheap syntax gate so both run on the same

@@ -18,8 +18,9 @@ second queue or status source.
    `comms` only when a pending question, failure, or contradictory state needs
    investigation. Batch independent reads in parallel.
 3. **Reconcile the executor once.** A board `running` or `failed` value is not
-   proof of the external executor's current state. For Jules, use one session
-   list for the batch; fetch session details/activities only for sessions
+   proof of the external executor's current state. For remote-lane
+   executors, use one status listing for the batch; fetch session
+   details/activities only for sessions
    whose state is awaiting input, completed, or inconsistent with the card.
    Read a PR and its checks only when the session/card points to one.
 4. **Reuse decisions.** Read card `requests` and recent `comms` before asking

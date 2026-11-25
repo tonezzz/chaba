@@ -47,7 +47,7 @@ reports success).
 ## What a launchd runner serves
 
 - **Yes:** `executor=opencode` (+ the opencode lane route), `script`,
-  `container` (if podman installed), `jules`, `nlm_batch`,
+  `container` (if podman installed), `nlm_batch`,
   `kk_mac_local`.
 - **No:** `executor=devin` and unexecutored cards that don't resolve an
   opencode lane. `devin-dispatch.sh` drives `systemd-run` internally —

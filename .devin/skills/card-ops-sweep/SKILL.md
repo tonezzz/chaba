@@ -1,6 +1,6 @@
 ---
 name: card-ops-sweep
-description: Use for status/process/continue requests involving one or more Kanban cards, DevNest runners, Jules sessions, or PR closeout.
+description: Use for status/process/continue requests involving one or more Kanban cards, DevNest runners, or PR closeout.
 ---
 
 # Card Operations Sweep

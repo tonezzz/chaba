@@ -111,7 +111,7 @@ step_deploykey() {
         ok "generated $SSH_KEY"
     fi
     # Host alias — the fleet's write path for chaba is the gh-chaba
-    # ssh alias (runner-agent jules_merge_pr, idc03). Each host keeps
+    # ssh alias (runner-agent push path, idc03). Each host keeps
     # its own deploy key behind the same alias.
     local cfg="$KK_HOME/.ssh/config"
     touch "$cfg" && chmod 600 "$cfg"

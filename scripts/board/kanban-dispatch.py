@@ -655,7 +655,7 @@ def finish_one(path: Path, card: dict,
                 f"unit failed — {verdict}")
         return "failed"
     # Executor-owned closeout (OPS-1066): tasks run by runner-agent's
-    # non-devin executors (jules, opencode, kk_mac_local) own their finish
+    # non-devin executors (opencode, kk_mac_local) own their finish
     # path — the runner's finish_pass calls finish_<executor>_lane for
     # the artifact/verified evidence. This sweeper knows none of that;
     # it used to finish the card first ("no exit record") and the real
@@ -1125,7 +1125,7 @@ def _verdict_reason(card: dict, ctx: dict) -> str:
     lane = str(a.get("lane") or "").strip()
     if lane == "manual":
         return "lane=manual (Tony's hands)"
-    if lane in ("jules", "nlm_batch"):
+    if lane == "nlm_batch":
         return f"remote lane {lane} — not a devin claim"
     ex = str(a.get("executor") or "").strip()
     if ex and ex != "devin":
@@ -1372,12 +1372,11 @@ def main() -> int:
                     print(f"{card['id']}: skipped — lane=manual "
                           "(Tony's hands — never claimed)")
                     continue
-                if str(a.get("lane") or "").strip() in ("jules", "nlm_batch"):
-                    # stale jules pins (lane retired 2026-11-20) and
+                if str(a.get("lane") or "").strip() == "nlm_batch":
                     # nlm_batch pins route to a remote runner —
                     # this dispatcher only runs devin claims
                     print(f"{card['id']}: skipped — remote lane "
-                          "(jules retired / nlm_batch)")
+                          "(nlm_batch)")
                     continue
                 if ex and ex != "devin":
                     why = ("not a known executor"

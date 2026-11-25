@@ -207,8 +207,6 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              the admitted task classes. Serving requires KK_MAC_LANES=1
 #              on the runner (off by default until the supervised
 #              dispatch passes).
-#   jules    — REMOVED 2026-11-20 (provider EOL, OPS-0156): no lane,
-#              no executor, no client, no key. A stale pin fails closed.
 #   claude   — the claude-dispatch sibling lane (2026-11-18 eval:
 #              sonnet best tokens-per-verified-fix). Same contract as
 #              devin-dispatch — shared task dirs, devin-task-<id>

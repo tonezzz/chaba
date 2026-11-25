@@ -6972,7 +6972,7 @@ def _selftest() -> None:
     assert "needs frontier reasoning" in scard["comms"][-1]["text"]
     # set executor — same door, contract-validated
     do_card_set(scard, {"set": {"executor": "devin"},
-                        "reason": "pin devin after jules EOL"}, "devin")
+                        "reason": "pin devin after lane retirement"}, "devin")
     assert scard["action"]["executor"] == "devin"
     # tags — add/remove form and wholesale replace
     do_card_set(scard,
@@ -7002,13 +7002,13 @@ def _selftest() -> None:
     scard["action"].pop("runner")
     # invalid lane/executor and workflow fields fail closed
     rejects(lambda: do_card_set(
-        scard, {"set": {"lane": "jules"}, "reason": "x"}, "devin"),
+        scard, {"set": {"lane": "bogus-lane"}, "reason": "x"}, "devin"),
         "action.lane must be one of")
     rejects(lambda: do_card_set(
         scard, {"set": {"lane": "devin"}, "reason": "x"}, "devin"),
         "'devin' is an executor")
     rejects(lambda: do_card_set(
-        scard, {"set": {"executor": "jules"}, "reason": "x"}, "devin"),
+        scard, {"set": {"executor": "bogus-executor"}, "reason": "x"}, "devin"),
         "action.executor must be one of")
     rejects(lambda: do_card_set(
         scard, {"set": {"column": "doing"}, "reason": "x"}, "devin"),

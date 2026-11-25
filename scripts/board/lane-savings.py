@@ -54,14 +54,14 @@ CARDS_DIR = REPO / "docs" / "ssot" / "kanban" / "cards"
 # are the paid baseline, 'manual' is neither.
 CHEAP_LANES = {"deterministic", "codemod", "local-gpu-packs",
                "free-opencode", "free_lane", "kk_mac_local",
-               "jules", "nlm_batch"}
+               "nlm_batch"}
 PAID_LANES = {"paid_frontier", "devin"}
 
 # action.executor values that ARE a cheap lane even when action.lane is
 # unset (card kk-mac-routing-proposal — without this, executor-pinned
 # dispatch cards attributed to 'devin' via action.type and savings were
 # invisible). opencode executor maps to the existing free-opencode lane id.
-EXECUTOR_LANES = {"kk_mac_local": "kk_mac_local", "jules": "jules",
+EXECUTOR_LANES = {"kk_mac_local": "kk_mac_local",
                   "nlm_batch": "nlm_batch", "opencode": "free-opencode"}
 
 TASK_DATE = re.compile(r"(?:devin-task|runner)-(?:[a-z0-9-]*?-)?(\d{8})-")

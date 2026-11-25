@@ -74,7 +74,7 @@ Give the agent — and the human — a repeatable way to answer "which cards rel
 
 - Facts that live only in card `comms` can be missed because `ada_status` returns only the last five comments; use `GET /card/<id>?comms_tail=<n>` or grep the card YAML before diagnosing.
 - A fact that only lives in card comments is not discoverable via tool results alone; promote it to an SSOT doc.
-- Stale `lane: jules` is harmless when `executor` is set; `action.lane` only accepts `codemod, free_lane, jules, manual, nlm_batch, paid_frontier`.
+- A stale `lane` pin is harmless when `executor` is set; `action.lane` only accepts `codemod, free_lane, manual, nlm_batch, paid_frontier` (retired lanes drop out via `ssot.devnest-lanes.yml`).
 - Staged dispatch (`ada_envelope_stage`) is read-only only (S3 / ops-readonly / ssot-research / storage-dryrun).
 
 ## Testing the Process

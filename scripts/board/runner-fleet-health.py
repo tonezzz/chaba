@@ -295,8 +295,9 @@ out["repos"] = repos
 
 # Content pins read from origin/master, NOT from the host's checkout: a
 # stale checkout carries a stale manifest and would happily agree with a
-# stale install (the 2026-11-20 Jules half-purge pattern — master had
-# deleted jules.py but still shipped 107 Jules refs in runner-agent.py).
+# stale install (the 2026-11-20 lane half-purge pattern — master had
+# deleted the lane client but still shipped live lane refs in
+# runner-agent.py).
 # The probe has just fetched origin above, so this is today's reference.
 pins = {"ok": False, "tools": {}, "sources": {}, "checkout": {}, "err": ""}
 try:

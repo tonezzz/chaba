@@ -1,11 +1,11 @@
 """Contract tests for lane retirement and runner-tooling pins.
 
-Two drift failure modes from the 2026-11-20 Jules purge:
+Two drift failure modes from the 2026-11-20 lane purge:
 
 1. A lane is marked REMOVED in ssot.devnest-lanes.yml but a downstream
    allowlist still carries it. What actually merged upstream deleted
-   scripts/jules/jules.py while runner-agent.py still had 107 Jules refs
-   — a half-purge that every self-heal sync then propagated faithfully.
+   the lane client script while runner-agent.py still carried live lane
+   refs — a half-purge that every self-heal sync then propagated faithfully.
 2. A deployable tool changed without its content pin being bumped.
    sync-runner-tools.sh refuses an unpinned/mismatched source, so the
    fleet silently keeps running the previous build.
@@ -33,6 +33,14 @@ MANIFEST = REPO / "scripts" / "devin" / "runner-tooling.manifest.json"
 RETIRE_RE = re.compile(r"^\s*(removed|retired|deprecated|disabled|dead)\b",
                        re.I)
 SYNC_RE = re.compile(r'^_sync_one\s+"([^"]+)"\s+"([^"]+)"')
+
+
+def lane_ids() -> set:
+    """Every lane key declared in the SSOT catalog."""
+    import yaml
+
+    doc = yaml.safe_load(LANES.read_text()) or {}
+    return set((doc.get("lanes") or {}).keys())
 
 
 def retired_lanes() -> list[str]:
@@ -83,10 +91,12 @@ def sync_targets() -> list[tuple[str, str]]:
 
 
 class RetiredLaneContractTest(unittest.TestCase):
-    def test_ssot_still_declares_jules_retired(self):
-        # If someone edits the SSOT back to "live", the contract below
-        # loses its subject — fail loudly instead of passing vacuously.
-        self.assertIn("jules", retired_lanes())
+    def test_excised_lane_stays_excised(self):
+        # chore-excise-jules-lane-code: the lane is fully removed — no
+        # catalog entry (live or tombstone) and no client dir. A re-added
+        # entry must come back with its executor code, not as a stub.
+        self.assertNotIn("jules", lane_ids())
+        self.assertFalse((REPO / "scripts" / "jules").exists())
 
     def test_retired_lanes_absent_from_executor_tables(self):
         tables = {
