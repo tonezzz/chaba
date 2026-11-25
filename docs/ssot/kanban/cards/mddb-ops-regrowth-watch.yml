@@ -1,7 +1,7 @@
 id: mddb-ops-regrowth-watch
 title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
 column: review
-updated: 2026-11-25 17:39
+updated: 2026-11-25 17:40
 spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
   outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
   — review at ~10G.
@@ -265,6 +265,10 @@ comms:
 - at: 2026-11-25 17:39
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-161649'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
