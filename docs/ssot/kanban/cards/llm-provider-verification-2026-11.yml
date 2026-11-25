@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: backlog
-updated: 2026-11-24 21:12
+updated: 2026-11-25 07:45
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -235,6 +235,9 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
@@ -298,13 +301,11 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: idle
-  runner: idc02
+  status: queued
   attempts: 1
   result: 'exit=0 Started devin-task-llm-provider-verification-2026-11-1795254266.service - runner llm-provider-verification-2026-11
     staged read-only profile. | devin-task-llm-provider-verification-2026-11-1795254266.service: Consumed 23.568s
     CPU time.'
-  verified: false
   sweep:
     stale_running: 2026-11-21 16:48
     dirty: 1
