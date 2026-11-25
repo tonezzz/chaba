@@ -1,7 +1,7 @@
 id: idc03-stale-embed-db-delete
 title: Delete stale mddb-embed DB copy on idc03 (2.8G)
 column: doing
-updated: 2026-11-25 15:54
+updated: 2026-11-25 15:56
 spec: ~/.config/containers/mddb-embed/data/mddb.db (2.8G) on idc03 = pre-relocation copy; live bank verified on
   idc02 (15:56 run, 501 docs, 0 fail). Keep until ~2026-11-19 as instant rollback, then delete dir (quadlet already
   .retired). Dated reminder card — delete + close.
@@ -201,6 +201,13 @@ comms:
 - at: 2026-11-25 15:54
   from: devin
   text: picked up on idc02 dispatch; verifying live bank on idc02 + stale dir on idc03 before deleting
+- at: 2026-11-25 15:56
+  from: devin
+  text: 'DONE (verify-gone): stale ~/.config/containers/mddb-embed on idc03 already absent — no dir, no container/volume,
+    no stray *.db >100M (only live idc03 banks + declared backups). Quadlet remains .retired (Nov 8). Live bank
+    on idc02 consumer-verified: mddb-embed.service active, /health 200 {status:healthy,mode:wr,durable}, db 3.77G
+    written 15:50 today. Trail: docs/ssot/jobs/mddb/2026-11-25-idc03-stale-embed-db-delete.yml; outcome: dispatch-outcome-20261125-155419-config-containers-mddb-embed-d.md
+    ('
 action:
   type: dispatch
   status: running
