@@ -1,7 +1,7 @@
 id: idc02-audit-census-reconcile
 title: idc02 audit-hosts census reconcile — expected_services drift red
 column: doing
-updated: 2026-11-25 14:12
+updated: 2026-11-25 14:35
 priority: low
 tags:
 - audit
@@ -78,6 +78,13 @@ comms:
     the grand-rename — the live instance was on idc02 (mo; Duplicate systemd units survive job migrations: ssot.jobs.yml
     said con01 but ome; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [ada-ha-dashboard-live-view-drift]
     auto-merge not done: push:'
+- at: 2026-11-25 14:35
+  from: devin
+  text: 'recon done on idc02: mn-ha-dev+mha-state-push moved to mn01 this AM (5a0601d3, verified active there),
+    ada-code/jack quadlets retired 11-24 (.retired files), camwall-render-check.timer retired per camwall-retire-to-wiki,
+    vcast-real-macbook unit gone (superseded by vcast-real@6/@7). Real drift found: mddb-embed down since 09:20
+    reboot (quadlet lacks [Install] WantedBy — no auto-start), gev-cmd-relay dead since boot (BindsTo dependency
+    race). Restoring both + reconciling census next.'
 action:
   type: dispatch
   status: running
