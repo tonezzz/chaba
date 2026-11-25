@@ -1,6 +1,6 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
-column: backlog
+column: doing
 updated: 2026-11-25 08:23
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
@@ -286,18 +286,22 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 08:23
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-24 23:09
     dirty: 1
+  runner: mn01
 claim:
-  since: 2026-11-24 22:33
+  since: 2026-11-25 08:23
 requests:
 - id: phase-1-consumer-map-done-docs-kb-retire-b94876
   ask: Phase 1 consumer map done (docs/kb/retired-apps/camwall.md). How far should the stop go? (a) full stop —
