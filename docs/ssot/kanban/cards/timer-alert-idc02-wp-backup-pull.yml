@@ -1,6 +1,6 @@
 id: timer-alert-idc02-wp-backup-pull
 title: Timer wp-backup-pull on idc02 failing
-column: backlog
+column: done
 updated: 2026-11-25 19:29
 priority: high
 tags:
@@ -65,8 +65,14 @@ comms:
     returns HTTP 404 on the plugin-dump endpoint. SSOT ssot.audit.hosts.yml already lists wp-backup-pull.service
     under known_failed (endpoint drift, OPS-1344). No successful manual run is possible without restoring the script
     and a vali'
+- at: 2026-11-25 19:29
+  from: tony
+  text: moved backlog -> done
 spec: Goal is to investigate and resolve the failure of the `wp-backup-pull.service` timer on `idc02` that resulted
   in an exit-code on 11-25 05:30. The runner must log into `idc02`, inspect the user journal using `journalctl --user
   -u wp-backup-pull.service`, and check the CMS `timer-timeline-idc02`. The done-condition is verified when the
   root cause of the timer failure is identified and documented on the card, or when a successful manual run of `wp-backup-pull.service`
   completes with exit status 0.
+action:
+  status: done
+claim: {}
