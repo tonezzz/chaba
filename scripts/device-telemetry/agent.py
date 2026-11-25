@@ -13,6 +13,7 @@ Env:
   DEVICE_TELEMETRY_NAME   default short hostname
   DEVICE_TELEMETRY_GEO    "0" to skip WAN geo lookup (privacy/offline)
   DEVICE_TELEMETRY_PROC   max processes to list (default 8, 0=off)
+  DEVICE_TELEMETRY_TEMP_CACHE_S  macOS last-good temperature TTL (default 900)
 """
 from __future__ import annotations
 
