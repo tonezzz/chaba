@@ -1,7 +1,7 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
-column: doing
-updated: 2026-11-25 07:48
+column: review
+updated: 2026-11-25 07:50
 priority: medium
 tags:
 - idc03
@@ -209,6 +209,25 @@ comms:
     TimeoutStartSec=7800 + SCENARIO_BUDGET_S=7000 (commit 9c58d304b3 had landed after the prior 11-24 install);
     all 10 timers enabled, smoke.timer active. Weekly suites will run on dev lane instead of parking. Outcome doc:
     dispatch-outcome-20261125-074725-re-run-install-sh-for-ada-sc'
+- at: 2026-11-25 07:50
+  from: tony-macbook
+  text: 'finished (ok): exit=0 -074725-re-run-install-sh-for-ada-scen.md` and the card has progress + final comms
+    entries. | devin-task-20261125'
+- at: 2026-11-25 07:50
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 07:50
+  from: chaba
+  text: 'session-end checkpoint 23f9ec65: 1 leftover file(s) committed'
+- at: 2026-11-25 07:50
+  from: chaba
+  text: banked 563 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 07:50
+  from: chaba
+  text: pushed dispatch/20261125-074725-re-run-install-sh-for-ada-scen to origin
+- at: 2026-11-25 07:50
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
   run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
@@ -216,11 +235,16 @@ spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale sy
   scenario runner services.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 -074725-re-run-install-sh-for-ada-scen.md` and the card has progress + final comms entries. |
+    devin-task-20261125-074725-re-run-install-sh-for-ada-scen.service: Consumed 9.520s CPU time over 1min 19.101s
+    wall clock time, 379.3M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 07:46
+review_kind: verify
