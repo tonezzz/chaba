@@ -1,7 +1,7 @@
 id: ada-lane-health-gate-misses-notebooklm-dep
 title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
 column: done
-updated: 2026-11-25 15:24
+updated: 2026-11-25 16:51
 brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
   NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
   covered by no gate on any lane. Dead dell:3011 ran ~5 weeks (2026-10-17 migration -> 2026-11-25 repoint) with
@@ -130,6 +130,10 @@ comms:
   from: chaba
   text: 'auto-merge not done: merge: merge: dispatch/20261125-151222-found-during-notebooklm-rest-b - not something
     we can merge — close will block until merged'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
