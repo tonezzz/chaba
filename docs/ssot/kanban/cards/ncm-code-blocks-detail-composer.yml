@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 19:06
+updated: 2026-11-25 19:11
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -151,3 +151,10 @@ comms:
     bucket; content = quantized need values + timeout + count flags. Single-stage all-bits denoiser: structure F1
     0.7743, content 0.5404. Two-stage outline→details: structure 0.8707 (+0.0964) but content 0.5087 (-0.0317).
     So generating the outline first helps the outline, while the d'
+- at: 2026-11-25 19:11
+  from: devin
+  text: 'Next-detail ordering toy done (DetailFlow-style, local-only: 71 packs, 57 tokens, 0 provider calls/$0).
+    L0 role given, not generated. Learned order = role-token mutual information as resolution proxy; fixed = L1
+    needs -> L2 kinds -> L3 schema -> content values. Token-set F1: learned 0.6159 vs fixed 0.6106 (marginal +0.0053).
+    Mixed: learned recovers the timeout group (0.437 vs 0.000 in fixed, where it is emitted last and lost to cascade)
+    but degrades first-token hit (0.437 vs 0.732) and schema F1'
