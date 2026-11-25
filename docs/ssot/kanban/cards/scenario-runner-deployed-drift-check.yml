@@ -1,7 +1,7 @@
 id: scenario-runner-deployed-drift-check
 title: Detect deployed-vs-repo drift of ada-scenario-runner wrapper on idc03
-column: review
-updated: 2026-11-25 09:43
+column: done
+updated: 2026-11-25 09:56
 priority: medium
 tags:
 - ops
@@ -237,6 +237,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-092757-deploy-a-light-drift-check-on-,
     branch dispatch/20261125-092757-deploy-a-light-drift-check-on-'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: Deploy a light drift check on idc03 to detect discrepancies between the repo source and the copy-on-install
   ada-scenario-runner wrapper located at ~/.local/share/ada-scenario-runner/. The host is idc03 and the relevant
   repository is chaba. Constraints include preserving the copy-on-install isolation design while closing the detection
@@ -257,3 +260,7 @@ action:
 claim:
   since: 2026-11-25 09:27
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:56
+  note: verified — evidence checks green, closing itself

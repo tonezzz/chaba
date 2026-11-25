@@ -1,7 +1,7 @@
 id: ssot-validation-errors-cleanup
 title: Fix 5 pre-existing SSOT validation errors
 column: review
-updated: 2026-11-25 09:46
+updated: 2026-11-25 09:56
 brief: 'ssot-validate-all.mjs reports 5 errors unrelated to the skills/wiki work: missing title in 4 cards and a
   YAML syntax error in ssot.devnest-lanes.yml.'
 priority: medium
@@ -111,6 +111,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-093332-errors-focus-inbox-2026-11-19-,
     branch dispatch/20261125-093332-errors-focus-inbox-2026-11-19-'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-093332-errors-focus-inbox-2026-11-19- on
+    tony-omen — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -121,6 +125,8 @@ action:
   attempts: 1
   result: 'exit=0 te the outcome to `dispatch-outcome-20261125-093332-errors-focus-inbox-2026-11-19-.md`. | devin-task-20261125-093332-errors-focus-inbox-2026-11-19-.service:
     Consumed 2min 41.203s CPU time over 7min 34.899s wall clock time, 1.1G memory peak.'
+  sweep:
+    session_gone: 2026-11-25 09:56
 claim:
   since: 2026-11-25 09:32
 review_kind: verify
