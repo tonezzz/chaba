@@ -1,0 +1,108 @@
+title: ada-review-refresh log-shipper 600s timeout — root cause + fix
+subtitle: >-
+  The unit's exit-1 was an uncaught subprocess.TimeoutExpired on the
+  log-shipper fallback lane, not a compute problem. Root cause is the
+  same one OPS-1153 diagnosed on idc03 in November: per-doc /add posts
+  cannot drain a backlog inside 600s when MDDB write latency climbs.
+  The proven fix (batch via /v1/ingest + per-batch cursor checkpoint)
+  existed only on an unmerged dispatch branch since 2026-11-08 — this
+  change lands it on master and hardens the caller.
+icon: timer
+id: 2026-11-25-ada-review-refresh-log-shipper-timeout
+status: done
+owner: devin-dispatch
+project: chaba
+card: ada-review-refresh-log-shipper-timeout
+started: "2026-11-25"
+completed: "2026-11-25"
+
+context:
+  user_request: >
+    Card ada-review-refresh-log-shipper-timeout: ada-review-refresh.service
+    on tony-omen exits 1 — its log-shipper.py subprocess hits the 600s
+    timeout. Unit consumed 11.5min wall / 22s CPU — subprocess stalls
+    (likely MDDB push backlog or slow endpoint), not compute-bound.
+    Reproduce: journalctl --user -u ada-review-refresh; check
+    log-shipper.py --self --max-docs 2000 timing standalone.
+
+investigation:
+  host: tony-omen (dispatch ran on idc02; all live checks over ssh)
+  journal: >-
+    tony-omen's user journal only retains the current boot (up ~1.5d at
+    investigation time), so the failing run's journal is gone. The
+    2026-11-25 08:45 run SUCCEEDED: 9min18s wall / 1min27s CPU. The
+    timer-alert-tony-omen-ada-review-refresh card shows the failure
+    streak was 11-08 through ~11-09 (result=exit-code daily).
+  call_chain: >-
+    systemd/ada-review-refresh.service -> export-transcripts.py ->
+    subprocess.run(log-shipper.py, timeout=600) at line ~258. The shipper
+    is invoked with NO args = fleet fallback lane over all 8
+    DEFAULT_HOSTS, --max-docs 500/host, sequential per-doc /add posts.
+    TimeoutExpired was uncaught -> traceback -> exit 1 -> whole digest
+    chain dead (journal-report, host-report, collectors, rollup never ran).
+  timing_today: >-
+    Standalone on tony-omen (repo copy, pre-fix): `log-shipper.py`
+    fleet run = 3m53s wall for 1151 docs (idc03 hit the 500-doc cap);
+    `--self --max-docs 2000` = 32s for 737 docs. Per-host hourly timer
+    runs 40-65s shipping 650-1300 docs. MDDB /v1/search ~17-80ms, healthy.
+    So under current conditions the lane fits; the failure needs either
+    a large backlog or slow /add writes — exactly the OPS-1153 condition
+    (measured 2-6s/doc on a loaded 17GB host-logs bank).
+  structural_worst_case: >-
+    8 hosts x 500 docs = up to 4000 sequential HTTP posts + 16 ssh
+    journal pulls. At the OPS-1153 measured 2-6s/doc that is hours; even
+    at today's ~40ms/doc it is ~160s of posts alone. The 600s budget only
+    holds while MDDB stays fast — one bad window wedges the unit daily
+    until cursors drain, and each killed run loses the whole leg's
+    progress (cursor saved only at end-of-leg in the old code).
+  lost_fix: >-
+    Commit 0ffe452274 (dispatch/20261108-134744-timer-log-shipper-on-idc03-fai,
+    OPS-1153) already implemented the fix — /v1/ingest batches of 100
+    (~0.09s/doc marginal), per-batch cursor checkpoint, SIGTERM/SIGINT
+    graceful stop — but was NEVER merged. Fleet-deployed copies at
+    ~/.local/share/log-shipper/log-shipper.py are a third variant
+    (matches stash@{0} "OPS-1330 pre-convergence idc02": repo +
+    exit-code-on-add-failure, NO batching) on at least tony-omen and
+    idc03. idc03's log-shipper still records result=timeout runs as of
+    2026-11-24 — the same wedge, still live.
+
+fix:
+  landed_here:
+    - "cherry-pick 0ffe452274 -> e1914574f6: scripts/ada/log-shipper.py
+      now posts via /v1/ingest in batches of 100 with per-batch cursor
+      checkpoint and SIGTERM handling; falls back to per-doc /add on
+      404. Applied clean — file unchanged on master since Nov 8."
+    - "export-transcripts.py: catch subprocess.TimeoutExpired around the
+      shipper call — warn to stderr and continue the chain instead of
+      exit 1. The shipper is explicitly a fallback lane; per-host timers
+      are primary, so a slow run degrades gracefully."
+  verified:
+    - "/v1/ingest live on both MDDB endpoints (11026 ops, 11023 leader):
+      POST {documents:[]} -> 200 {added:0,...}"
+    - "python3 -m py_compile both files OK; export-transcripts --help OK"
+    - "real run from worktree on idc02: `log-shipper.py --self --max-docs
+      2000` shipped 135 docs in 2.4s wall (vs ~30-60s per-doc lane);
+      ship/idc02 state doc confirms shipped:135 failed:0 at
+      2026-11-25T03:47:54Z"
+  not_done_deploy: >-
+    Merging to master is what propagates: tony-omen's exec checkout
+    (~/CascadeProjects/chaba) syncs hourly via chaba-repo-sync, so the
+    export-transcripts fleet lane picks up batching automatically. The
+    per-host ~/.local/share/log-shipper/ bundles are self-contained and
+    need `bash scripts/ada/install-log-shipper.sh <host>` (or --all)
+    per host — deploy left for approval per policy. Until then the
+    per-host timers keep running the stash variant (exit-code feature,
+    no batching) — functional but still exposed to the same wedge.
+
+known_limits:
+  - "subprocess.run(timeout=) kills with SIGKILL, so the SIGTERM handler
+    only helps systemd TimeoutStartSec kills; for the export-transcripts
+    lane the per-batch cursor checkpoint is what preserves progress —
+    a 600s kill loses at most one 100-doc batch."
+  - "the stash@{0} exit-code-on-add-failure variant is deployed on
+    tony-omen+idc03 but absent from master — deliberate non-merge here
+    (another session's WIP, OPS-1330); reconcile when that lands or it
+    will keep drifting."
+  - "other export-transcripts subprocesses still have bare timeouts
+    (prune-old-docs 600s, journal-report none) — same crash mode if they
+    stall; out of scope, worth a follow-up if it recurs."
