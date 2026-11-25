@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
 column: doing
-updated: 2026-11-24 22:39
+updated: 2026-11-25 07:27
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -252,6 +252,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-215700-candidates-verify-each-is-actu on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 07:27
+  from: tony
+  text: 'answered retire-list-signoff: retire-as-proposed'
+- at: 2026-11-25 07:27
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
@@ -271,7 +277,7 @@ requests:
     dance2energy, gemini-mic-test, neo-chat, chatlocal, chatllama, dev-v0 surface, test-carplay main-stack ghosts.
     KEEP: cline (active lane — card done today, timers cycling). Per app: stop/disable, remove route+apps.yml+HA
     tab, docs/kb/retired-apps/<app>.md, status:retired.'
-  status: open
+  status: answered
   at: 2026-11-24 22:18
   from: devin
   options:
@@ -279,6 +285,7 @@ requests:
   - keep-dev-v0-revive-backend
   - hold
   suggested: retire-as-proposed
+  answer: retire-as-proposed
 - id: job-input-app-retirement-sweep
   ask: 'Job needs your input: Approve the app-retirement retire/keep list on card app-retirement-sweep?'
   status: open
