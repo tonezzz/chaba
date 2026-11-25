@@ -1,7 +1,7 @@
 id: raceman-php-placement-decision
 title: Raceman PHP placement — restore on omen or retire backend
-column: doing
-updated: 2026-11-25 09:25
+column: review
+updated: 2026-11-25 09:29
 priority: medium
 tags:
 - ssot
@@ -238,9 +238,35 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-090520-found-while-reconciling-knb-00 on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:29
+  from: tony-dell
+  text: 'finished (ok): exit=0 ch (not pushed), outcome doc written, and card comms posted. | devin-task-20261125-090520-found-while-reconciling'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-090520-found-while-reconciling-knb-00'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: pushed dispatch/20261125-090520-found-while-reconciling-knb-00 to origin
+- at: 2026-11-25 09:29
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 09:29
+  from: chaba
+  text: auto-merged a50c0977 (dispatch/20261125-090520-found-while-reconciling-knb-00) → origin/master
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-dell
@@ -248,5 +274,9 @@ action:
   sweep:
     stale_running: 2026-11-25 09:25
     dirty: 1
+  result: 'exit=0 ch (not pushed), outcome doc written, and card comms posted. | devin-task-20261125-090520-found-while-reconciling-knb-00.service:
+    Consumed 2min 57.276s CPU time over 9min 27.788s wall clock time, 811.4M memory peak, 460.4M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 09:04
+review_kind: verify
