@@ -88,6 +88,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: devin
+  text: '[DONE - root cause: earlyoom, not HA] Investigation complete. mn-ha-dev is STILL looping — NRestarts=45
+    at 10:03 UTC, 2 more earlyoom kills since 09:35, MemAvailable hovering ~860MB. earlyoom SIGTERMs python3 -m
+    homeassistant whenever avail<10% of 7.3GB (mn01 has zero swap so the condition is always armed). Deliverables:
+    docs/ssot/jobs/infrastructure/2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml (full timeline/evidence/verdicts)
+    + dispatch-outcome-20261125-154657-found-during-mn01-yolo-xiaomi-.md'
 action:
   type: dispatch
   status: running

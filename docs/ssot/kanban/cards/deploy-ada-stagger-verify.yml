@@ -1,7 +1,7 @@
 id: deploy-ada-stagger-verify
 title: deploy-ada.sh exits 7 when staggered units are still in start-pre
 column: backlog
-updated: 2026-11-25 17:09
+updated: 2026-11-25 17:13
 brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
   9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
   post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
@@ -309,6 +309,10 @@ comms:
 - at: 2026-11-25 17:09
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
