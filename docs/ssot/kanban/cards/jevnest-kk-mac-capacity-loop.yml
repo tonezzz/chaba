@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-25 10:19
+updated: 2026-11-25 11:13
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -248,15 +248,30 @@ comms:
     scripts/devnest/kk_mac_admission.py and scripts/ops/ada-nest-heartbeat.sh in ~/CascadeProjects/chaba; the LaunchDaemon
     actually runs root-owned /Users/adanest/bin/ada-nest-heartbeat.sh, so that copy was replaced too (backup .bak-20261125-101855).
     idc03: canonical files already matched master (local heartbeat_ts addition preserved); restarted kkmac-admission-shim.service
-    to load them. Verified: kk-mac-reonline-check.sh RESULT OK — 14 cores, CPU temp 40C, disk 60GB, both launchd labels
-    loaded, heartbeat fresh, admission eligible. A transient 70C spike was correctly denied by the 60C gate and settled to 40C.'
+    to load them. Verified: '
+- at: 2026-11-25 10:19
+  from: tony
+  text: 'Deployed 2026-11-25 10:20 (+07): per-core gate patch is live on both hosts. kk-mac: installed master''s
+    scripts/devnest/kk_mac_admission.py and scripts/ops/ada-nest-heartbeat.sh in ~/CascadeProjects/chaba; the LaunchDaemon
+    actually runs root-owned /Users/adanest/bin/ada-nest-heartbeat.sh, so that copy was replaced too (backup .bak-20261125-101855).
+    idc03: canonical files already matched master (local heartbeat_ts addition preserved); restarted kkmac-admission-shim.service
+    to load them. Verified: kk-mac-reonline-check.sh RESULT OK — 14 cores, CPU temp 40C, disk 60GB, both launchd
+    labels loaded, heartbeat fresh, admission eligible. A transient 70C spike was correctly denied by the 60C gate
+    and settled to 40C.'
 - at: 2026-11-25 11:10
   from: tony
   text: 'Converged runner-agent on kk-mac at 10:56 (+07): installed the manifest-pinned master copy (sha256 837040bd...,
     md5 8449140f...) to ~/.local/bin/runner-agent, backup ~/.cache/chaba-deploy-backups/20261125-105617/runner-agent;
-    kickstarted gui/$(id -u)/ai.chaba.runner-agent (running). The Mac could not git-fetch (host-key verification failure),
-    so the controller validated the pin against runner-tooling.manifest.json before scp. Re-ran kk-mac-reonline-check.sh:
-    RESULT OK, runner-agent in sync, admission eligible. runner-agent.log is block-buffered, so freshness is visible in
-    gpu-defer.json / ready-verdicts.json rather than immediate log lines.'
+    kickstarted gui/$(id -u)/ai.chaba.runner-agent (running). The Mac could not git-fetch (host-key verification
+    failure), so the controller validated the pin against runner-tooling.manifest.json before scp. Re-ran kk-mac-reonline-check.sh:
+    RESULT OK, runner-agent in sync, admission eligible. runner-agent.log is block-buffered, so freshness is visible
+    in gpu-defer.json / ready-verdicts.json rather than immediate log lines.'
+- at: 2026-11-25 11:13
+  from: tony
+  text: '2026-11-25 11:10 (+07): converged runner-agent on kk-mac — installed manifest-pinned master copy (sha256
+    837040bd..., md5 8449140f...) to ~/.local/bin/runner-agent, backup ~/.cache/chaba-deploy-backups/20261125-105617/runner-agent;
+    kickstarted launchd label (running). Mac cannot git-fetch (host-key failure), so controller validated the pin
+    from runner-tooling.manifest.json before scp. kk-mac-reonline-check.sh RESULT OK: runner-agent in sync, 14 cores,
+    temp 40C, disk 60GB, heartbeat fresh, admiss'
 action:
   status: done
