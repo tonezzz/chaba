@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
-column: backlog
-updated: 2026-11-25 15:13
+column: doing
+updated: 2026-11-25 15:24
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -206,14 +206,21 @@ comms:
 - at: 2026-11-25 15:13
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
 spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository. The implementation
   must enforce strict limits on individual tool usage to prevent runaway costs and provide a clear status readout
   of remaining daily budgets. Verify the implementation by running local unit tests and checking that the budget
   readout correctly queries and displays current spending totals. Execute the work targeting the ada-voice repository.
-claim: {}
+claim:
+  since: 2026-11-25 15:24

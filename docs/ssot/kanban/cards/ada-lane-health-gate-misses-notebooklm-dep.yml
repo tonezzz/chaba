@@ -1,6 +1,6 @@
 id: ada-lane-health-gate-misses-notebooklm-dep
 title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
-column: doing
+column: done
 updated: 2026-11-25 15:24
 brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
   NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
@@ -94,14 +94,29 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-151222-found-during-notebooklm-rest-b no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'merge-sweep: merged a4e1673e (dispatch/20261125-151222-found-during-notebooklm-rest-b from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-151222-found-during-notebooklm-rest-b.md)
+    — auto-closed'
+- at: 2026-11-25 15:24
+  from: local
+  text: 'pub milestone: card verified: ada-lane-health-gate-misses-notebooklm-dep on idc03 — merged a4e1673e (dispatch/20261125-151222-found-during-notebooklm-rest-b
+    from idc02) -> origin/master — verified — auto- — merged a4e1673e (dispatch/20261125-151222-found-during-notebooklm-rest-b
+    from idc02) -> origin/master — verified — auto-closed [evt-754f191a9831b0c8]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-25 15:24
+  verified: true
 claim:
   since: 2026-11-25 15:11
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 15:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-151222-found-during-notebooklm-rest-b.md
