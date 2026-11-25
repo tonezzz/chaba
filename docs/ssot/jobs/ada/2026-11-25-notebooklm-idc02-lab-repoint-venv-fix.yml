@@ -1,0 +1,64 @@
+title: idc02 ada-lab NOTEBOOKLM repoint + ada-voice venv shebang repair
+card: notebooklm-rest-unreachable-from-idc03-k-c38158
+dispatch: dispatch-wt-20261125-120821-revalidated-2026-11-20-this-is
+date: 2026-11-25
+status: shipped-live
+
+summary: |
+  Revalidation dispatch for OPS-0732. The idc03-side fix from
+  2026-11-25-notebooklm-rest-repoint.yml verified still live — no env
+  edit or restart needed there. Fleet re-sweep found one consumer the
+  morning sweep missed: idc02 ~/.config/secrets/ada-lab.env still
+  pointed NOTEBOOKLM_REST_BASE_URL at dead tony-dell :3011. Repointed
+  and restarted ada-lab.service; the restart exposed a pre-existing
+  broken venv (all 20 console-script shebangs referenced the renamed
+  ada-pi path) which was repaired in place. Service verified end-to-end.
+
+verification_idc03:
+  - "~/.config/secrets/michael-ha/backend.env line 7 already NOTEBOOKLM_REST_BASE_URL=http://100.123.163.11:3011/v1."
+  - "ada-ai-kraut.service active, MainPID 1793623 since 14:51 +07; /proc environ carries the idc02 URL."
+  - "All 7 live lane envs on idc03 grep NOTEBOOKLM_REST_BASE_URL -> idc02 :3011/v1; zero live files retain 100.68.142.13:3011 (only .bak/_attic)."
+  - "From idc03: GET http://100.123.163.11:3011/health/auth -> 200 {ok:true,auth:ok}; dead dell endpoint still 000."
+  - "Scoped consumer proof from idc03 with michael-ha key + X-API-Key header: GET /v1/notebooks -> 200 (scoped notebook list)."
+  - "journalctl ada-ai-kraut since restart: 0 notebooklm/connect errors."
+
+changes:
+  - host: idc02
+    files:
+      - "~/.config/secrets/ada-lab.env   # NOTEBOOKLM_REST_BASE_URL -> idc02 :3011/v1 (bak-nlmrepoint-20261125)"
+      - "~/CascadeProjects/ada-voice/.venv/bin/*   # 20 shebangs ada-pi/.venv -> ada-voice/.venv"
+    restarts:
+      - ada-lab.service (active, MainPID 30251, :8012 HTTP 200)
+
+findings:
+  - id: venv-shebang-rot
+    detail: |
+      idc02 ada-voice/.venv was created while the checkout lived at
+      ~/CascadeProjects/ada-pi (pyvenv.cfg command line still says so);
+      after the rename every console script (uvicorn, pip, pytest, ...)
+      kept shebang #!.../ada-pi/.venv/bin/python3 -> 203/EXEC on exec.
+      The long-running ada-lab process masked it until restart. Fixed
+      by sed on .venv/bin/* only; .pyc caches still embed the old path
+      (cosmetic — traceback paths only). mn01 + idc03 venvs verified
+      clean (shebangs already ada-voice).
+  - id: auth-header
+    detail: |
+      notebooklm-rest auth is X-API-Key header, NOT Authorization:
+      Bearer — Bearer returns 401 Invalid API key even with a valid
+      scoped key. Worth remembering for manual probes.
+  - id: lab-lane-gaps
+    detail: |
+      ada-lab.env carried the dead URL because the morning fleet sweep
+      covered idc03/tony-omen/mn01 envs but not idc02 consumer envs
+      (idc02 was only checked as the REST host). ada-lab also logs
+      recurring ha.events connect failures to 100.68.142.13:8123 —
+      separate HA-on-dell drift, NOT fixed here, card if it matters.
+
+rollback: |
+  Env backup at ~/.config/secrets/ada-lab.env.bak-nlmrepoint-20261125;
+  `systemctl --user restart ada-lab.service` restores prior env.
+  Venv shebangs are forward-only fixes (old path does not exist).
+
+related_files:
+  - docs/ssot/jobs/ada/2026-11-25-notebooklm-rest-repoint.yml  # morning sweep this completes
+  - stacks/tony-dell/notebooklm-rest/app.py                  # X-API-Key auth source
