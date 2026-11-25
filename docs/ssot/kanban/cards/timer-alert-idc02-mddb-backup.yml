@@ -1,7 +1,7 @@
 id: timer-alert-idc02-mddb-backup
 title: Timer mddb-backup on idc02 failing
 column: backlog
-updated: 2026-11-25 14:16
+updated: 2026-11-25 14:34
 priority: high
 tags:
 - timer-alert
@@ -31,6 +31,13 @@ comms:
     after 3 open-verify attempts. Same window as bank-inspect PUBLISH FAIL ''Remote end closed connection'', prune-old-docs
     ''host-logs: list failed'', chaba-lessons-due read timeout and ada-market-report connection refused. Fix the
     MDDB endpoint/embed path first; the downstream cards should then auto-heal via sentinel reconcile.'
+- at: 2026-11-25 14:34
+  from: tony
+  text: '2026-11-25 14:35 (+07): FIXED + VERIFIED. Root cause was NOT the backend: the nightly backup script on
+    idc02 still listed a retired mddb-embed:11028 container (no container, no listener), so native + filecopy both
+    failed and the unit exited 1. Removed that stale target from ~/mddb-backup.sh (backup at ~/mddb-backup.sh.bak-20261125-143311;
+    rollback: cp that file back). Reran the unit: Result=success, backup ok (native): mddb-ops-20261125-1433.db.gz
+    (81M).'
 spec: Investigate the failure of `mddb-backup.service` on `idc02` by inspecting the user journal via `journalctl
   --user -u mddb-backup.service` on host `idc02`. Target repo is `chaba` for runner alignment if needed, following
   the CMS timeline `timer-timeline-idc02`. The runner must diagnose the exit-code failure and verify the root cause

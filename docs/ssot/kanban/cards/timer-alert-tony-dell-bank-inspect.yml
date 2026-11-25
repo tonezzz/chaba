@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-bank-inspect
 title: Timer bank-inspect on tony-dell failing
 column: backlog
-updated: 2026-11-25 07:45
+updated: 2026-11-25 14:34
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:34
+  from: tony
+  text: '2026-11-25 14:35 (+07): Bank-inspect reads idc03 :11023 and writes :11027, so the same MDDB embed-path
+    fix applies. Verified after the fix: embed-probe up, CMS embed queue 0/4000, leader 47/4000, shim ~500ms with
+    0 fails, vector-reindex failed=0. The previous ''PUBLISH FAIL Remote end closed connection without response''
+    was consistent with the saturated backend. Awaiting the next scheduled run (daily ~05:55) for the timer-sentinel
+    auto-close; no manual publish was forced.'
