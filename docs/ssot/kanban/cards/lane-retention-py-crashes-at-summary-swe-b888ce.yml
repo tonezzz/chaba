@@ -1,7 +1,7 @@
 id: lane-retention-py-crashes-at-summary-swe-b888ce
 title: lane-retention.py crashes at summary — sweep_ops returns tuples, regex expects strings
 column: doing
-updated: 2026-11-25 12:24
+updated: 2026-11-25 12:29
 priority: medium
 tags:
 - bug
@@ -48,6 +48,11 @@ comms:
 - at: 2026-11-25 12:24
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261109-094039-ton'
+- at: 2026-11-25 12:29
+  from: devin
+  text: 'investigating: repo code shows prune.sweep()->str and sweep_ops->list[str] on all branches — no tuple path
+    exists in git. deployed idc03 copy likely diverges; making sweep_ops normalize (line,ok) tuples + regression
+    test regardless'
 action:
   type: dispatch
   status: running
