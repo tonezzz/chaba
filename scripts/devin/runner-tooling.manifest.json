@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-11-24",
+  "updated": "2026-11-25",
   "purpose": "Content pins for the single-file tools that scripts/devin/sync-runner-tools.sh installs into ~/.local/bin. A change to any source below MUST update its sha256 in the SAME commit: tests/board/test_runner_tooling_contract.py fails CI otherwise, sync-runner-tools.sh refuses to install an unpinned/mismatched source, and runner-fleet-health.py compares every host's installed and checkout copies against these pins read from origin/master (never from the host's possibly-stale checkout).",
   "tools": {
     "runner_agent": {
       "source": "scripts/board/runner-agent.py",
       "dest": "runner-agent",
-      "sha256": "0bc62e20bab2552b5f757c73fccaed03d8bc148e6a81c41b8764d57225472e92"
+      "sha256": "837040bd2f82b75951cb31d0de2dd8e8959264132f11794483e428dad6fe5f52"
     },
     "devin_dispatch": {
       "source": "scripts/devin/devin-dispatch.sh",
@@ -31,7 +31,7 @@
     "dispatch_repos": {
       "source": "scripts/board/dispatch_repos.py",
       "dest": "dispatch_repos.py",
-      "sha256": "39983459e3bbe8cec410cffef9fa9b760e32f451c5789770ad41f4b9cbce7292"
+      "sha256": "5c0d0225e602d43bf074e662394ca1b93deaa877f005fa32798e6cadf9550932"
     }
   }
 }
