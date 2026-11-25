@@ -44,7 +44,10 @@ Shared-fate vectors (one failure hits every lane):
   scripts). Every live env slot now holds a dedicated non-admin svc
   token: `svc-chaba-guest` → chaba-guest.env, `svc-nodered` →
   nodered-ha.env (per-host lanes omen/dell), `svc-chaba-scripts` →
-  home-assistant-token.env (per-host lanes omen/dell/idc03/mn01),
+  home-assistant-token.env (per-host lanes omen/dell/idc03/mn01 —
+  **admin since 2026-11-25**: promoted to system-admin because
+  lovelace/config/save is admin-gated; card
+  tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302),
   `svc-ada` standby lanes → ada-ha-tony.env (mn01) + ada-pi-pwa.env
   (dell). All three owner LLATs deleted via `auth/delete_refresh_token`.
   .bak-* copies of the old env files still hold the (now dead) owner

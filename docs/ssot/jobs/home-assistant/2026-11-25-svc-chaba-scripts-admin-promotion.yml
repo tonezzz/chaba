@@ -1,0 +1,63 @@
+title: svc-chaba-scripts promoted to system-admin on tony-ha (lovelace saves fixed)
+subtitle: WS config/auth/update moved the svc user from system-users to
+  system-admin — live, no restart; build-dossier-devices.py tony-ha verified
+icon: 🔑
+id: 2026-11-25-svc-chaba-scripts-admin-promotion
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-11-25"
+card: tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302
+ref: OPS-1305
+
+context: |
+  network-scan-tony (tony-dell, every 15m) failed nightly at the
+  build-dossier-devices.py tony-ha step: WS auth_ok as svc-chaba-scripts but
+  lovelace/config/save returned {code: unauthorized} — the user sat in
+  system-users (non-admin) after the 2026-10-27 svc-token split, and
+  lovelace/config/save is @require_admin in HA.
+
+root_cause: |
+  svc-chaba-scripts was minted non-admin by scripts/ada/ha-svc-user.py
+  (group_ids=["system-users"]) during the owner-LLAT revocation, but its
+  lanes' job — pushing the Dossier devices view — needs admin. REST
+  /api/ and WS auth/current_user kept working, so the failure only showed
+  at the save step.
+
+ha_admin_model_verified_2026_11_25:
+  version: "2026.8.3 (homeassistant/home-assistant:stable, host network on tony-omen)"
+  groups: [system-admin, system-users, system-read-only]
+  is_admin: "is_owner OR (is_active AND member of system-admin) — auth/models.py"
+  live_update: >-
+    WS config/auth/update {user_id, group_ids:[...]} resolves group_ids to
+    Group objects and assigns user.groups; the attr on_setattr hook calls
+    invalidate_cache() so is_admin flips immediately — persisted to
+    .storage/auth by the auth store, NO restart needed.
+
+change:
+  method: >-
+    WS config/auth/update on ws://127.0.0.1:8123/api/websocket (tony-omen,
+    host net) as the telemetry-ha-push.env LLAT (Tony owner, admin) —
+    user_id 5edf662551e345cb9c62abe88ad2c149 group_ids
+    ["system-users"] -> ["system-admin"].
+  scope: >-
+    One HA user; all four per-host LLATs (scripts-omen/dell/idc03/mn01)
+    inherit admin. svc-ada, svc-nodered, svc-chaba-guest, svc-chaba remain
+    non-admin. Alternative considered — swapping an owner/admin LLAT into
+    home-assistant-token.env — rejected: concentrates owner creds in more
+    slots and loses per-consumer attribution.
+
+verified:
+  - "auth/current_user as svc-chaba-scripts (omen home-assistant-token.env): admin=True"
+  - "ssh tony-dell; ~/CascadeProjects/chaba/venv/bin/python3 scripts/build-dossier-devices.py tony-ha -> 'Pushed tony-ha Devices view (50 rows for tony-ha)' — lovelace/config/save success"
+  - ".storage/auth on omen shows svc-chaba-scripts group_ids ['system-admin'] (persisted)"
+
+followups:
+  - >-
+    Isolation-doc tension: docs/kb/ha-ada-isolation.md's "dedicated
+    non-admin svc token" claim now has the svc-chaba-scripts exception —
+    annotated in place. If a future HA version adds per-dashboard ACLs,
+    re-scope this user back to system-users.
+  - >-
+    ha-svc-user.py prints "(non-admin)" unconditionally — cosmetic; it
+    cannot promote. A --group flag would make intent explicit.
