@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
 column: review
-updated: 2026-11-25 20:52
+updated: 2026-11-25 20:54
 priority: medium
 tags:
 - ops
@@ -38,6 +38,8 @@ action:
   attempts: 1
   result: 'exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules. | devin-task-20261125-203735-goal-close-the-host-discovery-.service:
     Consumed 2min 17.437s CPU time over 13min 44.324s wall clock time, 821.4M memory peak.'
+  sweep:
+    session_gone: 2026-11-25 20:54
 note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
 ref: OPS-1406
 comms:
@@ -132,6 +134,10 @@ comms:
 - at: 2026-11-25 20:52
   from: chaba
   text: 'worktree kept: dirty — 7 uncommitted file(s)'
+- at: 2026-11-25 20:54
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-203735 on tony-macbook — if the work was
+    never pushed it may be gone'
 claim:
   since: 2026-11-25 20:36
 review_kind: verify
