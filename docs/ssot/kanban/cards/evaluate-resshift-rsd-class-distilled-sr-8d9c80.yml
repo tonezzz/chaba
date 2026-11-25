@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 18:56
+updated: 2026-11-25 19:26
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -265,6 +265,15 @@ comms:
     35.6dB / rtSSIM 0.9788 (~108min wall under host contention, GPU+CPU-VAE hybrid). RSD one-step -> lap 174.6 /
     34.85dB / 0.9837 (60min, chop128). Both beat Real-ESRGAN fidelity (32.2dB/0.9718) with equal-or-more texture
     energy (130.5) — the predicted mid-tier. ResShift v3-s4 bonus run on GPU now; report+receipts to follow.'
+- at: 2026-11-25 19:26
+  from: tony
+  text: '19:26 +07: found two v3 jobs writing to the same empty output dir - my 18:46 CPU rerun (4h) and a GPU job
+    started 18:50 (2h, SR_DEVICE=cuda), both in cpu-jobs.slice. Stopped my CPU rerun to avoid output collision and
+    free CPU; kept the GPU job. Load was 80.87 at detection, 70.91 right after the stop. Completion check at 23:00
+    now targets the GPU job.'
+- at: 2026-11-25 19:26
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
