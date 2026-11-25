@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: review
-updated: 2026-11-24 23:08
+updated: 2026-11-25 07:28
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -296,6 +296,12 @@ comms:
 - at: 2026-11-24 23:08
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''h3-forensic-access-plesk-panel''] block close)'
+- at: 2026-11-25 07:28
+  from: tony
+  text: 'answered h3-forensic-access-plesk-panel-is-live-a-fc58e4: proceed'
+- at: 2026-11-25 07:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -317,10 +323,12 @@ requests:
     SSH :22 is filtered and NO plesk/ssh credential exists in fleet secrets. Please supply the Plesk admin login
     (or ReadyIDC client-area creds / enable SSH) so it can be stored as ~/.config/secrets/h3-plesk.env per the new
     ssot.secrets entry h3-plesk-panel.'
-  status: open
+  status: answered
   at: 2026-11-24 22:40
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
