@@ -367,7 +367,15 @@ def sweep_ops(cfg: dict, dry: bool) -> list[str]:
             continue
         ts_key, days = prune.POLICY[coll]
         for base in prune.collection_bases(coll):
-            out.append(prune.sweep(coll, ts_key, days, dry, base))
+            res = prune.sweep(coll, ts_key, days, dry, base)
+            # prune.sweep returns a str on master, but a stale deployed
+            # copy may yield (line, ok) tuples — the summary regex
+            # needs the bare line (tuples exit-coded all four lanes
+            # 2026-11-25, ADA-1370)
+            if isinstance(res, (tuple, list)):
+                res = res[0] if res else None
+            if isinstance(res, str):
+                out.append(res)
     return out
 
 
