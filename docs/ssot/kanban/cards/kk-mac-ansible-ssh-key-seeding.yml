@@ -1,7 +1,7 @@
 id: kk-mac-ansible-ssh-key-seeding
 title: 'kk-mac: seed SSH key/auth for Ansible R7 verification'
 column: done
-updated: 2026-11-25 16:49
+updated: 2026-11-25 16:57
 brief: Controller has IP known_hosts for 100.108.217.17, but ssh auth fails as kkkakk/tony; blocks verify-host-software
   for kk-mac.
 priority: medium
@@ -106,6 +106,10 @@ comms:
 - at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: ssh-seeding-is-done-the-r7-verifier-now-956a74
