@@ -1,7 +1,7 @@
 id: omen-sdxl-full-model-experiment
 title: Test non-Lightning SDXL checkpoint on omen sd-server
 column: doing
-updated: 2026-11-25 07:49
+updated: 2026-11-25 07:55
 brief: Determine whether omen painterly output is the Lightning checkpoint or Q4 quantization.
 priority: medium
 program: adobe-stock
@@ -198,6 +198,13 @@ comms:
     Landed on origin/master as 7b5f; shadow_eval.bench_key() only knew LITELLM_KEY_BENCH/CHABA + litellm-keys.env
     — h; [adobe-stock-inpaint-defect-repair] Dispatch 20261109 complete: lane evaluation ; [nest-percussion] primer
     injected 8 lesson(s): [devnest-queue'
+- at: 2026-11-25 07:55
+  from: devin
+  text: '[progress] Found prior art: sdxl-base-1.0-Q8_0.gguf already on omen (pulled 2026-11-07); comparison-d-omen-sdxl-q8
+    + comparison-g-omen-sdxl-q8-wallfix already rendered via omen sd lane and Tony QCd d as smooth-but-not-photoreal.
+    sd-server has NO hot model swap (single -m at startup; routes verified in source). Recovered verbatim candidate-C
+    prompt from ~/adobe-stock-gemini-c.7wBI1T/sd_submit.py (actually 8 steps cfg1.0 on Lightning — card says 20/cfg7,
+    correcting). Running controlled re-run: par'
 action:
   type: dispatch
   status: running
