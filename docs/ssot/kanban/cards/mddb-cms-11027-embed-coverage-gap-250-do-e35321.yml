@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
 column: doing
-updated: 2026-11-25 14:45
+updated: 2026-11-25 16:02
 priority: medium
 tags:
 - mddb
@@ -215,6 +215,13 @@ comms:
     Stamped meta search_mode=keyword on all 83 via PATCH /v1/update (scripts/mddb/mark-keyword-only.py, idempotent).
     infra-ssot had 147 real missing vectors — non-force reindex running now (8878->8894+). Declared+rendered: embed-pool-warm
     (idc03 4m, scripts/embed/embed-pool-warm.py) + mddb-cms-vector-reindex (con01 daily :11027). Job record: docs/ssot/jobs/mddb/2026-11-25-embed-coverage-gap-close'
+- at: 2026-11-25 16:02
+  from: devin
+  text: 'DONE (attempt 2, branch dispatch/20261125-072847-found-by-cms-plane-bge-golden-, outcome doc in worktree).
+    Attempt-1 repo deliverables never landed (verify-queue merge shas not in origin/master) — re-declared here.
+    Live :11027 decomposed: 83 meta-only stubs stamped meta search_mode=keyword via PATCH /v1/update (scripts/mddb/mark-keyword-only.py);
+    infra-ssot re-embedded 8878->8990/9025, last ~35 docs queued during a LIVE pool-degraded window (tony-omen bge-m3
+    cold, 69s load vs 8s shim timeout — w'
 action:
   type: dispatch
   status: running
