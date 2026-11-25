@@ -1,7 +1,7 @@
 id: runner-host-gate-card-visibility
 title: host-level claim gates skip before per-card eval — no defer note reaches the card
-column: doing
-updated: 2026-11-25 11:10
+column: review
+updated: 2026-11-25 11:23
 priority: medium
 tags:
 - runner-agent
@@ -273,16 +273,38 @@ comms:
     (_pass_gate_scope, _pass_gate_note_reason, main-loop note on can_claim=False), +4 tests in test_dispatch_runner_resilience.py
     (22/22 OK), job trail docs/ssot/jobs/board/2026-11-25-kanban-dispatch-pass-gate-card-visibility.yml, outcome
     doc dispatch-outcome-20261125-105759-ops-1097-made'
+- at: 2026-11-25 11:23
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ve notes appear once idc03''s checkout syncs past this commit — posted to card comms.
+    | devin-task-20261125-105759'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:23
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 11:23
+  from: chaba
+  text: banked 179 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:23
+  from: chaba
+  text: pushed dispatch/20261125-105759-ops-1097-made-per-card-unclaim to origin
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
-    XDG_SESSION_TYPE ='x11' UID=1000 PID=3554464 PPID=3554381 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
-    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
+  result: 'exit=0 ve notes appear once idc03''s checkout syncs past this commit — posted to card comms. | devin-task-20261125-105759-ops-1097-made-per-card-unclaim.service:
+    Consumed 8min 46.330s CPU time over 12min 59.030s wall clock time, 386.8M memory peak.'
   last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
     XDG_SESSION_TYPE ='x11' UID=1000 PID=3554464 PPID=3554381 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
     SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT
@@ -290,5 +312,7 @@ action:
     stale_running: 2026-11-25 09:39
     dirty: 2
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-25 10:57
+review_kind: verify
