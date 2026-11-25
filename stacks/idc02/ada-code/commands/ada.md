@@ -81,6 +81,15 @@ Interpret the command as one of these safe operations:
   is dismissed, or is unavailable, say no choice was captured and stop with
   a partial receipt; do not claim a menu was shown or perform a mutation.
   Finish with a compact sweep receipt after the question is answered.
+- `/ada publish-command <op> [name]`: call the `ada_command_publish` MCP
+  tool. Ops: `preview`, `validate`, `publish`, `sync`, `verify`; `name`
+  defaults to `ada` — the only allowlisted command file. There are no
+  arbitrary paths or shell. `preview`, `validate`, and `verify` are
+  read-only and run directly. `publish` and `sync` are mutations: the
+  first call without `confirmed` returns the door's preview — show it,
+  then retry the identical call with `confirmed=true` only after Tony
+  confirms. `publish` also requires `expect_sha` = sha256 of the exact
+  content bytes under review; never invent content or hashes.
 
 Active-card context:
 
