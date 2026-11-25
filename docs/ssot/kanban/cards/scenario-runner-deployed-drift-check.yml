@@ -1,7 +1,7 @@
 id: scenario-runner-deployed-drift-check
 title: Detect deployed-vs-repo drift of ada-scenario-runner wrapper on idc03
-column: backlog
-updated: 2026-11-25 09:12
+column: doing
+updated: 2026-11-25 09:27
 priority: medium
 tags:
 - ops
@@ -193,6 +193,9 @@ comms:
 - at: 2026-11-25 09:12
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.56 > 1.5)'
+- at: 2026-11-25 09:27
+  from: idc02
+  text: claimed
 spec: Deploy a light drift check on idc03 to detect discrepancies between the repo source and the copy-on-install
   ada-scenario-runner wrapper located at ~/.local/share/ada-scenario-runner/. The host is idc03 and the relevant
   repository is chaba. Constraints include preserving the copy-on-install isolation design while closing the detection
@@ -201,7 +204,10 @@ spec: Deploy a light drift check on idc03 to detect discrepancies between the re
   and the repository version.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-25 09:27
