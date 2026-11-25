@@ -1,7 +1,7 @@
 id: litellm-ledger-timer-enable
 title: Enable the litellm-ledger timer on idc03
 column: doing
-updated: 2026-11-25 10:35
+updated: 2026-11-25 10:43
 spec: The published spend ledger (source ada-cms-pages/llm-gateway-spend-ledger) is stale — the report age was ~11.8
   days as of 2026-11-13, and litellm-ledger.timer is 'kept disabled until branch merges'. Enable litellm-ledger.timer
   so scripts/litellm/daily-ledger.py publishes daily from LiteLLM_SpendLogs to the CMS page. DONE when the timer
@@ -73,5 +73,12 @@ comms:
 - at: 2026-11-25 10:35
   from: devin
   text: dispatch picked up on idc02 — inspecting live unit state on idc03 before enabling
+- at: 2026-11-25 10:43
+  from: devin
+  text: 'DONE. Root cause: deploy.sh installed litellm-ledger.{service,timer} into ~/.config/containers/systemd/
+    (quadlet dir — systemd never loads plain units there); they sat inert since 2026-11-04. Fixed deploy.sh (FILES->USER_UNITS),
+    installed units to ~/.config/systemd/user/ on idc03, removed inert copies, enable --now. Timer armed: next fire
+    2026-11-26 07:10 +07. Verified end-to-end: systemctl --user start litellm-ledger.service exited 0, published
+    -> ada-cms-pages/llm-gateway-spend-ledger (meta.up'
 claim:
   since: 2026-11-25 10:31
