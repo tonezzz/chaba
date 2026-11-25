@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 09:51
+updated: 2026-11-25 09:58
 priority: medium
 tags:
 - tony-omen
@@ -217,6 +217,13 @@ comms:
     Inspection: retry did not start code; tony-omen got HT; [ada-scenario-casting-service-failed-on-i-340465] primer
     injected 8 lesson(s): C; [board-api-queue-write-verify-lost-race-f85f2f] primer injected 8 lesson(s): cha; [chaba-board-quadlet]
     primer injected 8 lesson(s): [devnest-q'
+- at: 2026-11-25 09:58
+  from: devin
+  text: 'fix applied + verified live: user drop-in ~/.config/systemd/user/snap.snapd-desktop-integration.snapd-desktop-integration.service.d/override.conf
+    adds DISPLAY=:20 XAUTHORITY=/home/tony/.Xauthority (CRD Xvfb session env never reaches systemd --user). Service
+    active/running, NRestarts=0, journal clean — daemon now detects theme and reports all theme snaps installed.
+    Remaining: literal post-reboot verification needs a reboot window (host under heavy load: llama-server/ffmpeg/openjev/docker)
+    — raise'
 action:
   type: dispatch
   status: running
