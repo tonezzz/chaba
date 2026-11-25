@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=MacBook Day Awake
+Comment=Hold logind sleep inhibitor during day hours so tony-macbook stays available as a dispatch runner (card tony-macbook-daytime-runner). Runs inside the XFCE session because logind block inhibitors require an active/inactive session subject (polkit inhibit-block-sleep).
+Exec=sh -c "while :; do /home/tony/.local/bin/macbook-day-awake.sh; sleep 5; done"
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
