@@ -1,7 +1,7 @@
 id: awx-aap-rbac-approval-gates
 title: AWX/AAP integration for RBAC and approval gates
-column: backlog
-updated: 2026-11-25 20:57
+column: doing
+updated: 2026-11-25 21:02
 brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
   and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
   without breaking the current scheduler.
@@ -32,9 +32,12 @@ spec: 'Context: /home/tony/ansible — dispatch_job.yml, queue_manager.py, sched
   not replace the scheduler unless the integration proves necessary.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -82,4 +85,9 @@ comms:
   from: chaba
   text: 'mn01 defers: provider rate-limited (throttl on devin-task-20261125-125447-goal-generated-writes-from-non)
     — claims held ~28m'
+- at: 2026-11-25 21:02
+  from: tony-macbook
+  text: claimed
 ref: OPS-1408
+claim:
+  since: 2026-11-25 21:02
