@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
 column: doing
-updated: 2026-11-25 09:28
+updated: 2026-11-25 09:29
 priority: medium
 tags:
 - ops
@@ -194,6 +194,16 @@ comms:
 - at: 2026-11-25 09:28
   from: idc02
   text: claimed
+- at: 2026-11-25 09:29
+  from: chaba
+  text: started devin-task-20261125-092859-fix-non-atomic-state-writes-ac on idc02 (dispatch)
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'primer injected 8 lesson(s): Dead-without-evidence runs (RuntimeMaxSec/SIGKILL/failed rt_launch) leave
+    no exi; The dispatch verified-gate needs a committed deliverable — write the jobs/report; [mddb-cms-embed-quota-write-timeout-stall]
+    primer injected 8 lesson(s): [embed-l; "mutations: net_writes" in the session audit can be an attempted-and-denied
+    call; Merge-sweep "verified gate" requires at least one commit on the dispatch branch ; `scenario-provider-gate.py`
+    is an ExecCondition with side eff'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
