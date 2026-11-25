@@ -1,7 +1,7 @@
 id: mn01-yolo-xiaomi-service-stopped-deliber-d2b384
 title: mn01 yolo-xiaomi.service stopped — deliberate capacity stop or restart?
 column: doing
-updated: 2026-11-25 14:58
+updated: 2026-11-25 15:02
 priority: medium
 tags:
 - mn01
@@ -72,6 +72,13 @@ comms:
     enabled; live consumers confirmed: /apps/yolo app + /apps/yolo/api proxy (incl /tvs /cast used by gesture screen
     + ada-chat-card YOLO button) all backend on mn01:8780. mn-ha-dev stable ~2h now. Restarting yolo-xiaomi and
     verifying by surface.'
+- at: 2026-11-25 15:02
+  from: devin
+  text: 'DONE — verdict: RESTART (not park). Stop was crisis triage: clean systemctl stop (Result=success, SIGTERM)
+    at 02:38 UTC inside the mn-ha-dev crash-loop window (40 restarts, HA clean-exits every ~2-7min on 7.3GB no-swap
+    mn01). Unit stayed enabled; live consumers confirmed (/apps/yolo page+api on tony-dell+idc02 edges, /tvs /cast
+    -> HA media_players verified end-to-end). yolo-xiaomi active+enabled on mn01 since 07:58 UTC; /detect imdecode
+    error = known xiaomi_c201 camera outage, not service. Trail'
 action:
   type: dispatch
   status: running
