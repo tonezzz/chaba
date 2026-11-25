@@ -1,7 +1,7 @@
 id: render-board-checks-task-id-dead-path
 title: compute_checks git chips are dead code — action.task_id is never populated anymore
-column: doing
-updated: 2026-11-25 20:58
+column: review
+updated: 2026-11-25 21:07
 brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
   so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
   cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
@@ -104,12 +104,45 @@ comms:
     truncation) -> action.result — gated to action.type=dispatch, zero subprocesses; rejected state.json ssh leg
     and chip deletion. Live corpus: 0 -> 76 code chips (51 merged/25 not-merged); verified card ada-session-summary-inflow-stalled
     renders code=ok on its merged branch. +7'
+- at: 2026-11-25 21:07
+  from: tony-dell
+  text: 'finished (ok): exit=0 red generated board2 artifacts absent in fresh worktrees). | devin-task-20261125-190842-decide-how-compute-checks'
+- at: 2026-11-25 21:07
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 21:07
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-190842-decide-how-compute-checks-shou'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 21:07
+  from: chaba
+  text: banked 698 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 21:07
+  from: chaba
+  text: pushed dispatch/20261125-190842-decide-how-compute-checks-shou to origin
+- at: 2026-11-25 21:07
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 21:07
+  from: chaba
+  text: auto-merged a02384c2 (dispatch/20261125-190842-decide-how-compute-checks-shou) → origin/master
+- at: 2026-11-25 21:07
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 red generated board2 artifacts absent in fresh worktrees). | devin-task-20261125-190842-decide-how-compute-checks-shou.service:
+    Consumed 29min 29.417s CPU time over 1h 53min 4.390s wall clock time, 816.4M memory peak, 530M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 19:07
+review_kind: verify
