@@ -1,7 +1,7 @@
 id: devin-taskdir-gc-dispatch-hosts
 title: 'Dispatch task-dir GC gap: hosts accumulate ~/.local/share/devin-dispatch/tasks forever (idc02: 917 dirs)'
-column: backlog
-updated: 2026-11-25 09:38
+column: doing
+updated: 2026-11-25 09:39
 brief: 'DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed — devin-cleanup
   declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.'
 priority: medium
@@ -43,9 +43,12 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
 ref: DEV-1333
 comms:
 - at: 2026-11-24 22:59
@@ -90,4 +93,8 @@ comms:
 - at: 2026-11-25 09:38
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
-claim: {}
+- at: 2026-11-25 09:39
+  from: tony-macbook
+  text: claimed
+claim:
+  since: 2026-11-25 09:39
