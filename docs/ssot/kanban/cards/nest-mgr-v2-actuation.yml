@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: review
-updated: 2026-11-25 10:22
+updated: 2026-11-25 10:24
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -464,6 +464,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-101355-goal-improve-devnest-throughpu,
     branch dispatch/20261125-101355-goal-improve-devnest-throughpu'
+- at: 2026-11-25 10:24
+  from: chaba
+  text: 'merge-sweep: verified — held in review (review_kind=design — human-gated)'
 action:
   type: dispatch
   status: done
@@ -473,6 +476,7 @@ action:
     stale_running: 2026-11-18 21:27
     dirty: 1
     no_repo: 2026-11-24 18:09
+    close_held: 2026-11-25 10:24
   result: 'exit=0 e commits on `dispatch/20261125-101355-goal-improve-devnest-throughpu` and `dispatch-outcome-20261125-101355-goal-improve-devnest-throughpu.md`.
     | devin-task-20261125-101355-goal-improve-devnest-throughpu.service: Consumed 17.963s CPU time.'
   attempts: 2
