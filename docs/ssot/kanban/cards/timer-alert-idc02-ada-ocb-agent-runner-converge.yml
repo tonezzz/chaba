@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
-column: backlog
-updated: 2026-11-25 16:58
+column: done
+updated: 2026-11-25 17:03
 priority: high
 tags:
 - timer-alert
@@ -47,9 +47,17 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 16:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: closed by tony
 spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
   exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
   from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs to be redeployed.
   The done-condition is verified when scripts/board/runner-agent.py is successfully copied to idc02 (~/.local/bin/runner-agent)
   and a manual run or subsequent timer execution of ada-ocb-agent-runner-converge.service on idc02 succeeds without
   exit-code errors in journalctl.
+action:
+  status: done
