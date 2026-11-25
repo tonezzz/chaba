@@ -1,7 +1,7 @@
 id: systemic-sweep-non-atomic-state-write-te-040822
 title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
 column: doing
-updated: 2026-11-25 15:29
+updated: 2026-11-25 16:22
 priority: low
 tags:
 - ops
@@ -90,6 +90,12 @@ comms:
   text: 'progress: scripts/ops/ done (15 files: 11 save_state conversions + kanban-notify helper + 2 fsync additions
     + yt-vtt-translate cache + yt-live.sh meta.json x2). All py_compile clean. Continuing: report/litellm/audits/cam-wall,
     then ada/board/devnest/misc.'
+- at: 2026-11-25 16:22
+  from: devin
+  text: 'DONE: swept all of scripts/ — ~99 files converted/hardened to tmp+flush+fsync+os.replace (22-file batch
+    landed via CLI auto-commit 3a23f9c9769 at compaction; 77 files uncommitted in worktree). Covered ops/report/litellm/audits/cam-wall/ada/board/devnest/colab/adobe-stock/home-assistant/root.
+    Notable: job-dispatcher flock moved to .lock sibling (replace would orphan inode); HA .storage writes + token/credential
+    files included. Skipped: one-shot report/bench/taskdir artifacts + append-only .jsonl.'
 action:
   type: dispatch
   status: running
