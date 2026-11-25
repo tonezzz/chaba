@@ -1,0 +1,29 @@
+id: ada-ha-chaba-admin-ada-code-view-iframes-d1c492
+title: ada-ha chaba-admin 'Ada Code' view iframes retired hostname ada-code.surf-thailand.com
+column: backlog
+updated: 2026-11-25 14:20
+priority: low
+tags:
+- dashboard
+- idc02
+- retirement-drift
+- ada-ha
+spec: 'Found during ocb-spa-route-guard-upstream-fix dispatch (2026-11-25). The ada-ha chaba-admin dashboard ''Ada
+  Code'' view (path ada-code) iframes https://ada-code.surf-thailand.com/ — that public edge route was RETIRED 2026-11-24
+  with the opencode public-route teardown (idc02 Caddyfile comment ~line 599; backup Caddyfile.bak-retired-opencode-20261124;
+  quadlets ada-code/ada-code-enroll/jack-* removed; live opencode is now host binary v2.4.1 via opencode-serve.service
+  on tailnet 100.123.163.11:4096). The tab is dead. Repo snapshot docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+  (~line 79) and docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml (~line 296) still describe it as live.
+  Live==snapshot per the 2026-11-24 ada-ha-dashboard-live-view-drift readback. Options: (a) remove the Ada Code
+  view, (b) repoint iframe to https://ada-ocb.surf-thailand.com/ (duplicates the existing OpenChamber view — probably
+  not), (c) repoint to the tailnet opencode-serve surface (works only on tailnet devices; no auth edge — decide
+  if acceptable for an admin dashboard), (d) leave dead. Mutate live over websocket per dashboard convention (push-dashboard.py
+  / mutate script), then sync-ssot-from-live.sh and commit. Related: consumer-canary (card consumer-canary-standing-retired-hostnam-6aa4a2)
+  only watches tony-dell.taila0626a.ts.net — consider adding retired public hostnames (ada-code.surf-thailand.com,
+  opencode-ada.surf-thailand.com, opencode-jack.surf-thailand.com) to its RETIRED_HOSTS so this class of drift is
+  caught standing.'
+ref: HOM-1394
+comms:
+- at: 2026-11-25 14:20
+  from: tony
+  text: card captured via board-api
