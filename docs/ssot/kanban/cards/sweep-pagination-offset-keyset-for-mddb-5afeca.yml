@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: doing
-updated: 2026-11-25 21:09
+updated: 2026-11-25 21:11
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -348,6 +348,12 @@ comms:
     Dispatch scope: fix scripts/embed/embed-lan; runbook docs/kb/global-rules-rules.md: Testing Global Rules Effectiveness
     — **Ob; [ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81] primer injected 8 lesson(s): A; [embed-lane-banks-search-pagination]
     primer injected 8 lesson'
+- at: 2026-11-25 21:11
+  from: devin
+  text: 'API check done: /v1/search has no keyset/cursor in any deployed version (2.15.3 idc02, 2.18.10 idc03, latest
+    upstream 2.19.13 — SearchRequest is collection/filterMeta/filter/sort/asc/limit/offset only). Default sort is
+    updatedAt, which reshuffles under writes — that is the instability. Plan: pin sort=key asc (verified honored
+    on :11026 and :11025) + bounded re-sweep passes until a pass deletes 0, then document.'
 action:
   type: dispatch
   status: running
