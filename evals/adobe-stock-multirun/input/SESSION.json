@@ -1,0 +1,72 @@
+{
+ "session_id": "AS-2026-11-05-REMOTE-WORK-001",
+ "kind": "adobe_stock_campaign",
+ "title": "Remote work home office",
+ "status": "human_qc_pending",
+ "current_stage": "40-qc-review",
+ "generator": "multi-lane (kk-mac-sdxl baseline/B; tony-omen-sd-server fallback C)",
+ "gdrive_root": "gdrive:ada-nest-adobe-stock/campaigns/AS-2026-11-05-REMOTE-WORK-001",
+ "asset_ids": [
+  "remote-work-home-office-001",
+  "comparison-b-sharp-leaves",
+  "comparison-c-omen-sdxl",
+  "comparison-e-cf-flux-schnell",
+  "comparison-d-omen-sdxl-q8",
+  "comparison-e-gemini-wallfix",
+  "comparison-d-x4",
+  "comparison-d-x4-sharp40",
+  "comparison-d-x4-sharp60",
+  "comparison-g-omen-sdxl-q8-wallfix",
+  "comparison-e-gemini-fix2",
+  "comparison-e-gemini-fix3-region",
+  "comparison-e-gemini-fix4-wheels",
+  "comparison-e-omen-sdxl-inpaint-wheels",
+  "comparison-e-cf-inpaint-wheels",
+  "comparison-h-omen-sdxl-q8-cprompt"
+ ],
+ "pending_decisions": [
+  "Tony: visual QC wheels repair — fix3-region vs gemini-fix4-wheels vs cf-inpaint-wheels vs omen-sdxl-inpaint-wheels (30-candidates/)",
+  "Tony: QC comparison-g-omen-sdxl-q8-wallfix + comparison-d-x4 variants"
+ ],
+ "last_event": "comparison-h-omen-sdxl-q8-cprompt_landed_local-file",
+ "comparison": {
+  "baseline_asset_id": "remote-work-home-office-001",
+  "candidate_asset_id": "comparison-b-sharp-leaves",
+  "candidate_request_id": "render-002-comparison-b",
+  "candidate_sha256": "4d5694c0ee3a4249d2fa69cf48d36a7121ce7c4ce01a7f55ce1a0243e535535a",
+  "candidate_status": "rendered_pending_human_qc",
+  "candidate_qc_decision": "revise",
+  "candidate_qc_note": "Leaves improved; floor behind the door and the chair surface under the table look weird.",
+  "revision_request_id": "render-003-comparison-c",
+  "revision_provider": "omen-sd-server-sdxl-lightning",
+  "revision_job": "job_6aeea32e_00000001",
+  "note": "C rendered on tony-omen sd-server (job_6aeea32e_00000001, ~71min under load~29). KK-Mac render-003 still staged as backup if she wakes.",
+  "revision_status": "rendered_pending_human_qc",
+  "revision_sha256": "905631838a88e177dac783b4c35ee75b5bead3db15274ec3261c3f5ce5c3750d",
+  "revision_artifact": "30-candidates/comparison-c-omen-sdxl/comparison-c-omen-sdxl.png",
+  "revision_dimensions": "1344x768",
+  "revision_qc_decision": "reject_for_photorealism",
+  "revision_qc_note": "C looks like color paint, not photorealistic at all. Root cause likely omen SDXL-Lightning 4-step sampler (painterly output); KK-Mac 20-step SDXL produced photographic B.",
+  "e_qc_decision": "revise",
+  "e_qc_note": "Leaves look good (FLUX sharpness confirmed); wall corner looks weird. Direction: revise prompt targeting wall/corner geometry.",
+  "last_landed": {
+   "asset_id": "comparison-h-omen-sdxl-q8-cprompt",
+   "lane": "local-file",
+   "job_id": "/tmp/ops1078-compare/comparison-h-omen-sdxl-q8-cprompt.png",
+   "sha256": "13ab4de2420197dd0ea19140343582aef0b51e102fecad50d760dfc5950fc9fb",
+   "at": "2026-11-25T02:35:55.776814+00:00"
+  },
+  "d_qc_decision": "revise",
+  "d_qc_note": "Tony 2026-11-07: smooth and good, but doesn't feel photorealistic; suggested more sharpen. Try upscaling (Real-ESRGAN x4 in flight) + sharpen pass.",
+  "pending_decisions": [
+   "Tony: approve revised prompt targeting wall corner for next render",
+   "Choose processing/upscale strategy after candidate selection"
+  ],
+  "e_wallfix_qc_decision": "revise",
+  "e_wallfix_qc_note": "Tony 2026-11-08: wall fix works in the middle, but the vertical corner isn't aligned at the floor and the shelf near the corner looks floating. Overall image too dark/flat vs KK-Mac candidate — wants brighter mood (morning light). Next: combined Gemini edit (corner-at-floor + shelf grounding + relight) or picker-selected region repair.",
+  "e_fix2_qc_decision": "revise",
+  "e_fix2_qc_note": "Tony 2026-11-08: bright, leaves sharp — relight worked. But room corner still not aligned top-to-bottom and shelf still floating. Gemini full-image edits fix mood but can't hold vertical geometry — next try: picker-selected region edits (corner strip + shelf) or CF/diffusers inpaint.",
+  "e_fix3_qc_decision": "revise",
+  "e_fix3_qc_note": "Tony 2026-11-08: wall corner FIXED by region-targeted Gemini edit (picker request 20261108T025838Z). Remaining defect: chair wheels. Region-select repair loop proven — next target chair wheels."
+ }
+}

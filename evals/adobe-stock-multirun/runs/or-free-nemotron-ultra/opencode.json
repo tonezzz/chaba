@@ -1,0 +1,57 @@
+{
+ "$schema": "https://opencode.ai/config.json",
+ "model": "litellm/or-free-nemotron-ultra",
+ "agent": {
+  "build": {
+   "disable": true
+  },
+  "plan": {
+   "disable": true
+  },
+  "general": {
+   "disable": true
+  },
+  "eval-ro": {
+   "mode": "primary",
+   "model": "litellm/or-free-nemotron-ultra",
+   "description": "adobe-stock multirun read-only eval arm",
+   "prompt": "Read-only evaluation arm. You have no tools \u2014 answer from the task\nmessage alone. Emit exactly one JSON object matching the supplied\noutput contract as your final message, then stop. Any attempt to use a\ntool, read a file, run a command, or mutate anything fails the run.\n",
+   "tools": {
+    "read": false,
+    "grep": false,
+    "glob": false,
+    "list": false,
+    "todoread": false,
+    "todowrite": false,
+    "bash": false,
+    "write": false,
+    "edit": false,
+    "patch": false,
+    "task": false,
+    "webfetch": false,
+    "websearch": false,
+    "skill": false,
+    "question": false
+   },
+   "permission": {
+    "*": "deny",
+    "bash": "deny",
+    "edit": "deny",
+    "external_directory": "deny",
+    "patch": "deny",
+    "question": "deny",
+    "read": "deny",
+    "task": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "write": "deny",
+    "doom_loop": "deny"
+   }
+  }
+ },
+ "permission": {
+  "external_directory": "deny",
+  "doom_loop": "deny"
+ },
+ "mcp": {}
+}
