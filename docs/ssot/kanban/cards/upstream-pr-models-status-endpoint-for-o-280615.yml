@@ -1,7 +1,7 @@
 id: upstream-pr-models-status-endpoint-for-o-280615
 title: 'Upstream PR: models.status endpoint for OpenChamber'
 column: doing
-updated: 2026-11-25 21:11
+updated: 2026-11-25 23:14
 brief: 'Follow-up to ocb-models-status-patch-durability. Upstream repo github.com/openchamber/openchamber is public
   (MIT, main). Our models.status patch (LiteLLM gateway liveness probe, GET /api/openchamber/models/status) is applied
   to the dist bundle — a real PR must port it to the TS source and generalize it (provider id + gateway URL/key
@@ -271,6 +271,13 @@ comms:
   from: devin
   text: '[progress] cloning openchamber/openchamber to port models.status patch to TS source; no gh CLI or github
     token on this host, so deliverable will be a PR-ready branch + patch + PR body unless push creds appear'
+- at: 2026-11-25 23:14
+  from: devin
+  text: '[done] Ported models.status to upstream TS source on branch feat/models-status-endpoint (openchamber @9909e71,
+    commit 78bbfb5). Generalized: probes any OpenAI-chat-completions provider via configured package+settings.baseURL,
+    key from settings.apiKey ({env:} refs) or stored OpenCode credential — no litellm hardcoding. New module openchamber-control/models-status.ts;
+    route GET /api/openchamber/models/status; bun run check:changed clean, 266 vitest tests pass. Deliverables in
+    chaba @ stacks/idc02/'
 action:
   type: dispatch
   status: running
