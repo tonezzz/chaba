@@ -1,0 +1,78 @@
+title: go2rtc empty-frames diagnosis — tony-dell card, real fault on tony-omen
+date: 2026-11-25
+card: go2rtc-empty-frames-all-cams
+status: partial-fix-verified-upstream-blockers-remain
+host_scope: diagnosed from idc02; actions on tony-dell (read-only) + tony-omen (one restart)
+
+finding:
+  dell_side:
+    - >-
+      tony-dell has NO go2rtc: ~/.config/systemd/user/go2rtc.service.parked,
+      no process, nothing on :1984. go2rtc moved dell -> omen; the
+      wp-cam-snapshot job on dell is declared with
+      GO2RTC_URL=http://tony-omen.taila0626a.ts.net:1984 (ssot.jobs.yml
+      job:wp-cam-snapshot). The "127.0.0.1:1984" in the card spec was the
+      pre-move state (2026-11-08).
+    - >-
+      dell's wp-cam-snapshot.service is masked and its .timer stopped dead
+      since 2026-11-24 08:03-08:04 (mask applied right after the last
+      8/8-FAIL run). No host currently runs wp-cam-snapshot — WP cam CPT
+      snapshots have been off fleet-wide since then. Left masked
+      deliberately: 7/8 cams still fail upstream, and a partial-ok run
+      would return exit 0 and hide the remaining breakage from
+      timer-sentinel.
+  omen_side:
+    - >-
+      go2rtc-omen.service (system, owns :1984/:8554/:8555) had been up
+      1d12h since the 2026-11-23 ~18:51 reboot. ALL streams were wedged:
+      /api/frame.jpeg for omen_cam hung >100s (curl killed, no response)
+      while its ffmpeg v4l2 producer kept writing ~456MB of mpegts into
+      the pipe — go2rtc's pipeline was alive at transport level but never
+      emitted a frame. Other streams returned 200/0B.
+    - >-
+      journal showed the xiaomi:// producers timing out on cloud UDP
+      reads and exec/pipe EOFs; consistent with the dead passToken
+      (below), not a go2rtc defect.
+
+action:
+  - >-
+    systemctl restart go2rtc-omen.service on tony-omen (sudo, 07:59 +07).
+    Verified: omen_cam /api/frame.jpeg?src=omen_cam now returns a valid
+    640x480 JPEG (~30KB) in ~1s — both locally on omen AND from tony-dell
+    via the tailnet URL the job actually uses. cam-wall/cam-snapshot
+    consumers on omen recover on next poll.
+
+verified_state_after_fix:
+  omen_cam: "200 + ~30KB JPEG, ~1s (was: hang >100s)"
+  ip_cam_65: "200/0B — camera 192.168.2.71 still off-network (no route to
+    host, 100% loss; absent from ARP since 2026-10-26 rotation; the
+    ipcam65-rotate-finish auto-finisher expired ~Nov 9 — needs manual
+    re-arm or physical camera check)"
+  xiaomi_c100/c201 + _h264/_hd/_hd_h264 variants:
+    "200/0B — xiaomi-token-refresh.service FAILED 2026-11-25 00:00:
+    'no valid passToken cookie — is the browser logged in to
+    account.xiaomi.com?' Tony must re-login to Xiaomi in Chrome on omen;
+    the refresh job then re-patches go2rtc.yaml and restarts go2rtc.
+    6 of 8 snapshot cams blocked on this one human step."
+
+notes:
+  - >-
+    omen also runs a duplicate user-unit go2rtc.service (PID 3036, same
+    binary+config, enabled) alongside system go2rtc-omen.service. It
+    never owns :1984 (system unit binds first) and idles at ~1MB RSS —
+    harmless but confusing; candidate for park/disable hygiene pass.
+  - >-
+    A stray /bin/go2rtc test instance (PID 12911, config under deleted
+    /tmp/go2rtc-io30kzsa/, parent = Home Assistant) listens on
+    127.0.0.1:18554 + *:18555 — orphan, not part of the cam path.
+  - >-
+    Cross-card: omen producer detail belongs to
+    go2rtc-7-camera-producers-return-empty-f-cc9176; this card's dell
+    scope is resolved as far as host-side state goes.
+
+verify:
+  - ssh tony-omen 'curl -s -o /tmp/x.jpg -w "%{size_download}\n"
+    "http://127.0.0.1:1984/api/frame.jpeg?src=omen_cam"'  # ~30000
+  - ssh tony-dell 'curl -s -o /tmp/x.jpg -w "%{size_download}\n"
+    "http://tony-omen.taila0626a.ts.net:1984/api/frame.jpeg?src=omen_cam"'
+  - journalctl -u go2rtc-omen.service on omen for producer errors
