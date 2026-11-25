@@ -1,7 +1,7 @@
 id: wiki-education-cargo-table-setup
 title: 'Set up Cargo table for Education: lessons on wiki.h3'
-column: doing
-updated: 2026-11-25 15:48
+column: review
+updated: 2026-11-25 15:51
 brief: 'Unblock optional on-wiki Cargo queries for Education lessons: a Cargo table must be created by host-level
   maintenance before the declare/store template edit can be retried.'
 priority: low
@@ -126,12 +126,41 @@ comms:
     is sysop-only recreatecargodata). No Plesk shell needed: FTP docroot write + token-gated PHP helper (WebStart
     bootstrap) ran create+populate, then deleted (404 verified). Steps: re-applied revid-481 declare/store via /wiki/page
     -> revid 525; recreate -> cargo__Education + '
+- at: 2026-11-25 15:51
+  from: idc02
+  text: 'finished (ok): exit=0 ranch — `python3 scripts/wiki-cargo-check.py` exits 0 and `action=cargotables` returns
+    `["Education"]`. | devin-t'
+- at: 2026-11-25 15:51
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:51
+  from: chaba
+  text: pushed dispatch/20261125-153648-2026-11-24-attempt-cargo-exten to origin
+- at: 2026-11-25 15:51
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 15:51
+  from: chaba
+  text: auto-merged 0456fe55 (dispatch/20261125-153648-2026-11-24-attempt-cargo-exten) → origin/master
+- at: 2026-11-25 15:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-153648-2026-11-24-attempt-cargo-exten,
+    branch dispatch/20261125-153648-2026-11-24-attempt-cargo-exten'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 ranch — `python3 scripts/wiki-cargo-check.py` exits 0 and `action=cargotables` returns `["Education"]`.
+    | devin-task-20261125-153648-2026-11-24-attempt-cargo-exten.service: Consumed 36.196s CPU time, 328.5M memory
+    peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 15:35
+review_kind: verify
