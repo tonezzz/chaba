@@ -1,7 +1,7 @@
 id: gh-radar
 title: gh-radar — daily GitHub repo news digest (free lane)
 column: doing
-updated: 2026-11-25 20:57
+updated: 2026-11-25 20:58
 brief: 'Daily hierarchical GitHub repo release/news digest at ~/CascadeProjects/gh-radar on tony-omen: gh api collector
   + local ollama (qwen3:8b, think:false) TL;DR -> reports/<date>.md + iPhone HA notify + MDDB ada-ha-bank-devin-tony
   doc. gh-radar.timer fires 07:20 daily. Built 2026-11-12 by Devin dispatch session.'
@@ -336,6 +336,13 @@ comms:
   text: 'dispatch 205450: seeded watchlist groups->repos from live GitHub data (5 starred + 30 fork upstreams resolved
     via api.github.com + 11 stack tools verified against repo SSOT). Writing stacks/tony-omen/gh-radar/{watchlist,stack}.yml
     + job record; gh-radar repo itself lives on omen so deploy of watchlist.yml there is a follow-up.'
+- at: 2026-11-25 20:58
+  from: devin
+  text: 'DONE (dispatch 205450, commits 8043f04+7de20d3 on dispatch branch): canonical watchlist seed at stacks/tony-omen/gh-radar/watchlist.yml
+    — 46 repos / 3 groups (5 starred live-pulled, 30 fork-upstreams resolved via GitHub API, 11 stack-tools verified
+    vs SSOT). stack.yml declares units+restore; job record at docs/ssot/jobs/infrastructure/2026-11-25-gh-radar-watchlist-seed.yml
+    records the surface split (omen systemd timer authoritative, tony-dell OpenChamber interactive). FOLLOW-UP needed:
+    copy watc'
 action:
   type: dispatch
   status: running
