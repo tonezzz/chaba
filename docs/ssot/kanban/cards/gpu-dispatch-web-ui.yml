@@ -1,7 +1,7 @@
 id: gpu-dispatch-web-ui
 title: Web UI for GPU dispatch queue management
-column: doing
-updated: 2026-11-25 21:56
+column: review
+updated: 2026-11-25 22:04
 brief: 'Add a small read-mostly web UI for the dispatch queue: per-host GPU capacity, queued/running jobs, priority,
   and enqueue/cancel controls behind an explicit confirmation. Done when the UI renders live Redis/sidecar data
   and one job can be enqueued and cancelled through it with audited actions.'
@@ -31,11 +31,14 @@ spec: 'Context: /home/tony/ansible — gpu_status.py, queue_manager.py, schedule
   card mutations; keep the CLI as the authoritative fallback.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 -dispatch-webui/`); CLI remains the authoritative fallback. | devin-task-20261125-210414-context-home-tony-ansible-gpu-.service:
+    Consumed 2min 17.840s CPU time over 55min 10.187s wall clock time, 957.3M memory peak, 450.6M memory swap peak.'
+  verified: true
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -98,6 +101,36 @@ comms:
     health. Mutations enqueue/cancel/requeue require confirm:true + audit to audit.jsonl + Redis queue:audit; queue_manager.py
     gained cancel_job()+cancel CLI (patch in repo — ansible checkout is untracked). Verified: enqueued webui-test-001
     (stayed queue'
+- at: 2026-11-25 22:04
+  from: tony-dell
+  text: 'finished (ok): exit=0 -dispatch-webui/`); CLI remains the authoritative fallback. | devin-task-20261125-210414-context-home-tony-ansibl'
+- at: 2026-11-25 22:04
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 22:04
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-210414-context-home-tony-ansible-gpu-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 22:04
+  from: chaba
+  text: banked 717 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 22:04
+  from: chaba
+  text: pushed dispatch/20261125-210414-context-home-tony-ansible-gpu- to origin
+- at: 2026-11-25 22:04
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 22:04
+  from: chaba
+  text: auto-merged 517fd94b (dispatch/20261125-210414-context-home-tony-ansible-gpu-) → origin/master
+- at: 2026-11-25 22:04
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 ref: OPS-1409
 claim:
   since: 2026-11-25 21:03
+review_kind: verify
