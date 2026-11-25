@@ -1,0 +1,95 @@
+title: Ada lane dep-gate — extend ExecStartPre health gate to notebooklm-rest :3011 (ADA-1369)
+date: 2026-11-25
+card: ada-lane-health-gate-misses-notebooklm-dep
+dispatch: dispatch-wt-20261125-151222-found-during-notebooklm-rest-b
+status: shipped-live   # 11 dep-gate.conf drop-ins live on idc03/tony-omen/mn01, zero restarts
+
+summary: |
+  Card spec recommended (a)+(b): extend the kraut/tony ExecStartPre gate
+  to also probe notebooklm-rest, and add the same gate to the lanes that
+  only had ada-start-stagger.sh. Implemented as a single canonical
+  dep-gate.conf drop-in per lane covering BOTH hard runtime deps
+  (MDDB :11023 + notebooklm-rest :3011), superseding the ad-hoc
+  MDDB-only mddb-gate.conf. Live state was worse than the card model:
+  the lab lanes migrated idc03 -> tony-omen on 2026-11-18 with NO
+  drop-ins at all, and mn01 standby lanes had none either — the gate
+  now covers every lane whose env carries NOTEBOOKLM_REST_BASE_URL.
+
+findings:
+  - id: gate-was-ad-hoc
+    detail: |
+      mddb-gate.conf existed only on idc03 ada-ai-kraut + ada-ha-tony,
+      dated 2026-10-05, tracked in NO repo (chaba + ada-voice both
+      clean). It waited fail-closed up to ~450s for
+      http://100.102.134.91:11023/health — MDDB only.
+  - id: omen-migration-dropped-dropins
+    detail: |
+      ada-dev + ada-kk-dev moved idc03 -> tony-omen 2026-11-18 (SYS-0151)
+      with zero ~/.config/systemd/user drop-ins — no stagger AND no
+      health gate. Their disabled idc03 twins keep stagger.conf +
+      dep-gate.conf for parity. Fleet stagger remains idc03-only by
+      design (deploy-ada.sh targets idc03).
+  - id: timeoutstartsec-interaction
+    detail: |
+      ExecStartPre drop-ins apply in lexical filename order and the
+      last TimeoutStartSec wins. dep-gate.conf < stagger.conf, so on
+      idc03 lanes stagger's 180s overrides dep-gate's 300 — the same
+      budget the old mddb-gate already ran under. On omen/mn01 (no
+      stagger) dep-gate's 300s is effective; default 90s would have
+      killed the gate loop early.
+  - id: scope-decision
+    detail: |
+      Card listed chaba/ha-ada/kk/kk-dev/dev; implemented coverage =
+      every lane consuming NOTEBOOKLM_REST_BASE_URL: 7 idc03 units +
+      2 omen + 2 mn01 standby = 11 drop-ins. ada-bankq-student excluded
+      (no notebooklm env — open-jev student lane). Relays excluded
+      (no ConversationMemory). All reversible: rm dep-gate.conf +
+      daemon-reload.
+
+changes:
+  - repo: chaba worktree (this branch)
+    files:
+      - stacks/idc03/ada-dep-gate/{install.sh,stack.yml} — 7 units; removes legacy mddb-gate.conf
+      - stacks/tony-omen/ada-dep-gate/{install.sh,stack.yml} — ada-dev, ada-kk-dev
+      - stacks/mn01/ada-dep-gate/{install.sh,stack.yml} — ada-ha-tony, ada-ha-michael standby
+  - live: idc03 — dep-gate.conf written to 7 units, mddb-gate.conf removed, daemon-reload
+  - live: tony-omen — dep-gate.conf written to ada-dev + ada-kk-dev, daemon-reload
+  - live: mn01 — dep-gate.conf written to ada-ha-tony + ada-ha-michael, daemon-reload
+
+gate_semantics: |
+  ExecStartPre=/bin/sh -c "for i in $(seq 1 90); do curl -sf --max-time 3
+  http://100.102.134.91:11023/health >/dev/null && curl -sf --max-time 3
+  http://100.123.163.11:3011/health >/dev/null && exit 0; sleep 5; done;
+  exit 1" — waits fail-closed until BOTH deps are healthy; on dep outage
+  the start job times out (180s idc03 / 300s elsewhere) and
+  Restart=on-failure retries until deps return. :3011/health is
+  unauthenticated by design ({"ok":true,"auth":"ok"}).
+
+verification:
+  - >-
+    systemctl --user show <unit> -p ExecStartPre --value on idc03
+    (kraut, chaba spot-checked), tony-omen (ada-dev), mn01
+    (ada-ha-tony): dual-dep curl gate present, stagger preserved.
+  - >-
+    find ~/.config/systemd/user -name mddb-gate.conf on idc03: zero
+    leftovers; 7 dep-gate.conf present.
+  - >-
+    TimeoutStartUSec: 3min on idc03 (stagger.conf wins, as designed),
+    5min on omen/mn01.
+  - >-
+    All 11 units still active post-daemon-reload — zero restarts, gate
+    takes effect on next natural start.
+  - >-
+    curl :3011/health + :11023/health = 200 from idc02, tony-omen, mn01
+    before gating (no unreachable-dep trap).
+
+rollback: |
+  Per host: rm ~/.config/systemd/user/<unit>.service.d/dep-gate.conf &&
+  systemctl --user daemon-reload. On idc03 kraut/tony the legacy
+  mddb-gate.conf is NOT restored automatically — recreate from git
+  history of this dispatch or rewrite the single-curl MDDB-only line.
+
+related_files:
+  - stacks/idc03/ada-start-stagger/   # stagger drop-ins (unchanged)
+  - docs/ssot/jobs/ada/2026-11-25-notebooklm-rest-repoint.yml  # the repoint that exposed the gap
+  - docs/ssot/infrastructure/ssot.services.yml  # notebooklm-rest entry (idc02)
