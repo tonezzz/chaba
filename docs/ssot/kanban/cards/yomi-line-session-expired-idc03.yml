@@ -73,6 +73,13 @@ comms:
   from: devin
   text: 'raised request line-re-login-needs-your-phone-3min-wind-c11696: LINE re-login needs your phone (~3min window).
     On idc03 run: node /home/tony/.yomi/mcpb/run.mjs login --phone +668090068'
+- at: 2026-11-25 16:09
+  from: devin
+  text: 'Diagnosed two-layer failure. (1) Plumbing bug: podman one-shots run as root -> homedir()=/root -> yomi
+    data dir /root/.local/share/yomi unmounted, so credentials were invisible (no_saved_auth_token) — NOT just expired
+    session. Fixed: -e HOME=/home/tony added to yomi-update-all/yomi-update-active in ssot.jobs.yml + interim .d/home.conf
+    drop-ins live on idc03; HOME=/home/tony added to yomi-api.env and yomi-api restarted (session-status now answers
+    valid:false). Verified: manual run now finds creds'
 action:
   type: dispatch
   status: running
