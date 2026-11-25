@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
 column: doing
-updated: 2026-11-25 19:55
+updated: 2026-11-25 20:54
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -357,6 +357,10 @@ comms:
   from: devin
   text: 'attempt 2 started: prior work never committed; reconstructing on fresh origin/master, then verifying omen/idc03
     live state'
+- at: 2026-11-25 20:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-125447-goal-generated-writes-from-non on mn01 still dirty —
+    30 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -369,6 +373,7 @@ action:
   sweep:
     no_repo: 2026-11-25 19:09
     stale_running: 2026-11-25 19:54
+    dirty: 30
   runner: mn01
 claim:
   since: 2026-11-25 19:53
