@@ -95,6 +95,8 @@ def test_wiki_export_shape_with_fixtures():
         assert param in page, param
     assert "== Inventory ==" in page
     assert "== Repositories explored ==" in page
+    assert "== Benchmarks ==" in page and "info-find efficiency A/B" in page
+    assert "== Related tooling ==" in page and "ansible-first" in page
     assert page.count("\n|-") == len(fixtures) + len(export.REPOS)
     for repo in export.REPOS:
         assert repo["name"] in page, repo["name"]

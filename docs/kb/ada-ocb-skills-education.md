@@ -66,6 +66,14 @@ Recorded alongside the skills in the same session history; the wiki page carries
 | `tonezzz/mddb` (mddb-fork, https://github.com/tonezzz/mddb) | Markdown database with full-text/vector/hybrid search over MCP | The `mddb` agent skill (search-tool choice, chunk projections, `memory_*`); `chaba-lessons` / KB indexing. Local lag snapshots: `~/var/tmp/mddb-lag-base` and `-fix`. |
 | `anthropics/claude-plugins-official` (https://github.com/anthropics/claude-plugins-official) | Anthropic's official Claude Code plugin marketplace (`plugins/`, `external_plugins/`) | Installed `skill-creator` from `plugins/skill-creator/skills/` into `~/.claude/skills/skill-creator` with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin `LICENSE`. |
 
+## Benchmarks
+
+- **info-find efficiency A/B** (PR #219, `evals/info-find-efficiency/`, card `BEN-1359` closed): 8 offline tasks comparing `info-find` to bounded direct grep. Medians: narrow — info-find ~1703 tokens / 7616 ms vs direct ~92 tokens / 18 ms; cross — info-find ~1699 tokens / 5487 ms vs direct ~826 tokens / 305 ms. Correctness 0/8 vs 8/8 after hydrating top local paths. Decision rule (cross-source adoption only at ≤70% tokens with equal correctness) was not met: **keep `info-find` optional**, revisit with better routing/queries. Directional evidence only (offline, 8 tasks, bytes/4 token proxy).
+
+## Related tooling
+
+- **`ansible-first`** (`~/.claude/skills/ansible-first/SKILL.md`): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
+
 ## Wiki education record
 
 The generated page is `Education:Ada-Ocb-Skills` (`pub.lesson_wiki_title("ada-ocb-skills")`), carrying the standard `แม่แบบ:Education` call with `topic=ada-ocb-skills`, `source=session-history`, `learned_at=2026-11-24`, `next_review=2026-12-08`, and `[[Category:Education]]`. Publish is a separate, card-gated step:
