@@ -984,7 +984,7 @@ function detailHtml(c) {
     <div class="text-xs text-slate-500 mt-0.5">${c.ref?`<span class="text-sky-400 font-semibold">${esc(c.ref)}</span> · `:''}${esc(c.id)} · ${esc(c.column||'backlog')} ${c.priority?'· '+esc(c.priority):''}</div>
     <div class="mt-1 flex gap-1 flex-wrap">${badgeHtml(c, c.column || 'backlog')}</div></div>
     <div class="flex flex-col gap-1 items-end shrink-0">
-      ${!['queued','running','done'].includes(a.status||'idle') && (a.type || !['doing','done','verified','review'].includes(c.column||'')) ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}
+      ${!['queued','running','done','verified'].includes(a.status||'idle') && !['doing','done','verified','review'].includes(c.column||'') ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}
       ${c.column !== 'done' ? `<button class="act text-xs bg-emerald-800 hover:bg-emerald-700 rounded px-2.5 py-1" data-do="close">✓ close</button>`:''}
       <select class="mv text-xs bg-slate-800 border border-slate-700 rounded px-2 py-1">
         <option value="">move to…</option>
@@ -1027,17 +1027,31 @@ function renderModal() {
   const cm = document.getElementById('cm');
   if (cmv) cm.value = cmv;
 
+  // writes serialize on the board-api flock — kanban-commit/merge-sweep can
+  // hold it for minutes, so show a pending state instead of looking dead
+  const pend = (el, on) => {
+    el.disabled = on;
+    el.classList.toggle('opacity-50', on);
+    el.classList.toggle('cursor-wait', on);
+    if (on) el.dataset.label = el.textContent;
+    else if (el.dataset.label) { el.textContent = el.dataset.label; delete el.dataset.label; }
+  };
   body.querySelectorAll('.act').forEach(b => b.onclick = async () => {
+    pend(b, true); b.textContent = '…';
     const r = await api('/action', {id: c.id, do: b.dataset.do});
     toast(r.ok === false ? (r.error || 'refused') : b.dataset.do + ' ok'); await load();
   });
-  body.querySelector('.mv').onchange = async (e) => {
+  const mv = body.querySelector('.mv');
+  mv.onchange = async (e) => {
     if (!e.target.value || e.target.value === c.column) return;
+    pend(mv, true);
     const r = await api('/action', {id: c.id, do: 'move', column: e.target.value});
     toast(r.ok === false ? (r.error || 'refused') : 'moved'); await load();
   };
-  document.getElementById('cm-btn').onclick = async () => {
+  const cmBtn = document.getElementById('cm-btn');
+  cmBtn.onclick = async () => {
     if (!cm.value.trim()) return;
+    pend(cmBtn, true); cmBtn.textContent = '…';
     await api('/comment', {id: c.id, from: 'tony', text: cm.value.trim()});
     toast('comment added'); await load();
   };
@@ -1056,10 +1070,12 @@ function closeModal() {
 
 async function api(path, body) {
   try {
-    // 60s: writes serialize on the board-api flock which kanban-commit
-    // holds across pull+push — 15s aborted mid-commit (broken pipe).
+    // 5min: writes serialize on the board-api flock which kanban-commit,
+    // merge-sweep and deploy-preflight each hold for minutes under load —
+    // observed ~5min starvation 2026-11-16. The modal disables its buttons
+    // while a write is in flight so the wait is visible, not silent.
     const r = await fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body), signal: AbortSignal.timeout(60000)});
+      body: JSON.stringify(body), signal: AbortSignal.timeout(300000)});
     return await r.json();
   } catch (e) { return {ok:false, error:String(e)}; }
 }
