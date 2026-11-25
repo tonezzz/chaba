@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
-column: doing
-updated: 2026-11-25 20:58
+column: review
+updated: 2026-11-25 21:02
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -32,11 +32,13 @@ spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPA
   Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 d GPU-JOBS.md/README-DISPATCH.md, and a final card comment posted. | devin-task-20261125-203632-context-home-tony-ansible-queu.service:
+    Consumed 49.989s CPU time over 22min 43.892s wall clock time, 1.1G memory peak, 569.8M memory swap peak.'
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -100,6 +102,30 @@ comms:
     ~4min while A held gpu:hold:omen:0, then ran Exited(0). Unit test queue/test_gpu_reservations.py 14/14 PASS
     on isolated db15. Also fixed 3 real bugs found in verification: (1) job_cmd truncated to first word via key=value
     -e whitespace split — now JSON extra-var in scheduler.py+'
+- at: 2026-11-25 21:02
+  from: tony-dell
+  text: 'finished (ok): exit=0 d GPU-JOBS.md/README-DISPATCH.md, and a final card comment posted. | devin-task-20261125-203632-context-home-tony'
+- at: 2026-11-25 21:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 21:02
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-203632-context-home-tony-ansible-queu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 3 le'
+- at: 2026-11-25 21:02
+  from: chaba
+  text: banked 717 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 21:02
+  from: chaba
+  text: pushed dispatch/20261125-203632-context-home-tony-ansible-queu to origin
+- at: 2026-11-25 21:02
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 21:02
+  from: chaba
+  text: 'worktree kept: dirty — 52 uncommitted file(s)'
 ref: OPS-1407
 claim:
   since: 2026-11-25 20:35
+review_kind: verify
