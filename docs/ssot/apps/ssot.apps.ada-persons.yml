@@ -498,7 +498,8 @@ bench_profiles:
     # new session regardless of the tool surface — with it on, "CMS-only
     # memory" is false. Off for the experiment; parity restores it.
     env_knobs:
-      ADA_SESSION_PRIME: "0"
+      ADA_SESSION_PRIME: "1"        # keep identity + CMS catalog prime
+      ADA_PRIME_SKIP_HISTORY: "1"   # skip only stale session history
     include:
       # --- production surface, minus the five experimental drops ---
       - cms_read
@@ -573,7 +574,8 @@ bench_profiles:
     host: idc03
     port: 8009  # health probe after --apply (/api/health)
     env_knobs:
-      ADA_SESSION_PRIME: "1"  # restore default prime on parity
+      ADA_SESSION_PRIME: "1"        # restore default prime on parity
+      ADA_PRIME_SKIP_HISTORY: "0"   # restore cross-session context
     include:
       - ada_memory_search
       - ada_remember

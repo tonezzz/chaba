@@ -77,9 +77,13 @@ def test_cms_only_is_prod_minus_declared_drops() -> None:
     )
 
 
-def test_session_prime_knob_matches_profile_purpose() -> None:
-    assert _profile("kk-cms-only")["env_knobs"]["ADA_SESSION_PRIME"] == "0"
-    assert _profile("kk-parity")["env_knobs"]["ADA_SESSION_PRIME"] == "1"
+def test_prime_knobs_match_profile_purpose() -> None:
+    cms = _profile("kk-cms-only")["env_knobs"]
+    parity = _profile("kk-parity")["env_knobs"]
+    assert cms["ADA_SESSION_PRIME"] == "1"  # keeps CMS catalog + identity
+    assert cms["ADA_PRIME_SKIP_HISTORY"] == "1"  # drops stale history only
+    assert parity["ADA_SESSION_PRIME"] == "1"
+    assert parity["ADA_PRIME_SKIP_HISTORY"] == "0"
 
 
 def test_no_tool_is_both_included_and_excluded() -> None:
