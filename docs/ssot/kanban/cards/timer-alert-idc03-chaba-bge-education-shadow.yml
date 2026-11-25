@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-bge-education-shadow
 title: Timer chaba-bge-education-shadow on idc03 failing
 column: backlog
-updated: 2026-11-25 07:43
+updated: 2026-11-25 10:14
 priority: high
 tags:
 - timer-alert
@@ -75,6 +75,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 10:14
+  from: devin
+  text: '[still suspicious] Last run (11-25 09:59) of `chaba-bge-education-shadow.service` on `idc03` result=signal
+    — investigate journal: `journalctl --user -u chaba-bge-education-shadow.service` on the host. See CMS `timer-timeline-idc03`.'
 requests:
 - id: the-runner-agent-on-idc03-and-f13918
   ask: The runner-agent on idc03 (and multiple other hosts) has drifted from the repository version, causing agents
