@@ -1,0 +1,74 @@
+{
+  "benchmark": "info-find efficiency A/B",
+  "version": 1,
+  "note": "Tool-level, deterministic, offline. Arm A = info-find planner+run; Arm B = bounded direct grep. bytes/4 is a rough token proxy; results are directional, not conclusive.",
+  "tasks": [
+    {
+      "id": "narrow-1",
+      "kind": "narrow",
+      "query": "Which card authorized the Education wiki publish?",
+      "required_facts": ["ada-ocb-skills-wiki-education-2026-11-24", "ADA-0031"],
+      "direct_commands": ["grep -Rni -m 20 'ada-ocb-skills-wiki-education-2026-11-24\\|ADA-0031' docs/ssot/jobs/education docs/kb | head -40"]
+    },
+    {
+      "id": "narrow-2",
+      "kind": "narrow",
+      "query": "Where is the published_ports configuration for the mn-ha-dev host?",
+      "required_facts": ["ssot.home-assistant.mn-ha-dev.yml", "published_ports"],
+      "direct_commands": ["grep -Rni -m 20 'published_ports' docs/ssot/infrastructure | head -40"]
+    },
+    {
+      "id": "narrow-3",
+      "kind": "narrow",
+      "query": "Where was the Cargo declare/store attempt recorded and reverted?",
+      "required_facts": ["polish_attempt", "revid 483"],
+      "direct_commands": ["grep -Rni -m 20 'polish_attempt\\|revid 483' docs/ssot/jobs/education docs/kb | head -40"]
+    },
+    {
+      "id": "narrow-4",
+      "kind": "narrow",
+      "query": "Which revision published the 13-skill Education page?",
+      "required_facts": ["revid 501", "13-skill"],
+      "direct_commands": ["grep -Rni -m 20 'revid 501\\|13-skill' docs/ssot/jobs/education docs/kb | head -40"]
+    },
+    {
+      "id": "cross-1",
+      "kind": "cross",
+      "query": "How do we publish an Education wiki lesson through board-api?",
+      "required_facts": ["wiki-education", "/publish", "source=wiki"],
+      "direct_commands": [
+        "grep -Rni -m 15 'wiki-education' docs/kb docs/ssot/apps | head -30",
+        "grep -Rni -m 15 'wiki_title\\|source.*wiki' scripts/board/publication.py | head -30"
+      ]
+    },
+    {
+      "id": "cross-2",
+      "kind": "cross",
+      "query": "What skills exist and how are they used in ada-ocb?",
+      "required_facts": ["auto-kb", "info-find", "session-capture", "wiki-education-publish"],
+      "direct_commands": [
+        "grep -Rhi -m 20 '^name:' .agents/skills/*/SKILL.md .opencode/skills/*/SKILL.md | head -30",
+        "grep -Rni -m 15 'wiki-education-publish' docs/kb | head -30"
+      ]
+    },
+    {
+      "id": "cross-3",
+      "kind": "cross",
+      "query": "How does SSOT govern wiki writes?",
+      "required_facts": ["ssot.file-control.yml", "pointer-first", "wiki-private"],
+      "direct_commands": [
+        "grep -Rni -m 20 'wiki-private\\|pointer-first' docs/ssot docs/kb | head -40",
+        "grep -Rni -m 10 'ssot.file-control.yml' docs/ssot docs/kb | head -20"
+      ]
+    },
+    {
+      "id": "cross-4",
+      "kind": "cross",
+      "query": "Where are the Education audit, drift and due checks defined?",
+      "required_facts": ["education-report.py", "lessons-due.py", "lessons-drift.py"],
+      "direct_commands": [
+        "grep -Rni -m 30 'lessons-due.py\\|education-report.py\\|lessons-drift.py' scripts docs/kb docs/ssot/jobs/education | head -80"
+      ]
+    }
+  ]
+}
