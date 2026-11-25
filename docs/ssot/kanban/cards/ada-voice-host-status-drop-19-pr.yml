@@ -1,7 +1,7 @@
 id: ada-voice-host-status-drop-19-pr
 title: 'ada-voice: open + merge PR for host_status tool (drop 19), then restart persona backends and run live scenarios'
 column: backlog
-updated: 2026-11-25 17:12
+updated: 2026-11-25 17:27
 brief: 'Branch feat/host-status-drop-19 (commit 3411665, off ada-voice origin/main 7048cba) is pushed and tested
   but has no PR: the host has no gh CLI and no GitHub token. Human-owned step.'
 priority: medium
@@ -139,6 +139,10 @@ comms:
 - at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

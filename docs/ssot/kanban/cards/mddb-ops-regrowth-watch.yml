@@ -1,7 +1,7 @@
 id: mddb-ops-regrowth-watch
 title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
-column: doing
-updated: 2026-11-25 17:24
+column: review
+updated: 2026-11-25 17:27
 spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
   outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
   — review at ~10G.
@@ -238,13 +238,37 @@ comms:
     write deadline -> 0 deletes/day. Fix committed on dispatch branch (server-side filter, 1000-doc page cap, retries).
     Catch-up prune running on idc03 (~12k docs deleted in first 15min, ETA ~8-11h for ~520k expired). Trail: docs/ssot/jobs/mddb/2026-11-25-ops-regrowth-watch.yml;
     outc'
+- at: 2026-11-25 17:27
+  from: tony-macbook
+  text: 'finished (ok): exit=0 still reclaim the ~8G high-water file if wanted — noted as a watch item on the card.
+    | devin-task-20261125-161649'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 17:27
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-161649-mddb-ops-compacted-31g-2-8g-is
+    is 550 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 17:27
+  from: chaba
+  text: pushed dispatch/20261125-161649-mddb-ops-compacted-31g-2-8g-is to origin
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 still reclaim the ~8G high-water file if wanted — noted as a watch item on the card. | devin-task-20261125-161649-mddb-ops-compacted-31g-2-8g-is.service:
+    Consumed 2min 49.164s CPU time over 1h 9min 14.712s wall clock time, 725M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 16:16
+review_kind: verify
