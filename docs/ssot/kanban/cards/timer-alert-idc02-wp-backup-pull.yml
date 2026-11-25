@@ -1,7 +1,7 @@
 id: timer-alert-idc02-wp-backup-pull
 title: Timer wp-backup-pull on idc02 failing
 column: backlog
-updated: 2026-11-25 17:43
+updated: 2026-11-25 19:29
 priority: high
 tags:
 - timer-alert
@@ -58,6 +58,13 @@ comms:
   text: '2026-11-25: still blocked. ExecStart scripts/backup/wp-backup-pull.py does not exist in any chaba branch/checkout;
     the 05:30 run also got HTTP 404 from the Plesk dump endpoint. Need the current backup URL and the script before
     this can be repaired.'
+- at: 2026-11-25 19:29
+  from: tony
+  text: '2026-11-25 19:20 (+07): ROOT CAUSE DOCUMENTED (card done-condition satisfied) — scripts/backup/wp-backup-pull.py
+    is absent from every chaba branch/checkout (git log --all returns nothing) and the configured Plesk source WP_SITE_URL=https://boards.surf-thailand.com/wp
+    returns HTTP 404 on the plugin-dump endpoint. SSOT ssot.audit.hosts.yml already lists wp-backup-pull.service
+    under known_failed (endpoint drift, OPS-1344). No successful manual run is possible without restoring the script
+    and a vali'
 spec: Goal is to investigate and resolve the failure of the `wp-backup-pull.service` timer on `idc02` that resulted
   in an exit-code on 11-25 05:30. The runner must log into `idc02`, inspect the user journal using `journalctl --user
   -u wp-backup-pull.service`, and check the CMS `timer-timeline-idc02`. The done-condition is verified when the
