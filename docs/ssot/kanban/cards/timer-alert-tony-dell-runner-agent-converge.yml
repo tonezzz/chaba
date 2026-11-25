@@ -76,6 +76,13 @@ comms:
     not be found" — the unit referenced that path but it was never committed to master. Restored the idempotent
     playbook (commit 050e7df458), adopted it on tony-dell, and changed the restart handler to systemd_service no_block
     so an off-net laptop cannot hang a fleet run. Verified: systemctl --user start runner-agent-converge.service
+    completes Result=success, ExecMainStatus=0; all 7 hosts in-sync, changed=0.'
+- at: 2026-11-25 11:15
+  from: tony
+  text: 'Root cause: runner-agent-converge.service failed with "playbook: playbooks/deploy-runner-agent.yml could
+    not be found" — the unit referenced that path but it was never committed to master. Restored the idempotent
+    playbook (commit 050e7df458), adopted it on tony-dell, and changed the restart handler to systemd_service no_block
+    so an off-net laptop cannot hang a fleet run. Verified: systemctl --user start runner-agent-converge.service
     completes Result=success, ExecMainStatus=0; all 7 hosts in-sync, changed=0. The tony-dell checkout still has
     a pre-existing unmerged stacks/web/public/apps/ha/ssot.ui.ha.yml — resolve it before a full git pull.'
 - at: 2026-11-25 11:21
@@ -85,6 +92,13 @@ comms:
     with 0 unique commits, so local tracked work was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/
     and the exec checkout was reset to origin/master (5ed3ff675e4). Untracked live scripts/timers preserved. HA
     file has 0 conflict markers and parses a'
+- at: 2026-11-25 11:22
+  from: tony
+  text: 'Remaining issue resolved: the pre-existing unmerged stacks/web/public/apps/ha/ssot.ui.ha.yml on tony-dell
+    was an autostash-pop conflict (local HA refresh vs canonical master). HEAD had 0 unique commits, so the refresh
+    was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/ and the exec checkout reset to origin/master
+    (5ed3ff675e4). Untracked live scripts/timers preserved; HA file parses as YAML with 0 conflict markers; chaba-repo-sync.service
+    re-ran Result=success. Checkout clean except four intentional untracked files.'
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
