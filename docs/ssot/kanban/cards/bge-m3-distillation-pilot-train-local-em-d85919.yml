@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
-column: doing
-updated: 2026-11-25 17:03
+column: review
+updated: 2026-11-25 17:08
 priority: low
 tags:
 - embedding
@@ -363,14 +363,29 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: tony-dell
+  text: 'finished (ok): exit=0 h-outcome-20261125-164653-distillation-experiment-option.md`. | devin-task-20261125-164653-distillation-experimen'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-164653-distillation-experiment-option'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: banked 85 outcome lesson(s) → devin-handoff bank
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 h-outcome-20261125-164653-distillation-experiment-option.md`. | devin-task-20261125-164653-distillation-experiment-option.service:
+    Consumed 5min 13.552s CPU time over 16min 29.468s wall clock time, 1.1G memory peak, 545.8M memory swap peak.'
 claim:
   since: 2026-11-25 16:45
 requests:
@@ -388,3 +403,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
