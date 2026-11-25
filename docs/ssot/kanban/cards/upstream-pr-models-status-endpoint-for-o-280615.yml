@@ -1,7 +1,7 @@
 id: upstream-pr-models-status-endpoint-for-o-280615
 title: 'Upstream PR: models.status endpoint for OpenChamber'
 column: review
-updated: 2026-11-25 23:22
+updated: 2026-11-25 23:24
 brief: 'Follow-up to ocb-models-status-patch-durability. Upstream repo github.com/openchamber/openchamber is public
   (MIT, main). Our models.status patch (LiteLLM gateway liveness probe, GET /api/openchamber/models/status) is applied
   to the dist bundle — a real PR must port it to the TS source and generalize it (provider id + gateway URL/key
@@ -300,6 +300,9 @@ comms:
 - at: 2026-11-25 23:22
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 23:24
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-211048'
 action:
   type: dispatch
   status: done
@@ -311,6 +314,8 @@ action:
   result: 'exit=0 am auto-closes PRs without an accepted issue), then push the branch and open the PR. | devin-task-20261125-211048-upstream-pr-models-status-endp.service:
     Consumed 17min 5.612s CPU time over 2h 9min 46.744s wall clock time, 4.7G memory peak.'
   verified: false
+  sweep:
+    no_repo: 2026-11-25 23:24
 claim:
   since: 2026-11-25 21:09
 review_kind: verify
