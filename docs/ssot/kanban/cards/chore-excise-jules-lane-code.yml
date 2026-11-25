@@ -1,7 +1,7 @@
 id: chore-excise-jules-lane-code
 title: Excise retired jules lane code from runner-agent/dispatch/board-api
-column: backlog
-updated: 2026-11-25 15:37
+column: doing
+updated: 2026-11-25 15:39
 ref: OPS-0026
 comms:
 - at: 2026-11-20 18:38
@@ -151,6 +151,9 @@ comms:
 - at: 2026-11-25 15:37
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:39
+  from: tony-macbook
+  text: claimed
 spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-dispatch.py, dispatch_repos.py, board-api.py,
   and ssot.devnest-lanes.yml in the chaba repo, including associated tests and deployment. Host is tony-dell or
   idc02 where the installed runner-agent drifted from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
@@ -159,7 +162,11 @@ spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-d
   are removed from the codebase and the redeployed runner-agent passes tests.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-25 15:39
