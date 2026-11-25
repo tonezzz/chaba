@@ -1,7 +1,7 @@
 id: notebooklm-rest-unreachable-from-idc03-k-c38158
 title: NotebookLM REST unreachable from idc03 (kraut session-close failures)
-column: doing
-updated: 2026-11-25 19:13
+column: review
+updated: 2026-11-25 19:17
 spec: 'Revalidated 2026-11-20; this is still live, not superseded by the service move. The idc03 ada-ai-kraut service
   is active, but its EnvironmentFile ~/.config/secrets/michael-ha/backend.env sets NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1
   (tony-dell). From idc03, GET http://100.68.142.13:3011/health/auth fails to connect (HTTP 000). The service is
@@ -181,12 +181,38 @@ comms:
     confirmed, /health/auth 200, scoped /v1/notebooks 200 via X-API-Key, 0 notebooklm errors since restart. Fleet
     re-sweep found idc02 ada-lab.env still on dead dell :3011 — repointed + restarted; restart exposed pre-existing
     broken ada-voice/.venv (20 console-script shebangs still pointed'
+- at: 2026-11-25 19:17
+  from: mn01
+  text: 'finished (ok): exit=0 125-120821-revalidated-2026-11-20-this-is.md`; final comms posted — card ready for
+    review. | devin-task-20261125-'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'session-end checkpoint cfcf1d63: 1 leftover file(s) committed'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: banked 46 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:17
+  from: chaba
+  text: pushed dispatch/20261125-120821-revalidated-2026-11-20-this-is to origin
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: mn01
   attempts: 1
+  result: 'exit=0 125-120821-revalidated-2026-11-20-this-is.md`; final comms posted — card ready for review. | devin-task-20261125-120821-revalidated-2026-11-20-this-is.service:
+    Consumed 29.088s CPU time over 4min 50.006s wall clock time, 356.5M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 19:07
+review_kind: verify
