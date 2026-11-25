@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: doing
-updated: 2026-11-25 09:11
+updated: 2026-11-25 09:24
 priority: medium
 tags:
 - infra
@@ -223,6 +223,10 @@ comms:
     as <path>.local-conflict-<ts> for all paths (was cards-only). Non-generated conflicts + any retained pull-created
     autostash (_autostash_pending) now exit 1, so chaba-repo-sync/git-safe-push report failure instead of success.
     tests/test-kanban-commit.sh section M reproduces '
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-020433-goal-prevent-git-safe-pull-aut no longer active on mn01 but card
+    still says running — sweeping its branch'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
@@ -237,5 +241,7 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:24
 claim:
   since: 2026-11-25 09:03
