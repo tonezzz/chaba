@@ -1,7 +1,7 @@
 id: systemic-sweep-non-atomic-state-write-te-040822
 title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
 column: backlog
-updated: 2026-11-25 09:41
+updated: 2026-11-25 14:45
 priority: low
 tags:
 - ops
@@ -23,3 +23,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:45
+  from: chaba
+  text: classified as devin (fallback conf 0.16)
+- at: 2026-11-25 14:45
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
