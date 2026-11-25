@@ -1,7 +1,7 @@
 id: litellm-proxy-wide-30d-budget-exhausted-04049d
 title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
 column: review
-updated: 2026-11-25 20:23
+updated: 2026-11-25 20:24
 tags:
 - litellm
 - budget
@@ -136,6 +136,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-190752-verify-live-max-budget-vs-ssot,
     branch dispatch/20261125-190752-verify-live-max-budget-vs-ssot'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-190752-verify-live-max-budget-vs-ssot no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-190752-verify-live-max-budget-vs-ssot on
+    tony-dell — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -146,6 +154,9 @@ action:
   result: 'exit=0 watcher update goes live on idc03 after merge + repo-sync. | devin-task-20261125-190752-verify-live-max-budget-vs-ssot.service:
     Consumed 7min 53.813s CPU time over 1h 11min 47.543s wall clock time, 1.2G memory peak, 549.9M memory swap peak.'
   verified: true
+  sweep:
+    stale_running: 2026-11-25 20:24
+    session_gone: 2026-11-25 20:24
 claim:
   since: 2026-11-25 19:07
 review_kind: verify
