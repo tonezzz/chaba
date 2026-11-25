@@ -1,0 +1,59 @@
+title: 'Bench: m1-behavioral fixture activated — repo.ref bumped to hook commit, skips now counted'
+subtitle: SetStreamStateForTest hook pushed to tonezzz/mddb; all four held-out cases execute; score.py skip-accounting hardened
+icon: flask
+runner: devin-dispatch on tony-macbook (consumer on tony-dell via ssh, ~/evals)
+date: 2026-11-25
+card: m1-behavioral-fixture-activation-and-skips
+ref: OPS-1301
+
+context:
+  problem: >-
+    tasks/m1-behavioral pinned mddb ed1ff116 (parent of fix c0850f0) which lacks
+    SetStreamStateForTest, so the fourth required held-out case
+    (TestFollowerHealthIdleCaughtUpStaysHealthy) self-skipped and score.py
+    counted only PASS/FAIL — the skip silently shrank the denominator
+    (3/3 instead of 2/4 or 3/4).
+  prepared_hook: >-
+    c66b563c3c3e08c2f1a293d6dc5217b6d94bc8f9 on idc02 mddb-fork branch
+    dispatch/20261025-055220-m1-add-a-stream-state-test-hoo, based directly on
+    ed1ff116. Reviewed before activation: adds `connected atomic.Bool` wired
+    in replicate()/disconnect() plus SetStreamStateForTest(connected, lagMs,
+    lastAppliedAt, appliedLSN) writing the same atomics; IsHealthy/handler
+    semantics untouched (the fix remains the agent's task).
+
+actions:
+  push: >-
+    branch pushed idc02 -> github-mddb (tonezzz/mddb), new remote branch
+    dispatch/20261025-055220-m1-add-a-stream-state-test-hoo. Dispatch/* branch
+    only — no main/release promotion.
+  task_yaml: >-
+    ~/evals/tasks/m1-behavioral/task.yaml repo.ref ed1ff116... ->
+    c66b563c3c3e08c2f1a293d6dc5217b6d94bc8f9; activation comment updated.
+    Backup at /tmp/task.yaml.bak on dell.
+  score_py: >-
+    ~/evals/tasks/m1-behavioral/verify/score.py now parses `--- SKIP:` lines:
+    skipped tests stay in the denominator (passed+failed+skipped), are named
+    in checkpoints.tests.skipped_names and the summary, and set
+    qualified=false unless skipped==0 and all pass. Additive checkpoint keys
+    only — marker schema unchanged.
+  regression_tests: >-
+    new ~/evals/tasks/m1-behavioral/verify/test_score.py (4 tests, stub `go`
+    binary, no toolchain/model needed): all-pass qualified, skip-in-denominator
+    (3+1skip => 0.75 not 1.0), mixed fail+skip, no-tests-ran zero.
+    `python3 -m pytest test_score.py` -> 4 passed.
+
+control_validation:
+  workspaces: 'dell /tmp/m1hook/{parent,fix} (mddb-fork worktrees)'
+  parent_plus_hook_c66b563: '0.5 (2/4) — all four cases execute, zero skips; idle test FAILs on time-based IsHealthy as designed'
+  fix_plus_hook: '1.0 (4/4) qualified — c0850f0 + cherry-picked hook (520ac078; fix already wires `connected` identically, one adjacent-hunk conflict resolved as union)'
+  historical: >-
+    run 20261109_022656_b016d7 results/*.json|html|log untouched (mtimes
+    2026-11-09); original scores preserved — the independent DeepSeek M1
+    artifact evidence (all five client/handler states incl. idle 24h) remains
+    separate evidence, not a rewritten 4/4.
+  cleanliness: 'injected zz_heldout_* removed post-run in both workspaces (BEN-0828 finally-path verified)'
+
+not_done:
+  - 'no paid model reruns (per card)'
+  - 'no stage/provider/code promotion, no threshold relaxation'
+  - '~/evals is not a git repo — task/score changes live only on dell; this yml is the repo-side trail'
