@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 12:31
+updated: 2026-11-25 12:43
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -155,6 +155,11 @@ comms:
     on idc02; tony-omen has no opencode-lane state dir; member-device lanes (kk-mac) sleep without warning — bench
     gates fail closed; sc; shadow_eval.bench_key() only knew LITELLM_KEY_BENCH/CHABA + litellm-keys.env — h; same
     search over chaba-lessons + kb-{development,features, operation'
+- at: 2026-11-25 12:43
+  from: devin
+  text: dispatch started on idc02 -> executing benchmark on tony-omen GTX1650. Source asset + OPS-1077 receipts
+    pulled from gdrive campaign 60-upscale-eval. Setting up ResShift (zsyOAOA) + RSD (Selikhanovych, 1-step distill)
+    inference env; GPU currently ~1.3GB free (bge-rerank + ollama resident) so will run amp/chopped.
 action:
   type: dispatch
   status: running
