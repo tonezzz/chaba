@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>GPU Dispatch</title>
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+  <nav class="gd-topnav">
+    <a class="gd-topnav-link" href="https://idc02.taila0626a.ts.net/apps/">&larr; Apps</a>
+    <span class="gd-topnav-sep">|</span>
+    <span class="gd-topnav-title">GPU Dispatch</span>
+    <span class="gd-topnav-spacer"></span>
+    <label class="gd-actor">actor
+      <input id="actor" type="text" maxlength="64" placeholder="webui" autocomplete="off">
+    </label>
+    <label class="gd-check">
+      <input id="auto-refresh" type="checkbox" checked>
+      <span>Auto (5s)</span>
+    </label>
+    <button id="btn-refresh" type="button">Refresh</button>
+  </nav>
+
+  <main class="gd-app">
+    <header class="gd-header">
+      <div>
+        <h1>GPU Dispatch Queue</h1>
+        <p>Redis-backed Ansible job dispatch &mdash; queue, fleet GPUs, scheduler. CLI remains authoritative:
+           <code>python3 queue/queue_manager.py stats --redis 100.123.163.11</code></p>
+      </div>
+      <div id="conn-status" class="gd-conn">connecting&hellip;</div>
+    </header>
+
+    <section class="gd-strip" id="sched-strip" aria-label="scheduler health">
+      <div class="gd-strip-item"><span class="gd-strip-label">scheduler</span><span id="sched-scheduler" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">sidecar (idc02)</span><span id="sched-sidecar" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">queued</span><span id="stat-queued" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">processing</span><span id="stat-processing" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">completed</span><span id="stat-completed" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">failed</span><span id="stat-failed" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">dlq</span><span id="stat-dlq" class="gd-badge">&hellip;</span></div>
+      <div class="gd-strip-item"><span class="gd-strip-label">reservations</span><span id="stat-resv" class="gd-badge">&hellip;</span></div>
+    </section>
+
+    <div class="gd-grid">
+      <section class="gd-card gd-col-wide">
+        <div class="gd-card-head">
+          <h2>Fleet GPUs &amp; hosts</h2>
+          <span class="gd-muted" id="gpu-summary"></span>
+        </div>
+        <div class="gd-table-wrap">
+          <table class="gd-table" id="gpu-table">
+            <thead>
+              <tr>
+                <th>Host</th><th>GPU</th><th>VRAM total</th><th>VRAM used</th><th>VRAM free</th>
+                <th>Util</th><th>Temp</th><th>Hold</th><th>CPU%</th><th>Mem%</th><th>Load1</th><th>Disk%</th><th>Tags</th><th>Sidecar</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="gd-card">
+        <div class="gd-card-head">
+          <h2>Queue</h2>
+          <span class="gd-muted" id="fairshare"></span>
+        </div>
+        <div class="gd-table-wrap">
+          <table class="gd-table" id="job-table">
+            <thead>
+              <tr>
+                <th>Job</th><th>Status</th><th>Pri</th><th>User</th><th>Image</th>
+                <th>GPUs</th><th>Created</th><th>Host</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="gd-card">
+        <div class="gd-card-head">
+          <h2>Enqueue job</h2>
+          <span class="gd-muted">requires confirmation + audit</span>
+        </div>
+        <form id="enqueue-form" class="gd-form">
+          <div class="gd-form-grid">
+            <label>Image *<input name="job_image" required placeholder="docker.io/nvidia/cuda:12.2.0-base-ubuntu22.04"></label>
+            <label>Command *<input name="job_cmd" required placeholder="nvidia-smi -L"></label>
+            <label>Job ID<input name="job_id" placeholder="auto (job-xxxxxxxx)"></label>
+            <label>Priority<select name="priority">
+              <option value="0">0 critical</option><option value="1">1 high</option>
+              <option value="5" selected>5 normal</option><option value="8">8 low</option>
+              <option value="9">9 background</option>
+            </select></label>
+            <label>GPUs<input name="job_gpus" type="number" min="0" max="8" value="0"></label>
+            <label>Min VRAM GB<input name="job_min_vram_gb" type="number" min="0" max="64" value="1"></label>
+            <label>Require tags<input name="job_require_tags" placeholder="gpu (comma-sep, optional)"></label>
+            <label>Exclude tags<input name="job_exclude_tags" placeholder="(optional)"></label>
+            <label>Max load %<input name="job_max_load_pct" type="number" min="1" max="10000" value="1000"></label>
+            <label>Max mem %<input name="job_max_mem_pct" type="number" min="1" max="100" value="95"></label>
+            <label>Reserve window s<input name="reserve_gpu_window_sec" type="number" min="0" max="86400" value="0"></label>
+            <label>Runtime<select name="container_runtime"><option value="podman" selected>podman</option><option value="docker">docker</option></select></label>
+            <label>Timeout s<input name="job_timeout_sec" type="number" min="10" max="604800" value="3600"></label>
+            <label>Max retries<input name="max_retries" type="number" min="0" max="10" value="2"></label>
+            <label>Target group<input name="target_group" value="all"></label>
+            <label>User<input name="user" value="webui"></label>
+            <label>Project<input name="project" value="default"></label>
+          </div>
+          <div class="gd-form-actions">
+            <button type="submit" class="gd-btn gd-btn-primary">Enqueue&hellip;</button>
+            <span id="enqueue-status" class="gd-action-status"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="gd-card gd-col-wide">
+        <div class="gd-card-head">
+          <h2>Audit log</h2>
+          <span class="gd-muted">mutations via this UI (enqueue/cancel/requeue)</span>
+        </div>
+        <div class="gd-table-wrap">
+          <table class="gd-table" id="audit-table">
+            <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Job</th><th>Result</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div id="job-modal" class="gd-modal" hidden>
+      <div class="gd-modal-card">
+        <div class="gd-card-head">
+          <h2 id="modal-title">Job</h2>
+          <button id="modal-close" type="button" class="gd-btn">Close</button>
+        </div>
+        <pre id="modal-body" class="gd-pre"></pre>
+      </div>
+    </div>
+
+    <div class="gd-footer">
+      <span id="last-updated">Last updated: never</span>
+      <span id="refresh-status"></span>
+    </div>
+  </main>
+
+  <div id="toast" class="gd-toast" hidden></div>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[Unit]
+Description=GPU Dispatch Web UI — queue + fleet GPU pane (card gpu-dispatch-web-ui)
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ansible/webui
+Environment=GPU_WEBUI_HOST=100.123.163.11
+Environment=GPU_WEBUI_PORT=8795
+Environment=ANSIBLE_DIR=%h/ansible
+Environment=REDIS_HOST=127.0.0.1
+ExecStart=/home/tony/.local/venv-sidecar/bin/python %h/ansible/webui/gpu_dispatch_webui.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
