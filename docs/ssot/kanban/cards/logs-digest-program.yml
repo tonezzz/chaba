@@ -10,7 +10,7 @@ metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships bot
 note: 'Epic for the kanban-in-logs work (2026-10-04). Detection layer live: log-shipper posts per-host ship-state
   docs (reachable/scanned/shipped/ journals), logs-report posts report/24h, logs-kanban turns gaps into auto cards
   inside kanban-sync on dell. Remaining work = the child cards.'
-updated: 2026-11-25 07:51
+updated: 2026-11-25 15:45
 comms:
 - at: 2026-10-06 08:13
   from: tony
@@ -296,6 +296,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 15:45
+  from: chaba
+  text: queued for processing
 ref: OPS-0094
 requests:
 - id: the-logs-digest-program-epic-t-8bb097
@@ -312,8 +318,12 @@ requests:
   answer: ★ Keep the epic card in the backlog as a tracking umbrella while working on its child cards like OPS-0094.
   executed: 2026-10-24 hold
 action:
-  status: idle
+  status: queued
+  type: dispatch
+  lane: free_lane
+  lane_source: kw
 spec: 'Goal: Redeploy the drifted runner-agent script from the chaba repo to the hosts idc03, tony-macbook, idc02,
   and tony-dell. Target hosts are idc03, tony-macbook, idc02, and tony-dell using the chaba repo path /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
   Constraint: copy scripts/board/runner-agent.py to ~/.local/bin/runner-agent on each specified host. Testable done-condition:
   running runner-agent successfully executes without drift errors across idc03, tony-macbook, idc02, and tony-dell.'
+claim: {}
