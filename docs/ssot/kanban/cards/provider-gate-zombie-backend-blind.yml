@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
-column: doing
-updated: 2026-11-25 09:24
+column: done
+updated: 2026-11-25 09:25
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -210,14 +210,24 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-090509-found-during-timer-alert-idc03 no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 09:25
+  from: chaba
+  text: 'merge-sweep: merged b38d9e83 (dispatch/20261125-090509-found-during-timer-alert-idc03 from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-090509-found-during-timer-alert-idc03.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-25 09:24
+  verified: true
 claim:
   since: 2026-11-25 09:04
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-090509-found-during-timer-alert-idc03.md
