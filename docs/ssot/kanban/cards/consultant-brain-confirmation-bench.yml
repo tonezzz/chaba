@@ -1,7 +1,7 @@
 id: consultant-brain-confirmation-bench
 title: Consultant-brain confirmation series — qwen3:8b (or new candidate) x3 on corrected card-judgment corpus
 column: doing
-updated: 2026-11-25 15:25
+updated: 2026-11-25 16:43
 priority: medium
 tags:
 - ada
@@ -298,6 +298,12 @@ comms:
     live only on unmerged branch dispatch/20261119-130719 (commit 2ad449c283) — porting the 2-file relabel + flag
     into this worktree, then running qwen3:8b x3 vs kk-mac ollama. Note: consultant LANE itself is also unmerged
     — activation step will need that branch landed first.'
+- at: 2026-11-25 16:43
+  from: devin
+  text: '[progress] Series running on kk-mac (awake again). run1 done: qwen3:8b PASS on bars (acc .904 def .926
+    prec .882) BUT 3 defer-gold over-act misses (defer-027->act, defer-013/009->correct) — disqualifying direction
+    already tripped. qwen2.5:32b run1: clean PASS (.894/.947/.857), zero defer->act/correct — now the lead candidate;
+    queued runs 2-3 after the 8b series. Artifacts: scripts/bench/card-judgment/consultant-confirm-*.{md,json}'
 action:
   type: dispatch
   status: running
