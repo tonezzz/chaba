@@ -1,7 +1,7 @@
 id: prune-old-docs-log-expired-count-separat-fb03e3
 title: 'prune-old-docs: log expired count separately from deleted'
-column: doing
-updated: 2026-11-25 19:31
+column: review
+updated: 2026-11-25 19:34
 brief: Sweep log line reads deleted N/M where M=scanned - under the offset race a run can print deleted 0/25313
   while thousands of stale docs exist, misleading operators into thinking the collection is clean. Add expired_seen
   counter (docs matching the stale predicate during enumeration, independent of delete attempts) so the line reads
@@ -319,13 +319,34 @@ comms:
   text: 'done: sweep() in scripts/ada/prune-old-docs.py now counts expired_seen during enumeration and logs "expired
     E, deleted D/scanned S"; mirrored in scripts/device-telemetry/prune.py. lane-retention summary regex still matches.
     tests/ada/test_lane_retention.py: 28/28 ok. Committed on dispatch/20261125-123109-prune-old-docs-log-expired-cou.'
+- at: 2026-11-25 19:34
+  from: mn01
+  text: 'finished (ok): exit=0 posted; outcome written to `dispatch-outcome-20261125-123109-prune-old-docs-log-expired-cou.md`.
+    | devin-task-202'
+- at: 2026-11-25 19:34
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 19:34
+  from: chaba
+  text: banked 706 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:34
+  from: chaba
+  text: pushed dispatch/20261125-123109-prune-old-docs-log-expired-cou to origin
+- at: 2026-11-25 19:34
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   runner: mn01
   attempts: 1
+  result: 'exit=0 posted; outcome written to `dispatch-outcome-20261125-123109-prune-old-docs-log-expired-cou.md`.
+    | devin-task-20261125-123109-prune-old-docs-log-expired-cou.service: Consumed 4.659s CPU time over 49.528s wall
+    clock time, 283.8M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 19:30
+review_kind: verify
