@@ -1,7 +1,7 @@
 id: scenario-runner-deployed-drift-check
 title: Detect deployed-vs-repo drift of ada-scenario-runner wrapper on idc03
-column: doing
-updated: 2026-11-25 09:40
+column: review
+updated: 2026-11-25 09:43
 priority: medium
 tags:
 - ops
@@ -213,6 +213,30 @@ comms:
     exec-checkout repo source; missing/not-executable/content-drift/reference-missing -> deduped board-api /inbox
     alert (6h/condition). Exit 0 on completed checks per OPS-0581 — findings ride inbox, not exit code. Live run:
     ok rc=0; drift/missing/not-exec paths verified vi'
+- at: 2026-11-25 09:43
+  from: idc02
+  text: 'finished (ok): exit=0  either way. Full details in `dispatch-outcome-20261125-092757-deploy-a-light-drift-check-on-.md`.
+    | devin-task-2'
+- at: 2026-11-25 09:43
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:43
+  from: chaba
+  text: pushed dispatch/20261125-092757-deploy-a-light-drift-check-on- to origin
+- at: 2026-11-25 09:43
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 09:43
+  from: chaba
+  text: auto-merged 68edfe57 (dispatch/20261125-092757-deploy-a-light-drift-check-on-) → origin/master
+- at: 2026-11-25 09:43
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-092757-deploy-a-light-drift-check-on-,
+    branch dispatch/20261125-092757-deploy-a-light-drift-check-on-'
 spec: Deploy a light drift check on idc03 to detect discrepancies between the repo source and the copy-on-install
   ada-scenario-runner wrapper located at ~/.local/share/ada-scenario-runner/. The host is idc03 and the relevant
   repository is chaba. Constraints include preserving the copy-on-install isolation design while closing the detection
@@ -221,10 +245,15 @@ spec: Deploy a light drift check on idc03 to detect discrepancies between the re
   and the repository version.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0  either way. Full details in `dispatch-outcome-20261125-092757-deploy-a-light-drift-check-on-.md`.
+    | devin-task-20261125-092757-deploy-a-light-drift-check-on-.service: Consumed 1min 54.773s CPU time, 566.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 09:27
+review_kind: verify
