@@ -1,7 +1,7 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
 column: backlog
-updated: 2026-11-25 10:14
+updated: 2026-11-25 14:15
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
 priority: medium
@@ -297,6 +297,9 @@ comms:
 - at: 2026-11-25 10:14
   from: chaba
   text: 'idc02 retry backoff: fail 2/3 — next claim not before 11-25 11:14'
+- at: 2026-11-25 14:15
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
@@ -360,8 +363,8 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: failed
-  attempts: 2
+  status: queued
+  attempts: 0
   sweep:
     stale_running: 2026-11-21 16:48
     dirty: 1
@@ -369,10 +372,6 @@ action:
   last_failure: 'exit=2 d-only profile. | devin-task-llm-provider-verification-2026-11-1795576385.service: Main
     process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-llm-provider-verification-2026-11-1795576385.service:
     Failed with result ''exit-code''.'
-  result: 'exit=2 d-only profile. | devin-task-llm-provider-verification-2026-11-1795576385.service: Main process
-    exited, code=exited, status=2/INVALIDARGUMENT | devin-task-llm-provider-verification-2026-11-1795576385.service:
-    Failed with result ''exit-code''.'
-  runner: idc02
 claim:
   since: 2026-11-25 10:13
 review_kind: verify
