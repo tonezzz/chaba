@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
-column: backlog
-updated: 2026-11-25 15:45
+column: doing
+updated: 2026-11-25 15:46
 priority: medium
 tags:
 - mn01
@@ -41,9 +41,15 @@ comms:
 - at: 2026-11-25 15:45
   from: chaba
   text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: jevos
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-25 15:46
