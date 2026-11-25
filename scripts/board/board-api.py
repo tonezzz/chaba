@@ -225,6 +225,7 @@ Smoke test: python3 scripts/board/board-api.py --selftest
 import base64
 import copy
 import fcntl
+import faulthandler
 import gzip
 import hashlib
 import hmac
@@ -287,6 +288,15 @@ ATTACH_EXTS = {
 RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
+# Render flock — same file git-safe-pull's pull phase and
+# board-render-guard serialize on. acquire_lock is bounded LOCK_NB:
+# an unbounded flock here is the 2026-11-25 wedge class — on py<=3.13
+# fcntl.flock holds the GIL while blocked, so a contended render lock
+# (a multi-minute pull phase) froze EVERY board-api thread.
+RENDER_LOCK = Path(os.environ.get("BOARD_API_RENDER_LOCK",
+                                  "/tmp/board-render.lock"))
+RENDER_LOCK_WAIT_S = float(os.environ.get(
+    "BOARD_API_RENDER_LOCK_WAIT_S", "30"))
 # Bounded write-lock wait (OPS-1314, 2026-11-16 incident): an unbounded
 # LOCK_EX queues a writer behind git-safe-pull's whole pull phase
 # (1-6min when upstream moved) — the client's 30-60s timeout dies first,
@@ -608,6 +618,66 @@ def ref_cat(card: dict, body: dict) -> str:
     return REF_DEFAULT
 
 
+# Lock-hold watchdog (card board-api-wedged-8min-on-hung-outbound-h-
+# 389be8): the 2026-11-25 wedge held the card flock AND WP_LOCK ~8min
+# behind an upstream call that never returned while every endpoint —
+# including lock-free /health — timed out, with no journal trace of
+# where the time went. acquire_lock now records each held flock and a
+# daemon thread dumps every thread's stack to the journal once a hold
+# exceeds LOCK_HOLD_ALERT_S, so the next wedge names its culprit
+# instead of needing a live py-spy mid-outage. The 'alerted' flag
+# re-arms on the next acquire — one dump per hold episode.
+LOCK_HOLD_ALERT_S = float(os.environ.get(
+    "BOARD_API_LOCK_HOLD_ALERT_S", "120"))
+LOCK_WATCHDOG_S = float(os.environ.get(
+    "BOARD_API_LOCK_WATCHDOG_S", "5"))
+_held_locks: dict = {}
+_held_mu = threading.Lock()
+
+
+def _hold_mark(path: Path) -> None:
+    with _held_mu:
+        _held_locks[str(path)] = {
+            "since": time.monotonic(),
+            "thread": threading.current_thread().name,
+            "alerted": False}
+
+
+def _hold_unmark(path: Path) -> None:
+    with _held_mu:
+        _held_locks.pop(str(path), None)
+
+
+class _TrackedLock:
+    """File wrapper acquire_lock returns — close() releases the flock
+    and clears the watchdog's hold record. __getattr__ passthrough keeps
+    it file-like for callers that need more than close()."""
+
+    __slots__ = ("_f", "_path")
+
+    def __init__(self, f, path: Path):
+        self._f = f
+        self._path = path
+
+    def close(self) -> None:
+        try:
+            self._f.close()
+        finally:
+            _hold_unmark(self._path)
+
+    def __getattr__(self, name):
+        return getattr(self._f, name)
+
+
+def _lock_holds_snapshot() -> dict:
+    """Live flock holds this process owns — surfaced on /lock-stats."""
+    now = time.monotonic()
+    with _held_mu:
+        return {p: {"held_s": round(now - h["since"], 1),
+                    "thread": h["thread"]}
+                for p, h in _held_locks.items()}
+
+
 def acquire_lock(path: Path, timeout_s: float):
     """Bounded LOCK_EX acquire — fcntl.flock has no timeout, so retry
     LOCK_NB until the deadline. Returns (open file, wait_seconds) or
@@ -619,12 +689,44 @@ def acquire_lock(path: Path, timeout_s: float):
     while True:
         try:
             fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            return lf, time.monotonic() - t0
+            _hold_mark(path)
+            return _TrackedLock(lf, path), time.monotonic() - t0
         except BlockingIOError:
             if time.monotonic() - t0 >= timeout_s:
                 lf.close()
                 return None
             time.sleep(0.25)
+
+
+def _lock_watchdog_tick() -> None:
+    """One watchdog pass — a hold past LOCK_HOLD_ALERT_S dumps all
+    thread stacks to the journal (faulthandler -> stderr) once per
+    hold episode."""
+    now = time.monotonic()
+    with _held_mu:
+        due = [(p, h) for p, h in _held_locks.items()
+               if not h["alerted"]
+               and now - h["since"] >= LOCK_HOLD_ALERT_S]
+        for _p, h in due:
+            h["alerted"] = True
+    for p, h in due:
+        sys.stderr.write(
+            f"board-api LOCK-HOLD-ALERT {p} held "
+            f"{now - h['since']:.0f}s (>= {LOCK_HOLD_ALERT_S:.0f}s) "
+            f"by {h['thread']} — dumping thread stacks\n")
+        try:
+            faulthandler.dump_traceback()
+        except Exception as e:
+            sys.stderr.write(f"board-api stack dump failed: {e}\n")
+
+
+def _lock_watchdog_loop() -> None:
+    while True:
+        time.sleep(LOCK_WATCHDOG_S)
+        try:
+            _lock_watchdog_tick()
+        except Exception as e:
+            sys.stderr.write(f"board-api lock watchdog error: {e}\n")
 
 
 # Lock-wait telemetry (card board-api-lock-contention): per-endpoint
@@ -3200,6 +3302,19 @@ PUB_TG_URL = os.environ.get("PUB_TELEGRAM_URL",
 PUB_PROGRESS_MIN_S = int(os.environ.get("PUB_PROGRESS_MIN_S", "900"))
 PUB_TG_MIN_S = int(os.environ.get("PUB_TG_MIN_S", "600"))
 PUB_ALERT_MIN_S = int(os.environ.get("PUB_ALERT_MIN_S", "60"))
+# Piggyback outbox drain budget per /publish — a backlog of due entries
+# must not hold WP_LOCK indefinitely; unreached entries stay pending
+# (card board-api-wedged-8min-on-hung-outbound-h-389be8). Explicit
+# {op:"drain"} gets a larger budget since it's operator-initiated.
+PUB_DRAIN_BUDGET_S = int(os.environ.get("PUB_DRAIN_BUDGET_S", "60"))
+# Whole-request deadline for the REMOTE_WRITE_PATHS dispatch — bounds
+# the do_* call including any upstream chain, so one hung peer can't
+# park WP_LOCK forever. On expiry the orphan finishes under its own
+# socket timeouts but holds no locks; upsert semantics make a late
+# completion + client retry converge. Sized above the slowest legit
+# single op (~5 sequential upstream calls at their socket timeouts).
+REMOTE_WRITE_DEADLINE_S = float(os.environ.get(
+    "BOARD_API_REMOTE_DEADLINE_S", "300"))
 
 # --- runner readiness projection (runner-readiness-projection, KNB-1007) --
 # Verdicts live off-repo on the service host: each runner POSTs its own
@@ -5303,6 +5418,32 @@ def _pub_sinks(frm: str) -> dict:
     return sinks
 
 
+def _remote_dispatch(path: str, body: dict, frm: str) -> dict:
+    """The REMOTE_WRITE_PATHS do_* selection — invoked under
+    pub.run_bounded's per-request deadline so one hung upstream peer
+    can't park WP_LOCK forever (card
+    board-api-wedged-8min-on-hung-outbound-h-389be8)."""
+    if path == "/lesson":
+        return (do_lesson_topics(body, frm)
+                if body.get("op") == "topics"
+                else do_lesson(body, frm))
+    if path == "/job":
+        return do_job(body, frm)
+    if path == "/publish":
+        return do_publish(body, frm)
+    if path == "/wiki/extension":
+        return do_wiki_extension(body, frm)
+    if path == "/wiki/news-review":
+        return do_wiki_news_review(body, frm)
+    if path == "/wiki/news-diagnose":
+        return do_wiki_news_diagnose(body, frm)
+    if path == "/wiki/page":
+        return do_wiki_page(body, frm)
+    if path == "/opencode-command":
+        return do_opencode_command(body, frm)
+    return do_report(body, frm)
+
+
 def do_publish(body: dict, frm: str) -> dict:
     """POST /publish — canonical event in, per-sink receipts out.
     {op:"sinks"} reports the capability table, {op:"drain"} retries
@@ -5323,13 +5464,14 @@ def do_publish(body: dict, frm: str) -> dict:
                           for n, s in sinks.items()},
                 "pending": box.pending_count()}
     if op == "drain":
-        res = box.drain(_pub_sinks(frm))
+        res = box.drain(_pub_sinks(frm),
+                        budget_s=PUB_DRAIN_BUDGET_S * 5)
         return {"message": f"drained: {len(res['delivered'])} delivered, "
                            f"{res['retrying']} retrying, "
                            f"{res['dead']} dead, {res['pending']} pending",
                 **res}
     sinks = _pub_sinks(frm)
-    drained = box.drain(sinks)   # piggyback retry on every publish
+    drained = box.drain(sinks, budget_s=PUB_DRAIN_BUDGET_S)
     res = pub.publish_event(body, sinks, box, noise, frm)
     if drained["delivered"] or drained["dead"]:
         res["drained"] = drained
@@ -5364,9 +5506,18 @@ def _render_loop() -> None:
 
 def render() -> None:
     # own lock, not the card lock — renders may serialize among themselves
-    # without blocking card mutations
-    with Path("/tmp/board-render.lock").open("w") as rl:
-        fcntl.flock(rl, fcntl.LOCK_EX)
+    # without blocking card mutations. Bounded acquire: a busy lock skips
+    # this pass — the 60s chaba-board-render timer is the backstop, and a
+    # blocking flock would park the whole process on py<=3.13 (the
+    # 2026-11-25 wedge).
+    got = acquire_lock(RENDER_LOCK, RENDER_LOCK_WAIT_S)
+    if got is None:
+        sys.stderr.write(
+            f"board-api render skipped: {RENDER_LOCK} busy "
+            f">{RENDER_LOCK_WAIT_S:.0f}s\n")
+        return
+    rl, _w = got
+    try:
         subprocess.run(
             [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
         )
@@ -5376,6 +5527,8 @@ def render() -> None:
             [sys.executable, str(RENDER2), "--if-changed"],
             cwd=REPO, timeout=60, check=False
         )
+    finally:
+        rl.close()
 
 
 def _ready_load() -> dict:
@@ -5977,7 +6130,9 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {
                 "ok": True,
                 "buckets_s": list(_LOCK_STAT_BUCKETS),
-                "paths": snap})
+                "paths": snap,
+                "held_now": _lock_holds_snapshot(),
+                "lock_hold_alert_s": LOCK_HOLD_ALERT_S})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -6037,29 +6192,12 @@ class H(BaseHTTPRequestHandler):
                         "retry_after_s": 10})
                 lf, _w = got
                 try:
-                    if path == "/lesson":
-                        res = (do_lesson_topics(body, frm)
-                               if body.get("op") == "topics"
-                               else do_lesson(body, frm))
-                    elif path == "/job":
-                        res = do_job(body, frm)
-                    elif path == "/publish":
-                        res = do_publish(body, frm)
-                        if (res.get("receipts") or {}).get(
-                                "board", {}).get("status") == "delivered":
-                            render_async()   # board audit -> cards.json
-                    elif path == "/wiki/extension":
-                        res = do_wiki_extension(body, frm)
-                    elif path == "/wiki/news-review":
-                        res = do_wiki_news_review(body, frm)
-                    elif path == "/wiki/news-diagnose":
-                        res = do_wiki_news_diagnose(body, frm)
-                    elif path == "/wiki/page":
-                        res = do_wiki_page(body, frm)
-                    elif path == "/opencode-command":
-                        res = do_opencode_command(body, frm)
-                    else:
-                        res = do_report(body, frm)
+                    res = pub.run_bounded(
+                        lambda: _remote_dispatch(path, body, frm),
+                        REMOTE_WRITE_DEADLINE_S, f"remote {path}")
+                    if path == "/publish" and (res.get("receipts") or {}).get(
+                            "board", {}).get("status") == "delivered":
+                        render_async()   # board audit -> cards.json
                 finally:
                     lf.close()
                 msg = res.pop("message")
@@ -6069,6 +6207,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(400, {"error": str(e)})
             except UpstreamError as e:
                 return self._send(502, {"error": str(e)})
+            except pub.DeadlineError as e:
+                return self._send(504, {"error": str(e)})
             except Exception as e:
                 return self._send(500, {"error": str(e)})
 
@@ -7511,4 +7651,6 @@ if __name__ == "__main__":
         LOCK_REPO_SENTINEL.write_text(str(REPO.resolve()) + "\n")
     except OSError:
         pass
+    threading.Thread(target=_lock_watchdog_loop, daemon=True,
+                     name="lock-watchdog").start()
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()
