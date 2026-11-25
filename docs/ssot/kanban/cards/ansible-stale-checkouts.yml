@@ -1,7 +1,7 @@
 id: ansible-stale-checkouts
 title: 'Ansible audit: stale chaba exec checkouts detected'
 column: done
-updated: 2026-11-26 04:06
+updated: 2026-11-26 06:30
 spec: 'Read-only audit detected stale/dirty/diverged chaba exec checkouts. Hosts: idc02. Report dir: reports/ansible-benchmark/stale-checkouts/.
   No remediation performed; decide stash-u-ff / commit-wip / leave / abandon per host.'
 action:
@@ -134,6 +134,11 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'ansible audit-stale-checkouts: 7 stale host(s): con01, idc02, idc03, mn01, tony-dell, tony-macbook, tony-omen.
+    fp=con01:dirty|idc02:dirty+ahead|idc03:dirty|mn01:dirty|tony-dell:dirty|tony-macbook:dirty|tony-omen:dirty.
+    Reasons per host in reports/ansible-benchmark/stale-checkouts/. Read-only; no host writes.'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
   ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
