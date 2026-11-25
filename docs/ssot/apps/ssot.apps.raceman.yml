@@ -100,7 +100,9 @@ sections:
       - label: Location
         text: "chaba-h3/public/apps/raceman/ (static files), chaba-raceman/ (docker-compose services)"
       - label: URLs
-        text: "https://chaba.h3.gizmo-thailand.com/apps/raceman/ (static), tailnet funnel port retired 2026-10-20 (dell serve wipe; gizmo URL is the live edge)"
+        text: "https://chaba.h3.gizmo-thailand.com/apps/raceman/ (static), tailnet funnel port retired 2026-10-20 (dell serve wipe; gizmo URL is the live edge); LAN surface http://tony-omen:8083/apps/raceman/"
+      - label: PHP backend
+        text: "Course save/load API (api/{list,load,save,save-course}.php) is NOT static — php-fpm raceman-php runs on tony-dell :9001 (host network, file-backed by apps_data/raceman + courses/ in ~/CascadeProjects/chaba-raceman) and is consumed by the omen raceman-web nginx via fastcgi_pass 100.68.142.13:9001. Placement decided 2026-11-25 (card raceman-php-placement-decision)."
       - label: Registry
         text: "Listed in apps.yml with 🏁 icon and race management description"
       - label: Branches
