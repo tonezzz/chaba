@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
-column: backlog
-updated: 2026-11-25 09:41
+column: doing
+updated: 2026-11-25 09:50
 priority: medium
 tags:
 - ops
@@ -212,6 +212,9 @@ comms:
 - at: 2026-11-25 09:41
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-25 09:50
+  from: mn01
+  text: claimed
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
@@ -219,7 +222,11 @@ spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ss
   redeployed, and subsequent timer runs complete without board-api or CMS RemoteDisconnected/timeout failures.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-25 09:50
