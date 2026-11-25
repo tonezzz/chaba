@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
-column: backlog
-updated: 2026-11-25 11:05
+column: doing
+updated: 2026-11-25 11:06
 priority: medium
 tags:
 - idc03
@@ -287,19 +287,23 @@ comms:
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:06
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   result: 'exit=0 cap.yml`, `dispatch-outcome-20261125-090408-idc03-runs-8-ada-services-4-5g.md`, card comms posted.
     | devin-task-20261125-090408-idc03-runs-8-ada-services-4-5g.service: Consumed 4min 56.602s CPU time, 419.3M
     memory peak, 0B memory swap peak.'
   sweep:
     conflict_sig: b54134f4ce42|scripts/ada/scenario-provider-gate.py
+  runner: mn01
 claim:
-  since: 2026-11-25 09:03
+  since: 2026-11-25 11:06
 review_kind: verify
 requests:
 - id: merge-conflict
