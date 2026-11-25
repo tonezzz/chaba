@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
-column: doing
-updated: 2026-11-25 15:38
+column: review
+updated: 2026-11-25 15:42
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -232,18 +232,42 @@ comms:
     manifest daily_cap_usd (render_video 5.0, render_image 2.0). Tests: tests/test_tool_budget.py 18/18 green; 379
     related tests green; tool-lint clean. Trail: docs/ssot/jobs/ada/2026-11-25-tool-daily-spend-caps.yml; outcome:
     dispatch-outcome-20261125-152510-implement-per-tool-daily-'
+- at: 2026-11-25 15:42
+  from: tony-macbook
+  text: 'finished (ok): exit=0 reviously unmetered aux spend) — intended, but lanes near their monthly cap may trip
+    sooner. | devin-task-2026112'
+- at: 2026-11-25 15:42
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 15:42
+  from: chaba
+  text: 'session-end checkpoint 09f93c84: 14 leftover file(s) committed'
+- at: 2026-11-25 15:42
+  from: chaba
+  text: pushed dispatch/20261125-152510-implement-per-tool-daily-spend to origin
+- at: 2026-11-25 15:42
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 15:42
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 reviously unmetered aux spend) — intended, but lanes near their monthly cap may trip sooner. |
+    devin-task-20261125-152510-implement-per-tool-daily-spend.service: Consumed 56.119s CPU time over 14min 9.804s
+    wall clock time, 636M memory peak.'
+  verified: false
 spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository. The implementation
   must enforce strict limits on individual tool usage to prevent runaway costs and provide a clear status readout
   of remaining daily budgets. Verify the implementation by running local unit tests and checking that the budget
   readout correctly queries and displays current spending totals. Execute the work targeting the ada-voice repository.
 claim:
   since: 2026-11-25 15:24
+review_kind: verify
