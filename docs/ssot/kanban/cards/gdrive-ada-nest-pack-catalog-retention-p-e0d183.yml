@@ -1,7 +1,7 @@
 id: gdrive-ada-nest-pack-catalog-retention-p-e0d183
 title: Gdrive ada-nest pack catalog + retention policy
 column: doing
-updated: 2026-11-25 15:47
+updated: 2026-11-25 15:51
 ref: ADA-1185
 comms:
 - at: 2026-11-08 12:56
@@ -194,6 +194,13 @@ comms:
     primer injected 8 lesson(s): Check `sha256sum` of BOT; Drift flags flap transiently: chaba-repo-sync updates
     the checkout copy, and unt; Deploy note: hosts need the new file via their chaba checkout sync (chaba-repo-s;
     [chaba-exec-checkout-idc02-dirty-files] DECISION 2026-11-24: '
+- at: 2026-11-25 15:51
+  from: devin
+  text: 'runner-agent drift redeploy: verified already converged on idc02 + tony-dell — installed ~/.local/bin/runner-agent
+    == checkout == origin/master == manifest pin (sha256 1514c75c…) on both; snapshots refreshed 15:42 via governed
+    sync-runner-tools path. Both services exit 0 and are claiming cards (idc02 spawned this dispatch; tony-dell
+    claimed mn-ha-dev card 15:47). Zero drift-defers in 24h journals. Fleet sweep: idc03/mn01/tony-omen/tony-macbook/con01
+    also converged. No manual copy needed — done-c'
 spec: Redeploy the drifted runner-agent script from the chaba repository to the affected hosts (idc02 and tony-dell)
   by copying scripts/board/runner-agent.py to ~/.local/bin/runner-agent. Ensure that the runner-agents on both idc02
   and tony-dell successfully execute without drifting from the repository version. The done-condition is met when
