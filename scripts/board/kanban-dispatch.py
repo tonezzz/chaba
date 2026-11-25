@@ -502,14 +502,19 @@ def unit_state(task_id: str) -> str:
     return r.stdout.strip() or "unknown"
 
 
+def _load5_per_core() -> float | None:
+    try:
+        return os.getloadavg()[1] / (os.cpu_count() or 1)
+    except (OSError, AttributeError):
+        return None
+
+
 def overloaded() -> bool:
     """5-min load per core above MAX_LOAD_PC → don't claim new work."""
     if MAX_LOAD_PC <= 0:
         return False
-    try:
-        return os.getloadavg()[1] / (os.cpu_count() or 1) > MAX_LOAD_PC
-    except OSError:
-        return False
+    l = _load5_per_core()
+    return bool(l is not None and l > MAX_LOAD_PC)
 
 
 def load_card(path: Path) -> dict:
@@ -832,6 +837,46 @@ def _defer_note(path: Path, card: dict, reason: str) -> bool:
     comms_add(card, "chaba", text)
     save_card(path, card)
     return True
+
+
+def _pass_gate_scope(card: dict) -> bool:
+    """True when this dispatcher would evaluate `card` for a claim —
+    the pass-gate defer note (KNB-1183 twin of runner-agent's
+    _note_capacity_skip) only lands on cards in that scope: foreign
+    host pins, missing labels, non-dispatch types, remote/manual lanes
+    and non-devin executors are other runners' claims or already-
+    flagged gaps, not this pass's starvation."""
+    a = _act(card)
+    if (a.get("type") or "dispatch") != "dispatch":
+        return False
+    if str(a.get("lane") or "").strip() in ("manual", "jules",
+                                            "nlm_batch"):
+        return False
+    ex = str(a.get("executor") or "").strip()
+    if ex and ex != "devin":
+        return False
+    pinned = a.get("host")
+    if pinned and dr.canon_host(pinned) != dr.canon_host(HOST):
+        return False
+    th = str(a.get("target_host") or "").strip()
+    if th and th != HOST:
+        return False
+    if a.get("runner") and a["runner"] != HOST:
+        return False
+    needs = set(a.get("labels") or [])
+    return not needs or needs <= MY_LABELS
+
+
+def _pass_gate_note_reason(pass_reason: str) -> str:
+    """Card-facing pass-gate reason — the same gate claim_pass_gate
+    named, plus the live metric where the gate has one (the 'idc03
+    load/core 1.05 > cap 0.85' form KNB-1183 asks for). Verdicts keep
+    the static string so /ready's payload hash stays stable."""
+    if pass_reason.startswith("load gate"):
+        lp = _load5_per_core()
+        if lp is not None:
+            return f"load gate: load5/cpu {lp:.2f} > {MAX_LOAD_PC}"
+    return pass_reason
 
 
 def _flag_unclaimable(path: Path, card: dict, fleet: dict) -> str:
@@ -1246,6 +1291,12 @@ def main() -> int:
     can_claim = not pass_reason
     if pass_reason:
         print(f"{pass_reason} — not claiming")
+    # KNB-1183: a pass-level gate used to skip every card BEFORE per-
+    # card eval, so no defer note ever landed and queued work starved
+    # invisibly (runner-agent got _note_capacity_skip for the same gap;
+    # this is the served-side twin — quiet hours/preflight live only
+    # here). The note is card-facing, so it carries the live metric.
+    gate_note = _pass_gate_note_reason(pass_reason) if pass_reason else ""
     # Declared fleet claim surface for the unclaimable flag — parsed
     # once per pass; {} when the SSOT is unreadable (never flags).
     try:
@@ -1315,6 +1366,11 @@ def main() -> int:
             st = a.get("status")
             if st in ("queued", "starting"):  # 'starting' = crashed mid-start
                 if not can_claim:
+                    # 'starting' is mid-recovery, not starving — only
+                    # genuinely queued cards earn the hostgate note.
+                    if st == "queued" and _pass_gate_scope(card):
+                        changed |= _defer_note(
+                            p, card, f"pass gate: {gate_note}")
                     continue
                 ctier = TIER_ORDER.get(str(card.get("autonomy") or ""), -1)
                 if ctier > max_tier:

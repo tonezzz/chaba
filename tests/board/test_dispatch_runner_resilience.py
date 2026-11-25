@@ -477,6 +477,80 @@ class KanbanDispatchGuardTest(unittest.TestCase):
         self.assertEqual(card["action"]["status"], "queued")
         self.assertNotIn("task_id", card["action"])
 
+    def _comms_text(self) -> str:
+        card = self._card()
+        return " ".join(c.get("text", "")
+                        for c in card.get("comms") or [])
+
+    def test_pass_gate_writes_defer_note_on_queued_card(self):
+        """KNB-1183 served-side twin of runner-agent's
+        _note_capacity_skip: a pass-level gate (here the provider
+        rate-limit cooldown) fires BEFORE per-card eval — the queued
+        card must still learn why it waits instead of starving
+        silently."""
+        kd = self.kd
+        kd.ratelimit_record("devin-task-dead", "429")
+        self._run()
+        self.assertEqual(self._card()["action"]["status"], "queued")
+        comms = self._comms_text()
+        self.assertIn("pass gate:", comms)
+        self.assertIn("rate-limited", comms)
+
+    def test_pass_gate_note_debounced_per_reason(self):
+        """Rate limit: same gate reason notes once (DEFER_NOTE_SECS
+        debounce), not every 2-min tick."""
+        kd = self.kd
+        kd.ratelimit_record("devin-task-dead", "429")
+        self._run()
+        self._run()
+        card = self._card()
+        marked = [c for c in card.get("comms") or []
+                  if "pass gate:" in c.get("text", "")]
+        self.assertEqual(len(marked), 1, marked)
+
+    def test_pass_gate_skips_off_scope_cards(self):
+        """Foreign pins, missing labels, manual lane and non-dispatch
+        types are not this dispatcher's starvation — no hostgate note."""
+        kd = self.kd
+        kd.ratelimit_record("devin-task-dead", "429")
+        base = ("id: ada-card\ntitle: ada voice work\ncolumn: doing\n"
+                "action:\n  type: dispatch\n  status: queued\n"
+                "  repo: ada-voice\n")
+        for extra in ("  host: other-host\n",
+                      "  target_host: other-host\n",
+                      "  runner: other-host\n",
+                      "  lane: manual\n",
+                      "  executor: opencode\n",
+                      "  labels: [gpu]\n"):
+            (self.cards / "ada-card.yml").write_text(base + extra)
+            kd.INDEX_FILE.unlink(missing_ok=True)
+            self._run()
+            self.assertNotIn("pass gate:", self._comms_text(), extra)
+        (self.cards / "ada-card.yml").write_text(
+            base.replace("type: dispatch", "type: script"))
+        kd.INDEX_FILE.unlink(missing_ok=True)
+        self._run()
+        self.assertNotIn("pass gate:", self._comms_text())
+
+    def test_pass_gate_note_reason_names_live_load(self):
+        """The card-facing reason carries the measured value ('load5/
+        cpu 1.23 > 1.0') while the verdict-facing gate string stays
+        static so /ready's payload hash doesn't churn every pass."""
+        kd = self.kd
+        saved_lp, saved_cap = kd._load5_per_core, kd.MAX_LOAD_PC
+        kd._load5_per_core = lambda: 1.23
+        kd.MAX_LOAD_PC = 1.0
+        try:
+            self.assertEqual(
+                kd._pass_gate_note_reason("load gate: load5/cpu > 1.0"),
+                "load gate: load5/cpu 1.23 > 1.0")
+            self.assertEqual(
+                kd._pass_gate_note_reason("quiet hours 22:00-07:00"),
+                "quiet hours 22:00-07:00")
+        finally:
+            kd._load5_per_core = saved_lp
+            kd.MAX_LOAD_PC = saved_cap
+
     def test_ratelimit_scan_arms_from_journal(self):
         kd = self.kd
         saved_sh = kd.sh

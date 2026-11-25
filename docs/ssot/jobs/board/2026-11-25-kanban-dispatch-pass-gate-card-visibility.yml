@@ -1,0 +1,89 @@
+id: kanban-dispatch-pass-gate-card-visibility
+title: served dispatcher pass-gate defer notes (KNB-1183 twin of runner-agent _note_capacity_skip)
+date: 2026-11-25
+card: runner-host-gate-card-visibility
+ref: KNB-1183 / OPS-1097
+host: idc03 (kanban-dispatch.timer, every 2min) + fleet via runner-agent (already landed e353fc8359)
+status: implemented
+
+goal: >
+  Card runner-host-gate-card-visibility: host-level claim gates fire
+  BEFORE card iteration, so no per-card defer note lands and queued
+  cards look silently starving. runner-agent.py got
+  _note_capacity_skip on 2026-11-08 (e353fc8359) covering load/cap/
+  kill-switch/disk/provider-rate-limit. kanban-dispatch.py — the
+  served-side dispatcher whose claim_pass_gate ALSO owns quiet-hours
+  and waiting-cards preflight, gates no other runner has — still
+  skipped every queued card silently via `if not can_claim: continue`.
+
+root_cause: >
+  Two claim paths exist. runner-agent.py (per-host fleet runner)
+  writes hostgate defer notes through note_defer (6h debounce,
+  normalized-reason compare). kanban-dispatch.py (served dispatcher,
+  kanban-dispatch.timer on idc03) computes pass_reason =
+  claim_pass_gate(pol, pf_env) — load gate, kill switch, quiet
+  hours, waiting-cards preflight, provider rate-limit — then the
+  claim loop `continue`d on every queued card without a note. The
+  /ready verdict path already reported pass_reason
+  (_verdict_reason ctx), so only the card surface was blind.
+
+fix:
+  kanban-dispatch.py _pass_gate_scope(card): >
+    True only for cards THIS dispatcher would evaluate — type
+    dispatch (default), lane not manual/jules/nlm_batch, executor
+    unset-or-devin, host/target_host/runner pins matching HOST
+    (canon_host for `host`), labels subset of MY_LABELS. Foreign
+    pins, missing labels, remote/manual lanes and non-devin
+    executors are other runners' claims or already-flagged gaps.
+  kanban-dispatch.py main(): >
+    When can_claim is False, each queued (status=="queued" only —
+    "starting" is mid-recovery, not starving) in-scope card gets
+    _defer_note(p, card, "pass gate: <reason>"). _defer_note's
+    existing debounce (KANBAN_DEFER_NOTE_SECS=21600, normalized
+    text compare on the last "HOST defers:" comm) is the rate
+    limit: same gate reason notes once per 6h; a gate-state change
+    produces different normalized text and notes immediately —
+    stricter than the card's "gate-state change or max once/hour".
+  kanban-dispatch.py _pass_gate_note_reason(): >
+    Card-facing reason adds the live metric for the load gate
+    ("load gate: load5/cpu 1.23 > 1.0") matching runner-agent's
+    "host overloaded (5m load/core X > cap)" form and the card's
+    'idc03 load/core 1.05 > cap 0.85' example. claim_pass_gate's
+    return stays static so verdict_pass's payload hash (and /ready
+    POST debounce) doesn't churn on a volatile gauge. overloaded()
+    refactored onto shared _load5_per_core().
+
+verified: >
+  tests/board/test_dispatch_runner_resilience.py +4 cases in
+  KanbanDispatchGuardTest (end-to-end main() with the existing
+  tmpdir/mock harness): pass gate writes "pass gate: ... rate-
+  limited" comm on a queued card; second pass debounces to one
+  note; off-scope cards (host/target_host/runner pins, lane=manual,
+  executor=opencode, labels=[gpu], type=script) get no note;
+  _pass_gate_note_reason carries the live load value and passes
+  non-load gates through. 22/22 file tests OK; neighboring board
+  suites run (247 tests) — only failures are 6 pre-existing
+  test_dispatch_close_out env failures (no pytest on this host,
+  fail-closed test gate; reproduces on clean tree).
+
+measurement: >
+  Live proof the runner-agent half already works: this card's own
+  comms show "idc03 defers: host overloaded (5m load/core 3.07 >
+  0.85)", "tony-dell defers: runner at cap (3/3)", "mn01 defers:
+  runner at cap (1/1)" etc. landing 2026-11-25 09:10-09:12 while it
+  sat queued — the exact visibility the card asked for, from the
+  fleet side. The kanban-dispatch half activates on next merge +
+  the idc03 checkout's normal sync (no unit change needed —
+  kanban-dispatch.py runs from the served checkout).
+
+followups:
+  - kanban-dispatch.py is NOT pin-gated like runner-agent's
+    _self_update — hosts run whatever the served/exec checkout
+    holds after chaba-repo-sync; verify idc03's checkout ref
+    contains this commit before expecting live notes.
+  - runner-agent notes ALL in-scope queued cards on a capacity
+    skip (no per-card gate re-check); kanban-dispatch notes the
+    same scope. A card that would fail a LATER per-card gate
+    (autonomy tier, retry cap) still earns the hostgate note —
+    accurate (the pass gate did fire) and debounced; tighten only
+    if it proves noisy.
