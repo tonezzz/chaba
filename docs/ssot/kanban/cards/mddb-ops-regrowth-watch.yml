@@ -1,7 +1,7 @@
 id: mddb-ops-regrowth-watch
 title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
 column: backlog
-updated: 2026-11-25 15:47
+updated: 2026-11-25 15:48
 spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
   outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
   — review at ~10G.
@@ -180,6 +180,9 @@ comms:
 - at: 2026-11-25 15:47
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
 action:
   type: dispatch
   status: queued
