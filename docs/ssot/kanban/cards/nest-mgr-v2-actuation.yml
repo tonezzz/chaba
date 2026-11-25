@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: doing
-updated: 2026-11-25 10:17
+column: review
+updated: 2026-11-25 10:22
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -438,19 +438,46 @@ comms:
     stay-recommend decision in the soak doc (a2bc839931). Re-verified pilots live ~10:20 ICT: idc02/con01/mn01 all
     recommend mode, installed md5 affd0aeb == c4a7ab375bb, zero drift, 137 actions on idc02 all held/not-allowlisted,
     zero executions. Phase 0 complete; Phase 1 deferred pe'
+- at: 2026-11-25 10:22
+  from: idc02
+  text: 'finished (ok): exit=0 e commits on `dispatch/20261125-101355-goal-improve-devnest-throughpu` and `dispatch-outcome-20261125-101355-goal'
+- at: 2026-11-25 10:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:22
+  from: chaba
+  text: banked 133 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:22
+  from: chaba
+  text: pushed dispatch/20261125-101355-goal-improve-devnest-throughpu to origin
+- at: 2026-11-25 10:22
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:22
+  from: chaba
+  text: auto-merged b9de96d6 (dispatch/20261125-101355-goal-improve-devnest-throughpu) → origin/master
+- at: 2026-11-25 10:22
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-101355-goal-improve-devnest-throughpu,
+    branch dispatch/20261125-101355-goal-improve-devnest-throughpu'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
     stale_running: 2026-11-18 21:27
     dirty: 1
     no_repo: 2026-11-24 18:09
-  result: 'exit=0 atch-outcome-20261125-090427-goal-improve-devnest-throughpu.md`. | devin-task-20261125-090427-goal-improve-devnest-throughpu.service:
-    Consumed 2min 12.092s CPU time over 7min 47.727s wall clock time, 1G memory peak, 339.5M memory swap peak.'
+  result: 'exit=0 e commits on `dispatch/20261125-101355-goal-improve-devnest-throughpu` and `dispatch-outcome-20261125-101355-goal-improve-devnest-throughpu.md`.
+    | devin-task-20261125-101355-goal-improve-devnest-throughpu.service: Consumed 17.963s CPU time.'
   attempts: 2
   runner: idc02
+  verified: true
 review_kind: design
 claim:
   since: 2026-11-25 10:13
