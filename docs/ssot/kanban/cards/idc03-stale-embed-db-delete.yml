@@ -1,7 +1,7 @@
 id: idc03-stale-embed-db-delete
 title: Delete stale mddb-embed DB copy on idc03 (2.8G)
-column: backlog
-updated: 2026-11-25 15:48
+column: doing
+updated: 2026-11-25 15:53
 spec: ~/.config/containers/mddb-embed/data/mddb.db (2.8G) on idc03 = pre-relocation copy; live bank verified on
   idc02 (15:56 run, 501 docs, 0 fail). Keep until ~2026-11-19 as instant rollback, then delete dir (quadlet already
   .retired). Dated reminder card — delete + close.
@@ -185,9 +185,15 @@ comms:
 - at: 2026-11-25 15:48
   from: chaba
   text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 15:53
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-25 15:53
