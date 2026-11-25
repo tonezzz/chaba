@@ -1,7 +1,7 @@
 id: notebooklm-rest-base-url-points-at-dead-b8ef61
 title: NOTEBOOKLM_REST_BASE_URL points at dead tony-dell:3011 — lane envs stale after notebooklm-rest moved/retired
 column: doing
-updated: 2026-11-25 09:44
+updated: 2026-11-25 09:52
 priority: medium
 tags:
 - ada
@@ -76,6 +76,13 @@ comms:
   text: 'dispatch on idc02: confirmed REST is NOT retired — notebooklm-rest.service active on idc02 :3011 (tailnet
     100.123.163.11), /health/auth ok:true. SSOT services.yml tailnet_url already says http://100.123.163.11:3011/v1;
     values.yml mcp_host_note "retired" is stale. Now enumerating idc03/mn01 env files.'
+- at: 2026-11-25 09:52
+  from: devin
+  text: 'DONE (dispatch on idc02). REST was NOT retired — notebooklm-rest.service is active on idc02 :3011 (100.123.163.11),
+    /health/auth ok, scoped keys verified (ada-michael key -> 200 + exactly 5 scoped notebooks). Repointed NOTEBOOKLM_REST_BASE_URL
+    http://100.68.142.13:3011/v1 -> http://100.123.163.11:3011/v1 in 11 live env files: idc03 x7 (michael-ha/backend.env,
+    ada-chaba.env, ada-ha/backend.env, tony-ha/backend.env, kk-ha/backend.env, ada-dev.env, ada-kk-dev.env), tony-omen
+    x2 (ada-dev.env, ada-kk'
 action:
   type: dispatch
   status: running
