@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
-column: doing
-updated: 2026-11-25 17:13
+column: review
+updated: 2026-11-25 17:19
 priority: medium
 tags:
 - mn01
@@ -95,13 +95,46 @@ comms:
     homeassistant whenever avail<10% of 7.3GB (mn01 has zero swap so the condition is always armed). Deliverables:
     docs/ssot/jobs/infrastructure/2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml (full timeline/evidence/verdicts)
     + dispatch-outcome-20261125-154657-found-during-mn01-yolo-xiaomi-.md'
+- at: 2026-11-25 17:19
+  from: tony-dell
+  text: 'finished (ok): exit=0 p ★ / earlyoom `-m 5` / reduce mn01 load / leave as-is). | devin-task-20261125-154657-found-during-mn01-yolo-xiao'
+- at: 2026-11-25 17:19
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 17:19
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-154657-found-during-mn01-yolo-xiaomi-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 17:19
+  from: chaba
+  text: banked 148 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 17:19
+  from: chaba
+  text: pushed dispatch/20261125-154657-found-during-mn01-yolo-xiaomi- to origin
+- at: 2026-11-25 17:19
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 17:19
+  from: chaba
+  text: auto-merged 35962c19 (dispatch/20261125-154657-found-during-mn01-yolo-xiaomi-) → origin/master
+- at: 2026-11-25 17:19
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: jevos
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 p ★ / earlyoom `-m 5` / reduce mn01 load / leave as-is). | devin-task-20261125-154657-found-during-mn01-yolo-xiaomi-.service:
+    Consumed 2min 54.315s CPU time over 1h 27min 45.201s wall clock time, 946.7M memory peak, 574.1M memory swap
+    peak.'
+  verified: true
 claim:
   since: 2026-11-25 15:46
 requests:
@@ -116,3 +149,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
