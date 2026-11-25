@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
-column: doing
-updated: 2026-11-25 09:39
+column: review
+updated: 2026-11-25 09:40
 priority: medium
 tags:
 - idc03
@@ -227,12 +227,33 @@ comms:
     venv shebangs since 11-18 — rebound to tailnet IP, fixed, verified; idc03 twins stopped+disabled (~656MB); scenario
     units smoke/cms/reports/research + LINE_NAME_BACKENDS repointed to omen. (2) Found+fixed provider-gate: ExecCondition
     required local ada-dev active — added --liv'
+- at: 2026-11-25 09:40
+  from: idc02
+  text: 'finished (ok): exit=0 cap.yml`, `dispatch-outcome-20261125-090408-idc03-runs-8-ada-services-4-5g.md`, card
+    comms posted. | devin-task-2'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:40
+  from: chaba
+  text: pushed dispatch/20261125-090408-idc03-runs-8-ada-services-4-5g to origin
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'auto-merge conflicts: scripts/ada/scenario-provider-gate.py — card stays in review for manual resolution'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0 cap.yml`, `dispatch-outcome-20261125-090408-idc03-runs-8-ada-services-4-5g.md`, card comms posted.
+    | devin-task-20261125-090408-idc03-runs-8-ada-services-4-5g.service: Consumed 4min 56.602s CPU time, 419.3M
+    memory peak, 0B memory swap peak.'
+  verified: false
 claim:
   since: 2026-11-25 09:03
+review_kind: verify
