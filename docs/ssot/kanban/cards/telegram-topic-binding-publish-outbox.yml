@@ -1,7 +1,7 @@
 id: telegram-topic-binding-publish-outbox
 title: Fix telegram topic bindings — publish outbox stuck
 column: doing
-updated: 2026-11-25 12:24
+updated: 2026-11-25 12:29
 brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
   retries cannot clear them until project/card topic bindings exist.'
 priority: medium
@@ -70,6 +70,13 @@ comms:
     is loopback-only on idc03; tailnet `:8919` ; `~/var/chaba/reports/timeline.jsonl` is the *reports* timeline
     (ok/delta/status ; no chaba-audit.service/chaba-audit-full.service entries exist in ssot.audit.host; [ada-ocb-dispatch-parity]
     ADA-0024 refinement: verified runne'
+- at: 2026-11-25 12:29
+  from: devin
+  text: 'claimed on idc02 dispatch — root cause found: commit e4bf0d6 (2026-11-24) made TelegramSink forward project/card/job
+    refs to the relay; unbound refs now 404 instead of posting to General. Affects runner-lifecycle card milestones
+    (card= only), unattended digest (project=chaba), trade-docs news (project=education). Plan: create+bind PRJ
+    topics for chaba/education on idc03, patch outbox/dead events to carry project=chaba, drain, plus producer fix
+    in worktree.'
 action:
   type: dispatch
   status: running
