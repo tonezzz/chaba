@@ -1,0 +1,22 @@
+id: ada-lane-health-gate-misses-notebooklm-dep
+title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
+column: backlog
+updated: 2026-11-25 09:52
+brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
+  NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
+  covered by no gate on any lane. Dead dell:3011 ran ~5 weeks (2026-10-17 migration -> 2026-11-25 repoint) with
+  zero gate trips — only journal ERRORs.
+priority: low
+tags:
+- ada
+- infra
+spec: 'Found during notebooklm-rest-base-url-points-at-dead-b8ef61 dispatch 2026-11-25. Options: (a) extend the
+  ExecStartPre curl gate on kraut/tony to also probe http://100.123.163.11:3011/health (unauthenticated by design),
+  (b) add the same gate to chaba/ha-ada/kk/kk-dev/dev lanes which currently have only ada-start-stagger.sh, (c)
+  leave ungated and rely on journal monitoring. Recommend (a)+(b): one-line curl addition per unit, fails closed
+  only on dependency outage.'
+ref: ADA-1369
+comms:
+- at: 2026-11-25 09:52
+  from: tony
+  text: card captured via board-api
