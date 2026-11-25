@@ -1,7 +1,7 @@
 id: ada-dispatch-approval-scenario
 title: 'Live scenario: ask->respond->dispatch approval handshake'
 column: doing
-updated: 2026-11-25 10:24
+updated: 2026-11-25 10:40
 priority: low
 tags:
 - ada
@@ -203,6 +203,13 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-20261125-102412-guard-the-taught-approval-flow on tony-macbook — claim
     committed but the response was lost (OPS-1071)
+- at: 2026-11-25 10:40
+  from: devin
+  text: 'attempt 2 in progress: traced the taught flow end-to-end. Findings so far — (1) ada_opencode_dispatch re-queues
+    via /card on_exists=queue which preserves staged lane_envelope/task_class, but writes no lane_envelope itself,
+    so the probe card must be pre-staged with the full S3 opencode envelope to be claimable on idc02; (2) kanban
+    ask + respond both bump card.updated which re-keys the approval receipt — Ada MUST re-preflight after the answer
+    lands or dispatch returns approval_receipt_mismatch; wi'
 action:
   type: dispatch
   status: running
