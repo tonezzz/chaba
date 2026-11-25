@@ -1,7 +1,7 @@
 id: ops-kkmac-agent-update-temps
 title: 'kk-mac: update device-telemetry agent (semantic temps)'
 column: done
-updated: 2026-11-26 03:59
+updated: 2026-11-26 04:01
 priority: low
 spec: 'kk-mac is offline (ssh timeout). Its launchd beacon still runs the pre-a4504a72 agent (zoneN temp labels,
   no semantic zone names). Also its MDDB latest slot was polluted by tony-dell beacon misconfig (fixed on dell 2026-11-17).
@@ -362,6 +362,10 @@ comms:
 - at: 2026-11-26 03:59
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

@@ -1,7 +1,7 @@
 id: ssot-research-verifier-semantic
 title: ssot-research verifier passes fabricated answers when cited paths exist (OPS-1017 twin)
 column: done
-updated: 2026-11-26 03:59
+updated: 2026-11-26 04:01
 spec: 'Evidence KNB-1029 (qwen3:8b, 2026-10-30): artifact answered kk-mac declarations with citations to AGENTS.md
   + ssot.mcp.yml — both paths exist so every check passed, but the answer was wrong (claimed /etc/hosts + MCP tools;
   truth is ssot.audit.hosts.yml + stacks/idc03/litellm/config.yaml). Citation-existence != answer-truth. Same class
@@ -300,6 +300,10 @@ comms:
 - at: 2026-11-26 03:59
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
