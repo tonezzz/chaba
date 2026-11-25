@@ -1,7 +1,7 @@
 id: ada-engine-self-report
 title: Engine self-report — advertise {engine_line, engine_version, contract_version} in /api/health + session hello
 column: backlog
-updated: 2026-11-25 15:24
+updated: 2026-11-25 15:26
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): engines dont announce who they are, so which engine answered
   a turn is not auditable and engine swaps cant be verified mechanically. Deliverable in ada-voice: /api/health
@@ -277,6 +277,10 @@ comms:
 - at: 2026-11-25 15:24
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:26
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
