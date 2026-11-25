@@ -1,7 +1,7 @@
 id: ocb-spa-route-guard-upstream-fix
 title: 'Remove caddy SPA route guard when opencode ships #61001 fix'
 column: done
-updated: 2026-11-26 04:01
+updated: 2026-11-26 04:07
 brief: 'idc02 caddy-edge carries a temporary redirect guard (@ocbUnknownRoute) on ada-code.surf-thailand.com + opencode-ada.surf-thailand.com
   that bounces document requests for unknown SPA paths to / — workaround for upstream opencode web crash anomalyco/opencode#61001
   (SPA dies ''Cannot read properties of undefined (reading type)'' when mounted on unrecognised path, e.g. post-login
@@ -214,6 +214,10 @@ comms:
 - at: 2026-11-26 04:01
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
