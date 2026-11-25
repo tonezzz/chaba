@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 14:54
+updated: 2026-11-25 14:56
 priority: medium
 tags:
 - tony-omen
@@ -261,6 +261,17 @@ comms:
   from: devin
   text: 'raised request snap-reboot-verify-window: snapd-desktop-integration fix verified stable 12h on tony-omen
     (NRestarts=0). Done-condition still needs a post-reboot c'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'answer-sweep: ''answer'' resolves job-input-tony-omen-snap-desktop-restart-loop — no board action (option
+    ''answer'' action=none)'
+- at: 2026-11-25 14:56
+  from: devin
+  text: 'attempt 2 outcome: fix re-verified stable ~12h post-apply — NRestarts=0, env confirmed in live process
+    environ, drop-in merged, boot-order self-heal analyzed. Trail docs committed on dispatch branch (attempt 1 had
+    left them untracked — that was the merge failure). Only remaining: post-reboot NRestarts check. Host is busy
+    (devin-desktop session, llama-server, docker) so no unattended reboot — request snap-reboot-verify-window open
+    with options reboot-now/wait-natural/tony-reboots. needs-input.txt'
 action:
   type: dispatch
   status: running
@@ -288,6 +299,7 @@ requests:
     label: Hold — leave blocked
     action: hold
   answer: answer
+  executed: 2026-11-25 none
 - id: snap-reboot-verify-window
   ask: snapd-desktop-integration fix verified stable 12h on tony-omen (NRestarts=0). Done-condition still needs
     a post-reboot check. Host is busy (devin-desktop GUI session, llama-server, docker jobs) so I will not reboot
