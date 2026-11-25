@@ -77,6 +77,38 @@ def update_focus_lock():
 def write_focus_item(inbox_dir: str, host: str, playlive_url: str, error: str, labels: list[str] | None = None):
     if focus_already_flagged():
         return
+    # exec/readonly checkouts can't commit focus-inbox files — route the
+    # alert through board-api /inbox instead (card
+    # omen-chaba-checkout-focus-inbox-writers-d993c4).
+    inbox_door = None
+    try:
+        repo = Path(inbox_dir).resolve().parents[2]
+        sys.path.insert(0, str(repo / "scripts" / "lib"))
+        import inbox_door  # noqa: E402
+        writes_ok = inbox_door.local_writes_ok(repo)
+    except Exception:
+        writes_ok = True
+        inbox_door = None
+    if not writes_ok and inbox_door is not None:
+        if inbox_door.post_inbox({
+                "label": "playlive failover failure",
+                "subtitle": f"playlived at {playlive_url} is unreachable on {host}",
+                "icon": "inbox",
+                "text": (f"The PlayLive daemon at {playlive_url} was not "
+                         f"reachable. Self-heal and failover were attempted "
+                         f"but both failed. Last error: {error}"),
+                "priority": "high",
+                "tags": ["playlive", "infrastructure", "self-heal", "failover"]
+                        + list(labels or []),
+                "owner": "tony",
+                "session": "playlive-hosts-loader",
+                "subtasks": [{
+                    "label": "Check playlived and Chrome CDP on the primary and failover hosts",
+                    "status": "not_started",
+                }],
+        }):
+            update_focus_lock()
+        return
     try:
         os.makedirs(inbox_dir, exist_ok=True)
     except OSError:

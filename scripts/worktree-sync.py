@@ -9,8 +9,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
+WRITES_OK = inbox_door.local_writes_ok(REPO)
 
 
 def run(cmd):
@@ -30,6 +34,28 @@ def make_inbox_path(prefix):
 
 
 def write_draft(branch, ahead, behind):
+    if not WRITES_OK:
+        # exec/readonly checkout — park the drift finding via board-api.
+        ok = inbox_door.post_inbox({
+            "label": f"Sync worktree {branch} with master",
+            "subtitle": "Worktree drift detected",
+            "icon": "inbox",
+            "text": (f"Worktree {branch} is {ahead} commit(s) ahead and "
+                     f"{behind} commit(s) behind master. Decide whether to "
+                     f"merge, rebase, or archive the branch."),
+            "priority": "medium",
+            "tags": ["worktree", "sync", "branches"],
+            "owner": "tony",
+            "session": "worktree-sync",
+            "subtasks": [
+                {"label": f"Review {branch} changes", "status": "not_started"},
+                {"label": "Merge or rebase to master", "status": "not_started"},
+                {"label": "Delete worktree if merged", "status": "not_started"},
+            ],
+        })
+        print(("Posted via board-api /inbox" if ok
+               else "warn: board-api /inbox unreachable — drift alert dropped"))
+        return
     INBOX_DIR.mkdir(exist_ok=True)
     path = make_inbox_path(f"worktree-drift-{slugify(branch)}")
     body = f"""title: Focus Inbox Item

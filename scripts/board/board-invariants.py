@@ -36,6 +36,7 @@ Usage: board-invariants.py [--alert] [--strict] [--card-dir DIR]
 """
 import argparse
 import datetime as dt
+import json
 import re
 import sys
 from pathlib import Path
@@ -44,6 +45,9 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+import inbox_door  # noqa: E402
 
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
@@ -55,6 +59,32 @@ def _act(card: dict) -> dict:
 REPO = Path(__file__).resolve().parents[2]
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 INBOX = REPO / "docs/ssot/focus-inbox"
+# exec/readonly checkouts can't commit — --alert posts to board-api /inbox
+# instead of writing local files (card
+# omen-chaba-checkout-focus-inbox-writers-d993c4).
+WRITES_OK = inbox_door.local_writes_ok(REPO)
+ALERT_STATE = (Path.home() / ".local" / "state" / "chaba"
+               / "board-invariants-alerts.json")
+
+
+def _alert_signature(items):
+    import hashlib
+    return hashlib.sha1("\n".join(sorted(items)).encode()).hexdigest()[:12]
+
+
+def _load_alert_state():
+    try:
+        return json.loads(ALERT_STATE.read_text())
+    except Exception:
+        return {}
+
+
+def _save_alert_state(state):
+    try:
+        ALERT_STATE.parent.mkdir(parents=True, exist_ok=True)
+        ALERT_STATE.write_text(json.dumps(state))
+    except OSError:
+        pass
 
 DOING_STALE_D = 7
 RUNNING_STALE_H = 24
@@ -199,6 +229,38 @@ def write_alerts(finds):
         if not items:
             continue
         slug = names[code]
+        if not WRITES_OK:
+            # /inbox has no dedup — post only when the violation set changes
+            # (mirrors the local dedup-by-filename semantics).
+            sig = _alert_signature(items)
+            state = _load_alert_state()
+            if state.get(slug) == sig:
+                continue
+            focus = {
+                "label": f"Fix board invariants: {slug}",
+                "text": f"{len(items)} violation(s) of class {code} — "
+                        f"see ssot.repeat-asks.yml for the wound class.\n"
+                        + "\n".join(f"- {i}" for i in items[:25]),
+                "priority": "medium",
+                "tags": ["kanban", "invariants", code.lower()],
+            }
+            if inbox_door.post_inbox({
+                    "label": focus["label"],
+                    "subtitle": f"board-invariants.py {today}",
+                    "icon": "alert",
+                    "text": focus["text"],
+                    "priority": focus["priority"],
+                    "tags": focus["tags"],
+                    "owner": "tony",
+                    "session": "board-invariants",
+            }):
+                wrote.append(f"board-api:/inbox invariant-{slug}")
+                state[slug] = sig
+                _save_alert_state(state)
+            else:
+                print(f"warn: board-api /inbox unreachable — {slug} alert dropped",
+                      file=sys.stderr)
+            continue
         body = "\n".join(f"  - {i}" for i in items[:25])
         doc = {
             "title": f"board invariant violation: {slug} ({len(items)})",

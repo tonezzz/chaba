@@ -28,9 +28,18 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent / "board"))
 import card_io
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 ROUTES = REPO / "docs/ssot/infrastructure/ssot.routes.yml"
 INBOX = REPO / "docs/ssot/focus-inbox"
+# exec/readonly checkouts can't commit — --alert posts to board-api /inbox
+# instead of writing local files (card
+# omen-chaba-checkout-focus-inbox-writers-d993c4).
+WRITES_OK = inbox_door.local_writes_ok(REPO)
+ALERT_STATE = (Path.home() / ".local" / "state" / "chaba"
+               / "serve-config-alerts.json")
 TIMEOUT = 6
 
 
@@ -96,9 +105,51 @@ def probe(url: str) -> tuple[int | None, str]:
         return None, type(e).__name__
 
 
+def _alert_state_load():
+    try:
+        return json.loads(ALERT_STATE.read_text())
+    except Exception:
+        return {}
+
+
+def _alert_state_save(state):
+    try:
+        ALERT_STATE.parent.mkdir(parents=True, exist_ok=True)
+        ALERT_STATE.write_text(json.dumps(state))
+    except OSError:
+        pass
+
+
 def write_alert(host: str, findings: list[str]) -> str:
-    INBOX.mkdir(parents=True, exist_ok=True)
     today = dt.date.today().isoformat()
+    if not WRITES_OK:
+        # /inbox has no dedup — post only when the finding set changes.
+        import hashlib
+        sig = hashlib.sha1("\n".join(sorted(findings)).encode()).hexdigest()[:12]
+        state = _alert_state_load()
+        if state.get(host) == sig:
+            return f"board-api:/inbox serve-config-{host} (unchanged, deduped)"
+        text = ("Serve config drifted from ssot.routes.yml "
+                "`<host>-serve` mounts (OPS-0754 wound — a wiped "
+                "serve config kills every tailnet HTTPS route "
+                "silently). Restore per serve-restore procedure, "
+                "or update the registry if the route retired.\n"
+                + "\n".join(f"- {f}" for f in findings[:25]))
+        if inbox_door.post_inbox({
+                "label": f"Restore tailscale-serve config on {host}",
+                "subtitle": f"check-serve-config.py {today}",
+                "icon": "alert",
+                "text": text,
+                "priority": "high",
+                "tags": ["ops", "tailscale-serve", "ops-0754"],
+                "owner": "tony",
+                "session": "check-serve-config",
+        }):
+            state[host] = sig
+            _alert_state_save(state)
+            return f"board-api:/inbox serve-config-{host}"
+        return "board-api unreachable — alert dropped"
+    INBOX.mkdir(parents=True, exist_ok=True)
     body = "\n".join(f"  - {f}" for f in findings[:25])
     doc = {
         "title": f"tailscale-serve drift on {host} ({len(findings)})",
@@ -177,7 +228,7 @@ def main() -> int:
         return 1
 
     alert_file = INBOX / f"serve-config-{host}.yml"
-    if alert_file.exists():
+    if WRITES_OK and alert_file.exists():
         alert_file.unlink()          # self-heal: clear stale alert
         print(f"cleared stale alert {alert_file.name}")
     print(f"OK {host}: {len(declared)} declared mount(s) present")

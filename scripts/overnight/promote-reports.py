@@ -14,6 +14,14 @@ REPORTS_DIR = REPO / "reports"
 sys.path.insert(0, str(REPO / "scripts"))
 import events
 
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+import inbox_door  # noqa: E402
+
+# exec/readonly checkouts can't commit inbox drafts — the served checkout's
+# overnight run produces them canonically. Card
+# omen-chaba-checkout-focus-inbox-writers-d993c4.
+WRITES_OK = inbox_door.local_writes_ok(REPO)
+
 
 def slugify(text):
     return re.sub(r"[^a-z0-9_-]", "", text.lower().replace(" ", "-").replace("/", "-"))[:40]
@@ -25,6 +33,10 @@ def make_inbox_path(prefix):
 
 
 def write_draft(path, label, text, subtasks, tags, source_file, triage_score=0.5):
+    if not WRITES_OK:
+        print(f"Skipped draft {label} — non-committable checkout "
+              f"({inbox_door.checkout_role(REPO) or 'unmarked'})")
+        return
     INBOX_DIR.mkdir(exist_ok=True)
     indented_text = text.replace("\n", "\n    ")
     subtask_lines = "\n".join(f"    - label: {json.dumps(s)}" for s in subtasks)

@@ -2,16 +2,65 @@
 // Periodic snapshot of mcp-health status without desktop notifications.
 // Spawns mcp-health via the SSH wrapper, calls get_health_status, logs to file,
 // and writes to the SSOT focus-inbox only when something is failing.
-import { spawn } from "child_process";
-import { mkdirSync, writeFileSync } from "fs";
+import { spawn, execFileSync } from "child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import https from "https";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOG_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/logs";
+const REPO = "/home/tony/CascadeProjects/chaba-tony-dell";
+const LOG_DIR = join(REPO, "logs");
 const LOG_FILE = join(LOG_DIR, "mcp-health-snapshot.log");
-const INBOX_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox";
+const INBOX_DIR = join(REPO, "docs", "ssot", "focus-inbox");
 const WRAPPER = "/home/tony/.config/devin/mcp-scripts/mcp-health-ssh.sh";
+const BOARD_API =
+  process.env.BOARD_API ||
+  "https://idc03.taila0626a.ts.net:10000";
+
+// exec/readonly checkouts can't commit focus-inbox files — route alerts
+// through board-api /inbox instead (card
+// omen-chaba-checkout-focus-inbox-writers-d993c4). Mirrors
+// scripts/lib/inbox_door.py BLOCKING_ROLES.
+function localWritesOk(root) {
+  try {
+    const gitdir = execFileSync(
+      "git", ["-C", root, "rev-parse", "--absolute-git-dir"],
+      { encoding: "utf8" }).trim();
+    const roleFile = join(gitdir, "chaba-role");
+    if (!existsSync(roleFile)) return true;
+    const role = readFileSync(roleFile, "utf8").trim();
+    return role !== "exec" && role !== "readonly";
+  } catch {
+    return false; // can't prove the path is a committable checkout — don't litter
+  }
+}
+
+function postInbox(payload) {
+  return new Promise((resolve) => {
+    const body = JSON.stringify(payload);
+    const req = https.request(
+      `${BOARD_API}/inbox`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(body),
+        },
+        timeout: 10000,
+        rejectUnauthorized: false,
+      },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode >= 200 && res.statusCode < 300);
+      }
+    );
+    req.on("timeout", () => { req.destroy(); resolve(false); });
+    req.on("error", () => resolve(false));
+    req.write(body);
+    req.end();
+  });
+}
 
 mkdirSync(LOG_DIR, { recursive: true });
 
@@ -120,11 +169,33 @@ async function runSnapshot() {
 
     if (failing.length > 0) {
       log(`failing services: ${failing.map((s) => s.service).join(", ")}`);
-      mkdirSync(INBOX_DIR, { recursive: true });
       const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const inbox = join(INBOX_DIR, `mcp-health-snapshot-${stamp}.yml`);
-      const txt = `title: Health Snapshot Alert\nsubtitle: ${failing.length} services not healthy\nicon: heart-pulse\nfocus:\n  label: 'mcp-health: ${failing.length} failing'\n  text: |\n${failing.map((s) => `    - ${s.category} / ${s.service}: ${s.status}${s.error ? " - " + s.error : ""}`).join("\n")}\n  status: draft\n  priority: high\n  tags:\n  - health\n  - monitoring\n  - snapshot\n  subtasks:\n${failing.map((s) => `  - label: Investigate ${s.service}\n    status: not_started`).join("\n")}\nsource:\n  session: mcp-health-snapshot\n  date: ${new Date().toISOString().slice(0, 10)}\n`;
-      writeFileSync(inbox, txt);
+      if (!localWritesOk(REPO)) {
+        // Non-committable checkout — park the alert via board-api.
+        const ok = await postInbox({
+          label: `mcp-health: ${failing.length} failing`,
+          subtitle: `${failing.length} services not healthy`,
+          icon: "heart-pulse",
+          text: failing
+            .map((s) => `- ${s.category} / ${s.service}: ${s.status}${s.error ? " - " + s.error : ""}`)
+            .join("\n"),
+          priority: "high",
+          tags: ["health", "monitoring", "snapshot"],
+          owner: "tony",
+          session: "mcp-health-snapshot",
+          subtasks: failing.map((s) => ({
+            label: `Investigate ${s.service}`,
+            status: "not_started",
+          })),
+        });
+        log(ok ? "inbox alert posted via board-api /inbox"
+               : "warn: board-api /inbox unreachable — alert dropped");
+      } else {
+        mkdirSync(INBOX_DIR, { recursive: true });
+        const inbox = join(INBOX_DIR, `mcp-health-snapshot-${stamp}.yml`);
+        const txt = `title: Health Snapshot Alert\nsubtitle: ${failing.length} services not healthy\nicon: heart-pulse\nfocus:\n  label: 'mcp-health: ${failing.length} failing'\n  text: |\n${failing.map((s) => `    - ${s.category} / ${s.service}: ${s.status}${s.error ? " - " + s.error : ""}`).join("\n")}\n  status: draft\n  priority: high\n  tags:\n  - health\n  - monitoring\n  - snapshot\n  subtasks:\n${failing.map((s) => `  - label: Investigate ${s.service}\n    status: not_started`).join("\n")}\nsource:\n  session: mcp-health-snapshot\n  date: ${new Date().toISOString().slice(0, 10)}\n`;
+        writeFileSync(inbox, txt);
+      }
     } else {
       log("all healthy");
     }

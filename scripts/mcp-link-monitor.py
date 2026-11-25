@@ -21,6 +21,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 SSOT_DIR = REPO / "docs" / "ssot"
 LINK_SSOT = SSOT_DIR / "infrastructure" / "ssot.link-monitor.yml"
@@ -29,6 +32,38 @@ INBOX_DIR = SSOT_DIR / "focus-inbox"
 LOG_DIR = Path.home() / "var" / "chaba"
 LOG_FILE = LOG_DIR / "mcp-link-monitor.log"
 DRIFT_STATE_FILE = LOG_DIR / "mcp-link-monitor-drift-state.json"
+WRITES_OK = inbox_door.local_writes_ok(REPO)
+
+
+def _emit_inbox(doc):
+    """Local focus-inbox file on committable checkouts; board-api /inbox
+    on exec/readonly checkouts (card
+    omen-chaba-checkout-focus-inbox-writers-d993c4)."""
+    if WRITES_OK:
+        INBOX_DIR.mkdir(parents=True, exist_ok=True)
+        now = datetime.datetime.now()
+        stamp = now.strftime("%Y-%m-%d-%H%M%S")
+        slug = re.sub(r"[^a-z0-9]+", "-", doc["focus"]["label"].lower()).strip("-")
+        path = INBOX_DIR / f"{stamp}-{slug}.yml"
+        with open(path, "w") as f:
+            yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
+        logging.info("Wrote inbox alert: %s", path)
+        return
+    payload = {
+        "label": doc["focus"]["label"],
+        "subtitle": doc.get("subtitle"),
+        "icon": doc.get("icon", "inbox"),
+        "text": doc["focus"]["text"],
+        "priority": doc["focus"]["priority"],
+        "tags": doc["focus"].get("tags", []),
+        "owner": "tony",
+        "session": (doc.get("source") or {}).get("session", ""),
+        "subtasks": doc["focus"].get("subtasks", []),
+    }
+    if inbox_door.post_inbox(payload):
+        logging.info("Posted inbox alert via board-api /inbox")
+    else:
+        logging.warning("board-api /inbox unreachable — alert dropped")
 
 
 def load_yaml(path):
@@ -188,10 +223,7 @@ def run_fixes(host, host_cfg, link_cfg, no_fix=False):
 def write_inbox_alert(host, scan, fixes, dry_run=False):
     if dry_run or os.environ.get("LINK_MONITOR_NO_ALERT") == "1":
         return
-    INBOX_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.datetime.now()
-    stamp = now.strftime("%Y-%m-%d-%H%M%S")
-    path = INBOX_DIR / f"{host}-link-down-{stamp}.yml"
 
     scan_lines = [f"- {s['command']} (rc={s['rc']})" for s in scan]
     fix_lines = [f"- {f.get('label', 'unknown')} (rc={f.get('rc')})" for f in fixes if not f.get("skipped")]
@@ -228,9 +260,7 @@ def write_inbox_alert(host, scan, fixes, dry_run=False):
             "date": now.strftime("%Y-%m-%d"),
         },
     }
-    with open(path, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
-    logging.info("Wrote inbox alert: %s", path)
+    _emit_inbox(doc)
 
 
 def _load_drift_state():
@@ -260,10 +290,7 @@ def _save_drift_state(state):
 def write_drift_inbox(host, kind, expected, actual):
     if os.environ.get("LINK_MONITOR_NO_ALERT") == "1":
         return
-    INBOX_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.datetime.now()
-    stamp = now.strftime("%Y-%m-%d-%H%M%S")
-    path = INBOX_DIR / f"{host}-{kind}-drift-{stamp}.yml"
     text = f"Detected {kind} drift for {host}: expected {expected}, observed {actual}. The monitor will not auto-update SSOT; please verify and edit docs/ssot/infrastructure/ssot.host-roles.yml."
     doc = {
         "title": "Focus Inbox Item",
@@ -287,9 +314,7 @@ def write_drift_inbox(host, kind, expected, actual):
             "date": now.strftime("%Y-%m-%d"),
         },
     }
-    with open(path, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
-    logging.info("Wrote drift inbox: %s", path)
+    _emit_inbox(doc)
 
 
 class LinkMonitor:

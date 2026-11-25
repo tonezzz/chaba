@@ -24,7 +24,7 @@ function localWritesOk(root) {
     const role = readFileSync(roleFile, "utf8").trim();
     return role !== "exec" && role !== "readonly";
   } catch {
-    return true; // not a git worktree — can't determine, allow
+    return false; // can't prove the path is a committable checkout — don't litter
   }
 }
 const REPORTS_DIR = join(PROJECT_ROOT, "reports");

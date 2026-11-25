@@ -12,6 +12,15 @@ REPO = Path(__file__).resolve().parent.parent
 NODE = os.environ.get('NODE_BIN') or shutil.which('node') or str(Path.home() / '.n' / 'bin' / 'node')
 STATUS_FILE = Path("/home/tony/var/chaba/overnight-status.json")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
+# exec/readonly checkouts can't commit — skip steps that mutate tracked
+# repo files (improvements-triage -> ssot.improvements.yml, ssot-optimize ->
+# reports/SSOT_OPTIMIZATION_WARNINGS.json). Card
+# omen-chaba-checkout-focus-inbox-writers-d993c4.
+WRITES_OK = inbox_door.local_writes_ok(REPO)
+
 
 def _truncate(text, limit=2000):
     if not text:
@@ -67,7 +76,12 @@ def main():
     if os.environ.get("SKIP_HEALTH") != "1":
         rc |= run(["scripts/mcp-health-to-inbox.py"], steps)
     rc |= run(["scripts/registry-drafts.py"], steps)
-    rc |= run(["scripts/improvements-triage.py"], steps)
+    if WRITES_OK:
+        rc |= run(["scripts/improvements-triage.py"], steps)
+    else:
+        print("[overnight] improvements-triage skipped — non-committable checkout")
+        steps.append({"label": "improvements-triage", "command": ["scripts/improvements-triage.py"],
+                      "returncode": 0, "stdout": "", "stderr": "skipped: non-committable checkout"})
     if rc:
         print("[overnight] warning: pre-validation step(s) failed — continuing to validation", file=sys.stderr)
     val_rc = run(["node", "scripts/ssot-validate-all.mjs"], steps)
@@ -82,7 +96,12 @@ def main():
         # The actual run_subagent calls are still manual; this just prepares contracts.
         rc |= run(["scripts/focus-dispatcher.py", "--process-all-ready"], steps,
                   extra_env={"FOCUS_DISPATCHER_COMMIT": "0", "FOCUS_DISPATCHER_PUSH": "0"})
-    rc |= run(["node", "scripts/ssot-optimize.mjs"], steps)
+    if WRITES_OK:
+        rc |= run(["node", "scripts/ssot-optimize.mjs"], steps)
+    else:
+        print("[overnight] ssot-optimize skipped — non-committable checkout")
+        steps.append({"label": "ssot-optimize.mjs", "command": ["node", "scripts/ssot-optimize.mjs"],
+                      "returncode": 0, "stdout": "", "stderr": "skipped: non-committable checkout"})
     rc |= run(["node", "scripts/ssot-optimize-to-inbox.mjs"], steps)
     rc |= run(["scripts/process-remaining-focuses.py"], steps)
     if rc:

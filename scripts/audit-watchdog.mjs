@@ -10,10 +10,29 @@
  * not the exit code.
  */
 import { existsSync, statSync, readFileSync, writeFileSync, rmSync } from "fs";
+import { execFileSync } from "child_process";
 import { join } from "path";
 import { spawnSync } from "child_process";
 
 const PROJECT_ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
+
+// exec/readonly checkouts can't commit focus-inbox files — skip local
+// writes there; emitEvent still delivers the alert to the Events feed.
+// Card omen-chaba-checkout-focus-inbox-writers-d993c4.
+function localWritesOk(root) {
+  try {
+    const gitdir = execFileSync(
+      "git", ["-C", root, "rev-parse", "--absolute-git-dir"],
+      { encoding: "utf8" }).trim();
+    const roleFile = join(gitdir, "chaba-role");
+    if (!existsSync(roleFile)) return true;
+    const role = readFileSync(roleFile, "utf8").trim();
+    return role !== "exec" && role !== "readonly";
+  } catch {
+    return false;
+  }
+}
+const WRITES_OK = localWritesOk(PROJECT_ROOT);
 const SUMMARY = join(PROJECT_ROOT, "reports", "audits", "summary.json");
 const INBOX = join(PROJECT_ROOT, "docs", "ssot", "focus-inbox");
 const STALE_ALERT = join(INBOX, "audit-stale.yml");
@@ -50,6 +69,10 @@ function emitEvent(title, body, severity = "error") {
 }
 
 function writeAlert(path, title, subtitle, text) {
+  if (!WRITES_OK) {
+    console.log(`ALERT (inbox write skipped — non-committable checkout): ${title}`);
+    return;
+  }
   writeFileSync(
     path,
     [
@@ -107,7 +130,7 @@ if (ageDays > MAX_AGE_DAYS) {
 }
 
 // Fresh summary — resolve any staleness alert.
-rmSync(STALE_ALERT, { force: true });
+if (WRITES_OK) rmSync(STALE_ALERT, { force: true });
 
 if (summary.ok === false) {
   const failed = (summary.results || [])
@@ -115,7 +138,7 @@ if (summary.ok === false) {
     .map((r) => r.name)
     .join(", ");
   // run.mjs writes this alert itself; create it only if missing.
-  if (!existsSync(FAIL_ALERT)) {
+  if (WRITES_OK && !existsSync(FAIL_ALERT)) {
     writeAlert(
       FAIL_ALERT,
       "Audit suite failure",
@@ -132,6 +155,6 @@ if (summary.ok === false) {
 }
 
 // Suite ran recently and is green — clear any leftover failure alert.
-rmSync(FAIL_ALERT, { force: true });
+if (WRITES_OK) rmSync(FAIL_ALERT, { force: true });
 console.log(`OK: audit suite healthy (summary ${ageDays.toFixed(1)}d old)`);
 process.exit(0);

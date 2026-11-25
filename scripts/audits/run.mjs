@@ -4,13 +4,31 @@
  * Reads the audit list from docs/ssot/infrastructure/ssot.audit.yml,
  * runs each audit, and produces a normalized summary report.
  */
-import { spawn } from "child_process";
-import { writeFileSync, appendFileSync, readFileSync, mkdirSync, copyFileSync, rmSync } from "fs";
+import { spawn, execFileSync } from "child_process";
+import { writeFileSync, appendFileSync, readFileSync, mkdirSync, copyFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { hostname, homedir } from "os";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+
+// exec/readonly checkouts can't commit focus-inbox files — skip the alert
+// file there (the summary.md + meta timeline still report). Card
+// omen-chaba-checkout-focus-inbox-writers-d993c4.
+function localWritesOk(root) {
+  try {
+    const gitdir = execFileSync(
+      "git", ["-C", root, "rev-parse", "--absolute-git-dir"],
+      { encoding: "utf8" }).trim();
+    const roleFile = join(gitdir, "chaba-role");
+    if (!existsSync(roleFile)) return true;
+    const role = readFileSync(roleFile, "utf8").trim();
+    return role !== "exec" && role !== "readonly";
+  } catch {
+    return false;
+  }
+}
+const WRITES_OK = localWritesOk(PROJECT_ROOT);
 const REPORTS_DIR = join(PROJECT_ROOT, "reports", "audits");
 const SSOT_FILE = join(PROJECT_ROOT, "docs", "ssot", "infrastructure", "ssot.audit.yml");
 const ALERT_FILE = join(PROJECT_ROOT, "docs", "ssot", "focus-inbox", "audit-failures.yml");
@@ -215,7 +233,9 @@ async function main() {
   }
 
   // Focus-inbox alert on hard failures; auto-resolve by removing it when green.
-  if (hardFailed.length > 0) {
+  if (!WRITES_OK) {
+    console.log("focus-inbox alert skipped — non-committable checkout");
+  } else if (hardFailed.length > 0) {
     const names = hardFailed.map((r) => r.name).join(", ");
     writeFileSync(
       ALERT_FILE,

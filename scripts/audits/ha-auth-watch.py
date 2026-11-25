@@ -27,12 +27,24 @@ try:
 except ImportError:
     websockets = None
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INBOX_DIR = REPO_ROOT / "docs" / "ssot" / "focus-inbox"
 STATE_FILE = Path(os.environ.get(
     "HA_AUTH_WATCH_STATE",
     Path.home() / ".local" / "state" / "chaba" / "ha-auth-watch.json"))
 REPORTS_DIR = REPO_ROOT / "reports" / "ha-auth"
+# exec/readonly checkouts can't commit — alerts route through board-api
+# /inbox instead of local files (card
+# omen-chaba-checkout-focus-inbox-writers-d993c4).
+WRITES_OK = inbox_door.local_writes_ok(REPO_ROOT)
 TIMELINE = Path(os.environ.get(
     "CHABA_REPORTS_DIR", Path.home() / "var" / "chaba" / "reports")) / "timeline.jsonl"
 
@@ -274,10 +286,29 @@ def main():
         fname, body = alert_yaml(inst, src, ts, line)
         print(f"FAIL {inst} {src} @ {ts} -> {fname}")
         if not args.dry_run:
-            INBOX_DIR.mkdir(parents=True, exist_ok=True)
-            f = INBOX_DIR / fname
-            f.write_text(body)
-            written.append(f)
+            if WRITES_OK:
+                INBOX_DIR.mkdir(parents=True, exist_ok=True)
+                f = INBOX_DIR / fname
+                f.write_text(body)
+                written.append(f)
+            else:
+                doc = yaml.safe_load(body) if yaml else {}
+                focus = (doc or {}).get("focus") or {}
+                if inbox_door.post_inbox({
+                        "label": focus.get("label") or fname,
+                        "subtitle": (doc or {}).get("subtitle"),
+                        "icon": (doc or {}).get("icon", "inbox"),
+                        "text": focus.get("text", ""),
+                        "priority": focus.get("priority", "high"),
+                        "tags": focus.get("tags", []),
+                        "owner": "tony",
+                        "session": "ha-auth-watch",
+                        "subtasks": focus.get("subtasks", []),
+                }):
+                    print(f"  posted via board-api /inbox: {fname}")
+                else:
+                    print("  warn: board-api /inbox unreachable — alert dropped",
+                          file=sys.stderr)
     print(f"polled {len(INSTANCES)} instance(s): "
           f"{len(failures)} new auth-failure line(s) ({suppressed} deduped), "
           f"{errors} error(s)")
@@ -285,7 +316,7 @@ def main():
     if not args.dry_run:
         save_state(seen)
         emit_meta(now_iso, failures, errors)
-        if written and args.git:
+        if written and args.git and WRITES_OK:
             try:
                 git_commit_push(written)
                 print("pushed alert commit")

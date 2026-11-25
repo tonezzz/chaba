@@ -25,6 +25,9 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 LIMIT_BINLOG_BYTES = 1_073_741_824  # 1 GiB
 LIMIT_LSN_GAP = 5_000_000
 SEEN_FRESH_SECONDS = 120   # leader last_seen_at younger than this = stream connected
@@ -185,13 +188,43 @@ def save_state(path, state):
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
+def _repo_for_inbox_dir(d):
+    # <repo>/docs/ssot/focus-inbox -> repo root is three levels up
+    return d.parent.parent.parent
+
+
 def find_inbox_dir(explicit):
     if explicit:
         return Path(explicit)
     for d in INBOX_CANDIDATES:
-        if d.is_dir():
-            return d
+        if not d.is_dir():
+            continue
+        # exec/readonly checkouts can't commit — skip them so the alert
+        # lands in a checkout kanban-commit actually watches (or falls
+        # through to the board-api /inbox door). Card
+        # omen-chaba-checkout-focus-inbox-writers-d993c4.
+        if not inbox_door.local_writes_ok(_repo_for_inbox_dir(d)):
+            continue
+        return d
     return None
+
+
+def post_inbox_alert(reasons, metrics, breach_secs, now, escalation=None):
+    doc = make_inbox_item(reasons, metrics, breach_secs, now, escalation)
+    focus = doc.get("focus") or {}
+    payload = {
+        "label": focus.get("label") or doc.get("subtitle") or "mddb-binlog health",
+        "subtitle": doc.get("subtitle"),
+        "icon": doc.get("icon", "inbox"),
+        "text": focus.get("text", ""),
+        "priority": focus.get("priority", "high"),
+        "tags": focus.get("tags", []),
+        "missing_info": focus.get("missing_info", []),
+        "owner": "tony",
+        "session": (doc.get("source") or {}).get("session", ""),
+        "subtasks": focus.get("subtasks", []),
+    }
+    return inbox_door.post_inbox(payload)
 
 
 def dump_yaml(item):
@@ -335,6 +368,7 @@ def main():
                 escalation = "new" if first else ("escalated" if escalated
                                                   else "recurring")
                 inbox_dir = find_inbox_dir(args.inbox_dir)
+                posted = False
                 if inbox_dir:
                     try:
                         path = write_inbox(inbox_dir, reasons, metrics,
@@ -342,21 +376,35 @@ def main():
                                            None if first else escalation)
                         result["detail"] += (f" | inbox written ({escalation}): "
                                              f"{path.name}")
-                        result["alerted"] = True
-                        state["alerted"] = True
-                        state["alerted_epoch"] = now.timestamp()
-                        state["alerted_at"] = ts_iso(now)
-                        state["alerted_file"] = path.name
-                        state["alerted_reasons"] = list(reasons)
-                        state["alerted_signature"] = signature
-                        state["alerted_items"] = sorted(
-                            alerted_items | set(signature))
-                        if new_items:
-                            result["detail"] += (f" [+{', '.join(new_items)}]")
                     except Exception as e:
                         result["detail"] += f" | inbox write failed: {e}"
+                        inbox_dir = None
+                if not inbox_dir:
+                    # No committable checkout — park the alert via board-api.
+                    try:
+                        posted = post_inbox_alert(
+                            reasons, metrics, breach_secs, now,
+                            None if first else escalation)
+                    except Exception as e:
+                        result["detail"] += f" | inbox post failed: {e}"
+                    if posted:
+                        result["detail"] += (f" | inbox posted via board-api "
+                                             f"({escalation})")
+                if inbox_dir or posted:
+                    result["alerted"] = True
+                    state["alerted"] = True
+                    state["alerted_epoch"] = now.timestamp()
+                    state["alerted_at"] = ts_iso(now)
+                    state["alerted_file"] = (path.name if inbox_dir
+                                             else "board-api:/inbox")
+                    state["alerted_reasons"] = list(reasons)
+                    state["alerted_signature"] = signature
+                    state["alerted_items"] = sorted(
+                        alerted_items | set(signature))
+                    if new_items:
+                        result["detail"] += (f" [+{', '.join(new_items)}]")
                 else:
-                    result["detail"] += " | no focus-inbox dir found"
+                    result["detail"] += " | no committable focus-inbox dir and board-api unreachable"
     else:
         state["breach_since_epoch"] = None
         state["breach_since"] = None

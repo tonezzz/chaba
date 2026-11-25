@@ -7,6 +7,10 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import inbox_door  # noqa: E402
+
+from . import REPO
 from .actions import (
     activate_inbox,
     add_ready_safe,
@@ -62,6 +66,14 @@ def main():
     parser.add_argument("--advance", action="store_true", help="Advance to the next focus only if the active one is complete")
     parser.add_argument("--resume-session", default=None, help="Restrict next/advance to a specific session name")
     args = parser.parse_args()
+
+    # exec/readonly checkouts can't commit — every mutating path below ends
+    # in git_commit (or git mv/add), so bail before writing state files.
+    # Card omen-chaba-checkout-focus-inbox-writers-d993c4.
+    if not args.dry_run and not inbox_door.local_writes_ok(REPO):
+        print("focus-dispatcher: skipped — non-committable checkout "
+              f"({inbox_door.checkout_role(REPO) or 'unmarked'})")
+        sys.exit(0)
 
     if args.next:
         if args.dry_run:
