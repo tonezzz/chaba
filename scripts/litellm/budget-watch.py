@@ -13,6 +13,12 @@ budget_duration, budget_reset_at, models allowlist) and judges each key:
   spend >= max_budget            -> alert (callers are 422ing NOW)
   spend >= max_budget * warn_pct -> warn  (approaching cap)
   max_budget is null/0           -> note  (uncapped key — flagged, not judged)
+Plus the proxy-wide budget row (LiteLLM_UserTable user_id
+'litellm-proxy-budget' — litellm_settings.max_budget/budget_duration)
+as a synthetic 'proxy-wide' finding: the 2026-11-24 proxy-cap exhaustion
+422'd every route at auth while per-key budgets still had headroom, and
+nothing watched that row. psql source only; the /key/list API fallback
+does not expose it.
 Report is metadata only — key aliases, never key values.
 
 Sources (same duality as daily-ledger.py):
@@ -76,6 +82,11 @@ SELECT coalesce(key_alias,'<unnamed>'), max_budget, budget_duration,
 FROM "LiteLLM_VerificationToken" ORDER BY key_alias;
 """
 
+PROXY_SQL = """
+SELECT max_budget, budget_duration, spend, budget_reset_at
+FROM "LiteLLM_UserTable" WHERE user_id = 'litellm-proxy-budget';
+"""
+
 
 def rows_via_psql() -> list[dict]:
     out = subprocess.run(
@@ -94,6 +105,22 @@ def rows_via_psql() -> list[dict]:
                      "spend": float(spend or 0),
                      "budget_reset_at": reset or None,
                      "models": models})
+    try:
+        out = subprocess.run(
+            ["podman", "exec", DB_CONTAINER, "psql", "-U", "litellm",
+             "-d", "litellm", "-At", "-F", "|", "-c", PROXY_SQL],
+            capture_output=True, text=True, timeout=30)
+        if out.returncode == 0 and out.stdout.strip():
+            cap, dur, spend, reset = \
+                (out.stdout.strip().split("|") + [""] * 4)[:4]
+            rows.append({"key_alias": "proxy-wide",
+                         "max_budget": float(cap) if cap else None,
+                         "budget_duration": dur or None,
+                         "spend": float(spend or 0),
+                         "budget_reset_at": reset or None,
+                         "models": ""})
+    except Exception:
+        pass  # proxy row is best-effort — key rows still report
     return rows
 
 
@@ -264,6 +291,9 @@ SELFTEST_ROWS = [
     {"key_alias": "uncapped-test", "max_budget": None,
      "budget_duration": None, "spend": 3.0, "budget_reset_at": None,
      "models": "{}"},
+    {"key_alias": "proxy-wide", "max_budget": 120.0,
+     "budget_duration": "30d", "spend": 62.0,
+     "budget_reset_at": "2026-12-01 00:00:00", "models": ""},
 ]
 
 

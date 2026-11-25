@@ -44,9 +44,17 @@ auth:
     preserves persona slots across fleet switches.
 
 budgets:
-  proxy_cap: "$75 / 30d (litellm_settings.max_budget — raised 2026-11-07
-    from $50 after ledger hit $69.64; stays the outer brake below the
-    ~$92 sum of key caps)"
+  proxy_cap: "$120 / 30d (litellm_settings.max_budget — live+repo aligned
+    2026-11-25; the 2026-11-07 'raise to $75' was SSOT-only, live config
+    still said $50 and proxy-wide spend crossed it 2026-11-24 ~23:00 ICT
+    (window spend $50.01 → all routes 422 at auth, before fallback chains).
+    Raised $50→$75→$120 on 2026-11-25: window (Nov 1→Dec 1 reset) already
+    at $62 with ~5.8d left at ~$8/day recent burn → projected ~$110, so
+    $75 would have re-capped before reset. $120 stays below the ~$150 sum
+    of capped per-key budgets and is the only bound on uncapped
+    LITELLM_KEY_BENCH. Watcher: budget-watch.py now also judges the
+    proxy-wide row (LiteLLM_UserTable litellm-proxy-budget), hourly timer
+    live since 2026-11-25)"
   keys:
     LITELLM_KEY_ADA: "live $30 / 30d — shared interactive/eval role; virtual
       alias ada-sec1286, budget tier sec1286-ada-20261201. The 2026-11-09

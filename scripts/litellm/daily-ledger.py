@@ -31,9 +31,13 @@ GROUP BY 1,2 ORDER BY spend_usd DESC;
 """
 
 BUDGET_SQL = """
+SELECT 'proxy-wide', max_budget, budget_duration,
+       round(spend::numeric, 4), budget_reset_at
+FROM "LiteLLM_UserTable" WHERE user_id = 'litellm-proxy-budget'
+UNION ALL
 SELECT coalesce(key_alias,'<unnamed>'), max_budget, budget_duration,
        round(spend::numeric, 4), budget_reset_at
-FROM "LiteLLM_VerificationToken" ORDER BY key_alias;
+FROM "LiteLLM_VerificationToken" ORDER BY 1;
 """
 
 
@@ -111,6 +115,7 @@ def main():
             f"| {r['key']} | {r['model']} | {r['calls']} | {r['tokens']} | ${r['spend_usd']} |"
             for r in rows) or "| – | – | 0 | 0 | $0 |"
         try:
+            budget_list = budgets_via_psql()
             budget_rows = "\n".join(
                 f"| {b['key']} | {b['duration']} | "
                 + (f"${b['max_budget']:g}" if b['max_budget'] is not None
@@ -118,16 +123,25 @@ def main():
                 + f" | ${b['spend']:.4f} | "
                 + (f"{b['pct']:.0f}%" if b['pct'] is not None else "–")
                 + f" | {b['reset']} |"
-                for b in budgets_via_psql())
+                for b in budget_list)
             budget_section = f"""
-## Key budgets (live LiteLLM_VerificationToken)
+## Key budgets (live LiteLLM_VerificationToken + proxy-wide row)
 
 | key | window | cap | spend | used | reset |
 |---|---|---|---|---|---|
 {budget_rows}
 """
+            proxy = next((b for b in budget_list
+                          if b["key"] == "proxy-wide"), None)
+            ceiling = (f"Proxy ceiling: ${proxy['max_budget']:g}/"
+                       f"{proxy['duration']} (litellm_settings.max_budget, "
+                       f"live LiteLLM_UserTable litellm-proxy-budget)."
+                       if proxy and proxy["max_budget"] is not None
+                       else "Proxy ceiling: see "
+                            "ssot.llm-gateway.yml budgets.proxy_cap.")
         except Exception as e:
             budget_section = f"\n_Key budget table unavailable: {e}_\n"
+            ceiling = ""
         body = f"""# LLM Gateway Spend Ledger
 
 {rep['run']} — trailing 24h, source `{source}`.
@@ -139,7 +153,7 @@ Gateway: `http://100.102.134.91:4000` (idc03, tailnet-only). Admin UI: `/ui`.
 |---|---|---|---|---|
 {body_rows}
 {budget_section}
-Proxy ceiling: $50/30d (litellm_settings.max_budget).
+{ceiling}
 Routing: docs/ssot/infrastructure/ssot.llm-gateway.yml
 """
         req = urllib.request.Request(f"{MDDB}/add",
