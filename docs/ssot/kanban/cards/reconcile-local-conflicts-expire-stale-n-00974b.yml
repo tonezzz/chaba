@@ -1,7 +1,7 @@
 id: reconcile-local-conflicts-expire-stale-n-00974b
 title: 'reconcile-local-conflicts: expire stale non-card .local-conflict files'
-column: review
-updated: 2026-11-25 11:05
+column: done
+updated: 2026-11-25 11:10
 priority: medium
 tags:
 - chaba
@@ -311,6 +311,17 @@ comms:
 - at: 2026-11-25 11:05
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 11:10
+  from: chaba
+  text: 'merge-sweep: merged f0c8c829 (dispatch/20261125-105702-focus-inbox-and-other-generate from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-105702-focus-inbox-and-other-generate.md)
+    — auto-closed'
+- at: 2026-11-25 11:10
+  from: local
+  text: 'pub milestone: card verified: reconcile-local-conflicts-expire-stale-n-00974b on idc03 — merged f0c8c829
+    (dispatch/20261125-105702-focus-inbox-and-other-generate from tony-macbook) -> origin/master — verified — merged
+    f0c8c829 (dispatch/20261125-105702-focus-inbox-and-other-generate from tony-macbook) -> origin/master — verified
+    — auto-closed [evt-2bd8d9371b5fc1a3]'
 action:
   type: dispatch
   status: done
@@ -324,7 +335,11 @@ action:
     stale_running: 2026-11-25 09:25
     dirty: 1
   runner: tony-macbook
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 10:56
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 11:10
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-105702-focus-inbox-and-other-generate.md
