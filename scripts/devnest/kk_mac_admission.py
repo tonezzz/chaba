@@ -68,8 +68,8 @@ def snapshot(
     max_age_s: int = 900,
     min_disk_gb: int = 20,
     max_load_1m: float = 4.0,
-    # Tony 2026-11-09: KK runs hot under load — hold new work at 60C.
-    max_temp_c: float = 60.0,
+    # Tony 2026-11-09: KK runs hot under load — hold new work at 55C.
+    max_temp_c: float = 55.0,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
@@ -293,7 +293,7 @@ def local_snapshot(
     host: str = "local",
     min_disk_gb: int = 20,
     max_load_1m: float = 4.0,
-    max_temp_c: float = 60.0,
+    max_temp_c: float = 55.0,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     ollama_url: str = "http://127.0.0.1:11434",
