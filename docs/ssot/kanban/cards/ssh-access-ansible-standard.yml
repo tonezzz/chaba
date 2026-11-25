@@ -1,7 +1,7 @@
 id: ssh-access-ansible-standard
 title: Standardize host SSH access with Ansible
 column: done
-updated: 2026-11-25 17:12
+updated: 2026-11-25 17:27
 brief: 'Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per
   controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap,
   with read-only verification first.'
@@ -115,6 +115,10 @@ comms:
 - at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: scope-decision-how-far-should-the-first-f6a3bd
