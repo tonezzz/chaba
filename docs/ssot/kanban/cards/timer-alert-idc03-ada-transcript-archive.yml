@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-transcript-archive
 title: Timer ada-transcript-archive on idc03 failing
 column: backlog
-updated: 2026-11-25 14:34
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
@@ -36,3 +36,7 @@ comms:
     8s timeout; cancelled losers produced the /api/embed 400s. Added drop-in ~/.config/systemd/user/embed-pool-shim.service.d/zzzz-drop-local-idc03.conf:
     primaries now tony-omen only, kk-mac stays deferred. Rollback: delete the drop-in, daemon-reload, restart the
     shim. Verified: shim 0 fail'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

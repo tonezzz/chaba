@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-eval
 title: Timer ada-ocb-eval on idc02 failing
 column: backlog
-updated: 2026-11-25 14:16
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
@@ -107,6 +107,10 @@ comms:
     ok: False''; ada-ocb-agent-runner-converge cannot start at all (''Failed to determine supplementary groups:
     Operation not permitted'' - a unit privilege/config problem, not an Ansible drift). One bridge preflight fix
     plus one unit fix covers ADA-0042, ADA-0191, ADA-1340.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: multiple-runner-agents-across-fa4249
   ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because the installed

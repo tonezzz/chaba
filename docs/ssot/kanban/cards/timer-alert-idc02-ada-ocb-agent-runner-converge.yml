@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
 column: backlog
-updated: 2026-11-25 14:41
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
@@ -31,6 +31,10 @@ comms:
     a systemd --USER unit (~/.config/systemd/user/ada-ocb-agent-runner-converge.service), which is invalid; user
     manager cannot set supplementary groups. Fix = drop the User= line in the unit source (likely ansible/playbooks/agent-runner.yml
     in ada-ocb repo) + daemon-reload. Whitelisted in ssot.audit.hosts.yml known_failed meanwhile.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
   exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
   from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs to be redeployed.

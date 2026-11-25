@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-25 14:04
+updated: 2026-11-25 16:49
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -279,5 +279,9 @@ comms:
     9b50a157...) with backup ~/.cache/chaba-deploy-backups/20261125-140345/runner-agent and launchd kickstart. This
     supersedes the earlier 837040bd... pin noted at 11:10 after master advanced. kk-mac-reonline-check.sh RESULT
     OK: in sync, 14 cores, temp 40C, disk 48GB, heartbeat fresh, admission eligible.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
