@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
 column: doing
-updated: 2026-11-25 09:10
+updated: 2026-11-25 09:24
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -206,6 +206,10 @@ comms:
     before verdict ok — unreachable/malformed -> infra clean-skip with per-scenario infra reports. Journal-silence
     floor rejected: idle-healthy backends log nothing between runs -> false skips. 9 new tests pass (tests/ada/test_scenario_provider_gate.py);
     trail at docs/ssot/jobs/ada/2026'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090509-found-during-timer-alert-idc03 no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -213,5 +217,7 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:24
 claim:
   since: 2026-11-25 09:04
