@@ -1,7 +1,7 @@
 id: devin-usage-allowance-visibility
 title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
-column: backlog
-updated: 2026-11-25 09:38
+column: doing
+updated: 2026-11-25 09:40
 brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
   window burn but not plan allowance remaining.'
 priority: medium
@@ -36,9 +36,12 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
 ref: DEV-1332
 comms:
 - at: 2026-11-24 22:59
@@ -83,4 +86,12 @@ comms:
 - at: 2026-11-25 09:38
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
-claim: {}
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:40
+  from: tony-macbook
+  text: claimed
+claim:
+  since: 2026-11-25 09:40
