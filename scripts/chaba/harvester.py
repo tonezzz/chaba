@@ -135,7 +135,7 @@ def scan_dispatch_outcomes(limit=None):
         # Not pre-marked filed: let the router index these as evidence links
         # or surface lesson/SSOT candidates hiding inside them.
         out.append(_candidate("dispatch-outcome", path.stem,
-                              f"{headline}\n{text[:1200]}", path.stem[16:24], False))
+                              f"{headline}\n{text[:1200]}", path.stem[17:25], False))
         if limit and len(out) >= limit:
             break
     return out
