@@ -1,7 +1,7 @@
 id: board2-start-button-renders-on-review-do-bfd250
 title: 'board2: Start button renders on review/done cards and re-queues verified work'
-column: doing
-updated: 2026-11-25 17:03
+column: review
+updated: 2026-11-25 17:05
 priority: low
 tags:
 - board2
@@ -339,13 +339,37 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: tony-dell
+  text: 'finished (ok): exit=0 tainers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261125-164821-render-board2-py-6'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 17:05
+  from: chaba
+  text: banked 19 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 17:05
+  from: chaba
+  text: pushed dispatch/20261125-164821-render-board2-py-657-start-but to origin
+- at: 2026-11-25 17:05
+  from: chaba
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->
+    master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates
+    were rejected  — close will block until merged"
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-164821-render-board2-py-657-start-but,
+    branch dispatch/20261125-164821-render-board2-py-657-start-but'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 tainers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261125-164821-render-board2-py-657-start-but.service:
+    Consumed 35.888s CPU time over 12min 6.735s wall clock time, 982.4M memory peak, 598.3M memory swap peak.'
 claim:
   since: 2026-11-25 16:47
+review_kind: verify

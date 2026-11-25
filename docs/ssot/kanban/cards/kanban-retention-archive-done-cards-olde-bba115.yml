@@ -1,7 +1,7 @@
 id: kanban-retention-archive-done-cards-olde-bba115
 title: 'Kanban retention: archive done cards older than 7 days'
-column: doing
-updated: 2026-11-25 17:02
+column: review
+updated: 2026-11-25 17:05
 brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
   archive stale done cards to a separate store/page, keep board fast and searchable.'
 spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
@@ -34,11 +34,14 @@ spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-155532-proposal-devin-2026-11-08-disc.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-155532-proposal-devin-2026-11-08-disc.service:
+    No such file or directory'
 ref: KNB-1178
 comms:
 - at: 2026-11-08 12:33
@@ -276,5 +279,31 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-155532-proposal-devin-2026-11-08-disc.service:
+    Failed to ope'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'session-end checkpoint 6f1508e0: 6 leftover file(s) committed'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: banked 26 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 17:05
+  from: chaba
+  text: pushed dispatch/20261125-155532-proposal-devin-2026-11-08-disc to origin
+- at: 2026-11-25 17:05
+  from: chaba
+  text: "auto-merge not done: push: To github.com:tonezzz/chaba.git\n ! [rejected]              HEAD -> master (fetch
+    first)\nerror: failed to push some refs to 'github.com:tonezzz/chaba.git'\nhint: Updates were rejected because
+    the remote — close will block until merged"
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-155532-proposal-devin-2026-11-08-disc,
+    branch dispatch/20261125-155532-proposal-devin-2026-11-08-disc'
 claim:
   since: 2026-11-25 15:54
+review_kind: verify
