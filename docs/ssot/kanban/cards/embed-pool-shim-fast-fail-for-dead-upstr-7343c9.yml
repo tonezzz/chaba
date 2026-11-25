@@ -1,7 +1,7 @@
 id: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
 title: embed-pool-shim fast-fail for dead upstreams (member loss costs 17x latency)
 column: doing
-updated: 2026-11-25 12:32
+updated: 2026-11-25 12:37
 priority: low
 tags:
 - ops
@@ -216,6 +216,13 @@ comms:
     and live /health shows it working (idc03 upstream currently parked, consec=7). con01 itself was later dropped
     from the pool entirely (zz-drop-con01.conf, 2026-11-24). Remaining delta I am adding: /health dead flag + regression
     tests for the breaker (currently zero coverage — defer test'
+- at: 2026-11-25 12:37
+  from: devin
+  text: 'DONE (verify+gap-close). The asked-for suspect/cooldown mechanism already shipped as PR #106 (5c767a3ccff,
+    merged 3min after card capture) and is LIVE on idc03 — deployed file md5-matches repo, /health shows a parked
+    upstream right now (idc03-local consec=7). con01 itself was later dropped from the pool entirely (zz-drop-con01.conf).
+    Residual gaps closed in c416b288f89: /health now exposes a computed dead flag per upstream, DeadCooldown regression
+    tests added (breaker had ZERO coverage — defer t'
 action:
   type: dispatch
   status: running
