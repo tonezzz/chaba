@@ -1,0 +1,65 @@
+title: Exclude kanban/cards from advisory SSOT bloat review threshold
+card: ssot-baseline-board-drift-race
+date: 2026-11-25
+decision: option (a) — validator-level exclusion, not baseline refresh coupling
+
+context:
+  problem: >-
+    CI's ssot-optimize-gate fails on any warning absent from the committed
+    reports/SSOT_OPTIMIZATION_WARNINGS.json baseline. board-api mutates card
+    YAML on every write (~15min cadence) and comms growth routinely pushes
+    cards past the 350-line review threshold — 156 cards already exceed it.
+    On 2026-11-24 three master CI runs went red in 20 minutes from one-off
+    board drift (omen-battery-charge-policy.yml at 362 lines, plus a
+    malformed job doc fixed by PRs #205/#206).
+  options_considered:
+    a: >-
+      CHOSEN — exclude kanban/cards/ from the advisory review-threshold
+      bloat check in scripts/ssot-validate-all.mjs; keep the 750-line hard
+      threshold + per-card grandfathering as the real gate.
+    b: >-
+      rejected — refresh the committed baseline from the board write path
+      after each card mutation; auditable but couples CI to board-api.
+    c: >-
+      rejected — make optimize-gate treat card-only review warnings as
+      advisory; weaker signal, policy change in the gate rather than the
+      producer.
+
+change:
+  scripts/ssot-validate-all.mjs: >-
+    In the generated Python validator, review-threshold bloat checks
+    (350 lines / 10 sections / 45 items) are skipped when
+    rel.startswith('kanban/cards/'). The 750-line / 12-section / 60-item
+    hard-threshold block above it is untouched, as are REVIEW_EXEMPT /
+    HARD_EXEMPT grandfathering for non-card files.
+  docs/ssot/ssot.file-optimization.yml: >-
+    Comment added under config.bloat_exemptions noting kanban/cards are
+    exempt from review-threshold checks at the validator level; the two
+    existing per-card review_threshold entries
+    (omen-battery-charge-policy, kk-video-preview-output-qc-assembly) are
+    retained for the record — they are now unreachable for cards but
+    harmless, and their comments preserve rationale.
+  reports/SSOT_OPTIMIZATION_WARNINGS.json: >-
+    Refreshed via full `node scripts/ssot-optimize.mjs` run — the
+    sanctioned baseline escape. Drops ~150 stale card review-threshold
+    entries and absorbs 10 fresh non-bloat warnings that had drifted in
+    since the last baseline (incl. devin-session-audit-2026-10-29.yml
+    crossing the 750-line hard cap — correctly still gated as new debt).
+
+verification:
+  - "426-line temp card under kanban/cards/ -> 0 warnings from ssot-validate-all.mjs (was: review-threshold bloat)"
+  - "3824-line card timer-alert-idc03-kanban-dispatch.yml -> 'Bloat: 3824 lines exceeds hard threshold of 750' still fires"
+  - "full node scripts/ssot-optimize.mjs + node scripts/ssot-optimize-gate.mjs -> '139 warning(s), all covered by baseline', exit 0"
+  - "node scripts/ssot-validate-all.mjs full run -> 6474 files, 0 errors"
+
+residual_risks:
+  - >-
+    Card data-isolation warnings (hardcoded IPv4 / possible secret) and
+    kanban request-shape nudges are still gated — a card comm containing a
+    public IP or a malformed open request can still turn CI red. Deliberate:
+    those signal real hygiene issues, unlike line-count drift. If they
+    prove noisy, they need their own card.
+  - >-
+    Cards crossing 750 lines still produce fresh hard-threshold warnings
+    until baselined — the sweep/trim work for the ~77 already-over cards
+    remains open debt, unchanged by this fix.
