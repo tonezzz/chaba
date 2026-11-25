@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-repo-sync
 title: Timer chaba-repo-sync on idc03 failing
 column: backlog
-updated: 2026-11-25 19:34
+updated: 2026-11-25 19:42
 priority: high
 tags:
 - timer-alert
@@ -405,6 +405,12 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-25 19:25) of `chaba-repo-sync.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 19:42
+  from: tony
+  text: '2026-11-25 19:43 (+07): SELF-RECOVERED — the 19:25 run hit an autostash pop conflict on scripts/ada/prune-old-docs.py;
+    git-safe-pull preserved the local side as .local-conflict-* and retained the stash. The next run at 19:40:17
+    completed result=success exit=0. Manual merge is still advisable for the retained stash, but the timer itself
+    is healthy; closing.'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `chaba-repo-sync.service` on host idc03 by checking the systemd
