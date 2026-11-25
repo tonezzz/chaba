@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper-severe
 title: Timer log-shipper-severe on mn01 failing
-column: done
-updated: 2026-11-25 17:39
+column: backlog
+updated: 2026-11-26 00:54
 priority: high
 tags:
 - timer-alert
@@ -138,5 +138,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 00:54
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 00:54
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 17:45) of `log-shipper-severe.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-mn01`.'
 action:
   status: done
