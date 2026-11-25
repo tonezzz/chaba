@@ -1,0 +1,27 @@
+id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
+title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
+column: backlog
+updated: 2026-11-25 14:59
+priority: medium
+tags:
+- mn01
+- mn-ha-dev
+- stability
+- audit
+spec: 'Found during mn01-yolo-xiaomi-service-stopped-deliber-d2b384 (2026-11-25). After the idc02->mn01 move (card
+  michael-dev-migrate-mn01, ~01:30 UTC), mn-ha-dev.service on mn01 restart-looped: NRestarts reached 40 between
+  ~01:37-05:43 UTC. Each cycle: HA Core ran 2-7min then exited CLEANLY ("Home Assistant Core finish process exit
+  code 0", signal-15 shutdown path) — not OOM (no kernel oom-kill), not a podman failure. Journal shows repeated
+  "The system could not validate that the sqlite3 database at //config/home-assistant_v2.db was shutdown cleanly"
+  + unfinished recorder sessions each boot. Stabilized spontaneously at 05:43 UTC; up ~2h+ since, NRestarts frozen
+  at 40. mn01 has 7.3GB RAM, NO swap, ~1.4GB available — memory pressure plausible contributor but unproven. yolo-xiaomi.service
+  was clean-stopped (systemctl stop, Result=success) at 02:38 UTC mid-loop — likely crisis triage; restarted by
+  the yolo card dispatch once HA stabilized. TODO: identify what issued the clean HA exits (HA-side stop call? recorder/DB
+  fault? watchdog? s6?), decide whether mn-ha-dev needs MemoryMax/RestartSec tuning or a smaller footprint on mn01,
+  and confirm it stays stable. Evidence: journalctl --user -u mn-ha-dev.service on mn01, 2026-11-25 01:30-05:45
+  UTC.'
+ref: AUD-1399
+comms:
+- at: 2026-11-25 14:59
+  from: devin
+  text: card captured via board-api
