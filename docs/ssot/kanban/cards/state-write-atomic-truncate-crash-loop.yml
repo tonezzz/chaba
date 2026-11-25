@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
-column: review
-updated: 2026-11-25 09:45
+column: done
+updated: 2026-11-25 09:56
 priority: medium
 tags:
 - ops
@@ -240,6 +240,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-092859-fix-non-atomic-state-writes-ac,
     branch dispatch/20261125-092859-fix-non-atomic-state-writes-ac'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
@@ -259,3 +262,7 @@ action:
 claim:
   since: 2026-11-25 09:28
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:56
+  note: verified — evidence checks green, closing itself
