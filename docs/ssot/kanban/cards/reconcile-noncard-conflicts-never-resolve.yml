@@ -1,7 +1,7 @@
 id: reconcile-noncard-conflicts-never-resolve
 title: 'reconcile-local-conflicts: non-card .local-conflict files never fold back — re-flagged every run'
 column: doing
-updated: 2026-11-25 14:54
+updated: 2026-11-25 14:55
 priority: low
 tags:
 - git-safe-pull
@@ -215,6 +215,14 @@ comms:
     — archive preserves the only copy; and flag_card returns a status so already-flagged files go fully quiet (no
     stderr, no leftover, rc 0) inside the 48h dedup window. Card (.yml) conflict paths unchanged/loud. Verified:
     selftest OK, pytest 6/6, scratch-repo e2e — run'
+- at: 2026-11-25 14:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-143933-observed-2026-11-17-on-idc03-s no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-143933-observed-2026-11-17-on-idc03-s on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -222,5 +230,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 14:54
+    dirty: 2
 claim:
   since: 2026-11-25 14:38
