@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: done
-updated: 2026-11-25 12:29
+updated: 2026-11-25 16:49
 priority: medium
 tags:
 - infra
@@ -285,6 +285,10 @@ comms:
     by network-scan-tony in the exec checkout, so autostash-pop kept colliding with upstream refreshes and failed
     chaba-repo-sync.service. With the path treated as generated, local rebuilds are preserved as .local-conflict-*
     and upstream wins cleanly. The specific refreshed snaps'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd

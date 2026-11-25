@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
 column: done
-updated: 2026-11-25 12:09
+updated: 2026-11-25 16:49
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -186,6 +186,10 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261125-044950-observed-2026-11-24-after-pr-2 — close will block
     until merged'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done

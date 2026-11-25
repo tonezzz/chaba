@@ -2,7 +2,7 @@ id: render-board-real-cost-git-subprocesses
 title: render-board real cost is load_cards YAML + compute_checks git subprocesses, not _outcome_index (~2min on
   tony-omen)
 column: done
-updated: 2026-11-25 09:56
+updated: 2026-11-25 16:49
 brief: 'Measured while fixing render-board-worktree-rglob-slow (2026-11-17): on tony-omen a full render is 2m8s
   — load_cards 43s (900 YAML parses), compute_checks 76s (a `git merge-base` + `git cherry` subprocess per dispatch
   run branch per card). _outcome_index itself is now ~0.15s after the flat-glob fix. kanban-dispatch runs this inline
@@ -248,6 +248,10 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-022627-optimize-the-real-render-hot-p,
     branch dispatch/20261125-022627-optimize-the-real-render-hot-p on mn01'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
