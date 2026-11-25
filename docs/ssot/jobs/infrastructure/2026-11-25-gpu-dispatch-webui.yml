@@ -1,0 +1,64 @@
+title: GPU dispatch web UI — single pane over queue + fleet GPU state
+card: gpu-dispatch-web-ui
+date: 2026-11-25
+executor: devin-dispatch
+pattern: "gpu-dispatch-webui / 100.123.163.11:8795 / queue_manager.cancel_job"
+summary: >-
+  Read-mostly web pane for the Ansible dispatch queue on idc02. Small
+  self-contained Python service (/home/tony/ansible/webui/, systemd user
+  unit gpu-dispatch-webui.service, tailnet-IP bind :8795) that imports
+  queue/queue_manager.py directly — queue stats, all queue:job:* hashes,
+  dispatch:* records, fleet GPU table from sidecar:*, gpu:hold:*
+  reservations, and scheduler health. Mutations (enqueue/cancel/requeue)
+  require {"confirm": true} and are audited to audit.jsonl + Redis
+  queue:audit. queue_manager.py gained cancel_job() + a `cancel` CLI
+  subcommand (patch: stacks/services/gpu-dispatch-webui/queue_manager-cancel.patch).
+hosting_decision:
+  chosen: small service on idc02
+  why: >-
+    Redis, queue_manager.py, scheduler.py and dispatch-scheduler.service
+    all live in /home/tony/ansible on idc02 — the data plane is local.
+    The card requires reusing queue_manager APIs (not direct Redis writes
+    or CLI shell-outs), which means importing the module next to it. The
+    chaba apps stack only serves static files and would still need this
+    API somewhere; tailnet-IP bind matches gpu-queue :3001 /
+    secrets-console :8005 precedent — no credentials in code, no caddy or
+    ssot.routes.yml change needed. CLI remains authoritative fallback.
+service:
+  url: "http://idc02.taila0626a.ts.net:8795/"
+  bind: "100.123.163.11:8795 (tailnet IP only)"
+  unit: "gpu-dispatch-webui.service (systemd --user on idc02)"
+  code_on_host: /home/tony/ansible/webui/{gpu_dispatch_webui.py,static/,audit.jsonl}
+  source_in_repo: stacks/services/gpu-dispatch-webui/
+  python: /home/tony/.local/venv-sidecar/bin/python (stdlib http.server + redis-py)
+endpoints:
+  - "GET /api/state — queue stats + jobs + fleet GPUs + scheduler + audit tail"
+  - "GET /api/jobs/<id> — job hash + dispatch record + holds"
+  - "GET /api/audit — last 100 audit entries"
+  - "POST /api/jobs {job, confirm:true, actor} — enqueue (validated JobSpec)"
+  - "POST /api/jobs/<id>/cancel {confirm:true, actor} — queued/waiting only"
+  - "POST /api/jobs/<id>/requeue {confirm:true, actor} — terminal states only"
+queue_manager_change:
+  file: /home/tony/ansible/queue/queue_manager.py (idc02 — untracked ansible checkout, no remote)
+  patch: stacks/services/gpu-dispatch-webui/queue_manager-cancel.patch
+  adds:
+    - "QueueManager.cancel_job(job_id, actor) — atomic Lua check-and-cancel for queued/waiting jobs; LREM from queue:jobs:{pri}, HSET status=cancelled + cancelled_at/by, release_reservation, queue:events publish; refuses processing (409-equivalent) and terminal states"
+    - "CLI: queue_manager.py cancel <job_id> [--actor]"
+verified_live:
+  - "GET /api/state 200 — 6 sidecar hosts (omen gpu_count=1), scheduler+sidecar units active, queue stats match CLI"
+  - "POST /api/jobs without confirm -> 400 confirmation required"
+  - "POST /api/jobs webui-test-001 (require-tag no-such-tag-webui) -> enqueued p9; scheduler backpressure kept it waiting; visible in /api/state (total_queued=1)"
+  - "POST /api/jobs/webui-test-001/cancel -> ok, previous_status=waiting, queue_entries_removed=1"
+  - "POST requeue on cancelled job -> ok, back to waiting; second cancel -> ok"
+  - "POST cancel on completed gpu-rsv2-b -> 409 terminal"
+  - "final queue state identical to baseline: queued 0 / processing 0 / completed 3 / failed 1 / dlq 0; queue:jobs:* lists empty"
+  - "audit.jsonl has all 5 mutation entries; Redis queue:audit mirror populated"
+known_limits:
+  - "cancel only works pre-dispatch; processing jobs own a container on a remote host (UI refuses, CLI/runtime owns it)"
+  - "requeue of dead_letter leaves id in queue:dlq list — same semantics as existing CLI requeue"
+  - "no auth — tailnet is the trust boundary (same as gpu-queue :3001); do not expose beyond tailnet without adding auth"
+  - "queue_manager.py lives in an untracked ansible checkout on idc02 — the .patch file in this dir is the reviewable record; a sibling dispatch (gpu-timeslot-reservations) was editing the same files concurrently"
+rollback: >-
+  systemctl --user disable --now gpu-dispatch-webui on idc02; rm -rf
+  /home/tony/ansible/webui; apply queue_manager-cancel.patch in reverse
+  (or restore /tmp/ansible-queue-backup-20261125-webui.tgz on idc02).
