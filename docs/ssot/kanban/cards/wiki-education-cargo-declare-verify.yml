@@ -1,7 +1,7 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
 column: doing
-updated: 2026-11-25 15:38
+updated: 2026-11-25 15:39
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
 priority: low
@@ -98,6 +98,10 @@ comms:
     pending; DO-NOT-START honoured, no wiki writes. Template แม่แบบ:Education clean at revid 483; Education:Ada-Ocb-Skills
     live via /lesson source=wiki. Trail: BLOCKED entry in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml
     + dispatch-outcome doc. Re-dispatch af'
+- at: 2026-11-25 15:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-153507-do-not-start-until-python3-scr no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -105,5 +109,7 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 15:39
 claim:
   since: 2026-11-25 15:34
