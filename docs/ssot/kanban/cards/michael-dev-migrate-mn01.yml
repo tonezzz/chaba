@@ -1,7 +1,7 @@
 id: michael-dev-migrate-mn01
 title: Migrate michael-dev HA instance from idc02:8124 to mn01
 column: doing
-updated: 2026-11-25 07:57
+updated: 2026-11-25 08:17
 brief: 'Tony 2026-11-09: move michael-dev to mn01 (currently on idc02 since 2026-10-26 migration).'
 priority: medium
 tags:
@@ -206,6 +206,13 @@ comms:
     tailscale serve :8124 on idc02 is currently GONE — https://idc02...:8124 is dead; only http://idc02...:8124
     (tailnet-IP publish) works, so michael-dev.surf-thailand.com + /apps/ha/mn-ha-dev* redirects are broken NOW.
     Plan: rsync config to mn01 (same podman bridge 10.88.0.0/16, truste'
+- at: 2026-11-25 08:17
+  from: devin
+  text: 'DONE: mn-ha-dev moved idc02 -> mn01. Verified: https://mn01.taila0626a.ts.net:8124 = 200 (real HTTPS via
+    tailscale serve), /tony-test = 200, MCP ha-mcp 9.2.0 on mn01:9585, mha-state-push mirroring 60 entities, edge
+    michael-dev.surf-thailand.com repointed (CF-gated), /apps/ha/* redirects on idc02 web + mn01 caddy -> mn01,
+    mcp_config.json x3 hosts -> mn01:9585. idc02 parked: mn-ha-dev masked + mha-state-push disabled, config intact
+    24h rollback. GOTCHA: quadlet must NOT PublishPort tailnet-IP :812'
 action:
   type: dispatch
   status: running
