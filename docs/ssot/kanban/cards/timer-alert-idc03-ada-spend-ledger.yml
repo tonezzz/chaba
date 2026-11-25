@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-spend-ledger
 title: Timer ada-spend-ledger on idc03 failing
 column: backlog
-updated: 2026-11-25 17:38
+updated: 2026-11-25 17:43
 priority: high
 tags:
 - timer-alert
@@ -53,6 +53,11 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:43
+  from: tony
+  text: '2026-11-25: blocked for the same reason — EnvironmentFile ~/.config/secrets/ada-ha-tony.env missing on
+    idc03; last successful run was 11-23. Script itself is present and healthy. Needs the env file restored or the
+    unit retired.'
 spec: Investigate the failure of the `ada-spend-ledger.service` timer on host idc03, which recently resulted in
   a resource-related error. Inspect the systemd user journal using `journalctl --user -u ada-spend-ledger.service`
   on idc03 and cross-reference the CMS `timer-timeline-idc03` for context. The done-condition is verified when the
