@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
 column: doing
-updated: 2026-11-25 14:32
+updated: 2026-11-25 14:45
 priority: medium
 tags:
 - mddb
@@ -209,6 +209,12 @@ comms:
   text: 'attempt 2: prior run server-side reindex done + merged-claim unverifiable (deliverables absent from origin/master).
     Tony answered request=proceed -> executing keyword-only declaration for meta-only docs + re-declaring cms-plane
     reindex job/warm-ping. Verifying :11027 stats first.'
+- at: 2026-11-25 14:45
+  from: devin
+  text: 'progress: decomposed the gap live — 83 meta-only stubs (empty contentMd, can never embed) vs real drops.
+    Stamped meta search_mode=keyword on all 83 via PATCH /v1/update (scripts/mddb/mark-keyword-only.py, idempotent).
+    infra-ssot had 147 real missing vectors — non-force reindex running now (8878->8894+). Declared+rendered: embed-pool-warm
+    (idc03 4m, scripts/embed/embed-pool-warm.py) + mddb-cms-vector-reindex (con01 daily :11027). Job record: docs/ssot/jobs/mddb/2026-11-25-embed-coverage-gap-close'
 action:
   type: dispatch
   status: running
