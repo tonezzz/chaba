@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
 column: backlog
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:01
 priority: high
 tags:
 - timer-alert
@@ -1837,6 +1837,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: '2026-11-25 19:00 (+07): RESOLVED by retirement — wp-cam-snapshot.service is MASKED on tony-dell (~/.config/systemd/user/wp-cam-snapshot.service
+    -> /dev/null since 11-24), timer inactive, so no further sentinel alerts. Rerun refused with ''Unit is masked'';
+    last real run had 0 ok / 8 fail (empty frame from all 8 cams; ip_cam_65 HTTP 000). Underlying camera failure
+    tracked in go2rtc-empty-frames-all-cams. Closing this timer-alert card.'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining
