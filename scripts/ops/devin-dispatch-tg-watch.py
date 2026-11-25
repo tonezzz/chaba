@@ -226,7 +226,12 @@ def save_state(st: dict) -> None:
                 key=lambda kv: (kv[1] or {}).get("ts", ""))
             st["jobs"] = dict(items[-MAX_STATE:])
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(st))
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(st))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(STATE)
     except OSError as e:
         print(f"devin-dispatch-tg-watch: state write failed: {e}",
               file=sys.stderr)

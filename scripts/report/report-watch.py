@@ -81,7 +81,12 @@ def load_state() -> dict:
 
 def save_state(state: dict):
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(state, indent=2))
+    tmp = STATE.with_name(STATE.name + ".tmp")
+    with tmp.open("w") as f:
+        f.write(json.dumps(state, indent=2))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(STATE)
 
 
 def slug(node_id: str) -> str:

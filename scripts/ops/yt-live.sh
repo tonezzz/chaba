@@ -223,7 +223,12 @@ try:
 except Exception:
     m = {}
 m["voice"] = os.environ["FINAL_VOICE"]
-json.dump(m, open(sys.argv[1], "w"), ensure_ascii=False)
+_tmp = sys.argv[1] + ".tmp"
+with open(_tmp, "w") as _f:
+    json.dump(m, _f, ensure_ascii=False)
+    _f.flush()
+    os.fsync(_f.fileno())
+os.replace(_tmp, sys.argv[1])
 PY
   fi
   # validate: every playlist has ENDLIST and all its segments actually copied
@@ -670,7 +675,12 @@ m = {"vid": g("VID"), "title": g("TITLE"),
 if g("VOICE_REQ") not in (None, "", "off"):
     m["voice"] = g("VOICE_REQ")   # requested variant; __finalize rewrites
                                 # to "off" if the dub never lands
-json.dump(m, open(sys.argv[1], "w"), ensure_ascii=False)
+_tmp = sys.argv[1] + ".tmp"
+with open(_tmp, "w") as _f:
+    json.dump(m, _f, ensure_ascii=False)
+    _f.flush()
+    os.fsync(_f.fileno())
+os.replace(_tmp, sys.argv[1])
 PY
   mkdir -p "$MEDIA_CACHE"
   setsid "$0" __finalize "$MEDIA_CACHE/$CACHE_KEY" "$GEN_TOKEN" "$VOICE" \
