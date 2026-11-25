@@ -1314,11 +1314,10 @@ def main():
     adir = card_dir / "archive"
     if adir.is_dir():
         for p in sorted(adir.glob("*.yml")):
-            c = yaml.load(p.read_text(), Loader=_rb._YAML_LOADER)
-            if not isinstance(c, dict):
-                c = {}
-            c.setdefault("id", p.stem)
-            archive_cards.append(c)
+            archive_cards.append(_rb._load_card_file(p))
+    # persist the parse cache BEFORE compute_checks stamps 'checks' on
+    # the card dicts — the cache must hold pristine parses only
+    _rb._flush_cards_cache()
     archive_cards.sort(
         key=lambda c: str(c.get("updated") or ""), reverse=True)
     rank = {"high": 0, "medium": 1, "low": 3}
