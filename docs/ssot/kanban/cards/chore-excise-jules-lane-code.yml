@@ -1,7 +1,7 @@
 id: chore-excise-jules-lane-code
 title: Excise retired jules lane code from runner-agent/dispatch/board-api
-column: doing
-updated: 2026-11-25 16:01
+column: review
+updated: 2026-11-25 16:03
 ref: OPS-0026
 comms:
 - at: 2026-11-20 18:38
@@ -177,6 +177,26 @@ comms:
     tombstone, kanban-dispatch remote-lane tuples, board-api selftest strings, lane-savings sets, stale comments
     in repo-lint/fleet-health/onboard/skill, live KB docs; contract test now asserts lane stays excised; dispatch_repos
     manifest pin bumped. Verified: contract tests 15/15, board-api '
+- at: 2026-11-25 16:03
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ull details in `dispatch-outcome-20261125-154043-goal-is-to-excise-retired-jule.md`.
+    | devin-task-20261125-154043'
+- at: 2026-11-25 16:03
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:03
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-154043-goal-is-to-excise-retired-jule
+    is 66 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 16:03
+  from: chaba
+  text: pushed dispatch/20261125-154043-goal-is-to-excise-retired-jule to origin
+- at: 2026-11-25 16:03
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:03
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-dispatch.py, dispatch_repos.py, board-api.py,
   and ssot.devnest-lanes.yml in the chaba repo, including associated tests and deployment. Host is tony-dell or
   idc02 where the installed runner-agent drifted from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
@@ -185,11 +205,15 @@ spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-d
   are removed from the codebase and the redeployed runner-agent passes tests.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ull details in `dispatch-outcome-20261125-154043-goal-is-to-excise-retired-jule.md`. | devin-task-20261125-154043-goal-is-to-excise-retired-jule.service:
+    Consumed 12min 3.586s CPU time over 21min 20.756s wall clock time, 764.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 15:39
+review_kind: verify
