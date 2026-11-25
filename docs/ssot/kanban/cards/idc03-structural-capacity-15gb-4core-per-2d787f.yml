@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: doing
-updated: 2026-11-25 09:24
+updated: 2026-11-25 09:39
 priority: medium
 tags:
 - idc03
@@ -220,6 +220,13 @@ comms:
     ada-dev+ada-kk-dev now stopped+disabled (~656MB reclaimed). Scenario units smoke/cms/reports/research repointed
     to ws://100.75.102.88:8005. kk-dev had zero consumers. (2) board-api restarted fresh (2.07GB->34MB) + MemoryHigh=1600M/MemoryMax=2200M
     drop-in; root-cause fix (14MB car'
+- at: 2026-11-25 09:39
+  from: devin
+  text: 'DONE — non-spend options implemented, done-condition met. idc03 MemAvailable 4.4Gi->6.5Gi (>=4GB), no resize
+    needed (decision documented). (1) Twin migration COMPLETED: omen ada-dev/ada-kk-dev were localhost-bound + broken
+    venv shebangs since 11-18 — rebound to tailnet IP, fixed, verified; idc03 twins stopped+disabled (~656MB); scenario
+    units smoke/cms/reports/research + LINE_NAME_BACKENDS repointed to omen. (2) Found+fixed provider-gate: ExecCondition
+    required local ada-dev active — added --liv'
 action:
   type: dispatch
   status: running
