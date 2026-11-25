@@ -83,20 +83,21 @@ sources:
 not_found:
   - docs/ssot/jobs/ops/2026-11-03-ops1037-command-efficiency-apply.yml
   - docs/ssot/jobs/models/2026-11-03-kk-ltx23-gpu-format-audit.yml
-  detail: >
-    Searched every chaba worktree on tony-macbook (git status + git
-    log --all --diff-filter=A), full filesystem find under
-    ~/CascadeProjects and ~, plus idc02/idc03/tony-dell/tony-omen/
-    mn01/con01 ~/CascadeProjects — file exists nowhere reachable and
-    is in no commit in the macbook object store. Owning worktrees
-    were likely cleaned before the audit snapshot. Conscious discard:
-    nothing to land; if the records matter they must be regenerated.
+detail: >
+  Searched every chaba worktree on tony-macbook (git status + git
+  log --all --diff-filter=A), full filesystem find under
+  ~/CascadeProjects and ~, plus idc02/idc03/tony-dell/tony-omen/
+  mn01/con01 ~/CascadeProjects — file exists nowhere reachable and
+  is in no commit in the macbook object store. Owning worktrees
+  were likely cleaned before the audit snapshot. Conscious discard:
+  nothing to land; if the records matter they must be regenerated.
 
 verification:
   - python3 -m pytest tests/devnest/test_opencode_profiles.py → 89 passed
   - python3 -m pytest tests/colab/test_pack_preflight.py → 36 passed
   - pytest tests/colab/test_kk_mac_* test_pdf_image_audit test_kk_voice_clone_probe test_plan_compiler → 34 passed
-  - tests/devnest/test_lane_gate.py: 58 passed, 1 PRE-EXISTING master
+  - >
+    tests/devnest/test_lane_gate.py: 58 passed, 1 PRE-EXISTING master
     failure (Admit.test_s1_requires_opencode_lanes_env — reproduces on
     clean origin/master, unrelated to this salvage)
   - python3 -c yaml.safe_load on edited ssot.procedures.yml + pack.yml → OK
