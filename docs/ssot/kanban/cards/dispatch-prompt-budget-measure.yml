@@ -1,7 +1,7 @@
 id: dispatch-prompt-budget-measure
 title: 'Dispatch session bloat: measure per-session prompt-token drivers and propose caps'
 column: doing
-updated: 2026-11-25 09:38
+updated: 2026-11-25 10:07
 brief: DEV-0044 lever 4. Avg dispatch session ~4.4M prompt tokens, top decile 10-17M, 97% cached — burn scales with
   turns x context size. Nothing measures the drivers yet.
 priority: medium
@@ -93,5 +93,12 @@ comms:
 - at: 2026-11-25 09:38
   from: devin
   text: 'started: pulling 30d fleet usage + joining task dirs for driver analysis'
+- at: 2026-11-25 10:07
+  from: devin
+  text: 'DONE (read-only). 30d fleet: 494 sessions / 1.89B prompt tokens / 26.3k steps (idc01 unreachable; idc03=0
+    in-window — Nov dispatches rate-limit-died pre-transcript; 62 zero-metric). Driver: steps r=+0.96 — spec/primer/prompt.txt
+    all r<0.15. Fixed per-step context floor 22-32k tok/step = ~36% of burn. Top decile = long sessions (steps p50=112).
+    Non-landing outcomes ~19% of sampled tokens. Proposals: step-budget gate (>100 steps excess 84.7M/30d=4.5%),
+    dispatch-lite context profile (-20KB ~140M/30'
 claim:
   since: 2026-11-25 09:33
