@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ansible-audit-board
 title: Timer ansible-audit-board on idc02 failing
 column: backlog
-updated: 2026-11-26 06:43
+updated: 2026-11-26 06:44
 priority: high
 tags:
 - timer-alert
@@ -42,3 +42,7 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:44
+  from: devin
+  text: '[still suspicious] Last run (11-26 06:31) of `ansible-audit-board.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u ansible-audit-board.service` on the host. See CMS `timer-timeline-idc02`.'
