@@ -1,7 +1,7 @@
 id: session-capture-d1-metrics
 title: 'Session capture D.1: repeat-ask/miss/stale-pointer metrics'
-column: doing
-updated: 2026-11-25 14:47
+column: done
+updated: 2026-11-25 14:54
 priority: medium
 tags:
 - dev-0038-followup
@@ -237,9 +237,19 @@ comms:
     Phase D Refresh thresholds in ssot.knowledge-capture.yml. Acceptance met (read-only, thresholds recorded, no
     fake events). No code changes needed; outcome doc committed on dispatch branch. Note: repeat-asks register still
     34d stale (>14d threshold) — flagged for next sweep adju'
+- at: 2026-11-25 14:54
+  from: chaba
+  text: 'merge-sweep: merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-144508-goal-measure-repeat-ask-miss-r.md)
+    — auto-closed'
+- at: 2026-11-25 14:54
+  from: local
+  text: 'pub milestone: card verified: session-capture-d1-metrics on idc03 — merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r
+    from tony-omen) -> origin/master — verified — a — merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r
+    from tony-omen) -> origin/master — verified — auto-closed [evt-1b203bf01146e8d5]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -251,10 +261,11 @@ action:
     | devin-task-20261125-052707-goal-measure-repeat-ask-miss-r.service: Consumed 15.280s CPU time over 1min 18.253s
     wall clock time, 478.1M memory peak.'
   runner: tony-omen
+  verified: true
 claim:
   since: 2026-11-25 14:43
 review_kind: verify
 auto_close:
   by: merge-sweep
-  at: 2026-11-25 12:39
-  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-052707-goal-measure-repeat-ask-miss-r.md
+  at: 2026-11-25 14:54
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-144508-goal-measure-repeat-ask-miss-r.md
