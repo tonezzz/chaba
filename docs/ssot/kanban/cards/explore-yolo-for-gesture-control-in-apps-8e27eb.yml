@@ -1,7 +1,7 @@
 id: explore-yolo-for-gesture-control-in-apps-8e27eb
 title: Explore YOLO for gesture control in /apps/eye/
-column: doing
-updated: 2026-11-25 19:37
+column: backlog
+updated: 2026-11-25 19:51
 priority: medium
 note: Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime Web/WebGPU) for hand gesture detection on
   /apps/eye/
@@ -94,6 +94,10 @@ comms:
   from: devin
   text: claimed — exploring /apps/eye (MediaPipe ObjectDetector today); evaluating ONNX Runtime Web/WebGPU + YOLO
     gesture model
+- at: 2026-11-25 19:51
+  from: mn01
+  text: 'finished (failed): exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''.
+    | devin-task-20261125-1236 — auto-retry queued (attempt 2/2) (column -> backlog)'
 spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/WebGPU for hand gesture detection
   within the /apps/eye/ project of the chaba repository. The work must be performed on host tony-dell. Constraints
   include ensuring all dependencies are compatible with the existing browser-based stack and maintaining local execution
@@ -102,11 +106,15 @@ spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/W
   of performance compared to MediaPipe.
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: mn01
   attempts: 1
+  result: 'exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''. | devin-task-20261125-123658-evaluate-replacing-mediapipe-w.service:
+    Consumed 1min 30.560s CPU time over 14min 37.652s wall clock time, 2.5G memory peak.'
+  last_failure: 'exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''.
+    | devin-task-20261125-123658-evaluate-replacing-mediapipe-w.service: Consumed 1min 30.560s CPU time over 14min
+    37.652s wall clock time, 2.5G memory peak.'
 claim:
   since: 2026-11-25 19:35
