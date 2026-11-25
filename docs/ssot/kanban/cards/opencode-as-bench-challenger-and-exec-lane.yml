@@ -1,7 +1,7 @@
 id: opencode-as-bench-challenger-and-exec-lane
 title: Try opencode CLI as edu-manage bench challenger + exec lane once re-graduated
 column: doing
-updated: 2026-11-25 07:56
+updated: 2026-11-25 08:32
 priority: medium
 program: devnest
 tags:
@@ -211,6 +211,13 @@ comms:
     session continuation, token events all work; minimal deny-all OPENCODE_CONFIG so the agent is text-only). Part
     (b): verified idc02 stage.json — lane is at S1 (promoted 2026-11-23T13:15Z by lane_gate), not S0 as the card
     text says; re-graduation continues under opencode-lane-reg'
+- at: 2026-11-25 08:32
+  from: devin
+  text: 'DONE. (a) OpencodeLane shipped in scripts/bench-edu-manage.py (commit 89f5b45 on dispatch branch): text-protocol
+    tool loop over `opencode run --standalone` on idc02, deny-all-tools agent config, same MockStore/scorers as
+    other lanes; flags --lanes opencode --opencode-model/--opencode-host/--opencode-timeout. 14 unit tests pass.
+    Full 13-task bench on opencode/big-pickle (Zen free): F1=0.889, dedupe 3/5, ops 5/5, recall 2/3, draft-Q 4.8,
+    11/13 completed, p50 47.3s — reports/bench-edu-manage-2026-1'
 action:
   type: dispatch
   status: running
