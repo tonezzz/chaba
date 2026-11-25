@@ -42,7 +42,7 @@ def _expired(key: str, cutoff: int) -> bool:
 def main() -> int:
     dry = "--dry-run" in sys.argv
     cutoff = int(time.time()) - DAYS * 86400
-    skip, deleted, scanned = 0, 0, 0
+    skip, deleted, scanned, expired = 0, 0, 0, 0
     while True:
         page = _post("/search", {"collection": COLLECTION, "query": "",
                                  "limit": PAGE, "offset": skip})
@@ -50,6 +50,7 @@ def main() -> int:
             break
         scanned += len(page)
         old = [d for d in page if _expired(d["key"], cutoff)]
+        expired += len(old)
         kept = len(page) - len(old)
         if dry:
             deleted += len(old)
@@ -69,7 +70,8 @@ def main() -> int:
         # deleting shifts later docs left — advance only past kept docs
         skip += kept
     verb = "would delete" if dry else "deleted"
-    print(f"{COLLECTION}: {verb} {deleted}/{scanned} (>{DAYS}d on key ts)")
+    print(f"{COLLECTION}: expired {expired}, {verb} {deleted}/{scanned} "
+          f"(>{DAYS}d on key ts)")
     return 0
 
 
