@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
 column: backlog
-updated: 2026-11-25 17:50
+updated: 2026-11-25 19:06
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -216,6 +216,10 @@ comms:
 - at: 2026-11-25 17:50
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
+- at: 2026-11-25 19:06
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: queued
