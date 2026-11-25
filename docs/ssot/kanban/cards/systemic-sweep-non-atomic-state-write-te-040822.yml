@@ -1,7 +1,7 @@
 id: systemic-sweep-non-atomic-state-write-te-040822
 title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
-column: doing
-updated: 2026-11-25 16:22
+column: review
+updated: 2026-11-25 16:27
 priority: low
 tags:
 - ops
@@ -96,12 +96,45 @@ comms:
     landed via CLI auto-commit 3a23f9c9769 at compaction; 77 files uncommitted in worktree). Covered ops/report/litellm/audits/cam-wall/ada/board/devnest/colab/adobe-stock/home-assistant/root.
     Notable: job-dispatcher flock moved to .lock sibling (replace would orphan inode); HA .storage writes + token/credential
     files included. Skipped: one-shot report/bench/taskdir artifacts + append-only .jsonl.'
+- at: 2026-11-25 16:27
+  from: tony-dell
+  text: 'finished (ok): exit=0 with a `lessons:` list, and final comms posted to the card. | devin-task-20261125-151847-convert-every-remaining-'
+- at: 2026-11-25 16:27
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 16:27
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-151847-convert-every-remaining-state-
+    is 235 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 16:27
+  from: chaba
+  text: banked 3 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:27
+  from: chaba
+  text: pushed dispatch/20261125-151847-convert-every-remaining-state- to origin
+- at: 2026-11-25 16:27
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 16:27
+  from: chaba
+  text: auto-merged aee363a6 (dispatch/20261125-151847-convert-every-remaining-state-) → origin/master
+- at: 2026-11-25 16:27
+  from: chaba
+  text: 'worktree kept: dirty — 79 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 with a `lessons:` list, and final comms posted to the card. | devin-task-20261125-151847-convert-every-remaining-state-.service:
+    Consumed 1min 59.099s CPU time over 1h 6min 14.153s wall clock time, 975.9M memory peak, 586M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 15:17
+review_kind: verify
