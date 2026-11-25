@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
-column: review
-updated: 2026-11-25 11:11
+column: done
+updated: 2026-11-25 11:20
 priority: medium
 tags:
 - ops
@@ -301,6 +301,14 @@ comms:
   text: 'NOTE 2026-11-25: comments added earlier today about Cargo/Plesk/wiki credentials were misdirected here
     because ref OPS-0038 was reused. They belong on wiki-education-cargo-table-setup (now OPS-1322). Please ignore
     them for this card.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as c27fcedd8814
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: stagger idc03 timer herd (fd695d5, 33 files). Closing.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: closed by tony
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
