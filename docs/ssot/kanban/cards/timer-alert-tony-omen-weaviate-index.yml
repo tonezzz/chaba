@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-weaviate-index
 title: Timer weaviate-index on tony-omen failing
 column: backlog
-updated: 2026-11-25 17:43
+updated: 2026-11-25 19:07
 priority: high
 tags:
 - timer-alert
@@ -1454,6 +1454,13 @@ comms:
   text: '2026-11-25: code fix applied — auto-index.mjs used Node execAsync with default 1MB stdout buffer and died
     on ERR_CHILD_PROCESS_STDIO_MAXBUFFER after a full SSOT rebuild. Added maxBuffer=256MB (host backup auto-index.mjs.bak-20261125).
     Rerun started 16:49 and is still indexing; embedder+Weaviate sockets healthy.'
+- at: 2026-11-25 19:07
+  from: tony
+  text: '2026-11-25 19:04 (+07): ROOT CAUSE FIXED — auto-index.mjs exec() had its own 3600000ms (1h) cap, which
+    killed the child at 01:00:01 even though the unit''s TimeoutStartSec override is 3h (memory peak only 113MB,
+    so not OOM). Raised exec timeout to 10800000ms, kept the 256MB maxBuffer; patched live tony-omen (backup .bak-20261125)
+    and repo (commit 7a6e7e8388). Restarted weaviate-index.service at 19:03:36 +07 and it is activating/running.
+    Leaving card open until the full SSOT rebuild reports succes'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `weaviate-index.service` on the host `tony-omen`. Run `journalctl
