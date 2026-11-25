@@ -149,6 +149,34 @@ google_ai_pro:
     subscription quota. Consumer-side benefits now in use: 5 TB storage,
     higher NotebookLM limits (nlm/notebooklm MCP, devin-extract-sessions).
 
+gemini_project_isolation:
+  verified: "2026-11-24"
+  method: >-
+    Read-only quota-project membership oracle (card llm-provider-verification-2026-11,
+    OPS-0018 step 4). For each key, GET /v1beta/models with x-goog-user-project set
+    to a candidate project: 200 means the key's owning project may use that project,
+    403 means a different existing project, 400 means no such project. Confirmed on a
+    second endpoint (:countTokens). Key values were never printed. Re-run with
+    scripts/ops/gemini-project-verify.py. Successful responses, 404s and 429s from
+    the Gemini API itself carry NO project number — the earlier "error body names
+    the project" guidance in ssot.secrets.yml was stale.
+  map:
+    GEMINI_API_KEY_PAID: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_TONY: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_KK: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_MICHAEL: {project: gen-lang-client-0722326417, tier: free}
+    GEMINI_API_KEY_F6Pg_ops_archived: {project: gen-lang-client-0694401188, project_number: "517766007004", tier: paid, status: archived-2026-11-18}
+  verdict: >-
+    NOT isolated. PAID, TONY and KK share one GCP project — one quota bucket, one
+    spend cap, one billing outage domain. Only Michael (free-tier) and the archived
+    ops key are in different projects. Per-persona keys are credential separation,
+    not billing/quota redundancy.
+  implications:
+    - "Keep a non-Gemini leg (OpenRouter/Ollama) as the real failover in every critical chain."
+    - "A hard $10/mo cap in AI Studio must be set per project; setting it once does not cap the other projects."
+    - "A 429/RESOURCE_EXHAUSTED or billing latch on the shared project hits Tony, KK and the pooled gateway upstream together."
+    - "Do not promote a Live voice primary on the assumption that persona keys give independent quota."
+
 # canonical routing table — mirrors stacks/idc03/litellm/config.yaml
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
