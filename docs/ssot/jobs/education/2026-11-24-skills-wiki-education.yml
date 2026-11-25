@@ -67,6 +67,7 @@ verify:
   - "DONE 2026-11-24: used skill-creator (installed from anthropics/claude-plugins-official) to capture the wiki-education-publish skill from session history; PR #210 merged; 2 simulated eval cases x 3 assertions passed inline (baselines skipped: subagent model rate limits); static viewer at /tmp/opencode/wiki-education-publish-review.html; human review approved."
   - "DONE 2026-11-24: republished Education:Ada-Ocb-Skills with the new wiki-education-publish row -> revid 501 (event skills-wiki-export-2026-11-24-r4); /lesson op=get source=wiki confirms the skill and 13-skill count."
   - "DONE 2026-11-24: EDU_SOURCE=wiki education-report on idc03 -> 220 lessons, 205 flagged, compliance 0.7390, drift 16/40, due 164, verify=pass, holds=1; lesson-d8b6938588d3 (ada-ocb-skills) present in latest.md/json. Its source-gone flags for tests/test_agents_skills_explored.py and docs/kb/ada-ocb-skills-education.md are expected until this branch merges into the idc03 checkout."
+  - "DONE 2026-11-25: KNB-0039 closed — repaired docs/ssot/jobs/board/2026-11-24-worktree-artifact-salvage.yml (PR #213, 9a6a1a9c3f); node scripts/ssot-validate-all.mjs -> 6388 files, 0 errors."
 
 polish_attempt:
   date: 2026-11-24
@@ -86,6 +87,5 @@ polish_attempt:
     left behind.
 
 remaining:
-  - "CARD OPS-0038 (wiki-education-cargo-table-setup): wiki host needs Cargo table setup/maintenance first (see polish_attempt); retry the declare/store only after the table exists."
-  - "CARD KNB-0039 (ssot-validation-errors-cleanup): 5 pre-existing SSOT validation errors; unrelated uncommitted worktree files stay with their owners."
+  - "CARD OPS-0038 (wiki-education-cargo-table-setup): BLOCKED — Cargo installed but action=cargotables returns [] after page saves/purge; table creation needs Plesk/admin host maintenance, unreachable via board-api /wiki/page or available MCP hosts. Comment filed on card 2026-11-25; no half-configured template left live."
   - "No card: routine hub-inventory refresh when a skill is added/removed — the inventory test fails first."
