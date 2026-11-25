@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
 column: backlog
-updated: 2026-11-25 07:50
+updated: 2026-11-25 08:02
 program: infrastructure
 tags:
 - ops
@@ -162,6 +162,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 08:02
+  from: devin
+  text: 'Cross-post from go2rtc-empty-frames-all-cams dispatch: restarted go2rtc-omen.service on omen (was wedged
+    1d12h, frame.jpeg hung >100s). omen_cam now OK (30KB JPEG/1s). Remaining producers still dead for upstream reasons:
+    (1) xiaomi_c100/c201 all variants — xiaomi-token-refresh.service FAILED today 00:00: no valid passToken cookie;
+    Tony must re-login to account.xiaomi.com in Chrome on omen, then the job re-patches yaml+restarts. (2) ip_cam_65
+    — camera 192.168.2.71 still absent from network (no ro'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
