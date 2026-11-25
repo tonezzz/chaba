@@ -1,7 +1,7 @@
 id: ada-tool-voice-request-well-formed-kanba-56ba9f
 title: 'Ada tool: voice request -> well-formed kanban card spec'
 column: doing
-updated: 2026-11-25 15:28
+updated: 2026-11-25 15:36
 ref: ADA-1202
 comms:
 - at: 2026-11-08 13:52
@@ -227,6 +227,13 @@ comms:
   text: 'started: extending kanban tool with action=draft (voice request -> validated card spec) + file accepts
     spec/verify/card_action/queue behind the confirm gate; integration test will drive recorded transcript -> draft
     -> file -> queued card on FakeBoard'
+- at: 2026-11-25 15:36
+  from: devin
+  text: 'done: kanban action=draft (transcript -> validated card spec, no write) + file accepts spec/verify/done_when/tags/card_action/queue
+    validated against the Chaba card schema; queue=true behind the confirm gate. Done-condition met: tests/test_kanban_voice_draft.py
+    drives the recorded transcript fixture through draft->file(confirmed,queue) on FakeBoard -> card lands column=backlog
+    action.status=queued with spec/verify/envelope; scenario kanban_voice_card.yaml also green. tool-lint clean,
+    pytest 1998'
 action:
   type: dispatch
   repo: ada-voice
