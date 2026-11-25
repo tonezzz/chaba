@@ -1,7 +1,7 @@
 id: runner-load-cap-per-claim-type
 title: runner-agent load gate is one-size-fits-all — trivial script probes starve with heavyweight claims
 column: backlog
-updated: 2026-11-25 09:39
+updated: 2026-11-25 09:46
 priority: medium
 tags:
 - runner-agent
@@ -221,6 +221,10 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-092801-the-claim-pass-load-check-5m-l on tony-macbook still
     dirty — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued

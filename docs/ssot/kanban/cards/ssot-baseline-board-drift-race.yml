@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
 column: backlog
-updated: 2026-11-25 09:39
+updated: 2026-11-25 09:46
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -98,6 +98,10 @@ comms:
   from: chaba
   text: 'merge-sweep: fetch tony-macbook:/home/tony/CascadeProjects/dispatch-wt-20261125-092906-observed-2026-11-24-after-pr-2
     HEAD failed — runner down or worktree gone?'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
