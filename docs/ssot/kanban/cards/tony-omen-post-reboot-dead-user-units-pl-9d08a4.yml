@@ -1,8 +1,8 @@
 id: tony-omen-post-reboot-dead-user-units-pl-9d08a4
 title: 'tony-omen post-reboot dead user units: plug-watch, ha-stall-watchdog, playlive-chrome, yolo-detect still
   disabled+inactive'
-column: doing
-updated: 2026-11-25 10:39
+column: review
+updated: 2026-11-25 10:45
 priority: medium
 tags:
 - tony-omen
@@ -85,9 +85,38 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-102233-found-during-system-report-18- on tony-dell still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 10:45
+  from: tony-dell
+  text: 'finished (ok): exit=0 83, and omen''s playlive remote-CDP :9222 path confirmed dead. | devin-task-20261125-102233-found-during-system-re'
+- at: 2026-11-25 10:45
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:45
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-102233-found-during-system-report-18-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 10:45
+  from: chaba
+  text: banked 154 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:45
+  from: chaba
+  text: pushed dispatch/20261125-102233-found-during-system-report-18- to origin
+- at: 2026-11-25 10:45
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:45
+  from: chaba
+  text: auto-merged fa116471 (dispatch/20261125-102233-found-during-system-report-18-) → origin/master
+- at: 2026-11-25 10:45
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
@@ -95,5 +124,9 @@ action:
   sweep:
     stale_running: 2026-11-25 10:39
     dirty: 2
+  result: 'exit=0 83, and omen''s playlive remote-CDP :9222 path confirmed dead. | devin-task-20261125-102233-found-during-system-report-18-.service:
+    Consumed 2min 16.845s CPU time over 15min 27.922s wall clock time, 1.2G memory peak, 567.5M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 10:20
+review_kind: verify
