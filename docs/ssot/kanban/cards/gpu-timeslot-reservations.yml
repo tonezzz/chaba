@@ -1,0 +1,45 @@
+id: gpu-timeslot-reservations
+title: GPU time-slot reservations for shared omen GPU
+column: backlog
+updated: 2026-11-25 20:13
+brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
+  GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
+  on job completion/timeout, and verified with two overlapping GPU jobs.
+priority: medium
+tags:
+- dispatch
+- ops
+- gpu
+spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPATCH.md, GPU-JOBS.md). omen has one
+  GTX 1650 (4GB) shared with bge-rerank.service. Today placement checks GPU count/VRAM/load/memory but has no exclusivity:
+  two jobs can both qualify against the same free VRAM and OOM or thrash.
+
+
+  Scope:
+
+  1. Add reservation fields to JobSpec/Redis job hash (reserve_gpu_window_sec, optional reservation_id).
+
+  2. Add a reservation ledger keyed by host+GPU index with ttl; scheduler must refuse placement while held and create
+  the hold atomically on dispatch.
+
+  3. Release on complete/fail/timeout; expose reservation state in queue_manager stats and gpu_status.py.
+
+  4. Document CLI usage in GPU-JOBS.md and add a test that queues two overlapping GPU jobs and verifies only one
+  runs.
+
+
+  Constraints: keep current priority/fair-share semantics; no new external service; work within Ansible + Redis.
+  Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+comms:
+- at: 2026-11-25 20:13
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-25 20:13
+  from: chaba
+  text: card captured via board-api
+ref: OPS-1407

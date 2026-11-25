@@ -1,0 +1,45 @@
+id: awx-aap-rbac-approval-gates
+title: AWX/AAP integration for RBAC and approval gates
+column: backlog
+updated: 2026-11-25 20:13
+brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
+  and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
+  without breaking the current scheduler.
+priority: low
+tags:
+- dispatch
+- ops
+- awx
+spec: 'Context: /home/tony/ansible — dispatch_job.yml, queue_manager.py, scheduler.py. Today any local user can
+  enqueue via the CLI; there is no per-user authorization or approval step.
+
+
+  Scope:
+
+  1. Survey available AWX/AAP deployment on the fleet (host, version, credentials via secrets, no credentials in
+  cards).
+
+  2. Map queue users/projects to AWX organizations/teams and define which job templates map to dispatch_job.yml.
+
+  3. Define approval gate semantics: who approves, where the signal lands (card request, AWX approval, or Redis
+  field), and how the scheduler observes it before dequeue.
+
+  4. Produce a written decision: adopt with a minimal integration, or stay CLI-only with reasons. If adopted, implement
+  a dry-run-gated path and verify one approved + one rejected job.
+
+
+  Constraints: no new secrets in repo/cards; respect the board-api write door for any card/comment mutation; do
+  not replace the scheduler unless the integration proves necessary.'
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+comms:
+- at: 2026-11-25 20:13
+  from: chaba
+  text: classified as free_lane (kw:evaluate conf 1.00)
+- at: 2026-11-25 20:13
+  from: chaba
+  text: card captured via board-api
+ref: OPS-1408

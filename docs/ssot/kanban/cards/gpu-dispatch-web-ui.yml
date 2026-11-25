@@ -1,0 +1,44 @@
+id: gpu-dispatch-web-ui
+title: Web UI for GPU dispatch queue management
+column: backlog
+updated: 2026-11-25 20:13
+brief: 'Add a small read-mostly web UI for the dispatch queue: per-host GPU capacity, queued/running jobs, priority,
+  and enqueue/cancel controls behind an explicit confirmation. Done when the UI renders live Redis/sidecar data
+  and one job can be enqueued and cancelled through it with audited actions.'
+priority: low
+tags:
+- dispatch
+- ops
+- ui
+spec: 'Context: /home/tony/ansible — gpu_status.py, queue_manager.py, scheduler.py. Operators currently use CLI
+  + journalctl. Goal is a single pane over queue and GPU state.
+
+
+  Scope:
+
+  1. Decide hosting (existing chaba board/apps stack vs a small service on idc02) and document the choice.
+
+  2. Read-only view first: queue stats, per-job status, fleet GPU table from sidecar:* keys, scheduler health.
+
+  3. Mutating controls (enqueue/cancel/requeue) must require confirmation and write an audit record; reuse queue_manager
+  APIs rather than direct Redis writes from the UI.
+
+  4. Verify against live state: display a queued job, enqueue a test job, cancel it, and confirm the queue returns
+  to its prior state.
+
+
+  Constraints: no credentials in the UI code; follow existing project styling and the board-api write door for any
+  card mutations; keep the CLI as the authoritative fallback.'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+comms:
+- at: 2026-11-25 20:13
+  from: chaba
+  text: classified as devin (fallback conf 0.15)
+- at: 2026-11-25 20:13
+  from: chaba
+  text: card captured via board-api
+ref: OPS-1409
