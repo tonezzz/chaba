@@ -1,7 +1,7 @@
 id: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
 title: 'Fixture spec bug: ops-readonly artifact expect.required_keys mismatch'
 column: doing
-updated: 2026-11-25 16:21
+updated: 2026-11-25 16:22
 ref: OPS-1176
 comms:
 - at: 2026-11-08 12:26
@@ -216,6 +216,13 @@ comms:
     <checkout>/scripts/board/runner-agent.py on idc02, idc03, tony-macbook (and tony-dell worktree), all == origin/master
     blob 09cebebf. No scp needed. Fixture fix in flight: added contract.required_keys to ops-readonly fixture task.yaml
     + new tests/devnest/test_ops_readonly_fixture.py pinning required_fields == verifier req == required_keys.'
+- at: 2026-11-25 16:22
+  from: devin
+  text: 'done: (1) fixture spec fixed — ops-readonly task.yaml now carries contract.required_keys (the 12 health-JSON
+    keys, canonical for action.expect.required_keys) + new tests/devnest/test_ops_readonly_fixture.py pins required_keys
+    == required_fields == verify.py req == prompt fields and runs verify() end-to-end (7/7 OK). (2) runner-agent
+    already synchronized — sha256 1514c75c on installed+checkout copies on idc02, idc03, tony-macbook, tony-dell,
+    all == origin/master; no scp needed. Trail: docs/ssot/j'
 spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the chaba repository
   on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
   and needs redeployment via scp. The done-condition is verified when the test suite passes without required_keys
