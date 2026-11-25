@@ -10,13 +10,20 @@ plain 'fail', so all ~34 scenarios x 2 retries burn connects anyway
 (2026-10-11 03:00 run: ~64 billed connect attempts in 6 min while dead).
 
 This gate probes ONCE per scheduled run, before the container starts —
-zero API spend (journal + env-file reads only):
+zero API spend (journal + env-file reads + one loopback health GET):
 
   1. unit live     — target backend unit must be active (else 'infra').
-  2. free lane     — the unit's GEMINI_API_KEY must not be the PAID key
+  2. serves        — is-active is not liveness: 2026-11-02 ada-dev sat
+                     'active' with ZERO journal lines all day (zombie
+                     uvicorn) and the gate waved the suite through —
+                     every scenario then failed in ~0.4s. GET
+                     /api/health must answer ok:true (else 'infra'; a
+                     unit with no resolvable port keeps the
+                     journal-only verdict — relays have no HTTP face).
+  3. free lane     — the unit's GEMINI_API_KEY must not be the PAID key
                      while a FREE lane exists (sha-compare against
                      gemini-keys.env; key material never logged).
-  3. quota-dead    — quota-shaped provider errors in the last --window
+  4. quota-dead    — quota-shaped provider errors in the last --window
                      minutes with no healthy marker newer than the
                      newest error ON THE SAME TRANSPORT (else
                      'skip-quota'). Live-lane dunning (1011/quota close
@@ -324,6 +331,53 @@ def check_unit_active(unit: str) -> tuple[bool, str]:
     return out == "active", out or "unknown"
 
 
+def service_port(unit: str) -> str:
+    """Backend listen port — ADA_PORT in the unit environment first,
+    then --port in ExecStart. Same resolution as ada-voice
+    scripts/deploy-ada.sh service_port(); '' when unresolvable (relays
+    and other non-HTTP units keep the journal-only verdict)."""
+    env = _sh(["systemctl", "--user", "show", unit,
+               "-p", "Environment", "--value"], timeout=8)
+    for tok in env.split():
+        if tok.startswith("ADA_PORT="):
+            port = tok.split("=", 1)[1].strip()
+            if port.isdigit():
+                return port
+    cat = _sh(["systemctl", "--user", "cat", unit], timeout=8)
+    m = re.search(r"--port[= ]+(\d{1,5})", cat)
+    return m.group(1) if m else ""
+
+
+def check_live_probe(unit: str, timeout: float = 4.0,
+                     attempts: int = 2) -> tuple[str, str]:
+    """('ok'|'infra'|'skip', detail) — prove an is-active backend
+    actually serves. systemd 'active' is not liveness: 2026-11-02
+    ada-dev stayed active with zero journal output all day (zombie
+    uvicorn) and every scenario failed in ~0.4s. pwa_server.py exposes
+    unauthenticated GET /api/health (ok:true + active_sessions) — one
+    loopback GET is cheaper than the suite's first failed connect.
+    'skip' = no port resolvable — journal-only verdict stands."""
+    import time
+    port = service_port(unit)
+    if not port:
+        return "skip", f"no ADA_PORT/--port resolvable for {unit}"
+    url = f"http://127.0.0.1:{port}/api/health"
+    last = ""
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as r:
+                body = json.loads(r.read().decode() or "{}")
+            if isinstance(body, dict) and body.get("ok") is True:
+                return "ok", (f"{url} ok:true "
+                              f"(sessions={body.get('active_sessions', '?')})")
+            last = f"{url} answered but ok!=true"
+        except Exception as exc:
+            last = f"{url} {exc}"
+        if attempt < attempts:
+            time.sleep(1.5)
+    return "infra", f"backend not serving ({last}) — zombie unit?"
+
+
 def check_free_lane(unit: str) -> tuple[str, str]:
     """(verdict, detail) — 'ok' | 'paid-lane' | 'unknown'.
     Compares sha256 of the unit's GEMINI_API_KEY against the FREE/PAID
@@ -468,6 +522,12 @@ def main() -> int:
     active, active_detail = check_unit_active(args.unit)
     checks["unit_active"] = f"{args.unit}={active_detail}"
 
+    if active:
+        live, live_detail = check_live_probe(args.unit)
+    else:
+        live, live_detail = "skip", "unit not active — probe skipped"
+    checks["live_probe"] = live_detail
+
     lane, lane_detail = check_free_lane(args.unit)
     paid_card = check_paid_allow(args.paid_allow_file,
                                  args.paid_allow_max_age)
@@ -490,6 +550,9 @@ def main() -> int:
 
     if not active:
         status, reason = "infra", f"target unit {args.unit} is {active_detail}"
+    elif live == "infra":
+        status, reason = "infra", (
+            f"{args.unit} is-active but not serving — {live_detail}")
     elif lane in ("paid-lane", "unknown"):
         # fail-closed: an unmarked key may be a NEW paid key not yet added
         # to gemini-keys.env — a QA skip costs nothing, a wrong guess burns
