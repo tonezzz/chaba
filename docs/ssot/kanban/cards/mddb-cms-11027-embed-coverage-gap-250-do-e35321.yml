@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
 column: doing
-updated: 2026-11-25 10:22
+updated: 2026-11-25 10:42
 priority: medium
 tags:
 - mddb
@@ -98,6 +98,13 @@ comms:
     totalChunks=0. Real re-embeds so far: kb-development +5, chaba-lessons +3. Queue-drop alerting already exists
     (embed-probe per-plane, fired today: cms droppedTotal 1716->1729 at depth 4000/4000). Declared in ssot.jobs.yml
     + rendered units: mddb-cms-vector-reindex (con01 daily :110'
+- at: 2026-11-25 10:42
+  from: devin
+  text: 'DONE (dispatch branch c1beb717d2, outcome doc in worktree). Applied non-force vector-reindex across all
+    12 affected :11027 collections: real re-embeds were only ~8 dropped docs (kb-development +5, chaba-lessons +3)
+    + ada-cms-pages content-churn (200 docs -> 1599/1599); the rest of the ~250 gap is META-ONLY docs-sync stubs
+    with empty contentMd that can never embed — board request raised (recommend keyword-only). infra-ssot sweep
+    still draining server-side (8878+/9025). Declared+rendered: mddb-cms'
 action:
   type: dispatch
   status: running
