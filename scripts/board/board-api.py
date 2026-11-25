@@ -5461,17 +5461,35 @@ CARDS_MAX_LIMIT = 1000
 
 _card_read_cache = {}
 _card_read_lock = threading.Lock()
+_cards_json_cache = {"sig": None, "payload": {}}
+
+
+def _cards_json_payload() -> dict:
+    """cards.json parse cached by file signature. The file is ~14MB and
+    every /cards|/card/*|/queue call used to re-read + re-parse it — the
+    repeated multi-hundred-MB transient allocations were the board-api
+    RSS ratchet on idc03 (card idc03-structural-capacity-15gb-4core)."""
+    try:
+        st = CARDS_JSON.stat()
+    except OSError:
+        return {}
+    sig = (st.st_mtime_ns, st.st_size)
+    if _cards_json_cache["sig"] != sig:
+        try:
+            payload = json.loads(CARDS_JSON.read_text()) or {}
+        except (OSError, ValueError):
+            return {}
+        if not isinstance(payload, dict):
+            payload = {}
+        _cards_json_cache["sig"] = sig
+        _cards_json_cache["payload"] = payload
+    return dict(_cards_json_cache["payload"])
 
 
 def load_cards() -> dict:
     """Current canonical cards with legacy rendered board metadata.
     Unreadable canonical sources fail explicitly, never as stale/empty data."""
-    try:
-        payload = json.loads(CARDS_JSON.read_text()) or {}
-    except (OSError, ValueError):
-        payload = {}
-    if not isinstance(payload, dict):
-        payload = {}
+    payload = _cards_json_payload()
     if not CARD_DIR.is_dir():
         raise OSError("canonical card directory missing")
     with _card_read_lock:
