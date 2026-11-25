@@ -1,7 +1,7 @@
 id: audit-miss-uncommitted-worktree-job-artifacts
 title: Job records and eval artifacts uncommitted in live dispatch worktrees
 column: done
-updated: 2026-11-25 07:49
+updated: 2026-11-25 16:49
 brief: 'Session audit 2026-11-20 (AUD-0973): produced artifacts found only as uncommitted or local-branch files
   in still-existing worktrees; never reached origin/master.'
 priority: medium
@@ -189,6 +189,10 @@ comms:
 - at: 2026-11-25 07:49
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

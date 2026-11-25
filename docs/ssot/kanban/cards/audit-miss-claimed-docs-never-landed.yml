@@ -1,7 +1,7 @@
 id: audit-miss-claimed-docs-never-landed
 title: Claimed reports/KB docs never landed
 column: doing
-updated: 2026-11-25 16:39
+updated: 2026-11-25 16:49
 brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
   on master or any located copy.'
 priority: low
@@ -248,6 +248,13 @@ comms:
   from: chaba
   text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 16:49
+  from: devin
+  text: 'DONE: all three missing docs landed on dispatch branch (commit b7d75781ff4). docs/kb/edge-add-public-host.md
+    written — the edge-add-host procedure really did run 2026-10-07/08 (ha-public-urls-cf-access comms: CF proxied
+    CNAME -> idc02 caddy-edge vhost tls internal -> CF Access app); registry entry was right, body was never committed
+    — reconstructed runbook now matches it. docs/reports/ops0790-rollout-idc03.md reconstructed from card DONE comms
+    (3 timers armed+verified 2026-11-07, embed-lane-news'
 action:
   type: dispatch
   status: running
