@@ -202,6 +202,13 @@ comms:
   text: 'Verified on idc03: units already carry :8005 for research/cms/reports (installed 11-24 21:39, matching
     HEAD 1c56115c5). One quadlet drifted since (smoke.container TimeoutStartSec 7800 landed 21:48). Re-running install.sh
     now to converge.'
+- at: 2026-11-25 07:48
+  from: devin
+  text: 'DONE: install.sh re-ran clean on idc03 (image 4494ce2aac4a, cache hit). Verified: all managed units/quadlets
+    byte-identical to repo HEAD; research/cms/reports on :8005, memory/tools/casting on :8002; smoke.container now
+    TimeoutStartSec=7800 + SCENARIO_BUDGET_S=7000 (commit 9c58d304b3 had landed after the prior 11-24 install);
+    all 10 timers enabled, smoke.timer active. Weekly suites will run on dev lane instead of parking. Outcome doc:
+    dispatch-outcome-20261125-074725-re-run-install-sh-for-ada-sc'
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
   run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
