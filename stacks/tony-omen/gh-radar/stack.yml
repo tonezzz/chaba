@@ -1,0 +1,35 @@
+id: gh-radar
+host: tony-omen
+description: >-
+  Daily GitHub repo news digest (free lane). gh api collector over
+  watchlist.yml groups->repos -> local ollama qwen3:8b (think:false)
+  TL;DR -> reports/<date>.md + iPhone HA notify
+  (mobile_app_tony_ip) + MDDB ada-ha-bank-devin-tony doc + rolling
+  ada-cms-pages wiki page 'gh-radar' via board-api /report.
+  Standalone repo at ~/CascadeProjects/gh-radar (own git, NOT a chaba
+  checkout). systemd --user gh-radar.timer is the authoritative
+  scheduler (daily 07:20, Persistent=true); OpenChamber on tony-dell
+  remains the interactive surface for on-demand leaf reports
+  (bin/gh-radar-leaf.py, manual-only pending Tony review).
+verify: >-
+  systemctl --user list-timers gh-radar.timer | grep -q gh-radar &&
+  ls ~/CascadeProjects/gh-radar/reports/*.md | tail -1
+state:
+  - "~/.config/systemd/user/gh-radar.{service,timer} — installed 2026-11-12"
+  - "~/CascadeProjects/gh-radar/ — collector + watchlist.yml + reports/"
+  - "stacks/tony-omen/gh-radar/watchlist.yml — canonical watchlist seed (this repo)"
+restore: >-
+  Repo lives outside chaba: clone/recreate ~/CascadeProjects/gh-radar on
+  tony-omen, copy stacks/tony-omen/gh-radar/watchlist.yml into it,
+  reinstall gh-radar.service/.timer to ~/.config/systemd/user/,
+  systemctl --user enable --now gh-radar.timer.
+related_cards: [gh-radar]
+status: deployed
+deployed: 2026-11-12
+notes: >-
+  SSOT declaration rides PR tonezzz/chaba#164 (ssot.jobs.yml job +
+  ssot.audit.hosts.yml tony-omen expected_services) — open since
+  2026-11-12, still unmerged at seed time. Watchlist seed authored
+  2026-11-25 from live GitHub data: 5 starred + 30 fork upstreams +
+  11 stack tools = 46 repos in 3 groups. Deploying watchlist.yml into
+  the omen checkout is a follow-up (needs omen access).

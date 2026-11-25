@@ -1,0 +1,64 @@
+# gh-radar watchlist — groups -> repos
+# Canonical seed authored 2026-11-25 (card gh-radar / SYS-0067, dispatch
+# 20261125-205450). Deploy target: ~/CascadeProjects/gh-radar/watchlist.yml
+# on tony-omen (the gh-radar repo is standalone, NOT a chaba checkout —
+# copy this file there to activate; collector format is owner/repo lists
+# per group, matching the 2026-11-12 hand-tuned watchlist this replaces).
+#
+# Sources:
+#   starred        — api.github.com/users/tonezzz/starred (5 repos, live pull)
+#   fork-upstreams — parent.full_name of every tonezzz/* fork (30 forks,
+#                    resolved via api.github.com/repos/tonezzz/<fork>)
+#   stack-tools    — upstreams of tools the Chaba stack actually runs
+#                    (verified against docs/ssot + stacks/ in this repo)
+version: 1
+groups:
+  starred:
+    - nazirlouis/ada_v2
+    - Sompote/Tiger_bot
+    - mythrantic/ollama-docker
+    - openinterpreter/openinterpreter
+    - camenduru/gpt4all-colab
+  fork-upstreams:
+    - nazirlouis/ada-pi              # upstream of tonezzz/ada-voice (active)
+    - tradik/mddb                    # upstream of tonezzz/mddb (active)
+    - kittimasak/GhostRoute          # upstream of tonezzz/GhostRoute
+    - slipx06/sunsynk-power-flow-card
+    - Kalz99/trading-terminal
+    - LongQT-sea/macos-iso-builder
+    - NVIDIA/personaplex
+    - gmh5225/voyant
+    - jyjune/awesome-mcp-servers
+    - jyjune/vmspy
+    - lhl/voicechat2
+    - GongRzhe/YOLO-MCP-Server       # upstream of tonezzz/mcp_yolo
+    - Alex-Lekov/yolov8-fastapi      # upstream of tonezzz/yolov_fastapi
+    - ESP32-Work/Text-Recognition-ESP32-CAM
+    - AliyevH/fastapi-cloud-drives
+    - prateekmaj21/faiss_fastapi_project
+    - mietzen/docker-redsocks-proxy
+    - TransformerOptimus/SuperCoder
+    - pengxiaoo/llama-index-fastapi
+    - darcyg32/Ollama-FastAPI-Integration-Demo
+    - run-llama/llama_index          # upstream of tonezzz/llamaindex
+    - NiklasTiede/fastapi-timescaledb-demo
+    - enesagu/Object_detection_fastAPI_docker
+    - run-llama/chat-llamaindex
+    - omise/banks-logo               # upstream of tonezzz/logo-banks
+    - shashankdeshpande/langchain-chatbot
+    - iamaziz/llm-voice-bot
+    - PyThaiNLP/pythainlp
+    - maximeschoeni/sublanguage
+    - bejranonda/Emergency-Flood-Prediction
+  stack-tools:
+    - ollama/ollama                  # local LLM runtime (omen + fleet lanes)
+    - openchamber/openchamber        # interactive agent surface (tony-dell)
+    - anomalyco/opencode             # free-lane headless engine (sst/opencode redirect)
+    - home-assistant/core            # HA core — voice/PWA/dashboard surface
+    - weaviate/weaviate              # vector DB (chaba_weaviate)
+    - github/github-mcp-server       # GitHub MCP server in agent stacks
+    - modelcontextprotocol/servers   # MCP reference servers
+    - modelcontextprotocol/registry  # MCP registry
+    - erebe/wstunnel                  # tunnel transport (kk-macbook et al.)
+    - esphome/esphome                # ESPHome devices under HA
+    - blakeblackshear/frigate        # NVR — stacks/../frigate + HA integration

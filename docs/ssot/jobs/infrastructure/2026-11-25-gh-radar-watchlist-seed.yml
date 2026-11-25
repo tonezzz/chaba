@@ -1,0 +1,50 @@
+id: gh-radar-watchlist-seed
+title: gh-radar watchlist.yml — canonical groups->repos seed
+date: 2026-11-25
+card: gh-radar
+host: tony_omen
+status: seeded-awaiting-deploy
+
+trigger: >
+  Card gh-radar spec (SYS-0067): "Watchlist: watchlist.yml
+  groups->repos (seeded: 5 starred + upstreams of forks + stack
+  tools). OpenChamber on tony-dell stays interactive surface;
+  systemd timer on omen is authoritative scheduler." Dispatch
+  20261125-205450 ran on tony-macbook inside a chaba worktree —
+  the gh-radar repo itself lives at ~/CascadeProjects/gh-radar on
+  tony-omen (standalone git repo, unreachable from the dispatch
+  sandbox), so the deliverable is the canonical seed + stack
+  declaration in chaba, with deploy-to-omen as the follow-up.
+
+decision:
+  surfaces: >
+    Two surfaces, different roles — recorded so nobody "fixes" the
+    split later. systemd --user gh-radar.timer on tony-omen (daily
+    07:20, Persistent=true, declared in open PR #164) is the
+    AUTHORITATIVE scheduler: unattended daily digest to reports/ +
+    HA iPhone push + MDDB bank doc + ada-cms-pages wiki page.
+    OpenChamber on tony-dell stays the INTERACTIVE surface for
+    on-demand leaf reports (bin/gh-radar-leaf.py, manual-only pending
+    Tony review per 2026-11-12 comms).
+  watchlist_schema: >
+    watchlist.yml is a version:1 map of group -> list of owner/repo
+    strings. Three seed groups: starred (Tony's live GitHub stars),
+    fork-upstreams (parent.full_name of every tonezzz/* fork —
+    watching upstreams, not the forks, so digest tracks real project
+    news), stack-tools (upstreams of tools the Chaba stack runs).
+    Groups are the pruning unit — drop a stale fork's upstream by
+    deleting one line, no schema change.
+
+artifacts:
+  - stacks/tony-omen/gh-radar/watchlist.yml — canonical seed, 46 repos in 3 groups
+  - stacks/tony-omen/gh-radar/stack.yml — stack declaration (units, state, restore)
+
+seed_sources:
+  starred: "api.github.com/users/tonezzz/starred — 5 repos (live, unauthenticated)"
+  fork_upstreams: "api.github.com/repos/tonezzz/<fork> parent.full_name — 30 forks resolved 2026-11-25"
+  stack_tools: "ollama/ollama, openchamber/openchamber, anomalyco/opencode (sst/opencode 301s here), home-assistant/core, weaviate/weaviate, github/github-mcp-server, modelcontextprotocol/{servers,registry}, erebe/wstunnel, esphome/esphome, blakeblackshear/frigate — each verified 200 on api.github.com and tied to repo SSOT/stacks"
+
+follow_ups:
+  - "Deploy: copy stacks/tony-omen/gh-radar/watchlist.yml -> ~/CascadeProjects/gh-radar/watchlist.yml on tony-omen (needs omen access — not doable from dispatch worktree)."
+  - "PR tonezzz/chaba#164 (ssot.jobs.yml job + ssot.audit.hosts.yml tony-omen expected_services for gh-radar.{service,timer}) open since 2026-11-12 — merge or close; stack.yml notes references it."
+  - "If the gh-radar collector wants a different watchlist schema, adapt the seed — groups->repos is the contract, not the YAML shape."
