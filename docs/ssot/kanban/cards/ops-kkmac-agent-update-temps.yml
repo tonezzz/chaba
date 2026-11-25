@@ -1,7 +1,7 @@
 id: ops-kkmac-agent-update-temps
 title: 'kk-mac: update device-telemetry agent (semantic temps)'
-column: review
-updated: 2026-11-25 19:19
+column: done
+updated: 2026-11-25 19:25
 priority: low
 spec: 'kk-mac is offline (ssh timeout). Its launchd beacon still runs the pre-a4504a72 agent (zoneN temp labels,
   no semantic zone names). Also its MDDB latest slot was polluted by tony-dell beacon misconfig (fixed on dell 2026-11-17).
@@ -329,6 +329,11 @@ comms:
 - at: 2026-11-25 19:19
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 19:25
+  from: chaba
+  text: 'merge-sweep: merged 34628674 (dispatch/20261125-191149-kk-mac-is-offline-ssh-timeout- from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-191149-kk-mac-is-offline-ssh-timeout-.md)
+    — auto-closed'
 action:
   type: dispatch
   status: done
@@ -339,7 +344,11 @@ action:
   attempts: 1
   result: 'exit=0 1125-191149-kk-mac-is-offline-ssh-timeout-.md` and a final comms entry posted to the card. | devin-task-20261125-191149-kk-mac-is-offline-ssh-timeout-.service:
     Consumed 15.323s CPU time over 1min 47.587s wall clock time, 700.4M memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 19:10
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 19:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-191149-kk-mac-is-offline-ssh-timeout-.md
