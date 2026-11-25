@@ -1,7 +1,7 @@
 id: ada-session-summary-inflow-stalled
 title: Ada session-summary feed stalled — recall-summary collections get no new docs since early Oct
 column: backlog
-updated: 2026-11-25 14:47
+updated: 2026-11-25 14:48
 spec: 'Found while shipping memory-extract-merge-proposals (2026-11-18): memory-distill.timer runs Sun 09:45 on
   idc03 and exits SUCCESS but reports 0 new session summary docs in every ada-ha-recall-summary-* collection. Verified
   newest docs: ada-ha-recall-summary-tony=2026-10-03, -dev=2026-10-09, -kk=2026-10-13, -ada-dev=empty. Downstream
@@ -129,6 +129,11 @@ comms:
 - at: 2026-11-25 14:47
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 0.85 > 0.7)'
+- at: 2026-11-25 14:48
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
   type: dispatch
   status: queued
