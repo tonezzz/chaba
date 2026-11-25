@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: backlog
-updated: 2026-11-25 14:31
+column: doing
+updated: 2026-11-25 14:47
 priority: medium
 tags:
 - bug
@@ -108,9 +108,16 @@ comms:
 - at: 2026-11-25 14:31
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 14:47
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-25 14:47
