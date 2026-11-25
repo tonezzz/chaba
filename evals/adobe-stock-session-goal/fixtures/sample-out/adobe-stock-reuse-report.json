@@ -1,0 +1,69 @@
+{
+  "goal_id": "adobe-stock-reuse-qc-v1",
+  "campaign_idea": "remote work home office",
+  "campaign_id": "AS-2026-11-05-REMOTE-WORK-001",
+  "report": {
+    "tool": "ada_adobe_stock_reuse",
+    "called_at": "2026-11-25T09:30:00+07:00",
+    "asset_count": 3,
+    "report_ref": "ada_adobe_stock_reuse compact=false (fixture)"
+  },
+  "candidates": [
+    {
+      "asset_id": "comparison-c-omen-sdxl",
+      "decision": "reuse",
+      "reason": "sharp SDXL render with full provenance and live preview",
+      "preview_status": "available",
+      "provenance": {
+        "sha256": "905631838a88e177dac783b4c35ee75b5bead3db15274ec3261c3f5ce5c3750d",
+        "provider": "tony-omen-sd-server",
+        "job_id": "job_6aeea32e_00000001",
+        "source_ref": "AS-2026-11-05-REMOTE-WORK-001/RUN.json",
+        "campaign_id": "AS-2026-11-05-REMOTE-WORK-001"
+      }
+    },
+    {
+      "asset_id": "comparison-d-x4",
+      "decision": "hold",
+      "reason": "upscaled variant pending visual QC per campaign review",
+      "preview_status": "available",
+      "provenance": {
+        "sha256": "5bf3881619178701c1c4b3f6d76b47355e5d9dec4cb3f77544d217a0eca409c5",
+        "provider": "postprocess",
+        "job_id": "local-ncnn",
+        "source_ref": "AS-2026-11-05-REMOTE-WORK-001/RUN.json",
+        "campaign_id": "AS-2026-11-05-REMOTE-WORK-001"
+      }
+    },
+    {
+      "asset_id": "comparison-e-gemini-fix3-region",
+      "decision": "reuse",
+      "reason": "region-fixed gemini render; provenance complete",
+      "preview_status": "available",
+      "provenance": {
+        "sha256": "e519f5e538d890a1625dfc23b5151e7eb7b93eeb1f76d740b286c77c170a74d0",
+        "provider": "gemini-image",
+        "job_id": "gemini-2.5-flash-image",
+        "source_ref": "AS-2026-11-05-REMOTE-WORK-001/RUN.json",
+        "campaign_id": "AS-2026-11-05-REMOTE-WORK-001"
+      }
+    }
+  ],
+  "missing_previews": [],
+  "open_questions": [
+    "comparison-d-x4 is an upscale of comparison-d-omen-sdxl-q8 — confirm dedupe intent before reuse",
+    "report returned a fixture subset (3 of N index assets) — live runs must cover every asset the report returns"
+  ],
+  "policy": {
+    "mutations_performed": [],
+    "cards_created": false,
+    "adobe_upload": false,
+    "generation_requested": false,
+    "licensing_requested": false,
+    "published": false
+  },
+  "no_mutation_receipt": {
+    "statement": "Read-only goal: only ada_adobe_stock_reuse was called; no board, upload, generation, license, or publish action was taken.",
+    "checked_at": "2026-11-25T09:31:00+07:00"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "goal_id": "adobe-stock-reuse-qc-v1",
+  "version": 1,
+  "title": "Adobe Stock reuse QC — read-only Session Goal",
+  "card": "openchamber-session-goals-adobe-stock-qc",
+  "posture": "read-only",
+  "campaign_idea": "remote work home office",
+  "expected_campaign_id_hint": "AS-2026-11-05-REMOTE-WORK-001",
+  "executor": {
+    "kind": "openchamber-session",
+    "surface": "https://ada-ocb.surf-thailand.com (idc02) or equivalent ocb/opencode session",
+    "profile_hint": "ada-ocb (has ada_adobe_stock_reuse MCP tool)"
+  },
+  "allowed_calls": [
+    {
+      "tool": "ada_adobe_stock_reuse",
+      "args": {"campaign_idea": "remote work home office", "compact": false},
+      "min_calls": 1,
+      "max_calls": 2,
+      "note": "one retry allowed on failure; read-only report"
+    }
+  ],
+  "forbidden_actions": [
+    "create kanban cards or any board write",
+    "upload assets to Adobe Stock or any remote",
+    "generate images",
+    "request or grant licenses",
+    "publish reports/pages/posts",
+    "mutate the reuse index or campaign state",
+    "git commit or push",
+    "service restarts"
+  ],
+  "required_artifacts": [
+    "adobe-stock-reuse-report.md",
+    "adobe-stock-reuse-report.json",
+    "run.json"
+  ],
+  "artifact_contract": {
+    "adobe-stock-reuse-report.json": {
+      "required_keys": ["goal_id", "campaign_idea", "campaign_id", "report",
+                        "candidates", "missing_previews", "open_questions",
+                        "policy", "no_mutation_receipt"],
+      "candidate_keys": ["asset_id", "decision", "reason",
+                         "preview_status", "provenance"],
+      "provenance_keys": ["sha256", "provider", "job_id", "source_ref",
+                          "campaign_id"],
+      "decision_enum": ["reuse", "remix", "reject", "hold"],
+      "preview_status_enum": ["available", "thumbnail-only",
+                              "unavailable", "unknown"],
+      "policy_must_be": {
+        "mutations_performed": [],
+        "cards_created": false,
+        "adobe_upload": false,
+        "generation_requested": false,
+        "licensing_requested": false,
+        "published": false
+      }
+    },
+    "run.json": {
+      "required_keys": ["goal_id", "started_at", "finished_at", "turns",
+                        "cost_usd", "artifact_dir", "stop_reason"],
+      "stop_reason_enum": ["acceptance-met"],
+      "stop_reason_prefix_allowed": "blocked:"
+    }
+  },
+  "stop_when": [
+    "reuse MCP report called and captured (report.tool + report.called_at recorded)",
+    "candidates[] covers every asset the report returned, each with provenance copied verbatim",
+    "missing_previews[] and open_questions[] written (empty list is valid)",
+    "policy block clean and no_mutation_receipt present",
+    "run.json records turns, cost_usd (null allowed), and artifact_dir",
+    "final summary emitted — then the session ends; no looping"
+  ],
+  "acceptance": {
+    "verifier": "evals/adobe-stock-session-goal/verify.py <artifact_dir>",
+    "expected_goals_style": [
+      "file-exists adobe-stock-reuse-report.md",
+      "file-exists adobe-stock-reuse-report.json",
+      "file-exists run.json",
+      "command python3 evals/adobe-stock-session-goal/verify.py <artifact_dir>"
+    ],
+    "pass_criteria": "verify.py verdict=pass AND run.json stop_reason=acceptance-met"
+  },
+  "recording": {
+    "required": ["turns", "cost_usd", "final artifact paths", "stop_reason"],
+    "cost_usd_null_allowed": true,
+    "note": "record null rather than estimate when the executor does not meter cost"
+  }
+}

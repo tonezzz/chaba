@@ -1,0 +1,79 @@
+title: OpenChamber Session Goal — read-only Adobe Stock reuse QC (goal definition + verifier)
+id: openchamber-session-goals-adobe-stock-qc
+date: 2026-11-25
+card: openchamber-session-goals-adobe-stock-qc
+program: devnest
+domain: devnest
+status: goal-defined-awaiting-live-run
+summary: >-
+  Defined Session Goal adobe-stock-reuse-qc-v1 for card
+  openchamber-session-goals-adobe-stock-qc: a read-only OpenChamber
+  session goal that inspects the named campaign idea "remote work home
+  office" via one ada_adobe_stock_reuse MCP report call, lists candidate
+  assets with verbatim provenance, flags missing previews and open
+  questions, and must stop once the report, provenance checks,
+  missing-preview list, and no-mutation receipt exist — recording turns,
+  cost, and the final artifact. Hard boundaries: no card creation,
+  uploads, generation, licensing, or publishing. Deliverables live in
+  evals/adobe-stock-session-goal/ (GOAL.md, goal.json, verify.py,
+  README.md, fixtures/sample-out). A live ocb run on idc02 is still
+  needed to exercise the goal end-to-end; this dispatch could not run it
+  (no opencode/ocb executor on mn01).
+
+method: >-
+  Grounded in the existing surfaces: ada_adobe_stock_reuse is the
+  ada-ocb MCP tool (ssot.tools.yml media.adobe_stock_reuse, sig
+  ada_adobe_stock_reuse(campaign_idea,compact)); the output contract
+  reuses the provenance/preview_status/policy vocabulary proven by
+  evals/adobe-stock-multirun (openchamber-multirun-adobe-stock-prompts,
+  OPS-1200). verify.py is a held-out mechanical check in the same style
+  as the multirun verifier but scoped to the goal's stop conditions
+  rather than model quality.
+
+goal_contract:
+  campaign_idea: "remote work home office"
+  expected_campaign_id_hint: AS-2026-11-05-REMOTE-WORK-001
+  allowed_calls:
+    - tool: ada_adobe_stock_reuse
+      args: {campaign_idea: "remote work home office", compact: false}
+      min_calls: 1
+      max_calls: 2
+  forbidden:
+    - kanban card creation / board writes
+    - asset upload, image generation, licensing, publishing
+    - index or campaign mutation, git commit/push, service restarts
+  stop_when:
+    - reuse MCP report called and captured (tool + called_at recorded)
+    - candidates[] covers every report asset with verbatim provenance
+    - missing_previews[] and open_questions[] written (empty list valid)
+    - policy block clean + no_mutation_receipt present
+    - run.json records turns, cost_usd (null allowed), artifact_dir
+    - final summary emitted, then session ends — no looping
+  blocked_stop: >-
+    if the MCP report is unreachable the agent writes what it knows,
+    marks open_questions, sets run.json stop_reason=blocked:<reason>,
+    and stops anyway — honest artifact beats a loop.
+
+artifacts:
+  - evals/adobe-stock-session-goal/GOAL.md
+  - evals/adobe-stock-session-goal/goal.json
+  - evals/adobe-stock-session-goal/verify.py
+  - evals/adobe-stock-session-goal/README.md
+  - evals/adobe-stock-session-goal/fixtures/sample-out/
+
+verify: >-
+  cd evals/adobe-stock-session-goal && python3 verify.py
+  fixtures/sample-out  # contract self-check -> pass (verified 2026-11-25);
+  negative test (mutated policy/provenance/missing_previews) -> fail with
+  named hard_failures. Live acceptance: run GOAL.md in an ada-ocb
+  OpenChamber session on idc02, then `python3 verify.py <artifact_dir>`
+  plus run.json stop_reason=acceptance-met.
+
+open_questions:
+  - Does OpenChamber expose a native "session goal" attachment, or is
+    GOAL.md pasted as the session brief? Either works for the eval; the
+    goal.json contract is executor-agnostic.
+  - Which ocb profile/model should run the live eval — ada-ocb default,
+    or a pinned cheap model to keep cost near zero?
+  - Where should live session artifacts land durably (session scratch vs
+    a reports/ path) so the verifier and card comms can cite them?
