@@ -1,0 +1,25 @@
+id: devnest-upstream-skills-review-2026-11-25
+title: Upstream Agent Skills fit assessment for DevNest/Chaba
+date: 2026-11-25
+card: devnest-upstream-skills-review
+ref: DEV-0231
+kind: assessment
+report: docs/reports/upstream-agent-skills-review-2026-11-25.md
+summary: >
+  Read-only review of six upstream Agent Skills candidates (actual SKILL.md,
+  scripts, licenses, activity inspected via shallow clones; nothing installed).
+  Ranked verdicts: webapp-testing ADOPT-adapted, addyosmani
+  code-review-and-quality ADAPT, anthropics skill-creator ADAPT process-only,
+  vercel web-design-guidelines ADAPT vendor, anthropics mcp-builder ADAPT as
+  read-only reference, bregman-arie devops-sre-skills REJECT (dormant, all
+  draft, k8s/aws-targeted vs systemd/quadlet stack). Each adopt/adapt carries
+  a small pre-integration test; no installs performed in this dispatch.
+licenses:
+  anthropics/skills: Apache-2.0 per-skill LICENSE.txt
+  addyosmani/agent-skills: MIT
+  vercel-labs/agent-skills: MIT
+  bregman-arie/devops-sre-skills: Apache-2.0
+notes:
+  - skill-creator scripts shell out to `claude -p` — methodology ports, scripts do not.
+  - webapp-testing needs Python Playwright on the host; localhost-scoped by design.
+  - devops-sre-skills rejected on maturity/fit; its read-only runbook shape is worth stealing for a future chaba-sre skill.
