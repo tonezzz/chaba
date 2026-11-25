@@ -34,7 +34,8 @@ conventions:
 
     '
   schedule: 'on_calendar: systemd OnCalendar string, or every: interval like 15m/1h/6h/1d. Dispatcher jobs MUST
-    use every:.
+    use every:. idc03 wall-clock jobs keep fixed minute offsets off :00/:30
+    (stagger-idc03-timer-herd) — pick a free residue when adding one.
 
     '
   exec: 'string or list of strings — a list renders one ExecStart per entry (oneshot chain: later steps run only
@@ -59,7 +60,7 @@ jobs:
   name: Ada Jobs — verify lane (micro-entity ADA-1091)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* *:0/30:00'
+  on_calendar: '*-*-* *:04/30:00'
   persistent: true
   timeout: 15m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada-jobs/verify_worker.py --once --max 5
@@ -76,7 +77,7 @@ jobs:
   name: Ada lane retention — tony (+shared scopes)
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 04:15:00'
+  on_calendar: 'Sun *-*-* 04:18:00'
   persistent: true
   timeout: 2h
   env_file: '%h/.config/secrets/tony-ha/backend.env'
@@ -90,7 +91,7 @@ jobs:
   name: Ada lane retention — kk
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 04:30:00'
+  on_calendar: 'Sun *-*-* 04:33:00'
   persistent: true
   timeout: 1h
   env_file: '%h/.config/secrets/tony-ha/backend.env'
@@ -103,7 +104,7 @@ jobs:
   name: Ada lane retention — michael
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 04:45:00'
+  on_calendar: 'Sun *-*-* 04:48:00'
   persistent: true
   timeout: 1h
   env_file: '%h/.config/secrets/tony-ha/backend.env'
@@ -116,7 +117,7 @@ jobs:
   name: Ada lane retention — dev lanes
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 04:00:00'
+  on_calendar: 'Sun *-*-* 04:03:00'
   persistent: true
   timeout: 30m
   condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-retention.py'
@@ -131,7 +132,7 @@ jobs:
   name: Ada memory merge proposals (weekly recommend)
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 10:30:00'
+  on_calendar: 'Sun *-*-* 10:39:00'
   persistent: true
   timeout: 20m
   condition_path: '%h/CascadeProjects/chaba/scripts/ada/memory-merge-proposals.py'
@@ -167,7 +168,7 @@ jobs:
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
-  on_calendar: '*-*-* 02:00:00'
+  on_calendar: '*-*-* 02:09:00'
   persistent: true
   timeout: 30m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/orchestrate.py --workflow overnight --force
@@ -175,7 +176,7 @@ jobs:
   name: Chaba Overnight Focus Review
   host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
-  on_calendar: '*-*-* 03:00:00'
+  on_calendar: '*-*-* 03:13:00'
   persistent: true
   timeout: 20m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/overnight-focus-review.py
@@ -301,7 +302,7 @@ jobs:
   name: yt-live media cache -> CMS cached-videos-report
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
-  on_calendar: '*:0/30'
+  on_calendar: '*-*-* *:06/30:00'
   persistent: true
   timeout: 15m  # 2m was timing out under board-api/CMS congestion (2026-11-12 sweep)
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cached-videos-update.py
@@ -311,7 +312,7 @@ jobs:
   name: Starboard catalogs tracker -> CMS page
   host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
-  on_calendar: '*:0/30'
+  on_calendar: '*-*-* *:16/30:00'
   persistent: true
   timeout: 15m  # 2m was timing out under board-api/CMS congestion (2026-11-12 sweep)
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/starboard-tracker-update.py
@@ -321,7 +322,7 @@ jobs:
   name: Kanban Eisenhower brief + T2 auto-close -> CMS kanban-brief
   host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
-  on_calendar: '*:0/30'
+  on_calendar: '*-*-* *:19/30:00'
   persistent: true
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -346,7 +347,7 @@ jobs:
   name: Daily unattended-run digest -> reports/ + Telegram milestone
   host: idc03   # writer checkout — sees committed card state
   dispatch: systemd
-  on_calendar: '*-*-* 08:30:00'
+  on_calendar: '*-*-* 08:34:00'
   persistent: true
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -364,7 +365,7 @@ jobs:
   name: Tony ideas/decisions harvest -> CMS tony-ideas
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
-  on_calendar: '*:0/30'
+  on_calendar: '*-*-* *:26/30:00'
   persistent: true
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -381,7 +382,7 @@ jobs:
   name: CMS registry command-generator sweeper (the missing regen lane)
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
-  on_calendar: hourly
+  on_calendar: '*-*-* *:08:00'
   persistent: true
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -396,7 +397,7 @@ jobs:
   name: Standard-drift digest -> CMS standard-drift
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
-  on_calendar: hourly
+  on_calendar: '*-*-* *:18:00'
   persistent: true
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -584,7 +585,7 @@ jobs:
   name: Device telemetry retention prune (7d)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 04:20:00'
+  on_calendar: '*-*-* 04:23:00'
   persistent: true
   timeout: 5m
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/prune.py
@@ -710,7 +711,7 @@ jobs:
   name: Served-checkout divergence watchdog (idc03 writer health)
   host: idc03
   dispatch: systemd
-  on_calendar: 'hourly'
+  on_calendar: '*-*-* *:31:00'
   persistent: true
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/served-checkout-watchdog.py
@@ -725,7 +726,7 @@ jobs:
   name: Ada scenario-runner deployed drift check (idc03)
   host: idc03
   dispatch: systemd
-  on_calendar: 'hourly'
+  on_calendar: '*-*-* *:38:00'
   persistent: true
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/scenario-runner-drift-check.py
@@ -818,7 +819,7 @@ jobs:
   name: Weather bake-off daily report + snapshot (mn-ha)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 07:40:00'
+  on_calendar: '*-*-* 07:46:00'
   persistent: true
   timeout: 5m
   exec: '%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/weather-bakeoff.py --snapshot --send --chat 8960073266'
@@ -888,7 +889,7 @@ jobs:
   name: Backlog spec enrichment (thin cards -> drafted spec | owner ask)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 01,07,13,19:20:00'
+  on_calendar: '*-*-* 01,07,13,19:23:00'
   persistent: true
   timeout: 15m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/backlog-spec-enrich.py
@@ -910,7 +911,7 @@ jobs:
   name: Yomi + PostgreSQL Backup
   host: idc03
   dispatch: systemd
-  on_calendar: daily
+  on_calendar: '*-*-* 00:14:00'
   persistent: true
   timeout: 30m
   exec: '%h/.local/bin/yomi-backup.sh'
@@ -922,7 +923,7 @@ jobs:
   name: Yomi Update All
   host: idc03
   dispatch: systemd
-  on_calendar: hourly
+  on_calendar: '*-*-* *:48:00'
   persistent: true
   timeout: 10m
   exec: /usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
@@ -1089,7 +1090,7 @@ jobs:
   name: Kanban <-> CMS sync (xmatch)
   host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
-  on_calendar: '*-*-* *:0/15:00'
+  on_calendar: '*-*-* *:09/15:00'
   exec: '%h/CascadeProjects/chaba-kanban-sync/scripts/ada/kanban-sync.sh'
   timeout: 10m
   persistent: true
@@ -1409,7 +1410,7 @@ jobs:
   name: Education due-review queue + index -> wiki Education:Due/Index + WP page
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 07:30:00'
+  on_calendar: '*-*-* 07:31:00'
   persistent: true
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba'
@@ -1430,7 +1431,7 @@ jobs:
   name: Education CPT policy audit (R1/R3/R4) -> report
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 07:40:00'
+  on_calendar: '*-*-* 07:41:00'
   persistent: true
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
@@ -1485,7 +1486,7 @@ jobs:
   name: R7 host software readiness probe
   host: idc03
   dispatch: systemd
-  on_calendar: 'Sun *-*-* 06:00:00'
+  on_calendar: 'Sun *-*-* 06:09:00'
   persistent: true
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba'
@@ -1500,7 +1501,7 @@ jobs:
   name: BGE education shadow refresh (lesson sync + snapshot + report)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 07:00:00'
+  on_calendar: '*-*-* 07:01:00'
   persistent: true
   timeout: 30m
   cwd: '%h/CascadeProjects/chaba'
@@ -1639,7 +1640,7 @@ jobs:
   name: AI/model/provider morning brief (private WP page)
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 08:00:00'
+  on_calendar: '*-*-* 08:06:00'
   persistent: true
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-morning-brief.py brief
@@ -1982,7 +1983,7 @@ jobs:
   name: Ada transcript deep-archive to NotebookLM (weekly)
   host: idc03
   dispatch: systemd
-  on_calendar: Sun *-*-* 05:15:00
+  on_calendar: Sun *-*-* 05:19:00
   persistent: true
   timeout: 1h
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/transcript-archive.py
@@ -1995,14 +1996,14 @@ jobs:
     as lane=unknown, never dropped. State ~/.local/share/ada/
     transcript-archive-state.json makes re-runs incremental; each run
     comments the card. Limit 100/run drains the ~380-file backlog in ~4
-    weeks then covers ~new sessions/week. Sunday 05:15 sits inside the
-    approved early-morning window and clear of the 04:20 telemetry prune.
+    weeks then covers ~new sessions/week. Sunday 05:19 sits inside the
+    approved early-morning window and clear of the 04:23 telemetry prune.
     Added 2026-11-18.'
 - id: ada-morning-brief
   name: Ada proactive morning brief -> Tony TG DM
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* 07:35:00'
+  on_calendar: '*-*-* 07:36:00'
   persistent: true
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/morning-brief.py
@@ -2012,14 +2013,14 @@ jobs:
     overnight dispatch outcomes from the local devin-dispatch ledger,
     red health flags) and POSTs it to the ada-tg-relay loopback /send on
     127.0.0.1:8911 (Tony DM — msg-lane-standard contract, no creds in the
-    job). 07:35 lands after daily-brief (07:05) + narration and the
-    lessons-due refresh (07:30). --print renders without sending.
+    job). 07:36 lands after daily-brief (07:05) + narration and the
+    lessons-due refresh (07:31). --print renders without sending.
     Added 2026-11-20.'
 - id: wiki-talk-watch
   name: Wiki talk-page watch — classify + signed Ada auto-reply
   host: idc03
   dispatch: systemd
-  on_calendar: '*-*-* *:07/15:00'
+  on_calendar: '*-*-* *:13/15:00'
   persistent: true
   timeout: 20m
   cwd: '%h/CascadeProjects/chaba'
@@ -2041,8 +2042,9 @@ jobs:
     signed — Ada (ada-code) ~~~~~. Visibility guard scans the draft
     against the talk page''s tier so protected content never lands on a
     more-public talk page. Failures -> deduped board-api /inbox flags,
-    MAX_ATTEMPTS=3 per rcid, no blind retries. :07/15 phase offsets the
-    tick ~7min from kanban-commit''s drifting 15-min cycle. Install:
+    MAX_ATTEMPTS=3 per rcid, no blind retries. :13/15 phase offsets the
+    tick from deploy-preflight''s *:07/5 cycle and kanban-commit''s
+    drifting 15-min cycle. Install:
     render-jobs.py --host idc03 --ids wiki-talk-watch --install after
     merge.'
 related_files:
