@@ -1,7 +1,7 @@
 id: litellm-proxy-wide-30d-budget-exhausted-04049d
 title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
 column: doing
-updated: 2026-11-25 19:13
+updated: 2026-11-25 20:15
 tags:
 - litellm
 - budget
@@ -103,6 +103,13 @@ comms:
     row spend=$62.01 in the Nov1-Dec1 window vs cap $75 → only ~$13 headroom at ~$8/day recent burn, likely re-caps
     before the 2026-12-01 reset. Plan: raise cap to $120 (covers projected ~$110 window spend, still below ~$150
     sum of per-key caps, bounds the uncapped LITELLM_KEY'
+- at: 2026-11-25 20:15
+  from: devin
+  text: 'DONE. Verified: the 11-07 raise to $75 was SSOT-only — live+repo still had $50; proxy-wide spend crossed
+    $50 ~23:00 ICT 11-24 and 422d every route at auth (LiteLLM_UserTable litellm-proxy-budget row, reset 2026-12-01
+    — not a SpendLogs window). Someone had already bumped live to $75 at 18:28; I raised further to $120 (window
+    spend $62 with ~$8/day burn → projected ~$110, would have re-capped before reset). Applied live ~/.config/litellm/config.yaml
+    + repo stacks config + restarted litellm.service'
 action:
   type: dispatch
   status: running

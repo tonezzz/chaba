@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
 column: backlog
-updated: 2026-11-25 20:05
+updated: 2026-11-25 20:15
 priority: medium
 tags:
 - ops
@@ -33,6 +33,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
+  status: queued
 note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
 ref: OPS-1406
 comms:
@@ -46,3 +47,7 @@ comms:
     devin-dispatch and devin-cli missing (false positives, script-only host by design). kk-mac SSH times out from
     every tested host. Do not just widen the regex — make the devin checks capability-aware and decide the kk-mac
     probe path explicitly.'
+- at: 2026-11-25 20:15
+  from: chaba
+  text: queued for processing
+claim: {}
