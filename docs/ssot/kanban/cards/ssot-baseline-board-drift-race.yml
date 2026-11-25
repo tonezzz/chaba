@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
 column: doing
-updated: 2026-11-25 11:50
+updated: 2026-11-25 12:07
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -154,6 +154,13 @@ comms:
   from: devin
   text: 'attempt 2 on mn01: reading ssot-validate-all.mjs, implementing option (a) — drop kanban/cards from advisory
     bloat warnings, keep 750 hard gate'
+- at: 2026-11-25 12:07
+  from: devin
+  text: 'DONE (attempt 2, mn01): option (a) implemented — kanban/cards/ excluded from advisory review-threshold
+    bloat checks in scripts/ssot-validate-all.mjs; 750-line hard gate + exemptions untouched. Verified: 426-line
+    sim card -> 0 warnings; 3824-line card still fires hard warning; full optimize+gate green (139 warnings, all
+    baselined). Baseline refreshed + trail doc docs/ssot/jobs/kanban/2026-11-25-ssot-baseline-board-drift-race.yml.
+    Commit 41986aec99 on dispatch/20261125-044950-observed-2026-11-24-a'
 action:
   type: dispatch
   status: running
