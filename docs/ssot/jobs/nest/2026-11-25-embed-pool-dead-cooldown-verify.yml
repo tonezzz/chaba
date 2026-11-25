@@ -1,0 +1,50 @@
+title: embed-pool-shim dead-upstream breaker — already shipped (PR-106), verified live + test gap closed
+date: 2026-11-25
+card: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
+session: dispatch-wt-20261125-122952-soak-2026-11-08-con01-dropped- (tony-dell)
+refs: [OPS-1158, MEM-0805]
+
+what: >-
+  Dispatch for the 2026-11-08 soak finding (con01 dropped, pool stayed
+  15/15 ok but p50 went 131ms -> 2264ms). Verification showed the
+  requested mechanism ALREADY SHIPPED three minutes after the card was
+  captured: commit 5c767a3ccff "fix(nest): embed-pool fast-fail — dead
+  upstreams sit out races (#106)" added the circuit breaker
+  (EMBED_POOL_DEAD_AFTER=3 consec fails -> park for
+  EMBED_POOL_DEAD_COOLDOWN_S=60, half-open retry, all-dead falls back to
+  full set, applied to _race + _first, consec/dead_until in /health).
+
+  Deployed state verified 2026-11-25: embed-pool-shim.service on idc03
+  runs ~/CascadeProjects/chaba/scripts/nest/embed-pool-shim.py whose
+  md5 (ed94fd21...) matches this repo exactly; active since
+  2026-11-24 21:20, NRestarts=0. Live /health proves the breaker works:
+  the idc03-local upstream sat parked (consec=7, dead_until set)
+  while tony-omen carried 43k wins. Pool composition has since changed —
+  con01 was removed from the race entirely (zz-drop-con01.conf,
+  2026-11-24, CPU-capped bge-m3), idc02 dropped 2026-11-20, kk-mac moved
+  to the deferred tier (zzz-defer-kkmac.conf) — so the original soak
+  scenario is now doubly moot.
+
+  Residual gap closed by this dispatch (the breaker had ZERO test
+  coverage — the defer tests disable it with DEAD_AFTER=99):
+  - tests/embed/test_pool_shim_defer.py: new DeadCooldown class, 2
+    tests — parks after N consec fails and stops being spawned; half-
+    open retry after cooldown wins and resets consec/dead_until.
+  - scripts/nest/embed-pool-shim.py: /health stats now carry a computed
+    "dead" boolean per upstream (was: raw dead_until epoch only);
+    docstring documents EMBED_POOL_DEAD_AFTER/_DEAD_COOLDOWN_S which
+    PR #106 added undocumented.
+
+verify: >-
+  python3 tests/embed/test_pool_shim_defer.py — 7 tests OK.
+  curl http://100.102.134.91:11436/health — per-upstream "dead" flag
+  appears after the next embed-pool-shim.service restart on idc03
+  (service runs the exec checkout; repo change is not live until then).
+
+lessons:
+  - Card captured 10:31, fix merged 10:34 same day (PR-106) — the card
+    sat in backlog 17 days on runner drift deferrals, not missing work.
+    Always check git log -S for the asked-for mechanism before coding.
+  - The breaker only counts REAL failures — race losers cancelled via
+    socket shutdown are deliberately not recorded (else every loser
+    would trip it — that bug parked healthy con01 once already).
