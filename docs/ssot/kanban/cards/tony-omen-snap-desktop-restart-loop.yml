@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 09:58
+updated: 2026-11-25 10:08
 priority: medium
 tags:
 - tony-omen
@@ -224,6 +224,14 @@ comms:
     active/running, NRestarts=0, journal clean — daemon now detects theme and reports all theme snaps installed.
     Remaining: literal post-reboot verification needs a reboot window (host under heavy load: llama-server/ffmpeg/openjev/docker)
     — raise'
+- at: 2026-11-25 10:08
+  from: chaba
+  text: 'raised request job-input-tony-omen-snap-desktop-restart-loop: Job needs your input: Reboot tony-omen now
+    to verify the snapd-desktop-integration fix post-boot, or wait for the next n'
+- at: 2026-11-25 10:08
+  from: chaba
+  text: 'needs input: Reboot tony-omen now to verify the snapd-desktop-integration fix post-boot, or wait for the
+    next natural reboot?'
 action:
   type: dispatch
   status: running
@@ -233,3 +241,18 @@ action:
   attempts: 1
 claim:
   since: 2026-11-25 09:50
+requests:
+- id: job-input-tony-omen-snap-desktop-restart-loop
+  ask: 'Job needs your input: Reboot tony-omen now to verify the snapd-desktop-integration fix post-boot, or wait
+    for the next natural reboot?'
+  status: open
+  at: 2026-11-25 10:08
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
