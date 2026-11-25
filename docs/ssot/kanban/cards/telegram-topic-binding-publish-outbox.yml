@@ -1,7 +1,7 @@
 id: telegram-topic-binding-publish-outbox
 title: Fix telegram topic bindings — publish outbox stuck
 column: done
-updated: 2026-11-25 12:39
+updated: 2026-11-25 14:08
 brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
   retries cannot clear them until project/card topic bindings exist.'
 priority: medium
@@ -123,6 +123,13 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-122415-verified-2026-11-25-on-idc03-l,
     branch dispatch/20261125-122415-verified-2026-11-25-on-idc03-l on idc02'
+- at: 2026-11-25 14:08
+  from: devin
+  text: 'HANDOFF TO OPS (2026-11-25): Please bind active Telegram topics for the affected projects/cards. All 29
+    board-api publish outbox/dead entries are sink=telegram with 404 "no active topic bound for project=... card=..."
+    — examples: project=education card=trade-docs-education-migration, project=- card=classifier-readonly-audit-class-reroute,
+    card=ada-engine-contract-suite. After bindings exist, run POST /publish {op:drain} and confirm 0 retrying/dead.
+    State was backed up before inspection at /tmp/o'
 action:
   type: dispatch
   status: done
