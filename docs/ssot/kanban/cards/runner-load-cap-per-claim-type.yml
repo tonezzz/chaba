@@ -1,7 +1,7 @@
 id: runner-load-cap-per-claim-type
 title: runner-agent load gate is one-size-fits-all — trivial script probes starve with heavyweight claims
 column: backlog
-updated: 2026-11-25 11:00
+updated: 2026-11-25 11:05
 priority: medium
 tags:
 - runner-agent
@@ -245,6 +245,11 @@ comms:
 - at: 2026-11-25 11:00
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
