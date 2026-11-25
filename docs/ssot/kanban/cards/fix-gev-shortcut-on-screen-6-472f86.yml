@@ -1,7 +1,7 @@
 id: fix-gev-shortcut-on-screen-6-472f86
 title: Fix GEV Shortcut on Screen 6
 column: backlog
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:38
 priority: medium
 note: God's Eye View shortcut fails with 404 on screen 6.
 ref: MED-0049
@@ -88,17 +88,27 @@ comms:
 - at: 2026-11-25 19:23
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-25 19:38
+  from: tony
+  text: 'answered all-registered-runner-agents-c-eba883: ★ Fix runner-agent drift first by redeploying runner-agent
+    to all hosts, then investigate the GEV shortcut in the gods-eye-view repo'
+- at: 2026-11-25 19:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: all-registered-runner-agents-c-eba883
-  ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks
-    because the installed runner-agent script has drifted from the repository version. Additionally, the
-    card notes that the GEV shortcut fails with a 404 on screen 6, but does not specify which repository
-    contains the frontend code or screen definitions for Gods-Eye-View.
+  ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks because the
+    installed runner-agent script has drifted from the repository version. Additionally, the card notes that the
+    GEV shortcut fails with a 404 on screen 6, but does not specify which repository contains the frontend code
+    or screen definitions for Gods-Eye-View.
   options:
-  - ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV
-    shortcut in the gods-eye-view repo
+  - ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV shortcut in
+    the gods-eye-view repo
   - Postpone this card until the runner-agent infrastructure drift is resolved independently
   - Investigate and fix the GEV shortcut within the mddb-fork repository
-  status: open
+  status: answered
   at: 2026-11-25 19:23
   from: backlog-spec-enrich
+  answer: ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV shortcut
+    in the gods-eye-view repo
+awaiting_action: true
