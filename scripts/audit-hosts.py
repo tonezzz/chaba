@@ -145,6 +145,16 @@ def linux_services(host: str, ssh: bool) -> dict:
     failed_sys, _err_sys, _ = run(
         r"systemctl list-units --failed --no-pager --plain | grep -E '\.(service|scope)' | awk '{print $1}'"
     )
+    # Unit-file existence probe — list-units only shows loaded units, so
+    # timer/manual-triggered oneshots read "missing" between fires. The
+    # `type: oneshot` census entries diff against this instead (masked
+    # still counts as absent — a masked oneshot can never fire).
+    unit_files_user, _err_uf, _ = run(
+        r"systemctl --user list-unit-files --no-pager --plain | awk '{print $1, $2}'"
+    )
+    unit_files_sys, _err_ufs, _ = run(
+        r"systemctl list-unit-files --no-pager --plain | awk '{print $1, $2}'"
+    )
     free, _err_free, _ = run("free -h | grep -E '^Mem:|^Swap:'")
     df, _err_df, _ = run("df -h / | tail -1")
     uptime, _err_uptime, _ = run("uptime")
@@ -161,6 +171,8 @@ def linux_services(host: str, ssh: bool) -> dict:
         "active_system_services": _parse_kv(active_sys),
         "failed_user_services": _parse_list(failed_user),
         "failed_system_services": _parse_list(failed_sys),
+        "unit_files_user": _parse_unit_files(unit_files_user),
+        "unit_files_system": _parse_unit_files(unit_files_sys),
         "oom_kills_24h": {"user": _to_int(oom_user), "system": _to_int(oom_sys)},
         "memory": _parse_free(free),
         "disk": _parse_df(df),
@@ -385,6 +397,16 @@ def _parse_list(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
+def _parse_unit_files(text: str) -> dict:
+    """`list-unit-files --plain` 'name state' lines -> {unit: state}."""
+    out = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and "." in parts[0]:
+            out[parts[0]] = parts[1]
+    return out
+
+
 def _to_int(text: str) -> int:
     try:
         return int(text.strip().splitlines()[-1])
@@ -569,6 +591,24 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         present_in = active_system_units if scope == "system" else active_user_units
         running_in = running_sys if scope == "system" else running_user
         want = exp.get("expected_state") or "active"
+        if exp_type == "oneshot" and want == "active" and \
+                ("unit_files_system" if scope == "system"
+                 else "unit_files_user") in observed:
+            # Timer/manual-triggered oneshots are legitimately inactive
+            # (often unloaded) between fires — the contract is that the
+            # unit file exists and isn't masked, not that it's running.
+            # Probe absent (e.g. macOS observed shape) -> legacy path.
+            unit_files = observed[
+                "unit_files_system" if scope == "system"
+                else "unit_files_user"]
+            if exp_name in unit_files and \
+                    not unit_files[exp_name].startswith("masked"):
+                continue
+            if exp_name in known_failed or \
+                    exp.get("note", "").startswith("Currently disabled"):
+                continue
+            deltas.append(f"Expected oneshot unit missing: {exp_name}")
+            continue
         present = _is_present(exp_name, exp_type, present_in)
         running = _is_present(exp_name, exp_type, running_in)
         if running and want in ("inactive", "absent"):

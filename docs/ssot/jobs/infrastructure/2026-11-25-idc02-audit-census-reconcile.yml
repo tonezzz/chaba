@@ -1,0 +1,48 @@
+title: idc02 audit-hosts census reconcile — expected_services drift red
+card: idc02-audit-census-reconcile
+date: 2026-11-25
+executor: devin-dispatch
+pattern: "ssot.audit.hosts.yml / audit-hosts.py / systemctl --user"
+summary: >-
+  Reconciled the idc02 expected_services census in
+  docs/ssot/infrastructure/ssot.audit.hosts.yml against live
+  systemctl --user state, and taught scripts/audit-hosts.py a
+  `type: oneshot` census kind so timer/manual-triggered oneshots diff on
+  unit-file presence (list-unit-files) instead of flapping "missing"
+  between fires. Same-day live drift found and fixed: mddb-embed and
+  gev-cmd-relay restored, stale quadlet units stopped, masked timer
+  reset-failed. mn01 census patched for the same day's mn-ha-dev move.
+pre_state:
+  - "audit-hosts.py --host idc02 red: 13 missing + 8 unexpected-running + 7 unexpected-failed deltas"
+  - "mn-ha-dev + mha-state-push moved idc02 -> mn01 2026-11-25 ~08:03-08:39 (commit 5a0601d3, card michael-dev-migrate-mn01) — migrate commit never touched ssot.audit.hosts.yml"
+  - "ada-code/jack-opencode quadlets retired 2026-11-24 (*.container.retired-20261124); camwall-render-check.timer retired same morning per camwall-retire-to-wiki Phase 2 (Tony: ada-snapshot-only)"
+  - "mddb-embed down ~30h since 2026-11-24 09:20 reboot — quadlet lacks [Install] WantedBy=default.target so the generated unit never auto-starts; container had been removed"
+  - "gev-cmd-relay dead since same boot — BindsTo=gev-gemini dependency job failed during boot ordering, Restart=always never engaged"
+steps_done:
+  live_fixes:
+    - "systemctl --user start mddb-embed.service gev-cmd-relay.service — both active; mddb-embed /v1/health reports healthy (vector index re-verifying), :11028 listening"
+    - "systemctl --user stop ada-code-network.service jack-ide-network.service — stale generated quadlet units (not-found LOAD, still ACTIVE=exited) cleared from list-units; unused podman bridges 'ada-code'/'jack-ide' left behind"
+    - "systemctl --user daemon-reload (no effect on stale units — they needed explicit stop)"
+    - "systemctl --user reset-failed mddb-lab-pull.timer — masked+failed state cleared so expected_absent reads clean"
+  script:
+    - "scripts/audit-hosts.py: linux_services() now also probes `systemctl [--user] list-unit-files --no-pager --plain` into observed.unit_files_{user,system} ({unit: state} via _parse_unit_files)"
+    - "diff_against_ssot(): expected entries with type:oneshot + expected_state:active diff on unit-file presence (masked counts as absent) instead of active-unit listing — covers unloaded linked units, static monthly oneshots, and 60s-cadence timer oneshots caught between fires"
+    - "chose unit-files probe over `list-units --all` deliberately: --all still shows masked/inactive units as 'present', which would have hidden real drift like the mn-ha-dev mask"
+  census_idc02:
+    - "expected_absent += mn-ha-dev.service, mha-state-push.service (moved to mn01), camwall-render-check.timer (camwall retire), vcast-real-macbook.service (named unit never existed on idc02; superseded by vcast-real@6/@7), ada-code.service, ada-code-enroll.service, ada-code-network.service, jack-opencode.service, jack-enroll.service, jack-ide-network.service (quadlets retired 11-24), mddb-lab-pull.timer (masked wind-down)"
+    - "expected_services += gesture-relay, gpu-queue, gpu-queue-processor, weaviate, web, opencode-serve, ollama, mddb-lab (all OPS-0725/0731 migration adds verified running)"
+    - "type: service -> oneshot on runner-agent.service, kanban-dispatch.service, openchamber-update.service"
+    - "ada-stt.service -> expected_state: inactive (disabled parked lane, :8914 allocation still in msg-lane-standard)"
+    - "known_failed += ada-ocb-eval, ada-ocb-smoke, ada-ocb-agent-runner-converge, fleet-restic-backup, kk-mac-model-status, mddb-backup, wp-backup-pull — each reason cites its timer-alert-idc02-* tracking card"
+  census_mn01:
+    - "expected_services += mn-ha-dev.service (critical), mha-state-push.service — verified active via ssh; migrate commit 5a0601d3 missed this census"
+    - "expected_absent += vcast-real-macbook.service (same stale 11-12 fleet-wide declaration, verified absent on mn01)"
+    - "known_failed += mn01-canary.service (canary exits 1 on detected outage — 11-25 run flagged 'idc03 ada services 1/3 active'; tracked by timer-alert-mn01-mn01-canary)"
+verification:
+  - "python3 scripts/audit-hosts.py --host idc02 -> 'No deltas against SSOT expected state.'"
+  - "python3 scripts/audit-hosts.py --host mn01 -> only residual 'Expected service missing: yolo-xiaomi.service' (SIGTERM'd 02:38 UTC during migration window — filed AUD-1396 mn01-yolo-xiaomi-service-stopped-deliber-d2b384 rather than guessing restart-vs-park)"
+residuals:
+  - "mddb-embed.container still lacks [Install] WantedBy=default.target — service is up now but will not auto-start on next reboot; host-local file (~/.config/containers/systemd/), not repo-managed — noted in the SSOT entry"
+  - "podman networks 'ada-code' and 'jack-ide' bridges remain after quadlet retirement (unused)"
+  - "vcast-real-macbook.service stale declaration still present on tony-omen/macbook/idc03 census sections — same 11-12 fleet-wide copy; those hosts' audits will flag it until reconciled per-host"
+  - "mn01-canary 11-25 03:30 failure reported 'idc03 ada services 1/3 active' — real signal worth a look, tracked by its timer-alert card"
