@@ -1,0 +1,101 @@
+title: Repoint NOTEBOOKLM_REST_BASE_URL fleet-wide to idc02 :3011 (OPS-0732 / ADA-1328)
+date: 2026-11-25
+card: notebooklm-rest-base-url-points-at-dead-b8ef61
+dispatch: dispatch-wt-20261125-094135-found-during-ada-lanes-run-on-
+status: shipped-live   # 11 env files repointed, 9 running lanes restarted clean
+
+summary: |
+  Card spec assumed notebooklm-rest might be retired; it is not — the
+  service migrated tony-dell -> idc02 (OPS-0725, 2026-10-17; ssot.services.yml
+  already declared tailnet_url http://100.123.163.11:3011/v1). Every Ada lane
+  env still carried the dead dell URL http://100.68.142.13:3011/v1, so all
+  NotebooklmClient calls failed httpx ConnectError (degraded memory recall
+  only — ws sessions unaffected). Repointed all live env files and
+  restarted the running units. Also resolves sibling card
+  notebooklm-rest-unreachable-from-idc03-k-c38158 (OPS-0732).
+
+findings:
+  - id: rest-not-retired
+    detail: |
+      notebooklm-rest.service is active on idc02 (this dispatch host),
+      listening 127.0.0.1:3011 + 100.123.163.11:3011; GET /health/auth ->
+      {ok:true,auth:ok}, keepalive fresh. The "retired" claim lived only in
+      ssot.values.yml notebooklm.mcp_host_note (now corrected) and was
+      repeated into scripts/ada/transcript-archive.py + ssot.jobs.yml notes
+      (now corrected). notebooklm-mcp on mn01 is a different thing (MCP/nlm
+      CLI, not the REST API).
+  - id: scoped-key-auth-verified
+    detail: |
+      ada-michael scoped key from michael-ha/backend.env -> GET
+      /v1/notebooks on idc02 returns HTTP 200 with exactly the 5 michael
+      notebooks — key scopes survived the migration intact.
+  - id: health-gate-gap
+    detail: |
+      Only ada-ai-kraut + ada-ha-tony carry an ExecStartPre gate and it
+      curls MDDB http://100.102.134.91:11023/health — notebooklm :3011 is
+      ungated everywhere. The dead URL ran for weeks with zero gate trips.
+      Follow-up carded separately.
+  - id: transcript-archive-target-ok
+    detail: |
+      ada-transcript-archive.timer on idc03 active/waiting, next Sun
+      2026-11-29 05:15 +07; last run 2026-11-22 uploaded 100/0-fail. It does
+      NOT use REST — uploads via `ssh mn01 'podman exec -i notebooklm-mcp
+      nlm source add'` (mn01 notebooklm-mcp Up 5 weeks). No change needed.
+
+changes:
+  - host: idc03   # 7 env files, sed -i.bak-nlmrepoint-20261125
+    files:
+      - ~/.config/secrets/michael-ha/backend.env   # -> ada-ai-kraut.service :8003
+      - ~/.config/secrets/ada-chaba.env            # -> ada-chaba.service :8008
+      - ~/.config/secrets/ada-ha/backend.env        # -> ada-ha-ada.service :8006
+      - ~/.config/secrets/tony-ha/backend.env       # -> ada-ha-tony.service :8002
+      - ~/.config/secrets/kk-ha/backend.env         # -> ada-kk.service :8007
+      - ~/.config/secrets/ada-dev.env               # -> ada-dev.service (inactive)
+      - ~/.config/secrets/ada-kk-dev.env            # -> ada-kk-dev.service (inactive)
+  - host: tony-omen   # dev lanes migrated here 2026-11-18
+    files:
+      - ~/.config/secrets/ada-dev.env               # -> ada-dev.service (active)
+      - ~/.config/secrets/ada-kk-dev.env            # -> ada-kk-dev.service (active)
+  - host: mn01   # disabled-but-running standby lanes
+    files:
+      - ~/.config/secrets/ada-ha-tony.env           # -> ada-ha-tony.service (active, disabled)
+      - ~/.config/secrets/ada-ha-michael.env        # -> ada-ha-michael.service (active, disabled)
+  - repo: chaba worktree (this branch)
+    files:
+      - docs/ssot/infrastructure/ssot.values.yml    # mcp_host_note: REST not retired, lives idc02
+      - docs/ssot/infrastructure/ssot.jobs.yml      # ada-transcript-archive note corrected
+      - scripts/ada/transcript-archive.py           # docstring corrected (no behaviour change)
+
+restarts:
+  - idc03: ada-ai-kraut, ada-chaba, ada-ha-ada, ada-ha-tony, ada-kk (all active/running after)
+  - tony-omen: ada-dev, ada-kk-dev (active/running after)
+  - mn01: ada-ha-tony, ada-ha-michael (active/running after; UnitFileState stays disabled)
+
+verification:
+  - >-
+    /proc/<MainPID>/environ NOTEBOOKLM_REST_BASE_URL=http://100.123.163.11:3011/v1
+    confirmed on all 9 running units across idc03/tony-omen/mn01.
+  - >-
+    curl http://100.123.163.11:3011/health from idc03 -> HTTP 200.
+  - >-
+    journalctl --user -p err --since restart on all 5 idc03 lanes: 0 error
+    lines. (NotebooklmClient only fires on conversation memory ops, so the
+    first real recall is the true end-to-end proof — watch next ws session.)
+  - >-
+    grep -rln 100.68.142.13:3011 ~/.config/secrets on idc03/tony-omen/mn01
+    post-edit: CLEAN (only .bak/_attic/from-dell archive files retain it,
+    intentionally — point-in-time backups).
+  - >-
+    Fleet sweep: tony-dell, con01, tony-macbook have no live env files with
+    the var; idc01 offline.
+
+rollback: |
+  Per-file backups at <env>.bak-nlmrepoint-20261125 next to each edited
+  file; `systemctl --user restart <unit>` picks env back up. REST service
+  itself untouched.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.services.yml   # notebooklm-rest entry (idc02, tailnet_url)
+  - docs/ssot/infrastructure/ssot.values.yml     # notebooklm.mcp_host_note corrected
+  - scripts/ada/transcript-archive.py            # docstring corrected
+  - docs/ssot/kanban/cards/notebooklm-rest-unreachable-from-idc03-k-c38158.yml  # OPS-0732, also resolved
