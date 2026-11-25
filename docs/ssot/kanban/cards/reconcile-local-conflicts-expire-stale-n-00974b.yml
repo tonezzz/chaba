@@ -1,7 +1,7 @@
 id: reconcile-local-conflicts-expire-stale-n-00974b
 title: 'reconcile-local-conflicts: expire stale non-card .local-conflict files'
-column: doing
-updated: 2026-11-25 10:59
+column: review
+updated: 2026-11-25 11:05
 priority: medium
 tags:
 - chaba
@@ -292,20 +292,39 @@ comms:
     stubs FLAG_STATE; added tests/board/test_reconcile_local_conflicts.py. Selftest passes twice consecutively.
     Note: prior merge was held by test gate — pytest unavailable on tony-macbook (fail-closed OPS-1191); if merge
     routes there again it will hold regardless of code.'
+- at: 2026-11-25 11:05
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ict-expiry.yml`, and `dispatch-outcome-20261125-105702-focus-inbox-and-other-generate.md`.
+    | devin-task-20261125-'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:05
+  from: chaba
+  text: banked 134 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:05
+  from: chaba
+  text: pushed dispatch/20261125-105702-focus-inbox-and-other-generate to origin
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0  dispatch rails — the fix takes effect on each host at the next repo-sync tick after merge. |
-    devin-task-20261125-091036-focus-inbox-and-other-generate.service: Consumed 22.470s CPU time over 4min 3.245s
-    wall clock time, 317.2M memory peak.'
+  result: 'exit=0 ict-expiry.yml`, and `dispatch-outcome-20261125-105702-focus-inbox-and-other-generate.md`. | devin-task-20261125-105702-focus-inbox-and-other-generate.service:
+    Consumed 32.334s CPU time over 2min 55.193s wall clock time, 331.6M memory peak.'
   sweep:
     stale_running: 2026-11-25 09:25
     dirty: 1
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-25 10:56
 review_kind: verify
