@@ -1,7 +1,7 @@
 id: tony-ha-cold-standby-config-sync-promote-d12293
 title: tony-ha cold standby — config sync + promote runbook
 column: done
-updated: 2026-11-25 16:59
+updated: 2026-11-25 17:02
 ref: HOM-0855
 comms:
 - at: 2026-10-25 13:55
@@ -255,6 +255,10 @@ comms:
 - at: 2026-11-25 16:59
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Goal is to create a cold standby config sync and promotion runbook for tony-ha, leveraging the chaba repository.
   Constraints include adhering to existing infrastructure patterns without inventing hostnames or paths beyond what
