@@ -1,7 +1,7 @@
 id: opencode-session-start-recall-injection
 title: OpenCode session-start recall injection (Chaba L0 context)
 column: doing
-updated: 2026-11-25 09:08
+updated: 2026-11-25 09:12
 priority: medium
 tags:
 - opencode
@@ -152,6 +152,13 @@ comms:
   text: '[dispatch] Verified .opencode/commands/recall.md already landed via PR #207 (option A). render-memory.py
     --check passes clean. Now: documenting /recall in .opencode instructions, assessing option B (plugin context
     hook) for the trail doc, then DEV-0038 pointer note.'
+- at: 2026-11-25 09:12
+  from: devin
+  text: '[dispatch done] Acceptance met via option A: /recall command (already merged, PR #207) + NEW always-on
+    .opencode/instructions/session-start.md registered in opencode.jsonc so agents auto-run /recall on resume-type
+    sessions. Option B plugin auto-inject assessed feasible (ctx.session.hook context / chat.system.transform) but
+    deferred — trail in docs/ssot/jobs/session-summary/2026-11-25-opencode-session-start-recall.yml. DEV-0038 pointer
+    note posted on parent card. Commit 133623cd1e.'
 action:
   type: dispatch
   status: running
