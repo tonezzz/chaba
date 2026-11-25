@@ -1,7 +1,7 @@
 id: lane-retention-py-crashes-at-summary-swe-b888ce
 title: lane-retention.py crashes at summary — sweep_ops returns tuples, regex expects strings
 column: doing
-updated: 2026-11-25 12:29
+updated: 2026-11-25 12:33
 priority: medium
 tags:
 - bug
@@ -53,6 +53,13 @@ comms:
   text: 'investigating: repo code shows prune.sweep()->str and sweep_ops->list[str] on all branches — no tuple path
     exists in git. deployed idc03 copy likely diverges; making sweep_ops normalize (line,ok) tuples + regression
     test regardless'
+- at: 2026-11-25 12:33
+  from: devin
+  text: 'done on dispatch/20261125-122149 (commit 2a4f3f2033, not pushed). sweep_ops() now unwraps (line,ok) tuples
+    / drops non-str so the summary regex only sees lines; +4 offline tests incl. an end-to-end --ops-only main()
+    that reproduces the exact TypeError red-first (verified: fails pre-fix, green post-fix; 28/28 pass). NOTE: git
+    history shows NO tuple path on master — prune.sweep has always returned str — so the 09:57 crash implies idc03''s
+    deployed ~/CascadeProjects/chaba diverges from origin (uncom'
 action:
   type: dispatch
   status: running
