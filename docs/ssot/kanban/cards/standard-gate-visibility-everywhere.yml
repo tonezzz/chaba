@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
 column: doing
-updated: 2026-11-25 09:38
+updated: 2026-11-25 09:39
 priority: medium
 tags:
 - standard
@@ -219,6 +219,10 @@ comms:
     + applies_to roster + reference impls + known gaps); pointer added to devin-error-handling-standard.md; job
     record at docs/ssot/jobs/kanban/2026-11-25-gate-visibility-standard.yml. Gap found: kanban-act [hold] prints
     are stdout-only — recorded as known_gap, follow-up card candidate. Outcome doc: dispatch-outcome-20261125-093530-ops-1097-fixed-per-card-unclai.md'
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-093530-ops-1097-fixed-per-card-unclai no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -227,5 +231,7 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:39
 claim:
   since: 2026-11-25 09:33
