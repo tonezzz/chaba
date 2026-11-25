@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
 column: doing
-updated: 2026-11-25 09:09
+updated: 2026-11-25 09:10
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -199,6 +199,13 @@ comms:
   text: '[devin] fix implemented on dispatch branch: added live /api/health probe to scenario-provider-gate.py (service_port
     resolves ADA_PORT/--port like deploy-ada.sh; probe ok:true required else infra verdict). Chose option B (live
     probe) over journal-silence floor — idle-but-healthy backends stay green. 9 new unit tests pass; dry-run verified.'
+- at: 2026-11-25 09:10
+  from: devin
+  text: '[devin] DONE on dispatch/20261125-090509-found-during-timer-alert-idc03 (commit a23aee3da3, not pushed).
+    Chose option B: scenario-provider-gate.py now GETs /api/health (port via ADA_PORT/--port, deploy-ada.sh parity)
+    before verdict ok — unreachable/malformed -> infra clean-skip with per-scenario infra reports. Journal-silence
+    floor rejected: idle-healthy backends log nothing between runs -> false skips. 9 new tests pass (tests/ada/test_scenario_provider_gate.py);
+    trail at docs/ssot/jobs/ada/2026'
 action:
   type: dispatch
   status: running
