@@ -1,7 +1,7 @@
 id: dedicated-openrouter-key-for-bench-eval-7ff299
 title: Dedicated OpenRouter key for bench/eval lanes — fleet key $5/wk cap will strangle eval weeks
 column: doing
-updated: 2026-11-25 15:14
+updated: 2026-11-25 15:27
 priority: low
 spec: 'Found during litellm-or-key-weekly-budget (2026-11-25). LiteLLM_SpendLogs show bursty OR spend through the
   single fleet key (idc02-openclaw, now $5/week): $23.76 wk 11-02, $26.87 wk 10-19, $2.31 wk 10-12 vs <$0.55 quiet
@@ -78,6 +78,13 @@ comms:
   from: devin
   text: dispatch started on idc02 — reading litellm config + prior budget job, deciding between dedicated bench
     key vs raised fleet cap vs fail-soft
+- at: 2026-11-25 15:27
+  from: devin
+  text: 'DONE — option (a) implemented live. SpendLogs forensics: all paid-OR spend in 7wk was direct or-* alias
+    calls by dev-class keys (chaba/ada/bench/pilot); ZERO through job-class fallback chains. Minted OR key idc03-litellm-bench
+    ($30/wk, exp 2026-12-25) via provisioning API; repointed 7 paid or-* entries (2.5/3.5-flash{,-lite}, fable-5.1,
+    3.1-pro-preview, deepseek-v4-flash) to OPENROUTER_BENCH_API_KEY in live+repo litellm config; fleet key keeps
+    embed/image/consult/:free + all non-litellm consumer'
 action:
   type: dispatch
   status: running
