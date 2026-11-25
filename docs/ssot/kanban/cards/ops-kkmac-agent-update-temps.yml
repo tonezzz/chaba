@@ -1,7 +1,7 @@
 id: ops-kkmac-agent-update-temps
 title: 'kk-mac: update device-telemetry agent (semantic temps)'
 column: doing
-updated: 2026-11-25 19:11
+updated: 2026-11-25 19:13
 priority: low
 spec: 'kk-mac is offline (ssh timeout). Its launchd beacon still runs the pre-a4504a72 agent (zoneN temp labels,
   no semantic zone names). Also its MDDB latest slot was polluted by tony-dell beacon misconfig (fixed on dell 2026-11-17).
@@ -300,6 +300,13 @@ comms:
     in card text is stale — real archive is `tony-dell:; [install-device-telemetry-beacon-on-kk-ma-126d1f] DONE
     2026-11-14: beacon instal; Card spec named tony-dell as ada-voice edit point, but dispatch ran on tony-macb;
     runner-agent drift defers self-heal via _self_update/sync-run'
+- at: 2026-11-25 19:13
+  from: devin
+  text: 'kk-mac is back online (tailscale active; ssh via tony-dell as kkkakk — this host has no kk-mac key). Verified:
+    installed ~/.local/share/device-telemetry/agent.py md5 8247c31e == origin/master (card pin 132c7c8c was a4504a72;
+    two newer commits a3ed8fd+63b2fa9 landed since — already updated on-host ~18:56 today, backups agent.py.bak-20261125/.bak-retry
+    present). launchd com.telemetry.agent runs every 300s; ran once manually -> posted kk-mac/latest ts=1795608787
+    with temp_zones {"cpu":40.0}, temp_c'
 action:
   type: dispatch
   status: running
