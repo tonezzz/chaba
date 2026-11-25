@@ -244,14 +244,15 @@ tony-dell:
     image: docker.io/library/chaba-raceman-raceman-php:latest
     runtime: rootless podman
     network: host
+    host: tony_dell
     port: 9001
     host_port: 100.68.142.13:9001
     data_volume: /home/tony/CascadeProjects/chaba-raceman
     quadlet:
       container_unit: ~/.config/containers/systemd/raceman-php.container
       service_unit: ~/.config/systemd/user/raceman-php.service
-    status: implemented (2026-08-17)
-    note: Migrated from tony-omen; php-fpm listens on 0.0.0.0:9001 to avoid conflict with mddb :9000.
+    status: active on tony-dell (running again since 2026-11-16)
+    note: "PHP-FPM backend for the raceman course API (api/{list,load,save,save-course}.php — file-backed by apps_data/raceman + public/apps/raceman/courses in the data_volume). Placement decided 2026-11-25 (card raceman-php-placement-decision, path 2) — stays on tony-dell; listens 0.0.0.0:9001 and is consumed cross-host by raceman-web's nginx on tony-omen via fastcgi_pass 100.68.142.13:9001."
   raceman-web:
     container: raceman-web
     image: docker.io/library/nginx:alpine
@@ -265,7 +266,7 @@ tony-dell:
       container_unit: ~/.config/containers/systemd/raceman-web.container
       service_unit: ~/.config/systemd/user/raceman-web.service
     status: migrated to tony-omen (2026-10-20); dell copy retired
-    note: Nginx listens on tony-omen:8083 and serves the raceman app plus yt-live media; the old dell listener is gone.
+    note: Nginx listens on tony-omen:8083 and serves the raceman app plus yt-live media; the old dell listener is gone. PHP locations fastcgi_pass to the dell backend at 100.68.142.13:9001 (repointed from dead 127.0.0.1:9001 on 2026-11-25 — see card raceman-php-placement-decision).
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest

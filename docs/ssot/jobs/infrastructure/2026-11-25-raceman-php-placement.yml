@@ -1,0 +1,120 @@
+title: raceman-php placement decision — backend stays on tony-dell, omen nginx repointed over tailnet
+date: 2026-11-25
+card: raceman-php-placement-decision
+status: done-verified
+host_scope: read+fix on tony-omen (nginx.conf + raceman-web restart); read-only on tony-dell
+
+context:
+  drift: |
+    Card captured 2026-11-11 during KNB-0003 service-inventory
+    reconciliation: raceman-web active on tony-omen :8083, but
+    raceman-php "enabled but inactive on tony-dell since 2026-10-20",
+    omen nginx still fastcgi_passing 127.0.0.1:9001 (dead), and
+    ssot.audit.hosts.yml expecting raceman-php on dell — a real
+    placement/outage decision, not stale monitoring.
+  stale_premise: |
+    By 2026-11-25 the premise was half-stale: raceman-php.service on
+    tony-dell is ACTIVE again (running since 2026-11-16 09:49 +07,
+    container Up 8 days, podman ss shows php-fpm listening
+    0.0.0.0:9001). Someone/something already chose "keep it on dell";
+    the missing piece was only the omen nginx upstream.
+
+decision:
+  path: 2
+  summary: >-
+    Keep raceman-php on tony-dell and repoint tony-omen's raceman-web
+    nginx fastcgi_pass from 127.0.0.1:9001 to the dell tailnet address
+    100.68.142.13:9001.
+  why_not_path1_restore_on_omen: >-
+    The PHP API is file-backed, not DB-backed: api/*.php read/write
+    apps_data/raceman/state.json and public/apps/raceman/courses/*.yml
+    inside the host-local ~/CascadeProjects/chaba-raceman checkout.
+    Running php-fpm on omen would split course data across two
+    checkouts (split-brain saves) unless a sync layer were built —
+    strictly worse than one canonical backend.
+  why_not_path3_retire: >-
+    Raceman is NOT static-only. public/apps/raceman/{course-manager,
+    state-manager,yaml-editor,raceman}.js actively fetch
+    api/{list,load,save,save-course}.php for course persistence —
+    retiring PHP breaks save/load, a core listed feature.
+  why_path2: >-
+    php-fpm already runs on dell with the canonical data volume;
+    ssot.services.yml already declared host_port
+    100.68.142.13:9001 (dell tailnet); php-fpm.conf has no
+    listen.allowed_clients restriction; TCP 9001 verified reachable
+    from omen over tailnet. One-line nginx change, fully reversible
+    (backup kept at nginx.conf.bak-20261125 on omen).
+
+changes:
+  omen_live: |
+    - ~/CascadeProjects/chaba-raceman/nginx.conf on tony-omen:
+      both `fastcgi_pass 127.0.0.1:9001;` -> `100.68.142.13:9001;`
+      (postgres-test api.php location + generic .php location).
+      Backup: nginx.conf.bak-20261125 same dir.
+    - systemctl --user restart raceman-web.service (a reload was NOT
+      enough — see gotcha below).
+  dell_live: |
+    - ~/CascadeProjects/chaba-raceman/nginx.conf on tony-dell sed'd to
+      the same content (md5 now matches omen) — file is unused there
+      (dell raceman-web retired) but keeps the pair in sync.
+  ssot: |
+    - ssot.services.yml: raceman-php gained `host: tony_dell` +
+      decision note; raceman-web note records the fastcgi upstream.
+    - ssot.audit.hosts.yml: dell expected_services raceman-php note;
+      omen expected_services raceman-web note; omen expected_absent
+      gained raceman-php.service (ghost guard).
+    - ssot.health.home.web.yml: raceman-php note records backend
+      role + the 2026-10-20..11-16 outage window.
+    - ssot.apps.raceman.yml: deployment section gained PHP-backend
+      item (API is not static; placement + consumer documented).
+
+gotcha_bind_mount_single_file:
+  - >-
+    nginx.conf is bind-mounted as a SINGLE FILE into the raceman-web
+    container (`-v .../nginx.conf:/etc/nginx/conf.d/default.conf`).
+    `sed -i` replaces the inode, so the container kept serving the
+    OLD config — `nginx -t` inside the container passed against the
+    stale file and `nginx -s reload` reloaded the stale file; PHP
+    routes stayed 502 until `systemctl --user restart
+    raceman-web.service` re-resolved the mount. For single-file
+    bind mounts either edit in place (cat tmp > file) or restart the
+    container — reload alone is not enough after sed -i.
+
+verified_state_after_fix:
+  app_index: "GET /apps/raceman/ -> 200 (omen :8083)"
+  api_list: "GET /apps/raceman/api/list.php -> 200 JSON course list
+    (was 502)"
+  api_load: "GET /apps/raceman/api/load.php?course=tabsai-ws8-track3
+    -> 200 with real overrides JSON"
+  api_save_get: "GET /apps/raceman/api/save.php -> 400
+    {\"error\":\"empty body\"} — php-fpm executing app code, not 502"
+  yt_live_media: "GET /apps/yt-live/4njFdBF_42I-cast-times.txt -> 200
+    (co-tenant on same nginx unaffected)"
+  nonexistent_php: "/apps/raceman/index.php, api/status.php -> 404
+    (files don't exist; try_files =404 is correct behavior)"
+  php_fpm: "0.0.0.0:9001 LISTEN on tony-dell; TCP connect from omen
+    OPEN; no listen.allowed_clients restriction"
+
+rollback: |
+  On tony-omen: cp ~/CascadeProjects/chaba-raceman/nginx.conf.bak-20261125
+  ~/CascadeProjects/chaba-raceman/nginx.conf && systemctl --user
+  restart raceman-web.service  (inode-preserving cp keeps the mount;
+  restart re-resolves either way)
+
+followups:
+  - >-
+    ~/CascadeProjects/chaba-raceman is NOT a git repo on either host —
+    the nginx.conf fix lives only on the two host filesystems. If the
+    directory is ever re-deployed from a canonical source, the
+    fastcgi_pass target must be templated per host (omen->dell IP,
+    dell->127.0.0.1) or the file will regress to 127.0.0.1:9001.
+    Worth a card if/when chaba-raceman gets a real repo + deploy path.
+  - >-
+    Cross-host fastcgi means course API depends on tailnet dell<->omen.
+    If dell is down, static app still serves but save/load 502s —
+    acceptable for a LAN tool; noted in ssot.services.yml.
+  - >-
+    php-fpm :9001 is bound 0.0.0.0 on dell (LAN + tailnet reachable);
+    ssot.security.tony-dell.yml already lists it class:lan. If the
+    threat model tightens, php-fpm.conf could add
+    listen.allowed_clients for the omen tailnet IP only.

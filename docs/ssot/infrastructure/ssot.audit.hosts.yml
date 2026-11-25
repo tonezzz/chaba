@@ -240,7 +240,7 @@ hosts:
       - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
-      - {name: raceman-php.service, type: service, scope: user}
+      - {name: raceman-php.service, type: service, scope: user, note: "php-fpm :9001 — canonical raceman course API backend; consumed by omen raceman-web nginx via fastcgi 100.68.142.13:9001 (placement decided 2026-11-25)"}
       - {name: rclone-gdrive.service, type: service, scope: user}
       - {name: weaviate.service, type: service, scope: user}
       - {name: web.service, type: service, scope: user}
@@ -969,7 +969,7 @@ hosts:
       - {name: chaba-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff at dell power-off"}
       - {name: ha-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff"}
       - {name: gemini-ollama-proxy.service, type: service, scope: user, note: ":11435"}
-      - {name: raceman-web.service, type: service, scope: user, note: "nginx :8083 serves yt-live media"}
+      - {name: raceman-web.service, type: service, scope: user, note: ":8083 nginx — raceman app + yt-live media; PHP fastcgi_pass -> 100.68.142.13:9001 (dell)"}
       - {name: playlived.service, type: service, scope: user}
       - {name: playlive-chrome.service, type: service, scope: user}
       - {name: yolo-detect.service, type: service, scope: user}
@@ -980,6 +980,12 @@ hosts:
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
     expected_absent:
+      - name: raceman-php.service
+        scope: user
+        note: "PHP backend lives on tony-dell (:9001, host network) — omen
+          raceman-web nginx fastcgi_passes to 100.68.142.13:9001; a local
+          php-fpm here would shadow it (placement decided 2026-11-25,
+          card raceman-php-placement-decision)"
       - name: mn-ha-dev.service
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
