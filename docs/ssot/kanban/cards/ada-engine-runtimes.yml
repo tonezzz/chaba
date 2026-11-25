@@ -1,7 +1,7 @@
 id: ada-engine-runtimes
 title: Per-engine runtimes — parallel engine versions on idc03 (checkout+venv or quadlet per line@version)
 column: backlog
-updated: 2026-11-25 10:37
+updated: 2026-11-25 10:56
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): every ada-* instance shares the one idc03 ada-voice checkout
   + .venv, so the fleet-wide engine version is single — lanes cant run DIFFERENT engine versions simultaneously.
@@ -197,6 +197,11 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
   type: dispatch
   status: queued
