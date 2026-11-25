@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
 column: review
-updated: 2026-11-25 17:19
+updated: 2026-11-25 17:24
 priority: medium
 tags:
 - mn01
@@ -124,6 +124,9 @@ comms:
 - at: 2026-11-25 17:19
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 17:24
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''mn01-has-no-swap-and-earlyoom-''] block close)'
 action:
   type: dispatch
   status: done
@@ -135,6 +138,8 @@ action:
     Consumed 2min 54.315s CPU time over 1h 27min 45.201s wall clock time, 946.7M memory peak, 574.1M memory swap
     peak.'
   verified: true
+  sweep:
+    close_held: 2026-11-25 17:24
 claim:
   since: 2026-11-25 15:46
 requests:

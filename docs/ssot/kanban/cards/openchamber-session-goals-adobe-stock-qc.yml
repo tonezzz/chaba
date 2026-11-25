@@ -1,7 +1,7 @@
 id: openchamber-session-goals-adobe-stock-qc
 title: Test OpenChamber Session Goals for Adobe Stock reuse QC
 column: doing
-updated: 2026-11-25 17:22
+updated: 2026-11-25 17:24
 brief: Evaluate whether OpenChamber Session Goals can drive a bounded Adobe Stock reuse review to a verifiable stopping
   condition.
 priority: low
@@ -290,6 +290,10 @@ comms:
     provenance+missing-preview+open-questions, stop-on-acceptance, no cards/uploads/gen/license/publish), goal.json
     contract, verify.py held-out verifier (pass on fixture, fail on mutated negative), README runbook for the live
     idc02 ada-ocb run, jobs trail docs/ssot/jobs/devnest'
+- at: 2026-11-25 17:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-093411-create-a-read-only-session-goa no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -298,5 +302,7 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 17:24
 claim:
   since: 2026-11-25 16:33
