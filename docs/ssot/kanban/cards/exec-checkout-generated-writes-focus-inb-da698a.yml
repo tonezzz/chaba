@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: doing
-updated: 2026-11-25 19:01
+column: review
+updated: 2026-11-25 19:07
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -283,13 +283,40 @@ comms:
     test alert fired on omen landed in idc03 served focus-inbox (2026-11-25-183751-exec-writes-verify-omen.yml);
     render-handoff-inbox skips cleanly off-writer. ada-memory git dumps moved to new ada-memory-backup-writer job
     on idc03 (install post-merge); exec copies declared '
+- at: 2026-11-25 19:07
+  from: tony-macbook
+  text: 'finished (ok): exit=0 drift (mn01 ~145, dell ~431 inbox files) still needs a separate cleanup decision.
+    | devin-task-20261125-154351-go'
+- at: 2026-11-25 19:07
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 19:07
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-154351-goal-generated-writes-from-non
+    is 774 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 19:07
+  from: chaba
+  text: banked 687 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:07
+  from: chaba
+  text: pushed dispatch/20261125-154351-goal-generated-writes-from-non to origin
+- at: 2026-11-25 19:07
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 19:07
+  from: chaba
+  text: 'worktree kept: dirty — 28 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 drift (mn01 ~145, dell ~431 inbox files) still needs a separate cleanup decision. | devin-task-20261125-154351-goal-generated-writes-from-non.service:
+    Consumed 4min 35.055s CPU time over 3h 19min 37.065s wall clock time, 561.6M memory peak.'
 claim:
   since: 2026-11-25 15:43
+review_kind: verify
