@@ -1,7 +1,7 @@
 id: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
 title: embed-pool-shim fast-fail for dead upstreams (member loss costs 17x latency)
 column: doing
-updated: 2026-11-25 12:37
+updated: 2026-11-25 12:39
 priority: low
 tags:
 - ops
@@ -223,6 +223,14 @@ comms:
     upstream right now (idc03-local consec=7). con01 itself was later dropped from the pool entirely (zz-drop-con01.conf).
     Residual gaps closed in c416b288f89: /health now exposes a computed dead flag per upstream, DeadCooldown regression
     tests added (breaker had ZERO coverage — defer t'
+- at: 2026-11-25 12:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-122952-soak-2026-11-08-con01-dropped- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-122952-soak-2026-11-08-con01-dropped- on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -230,5 +238,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 12:38
+    dirty: 2
 claim:
   since: 2026-11-25 12:29
