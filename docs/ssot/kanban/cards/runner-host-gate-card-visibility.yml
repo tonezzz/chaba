@@ -1,7 +1,7 @@
 id: runner-host-gate-card-visibility
 title: host-level claim gates skip before per-card eval — no defer note reaches the card
-column: backlog
-updated: 2026-11-25 10:56
+column: doing
+updated: 2026-11-25 10:57
 priority: medium
 tags:
 - runner-agent
@@ -246,13 +246,16 @@ comms:
   text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 10:57
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
     XDG_SESSION_TYPE ='x11' UID=1000 PID=3554464 PPID=3554381 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
     SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
@@ -262,5 +265,6 @@ action:
   sweep:
     stale_running: 2026-11-25 09:39
     dirty: 2
+  runner: tony-macbook
 claim:
-  since: 2026-11-25 09:26
+  since: 2026-11-25 10:57
