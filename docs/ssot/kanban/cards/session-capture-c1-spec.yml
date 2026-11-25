@@ -1,7 +1,7 @@
 id: session-capture-c1-spec
 title: 'Session capture C.1: router/harvester contract spec (SSOT)'
 column: backlog
-updated: 2026-11-25 14:03
+updated: 2026-11-25 14:11
 priority: medium
 tags:
 - dev-0038-followup
@@ -199,9 +199,12 @@ comms:
 - at: 2026-11-25 14:03
   from: tony
   text: put on hold
+- at: 2026-11-25 14:11
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
 action:
   type: dispatch
-  status: idle
+  status: failed
   lane: devin
   lane_source: fallback
   attempts: 2
@@ -213,6 +216,7 @@ action:
     memory peak, 0B memory swap peak.'
   runner: idc02
   verified: true
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-25 12:21
 review_kind: verify
