@@ -1,7 +1,7 @@
 id: yomi-line-session-expired-idc03
 title: 'idc03: yomi LINE session expired — update-conversations writes 0 chats'
 column: doing
-updated: 2026-11-25 16:05
+updated: 2026-11-25 16:09
 priority: medium
 tags:
 - yomi
@@ -69,6 +69,10 @@ comms:
     Troubleshooting — - `mcp0_list_conversa; [ada-expert-consult-tool] finished (failed): no exit record — unit
     not-found rep; [ada-expert-consult-tool] finished (failed): no exit record — unit not-found rep; [ada-tool-consolidation-merge-overlapping-615ba9]
     merge-sweep'
+- at: 2026-11-25 16:09
+  from: devin
+  text: 'raised request line-re-login-needs-your-phone-3min-wind-c11696: LINE re-login needs your phone (~3min window).
+    On idc03 run: node /home/tony/.yomi/mcpb/run.mjs login --phone +668090068'
 action:
   type: dispatch
   status: running
@@ -79,3 +83,15 @@ action:
   attempts: 1
 claim:
   since: 2026-11-25 16:04
+requests:
+- id: line-re-login-needs-your-phone-3min-wind-c11696
+  ask: 'LINE re-login needs your phone (~3min window). On idc03 run: node /home/tony/.yomi/mcpb/run.mjs login --phone
+    +66809006872 --region TH — it prints a PIN; enter it in the LINE app on your phone to approve. Plumbing is already
+    fixed (HOME=/home/tony drop-ins live + ssot.jobs.yml), so once creds refresh the next hourly yomi-update-all
+    writes rows. Full runbook: docs/ssot/jobs/infrastructure/2026-11-25-yomi-idc03-home-data-dir.yml'
+  status: open
+  at: 2026-11-25 16:09
+  from: devin
+  options:
+  - proceed
+  - hold
