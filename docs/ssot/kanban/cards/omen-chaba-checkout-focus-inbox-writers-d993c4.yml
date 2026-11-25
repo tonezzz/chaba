@@ -1,7 +1,7 @@
 id: omen-chaba-checkout-focus-inbox-writers-d993c4
 title: 'omen chaba checkout: focus-inbox writers must use board-api /inbox, not local files'
-column: backlog
-updated: 2026-11-25 07:49
+column: doing
+updated: 2026-11-25 07:50
 priority: medium
 tags:
 - chaba
@@ -201,9 +201,16 @@ comms:
 - at: 2026-11-25 07:49
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.08 > 1.0)'
+- at: 2026-11-25 07:50
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-25 07:50
