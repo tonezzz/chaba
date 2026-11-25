@@ -1,0 +1,14 @@
+id: logs-auto-tony-omen-severe-add-failed
+title: logs `tony-omen` MDDB add failed (severe)
+brief: 'The log digest flagged something worth a look: logs `tony-omen` MDDB add failed (severe). Read the note,
+  then fix it or close the card.'
+column: review
+review_kind: triage
+generated: logs-kanban
+program: logs-digest
+priority: medium
+note: last `severe` lane run recorded 1 failed /add(s) to MDDB (mddb add failed). The cursor was held at the last
+  confirmed line, so later lines replay next run — but until MDDB recovers they never reach host-logs or the digest.
+help: Check http://100.102.134.91:11026/v1 health and free space, then retry `log-shipper.py --self --cursor-tag
+  severe` on tony-omen. This card auto-closes when a clean state doc lands.
+updated: '2026-11-26'
