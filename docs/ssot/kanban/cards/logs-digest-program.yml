@@ -2,7 +2,7 @@ id: logs-digest-program
 title: 'Program: log digesting — coverage, health, freshness'
 brief: Umbrella card for turning raw logs into a readable digest — detection and daily reports are already live.
   It tracks the remaining lanes; no action needed.
-column: doing
+column: review
 program: logs-digest
 metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships both journals daily; pipeline failures
   surface as logs-auto-* cards within 15min via kanban-sync; severe spikes and shipper backlog become tracked work;
@@ -10,7 +10,7 @@ metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships bot
 note: 'Epic for the kanban-in-logs work (2026-10-04). Detection layer live: log-shipper posts per-host ship-state
   docs (reachable/scanned/shipped/ journals), logs-report posts report/24h, logs-kanban turns gaps into auto cards
   inside kanban-sync on dell. Remaining work = the child cards.'
-updated: 2026-11-25 16:16
+updated: 2026-11-25 16:17
 comms:
 - at: 2026-10-06 08:13
   from: tony
@@ -353,6 +353,28 @@ comms:
   text: 'redeploy check: runner-agent.py already converged fleet-wide — sha256 1514c75c… identical on ~/.local/bin/runner-agent
     and ~/CascadeProjects/chaba/scripts/board/runner-agent.py on idc03, idc02, tony-dell, and tony-macbook (this
     host). No drift/stale errors in last 24h of runner-agent.service journals; timers active. No copy needed — byte-identical.'
+- at: 2026-11-25 16:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 check card comms for same-day duplicate dispatches of drift-redeploy goals before
+    re-verifying). | devin-task-202'
+- at: 2026-11-25 16:17
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:17
+  from: chaba
+  text: 'session-end checkpoint 03a8bc8c: 1 leftover file(s) committed'
+- at: 2026-11-25 16:17
+  from: chaba
+  text: banked 53 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:17
+  from: chaba
+  text: pushed dispatch/20261125-161600-goal-redeploy-the-drifted-runn to origin
+- at: 2026-11-25 16:17
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:17
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 ref: OPS-0094
 requests:
 - id: the-logs-digest-program-epic-t-8bb097
@@ -369,16 +391,21 @@ requests:
   answer: ★ Keep the epic card in the backlog as a tracking umbrella while working on its child cards like OPS-0094.
   executed: 2026-10-24 hold
 action:
-  status: running
+  status: done
   type: dispatch
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 check card comms for same-day duplicate dispatches of drift-redeploy goals before re-verifying).
+    | devin-task-20261125-161600-goal-redeploy-the-drifted-runn.service: Consumed 6.607s CPU time over 47.489s wall
+    clock time, 297.4M memory peak.'
+  verified: false
 spec: 'Goal: Redeploy the drifted runner-agent script from the chaba repo to the hosts idc03, tony-macbook, idc02,
   and tony-dell. Target hosts are idc03, tony-macbook, idc02, and tony-dell using the chaba repo path /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
   Constraint: copy scripts/board/runner-agent.py to ~/.local/bin/runner-agent on each specified host. Testable done-condition:
   running runner-agent successfully executes without drift errors across idc03, tony-macbook, idc02, and tony-dell.'
 claim:
   since: 2026-11-25 16:15
+review_kind: verify
