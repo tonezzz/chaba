@@ -2,7 +2,7 @@ id: render-board-real-cost-git-subprocesses
 title: render-board real cost is load_cards YAML + compute_checks git subprocesses, not _outcome_index (~2min on
   tony-omen)
 column: doing
-updated: 2026-11-25 09:27
+updated: 2026-11-25 09:28
 brief: 'Measured while fixing render-board-worktree-rglob-slow (2026-11-17): on tony-omen a full render is 2m8s
   — load_cards 43s (900 YAML parses), compute_checks 76s (a `git merge-base` + `git cherry` subprocess per dispatch
   run branch per card). _outcome_index itself is now ~0.15s after the flat-glob fix. kanban-dispatch runs this inline
@@ -200,6 +200,10 @@ comms:
     2026-11-24 DONE (dispatch 080808): (1) landed pri; [devin-lane-cheap-ops-reroute] 2026-11-24 session: found
     prior slice safe on ori; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [render-jobs-selective-install-ops0790-tonydell]
     2026-11-07 t'
+- at: 2026-11-25 09:28
+  from: devin
+  text: 'dispatch started on mn01: verifying what #197 already landed (CSafeLoader + branch --merged batch + tip-keyed
+    cherry cache) vs remaining spec gaps — measuring render phases now'
 action:
   type: dispatch
   status: running
