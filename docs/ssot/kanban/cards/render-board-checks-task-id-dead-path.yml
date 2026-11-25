@@ -1,0 +1,17 @@
+id: render-board-checks-task-id-dead-path
+title: compute_checks git chips are dead code — action.task_id is never populated anymore
+column: backlog
+updated: 2026-11-25 09:45
+brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
+  so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
+  cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
+  text (devin-task-<slug>.service) and claim.session is empty.'
+spec: 'Decide how compute_checks should recover the task slug: (a) parse action.result for devin-task-<slug> / devin-dispatch
+  task id, (b) read claim.session or runner state.json via merge-sweep task_id_for fallback, or (c) accept the chips
+  are deprecated and delete the git machinery. Verify against a card with a real merged dispatch run that the code-merged
+  chip renders again.'
+ref: KNB-1366
+comms:
+- at: 2026-11-25 09:45
+  from: devin
+  text: card captured via board-api
