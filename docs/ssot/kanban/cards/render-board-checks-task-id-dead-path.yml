@@ -1,7 +1,7 @@
 id: render-board-checks-task-id-dead-path
 title: compute_checks git chips are dead code — action.task_id is never populated anymore
 column: backlog
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:03
 brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
   so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
   cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
@@ -40,6 +40,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: '[auto-dispatch] wave 5 (2026-11-25 17:03): queued by the overnight incremental dispatcher; all gates clear.'
 action:
   type: dispatch
   status: queued
