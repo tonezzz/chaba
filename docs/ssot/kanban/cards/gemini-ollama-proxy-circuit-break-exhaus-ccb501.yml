@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-circuit-break-exhaus-ccb501
 title: 'gemini-ollama-proxy: circuit-break exhausted free Gemini key'
 column: done
-updated: 2026-11-25 17:13
+updated: 2026-11-25 17:28
 note: 'Free-tier GEMINI_API_KEY is quota-exhausted (35k 429s/day). Every embed request pays a doomed free-tier call
   before paid fallback — doubles API calls and adds latency that helps blow the 8s memory_search budget. Add a breaker:
   after N consecutive free-key 429s, route straight to paid for a cooldown, half-open probe to recover. Also reduces
@@ -187,6 +187,10 @@ comms:
 - at: 2026-11-25 17:13
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
