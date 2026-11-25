@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: done
-updated: 2026-11-25 11:21
+updated: 2026-11-25 12:29
 priority: medium
 tags:
 - infra
@@ -278,6 +278,13 @@ comms:
     (local HA refresh at 04:14Z vs canonical master). Resolved by the established policy: HEAD had 0 unique commits
     (ancestor, 694 behind), so the refresh was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/{ha-ssot-refresh.patch,ha-ssot-conflicted.yml}
     plus runner-agent-local.patch, then git reset --hard origin/master. Untracked live files (taskdir-prun'
+- at: 2026-11-25 12:29
+  from: tony
+  text: '2026-11-25 12:40 (+07): systemic fix landed for this recurrence class — stacks/web/public/apps/ha/ssot.ui.ha.yml
+    added to SAFE_PULL_GENERATED_RE in scripts/git-safe-pull.sh (commit cb0be357c9). The file is rebuilt every 15m
+    by network-scan-tony in the exec checkout, so autostash-pop kept colliding with upstream refreshes and failed
+    chaba-repo-sync.service. With the path treated as generated, local rebuilds are preserved as .local-conflict-*
+    and upstream wins cleanly. The specific refreshed snaps'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
