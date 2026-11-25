@@ -1,6 +1,6 @@
 id: llm-provider-verification-2026-11
 title: LLM provider verification — four open questions from the Education hierarchy
-column: doing
+column: backlog
 updated: 2026-11-25 07:47
 brief: Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider
   leg is promoted in the idc03 gateway chains.
@@ -256,6 +256,10 @@ comms:
   from: chaba
   text: started devin-task-llm-provider-verification-2026-11-1795567638 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-25 07:47
+  from: idc02
+  text: 'finished (failed): exit=2 d-only profile. | devin-task-llm-provider-verification-2026-11-1795567638.service:
+    Main process exited, code=exit — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
 action:
   type: dispatch
   repo: chaba
@@ -319,16 +323,19 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: failed
   attempts: 2
-  result: 'exit=0 Started devin-task-llm-provider-verification-2026-11-1795254266.service - runner llm-provider-verification-2026-11
-    staged read-only profile. | devin-task-llm-provider-verification-2026-11-1795254266.service: Consumed 23.568s
-    CPU time.'
+  result: 'exit=2 d-only profile. | devin-task-llm-provider-verification-2026-11-1795567638.service: Main process
+    exited, code=exited, status=2/INVALIDARGUMENT | devin-task-llm-provider-verification-2026-11-1795567638.service:
+    Failed with result ''exit-code''.'
   sweep:
     stale_running: 2026-11-21 16:48
     dirty: 1
     session_gone: 2026-11-23 08:35
   runner: idc02
+  last_failure: 'exit=2 d-only profile. | devin-task-llm-provider-verification-2026-11-1795567638.service: Main
+    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-llm-provider-verification-2026-11-1795567638.service:
+    Failed with result ''exit-code''.'
 claim:
   since: 2026-11-25 07:47
 review_kind: verify
