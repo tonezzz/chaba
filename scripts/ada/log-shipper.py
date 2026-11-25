@@ -26,6 +26,11 @@ granularity bug, not just slow writes.
 MDDB-down tolerant: posts with a short timeout and stops at the first
 failure (lines are ordered — a shipped-cursor gap would silently drop
 lines); the remote cursor only advances past lines confirmed shipped.
+That safety must not look like success: any failed /add (host-logs or
+heartbeat) makes the process exit 1, so systemd, the SSOT audit and the
+kanban judge can see it. Exit 0 means every attempted post landed (a
+host that is merely unreachable still exits 0 — that is an offline
+coverage gap, not a write failure).
 
 Per-host model (2026-10-05): each fleet host runs this on its own
 systemd user timer (`--self`, installed by install-log-shipper.sh) and
@@ -54,7 +59,8 @@ second per-host timer can run it hourly without disturbing the full
 lane's cursor — a severe line never queues behind a capped backlog.
 `--kinds`/`--cursor-tag` are the generic knobs underneath; `--severe` is
 `--kinds oom,panic,failed --cursor-tag severe`. Severe runs post
-`ship-severe/<host>` state docs (logs-kanban only reads `ship/`).
+`ship-severe/<host>` state docs; logs-kanban judges backlog/coverage on
+`ship/<host>` but reads every lane's state for add failures.
 """
 
 from __future__ import annotations
@@ -565,16 +571,18 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
             "error": "mddb add failed" if fail else ""}
 
 
-def post_state(r: dict) -> None:
+def post_state(r: dict) -> bool:
     """Upsert the per-host ship heartbeat. Runs even when shipped=0 — a
     quiet host and a broken shipper must not look identical. Tagged lanes
     (e.g. severe) write `ship-<tag>/<host>` — separate key so the fast
     lane's counters never clobber the full lane's `ship/<host>` doc that
-    logs-kanban judges backlog/coverage against."""
+    logs-kanban judges backlog/coverage against. Returns the /add result:
+    a failed heartbeat is itself a write failure (the judge cannot see
+    this run at all), so main() counts it in the exit code."""
     run = r.get("run") or "full"
     key = f"ship/{r['host']}" if run == "full" else \
         f"ship-{run}/{r['host']}"
-    _post("/add", {
+    return _post("/add", {
         "collection": STATE_COLLECTION, "key": key,
         "lang": "en",
         "contentMd": json.dumps(r),
@@ -655,6 +663,7 @@ def main() -> int:
 
     hosts = [_local_name()] if args.self_host else \
         [x.strip() for x in args.hosts.split(",") if x.strip()]
+    add_failures = state_failures = 0
     for h in hosts:
         try:
             r = ship(h, args.dry_run, args.max_docs,
@@ -665,16 +674,23 @@ def main() -> int:
                      if r.get("suppressed") else "")
                   + f", {r['failed']} failed)"
                   + ("" if r.get("reachable") else " — unreachable"))
-            if not args.dry_run:
-                post_state(r)
+            add_failures += int(r.get("failed") or 0)
+            if not args.dry_run and not post_state(r):
+                state_failures += 1
         except Exception as e:
             print(f"warn: {h}: {e}", file=sys.stderr)
             if not args.dry_run:
-                post_state({"host": h, "shipped": 0, "failed": 0,
-                            "scanned": 0, "reachable": False,
-                            "journals": {}, "run": tag or "full",
-                            "error": str(e)[:200]})
-    return 0
+                ok = post_state({"host": h, "shipped": 0, "failed": 0,
+                                 "scanned": 0, "reachable": False,
+                                 "journals": {}, "run": tag or "full",
+                                 "error": str(e)[:200]})
+                if not ok:
+                    state_failures += 1
+    if add_failures or state_failures:
+        print(f"error: {add_failures} host-log add failure(s), "
+              f"{state_failures} heartbeat write failure(s) — cursor "
+              "held at last confirmed line", file=sys.stderr)
+    return 1 if (add_failures or state_failures) else 0
 
 
 if __name__ == "__main__":
