@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
-column: doing
-updated: 2026-11-25 11:03
+column: review
+updated: 2026-11-25 11:05
 priority: medium
 tags:
 - observability
@@ -297,20 +297,40 @@ comms:
     + trail doc docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml + dispatch-outcome md. Verified: live
     --no-alert run (5 containers, ok), MDDB baseline vs live leader over tailnet, render-jobs --check OK 133 jobs.
     NOT installed per dispatch rules — after merge+repo-sync run '
+- at: 2026-11-25 11:05
+  from: mn01
+  text: 'finished (ok): exit=0 un already proved the log-signature leg catches the real ''embedding attempt failed''
+    storm. | devin-task-20261125-'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:05
+  from: chaba
+  text: banked 8 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:05
+  from: chaba
+  text: pushed dispatch/20261125-035625-the-mddb-embed-openrouter-retr to origin
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0  merge + repo sync, and the first real tick will file one expected consolidated inbox entry. |
-    devin-task-20261125-090624-the-mddb-embed-openrouter-retr.service: Consumed 28.704s CPU time over 9min 31.995s
-    wall clock time, 355M memory peak.'
+  result: 'exit=0 un already proved the log-signature leg catches the real ''embedding attempt failed'' storm. |
+    devin-task-20261125-035625-the-mddb-embed-openrouter-retr.service: Consumed 31.835s CPU time over 7min 33.594s
+    wall clock time, 518.7M memory peak.'
   sweep:
     stale_running: 2026-11-25 09:24
     dirty: 16
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 10:55
 review_kind: verify
