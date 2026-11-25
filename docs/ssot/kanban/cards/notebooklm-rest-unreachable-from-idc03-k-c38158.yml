@@ -1,7 +1,7 @@
 id: notebooklm-rest-unreachable-from-idc03-k-c38158
 title: NotebookLM REST unreachable from idc03 (kraut session-close failures)
 column: backlog
-updated: 2026-11-25 17:05
+updated: 2026-11-25 17:06
 spec: 'Revalidated 2026-11-20; this is still live, not superseded by the service move. The idc03 ada-ai-kraut service
   is active, but its EnvironmentFile ~/.config/secrets/michael-ha/backend.env sets NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1
   (tony-dell). From idc03, GET http://100.68.142.13:3011/health/auth fails to connect (HTTP 000). The service is
@@ -131,6 +131,9 @@ comms:
 - at: 2026-11-25 17:05
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
 action:
   type: dispatch
   status: queued

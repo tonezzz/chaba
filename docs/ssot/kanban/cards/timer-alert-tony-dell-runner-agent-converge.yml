@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-agent-converge
 title: Timer runner-agent-converge on tony-dell failing
 column: done
-updated: 2026-11-25 17:05
+updated: 2026-11-25 17:06
 priority: high
 tags:
 - timer-alert
@@ -128,6 +128,9 @@ comms:
 - at: 2026-11-25 17:05
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
