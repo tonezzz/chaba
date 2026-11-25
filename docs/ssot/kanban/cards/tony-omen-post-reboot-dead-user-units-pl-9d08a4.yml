@@ -2,7 +2,7 @@ id: tony-omen-post-reboot-dead-user-units-pl-9d08a4
 title: 'tony-omen post-reboot dead user units: plug-watch, ha-stall-watchdog, playlive-chrome, yolo-detect still
   disabled+inactive'
 column: doing
-updated: 2026-11-25 10:31
+updated: 2026-11-25 10:37
 priority: medium
 tags:
 - tony-omen
@@ -70,6 +70,13 @@ comms:
     already restored; SSOT declares all 4 expected on omen. Consumers check out: plug-watch->HA ws, ha-stall-watchdog->HA
     :8123 (both 200), playlive-chrome:9223<-chaba-playwright-mcp auto-mode, yolo-detect:8780<-HA rest_command/sensor.
     yolo-xiaomi cannot bind :8780 (jev-'
+- at: 2026-11-25 10:37
+  from: devin
+  text: '[done] All 4 units restored on omen (enable+start, verified by surface): plug-watch subscribed to HA ws,
+    ha-stall-watchdog probing :8123, playlive-chrome CDP live on :9223 (chaba-playwright-mcp consumer), yolo-detect
+    serving 127.0.0.1:8780 for HA rest/sensor. Correction to card framing: archive audit-auto-tony-omen (2026-11-12)
+    shows this stack was ALREADY deliberately disabled before the 11-23 reboot — not reboot casualties. yolo-xiaomi
+    documented retired (undeclared + cannot bind :8780 vs jev-'
 action:
   type: dispatch
   status: running
