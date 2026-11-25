@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
 column: done
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:05
 priority: medium
 tags:
 - ops
@@ -262,6 +262,10 @@ comms:
 - at: 2026-11-25 17:02
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
