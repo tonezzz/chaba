@@ -286,5 +286,53 @@ class TestTick(FlagsCase):
                       [(e["action"], e["outcome"]) for e in ev])
 
 
+class TestGhostPrune(FlagsCase):
+    """Units that leave discovery must not keep actuation state forever
+    (idc02 ghost: ada-code.service outlived its unit file)."""
+
+    def chain(self, nodes, act, ticks):
+        prev_act = act
+        for _ in range(ticks):
+            prev_act, _ = self.tick(nodes, {"actuation": prev_act,
+                                            "actions": []},
+                                    mode="recommend")
+        return prev_act
+
+    def ghost_prev(self):
+        return {"requested_mode": "recommend", "mode": "recommend",
+                "units": {"ghost.service": {
+                    "fail_ticks": 56,
+                    "held": {"gate": "not-allowlisted",
+                             "ts": iso_ago(3600)}}},
+                "metrics": {}}
+
+    def test_ghost_pruned_after_misses(self):
+        act = self.chain({}, self.ghost_prev(), mod.UNIT_PRUNE_MISSES)
+        self.assertNotIn("ghost.service", act["units"])
+
+    def test_ghost_kept_within_grace(self):
+        act = self.chain({}, self.ghost_prev(), 5)
+        self.assertIn("ghost.service", act["units"])
+        self.assertEqual(act["units"]["ghost.service"]["missed"], 5)
+
+    def test_missed_resets_when_seen_again(self):
+        act = self.chain({}, self.ghost_prev(), 5)
+        act, _ = self.tick({"k": node(unit="ghost.service",
+                                      state="active")},
+                           {"actuation": act, "actions": []},
+                           mode="recommend")
+        self.assertEqual(act["units"]["ghost.service"]["missed"], 0)
+
+    def test_held_cleared_on_recovery(self):
+        prev = {"actuation": {"mode": "recommend", "units": {
+            "jev-x.service": {"fail_ticks": 3,
+                              "held": {"gate": "not-allowlisted",
+                                       "ts": iso_ago(60)}}}},
+                "actions": []}
+        act, _ = self.tick({"k": node(state="active")}, prev,
+                           mode="recommend")
+        self.assertNotIn("held", act["units"]["jev-x.service"])
+
+
 if __name__ == "__main__":
     unittest.main()
