@@ -100,9 +100,10 @@ cpu_cores() {
 # hint — retry briefly and reject implausible readings instead of posting
 # null on a transient SMC miss.
 smctemp_read() {
+  flag=${2:--c}
   n=0
   while [ "$n" -lt 3 ]; do
-    v=$("$1" -c 2>/dev/null | head -1)
+    v=$("$1" "$flag" 2>/dev/null | head -1)
     case "$v" in
       ''|*[!0-9.]*) ;;
       *) awk -v v="$v" 'BEGIN{exit !(v>0 && v<150)}' && { echo "$v"; return 0; } ;;
@@ -133,12 +134,25 @@ cpu_temp_c() {
   echo "null"
 }
 
+gpu_temp_c() {
+  # Under ollama/Metal the GPU runs hotter than the CPU — carry both so the
+  # admission gate can use max(cpu_temp_c, gpu_temp_c) without a second
+  # read on the receiving side. On Linux without smctemp this is null.
+  if command -v smctemp >/dev/null 2>&1; then
+    smctemp_read smctemp -g && return
+  fi
+  if [ -x "$HOME/.local/bin/smctemp" ]; then
+    smctemp_read "$HOME/.local/bin/smctemp" -g && return
+  fi
+  echo "null"
+}
+
 EXTRA=""
 [ -n "${HEARTBEAT_EXTRA_CMD:-}" ] && EXTRA="\"extra\": $(sh -c "$HEARTBEAT_EXTRA_CMD" 2>/dev/null || echo null),"
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_cores\":$(cpu_cores),\"cpu_temp_c\":$(cpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_cores\":$(cpu_cores),\"cpu_temp_c\":$(cpu_temp_c),\"gpu_temp_c\":$(gpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )

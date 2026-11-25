@@ -9,7 +9,8 @@ or busy member device. Eligible requests are proxied through unchanged —
 incl. streamed ollama responses.
 
 Gates (snapshot reasons): heartbeat stale >900s / missing, ollama_ok false,
-disk_free_gb < 20, load_1m > 4.0, cpu_temp_c > 55, node_busy (tmux_jobs,
+disk_free_gb < 20, load_1m > 4.0, max(cpu_temp_c, gpu_temp_c) > 55
+(smctemp -c/-g), node_busy (tmux_jobs,
 load_ok false, or load1/cores > 1.0).
 
 Config (env):
