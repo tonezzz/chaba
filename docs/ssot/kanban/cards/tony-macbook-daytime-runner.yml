@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
-column: backlog
-updated: 2026-11-25 19:08
+column: doing
+updated: 2026-11-25 19:09
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -223,9 +223,15 @@ comms:
 - at: 2026-11-25 19:08
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 19:09
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-25 19:09
