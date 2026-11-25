@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
-column: doing
-updated: 2026-11-25 15:26
+column: review
+updated: 2026-11-25 15:32
 priority: medium
 tags:
 - tony-omen
@@ -321,9 +321,22 @@ comms:
     still enabled. Reboot deferred despite reboot-now answer: tony-omen is running an active upscale-eval queue
     (/tmp/resshift-eval queue-v1-rsd.sh — v1-s15 running, RSD queued, ~1.5h left, load ~66 on 12 cores); rebooting
     would destroy it for a check the armed @reboot verifier (snap-boot-v'
+- at: 2026-11-25 15:32
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ay-fix.yml` and `dispatch-outcome-20261125-152120-find-why-snap-snapd-desktop-in.md`.
+    | devin-task-20261125-15212'
+- at: 2026-11-25 15:32
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:32
+  from: chaba
+  text: banked 198 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 15:32
+  from: chaba
+  text: pushed dispatch/20261125-152120-find-why-snap-snapd-desktop-in to origin
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-macbook
@@ -331,6 +344,8 @@ action:
   sweep:
     stale_running: 2026-11-25 10:10
     dirty: 2
+  result: 'exit=0 ay-fix.yml` and `dispatch-outcome-20261125-152120-find-why-snap-snapd-desktop-in.md`. | devin-task-20261125-152120-find-why-snap-snapd-desktop-in.service:
+    Consumed 1min 11.842s CPU time over 9min 43.743s wall clock time, 717.6M memory peak.'
 claim:
   since: 2026-11-25 09:50
 requests:
@@ -369,3 +384,4 @@ requests:
   suggested: wait-natural
   answer: reboot-now — Reboot tony-omen now — I verify NRestarts post-boot
   executed: 2026-11-25 none
+review_kind: verify
