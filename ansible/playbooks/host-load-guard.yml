@@ -1,0 +1,137 @@
+---
+# host-load-guard.yml — deploy the CPU-job wrapper, aggregate slice and alarms.
+#
+# Follow-up to the 2026-11-25 tony-omen load incident (1m load ~57-63 on 12
+# CPUs, swap 16/16 GiB, open-jev OOM-killed at 14:21). Structural gaps:
+#   1. Long CPU jobs were bare `nohup ... &` from dead shells — no timeout,
+#      thread cap, stable log path, or aggregate limit.
+#   2. Netdata stock load alarms are `to: silent`, so spikes never reached
+#      the board-api inbox. Stock `used_swap` already notifies; do not duplicate.
+#
+# Changes (all idempotent):
+#   * scripts/ada/run-cpu-job.sh -> /home/tony/.local/bin/run-cpu-job.sh (0755)
+#     systemd-run --user --scope in cpu-jobs.slice + OMP cap + timeout + nice.
+#   * ~/.config/systemd/user/cpu-jobs.slice (0644) — CPUQuota=600% and
+#     MemoryMax=16G bound the SUM of all cpu jobs, not just each one.
+#   * health alarm file -> /home/tony/netdata/etc/health.d/tony-load.conf
+#     (root-owned 0644), bound into the netdata container by an existing mount.
+#     Netdata picks up health.d changes after `netdatacli reload-health`.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/host-load-guard.yml --limit tony-omen
+#
+# Rollback: delete the three deployed files; remove --slice from the wrapper
+# and let systemd garbage-collect the slice. open-jev drop-ins are separate.
+
+- name: Deploy host load guard
+  hosts: tony-omen
+  gather_facts: false
+
+  vars:
+    wrapper_src: "{{ playbook_dir }}/../../scripts/ada/run-cpu-job.sh"
+    wrapper_dest: /home/tony/.local/bin/run-cpu-job.sh
+    slice_dest: /home/tony/.config/systemd/user/cpu-jobs.slice
+    netdata_health_dir: /home/tony/netdata/etc/health.d
+    alarm_dest: "{{ netdata_health_dir }}/tony-load.conf"
+
+  tasks:
+    - name: Install bounded CPU-job wrapper
+      ansible.builtin.copy:
+        src: "{{ wrapper_src }}"
+        dest: "{{ wrapper_dest }}"
+        owner: tony
+        group: tony
+        mode: "0755"
+      tags: [wrapper]
+
+    - name: Ensure user systemd config directory exists
+      ansible.builtin.file:
+        path: /home/tony/.config/systemd/user
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0700"
+      tags: [slice]
+
+    - name: Install aggregate CPU-job slice
+      ansible.builtin.copy:
+        dest: "{{ slice_dest }}"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (host-load-guard.yml). Do not edit on host.
+          # Bounds the SUM of all cpu-job-*.scope units, so a second or third
+          # job cannot saturate all 12 cores or exhaust RAM.
+          [Unit]
+          Description=Bounded slice for CPU-heavy eval jobs
+
+          [Slice]
+          CPUQuota=600%
+          MemoryMax=16G
+      tags: [slice]
+
+    - name: Reload user systemd manager for the new slice
+      # A plain SSH session has no user bus; connect via the machine bus as
+      # root instead (the same reason `systemctl --user` fails in check mode).
+      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      tags: [slice]
+
+    - name: Ensure Netdata health.d exists
+      ansible.builtin.file:
+        path: "{{ netdata_health_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+      tags: [alarms]
+
+    - name: Install load and RAM alarms (swap alarm is stock)
+      ansible.builtin.copy:
+        dest: "{{ alarm_dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (host-load-guard.yml). Do not edit on host.
+          # Stock load alarms are `to: silent`; these notify via the existing
+          # health_alarm_notify.conf -> board-api /inbox custom sender.
+
+                alarm: tony_load_1_notify
+                   on: system.load
+                class: Utilization
+                 type: System
+            component: Load
+          host labels: _os=linux
+               lookup: max -1m unaligned of load1
+                 calc: ($load_cpu_number == nan) ? (nan) : ($this * 100 / $load_cpu_number)
+                units: % of CPUs
+                every: 1m
+                 warn: $this > (($status >= $WARNING) ? (200) : (250))
+                 crit: $this > (($status == $CRITICAL) ? (400) : (500))
+                delay: down 15m multiplier 1.5 max 1h
+              summary: Load 1m above 2x CPU count
+                 info: load1 as a percentage of active CPUs; warn 200%, crit 400%
+                   to: sysadmin
+
+                alarm: tony_ram_pressure
+                   on: system.ram
+                class: Utilization
+                 type: System
+            component: Memory
+          host labels: _os=linux
+                 calc: (($used + $free + $cached + $buffers) > 0) ? ($used * 100 / ($used + $free + $cached + $buffers)) : 0
+                units: %
+                every: 1m
+                 warn: $this > (($status >= $WARNING) ? (85) : (90))
+                 crit: $this > (($status == $CRITICAL) ? (92) : (95))
+                delay: down 15m multiplier 1.5 max 1h
+              summary: RAM utilization above 90%
+                 info: used / (used + free + cached + buffers) as a percentage
+                   to: sysadmin
+      become: true
+      tags: [alarms]

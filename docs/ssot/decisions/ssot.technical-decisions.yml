@@ -675,6 +675,50 @@ decisions:
       - OPS-0029 (backlog)
       - OPS-0066 (done, closed precursor)
 
+  - id: tony-omen-cpu-job-guard-2026-11-25
+    date: "2026-11-25"
+    title: Bound CPU-heavy host jobs and cap open-jev memory on tony-omen
+    status: accepted
+    context: >-
+      2026-11-25 load incident: 1m load ~57-63 on 12 CPUs, swap 16/16 GiB, open-jev
+      OOM-killed (exit 137, 8.8G peak) at 14:21. Two ad-hoc /tmp/resshift-eval
+      inference jobs were orphaned nohup processes from a dead tty session; further
+      jobs kept appearing via an orphaned queue-v1-rsd.sh. Netdata stock load alarms
+      were `to: silent`, so spikes never reached the board inbox.
+    options:
+      - label: Kill every heavy process as it appears
+        pros: [immediate]
+        cons: [discards active work, recurs, no prevention]
+      - label: Add bounded wrapper + aggregate slice + memory cap + alerts
+        pros: [reversible, idempotent via playbook, prevents recurrence]
+        cons: [needs adoption by job launchers]
+    chosen: >-
+      Wrapper run-cpu-job.sh (systemd-run --user --scope inside cpu-jobs.slice,
+      6-thread OMP cap, 2h timeout, nice 10, fixed logs), aggregate cpu-jobs.slice
+      (CPUQuota=600%, MemoryMax=16G), MemoryHigh=4G/MemoryMax=6G on open-jev.service,
+      and Netdata load/RAM alarms via Ansible.
+    reasoning: >-
+      Renicing gave immediate relief without losing work; structural fixes target
+      the three real gaps: the unbounded launch pattern, the lack of any aggregate
+      cap across concurrent jobs, and no notification for stock load alarms
+      (to: silent). Stock used_swap already notifies, so it was not duplicated.
+      A later audit showed both open-jev student services are distinct, actively
+      used lanes, so no service was stopped for memory reclaim.
+    consequences:
+      - open-jev drop-ins 50-MemoryHigh.conf / 50-MemoryMax.conf in ~/.config/systemd/user.control/open-jev.service.d/
+      - wrapper source scripts/ada/run-cpu-job.sh -> deployed /home/tony/.local/bin/run-cpu-job.sh (0755), smoke-tested; now passes --slice=cpu-jobs.slice and accepts CPU_JOB_SLICE
+      - aggregate ~/.config/systemd/user/cpu-jobs.slice with CPUQuota=600% (CPUQuotaPerSecUSec=6s) and MemoryMax=16G; verified a live scope in that cgroup
+      - playbook ansible/playbooks/host-load-guard.yml, --check clean, idempotent (changed=0 on recheck); daemon-reload uses 'systemctl --machine=tony@.host --user' with become because SSH has no user bus
+      - alarms tony_load_1_notify + tony_ram_pressure active, recipient sysadmin -> chaba board-api inbox; load alarm fired CRITICAL at 518.8% of CPU capacity during the incident
+      - swap remains 16/16 GiB; not forced off (only ~14 GiB RAM available)
+      - open-jev-student.service (port 8778) and openjev-student.service (port 8779) audited as distinct active lanes; no reclaim, neither stopped; 13:07-13:15 restart storm ended with status=137 and has been stable since
+    related:
+      - tony-omen
+      - OPS load incident 2026-11-25
+      - evaluate-resshift-rsd-class-distilled-sr-8d9c80
+      - scripts/ada/run-cpu-job.sh
+      - ansible/playbooks/host-load-guard.yml
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
