@@ -1,7 +1,7 @@
 id: audit-miss-claimed-docs-never-landed
 title: Claimed reports/KB docs never landed
-column: backlog
-updated: 2026-11-25 15:48
+column: doing
+updated: 2026-11-25 16:27
 brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
   on master or any located copy.'
 priority: low
@@ -231,9 +231,16 @@ comms:
 - at: 2026-11-25 15:48
   from: chaba
   text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 16:27
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-25 16:27
