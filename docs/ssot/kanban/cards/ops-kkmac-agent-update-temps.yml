@@ -1,6 +1,6 @@
 id: ops-kkmac-agent-update-temps
 title: 'kk-mac: update device-telemetry agent (semantic temps)'
-column: backlog
+column: doing
 updated: 2026-11-25 19:10
 priority: low
 spec: 'kk-mac is offline (ssh timeout). Its launchd beacon still runs the pre-a4504a72 agent (zoneN temp labels,
@@ -287,10 +287,16 @@ comms:
 - at: 2026-11-25 19:10
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 19:10
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   executor: devin
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-25 19:10
