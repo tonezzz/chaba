@@ -1,7 +1,7 @@
 id: opencode-session-start-recall-injection
 title: OpenCode session-start recall injection (Chaba L0 context)
-column: doing
-updated: 2026-11-25 11:05
+column: review
+updated: 2026-11-25 11:07
 priority: medium
 tags:
 - opencode
@@ -251,19 +251,40 @@ comms:
     registered in opencode.jsonc + docs/ssot/jobs/session-summary/2026-11-25-opencode-session-start-recall.yml option
     A/B/C trail); 92cf8f66e4 adds dispatch-outcome doc. /recall command itself already merged via PR #207 (800d086aae);
     DEV-0038 pointer verified on pare'
+- at: 2026-11-25 11:07
+  from: tony-macbook
+  text: 'finished (ok): exit=0  same pytest gate may hold this docs/config-only diff again — flagged on the card
+    for Tony. | devin-task-20261125'
+- at: 2026-11-25 11:07
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:07
+  from: chaba
+  text: banked 134 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:07
+  from: chaba
+  text: pushed dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses to origin
+- at: 2026-11-25 11:07
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:07
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 261125-090530-goal-give-ada-ocb-opencode-ses.md` with verification steps and lessons. | devin-task-20261125-090530-goal-give-ada-ocb-opencode-ses.service:
-    Consumed 1min 37.356s CPU time over 6min 54.496s wall clock time, 487.3M memory peak.'
+  result: 'exit=0  same pytest gate may hold this docs/config-only diff again — flagged on the card for Tony. |
+    devin-task-20261125-105612-goal-give-ada-ocb-opencode-ses.service: Consumed 19.276s CPU time over 9min 5.908s
+    wall clock time, 423.3M memory peak.'
   sweep:
     stale_running: 2026-11-25 09:24
     dirty: 2
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-25 10:55
 review_kind: verify
