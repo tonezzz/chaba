@@ -1,7 +1,7 @@
 id: telegram-topic-binding-publish-outbox
 title: Fix telegram topic bindings — publish outbox stuck
-column: doing
-updated: 2026-11-25 12:33
+column: review
+updated: 2026-11-25 12:36
 brief: 'All 29 board-api publish outbox/dead entries are telegram sink failures: 404 no active topic bound. Drain
   retries cannot clear them until project/card topic bindings exist.'
 priority: medium
@@ -89,12 +89,36 @@ comms:
     send card= only, no project) started 404ing into the outbox. Live fix on idc03: created+bound PRJ topics chaba=thread100,
     education=thread101 via project manifests (relay self-registered, no restart); patched outbox+dead (project=chaba
     injected into project-less events, dead requ'
+- at: 2026-11-25 12:36
+  from: idc02
+  text: 'finished (ok): exit=0  alarm, a few per day. Outcome written to `dispatch-outcome-20261125-122415-verified-2026-11-25-on-idc03-l.md`
+    an'
+- at: 2026-11-25 12:36
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 12:36
+  from: chaba
+  text: banked 649 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 12:36
+  from: chaba
+  text: pushed dispatch/20261125-122415-verified-2026-11-25-on-idc03-l to origin
+- at: 2026-11-25 12:36
+  from: chaba
+  text: 'auto-merge not done: merge: runner-tooling pin contract gate blocked: (failures=1) — close will block until
+    merged'
+- at: 2026-11-25 12:36
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0  alarm, a few per day. Outcome written to `dispatch-outcome-20261125-122415-verified-2026-11-25-on-idc03-l.md`
+    and the card has full comms. | devin-task-20261125-122415-verified-2026-11-25-on-idc03-l.service: Consumed 1min
+    41.415s CPU time.'
 claim:
   since: 2026-11-25 12:23
+review_kind: verify
