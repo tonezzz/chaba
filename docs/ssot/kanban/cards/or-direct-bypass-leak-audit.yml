@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
 column: doing
-updated: 2026-11-25 19:08
+updated: 2026-11-25 19:09
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -260,6 +260,11 @@ comms:
     primer injected 8 lesson(s): no chaba-audit.service/ch; Dispatch task dirs accumulate forever on hosts without
     devin-cleanup.timer — onl; SSOT `known_failed[].action` is documentation-only — audit-hosts.py and the ansi;
     `~/var/chaba/health/*.json` holds unrelated producer snapshot'
+- at: 2026-11-25 19:09
+  from: devin
+  text: 'dispatch picked up on tony-macbook. Prior state: openrouter_provider.py already gateway-first (0540fbb),
+    bench key split done 11-25. Starting fresh audit of OPENROUTER_API_KEY holders across hosts, then repoint +
+    rotate + verify.'
 action:
   type: dispatch
   status: running
