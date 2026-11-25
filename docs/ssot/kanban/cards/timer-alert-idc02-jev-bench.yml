@@ -1,6 +1,6 @@
 id: timer-alert-idc02-jev-bench
 title: Timer jev-bench on idc02 disabled
-column: backlog
+column: done
 updated: 2026-11-25 19:13
 priority: high
 tags:
@@ -1980,6 +1980,9 @@ comms:
   from: tony
   text: '2026-11-25 19:0x (+07): rerun result=success exit=0 (latest 19:00:02). Earlier RemoteDisconnected from
     the idc03 target was transient; no change needed.'
+- at: 2026-11-25 19:13
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
 spec: The goal is to ensure `jev-bench.timer` on `idc02` is enabled and active as required by the audit census and
@@ -1987,3 +1990,4 @@ spec: The goal is to ensure `jev-bench.timer` on `idc02` is enabled and active a
   unless there is an explicit deliberate decision to keep it disabled. The done-condition is verified when `systemctl
   --user is-active jev-bench.timer` and `systemctl --user is-enabled jev-bench.timer` both return active/enabled
   states on idc02.
+claim: {}
