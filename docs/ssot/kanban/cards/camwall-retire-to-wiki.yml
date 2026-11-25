@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
 column: doing
-updated: 2026-11-25 08:24
+updated: 2026-11-25 08:29
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -299,6 +299,13 @@ comms:
     injected 8 lesson(s): idc02''s kanban-dispatch.serv; [camwall-retire-to-wiki] primer injected 8 lesson(s): no
     chaba-audit.service/cha; runbook docs/kb/documentation-disaster-backup.md: Critical Infrastructure Compon; The
     rename script patches systemd units + worktree `.git` fil'
+- at: 2026-11-25 08:29
+  from: devin
+  text: 'Phase 2 starting with Tony''s ada-snapshot-only answer. Verified live state: dell cam-wall-pull/cms/roster
+    already parked-or-disabled (data dir stale since Oct 5 — dead man); LIVE producers are cam-wall-pull-vps on
+    idc02+idc03 feeding camwall-edge :8380, which serves /apps/camwall/data/* — exactly the path ada-voice stale_snapshot
+    + screens._camwall_fallback fetch (ADA_CAMWALL_BASE default tony-dell/apps/camwall). Literal option-(b) stop
+    of edge+route would break the very fallback it keeps, so I '
 action:
   type: dispatch
   status: running
