@@ -1,6 +1,6 @@
 id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
 title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
-column: backlog
+column: done
 updated: 2026-11-25 07:37
 spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
   (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
@@ -13,6 +13,7 @@ spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-hea
   pin bump.'
 action:
   type: manual
+  status: done
 ref: OPS-1330
 comms:
 - at: 2026-11-24 22:19
@@ -47,6 +48,9 @@ comms:
     1 (rescued untracked docs/ssot/focus-inbox/2026-11-25-003242-gh-run-tonezzz-chaba-45518383969.yml, not in any
     stash - preserved), stash@{1} OPS-1330 pre-convergence tony-omen 20261125-072211 preserves 153 files, ahead
     backup ops-1330/tony-omen-ahead-backup=f97afaa1c1c. Ar'
+- at: 2026-11-25 07:37
+  from: devin
+  text: moved backlog -> done
 requests:
 - id: how-should-the-dirty-in-flight-work-on-i-11feb4
   ask: How should the dirty in-flight work on idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox
@@ -65,4 +69,4 @@ requests:
     owner to pop (recommended, reversible)
   answer: stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for owner
     to pop (recommended, reversible)
-awaiting_action: true
+claim: {}
