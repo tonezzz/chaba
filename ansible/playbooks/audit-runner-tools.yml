@@ -227,12 +227,71 @@
       delegate_to: localhost
       run_once: true
 
+    - name: Fetch runner drift card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-runner-tools-drift"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: runner_drift_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+
+    - name: Compute runner drift cleared comment
+      ansible.builtin.set_fact:
+        runner_drift_cleared_comment: >-
+          ansible audit-runner-tools: all clear, no drift hosts. fp=cleared.
+        runner_drift_cleared_needed: >-
+          {{
+            (runner_drift_card_for_cleared.status | default(404)) == 200
+            and (
+              ((runner_drift_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list | length) > 0
+            )
+            and (
+              ((runner_drift_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=cleared')
+                | list | length) == 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+
+    - name: Comment runner drift cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-runner-tools-drift
+          from: "{{ board_from }}"
+          text: "{{ runner_drift_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+        - runner_drift_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
     - name: Show kanban notify summary
       ansible.builtin.debug:
         msg:
           board_notify: "{{ board_notify }}"
           drift_hosts: "{{ runner_drift_hosts | map(attribute='host') | list }}"
           comment_skipped_as_dup: "{{ runner_drift_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ runner_drift_cleared_needed | default(false) }}"
       when: board_notify | bool
       delegate_to: localhost
       run_once: true
