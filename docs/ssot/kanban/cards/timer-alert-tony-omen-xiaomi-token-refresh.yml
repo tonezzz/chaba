@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-xiaomi-token-refresh
 title: Timer xiaomi-token-refresh on tony-omen failing
 column: backlog
-updated: 2026-11-25 19:39
+updated: 2026-11-26 03:49
 priority: high
 tags:
 - timer-alert
@@ -1437,6 +1437,14 @@ comms:
   text: '2026-11-25 19:50 (+07): STILL BLOCKED on interactive credentials — xiaomi-token-refresh.py reads passToken/userId
     cookies from the local Chrome Default profile and reports ''no valid passToken cookie — is the browser logged
     in to account.xiaomi.com?''. Needs a browser login on tony-omen; cannot be fixed headlessly.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the xiaomi-token-refresh.service systemd user timer on the tony-omen host by checking
   the logs with journalctl --user -u xiaomi-token-refresh.service. Diagnose the root cause of the exit-code failure
   reported on recent runs, check the CMS timer-timeline-tony-omen, and resolve the underlying issue so the service

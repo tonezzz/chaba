@@ -1,7 +1,7 @@
 id: timer-alert-idc03-device-telemetry
 title: Timer device-telemetry on idc03 failing
 column: backlog
-updated: 2026-11-26 02:04
+updated: 2026-11-26 03:49
 priority: high
 tags:
 - timer-alert
@@ -297,5 +297,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 01:59) of `device-telemetry.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done

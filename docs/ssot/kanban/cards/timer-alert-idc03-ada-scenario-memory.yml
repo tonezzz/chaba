@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-25 19:39
+updated: 2026-11-26 03:49
 priority: high
 tags:
 - timer-alert
@@ -65,6 +65,14 @@ comms:
     (also absent), so systemd result=resources before ExecStart. Five stale ada-ha-tony.env.bak-* files exist (Oct
     2026) but none is a live credential. Needs Tony''s decision: retire the paid memory lane, or provision a current
     env + prod-allow file.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env

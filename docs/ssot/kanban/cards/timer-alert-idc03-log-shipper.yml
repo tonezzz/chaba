@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper
 title: Timer log-shipper on idc03 failing
 column: backlog
-updated: 2026-11-26 00:14
+updated: 2026-11-26 03:49
 priority: high
 tags:
 - timer-alert
@@ -3810,6 +3810,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 23:54) of `log-shipper.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
   type: dispatch
