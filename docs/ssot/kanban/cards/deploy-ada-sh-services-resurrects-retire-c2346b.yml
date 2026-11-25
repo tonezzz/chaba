@@ -1,0 +1,30 @@
+id: deploy-ada-sh-services-resurrects-retire-c2346b
+title: deploy-ada.sh SERVICES resurrects retired idc03 dev twins on every ada-voice deploy
+column: backlog
+updated: 2026-11-25 14:35
+priority: medium
+tags:
+- idc03
+- ada
+- deploy
+- hygiene
+spec: 'Found during idc03-ada-hygiene-20261107 verify (2026-11-25). ~/.local/bin/deploy-ada.sh on idc03 (SERVICES
+  default, dated 2026-11-18) still lists ada-dev + ada-kk-dev, so every ada-voice deploy runs systemctl --user restart
+  on them — resurrecting the disabled-but-active idc03 twins the capacity card stopped (~750MB RSS on an overloaded
+  4-core host) and colliding with scenario runs (the 2026-11-07 infra/skip-quota cascade mechanism). Live proof
+  2026-11-25: deploy at 11:08:48 restarted fleet 11:12:55-11:14:29 incl. ada-dev (UnitFileState=disabled, ActiveEnter
+  11:14:29). DECISION NEEDED before edit: (a) remove both twins from SERVICES entirely, or (b) keep ada-kk-dev —
+  bench_profiles.kk-cms-only in ssot.apps.ada-persons.yml declares host:idc03 port:8009 as the kk CMS-only bench
+  target and kk-bench-env.py --apply legitimately manages it there (applied 2026-11-25 14:09 adding ADA_SESSION_PRIME=0),
+  while ada-dev on idc03 may only serve the local /apps/ha/ada-dev tailnet route. Also update ssot.services.yml/ssot.routes.yml
+  ada-dev+ada-kk-dev entries which still say host:idc03 while canonical lanes live on tony-omen (:8005/:8009). Evidence
+  trail: docs/ssot/jobs/ada/2026-11-25-idc03-ada-hygiene-reconcile.yml'
+action:
+  type: manual
+  repo: ada-voice
+note: follow-up from idc03-ada-hygiene-20261107
+ref: ADA-1395
+comms:
+- at: 2026-11-25 14:35
+  from: devin
+  text: card captured via board-api
