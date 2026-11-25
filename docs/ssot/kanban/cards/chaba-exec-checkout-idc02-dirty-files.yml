@@ -1,7 +1,7 @@
 id: chaba-exec-checkout-idc02-dirty-files
 title: 'idc02 exec checkout: 13 modified + ~227 untracked files with no owner; slows repo-sync'
 column: done
-updated: 2026-11-25 17:12
+updated: 2026-11-25 17:27
 brief: idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash;
   pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.
 priority: medium
@@ -162,6 +162,10 @@ comms:
 - at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
