@@ -1,7 +1,7 @@
 id: openchamber-multirun-adobe-stock-prompts
 title: Test OpenChamber Multi-run for Adobe Stock prompt comparison
 column: doing
-updated: 2026-11-25 14:13
+updated: 2026-11-25 14:17
 brief: Compare bounded read-only model runs for Adobe Stock campaign prompt and asset-reuse recommendations.
 priority: low
 program: devnest
@@ -217,6 +217,12 @@ comms:
     primer injected 8 lesson(s): [ada-opencode-repai; [ada-opencode-v2-upgrade] primer injected 8 lesson(s): [chaba-exec-checkout-idc0;
     [adobe-stock-inpaint-defect-repair] Dispatch 20261109 resumed: all lanes now res; Paid-lane gating pattern that
     worked: keep the lane in LANE_M'
+- at: 2026-11-25 14:17
+  from: devin
+  text: 'Dispatch started on idc02. Plan: freeze campaign AS-2026-11-05-REMOTE-WORK-001 state as identical read-only
+    input, run it through up to 3 approved OpenCode models under a deny-all-tools isolated config (no board/fs mutation
+    by construction), score asset relevance / provenance / missing-preview / policy / token-cost-latency, emit comparison
+    artifact under evals/.'
 action:
   type: dispatch
   status: running
