@@ -1,7 +1,7 @@
 id: devin-usage-allowance-visibility
 title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
-column: doing
-updated: 2026-11-25 09:45
+column: review
+updated: 2026-11-25 09:46
 brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
   window burn but not plan allowance remaining.'
 priority: medium
@@ -36,12 +36,16 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0  recorded: the RPC''s `ide_version` metadata must be semver or the server returns HTTP 500. |
+    devin-task-20261125-094133-parent-card-devin-usage-reduct.service: Consumed 44.869s CPU time over 3min 53.142s
+    wall clock time, 538.8M memory peak.'
+  verified: false
 ref: DEV-1332
 comms:
 - at: 2026-11-24 22:59
@@ -109,5 +113,26 @@ comms:
     (api_key in metadata, no auth header). api.devin.ai has no usage endpoints (all 404). devin-usage.py now prints
     real quota footer (Pro: daily 100% / weekly 96%, resets, overage $3.55) + --json allowance block; 6 unittests
     pass. Job doc: docs/ssot/jobs/devnest/2026-11-25-devin-usage-allowance.yml'
+- at: 2026-11-25 09:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0  recorded: the RPC''s `ide_version` metadata must be semver or the server returns
+    HTTP 500. | devin-task-20261125-'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:46
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  pytest not installed — fast test gate skipped (close_out still gates the
+    merge)\n\U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/jobs/de"
+- at: 2026-11-25 09:46
+  from: chaba
+  text: pushed dispatch/20261125-094133-parent-card-devin-usage-reduct to origin
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'worktree kept: dirty — 3 uncommitted file(s)'
 claim:
   since: 2026-11-25 09:40
+review_kind: verify
