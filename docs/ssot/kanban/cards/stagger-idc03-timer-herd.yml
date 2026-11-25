@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: backlog
-updated: 2026-11-25 08:35
+updated: 2026-11-25 09:19
 priority: medium
 tags:
 - ops
@@ -178,8 +178,20 @@ comms:
     topic ada-ocb-skills in cargoquery. Admin action: on the Plesk wiki host docroot /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com
     run Cargo table maintenance (MediaWiki 1.46: `php maintenance/run.php Cargo:rebuildCargoTables`; if that entrypoint
     differs, `php extens'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
   done-condition: ssot.jobs.yml rendered and installed with jittered offsets on idc03, runner-agent successfully
   redeployed, and subsequent timer runs complete without board-api or CMS RemoteDisconnected/timeout failures.'
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
