@@ -1,0 +1,21 @@
+id: systemic-sweep-non-atomic-state-write-te-040822
+title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
+column: backlog
+updated: 2026-11-25 09:40
+priority: low
+tags:
+- ops
+- hardening
+spec: Convert every remaining `STATE.write_text(json.dumps(...))` / `json.dump(..., open(STATE,"w"))` state save
+  in scripts/ to write STATE.tmp + fsync + os.replace, matching the helpers added in scripts/chaba-nag.py, scripts/ada/line-chat-timeline.py,
+  scripts/rika-wx-alert.py (card state-write-atomic-truncate-crash-loop). Verify each service still loads state
+  after the change.
+note: Follow-up from state-write-atomic-truncate-crash-loop (2026-11-25). The 3 crash-looping services were fixed
+  (chaba-nag.py, line-chat-timeline.py, rika-wx-alert.py now tmp+fsync+os.replace + tolerant load). Audit found
+  the same non-atomic write pattern in ~20 more scripts — scripts/ops/{key-watch,stick-watch,podman-lock-watchdog,netdata-nodes-watch,served-checkout-watchdog,queue-mgr,devin-dispatch-tg-watch,kanban-notify,nest-queue-watch}.py,
+  scripts/ada/{burn-watch,memory-distill,memory-health-ch
+ref: OPS-1364
+comms:
+- at: 2026-11-25 09:40
+  from: devin
+  text: card captured via board-api
