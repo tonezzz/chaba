@@ -1,15 +1,14 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
 column: backlog
-updated: 2026-11-25 07:44
+updated: 2026-11-25 14:41
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 03:48) of `ada-ocb-agent-runner-converge.service` on `idc02` result=exit-code —
-  investigate journal: `journalctl --user -u ada-ocb-agent-runner-converge.service` on the host. See CMS
-  `timer-timeline-idc02`.'
+note: 'Last run (11-25 03:48) of `ada-ocb-agent-runner-converge.service` on `idc02` result=exit-code — investigate
+  journal: `journalctl --user -u ada-ocb-agent-runner-converge.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: ADA-1340
 comms:
 - at: 2026-11-25 04:04
@@ -17,9 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-25 04:14
   from: devin
-  text: '[still suspicious] Last run (11-25 03:48) of `ada-ocb-agent-runner-converge.service` on `idc02`
-    result=exit-code — investigate journal: `journalctl --user -u ada-ocb-agent-runner-converge.service`
-    on the host. See CMS `timer-timeline-idc02`.'
+  text: '[still suspicious] Last run (11-25 03:48) of `ada-ocb-agent-runner-converge.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u ada-ocb-agent-runner-converge.service` on the host. See CMS `timer-timeline-idc02`.'
 - at: 2026-11-25 07:44
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -27,9 +25,15 @@ comms:
 - at: 2026-11-25 09:59
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02,
-  which exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent
-  drifted from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-  and needs to be redeployed. The done-condition is verified when scripts/board/runner-agent.py is successfully
-  copied to idc02 (~/.local/bin/runner-agent) and a manual run or subsequent timer execution of ada-ocb-agent-runner-converge.service
-  on idc02 succeeds without exit-code errors in journalctl.
+- at: 2026-11-25 14:41
+  from: devin
+  text: 'root cause (found during idc02-audit-census-reconcile): unit exits 216/GROUP — it sets User=tony inside
+    a systemd --USER unit (~/.config/systemd/user/ada-ocb-agent-runner-converge.service), which is invalid; user
+    manager cannot set supplementary groups. Fix = drop the User= line in the unit source (likely ansible/playbooks/agent-runner.yml
+    in ada-ocb repo) + daemon-reload. Whitelisted in ssot.audit.hosts.yml known_failed meanwhile.'
+spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
+  exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
+  from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs to be redeployed.
+  The done-condition is verified when scripts/board/runner-agent.py is successfully copied to idc02 (~/.local/bin/runner-agent)
+  and a manual run or subsequent timer execution of ada-ocb-agent-runner-converge.service on idc02 succeeds without
+  exit-code errors in journalctl.

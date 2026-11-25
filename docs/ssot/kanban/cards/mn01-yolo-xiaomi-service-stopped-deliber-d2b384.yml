@@ -1,0 +1,19 @@
+id: mn01-yolo-xiaomi-service-stopped-deliber-d2b384
+title: mn01 yolo-xiaomi.service stopped — deliberate capacity stop or restart?
+column: backlog
+updated: 2026-11-25 14:41
+priority: medium
+tags:
+- mn01
+- audit
+- drift
+spec: 'Found during idc02-audit-census-reconcile (2026-11-25): audit-hosts.py --host mn01 flags yolo-xiaomi.service
+  missing. Verified live: Type=simple enabled unit, ran 1month+ then SIGTERM at 2026-11-25 02:38 UTC (~09:38 +07),
+  inactive dead 5h+. Timing coincides with the mn-ha-dev idc02->mn01 migration window — possibly a deliberate capacity
+  stop on the thinnest box, possibly collateral. Decide: restart it (systemctl --user start yolo-xiaomi on mn01)
+  or declare it expected_absent/parked in ssot.audit.hosts.yml hosts.mn01 if the stop was intentional.'
+ref: AUD-1396
+comms:
+- at: 2026-11-25 14:41
+  from: devin
+  text: card captured via board-api
