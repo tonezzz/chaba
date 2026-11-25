@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ada-market-report
 title: Timer ada-market-report on tony-omen failing
 column: backlog
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:01
 priority: high
 tags:
 - timer-alert
@@ -89,6 +89,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: '2026-11-25 18:51 (+07): rerun result=success exit=0. Earlier exit-code was transient (trade API/Yahoo connection
+    refused + remote-end-closed); no code or config change needed. Closing.'
 spec: Investigate the failure of the ada-market-report.service timer on tony-omen by checking the systemd journal
   logs using 'journalctl --user -u ada-market-report.service' on the host and reviewing the CMS timer-timeline-tony-omen.
   The target host is tony-omen. The done-condition is verified when the root cause of the service failure is identified
