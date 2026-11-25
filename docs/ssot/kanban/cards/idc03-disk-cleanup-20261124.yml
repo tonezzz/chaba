@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
 column: backlog
-updated: 2026-11-25 16:56
+updated: 2026-11-25 16:59
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -220,6 +220,10 @@ comms:
 - at: 2026-11-25 16:56
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

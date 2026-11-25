@@ -1,7 +1,7 @@
 id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
 title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
 column: done
-updated: 2026-11-25 16:50
+updated: 2026-11-25 16:59
 spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
   (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
   tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
@@ -58,6 +58,10 @@ comms:
 - at: 2026-11-25 16:50
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: how-should-the-dirty-in-flight-work-on-i-11feb4

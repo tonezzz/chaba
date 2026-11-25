@@ -1,7 +1,7 @@
 id: timer-alert-idc03-board-janitor
 title: Timer board-janitor on idc03 failing
 column: done
-updated: 2026-11-25 16:54
+updated: 2026-11-25 16:59
 priority: high
 tags:
 - timer-alert
@@ -224,6 +224,10 @@ comms:
 - at: 2026-11-25 16:54
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: 'Goal: investigate the failing board-janitor.service timer-alert on idc03 by inspecting the systemd journal
   via journalctl --user -u board-janitor.service on idc03, and redeploy the drifted runner-agent script from the
