@@ -1,7 +1,7 @@
 id: system-report-18-missing-nodes
 title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
 column: doing
-updated: 2026-11-25 09:37
+updated: 2026-11-25 09:50
 priority: medium
 tags:
 - system-report
@@ -212,6 +212,13 @@ comms:
 - at: 2026-11-25 09:37
   from: devin
   text: dispatch picked up; triaging the 18 missing report nodes against ssot.reports.yml + producer units
+- at: 2026-11-25 09:50
+  from: devin
+  text: 'DONE triage: all 18 missing nodes alive — delivery gap fixed 11-18 by pull-report-metas; fresh metas verified
+    on con01. Real blockers found+fixed: (1) report-system.py crashed on no-config status since 11-21 freezing served
+    report — patched _BADGE/_WORST; (2) watchdog ignored offline_ok (macbook) — patched + registry fallback; (3)
+    ha-live on tony-omen dead post-reboot — started+enabled, :8444=200; (4) con01 ada-stt shed broke mn-bot STT
+    — repointed TG_WHISPER_URL to idc03-local, relay restarted,'
 action:
   type: dispatch
   status: running
