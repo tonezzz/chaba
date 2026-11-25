@@ -1,0 +1,7 @@
+[Unit]
+Description=Embed-pool warm-ping — keep bge-m3 resident on fleet upstreams (job:embed-pool-warm, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-pool-warm.py

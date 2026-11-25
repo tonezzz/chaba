@@ -488,6 +488,48 @@ jobs:
     via mddb-vector-reindex.service(.d) — lost with that host 2026-10-12;
     declared here 2026-10-22 (OPS-0763). Same script stays wired to
     mddb.service ExecStartPost + mddb-embed-probe on idc03.
+- id: mddb-cms-vector-reindex
+  name: MDDB CMS-plane vector reindex — daily re-embed sweep for :11027
+  host: con01
+  dispatch: systemd
+  on_calendar: '*-*-* 05:50:00'
+  persistent: true
+  timeout: 45m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mddb/vector-reindex.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11027
+    MDDB_REINDEX_HEALTH_WAIT: '1200'
+    MDDB_REINDEX_TIMEOUT: '1800'
+  note: >-
+    CMS-plane twin of mddb-vector-reindex (card
+    mddb-cms-11027-embed-coverage-gap-250-do-e35321, 2026-11-25) — same
+    script and semantics against :11027, whose collections (chaba-*,
+    kb-*, documents, infrastructure-ssot, devin-kb, ada-cms-*) suffered
+    the same queue-drop embed losses (dropped=910+ observed, golden-set
+    eval MEM-0204 found ~250 docs without vectors). Non-force reindex
+    only embeds docs with content; meta-only docs-sync pointer stubs
+    (empty contentMd, declared keyword-only 2026-11-25) are skipped by
+    design — an embedded<total delta on those collections is expected,
+    not a gap.
+- id: embed-pool-warm
+  name: Embed-pool warm-ping — keep bge-m3 resident on fleet upstreams
+  host: idc03
+  dispatch: systemd
+  every: 4m
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-pool-warm.py
+  note: >-
+    Card mddb-cms-11027-embed-coverage-gap-250-do-e35321 action 3
+    (2026-11-25). Reads the live upstream list from embed-pool-shim
+    :11436 /health (primaries + deferred — auto-tracks fleet changes)
+    and POSTs a tiny /api/embed to each upstream directly so every
+    racer stays warm, not just the race winner. Counters the spike
+    gotcha: ollama unloads bge-m3 after ~5min idle and a cold first
+    embed blows the shim's 8s upstream timeout -> 504 -> mddb drops
+    embed jobs -> silent vector-coverage loss. 4m cadence stays under
+    ollama's default keep_alive. Runs on idc03 because the kk-mac
+    deferred upstream is the loopback admission shim :11447 — only
+    reachable from idc03. Exit 1 only when ALL upstreams fail.
 - id: embed-lane-news
   name: Embed lane — news title vectors (nomic) refresh
   host: idc03

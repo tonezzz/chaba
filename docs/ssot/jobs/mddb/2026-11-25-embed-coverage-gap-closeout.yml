@@ -1,0 +1,102 @@
+title: mddb-cms :11027 embed coverage gap — reindex + keyword-only
+  declaration + warm-ping/drop alerting closeout
+subtitle: ~250-doc vector gap resolved to 83 intentional meta-only stubs +
+  real drops; infra-ssot re-embedded; keyword-only declared via meta
+  search_mode=keyword; embed-pool-warm + mddb-cms-vector-reindex declared
+type: ops
+status: done
+card: mddb-cms-11027-embed-coverage-gap-250-do-e35321
+ref: MEM-0204 (found by), MEM-1336
+repo: chaba
+host: mn01 (attempt 2); tony-macbook (attempt 1)
+date: 2026-11-25
+
+summary: >-
+  Closeout of the embed-coverage gap found by the CMS-plane BGE
+  golden-set eval (docs/ssot/jobs/mddb/2026-11-24-cms-bge-golden-eval.yml).
+  Attempt 1 (tony-macbook, branch c1beb717d2) ran the non-force
+  /v1/vector-reindex sweep across all 12 affected :11027 collections and
+  raised the meta-only-docs decision request; its repo-side deliverables
+  never landed in origin/master (verify-queue merge claims 267d4546c67f /
+  b8f5e5e697f4 are not objects in the repo — the branch content is
+  absent). Attempt 2 (mn01) verified live state, finished the residual
+  infrastructure-ssot re-embed, executed Tony's "proceed" answer
+  (keyword-only declaration), and re-declared the missing jobs.
+
+findings:
+  - "Gap decomposition (verified live 2026-11-25): of the ~250-doc
+    embedded<total delta on :11027, 83 docs are meta-only pointer stubs
+    (contentMd empty BY DESIGN — docs-sync/SSOT index docs whose content
+    lives in git repos) and can never embed: chaba-archive 12,
+    chaba-docs 15, devin-kb 9, documents 1, kb-development 8,
+    kb-features 11, kb-operations 12, kb-system 14, ssot 1. Every other
+    collection is at embedded==total (chaba-lessons 207/207,
+    ada-cms-pages 1599/1599 after attempt-1 re-embeds)."
+  - "Real dropped-embed residue was infrastructure-ssot only: 147 docs
+    WITH contentMd but no vectors (attempt-1 sweep drained partway then
+    stalled at 8878+/9025). Attempt 2 re-ran non-force
+    POST /v1/vector-reindex {collection: infrastructure-ssot} —
+    synchronous inline embed, ~25s/doc on the current pool."
+  - "Queue-drop root cause: embed-pool-shim :11436 504s when fleet
+    ollama upstreams are cold (bge-m3 unloads after ~5min idle) or
+    degraded; mddb drops embed jobs past the retry cap (bounded-retry
+    fix shipped in mddb-fork ad7d3f72). droppedTotal kept growing during
+    the incident window (910 -> 1762 observed)."
+  - "Alerting on dropped>0 ALREADY EXISTS: scripts/ada/embed-probe.py
+    reads /v1/vector-stats queue on both planes and emits a rate-limited
+    ops-event when droppedTotal grows (fired during this incident:
+    cms droppedTotal 1716->1729). No new alert needed — documented here
+    so the card's action (2) is verifiably closed."
+
+actions:
+  reindex: >-
+    Non-force POST /v1/vector-reindex per affected collection — done
+    across two attempts. Residual infrastructure-ssot sweep re-run by
+    attempt 2 (see verify). All other gaps were meta-only skips.
+  keyword_only: >-
+    Tony answered request meta-only-docs-devin-kb-chaba-archive-st-1f3513
+    = "proceed" (recommended option A). Implemented as a machine-readable
+    declaration: all 83 empty-contentMd docs on :11027 now carry
+    meta.search_mode=["keyword"] via PATCH /v1/update (content untouched,
+    no re-embed). Script: scripts/mddb/mark-keyword-only.py — idempotent,
+    rescans for empty-contentMd docs, safe to re-run. Bank descriptions
+    for the fully-meta-only collections (devin-kb, chaba-archive) note
+    the keyword-only surface in ssot.apps.ada-memory-banks.yml.
+    embedded<total on collections containing these docs is now
+    EXPECTED — gap analysis should subtract search_mode=keyword docs.
+  warm_ping: >-
+    New scripts/embed/embed-pool-warm.py + ssot.jobs.yml job
+    embed-pool-warm (idc03, every 4m, rendered units in
+    systemd/generated/idc03/). Reads live upstreams from shim :11436
+    /health and POSTs a tiny /api/embed to each directly — warms every
+    racer, not just the race winner. Runs on idc03 because the kk-mac
+    deferred upstream is the loopback admission shim :11447.
+  cms_reindex_job: >-
+    New ssot.jobs.yml job mddb-cms-vector-reindex (con01, daily 05:50,
+    rendered units in systemd/generated/con01/) — the :11027 twin of
+    mddb-vector-reindex (:11023, daily 05:40) that attempt 1 described
+    but never landed. Same script, MDDB_BASE_URL=:11027.
+
+verify: >-
+  python3 scripts/mddb/mark-keyword-only.py --dry-run  # expect
+  meta_only=N already=N, would_mark=0 after the live run.
+  curl -s :11027/v1/vector-stats | jq '.collections["infrastructure-ssot"]'
+  — embedded_documents should reach total_documents minus any NEW drops.
+  On idc03 after deploy: systemctl --user start embed-pool-warm.service
+  && journalctl --user -u embed-pool-warm — expect "N/N upstreams warm".
+  render check: python3 scripts/render-jobs.py --check.
+
+lessons:
+  - "vector-stats embedded<total is not one number — decompose it: empty
+    contentMd docs are meta-only stubs (can never embed, declare
+    keyword-only via meta search_mode=keyword + PATCH /v1/update), the
+    rest are real dropped embeds needing non-force /v1/vector-reindex."
+  - "verify-queue 'merged into origin/master as <sha>' claims can be
+    hollow — cat-file the sha and diff the deliverables before treating
+    a dispatch branch as landed."
+  - "PATCH /v1/update {collection,key,lang,meta} does a meta-only update
+    (content untouched, no re-embed) — the cheap door for stamping
+    declarations on MDDB docs; send the FULL merged meta dict."
+  - "embed-pool-warm must run on idc03: the kk-mac deferred upstream is
+    127.0.0.1:11447 (loopback admission shim) — unreachable from other
+    hosts; shim /health is the source of truth for the upstream list."
