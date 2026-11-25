@@ -1,0 +1,20 @@
+id: lane-retention-py-crashes-at-summary-swe-b888ce
+title: lane-retention.py crashes at summary — sweep_ops returns tuples, regex expects strings
+column: backlog
+updated: 2026-11-25 10:10
+priority: medium
+tags:
+- bug
+- ada
+- lane-retention
+spec: 'scripts/ada/lane-retention.py: sweep_ops() returns list of (line, ok) tuples from prune.sweep(), but main()
+  line ~694 does `for line in sweeps: re.search(r"deleted (\d+)/", line)` — TypeError: expected string or bytes-like
+  object, got tuple. All 4 weekly ada-retention-* services on idc03 fail AFTER the ops sweep phase completes (transcripts
+  archived, extracts merged, 0-deletes logged) but before summary/card_comment/chaba_event. Observed 2026-11-25
+  09:57 catch-up run: dev/kk/michael/tony all exit-code. Fix: unpack tuples (for line, _ok in sweeps) or have sweep_ops
+  return just lines. Offline tests in tests/ada/test_lane_retention.py.'
+ref: ADA-1370
+comms:
+- at: 2026-11-25 10:10
+  from: devin
+  text: card captured via board-api
