@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-device-telemetry
 title: Timer device-telemetry on tony-macbook failing
 column: backlog
-updated: 2026-11-26 01:04
+updated: 2026-11-26 01:14
 priority: high
 tags:
 - timer-alert
@@ -474,6 +474,10 @@ comms:
   text: '[reopened — condition recurred] Last run (11-26 01:01) of `device-telemetry.service` on `tony-macbook`
     result=exit-code — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS
     `timer-timeline-tony-macbook`.'
+- at: 2026-11-26 01:14
+  from: devin
+  text: '[still suspicious] Last run (11-26 01:01) of `device-telemetry.service` on `tony-macbook` result=exit-code
+    — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-macbook`.'
 spec: Investigate why `device-telemetry.service` on `tony-macbook` failed with an exit code on the last run at 11-12
   20:49 by inspecting the user journal via `journalctl --user -u device-telemetry.service` on the host. Reference
   the CMS card `timer-timeline-tony-macbook` for timeline context. The done-condition is verified when the root
