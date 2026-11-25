@@ -15,10 +15,12 @@ which writes back into the card YAML and re-runs this renderer.
 Usage: render-board.py [--if-changed]   (--if-changed skips when the
 card-dir manifest hash is unchanged — cheap for the 60s timer run.)
 """
+import atexit
 import functools
 import hashlib
 import html
 import json
+import pickle
 import re
 import subprocess
 import sys
@@ -108,19 +110,50 @@ def _git(*args: str, timeout: int = 15):
         return 1, ""
 
 
+_dispatch_refs: list | None = None
+
+
+def _all_dispatch_refs() -> list:
+    """[(branch, tip-sha)] for every dispatch/* branch — ONE for-each-ref
+    pass feeds both the slug index and _branch_merged's cache keys, so
+    the render pays zero per-branch `git rev-parse`/`merge-base`
+    subprocesses (the ~0.25s x ~240-branch cost this card retires)."""
+    global _dispatch_refs
+    if _dispatch_refs is None:
+        refs = []
+        rc, txt = _git("for-each-ref",
+                       "--format=%(refname:short) %(objectname)",
+                       "refs/heads/dispatch/")
+        if rc == 0:
+            for line in txt.splitlines():
+                name, _, tip = line.partition(" ")
+                if name:
+                    refs.append((name, tip))
+        _dispatch_refs = refs
+    return _dispatch_refs
+
+
 def _run_branches() -> dict:
     """dispatch/* branch names grouped by task slug (one card -> many runs)."""
     out = {}
-    rc, txt = _git("branch", "--format=%(refname:short)", "--list",
-                   "dispatch/*")
-    if rc:
-        return out
-    for br in txt.splitlines():
+    for br, _tip in _all_dispatch_refs():
         slug = _TASK_TS.sub("", br[len("dispatch/"):])
         out.setdefault(slug, []).append(br)
     for lst in out.values():
         lst.sort()  # timestamps sort lexically — last is newest
     return out
+
+
+_branch_tips: dict | None = None
+
+
+def _branch_tip(br: str) -> str:
+    """Tip sha from the shared for-each-ref pass — no per-branch
+    `git rev-parse` subprocess."""
+    global _branch_tips
+    if _branch_tips is None:
+        _branch_tips = dict(_all_dispatch_refs())
+    return _branch_tips.get(br, "")
 
 
 # Merged-verdict cache, keyed by branch tip sha — a branch merged by
@@ -190,8 +223,10 @@ def _branch_merged(br: str) -> bool:
     # symmetric difference (measured ~45s on an old diverged branch), so
     # it gets a tight timeout and a tip-keyed disk cache: misses are
     # conservative "not merged" chips, never a stalled render.
-    rc, tip = _git("rev-parse", br)
-    tip = tip if rc == 0 else ""
+    # The tip comes from the shared for-each-ref pass (no per-branch
+    # rev-parse); evaluating the sha — not the ref name — also keeps the
+    # verdict consistent if the branch moves or is deleted mid-render.
+    tip = _branch_tip(br)
     ent = _mcache().get(br)
     if not isinstance(ent, dict):
         ent = {}
@@ -200,7 +235,7 @@ def _branch_merged(br: str) -> bool:
             return True
         if time.time() - float(ent.get("at") or 0) < _MERGE_NEG_TTL_S:
             return False
-    rc, out = _git("cherry", "origin/master", br, timeout=10)
+    rc, out = _git("cherry", "origin/master", tip or br, timeout=10)
     merged = rc == 0 and not any(
         l.startswith("+") for l in out.splitlines())
     if tip:
@@ -362,19 +397,96 @@ def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
     return checks
 
 
+# --- card parse cache ---------------------------------------------------
+# yaml.load of the ~750 live + ~1200 archived cards is the render's
+# dominant remaining cost — ~1.7s with libyaml here, ~40s+ on hosts
+# without it (the number this card retires). Writers land via atomic
+# rename or git checkout — both bump mtime — so a (size, mtime_ns)
+# signature is a sound parse key: the same stat invariant dir_hash
+# already relies on for --if-changed. One pickle holds every card's
+# parsed dict; each render re-parses only files whose signature moved.
+# (Pickle is fine here: the cache lives inside the checkout and is
+# written only by this script — same trust domain as the card YAML.)
+_CARDS_CACHE_PATH = REPO / "docs/ssot/kanban/.render-cards-cache.pkl"
+_CARDS_CACHE_VERSION = 1
+_cards_cache: dict | None = None       # rel path -> [size, mtime_ns, card]
+_cards_cache_dirty = False
+
+
+def _cards_cache_map() -> dict:
+    global _cards_cache
+    if _cards_cache is None:
+        try:
+            data = pickle.loads(_CARDS_CACHE_PATH.read_bytes())
+            entries = data.get("entries") \
+                if isinstance(data, dict) \
+                and data.get("v") == _CARDS_CACHE_VERSION else None
+            _cards_cache = entries if isinstance(entries, dict) else {}
+        except Exception:
+            _cards_cache = {}
+    return _cards_cache
+
+
+def _load_card_file(p: Path) -> dict:
+    """Parse one card YAML, served from the stat-keyed cache on a hit.
+
+    Returns a shallow copy: the cached object stays pristine, so caller
+    mutations (checks chips, sorts) can't leak stale state into the next
+    render. A file read mid-write (non-atomic writer, stash pop in
+    flight) parses to None or a scalar — that used to crash the WHOLE
+    render, wedging the board (2026-11-07, OPS-1107), so non-dicts
+    normalize to {} here exactly as load_cards always did."""
+    global _cards_cache_dirty
+    try:
+        rel = str(p.relative_to(REPO))
+    except ValueError:
+        rel = str(p)
+    try:
+        st = p.stat()
+        size, mtime_ns = st.st_size, st.st_mtime_ns
+    except OSError:
+        return {"id": p.stem}
+    ent = _cards_cache_map().get(rel)
+    if (isinstance(ent, list) and len(ent) == 3
+            and ent[0] == size and ent[1] == mtime_ns
+            and isinstance(ent[2], dict)):
+        return dict(ent[2])
+    c = yaml.load(p.read_text(), Loader=_YAML_LOADER)
+    if not isinstance(c, dict):
+        c = {}
+    c.setdefault("id", p.stem)
+    _cards_cache_map()[rel] = [size, mtime_ns, c]
+    _cards_cache_dirty = True
+    return dict(c)
+
+
+def _flush_cards_cache() -> None:
+    global _cards_cache, _cards_cache_dirty
+    if not _cards_cache_dirty or _cards_cache is None:
+        return
+    try:
+        # prune entries whose file is gone so the cache stays bounded
+        # (cards are archived rather than deleted, but keep it honest)
+        live = {k: v for k, v in _cards_cache.items()
+                if (REPO / k).exists()}
+        tmp = _CARDS_CACHE_PATH.with_name(_CARDS_CACHE_PATH.name + ".tmp")
+        tmp.write_bytes(pickle.dumps(
+            {"v": _CARDS_CACHE_VERSION, "entries": live}, protocol=4))
+        tmp.replace(_CARDS_CACHE_PATH)
+        _cards_cache = live
+        _cards_cache_dirty = False
+    except Exception:
+        pass
+
+
+atexit.register(_flush_cards_cache)
+
+
 def load_cards(man: dict) -> list:
     card_dir = REPO / man["card_dir"]
     cards = []
     for p in sorted(card_dir.glob("*.yml")):
-        # A file read mid-write (non-atomic writer, stash pop in flight)
-        # parses to None or a scalar — crashing here wedges the WHOLE
-        # render, not just that card (2026-11-07: one transient file ->
-        # rc=1 + stale board, OPS-1107).
-        c = yaml.load(p.read_text(), Loader=_YAML_LOADER)
-        if not isinstance(c, dict):
-            c = {}
-        c.setdefault("id", p.stem)
-        cards.append(c)
+        cards.append(_load_card_file(p))
     return cards
 
 
@@ -395,6 +507,9 @@ def main():
         # until a real card write bumps the hash (OPS-1107).
 
     cards = load_cards(man)
+    # persist the parse cache before compute_checks stamps 'checks' —
+    # cached entries must stay pristine parses (atexit is the backstop)
+    _flush_cards_cache()
     # legibility: `priority` drives intra-column order — "next-up" is
     # readable without a separate queue column. Stable: same-priority
     # cards keep file order.
