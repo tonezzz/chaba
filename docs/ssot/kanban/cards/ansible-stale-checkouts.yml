@@ -1,7 +1,7 @@
 id: ansible-stale-checkouts
 title: 'Ansible audit: stale chaba exec checkouts detected'
 column: backlog
-updated: 2026-11-25 14:52
+updated: 2026-11-25 15:22
 spec: 'Read-only audit detected stale/dirty/diverged chaba exec checkouts. Hosts: idc02. Report dir: reports/ansible-benchmark/stale-checkouts/.
   No remediation performed; decide stash-u-ff / commit-wip / leave / abandon per host.'
 action:
@@ -15,3 +15,26 @@ comms:
   from: devin
   text: 'ansible audit-stale-checkouts: 1 stale host(s): idc02. Reasons per host in reports/ansible-benchmark/stale-checkouts/.
     Read-only; no host writes.'
+- at: 2026-11-25 15:22
+  from: devin
+  text: 'ansible audit-stale-checkouts: 1 stale host(s): idc02. fp=idc02:dirty. Reasons per host in reports/ansible-benchmark/stale-checkouts/.
+    Read-only; no host writes.'
+- at: 2026-11-25 15:22
+  from: devin
+  text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-02eca1: idc02 chaba exec checkout is stale/dirty
+    (dirty; behind=29, ahead=0, dirty=18). How should it be brought current? No wor'
+requests:
+- id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
+  ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
+    current? No work will be destroyed.
+  status: open
+  at: 2026-11-25 15:22
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
