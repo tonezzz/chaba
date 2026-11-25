@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: backlog
-updated: 2026-11-25 16:49
+updated: 2026-11-25 16:56
 priority: medium
 tags:
 - ops
@@ -265,6 +265,10 @@ comms:
 - at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
