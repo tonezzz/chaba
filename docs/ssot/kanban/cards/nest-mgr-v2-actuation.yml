@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: backlog
-updated: 2026-11-25 10:08
+updated: 2026-11-25 10:09
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -409,6 +409,9 @@ comms:
 - at: 2026-11-25 10:08
   from: chaba
   text: queued for processing
+- at: 2026-11-25 10:09
+  from: chaba
+  text: '[auto-dispatch] wave 2 (2026-11-25 10:09): queued by the overnight incremental dispatcher; all gates clear.'
 action:
   type: dispatch
   status: queued
