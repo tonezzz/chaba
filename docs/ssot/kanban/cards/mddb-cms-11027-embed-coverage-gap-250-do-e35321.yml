@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
-column: doing
-updated: 2026-11-25 16:02
+column: review
+updated: 2026-11-25 16:05
 priority: medium
 tags:
 - mddb
@@ -222,19 +222,33 @@ comms:
     Live :11027 decomposed: 83 meta-only stubs stamped meta search_mode=keyword via PATCH /v1/update (scripts/mddb/mark-keyword-only.py);
     infra-ssot re-embedded 8878->8990/9025, last ~35 docs queued during a LIVE pool-degraded window (tony-omen bge-m3
     cold, 69s load vs 8s shim timeout — w'
+- at: 2026-11-25 16:05
+  from: mn01
+  text: 'finished (ok): exit=0  commits on the dispatch branch; units declared but not installed (deploy gated).
+    | devin-task-20261125-072847-fo'
+- at: 2026-11-25 16:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:05
+  from: chaba
+  text: 'session-end checkpoint 9491c25b: 1 leftover file(s) committed'
+- at: 2026-11-25 16:05
+  from: chaba
+  text: pushed dispatch/20261125-072847-found-by-cms-plane-bge-golden- to origin
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 ull details in `dispatch-outcome-20261125-101035-found-by-cms-plane-bge-golden-.md`. | devin-task-20261125-101035-found-by-cms-plane-bge-golden-.service:
-    Consumed 1min 13.514s CPU time over 32min 33.891s wall clock time, 438.2M memory peak.'
+  result: 'exit=0  commits on the dispatch branch; units declared but not installed (deploy gated). | devin-task-20261125-072847-found-by-cms-plane-bge-golden-.service:
+    Consumed 1min 42.973s CPU time over 1h 34min 10.276s wall clock time, 529.4M memory peak.'
   sweep:
     stale_running: 2026-11-25 10:56
     dirty: 2
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 14:27
 requests:
