@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
 column: doing
-updated: 2026-11-25 19:49
+updated: 2026-11-25 19:54
 program: infrastructure
 tags:
 - ops
@@ -252,6 +252,10 @@ comms:
     minutes old vs 26h threshold). runner-agent: zero drift fleet-wide — installed==checkout==origin/master==manifest
     pin (sha256 1514c75c) on idc02/idc03/tony-macbook/tony-dell (+omen/mn01/con01/kk-mac); reinstalled -m0755 on
     the 4 spec hosts anyway, verified. Nodes: audit-hosts/macbook hea'
+- at: 2026-11-25 19:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-190933-fix-the-stuck-system-report-ch no longer active on tony-dell but
+    card still says running — sweeping its branch'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
@@ -265,5 +269,7 @@ action:
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 19:54
 claim:
   since: 2026-11-25 19:08
