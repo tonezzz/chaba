@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-25 19:01
 priority: high
 tags:
@@ -1843,9 +1843,13 @@ comms:
     -> /dev/null since 11-24), timer inactive, so no further sentinel alerts. Rerun refused with ''Unit is masked'';
     last real run had 0 ok / 8 fail (empty frame from all 8 cams; ip_cam_65 HTTP 000). Underlying camera failure
     tracked in go2rtc-empty-frames-all-cams. Closing this timer-alert card.'
+- at: 2026-11-25 19:01
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining
   the systemd user journal via journalctl --user -u wp-cam-snapshot.service. Identify the root cause of the snapshot
   failure, implement a fix, and verify that subsequent runs of the timer execute successfully without exit-code
   errors.
+claim: {}
