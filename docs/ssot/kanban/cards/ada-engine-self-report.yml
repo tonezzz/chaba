@@ -1,7 +1,7 @@
 id: ada-engine-self-report
 title: Engine self-report — advertise {engine_line, engine_version, contract_version} in /api/health + session hello
 column: backlog
-updated: 2026-11-25 13:00
+updated: 2026-11-25 13:11
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): engines dont announce who they are, so which engine answered
   a turn is not auditable and engine swaps cant be verified mechanically. Deliverable in ada-voice: /api/health
@@ -239,6 +239,11 @@ comms:
 - at: 2026-11-25 13:00
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 13:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
