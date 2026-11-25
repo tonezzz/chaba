@@ -1,7 +1,7 @@
 id: kanban-retention-archive-done-cards-olde-bba115
 title: 'Kanban retention: archive done cards older than 7 days'
 column: backlog
-updated: 2026-11-25 07:50
+updated: 2026-11-25 15:45
 brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
   archive stale done cards to a separate store/page, keep board fast and searchable.'
 spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
@@ -34,6 +34,9 @@ spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
 ref: KNB-1178
 comms:
 - at: 2026-11-08 12:33
@@ -203,3 +206,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: classified as paid_frontier (kw:implement a conf 1.00)
+- at: 2026-11-25 15:45
+  from: chaba
+  text: queued for processing
+claim: {}
