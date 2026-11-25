@@ -1,7 +1,7 @@
 id: timer-alert-idc02-kk-mac-model-status
 title: Timer kk-mac-model-status on idc02 failing
 column: done
-updated: 2026-11-25 17:26
+updated: 2026-11-25 17:37
 priority: high
 tags:
 - timer-alert
@@ -59,5 +59,10 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: ExecStart script existed only on unmerged branch dispatch/20261124-kkmac-gate-visibility.
+    Restored scripts/devnest/kk_mac_model_status.py to master (commit 694b6d0d), deployed to idc02. Unit success
+    16:55; picker now shows kk-mac temp_high from live shim.'
 action:
   status: done
