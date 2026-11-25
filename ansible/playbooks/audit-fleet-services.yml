@@ -268,18 +268,24 @@
           {{
             (fleet_drift_card_for_cleared.status | default(404)) == 200
             and (
-              ((fleet_drift_card_for_cleared.json.card.comms | default([]))
+              (
+                (fleet_drift_card_for_cleared.json.card.comms | default([]))
                 | selectattr('from', 'equalto', board_from)
                 | selectattr('text', 'defined')
                 | selectattr('text', 'search', 'fp=')
-                | list | length) > 0
+                | list
+              ) | length > 0
             )
             and (
-              ((fleet_drift_card_for_cleared.json.card.comms | default([]))
-                | selectattr('from', 'equalto', board_from)
-                | selectattr('text', 'defined')
-                | selectattr('text', 'search', 'fp=cleared')
-                | list | length) == 0
+              'fp=cleared' not in (
+                (
+                  (fleet_drift_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
             )
           }}
       delegate_to: localhost
