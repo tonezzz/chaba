@@ -1,7 +1,7 @@
 id: ada-ha-dashboard-live-view-drift
 title: Reconcile Ada HA chaba-admin live-view drift
 column: done
-updated: 2026-11-24 21:55
+updated: 2026-11-25 07:49
 brief: The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot;
   verify whether this drift is intentional before restoring anything.
 priority: medium
@@ -204,6 +204,10 @@ comms:
   text: 'pub milestone: card verified: ada-ha-dashboard-live-view-drift on idc03 — merged 88739240 (dispatch/20261124-212619-read-only-evidence-from-2026-1
     from idc02) -> origin/master — verified — auto- — merged 88739240 (dispatch/20261124-212619-read-only-evidence-from-2026-1
     from idc02) -> origin/master — verified — auto-closed [evt-2e84cd8407b45d61]'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-live-ada-ha-chaba-admin-dashboard-co-8567e7
   ask: The live Ada HA chaba-admin dashboard contains Hosts and Services but no Ada Control; the previous repo snapshot
