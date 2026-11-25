@@ -1,0 +1,23 @@
+id: board-api-wedged-8min-on-hung-outbound-h-389be8
+title: board-api wedged ~8min on hung outbound HTTPS while holding wp.lock + card flock — all endpoints timed out
+column: backlog
+updated: 2026-11-25 10:10
+priority: high
+tags:
+- bug
+- board-api
+- idc03
+- reliability
+spec: '2026-11-25 ~09:59-10:07 idc03: chaba-board-api (pid 767125) held FLOCK WRITE on /tmp/board-api.lock AND /tmp/board-api-wp.lock
+  with an ESTABLISHED outbound HTTPS connection to 103.99.11.249:443 (213KB sent, no response). All 51 threads parked
+  in futex_wait; GET /cards and /health timed out for ~8min until `systemctl --user restart chaba-board-api`. Likely
+  a WP REST or remote call without an effective timeout inside a lock-holding handler (/publish or /lesson fan-out).
+  Fix directions: enforce socket timeouts on all outbound calls in board-api write path, add a lock-hold watchdog/metric
+  (lock held >Ns -> alert + dump stack), consider per-request deadlines so one hung sink cannot wedge the whole
+  write door. Evidence: journalctl -u chaba-board-api.service 09:59:35 last log line before silence; lslocks showed
+  both locks held by board-api pid.'
+ref: KNB-1371
+comms:
+- at: 2026-11-25 10:10
+  from: devin
+  text: card captured via board-api
