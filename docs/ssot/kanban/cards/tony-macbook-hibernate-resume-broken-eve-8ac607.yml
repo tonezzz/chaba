@@ -1,0 +1,23 @@
+id: tony-macbook-hibernate-resume-broken-eve-8ac607
+title: tony-macbook hibernate-resume broken — every suspend->hibernate cycle cold-boots
+column: backlog
+updated: 2026-11-25 20:57
+priority: high
+tags:
+- macbook
+- suspend
+- power
+spec: 'Found during tony-macbook-daytime-runner (2026-11-25): journal shows repeated boot-time systemd-hibernate-resume
+  failures — "Unable to resume from device /dev/disk/by-partuuid/cf9d881c-... offset 29630464, continuing boot process"
+  at 2026-11-21 07:14, 2026-11-23 16:51 + 16:55, 2026-11-25 09:38. Chain: lid-close on battery -> HandleLidSwitch=suspend-then-hibernate
+  (hibernate.conf drop-in) -> suspend -> HibernateDelaySec -> hibernate -> next power-on fails resume -> cold boot
+  = host offline until manually powered on. s2idle suspend itself works (verified 2026-10-11, card macbook-suspend-dgpu-wedge)
+  — the failure is specifically the hibernate image/resume path. Options: (a) drop hibernate entirely — change hibernate.conf
+  HandleLidSwitch to plain suspend (safest, loses hibernate); (b) debug resume — check resume= kernel arg, initramfs
+  resume hook, swap signature; (c) keep suspend-then-hibernate but ensure resume works. Until fixed, every battery
+  lid-close is a fleet-offline event; day-awake inhibit (scripts/ops/macbook-day-awake.sh) only reduces exposure.'
+ref: SYS-1410
+comms:
+- at: 2026-11-25 20:57
+  from: devin
+  text: card captured via board-api
