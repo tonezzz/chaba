@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 19:27
+updated: 2026-11-25 20:30
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -165,3 +165,10 @@ comms:
     My hypothesis that a shallower hierarchy reduces error was NOT supported: differences are tiny (<=0.013) and
     4 groups is slightly best on nearly every per-group F1 (need 0.756, schema 0.703). Likely because only 4 levels
     and early groups are high precision, so the hcr-core-style '
+- at: 2026-11-25 20:30
+  from: devin
+  text: 'Alternate-host rerun done (no waiting on tony-omen): glue moved to qwen2.5:7b-instruct on tony-dell (load
+    2.4), Choice attempted via JevTeam jevos on idc02 (12/12 timed out - idc02 load 16, 301MiB free - recorded as
+    fallbacks, no fabricated choices). 31/36 glue calls ok with 0 empty outputs; 11/12 tasks analysable (doc-embeds-ss1
+    lost all 3). Stronger baseline result: A fidelity 0.520 at k=1 / 0.532 at k=3 (up from 0.467 with qwen3:0.6b)
+    but still 0/11 passes and far below the 0.75 floor; B 1.00'
