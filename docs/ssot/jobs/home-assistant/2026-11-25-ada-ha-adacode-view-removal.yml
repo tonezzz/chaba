@@ -1,0 +1,68 @@
+id: 2026-11-25-ada-ha-adacode-view-removal
+title: ada-ha chaba-admin 'Ada Code' view removed — iframe target retired 2026-11-24
+date: 2026-11-25
+hosts: [tony-omen, idc02, mn01]
+card: ada-ha-chaba-admin-ada-code-view-iframes-d1c492
+dispatch: dispatch-wt-20261125-092607-found-during-ocb-spa-route-gua
+runner: mn01
+status: done
+
+summary: >
+  The ada-ha chaba-admin 'Ada Code' view (path ada-code) iframed
+  https://ada-code.surf-thailand.com/ — a public edge route retired
+  2026-11-24 with the opencode public-route teardown, leaving a dead tab.
+  Option (a) remove was chosen: (b) repoint to ada-ocb would duplicate the
+  existing OpenChamber view; (c) repoint to the live opencode-serve
+  surface is not viable — it is plain http on tailnet IP:port
+  (idc02 100.123.163.11:4096, opencode-serve.service, verified serving the
+  OpenCode web UI) with no auth edge, so a public https dashboard page
+  would block it as mixed content; (d) leaves dead weight.
+
+live_change:
+  what: >
+    lovelace.chaba_admin on ada-ha (tony-omen:8125, url_path chaba-admin):
+    views[path=ada-code] removed. View order now Pair → kanban → Kanban 2 →
+    Diagram → OpenChamber → Cline → Node-RED → DevNest → Wiki → Private
+    Wiki → Ada Pages → Monitor → Hosts → Services → Events → Log →
+    Obsidian → Gantt (18 views).
+  how: >
+    scripts/home-assistant/push-dashboard.py --mutate
+    scripts/home-assistant/mutate-ada-ha-remove-adacode-tab.py over the HA
+    websocket on tony-omen (HASS_TOKEN from
+    ~/.config/secrets/ada-ha-token.env, run via ssh). Mutator guards on
+    exactly one ada-code view titled 'Ada Code'.
+  verify: >
+    ws readback after save: no path=ada-code view and no
+    ada-code.surf-thailand.com string anywhere in the config.
+  sync: >
+    scripts/home-assistant/sync-ssot-from-live.sh --instance ada-ha —
+    resanitized ada-ha-chaba-admin-current.json (view block removed,
+    secrets still redacted); chaba-home snapshot unchanged; dashboards
+    SSOT note + view order updated by hand (last_verified already
+    2026-11-25).
+
+consumer_canary:
+  what: >
+    scripts/audit/consumer-canary.py RETIRED_HOSTS default now also covers
+    the public opencode edge hostnames retired 2026-11-24:
+    ada-code/opencode-ada/opencode-jack.surf-thailand.com — so this class
+    of consumer drift is caught standing instead of per-incident.
+  detail: >
+    IGNORE gained `\.retired[-\w.]*:` alongside the existing `.bak` rule —
+    idc02 keeps *.container.retired-20261124 tombstones under
+    ~/.config/containers/systemd/ that legitimately still name the retired
+    PUBLIC_HOSTs; without the rule the canary would re-report them every
+    6h. Verified locally: tombstone lines ignored, live unit-env hits and
+    Caddyfile comments still classified correctly.
+  deploy_note: >
+    Takes effect on idc03's exec checkout after the dispatch branch merges
+    and chaba-repo-sync pulls; no unit/env change needed (script default).
+
+verification:
+  - "ws readback post-save: 18 views, ada-code absent, zero retired-host refs in config"
+  - "snapshot diff: single view block removed, redactions intact"
+  - "canary regex unit-check: RETIRED list, tombstone ignore, live-hit detection all pass"
+
+lessons:
+  - "opencode-serve (:4096, tailnet http) cannot iframe into the public https ada-ha dashboard — mixed content; a tailnet-only agent UI needs a tailscale-serve https edge before it can be a dashboard tab."
+  - "Retired quadlets leave *.retired-<date> tombstone files under ~/.config/containers/systemd/ that still name the old PUBLIC_HOST — greps for retired hostnames must ignore .retired-* like .bak or the canary self-reports forever."

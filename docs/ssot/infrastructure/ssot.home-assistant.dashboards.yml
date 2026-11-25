@@ -272,8 +272,8 @@ instances:
     repo_snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
     note: >-
       Ada HA lab copy of chaba-admin, distinct from the tony-ha dashboard
-      above. Live view order (2026-11-20): Pair → Kanban (classic board) →
-      Kanban 2 (Board2) → Diagram → OpenChamber (ada-ocb) → Ada Code → Cline
+      above. Live view order (2026-11-25): Pair → Kanban (classic board) →
+      Kanban 2 (Board2) → Diagram → OpenChamber (ada-ocb) → Cline
       → Node-RED → DevNest → Wiki → Private Wiki → Ada Pages → Monitor →
       Hosts → Services → Events → Log → Obsidian → Gantt. Kanban is a
       full-page panel iframe to
@@ -291,9 +291,16 @@ instances:
       board request the current live set stays — do not restore Ada Control
       without an explicit ask (resources remain registered:
       /local/ada-voice-card.js?v=14). Sanitized live readback 2026-11-24 is
-      byte-identical to the repo snapshot. Ada Code is a
-      full-page panel iframe to
-      https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
+      byte-identical to the repo snapshot. The Ada Code view
+      (full-page panel iframe to https://ada-code.surf-thailand.com/) was
+      REMOVED 2026-11-25 (card
+      ada-ha-chaba-admin-ada-code-view-iframes-d1c492): its public edge
+      route was retired 2026-11-24 with the opencode public-route teardown,
+      leaving a dead tab. Repointing was rejected — ada-ocb would
+      duplicate OpenChamber, and the live opencode-serve surface
+      (idc02 tailnet 100.123.163.11:4096) is plain http with no auth edge,
+      which a public https dashboard would block as mixed content.
+      OpenChamber (added 2026-11-12 via
       push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
       web UI on tony-dell:3000 via tailscale serve at
       https://ada-ocb.surf-thailand.com/ — public edge built 2026-11-12

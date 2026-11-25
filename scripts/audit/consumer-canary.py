@@ -15,7 +15,9 @@ docs/ssot/jobs/monitoring/2026-11-08-consumer-canary-timer-alert.yml).
 Exit 1 only when findings exist but the board-api post failed.
 
 Env:
-  RETIRED_HOSTS   comma list (default tony-dell.taila0626a.ts.net)
+  RETIRED_HOSTS   comma list (default tony-dell.taila0626a.ts.net plus the
+                  public opencode edge hostnames retired 2026-11-24:
+                  ada-code/opencode-ada/opencode-jack.surf-thailand.com)
   CANARY_CARD     board-api card id to comment on
   BOARD_API       board-api base (default http://127.0.0.1:8787)
 """
@@ -27,7 +29,11 @@ import sys
 import urllib.request
 
 RETIRED = [h.strip() for h in os.environ.get(
-    "RETIRED_HOSTS", "tony-dell.taila0626a.ts.net").split(",") if h.strip()]
+    "RETIRED_HOSTS",
+    "tony-dell.taila0626a.ts.net,"
+    "ada-code.surf-thailand.com,"
+    "opencode-ada.surf-thailand.com,"
+    "opencode-jack.surf-thailand.com").split(",") if h.strip()]
 PAT = "|".join(re.escape(h) for h in RETIRED)
 CARD_ID = os.environ.get(
     "CANARY_CARD", "consumer-canary-standing-retired-hostnam-6aa4a2")
@@ -45,6 +51,7 @@ IGNORE = re.compile("|".join([
     r"VCAST_REDEEM_HOSTS",
     r"(chaba-report|chaba-events)\.json:",
     r"\.bak[-\w.]*:",          # grep hits inside .bak files
+    r"\.retired[-\w.]*:",      # grep hits inside .retired-* tombstone units
 ]))
 # comment markers — checked AFTER stripping grep's file:line: prefix
 COMMENT = re.compile(r"^\s*(#|//|\*)")
