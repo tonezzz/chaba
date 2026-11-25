@@ -1,0 +1,111 @@
+title: system-report 18 missing nodes — triage verdicts
+subtitle: Post Nov-8 delivery fix / Nov-18 meta-pull — every formerly-missing producer verified live; real blockers were downstream
+icon: search
+version: 1
+card: system-report-18-missing-nodes
+date: 2026-11-25
+host: tony-omen (dispatch worktree)
+
+context: |
+  Card asked: after the Nov-8 delivery fix, system-report-watchdog alerts on
+  21 red nodes — audit-hosts/{tony-omen,mn01,macbook}=unreachable + 18
+  missing (health-monitor, host-loads, disk-trend, overnight-assessment,
+  kanban, daily-brief, nest-lanes/*, nest-brains/*, nest-bench/orch,
+  chaba-nest). Triage dead vs decommissioned vs moved.
+
+  The 18 `missing` verdicts were a *delivery* gap, not dead producers:
+  reports/* is gitignored, so metas written on producer hosts never reached
+  the con01 renderer. Fixed 2026-11-18 by scripts/report/pull-report-metas.sh
+  (docs/ssot/jobs/infrastructure/2026-11-18-report-meta-pull.yml —
+  "missing 20 -> 0").
+
+verified_state: |
+  Pulled live meta inventory from con01:~/CascadeProjects/chaba/reports/
+  (the harvest target) on 2026-11-25 ~09:45 +07. Every node the card listed
+  as missing has a fresh meta (2026-11-23/24):
+
+  - health-monitor: delta, fresh (~/var/chaba/health/meta.yml on tony-dell)
+  - host-loads: delta 2026-11-24T12:47+07 (chaba-host-loads.timer idc02)
+  - disk-trend: delta 2026-11-24T12:47+07 (kanban-sync.timer path)
+  - kanban: ok 2026-11-24T12:37+07 (kanban-stats via kanban-sync worktree)
+  - daily-brief: delta 2026-11-23T19:05+07 (job:daily-brief)
+  - overnight-assessment: meta fresh BUT status=error — see findings
+  - nest-lanes/* (6), nest-brains/* (4), nest-bench/orch, chaba-nest:
+    all fresh 2026-11-24T12:33+07 via scripts/ada/nest-overview.py
+  - fleet-jobs-report, report-feed, focus-inbox, audit-suite,
+    memory-suite, fleet, mcp-fleet: all fresh
+
+  audit-hosts unreachable triage:
+  - tony-omen: delta 2026-11-24 (was unreachable at card time — transient)
+  - mn01: delta 2026-11-24 (same — transient; pull from mn01 failed
+    rc=23 on 11-24 run but meta is fresh via earlier pull/push)
+  - macbook: still unreachable — EXPECTED. Registry declares
+    offline_ok: true (laptop sleeps/off-net). report-watch already
+    exempts it; the system-report watchdog did not — fixed (below).
+
+verdict: |
+  ZERO of the 18 missing nodes are dead, decommissioned, or moved. All
+  producers deliver; the missing state was the pre-pull-report-metas
+  delivery gap, resolved 2026-11-18.
+
+findings_fixed: |
+  1. L3 renderer crash (ROOT CAUSE of current staleness):
+     chaba-system-report.service on con01 has failed every run since
+     2026-11-21 06:51 with KeyError 'no-config' in
+     scripts/report-system.py render_markdown — mcp-inventory started
+     emitting the `no-config` status (idc03 + mn01 answered but run no
+     agent lane) and _BADGE/_WORST never learned it. Served
+     system-report.yml frozen at 2026-11-20T06:48 — the watchdog's
+     "stale" chain alert is correct; the "21 red nodes" picture is stale.
+     FIX (this worktree): added no-config to _BADGE + _WORST (informational,
+     worst=1 like untracked/planned/dormant — matches report-watch's
+     BAD_NOW/BAD_SUSTAINED which already ignore it).
+
+  2. Watchdog offline_ok gap: system-report-watchdog.py counted
+     audit-hosts/macbook unreachable as red forever — registry declares
+     offline_ok but the rendered yml didn't carry the flag and the
+     watchdog never read the registry. FIX: resolve_node() now emits
+     offline_ok per node; watchdog exempts unreachable+offline_ok, with a
+     registry fallback for yml rendered before the flag existed.
+
+  3. ha-live 502 (found via overnight-assessment health_snapshot):
+     tony-omen rebooted ~2026-11-23 18:00; ha-live.service (Gemini Live
+     bridge, tailscale serve :8444 -> :9005 inside tony-ha) was left
+     disabled+inactive — never enabled since the 10-19 evacuation unit
+     was written. Started + enabled 2026-11-25 09:41; edge returns 200.
+     Sibling units still down: plug-watch, ha-stall-watchdog,
+     playlive-chrome, yolo-detect — carded OPS-1367.
+
+  4. ada-stt-con01 health check false-positive: con01 ada-stt.service
+     stopped+disabled 2026-11-23 (absorber shed; undocumented). idc03's
+     own ada-stt is active/healthy and is the prod fallback; the last
+     consumer still pointing at con01 (telegram-mn-bot TG_WHISPER_URL on
+     idc03, ada-tg-relay-mn.service) was repointed to 127.0.0.1:8914 and
+     the relay restarted — mn-ha lane STT works again. SSOT health entry
+     marked disabled:true with re-enable instructions (honored by
+     scripts/audits/http-health-audit.mjs).
+
+findings_open: |
+  - overnight-assessment ssot_validate step: 1 invalid SSOT file on the
+    idc03 served checkout (6343/6344 valid, 2026-11-24 run). NOT
+    reproducible in this dispatch worktree (6417/6417 valid) — likely a
+    focus-inbox/card file that landed on master after the worktree base.
+    Tonight's run will name it in ORCHESTRATION.json if still present.
+  - mn01 pull flakiness: pull-report-metas logged "mn01 unreachable/failed
+    (rc=23)" on the 11-24 run — meta still fresh via push-back/other
+    roots, but worth watching.
+  - idc01 audit-hosts/meta.idc01.yml still sits in con01's reports/
+    (unreachable, 2026-10-25) — node is retired in the registry; stale
+    meta file is inert residue, harmless.
+  - systemwide-assessment meta is from 2026-09-27 (manual CMS-reflect
+    producer, 7d cadence → will flag stale again); model-bench stale —
+    both pre-existing, not part of the missing-node class.
+
+verify: |
+  - After merge + chaba-repo-sync on con01/idc03: next
+    chaba-system-report.timer run (daily 06:45) should complete; check
+    `ssh con01 journalctl --user -u chaba-system-report.service -n 20`
+    for no KeyError and fresh reports/system-report.yml generated_at.
+  - `ssh tony-dell python3 ~/CascadeProjects/chaba/scripts/report/system-report-watchdog.py --no-alert`
+    — macbook should drop out of the red set.
+  - `curl -s -o /dev/null -w '%{http_code}' https://tony-omen.taila0626a.ts.net:8444/` → 200.

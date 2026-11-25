@@ -181,8 +181,24 @@ def main() -> int:
 
     # --- node-level checks ---------------------------------------------
     if rep:
+        # offline_ok nodes (laptops etc.) tolerate `unreachable` — same
+        # exemption report-watch applies. Older served yml may lack the
+        # per-node flag, so fall back to the registry declaration.
+        offline_ids = {n.get("id") for n in rep.get("nodes") or []
+                       if n.get("offline_ok")}
+        try:
+            import yaml as _yaml
+            reg = _yaml.safe_load(
+                (REPO / "docs/ssot/infrastructure/ssot.reports.yml")
+                .read_text()) or {}
+            offline_ids |= {n.get("id") for n in reg.get("nodes") or []
+                            if n.get("offline_ok")}
+        except Exception:
+            pass
         red = [n for n in (rep.get("nodes") or [])
-               if n.get("status") in RED_STATUSES]
+               if n.get("status") in RED_STATUSES
+               and not (n.get("status") == "unreachable"
+                        and (n.get("offline_ok") or n.get("id") in offline_ids))]
         if red:
             key = ",".join(sorted(f"{n['id']}:{n['status']}" for n in red))
             cond = f"nodes:{key}"

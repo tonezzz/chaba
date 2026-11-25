@@ -296,6 +296,7 @@ def resolve_node(node: dict) -> dict:
         "summary": "",
         "meta_path": None,
         "artifact": None,
+        "offline_ok": bool(node.get("offline_ok")),
     }
     if node.get("state") == "planned":
         out["status"] = "planned"

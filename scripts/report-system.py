@@ -55,10 +55,10 @@ _BADGE = {
     "ok": "OK", "delta": "DELTA", "stale": "STALE", "error": "ERROR",
     "unreachable": "UNREACH",
     "missing": "MISSING", "untracked": "untracked", "remote": "remote",
-    "planned": "planned", "dormant": "dormant",
+    "planned": "planned", "dormant": "dormant", "no-config": "no-config",
 }
 _WORST = {"ok": 0, "remote": 0, "untracked": 1, "planned": 1,
-          "dormant": 1,
+          "dormant": 1, "no-config": 1,
           "delta": 2, "stale": 2, "missing": 3, "error": 4,
           "unreachable": 4}
 

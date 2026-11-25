@@ -209,11 +209,16 @@ services:
     profiles:
       - home
       - mobile
-    note: "Native service (ada-stt.service, ~/audio-cpp-eval) bound tailnet
-      100.72.146.39:8914 — migrated off idc02 2026-10-22 (OPS-0763). Warm
-      RTF ~0.5 on threads=4 (8 thrashes shared vCPU). Voice consumers point
-      TG_WHISPER_URL/LINE_WHISPER_URL here; idc03 ~/audio-cpp is the
-      loaded-host fallback. Transcribe probe: POST /v1/audio/transcriptions."
+    disabled: true
+    note: "Disabled 2026-11-25 — ada-stt.service on con01 was stopped+disabled
+      2026-11-23 (absorber shed; unit inactive, :8914 refuses). Production STT
+      consumers now use idc03-local 127.0.0.1:8914 (telegram/kk bots) or
+      tony-omen:8790 (LINE); the last con01 pointer (telegram-mn-bot
+      TG_WHISPER_URL) was repointed to idc03-local 2026-11-25. con01 keeps the
+      unit installed as warm-standby — re-enable with
+      `ssh con01 systemctl --user enable --now ada-stt` if DR coverage is
+      wanted again. Was: native service migrated off idc02 2026-10-22
+      (OPS-0763), warm RTF ~0.5 on threads=4."
     recovery_actions:
       - "Check service: ssh con01 systemctl --user status ada-stt.service"
       - "Restart: ssh con01 systemctl --user restart ada-stt.service"
