@@ -1,7 +1,7 @@
 id: session-capture-c1-spec
 title: 'Session capture C.1: router/harvester contract spec (SSOT)'
-column: doing
-updated: 2026-11-25 10:09
+column: review
+updated: 2026-11-25 10:14
 priority: medium
 tags:
 - dev-0038-followup
@@ -104,9 +104,20 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261125-094612-goal-define-capture-router-har on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-25 10:14
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-094612-goal-define-capture-router-har.service:
+    Failed to ope'
+- at: 2026-11-25 10:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:14
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261125-094612-goal-define-capture-router-har — close will block
+    until merged'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
@@ -114,5 +125,9 @@ action:
   sweep:
     stale_running: 2026-11-25 10:09
     session_gone: 2026-11-25 10:09
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-094612-goal-define-capture-router-har.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-094612-goal-define-capture-router-har.service:
+    No such file or directory'
 claim:
   since: 2026-11-25 09:45
+review_kind: verify
