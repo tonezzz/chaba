@@ -202,7 +202,12 @@ def load_state() -> dict:
 def save_state(st: dict) -> None:
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(st))
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(st))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(STATE)
     except Exception as exc:
         log(f"state write failed: {exc}")
 

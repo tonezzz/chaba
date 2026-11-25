@@ -386,7 +386,12 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
     if not DRY:
         _pub_hash[hkey] = h
         try:
-            PUB_HASH.write_text(json.dumps(_pub_hash))
+            tmp = PUB_HASH.with_name(PUB_HASH.name + ".tmp")
+            with tmp.open("w") as f:
+                f.write(json.dumps(_pub_hash))
+                f.flush()
+                os.fsync(f.fileno())
+            tmp.replace(PUB_HASH)
         except Exception:
             pass
     return True
@@ -963,7 +968,12 @@ def notify_transitions(zones: dict[str, dict]) -> None:
                 f"camwall {zone} went all-dead — 0/{len(cams)} live "
                 f"({wall_key(zone)} updated)")
     try:
-        NOTIFY_STATE.write_text(json.dumps(cur))
+        tmp = NOTIFY_STATE.with_name(NOTIFY_STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(cur))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(NOTIFY_STATE)
     except Exception:
         pass
     for n in notes[:4]:  # cap: a DVR fleet flap can hit every zone at once
