@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
 column: doing
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:03
 priority: low
 tags:
 - embedding
@@ -353,6 +353,16 @@ comms:
   from: devin
   text: 'raised request distillation-pilot-already-ran-2026-11-0-5dd74e: Distillation pilot already ran 2026-11-08
     (linear closed-form BGE-M3 1024d -> Gemini 768d map on the same 8,109 doc pair'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[verify done] This experiment already ran 2026-11-08 as a linear closed-form map on the same 8,109 pairs:
+    cosine .9493, r@5 .235 / MRR .871, English .216/.848 — meets the card success gate; full FT judged optional.
+    /tmp/embedeval is gone fleet-wide so a re-run needs API re-embed + GPU; reranker already beats Gemini and :11023
+    is now bge-m3. Raised request distillation-pilot-already-ran-2026-11-0-5dd74e (close/park/rebuild). Trail: docs/ssot/jobs/ada/2026-11-25-bge-distillation-pilot-disposition.'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running
