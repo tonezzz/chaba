@@ -1,7 +1,7 @@
 id: r7-kk-macbook-venv-missing
 title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
 column: done
-updated: 2026-11-26 04:00
+updated: 2026-11-26 04:03
 brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
   package missing.'
 priority: medium
@@ -235,6 +235,10 @@ comms:
 - at: 2026-11-26 04:00
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: install-python3-14-venv-on-tony-macbook-e29487
