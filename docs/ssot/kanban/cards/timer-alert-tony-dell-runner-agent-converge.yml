@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-agent-converge
 title: Timer runner-agent-converge on tony-dell failing
 column: done
-updated: 2026-11-25 11:21
+updated: 2026-11-25 16:39
 priority: high
 tags:
 - timer-alert
@@ -99,6 +99,10 @@ comms:
     was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/ and the exec checkout reset to origin/master
     (5ed3ff675e4). Untracked live scripts/timers preserved; HA file parses as YAML with 0 conflict markers; chaba-repo-sync.service
     re-ran Result=success. Checkout clean except four intentional untracked files.'
+- at: 2026-11-25 16:39
+  from: tony
+  text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
+    and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
@@ -110,4 +114,5 @@ action:
   status: queued
   lane: free_lane
   lane_source: timer-alert
+  executor: devin
 claim: {}
