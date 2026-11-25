@@ -1,7 +1,7 @@
 id: idc03-stale-embed-db-delete
 title: Delete stale mddb-embed DB copy on idc03 (2.8G)
-column: doing
-updated: 2026-11-25 15:56
+column: review
+updated: 2026-11-25 15:59
 spec: ~/.config/containers/mddb-embed/data/mddb.db (2.8G) on idc03 = pre-relocation copy; live bank verified on
   idc02 (15:56 run, 501 docs, 0 fail). Keep until ~2026-11-19 as instant rollback, then delete dir (quadlet already
   .retired). Dated reminder card — delete + close.
@@ -208,12 +208,41 @@ comms:
     on idc02 consumer-verified: mddb-embed.service active, /health 200 {status:healthy,mode:wr,durable}, db 3.77G
     written 15:50 today. Trail: docs/ssot/jobs/mddb/2026-11-25-idc03-stale-embed-db-delete.yml; outcome: dispatch-outcome-20261125-155419-config-containers-mddb-embed-d.md
     ('
+- at: 2026-11-25 15:59
+  from: idc02
+  text: 'finished (ok): exit=0 patch branch (`1f5757d325`, not pushed); final comms posted to the card so the dispatcher
+    can close it. | devin-t'
+- at: 2026-11-25 15:59
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:59
+  from: chaba
+  text: pushed dispatch/20261125-155419-config-containers-mddb-embed-d to origin
+- at: 2026-11-25 15:59
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 15:59
+  from: chaba
+  text: auto-merged 8797036e (dispatch/20261125-155419-config-containers-mddb-embed-d) → origin/master
+- at: 2026-11-25 15:59
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-155419-config-containers-mddb-embed-d,
+    branch dispatch/20261125-155419-config-containers-mddb-embed-d'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0 patch branch (`1f5757d325`, not pushed); final comms posted to the card so the dispatcher can
+    close it. | devin-task-20261125-155419-config-containers-mddb-embed-d.service: Consumed 11.575s CPU time, 256.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 15:53
+review_kind: verify
