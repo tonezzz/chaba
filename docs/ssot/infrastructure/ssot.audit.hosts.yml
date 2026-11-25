@@ -1939,6 +1939,16 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly Sat 06:00 — embed benchmark (no :8199 lock)
+      - name: scenario-runner-drift-check.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Hourly — sha256 drift check of the copy-on-install
+          ~/.local/share/ada-scenario-runner/ wrapper vs repo source;
+          deduped board-api /inbox alerts (card
+          scenario-runner-deployed-drift-check, rendered from
+          ssot.jobs.yml 2026-11-25)"
       - name: jev-bench.timer
         type: timer
         scope: user

@@ -10,6 +10,14 @@ jobs:
     schedule: "*-*-* *:0/30:00"
     dispatch: "systemd"
     persistent: true
+  - id: ada-memory-merge-proposals
+    schedule: "Sun *-*-* 10:30:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-morning-brief
+    schedule: "*-*-* 07:35:00"
+    dispatch: "systemd"
+    persistent: true
   - id: ada-nest-heartbeat-idc03
     schedule: "every 5m"
     dispatch: "systemd"
@@ -31,6 +39,10 @@ jobs:
     persistent: true
   - id: ada-tg-webhook-watch
     schedule: "every 5m"
+    dispatch: "systemd"
+    persistent: true
+  - id: ada-transcript-archive
+    schedule: "Sun *-*-* 05:15:00"
     dispatch: "systemd"
     persistent: true
   - id: backlog-spec-enrich
@@ -109,6 +121,9 @@ jobs:
     schedule: "*-*-* 04:20:00"
     dispatch: "systemd"
     persistent: true
+  - id: devin-dispatch-tg-watch
+    schedule: "every 5m"
+    dispatch: "systemd"
   - id: embed-lane-lessons
     schedule: "every 1d"
     dispatch: "systemd"
@@ -143,6 +158,9 @@ jobs:
   - id: log-shipper-severe
     schedule: "every 1h"
     dispatch: "systemd"
+  - id: mcp-fleet-report
+    schedule: "every 24h"
+    dispatch: "systemd"
   - id: media-inbox-update-kk
     schedule: "every 15m"
     dispatch: "systemd"
@@ -154,6 +172,10 @@ jobs:
   - id: nest-queue-watch
     schedule: "every 15m"
     dispatch: "systemd"
+  - id: netdata-nodes-watch
+    schedule: "every 15min"
+    dispatch: "systemd"
+    persistent: true
   - id: ops-error-posts
     schedule: "every 15m"
     dispatch: "systemd"
@@ -164,6 +186,10 @@ jobs:
     persistent: true
   - id: qc-scoreboard
     schedule: "*-*-* 07,19:20:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: scenario-runner-drift-check
+    schedule: "hourly"
     dispatch: "systemd"
     persistent: true
   - id: served-checkout-watchdog
@@ -182,12 +208,20 @@ jobs:
     schedule: "*-*-* 07:40:00"
     dispatch: "systemd"
     persistent: true
+  - id: wiki-talk-watch
+    schedule: "*-*-* *:07/15:00"
+    dispatch: "systemd"
+    persistent: true
   - id: wp-comment-sync
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
   - id: wp-lane-timeline
     schedule: "every 15m"
+    dispatch: "systemd"
+    persistent: true
+  - id: wp-news-morning-brief
+    schedule: "*-*-* 08:00:00"
     dispatch: "systemd"
     persistent: true
   - id: wp-news-situation

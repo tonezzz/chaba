@@ -721,6 +721,25 @@ jobs:
     health — the OPS-1074 divergence sat for days before surfacing as
     >60s writes. Alerts deduped 12h; state
     ~/.local/state/served-checkout-watchdog.json.'
+- id: scenario-runner-drift-check
+  name: Ada scenario-runner deployed drift check (idc03)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/scenario-runner-drift-check.py
+  note: 'card scenario-runner-deployed-drift-check — the copy-on-install
+    isolation (install.sh -> ~/.local/share/ada-scenario-runner/) means
+    repo fixes never reach the wrapper until install.sh re-runs; the
+    OPS-0581 exit-contract fix sat undeployed 24 days and the Oct 30 +
+    Nov 6 weekly runs completed but alerted as exit-code (2026-11-08
+    incident). Hourly sha256 compare of each installed payload file vs
+    the exec-checkout source; missing/not-executable/content-drift
+    files a deduped board-api /inbox entry (6h repeat per condition).
+    Exit 0 on completed checks per the OPS-0581 contract — findings
+    ride the inbox, not the exit code. State
+    ~/.local/state/scenario-runner-drift-check.json.'
 - id: netdata-nodes-watch
   name: Netdata fleet nodes watchdog (streaming child drop-out)
   host: idc03
