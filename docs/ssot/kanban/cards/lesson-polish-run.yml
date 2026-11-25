@@ -1,6 +1,6 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
-column: backlog
+column: doing
 updated: 2026-11-25 19:06
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
@@ -36,7 +36,9 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-1403
 comms:
 - at: 2026-11-25 17:26
@@ -110,3 +112,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 19:06
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-25 19:06
