@@ -1,7 +1,7 @@
 id: classifier-readonly-audit-class-reroute
 title: 'Classifier: route bounded read-only audit/assessment cards to free_lane (ops-readonly profile)'
 column: backlog
-updated: 2026-11-25 07:49
+updated: 2026-11-25 09:19
 brief: 'DEV-0044 lever 1 first pick: bounded read-only audit/assessment/review/investigate cards -> free_lane. 56.8M
   prompt/30d on idc02 alone; ''audit'' is not a classifier keyword so these fall to jevos/devin.'
 priority: medium
@@ -57,6 +57,9 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: devin
+  lane_source: fallback
 ref: DEV-1335
 comms:
 - at: 2026-11-24 22:59
@@ -66,3 +69,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as devin (fallback conf 0.38)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+claim: {}
