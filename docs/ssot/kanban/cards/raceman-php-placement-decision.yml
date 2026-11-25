@@ -226,6 +226,10 @@ comms:
     -> 502). PHP is required (JS calls api/{list,load,save,save-course}.php; file-backed course data lives on dell
     — omen copy would split-brain). Fix: omen nginx.conf fastcgi_pass -> 100.68.142.13:9001 (both PHP locations),
     raceman-web.service restarted (NOT reload — single-file bin'
+- at: 2026-11-25 09:14
+  from: devin
+  text: 'Correction to previous comms: omen backup file is nginx.conf.bak-20261125 (not .bell-). Rollback: cp it
+    back over nginx.conf on omen then systemctl --user restart raceman-web.service.'
 action:
   type: dispatch
   status: running
