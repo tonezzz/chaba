@@ -713,7 +713,7 @@ decisions:
       - swap was 16/16 GiB at incident time; not forced off. zram-swap.service enabled 16:56 +07 via ansible/playbooks/zram-swap.yml (reused existing fleet-standard script: 24 GiB lzo-rle, priority 100); by 18:47 disk swap had fallen to 10.8/16 GiB with 16.2 GiB zram in use, and 1m load fell from ~45/47/54 to ~25/34/45 shortly after enablement
       - open-jev.service (port 8777, gemma-3-4b-it) CPUQuota tightened 250% -> 200% and restarted 16:57 +07; NRestarts=0, tailnet health/metrics 200 OK resumed, swap-backed memory ~1.5 GiB
       - open-jev-student.service (port 8778) and openjev-student.service (port 8779) audited as distinct active lanes; no reclaim, neither stopped; 13:07-13:15 restart storm ended with status=137 and has been stable since
-      - resshift v1 eval finished rc=0 at 17:14; v3 hit its 2h wrapper timeout at 17:24 with empty output; relaunched 18:46 as cpu-job-resshift-v3-s4-g128-rerun-20261125T114649Z.scope with CPU_JOB_TIMEOUT=14400 in cpu-jobs.slice, completion check scheduled 23:00 +07
+      - resshift v1 eval finished rc=0 at 17:14; v3 hit its 2h wrapper timeout at 17:24 with empty output; a CPU rerun launched 18:46 was stopped at 19:26 to avoid output collision with a GPU v3 job launched 18:50 (SR_DEVICE=cuda, 2h timeout), both in cpu-jobs.slice targeting the same empty output dir; GPU job kept, completion check 23:00 +07
     related:
       - tony-omen
       - OPS load incident 2026-11-25
