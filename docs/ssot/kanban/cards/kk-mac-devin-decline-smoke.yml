@@ -1,7 +1,7 @@
 id: kk-mac-devin-decline-smoke
 title: kk-mac launchd runner — devin-executor decline boundary check
 column: backlog
-updated: 2026-11-25 07:53
+updated: 2026-11-25 14:11
 brief: 'Boundary check: an executor=devin dispatch card pinned to kk-mac must be visibly declined by the launchd
   runner (devin-dispatch drives systemd-run internally — Linux-only), never silently claimed. Part of kk-mac-launchd-runner-followthrough
   e2e.'
@@ -12,7 +12,7 @@ action:
   repo: chaba
   host: kk-mac
   executor: devin
-  status: idle
+  status: queued
 ref: DEV-0228
 comms:
 - at: 2026-11-19 10:40
@@ -512,4 +512,7 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:11
+  from: tony
+  text: queued for processing
 claim: {}
