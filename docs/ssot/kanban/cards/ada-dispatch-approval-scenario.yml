@@ -1,7 +1,7 @@
 id: ada-dispatch-approval-scenario
 title: 'Live scenario: ask->respond->dispatch approval handshake'
 column: doing
-updated: 2026-11-25 10:40
+updated: 2026-11-25 10:49
 priority: low
 tags:
 - ada
@@ -210,6 +210,13 @@ comms:
     so the probe card must be pre-staged with the full S3 opencode envelope to be claimable on idc02; (2) kanban
     ask + respond both bump card.updated which re-keys the approval receipt — Ada MUST re-preflight after the answer
     lands or dispatch returns approval_receipt_mismatch; wi'
+- at: 2026-11-25 10:49
+  from: devin
+  text: 'DONE (attempt 2). Deliverables on two dispatch branches: ada-voice 527eaca — tests/scenarios-live/ada_opencode_approval.yaml
+    (smoke/text, 4 turns: preflight+kanban-ask asserts, board_respond driver turn for scripted respond=yes, dispatch
+    confirmed=true + queued:true assert, verdict readback) + scenario-live.py board_respond: driver (plays owner-only
+    /respond as tony) + benchmark.yml write_allowed_in + tool_guide.yml re-preflight teaching. chaba 74712995cb
+    — probe card ada-opencode-approval-probe'
 action:
   type: dispatch
   status: running
