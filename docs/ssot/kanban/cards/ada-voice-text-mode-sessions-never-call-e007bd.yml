@@ -2,7 +2,7 @@ id: ada-voice-text-mode-sessions-never-call-e007bd
 title: 'ada-voice: text-mode sessions never call conversation.persist() — recall-summary/report/extract feed starved
   since Oct'
 column: doing
-updated: 2026-11-25 15:47
+updated: 2026-11-25 16:10
 priority: high
 tags:
 - ada
@@ -64,6 +64,13 @@ comms:
   from: devin
   text: '[progress] investigating ada-voice OpenRouterTextProvider.close() vs GeminiLiveProvider.close() persist
     gap; will patch on an ada-voice dispatch worktree per established pattern'
+- at: 2026-11-25 16:10
+  from: devin
+  text: '[done] fix landed on ada-voice branch dispatch/text-mode-session-persist (worktree ~/CascadeProjects/ada-voice-wt-text-mode-persist,
+    commit c14758b, NOT pushed): OpenRouterTextProvider.close() now fires conversation.persist() fire-and-forget
+    like GeminiLiveProvider, with an idempotence guard. +2 regression tests; full suite 1982 passed, tool-lint clean.
+    Job trail: ada-voice docs/ssot/jobs/ada/2026-11-25-text-mode-session-persist.yml. Outcome doc in chaba dispatch
+    worktree. Next: merge branch on '
 action:
   type: dispatch
   status: running
