@@ -1,7 +1,7 @@
 id: raceman-php-placement-decision
 title: Raceman PHP placement — restore on omen or retire backend
 column: doing
-updated: 2026-11-25 09:08
+updated: 2026-11-25 09:14
 priority: medium
 tags:
 - ssot
@@ -219,6 +219,13 @@ comms:
     dell php-fpm listens 0.0.0.0:9001, reachable from omen over tailnet, no allowed_clients restriction. omen nginx
     still fastcgi_passes 127.0.0.1:9001 → api/list.php returns 502. Decision: path 2 — keep php on dell, repoint
     omen nginx to 100.68.142.13:9001. Executing repoint now.'
+- at: 2026-11-25 09:14
+  from: devin
+  text: 'DONE — path 2 executed + verified. Live state had drifted since card filing: raceman-php already ACTIVE
+    on tony-dell since 2026-11-16; real fault was omen raceman-web nginx fastcgi_pass to dead 127.0.0.1:9001 (api/*.php
+    -> 502). PHP is required (JS calls api/{list,load,save,save-course}.php; file-backed course data lives on dell
+    — omen copy would split-brain). Fix: omen nginx.conf fastcgi_pass -> 100.68.142.13:9001 (both PHP locations),
+    raceman-web.service restarted (NOT reload — single-file bin'
 action:
   type: dispatch
   status: running
