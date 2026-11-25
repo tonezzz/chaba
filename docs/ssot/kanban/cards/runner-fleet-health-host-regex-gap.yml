@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
 column: doing
-updated: 2026-11-25 20:43
+updated: 2026-11-25 20:51
 priority: medium
 tags:
 - ops
@@ -99,5 +99,12 @@ comms:
     as authoritative host source for both modules; kk-mac probed via board-api /ready heartbeat (no inbound ssh,
     OPS-0220); devin checks gated on declared capability; con01 git-identity will be fixed to fleet convention.
     implementing now.'
+- at: 2026-11-25 20:51
+  from: devin
+  text: 'DONE: host-discovery gap closed. Structured runner_fleet_hosts added to ssot.kanban.yml (8 hosts, probe+devin
+    per host); dispatch_repos fleet_hosts/fleet_host_specs authoritative, prose regex is fallback-only (+conN).
+    runner-fleet-health.py: probe dispatch ssh|board-api; kk-mac probed via /ready heartbeat on /queue (stale=note,
+    missing=>7d=violation); judge skips devin checks when devin:false; queue_satisfiability uses declared labels
+    for heartbeat hosts. con01 git-identity fixed live (fleet Dev'
 claim:
   since: 2026-11-25 20:36
