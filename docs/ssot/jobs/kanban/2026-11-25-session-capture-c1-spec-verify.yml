@@ -1,0 +1,50 @@
+title: "session-capture C.1 spec: attempt-2 verification — contract confirmed merged on master"
+summary: >
+  Card session-capture-c1-spec (OPS-1355) attempt 2. Attempt 1's deliverable
+  was reported lost by the verify queue ("no code landed in origin/master"),
+  but merge 8277cd3e (dispatch/20261125-094612-goal-define-capture-router-har)
+  IS an ancestor of origin/master and carries the full contract: the
+  "Capture Router Contract (Phase C.1)" + "Examples" sections in
+  docs/ssot/ssot.knowledge-capture.yml, CHANGELOG entry, job record, and
+  dispatch-outcome. This pass re-verified every acceptance item
+  independently and closed the superseded PR #218. No content changes
+  were needed — the spec was already correct and as-built accurate.
+card: session-capture-c1-spec
+verify:
+  - "git merge-base --is-ancestor 8277cd3e origin/master — confirmed; merge
+    stat shows ssot.knowledge-capture.yml +144, CHANGELOG +8, job record,
+    outcome file"
+  - "yaml.safe_load: 12 sections, no duplicate titles; Capture Router
+    Contract (Phase C.1) at line ~380, Examples at ~471"
+  - "node scripts/ssot-validate-all.mjs — 6479 files, 0 errors, 139
+    warnings; ssot.knowledge-capture.yml trips bloat review-threshold
+    warnings only (521 lines / 12 sections / 59 items) — expected for a
+    contract spec, documented in the c1 job record"
+  - "python3 scripts/ssot-prose-smell.py --file
+    docs/ssot/ssot.knowledge-capture.yml — 0 flagged values"
+  - "python3 scripts/chaba/capture-router.py --self-test — 13/13"
+  - "live router output reproduces the documented examples exactly:
+    card-comms candidate -> dedupe_key kanban:ada-capture-hooks action
+    link; focus-inbox candidate -> kanban:04e0aa363440 action create,
+    confidence 0.8 — fields, keys, and actions all match the Examples
+    section"
+method_notes: >
+  Root cause of the verify miss: the 10:07 merge-sweep GC'd the attempt-1
+  worktree and the session ended with a transient systemd error
+  ("Failed to open ... .service"). Whatever evidence the 11:20 verify
+  pass sampled, it did not include merge ancestry — the merge was already
+  on origin/master 73 minutes before the hold note. Lesson: dispatch-card
+  triage should check `git merge-base --is-ancestor <merge> origin/master`
+  (or `git log origin/master --grep=<branch>`) before declaring "no code
+  landed" — session/worktree absence is not evidence of absent work once
+  the branch was pushed and auto-merged. Also closed PR #218
+  (ada/session-capture-c1-spec, +28-line draft) as superseded — its
+  invented event_id/UUID envelope never matched the as-built router.
+followups: >
+  None for this card. Note for reviewers: "VERIFY-QUEUE triage" appears
+  to be a manual review pass, not a repo tool (no verify-queue script in
+  scripts/). Its "no code landed" conclusion was wrong here — for future
+  dispatch triage, check merge ancestry
+  (`git merge-base --is-ancestor <merge> origin/master`) before holding a
+  card; session/worktree absence after GC is not evidence of absent work
+  once the branch was pushed and auto-merged.
