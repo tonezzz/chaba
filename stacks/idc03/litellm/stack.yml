@@ -9,10 +9,10 @@ description: >-
 verify: >-
   curl -sf http://100.102.134.91:4000/health/liveliness -o /dev/null
 secrets:
-  - "~/.config/secrets/litellm.env — LITELLM_MASTER_KEY, LITELLM_SALT_KEY, POSTGRES_*, DATABASE_URL, UI creds"
+  - "~/.config/secrets/litellm.env — LITELLM_MASTER_KEY, LITELLM_SALT_KEY, POSTGRES_*, DATABASE_URL, UI creds, OPENROUTER_API_KEY (fleet upstream), OPENROUTER_BENCH_API_KEY"
   - "~/.config/secrets/litellm-keys.env — minted virtual keys (LITELLM_KEY_ADA/_CHABA/_BENCH)"
   - "~/.config/secrets/gemini-keys.env — GEMINI_API_KEY_PAID/_FREE (mounted)"
-  - "~/.config/secrets/mddb-gemini.env — OPENROUTER_API_KEY (mounted)"
+  - "~/.config/secrets/mddb-gemini.env — mounted for other vars only; OPENROUTER_API_KEY removed 2026-11-25 (gateway-only fleet key)"
 requires:
   - "tool:podman"
   - "tcp:100.102.134.91:11434 — ollama (self)"

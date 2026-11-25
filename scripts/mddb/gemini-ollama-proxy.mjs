@@ -36,6 +36,18 @@ const OPENROUTER_PROVIDER = process.env.OPENROUTER_PROVIDER || "Google";
 // flip is index-safe. Gemini and Ollama embed in different vector spaces;
 // a silent fallback write would corrupt the index.
 const OPENROUTER_PRIMARY = (process.env.OPENROUTER_PRIMARY ?? "1") !== "0";
+// LiteLLM gateway embed leg (card or-direct-bypass-leak-audit): when
+// EMBED_GATEWAY_BASE is set, the OR backup leg rides the gateway's
+// OpenAI-compatible /v1/embeddings (model EMBED_GATEWAY_MODEL, default
+// "embedding" -> openrouter/google/gemini-embedding-2 upstream) instead
+// of holding a raw OR key — spend stays attributed inside LiteLLM.
+// Gateway mode is backup-only: OPENROUTER_PRIMARY never promotes it to
+// primary (that path still requires a raw OPENROUTER_API_KEY).
+const EMBED_GATEWAY_BASE = (process.env.EMBED_GATEWAY_BASE || "").replace(/\/$/, "");
+const EMBED_GATEWAY_KEY = process.env.EMBED_GATEWAY_KEY || process.env.LITELLM_KEY || "";
+const EMBED_GATEWAY_MODEL = process.env.EMBED_GATEWAY_MODEL || "embedding";
+const EMBED_VIA_GATEWAY = !!(EMBED_GATEWAY_BASE && EMBED_GATEWAY_KEY);
+const OR_LEG_CONFIGURED = EMBED_VIA_GATEWAY || !!OPENROUTER_API_KEY;
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || "100", 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || "100", 10);
 const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || "5", 10);
@@ -462,22 +474,50 @@ async function fetchOpenRouterBatch(texts, orModel, outputDimensionality) {
   return list.map((entry) => entry.embedding);
 }
 
+async function fetchGatewayEmbedBatch(texts, outputDimensionality) {
+  const resp = await fetch(`${EMBED_GATEWAY_BASE}/v1/embeddings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${EMBED_GATEWAY_KEY}`,
+    },
+    body: JSON.stringify({
+      model: EMBED_GATEWAY_MODEL,
+      input: texts,
+      dimensions: outputDimensionality,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Embed gateway error: ${resp.status} - ${t.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  const list = data.data || [];
+  if (list.length !== texts.length) {
+    throw new Error(`Embed gateway returned ${list.length}/${texts.length} embeddings`);
+  }
+  return list.map((entry) => entry.embedding);
+}
+
 async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGemini = false, bulk = false) {
-  // Order: OpenRouter (Vertex gemini space) -> direct Gemini -> Ollama.
+  // Order: OpenRouter/gateway (Vertex gemini space) -> direct Gemini -> Ollama.
   // When OR is primary this whole chain is the normal path.
-  if (OPENROUTER_API_KEY) {
+  if (OR_LEG_CONFIGURED) {
     const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
+    const orLabel = EMBED_VIA_GATEWAY ? `litellm:${EMBED_GATEWAY_MODEL}` : orModel;
     const orCircuitOpen = Date.now() < orCircuitOpenUntil;
     const orCapped = orDailyCapHit();
     if (!orCircuitOpen && !orCapped) {
-      console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
+      console.log(`routing ${texts.length} input(s) via ${EMBED_VIA_GATEWAY ? "embed gateway" : "OpenRouter"} ${orLabel}`);
       try {
-        const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
+        const out = EMBED_VIA_GATEWAY
+          ? await fetchGatewayEmbedBatch(texts, outputDimensionality)
+          : await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
         orCallsToday += 1;
-        lastBackupProvider = orModel;
+        lastBackupProvider = orLabel;
         return out;
       } catch (err) {
-        console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+        console.log(`${EMBED_VIA_GATEWAY ? "Embed gateway" : "OpenRouter"} failed (${String(err.message).slice(0, 80)})`);
         orCircuitOpenUntil = Date.now() + OR_CIRCUIT_COOLDOWN_MS;
         // Circuit closed->open transition (inside !orCircuitOpen branch):
         // a key/spend-cap failure pages now, not at the next probe tick.
@@ -614,9 +654,9 @@ async function handleEmbed(req, res) {
     ? parseInt(outputDimensionality, 10)
     : DEFAULT_DIMENSIONS;
 
-  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY && !GEMINI_API_KEY_PAID) {
+  if (!OR_LEG_CONFIGURED && !GEMINI_API_KEY && !GEMINI_API_KEY_PAID) {
     return sendJson(res, 500, {
-      error: "no embedding provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)",
+      error: "no embedding provider configured (set EMBED_GATEWAY_BASE, OPENROUTER_API_KEY or GEMINI_API_KEY)",
     });
   }
 
@@ -635,7 +675,7 @@ async function handleEmbed(req, res) {
       const chunk = inputs.slice(i, i + BATCH_SIZE);
       let chunkEmbeddings;
       const circuitOpen =
-        (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
+        (OLLAMA_FALLBACK_BASE || OR_LEG_CONFIGURED) &&
         (Date.now() < geminiCircuitOpenUntil || freeGeminiCircuitOpen() ||
          freePaceHit() || (isBulk && freeBulkBudgetHit()));
       if (OPENROUTER_API_KEY && OPENROUTER_PRIMARY) {
@@ -659,7 +699,7 @@ async function handleEmbed(req, res) {
             isBulk
           );
         } catch (err) {
-          if (!OLLAMA_FALLBACK_BASE && !OPENROUTER_API_KEY) throw err;
+          if (!OLLAMA_FALLBACK_BASE && !OR_LEG_CONFIGURED) throw err;
           if (!err.freeBudget) {
             geminiCircuitOpenUntil = Date.now() + CIRCUIT_COOLDOWN_MS;
             console.log(
@@ -738,9 +778,10 @@ const server = createServer((req, res) => {
       gemini_model: GEMINI_EMBEDDING_MODEL,
       dimensions: DEFAULT_DIMENSIONS,
       ollama_fallback: OLLAMA_FALLBACK_BASE ? OLLAMA_FALLBACK_MODEL : null,
-      provider_mode: OPENROUTER_API_KEY
-        ? (OPENROUTER_PRIMARY ? "openrouter-primary" : "gemini-primary")
+      provider_mode: OR_LEG_CONFIGURED
+        ? (OPENROUTER_API_KEY && OPENROUTER_PRIMARY ? "openrouter-primary" : "gemini-primary")
         : "gemini-only",
+      embed_gateway: EMBED_VIA_GATEWAY ? EMBED_GATEWAY_MODEL : null,
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,

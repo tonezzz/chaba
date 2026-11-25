@@ -138,14 +138,15 @@ QUOTA_TEXT = re.compile(
 # {host, file, var} are metadata pointers only; the probe reads the value
 # on that host and reports back fingerprint+verdict, never the secret.
 WATCHLIST = [
-    # openrouter-ada-safety — the fleet key lives in 3 env slots +
-    # openclaw sqlite (sqlite slot not probed — var-less store).
-    {"id": "or-tony-dell", "kind": "openrouter", "host": "tony-dell",
-     "file": "~/.config/secrets/openrouter.env", "var": "OPENROUTER_API_KEY"},
+    # openrouter fleet key — gateway-only store since 2026-11-25
+    # (or-direct-bypass-leak-audit); tony-dell openrouter.env no longer
+    # holds a key. omen holds its own dedicated openclaw-free key.
     {"id": "or-tony-omen", "kind": "openrouter", "host": "tony-omen",
      "file": "~/.config/secrets/openrouter.env", "var": "OPENROUTER_API_KEY"},
     {"id": "or-idc03", "kind": "openrouter", "host": "idc03",
-     "file": "~/.config/secrets/mddb-gemini.env", "var": "OPENROUTER_API_KEY"},
+     "file": "~/.config/secrets/litellm.env", "var": "OPENROUTER_API_KEY"},
+    {"id": "or-idc03-bench", "kind": "openrouter", "host": "idc03",
+     "file": "~/.config/secrets/litellm.env", "var": "OPENROUTER_BENCH_API_KEY"},
     # HA long-lived tokens -> their instance's GET /api/.
     {"id": "ha-tony-ops-omen", "kind": "ha", "host": "tony-omen",
      "file": "~/.config/secrets/home-assistant-token.env",

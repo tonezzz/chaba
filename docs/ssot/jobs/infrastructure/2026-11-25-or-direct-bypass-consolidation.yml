@@ -1,0 +1,78 @@
+id: or-direct-bypass-consolidation
+title: Consolidate OpenRouter fleet key to gateway-only + repoint direct callers
+card: or-direct-bypass-leak-audit
+date: 2026-11-25
+host: tony-macbook (dispatch) — changes landed on idc03, tony-omen, tony-dell
+decision: >-
+  The fleet OR key bypassed LiteLLM spend attribution through four env
+  stores. Rather than repoint every consumer (openclaw's ~25-model OR
+  :free rotation cannot ride LiteLLM's 4 or-free-* aliases without a
+  re-architecture), the fleet key was consolidated to a single
+  gateway-only store and every non-gateway consumer was either repointed
+  at the gateway or given its own scoped/capped key.
+changes:
+  audit: >-
+    Live holders of fleet key sk-or-v1-74d…f6c (OR name idc02-openclaw,
+    $5/wk): idc03 mddb-gemini.env (fed BOTH litellm container and
+    gemini-ollama-proxy), tony-dell openrouter.env (no active consumer),
+    tony-omen openrouter.env (ghostroute-watcher) + openclaw.sqlite
+    authProfiles.store (openclaw-gateway). mn01/idc02/con01/kk-mac held
+    none (kk-mac audited via idc03 jump — no secrets dir hits).
+    vision_describe.py already on local ollama (moondream); ada-*.env
+    OPENROUTER_API_KEY stripped 2026-11-12; openrouter_provider.py
+    already gateway-first (_or_turn prefers ADA_GEMINI_REST_BASE_URL).
+    OR /activity showed residual ~$0.2-0.4/day: gemini-embedding-2
+    direct-OR proxy leg + gateway or-* routes (bench-key attributed).
+  proxy_repoint: >-
+    scripts/mddb/gemini-ollama-proxy.mjs gained an EMBED_GATEWAY_* leg:
+    EMBED_GATEWAY_BASE/MODEL/KEY (key defaults to LITELLM_KEY) posts
+    OpenAI-shaped /v1/embeddings to the LiteLLM gateway instead of raw
+    OR. OR_LEG_CONFIGURED = EMBED_VIA_GATEWAY || OPENROUTER_API_KEY;
+    gateway mode is backup-only (OPENROUTER_PRIMARY still requires a
+    raw key). Patched BOTH the repo copy and the live idc03 file —
+    they had already diverged (live has free-key ring, repo has
+    bulk/pacing; drift card-worthy). idc03 mddb-gemini.env: OR key line
+    -> comments + EMBED_GATEWAY_BASE=http://100.102.134.91:4000,
+    EMBED_GATEWAY_MODEL=embedding.
+  litellm_provider_pin: >-
+    OR embeddings default-route to the broken AI Studio upstream
+    ("HTTP 400: API key not valid" — bogus error, same as the proxy's
+    old direct-OR comment). LiteLLM sent no provider pin, so
+    or-gemini-embedding-2/embedding 400d and `embedding` silently fell
+    back to PAID gemini-embedding-2. Fixed by adding
+    extra_body.provider {order:["Google"], allow_fallbacks:false} to
+    both embedding entries (repo + live config.yaml); verified 200.
+  key_rotation: >-
+    Minted idc03-litellm-fleet (sk-or-v1-ca7…8545, $5/wk, provisioning
+    API) -> idc03 litellm.env OPENROUTER_API_KEY (the ONLY fleet store).
+    Minted tony-omen-openclaw-free (sk-or-v1-0e1…76fb, $0.50/wk) ->
+    omen openrouter.env + openclaw.sqlite authProfiles.store;
+    ghostroute-watcher + openclaw-gateway restarted (gateway caches
+    profile at startup). tony-dell openrouter.env stripped to comment.
+    DELETED old fleet key idc02-openclaw …f6c and stale leak key
+    tony-mddb …35b via DELETE /api/v1/keys/{hash}.
+  tooling: >-
+    rotate-or-key.sh rewritten for the single-store model (was 4-store
+    fleet rotation that would have re-scattered the key); key-watch.py
+    watchlist updated (dell slot removed, idc03 -> litellm.env, bench
+    key added); or-credits-poll.service EnvironmentFile switched
+    mddb-gemini.env -> litellm.env; ssot.secrets.yml openrouter-ada-safety
+    rewritten + new openrouter-openclaw-free entry; stack.yml +
+    ssot.llm-gateway.yml + ssot.services.yml notes updated.
+verified:
+  - "litellm liveliness 200; or-gemini-embedding-2 + embedding return 768d via OR/Vertex with new fleet key"
+  - "gemini-ollama-proxy /health: provider_mode gemini-primary, embed_gateway=embedding; /api/embed e2e 768d"
+  - "omen ghostroute-watcher active + rotating (OR auth OK — errors are model 404s/quota, not 401); openclaw-gateway active post-restart"
+  - "or-credits-poll ran clean on new key (usage_daily ~0)"
+  - "or-panel.json: gateway_or_spend_24h $0.66, or_unexplained_24h $0.072 (includes pre-fix hours; trends to ~0)"
+residuals:
+  - "or_unexplained_24h needs a clean 24h window post-change to confirm ~0 — panel recomputes hourly"
+  - "OR account-wide :free daily quota (1000 req/day) was exhausted at change time — openclaw + or-free-* legs 429 until 07:00 ICT reset; pre-existing, not caused by rotation"
+  - "live gemini-ollama-proxy.mjs vs repo copy drift (key-ring vs bulk-pacing features) — needs a reconcile card"
+  - "dead-key residue: e2ce…5528/4d8f…c966/591bb…f031 keys in *.bak + live env files on idc03 backend.env/mn01/macbook — all 401 'User not found', cosmetic cleanup only"
+  - "scoped OR keys left live by design: Ada HA text-mode $1 (mn01 standby), ada-management $1, devnest-fable $2, cline-or $1 (expires 11-27)"
+lessons:
+  - "OR embeddings via LiteLLM need extra_body.provider order [Google] — the default AI Studio upstream returns a bogus 'API key not valid' 400; without the pin the embedding alias silently fell back to PAID Gemini."
+  - "LiteLLM fallbacks hide upstream 400s — a 200 on model 'embedding' can be the paid-Gemini fallback, not the OR route; check the served model/spend, not just status."
+  - "OR /api/v1/keys POST returns the key once — never truncate before persisting; a lost mint means delete+remint."
+  - "OR free-tier daily quota is account-wide across keys — a fresh key does NOT reset it."
