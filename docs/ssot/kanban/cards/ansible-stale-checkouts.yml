@@ -147,6 +147,26 @@ comms:
   from: devin
   text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-89c8ce: idc02 chaba exec checkout is stale/dirty
     (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought current?'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request idc03-chaba-exec-checkout-is-stale-dirty-b93e02: idc03 chaba exec checkout is stale/dirty
+    (dirty; behind=0, ahead=0, dirty=23). How should it be brought current? No work'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request mn01-chaba-exec-checkout-is-stale-dirty-c8d27d: mn01 chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=146). How should it be brought current? No wor'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-dell-chaba-exec-checkout-is-stale-d-545026: tony-dell chaba exec checkout is stale/dirty
+    (dirty; behind=11, ahead=0, dirty=10). How should it be brought current? No'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-macbook-chaba-exec-checkout-is-stal-bc1bdb: tony-macbook chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=106). How should it be brought current'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-omen-chaba-exec-checkout-is-stale-d-4c3b02: tony-omen chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=152). How should it be brought current? N'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
   ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
@@ -180,6 +200,76 @@ requests:
     (recommended, reversible)
 - id: idc02-chaba-exec-checkout-is-stale-dirty-89c8ce
   ask: idc02 chaba exec checkout is stale/dirty (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought
+    current? No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: idc03-chaba-exec-checkout-is-stale-dirty-b93e02
+  ask: idc03 chaba exec checkout is stale/dirty (dirty; behind=0, ahead=0, dirty=23). How should it be brought current?
+    No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: mn01-chaba-exec-checkout-is-stale-dirty-c8d27d
+  ask: mn01 chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=146). How should it be brought
+    current? No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-dell-chaba-exec-checkout-is-stale-d-545026
+  ask: tony-dell chaba exec checkout is stale/dirty (dirty; behind=11, ahead=0, dirty=10). How should it be brought
+    current? No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-macbook-chaba-exec-checkout-is-stal-bc1bdb
+  ask: tony-macbook chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=106). How should it be
+    brought current? No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-omen-chaba-exec-checkout-is-stale-d-4c3b02
+  ask: tony-omen chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=152). How should it be brought
     current? No work will be destroyed.
   status: open
   at: 2026-11-26 06:30
