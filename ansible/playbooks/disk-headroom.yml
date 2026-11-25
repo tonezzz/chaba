@@ -175,7 +175,7 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Render per-host disk verdicts
+    - name: Render per-host disk verdicts (probed hosts only; --limit preserves others)
       ansible.builtin.template:
         src: disk-headroom.j2
         dest: "{{ benchmark_out }}/{{ target }}.yml"
@@ -184,6 +184,7 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      when: hostvars[target].diskprobe is defined
       delegate_to: localhost
       run_once: true
 
@@ -197,6 +198,7 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      when: hostvars[target].diskprobe is defined
       delegate_to: localhost
       run_once: true
 
@@ -232,6 +234,7 @@
         disk_alert_hosts: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if hostvars[h].diskprobe is not defined -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -246,6 +249,7 @@
         disk_alert_fingerprint: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if hostvars[h].diskprobe is not defined -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}

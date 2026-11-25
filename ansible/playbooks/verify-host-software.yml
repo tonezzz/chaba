@@ -164,7 +164,7 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Render per-host host-software reports
+    - name: Render per-host host-software reports (probed hosts only; --limit preserves others)
       ansible.builtin.template:
         src: host-software-verify.j2
         dest: "{{ benchmark_out }}/{{ target }}.yml"
@@ -173,6 +173,7 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      when: hostvars[target].sw_probe is defined or hostvars[target].sw_not_declared is defined
       delegate_to: localhost
       run_once: true
 
@@ -186,6 +187,7 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      when: hostvars[target].sw_probe is defined or hostvars[target].sw_not_declared is defined
       delegate_to: localhost
       run_once: true
 
@@ -194,6 +196,7 @@
         host_sw_alert_hosts: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if not (hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined) -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -209,6 +212,7 @@
         host_sw_alert_fingerprint: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if not (hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined) -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}

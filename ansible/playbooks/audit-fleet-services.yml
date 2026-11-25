@@ -109,7 +109,7 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Render per-host delta reports
+    - name: Render per-host delta reports (probed hosts only; --limit preserves others)
       ansible.builtin.template:
         src: service-audit-deltas.j2
         dest: "{{ benchmark_out }}/{{ target }}.yml"
@@ -117,6 +117,7 @@
       loop: "{{ audited_hosts }}"
       loop_control:
         loop_var: target
+      when: hostvars[target].probe is defined
       delegate_to: localhost
       run_once: true
 
@@ -126,6 +127,7 @@
           {{ item }}: {{ (lookup('file', benchmark_out + '/' + item + '.yml')
              | from_yaml).deltas | length }} delta(s)
       loop: "{{ audited_hosts }}"
+      when: hostvars[item].probe is defined
       delegate_to: localhost
       run_once: true
 
@@ -134,6 +136,7 @@
         fleet_service_drift_hosts: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if hostvars[h].probe is not defined -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -147,6 +150,7 @@
         fleet_service_fingerprint: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
+            {%- if hostvars[h].probe is not defined -%}{%- continue -%}{%- endif -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
