@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
 column: doing
-updated: 2026-11-25 09:29
+updated: 2026-11-25 09:31
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -79,6 +79,10 @@ comms:
     Control-surface review (2026-10-27):; [timer-sentinel-stale-respawn] [fixed] commit 6068271a46 on master. Closed
     timer; board-api derives REPO from `__file__`, so bind-mounting the checkout at its rea; [chaba-exec-checkout-idc02-dirty-files]
     DECISION 2026-11-24: '
+- at: 2026-11-25 09:31
+  from: devin
+  text: 'picked up: implementing option (a) — exclude kanban/cards/ from advisory review-threshold bloat check in
+    ssot-validate-all.mjs; hard 750-line threshold stays gated'
 action:
   type: dispatch
   status: running
