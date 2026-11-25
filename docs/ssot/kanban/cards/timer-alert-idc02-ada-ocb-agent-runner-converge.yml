@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
 column: done
-updated: 2026-11-26 03:48
+updated: 2026-11-26 03:49
 priority: high
 tags:
 - timer-alert
@@ -76,6 +76,10 @@ comms:
 - at: 2026-11-26 03:48
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
   exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
