@@ -1,7 +1,7 @@
 id: ada-review-refresh-log-shipper-timeout
 title: ada-review-refresh fails — log-shipper.py subprocess exceeds 600s on tony-omen
 column: doing
-updated: 2026-11-25 10:50
+updated: 2026-11-25 10:54
 priority: low
 tags:
 - log-shipper
@@ -223,6 +223,10 @@ comms:
     timeout; TimeoutExpired was uncaught -> exit 1 killed the whole digest chain. Same wedge as OPS-1153 — its fix
     (0ffe452274: /v1/ingest batching + per-batch cursor checkpoint) sat UNMERGED on a Nov-8 dispatch branch; cherry-picked
     it clean (e1914574f6) and hardened e'
+- at: 2026-11-25 10:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-103752-ada-review-refresh-service-on- no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -230,5 +234,7 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:54
 claim:
   since: 2026-11-25 10:37
