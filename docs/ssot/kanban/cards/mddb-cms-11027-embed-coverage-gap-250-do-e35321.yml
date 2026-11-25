@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
-column: backlog
-updated: 2026-11-25 14:11
+column: doing
+updated: 2026-11-25 14:27
 priority: medium
 tags:
 - mddb
@@ -191,20 +191,24 @@ comms:
 - at: 2026-11-25 14:11
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.02 > 0.75)'
+- at: 2026-11-25 14:27
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   result: 'exit=0 ull details in `dispatch-outcome-20261125-101035-found-by-cms-plane-bge-golden-.md`. | devin-task-20261125-101035-found-by-cms-plane-bge-golden-.service:
     Consumed 1min 13.514s CPU time over 32min 33.891s wall clock time, 438.2M memory peak.'
   sweep:
     stale_running: 2026-11-25 10:56
     dirty: 2
+  runner: mn01
 claim:
-  since: 2026-11-25 10:09
+  since: 2026-11-25 14:27
 requests:
 - id: meta-only-docs-devin-kb-chaba-archive-st-1f3513
   ask: 'Meta-only docs (devin-kb/*, chaba-archive stubs, ssot.focus, + meta-only fraction of chaba-docs/kb-*/documents
