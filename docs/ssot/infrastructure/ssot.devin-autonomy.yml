@@ -13,6 +13,7 @@ related:
   - docs/ssot/infrastructure/ssot.ada-participation.yml   # Ada tier ladder (parallel contract)
   - docs/ssot/infrastructure/ssot.release-lifecycle.yml   # stage gates before production
   - docs/ssot/kanban/cards/release-lifecycle-standard.yml # evidence checker that enforces gates
+  - docs/kb/devin-error-handling-standard.md              # companion lane contract (DEV-0253)
   - scripts/board/kanban-dispatch.py                      # reads `dispatch:` below
 notes: >-
   Queueing is already human-gated (action.status: queued is set via board API
@@ -164,3 +165,91 @@ waiting_cards:
     Negative evidence: R3/R4 -> never=True HOLD; open request -> HOLD;
     missing host/artifact/verifier/recoverability -> HOLD; R2 without
     backup proof -> HOLD (tests/board/test_waiting_cards.py, 25 tests).
+
+gate_visibility:
+  # standard-gate-visibility-everywhere (OPS-1193, 2026-11-25). Generalizes
+  # the OPS-1097 unclaimable-flag and KNB-1183 host-gate work, plus the
+  # embed-storm lesson (service-level silent retry burn): the rule is not
+  # about cards specifically — it is about ANY queued item and ANY
+  # component that declines to act on it.
+  rule: >-
+    ANY component that decides not to act on a queued item — skip,
+    defer, hold, retry-without-progress, park — MUST emit a rate-limited,
+    consumer-visible reason on the item itself or on a fleet-level
+    surface that a consumer actually reads. A "claim pass skipped" line
+    in a journal nobody greps is silent starvation: the item looks
+    queued forever and no human or agent ever learns why.
+  scope:
+    applies_to: >-
+      runner-agent, kanban-dispatch, kanban-act, Ada sweep tools,
+      mddb workers — and by extension every future claim/act gate,
+      including service-level retry loops (embed storms) and non-card
+      queues (jobs, lessons, reports, inbox entries).
+    decides: >-
+      A decision is "not acting": the component evaluated a queued or
+      claimable item and chose not to start/finish it this pass. Pure
+      pass-level gates (kill switch, quiet hours, load) decide about the
+      WHOLE pass, not an item — they owe the fleet surface, not per-item
+      comms.
+  contract:
+    reason:
+      - "names WHICH gate declined and the evidence (e.g. 'host
+        overloaded (load/core 1.10 > 0.7)', 'labels:[exec] match no
+        declared runner') — not a bare 'skipped'"
+      - "short enough to act on (~240-500 chars); pointers to runbooks
+        or cards when the fix is non-obvious"
+    rate_limited:
+      - "debounced per distinct NORMALIZED reason — volatile numbers
+        stripped (OPS-1314: un-normalized reasons produced ~12k defer
+        comms on one card). Same reason within the window = no repost"
+      - "per-item notes debounce on the item's own comms; per-host state
+        lives in a sidecar ledger (e.g. runner defer-ledger.json)"
+    consumer_visible_surface:
+      per_item: >-
+        card comms via board-api /comment ('<host> defers: <reason>')
+        for per-item, per-host refusals. Item-level queues use their own
+        visible note field — the invariant is 'the item carries the
+        reason', not 'the reason is a comms line'.
+      fleet_level: >-
+        for fleet-wide or pass-level verdicts: board-api /ready
+        verdicts (GET /queue hosts), queue-starve ops-events,
+        unattended-report digest. A gate whose verdict lives ONLY in a
+        unit journal or state file is non-conforming.
+    escalation:
+      - "deterministic gaps a human must fix (card no declared runner
+        can serve — dispatch_repos.unsatisfiable_reasons) may set
+        awaiting_action on the item; transient per-host refusals
+        (load, cap, drift) MUST NOT — one host's 'no' is not a fleet
+        verdict"
+  exemplars:
+    - "runner-agent.note_defer + _defer_norm — per-card defer comms,
+      GPU_DEFER_SECS window, normalized-reason debounce, awaiting flag
+      only for fleet-unclaimable"
+    - "kanban-dispatch._defer_note — served-side twin; comms are the
+      debounce store (the 2026-11-07 ops0790 ~3h invisible starve is why
+      this exists)"
+    - "kanban-dispatch._flag_unclaimable / UNCLAIM_MARK — queued card no
+      runner can serve writes WHY + awaiting_action (OPS-1097)"
+    - "kanban-dispatch.verdict_pass -> POST /ready — pass-level verdicts
+      on a fleet surface every queued card is projected onto"
+    - "merge-sweep fail_attempt / retry_record_failure — failure IS the
+      visible reason (verified:false + last_failure + comms)"
+  nonconforming:
+    - "bare `continue`/`return` on a queued item with only a journal or
+      stdout line — the ops0790 starve pattern"
+    - "retry loops that re-attempt a skipped/failed item with no
+      surfaced reason and no backoff signal (embed-storm silent burn)"
+    - "defer/failure notes that spam: un-debounced or un-normalized
+      reasons"
+    - "host-level holds visible only in a per-host state file no other
+      component or human reads (KNB-1183 class)"
+  new_component_checklist:
+    - "if your gate can skip/defer/hold/retry a queued item, wire the
+      reason to the item or a fleet surface BEFORE shipping — journal
+      logging alone does not count"
+    - "reuse the existing debounce helpers (note_defer/_defer_norm or
+      the item's own comms); do not invent a third retry/debounce
+      ledger (see docs/kb/devin-error-handling-standard.md rule 2)"
+    - "test the negative case: a gated item must produce exactly one
+      visible reason per debounce window, and the surface must be
+      readable by a consumer that never opens your journal"
