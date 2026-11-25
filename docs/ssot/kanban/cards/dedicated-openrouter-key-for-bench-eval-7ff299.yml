@@ -1,0 +1,18 @@
+id: dedicated-openrouter-key-for-bench-eval-7ff299
+title: Dedicated OpenRouter key for bench/eval lanes — fleet key $5/wk cap will strangle eval weeks
+column: backlog
+updated: 2026-11-25 10:43
+priority: low
+spec: 'Found during litellm-or-key-weekly-budget (2026-11-25). LiteLLM_SpendLogs show bursty OR spend through the
+  single fleet key (idc02-openclaw, now $5/week): $23.76 wk 11-02, $26.87 wk 10-19, $2.31 wk 10-12 vs <$0.55 quiet
+  weeks. Every openrouter/* model in ~/.config/litellm/config.yaml on idc03 uses os.environ/OPENROUTER_API_KEY —
+  bench and production share one weekly cap, so any eval week caps the fleet key mid-run and starves production
+  lanes (litellm or-*, embed fallback, openclaw emergency). Options: (a) mint a dedicated bench OR key and split
+  config (e.g. OPENROUTER_BENCH_API_KEY on bench model entries / LITELLM_KEY_BENCH routing); (b) temporarily raise
+  fleet limit for announced bench windows; (c) accept fail-soft to free models. Decide + implement. Existing spare
+  keys: tony-or-devnest-fable ($2 total, expires 12-04), cline-or ($1, expires 11-27).'
+ref: SEC-1384
+comms:
+- at: 2026-11-25 10:43
+  from: devin
+  text: card captured via board-api
