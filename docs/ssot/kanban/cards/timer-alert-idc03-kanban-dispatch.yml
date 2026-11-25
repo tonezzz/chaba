@@ -1,6 +1,6 @@
 id: timer-alert-idc03-kanban-dispatch
 title: Timer kanban-dispatch on idc03 disabled
-column: backlog
+column: done
 updated: 2026-11-25 14:50
 priority: high
 tags:
@@ -3821,6 +3821,13 @@ comms:
     devnest-queue-consolidation); per-job rendered timers are the replacement. Tony''s 2026-11-09 answer was to
     leave the other automation running — only Devin dispatch sessions stay paused. Census updated with `expected_state:
     inactive` + rationale; sentinel patched to honour it. '
+- at: 2026-11-25 14:50
+  from: devin
+  text: '[auto-resolved] kanban-dispatch.timer intentionally inactive per audit census (expected_state: inactive)
+    — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 14:50
+  from: tony
+  text: closed by tony
 action:
   status: done
 spec: Ensure the runner-agent on idc03 is up to date by deploying scripts/board/runner-agent.py from the chaba repo
