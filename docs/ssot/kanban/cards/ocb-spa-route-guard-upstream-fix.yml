@@ -1,7 +1,7 @@
 id: ocb-spa-route-guard-upstream-fix
 title: 'Remove caddy SPA route guard when opencode ships #61001 fix'
-column: doing
-updated: 2026-11-25 14:24
+column: review
+updated: 2026-11-25 14:30
 brief: 'idc02 caddy-edge carries a temporary redirect guard (@ocbUnknownRoute) on ada-code.surf-thailand.com + opencode-ada.surf-thailand.com
   that bounces document requests for unknown SPA paths to / — workaround for upstream opencode web crash anomalyco/opencode#61001
   (SPA dies ''Cannot read properties of undefined (reading type)'' when mounted on unrecognised path, e.g. post-login
@@ -131,12 +131,45 @@ comms:
     quadlets :8377/:8378 all removed; block preserved in Caddyfile.bak-retired-opencode-20261124). Live Caddyfile
     has zero ocbUnknownRoute refs outside backups. (2) Upstream still unfixed anyway: anomalyco/opencode#61001 open,
     PR #61017 open+incomplete, dev and latest release v2.4.1 s'
+- at: 2026-11-25 14:30
+  from: tony-dell
+  text: 'finished (ok): exit=0 tainers.image.revision=822c87761f8587395b3e1a04b5386b2611252cd1) | devin-task-20261125-141325-remove-caddy-spa-ro'
+- at: 2026-11-25 14:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 14:30
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-141325-remove-caddy-spa-route-guard-w'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 14:30
+  from: chaba
+  text: banked 660 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 14:30
+  from: chaba
+  text: pushed dispatch/20261125-141325-remove-caddy-spa-route-guard-w to origin
+- at: 2026-11-25 14:30
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 14:30
+  from: chaba
+  text: auto-merged 830f3ebb (dispatch/20261125-141325-remove-caddy-spa-route-guard-w) → origin/master
+- at: 2026-11-25 14:30
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 tainers.image.revision=822c87761f8587395b3e1a04b5386b2611252cd1) | devin-task-20261125-141325-remove-caddy-spa-route-guard-w.service:
+    Consumed 4min 5.628s CPU time over 11min 38.395s wall clock time, 1G memory peak, 616.7M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 14:12
+review_kind: verify
