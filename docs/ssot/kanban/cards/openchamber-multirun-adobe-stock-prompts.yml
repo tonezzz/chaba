@@ -1,7 +1,7 @@
 id: openchamber-multirun-adobe-stock-prompts
 title: Test OpenChamber Multi-run for Adobe Stock prompt comparison
 column: doing
-updated: 2026-11-25 14:17
+updated: 2026-11-25 14:46
 brief: Compare bounded read-only model runs for Adobe Stock campaign prompt and asset-reuse recommendations.
 priority: low
 program: devnest
@@ -223,6 +223,13 @@ comms:
     input, run it through up to 3 approved OpenCode models under a deny-all-tools isolated config (no board/fs mutation
     by construction), score asset relevance / provenance / missing-preview / policy / token-cost-latency, emit comparison
     artifact under evals/.'
+- at: 2026-11-25 14:46
+  from: devin
+  text: 'DONE. Ran identical frozen brief (campaign AS-2026-11-05-REMOTE-WORK-001) through 3 approved OpenCode models
+    under deny-all-tools isolation — zero tool calls/denials/mutations on every arm, no uploads/generation/licenses/card
+    writes. All 3 verifier-pass (16/16 coverage, exact provenance, missing-preview F1=1.0). Recommended: litellm/or-free-nemotron-ultra
+    ($0, best qc_decision mapping, 177.7s); or-gemini-3.5-flash balanced paid alt; gemini-3.5-flash-lite fastest/cheapest
+    but shallowest. Delivera'
 action:
   type: dispatch
   status: running
