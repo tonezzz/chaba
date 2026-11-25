@@ -1,7 +1,7 @@
 id: timer-alert-idc03-or-key-watch
 title: Timer or-key-watch on idc03 failing
 column: done
-updated: 2026-11-25 16:51
+updated: 2026-11-25 16:59
 priority: high
 tags:
 - timer-alert
@@ -170,6 +170,10 @@ comms:
 - at: 2026-11-25 16:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `or-key-watch.service` on host idc03, which exited with a non-zero code on 2026-11-16
   at 08:00. The agent must inspect the system logs using `journalctl --user -u or-key-watch.service` on idc03 and

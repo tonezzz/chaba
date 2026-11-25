@@ -1,7 +1,7 @@
 id: timer-alert-idc03-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on idc03 failing
 column: done
-updated: 2026-11-25 16:51
+updated: 2026-11-25 16:58
 priority: high
 tags:
 - timer-alert
@@ -1208,6 +1208,10 @@ comms:
 - at: 2026-11-25 16:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of focus-dispatcher-overnight.service on idc03 from the 11-08 03:00 run, which exited
   with code 1 during the mddb-embed runaway window. Examine the journal via journalctl --user -u focus-dispatcher-overnight.service
