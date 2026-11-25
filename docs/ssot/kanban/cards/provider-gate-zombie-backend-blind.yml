@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
-column: backlog
-updated: 2026-11-25 09:03
+column: doing
+updated: 2026-11-25 09:04
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -181,9 +181,15 @@ comms:
 - at: 2026-11-25 09:03
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:04
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-25 09:04
