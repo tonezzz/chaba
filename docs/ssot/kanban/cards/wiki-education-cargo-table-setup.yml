@@ -1,7 +1,7 @@
 id: wiki-education-cargo-table-setup
 title: 'Set up Cargo table for Education: lessons on wiki.h3'
 column: backlog
-updated: 2026-11-25 11:11
+updated: 2026-11-25 14:08
 brief: 'Unblock optional on-wiki Cargo queries for Education lessons: a Cargo table must be created by host-level
   maintenance before the declare/store template edit can be retried.'
 priority: low
@@ -44,3 +44,10 @@ comms:
     a table; template revids 481/482 reverted at 483/484). Host-owned blocker: admin runs Cargo table maintenance
     via Plesk 8443 Terminal/Scheduled Tasks (or Special:CargoTables as wiki admin); SSH 22/2222 blocked, FTP 21
     verified. Fill-in forms: ~/.config/secrets/plesk-cargo-maintenan'
+- at: 2026-11-25 14:08
+  from: devin
+  text: 'HANDOFF TO PLESK ADMIN (2026-11-25): Please create the Cargo table for the Education: namespace on wiki.h3.
+    Fill in ~/.config/secrets/plesk-cargo-maintenance-request.md using Plesk https://h3.gizmo-thailand.com:8443
+    (SSH 22/2222 is blocked from our hosts; FTP 21 works if a helper file is needed). From the wiki docroot /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com
+    run php maintenance/run.php Cargo:rebuildCargoTables, or the extension-script variant listed in the form; if
+    sh'
