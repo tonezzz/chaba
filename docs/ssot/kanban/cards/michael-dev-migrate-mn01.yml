@@ -1,7 +1,7 @@
 id: michael-dev-migrate-mn01
 title: Migrate michael-dev HA instance from idc02:8124 to mn01
 column: doing
-updated: 2026-11-25 07:48
+updated: 2026-11-25 07:57
 brief: 'Tony 2026-11-09: move michael-dev to mn01 (currently on idc02 since 2026-10-26 migration).'
 priority: medium
 tags:
@@ -199,6 +199,13 @@ comms:
     Rollback Procedures — ```bas; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
     ; [app-retirement-sweep] primer injected 8 lesson(s): idc02''s kanban-dispatch.serv; [audit-oc-mutating-command-aahmnvt5]
     primer injected 8 lesson'
+- at: 2026-11-25 07:57
+  from: devin
+  text: 'dispatch started (worktree dispatch-wt-20261125-074808). Recon done: live state = mn-ha-dev container on
+    idc02 (config ~/.config/mn-ha-dev 1.0G, UI :8124 loopback+tailnet-IP, MCP :9585, mha-state-push active). NOTE:
+    tailscale serve :8124 on idc02 is currently GONE — https://idc02...:8124 is dead; only http://idc02...:8124
+    (tailnet-IP publish) works, so michael-dev.surf-thailand.com + /apps/ha/mn-ha-dev* redirects are broken NOW.
+    Plan: rsync config to mn01 (same podman bridge 10.88.0.0/16, truste'
 action:
   type: dispatch
   status: running
