@@ -1,0 +1,90 @@
+title: lesson-polish pass 2026-11-25 — 190 R1/R3/R4 flags cleared + two door hazards found and repaired
+subtitle: standing lesson-polish-run dispatch; wiki-primary Education: store; /lesson door writes plus /wiki/page raw-wikitext repair path
+icon: education
+version: 1
+
+card: lesson-polish-run
+date: 2026-11-25
+dispatch: 20261125-190732-recurring-lesson-polish-pass-q
+
+summary: |
+  Re-audited the full lesson corpus via POST /lesson {op:list,content:1}
+  (227 lessons, wiki-primary store), applied scripts/lessons-audit.py
+  audit_one, and re-filed all 190 R1/R3/R4-flagged lessons through the
+  /lesson door. After-state: 0 polish-scope flags (R1/R3/R4); remaining
+  flags are R2 thin x6 (human-gated) and R5 consider-thai x56 (curated
+  exemptions). Per-lesson actions: 164 next_review refreshes to
+  2026-12-02, 17 level fixes (16 panelui-* reference->deep,
+  ada-ha-mcp ''->working), 48 pointer inserts (45 R3 SSOT/KB pointers +
+  3 R4 family hub pointers, all placed before the <h3>ไทย</h3> section),
+  17 source sanitizations (panelui URL sources -> link,
+  ada-ha-mcp 'tony-agent-exploration' -> chat — the door rejects
+  non-enum sources).
+
+content_fidelity: |
+  Lesson bodies are wikitext but the door's write path converts submitted
+  content through publication.html_to_wikitext (meta.format hardcoded
+  'html'). Raw-wikitext resubmission shredded <syntaxhighlight>/
+  <syntaxhighlight lang="tsx"> blocks (PanelUI lessons lost ~50%).
+  Fix used corpus-wide: html.escape() the stored wikitext before submit
+  — the parser treats it as inert text and emits it back ~verbatim.
+  Verified: all 16 PanelUI bodies byte-identical after round-trip;
+  every other polished lesson's EN body identical except the intended
+  pointer insertions.
+
+door_hazard_1_title_mismatch_dupes: |
+  _lesson_wiki_primary upserts by wiki_title = lesson_wiki_title(topic),
+  NOT by the lesson-<md5(topic)> slug. 17 lessons (16 panelui-* +
+  trade-map) live on non-canonical titles (e.g.
+  'Education:PanelUI Native - Layout and Navigation' vs canonical
+  'Education:Panelui-Native-Layout'), so the door saw "no page" and
+  CREATED duplicates with degraded meta (learned_at reset to write
+  date, next_review reset to +7d — first-learn provenance lost). Both
+  pages mint the SAME slug (slug derives from topic), so op:list showed
+  244 rows / 17 dup topics. Repaired without deletes: rewrote the
+  canonical pages via POST /wiki/page (raw wikitext, Education:
+  allowlist) restoring learned_at/next_review/level from the stale
+  pages' template params, converted the 17 stale pages to
+  '#REDIRECT [[canonical]]' (no Education template -> skipped by
+  op:list, links still resolve), then re-filed each topic via /lesson
+  so action=updated and the MDDB chaba-lessons mirror picked up the
+  corrected meta. Corpus back to 227 lessons, 0 dup topics.
+  LATENT BUG: any future /lesson re-file of these 17 topics now works
+  (canonical title exists), but any OTHER lesson sitting on a
+  non-canonical title will dup the same way — audit should check
+  wiki_title == lesson_wiki_title(topic).
+
+door_hazard_2_body_max_truncation: |
+  publication.BODY_MAX=20000 truncates ev.body inside validate_event.
+  5 lessons already at the ~20000-char boundary (the migration-era cap)
+  lost their tail (12-911 chars) when my escaped resubmission pushed the
+  body over 20000. Caught by prefix-diffing before/after content.
+  Recovered FULL bodies from the frozen WP archive (op:get
+  source:'wp' — WP holds the pre-migration HTML, e.g. ada-nest-hardware
+  27953 html chars incl. a whole Test-010 section the wiki copy lacked),
+  converted locally with publication.html_to_wikitext (verified
+  byte-identical prefix vs the stored wikitext), and wrote the pages
+  via /wiki/page (200KB limit — the 4.9MB WP HTML for the Sacred Father
+  lesson is mostly base64 imagery and converts to only 21956 wikitext
+  chars). All 5 restored to 20-24K complete bodies; audit stays clean.
+  KNOWN LIMIT: /lesson re-file of any >20000-char lesson will truncate
+  again at BODY_MAX — /wiki/page is the only door that can hold more.
+  MDDB mirror for these 5 still carries the ~20K truncated body
+  (mirror writes only happen inside do_lesson; a re-file would
+  re-truncate the wiki page, so it was left as-is — retrieval still
+  works, tail content is wiki-only).
+
+verification: |
+  op:list content=1 before: 227 lessons / 190 polish-flagged.
+  After: 227 lessons / 0 polish-flagged (59 total flagged = R2 x6 +
+  R5 x56, both out of scope). Content diffs audited per lesson:
+  134 EN-identical, 48 pointer inserts, 7 Thai-append separators,
+  5 restored-from-WP bodies. No deletes performed; no commits/pushes.
+
+followups: |
+  - board-api: consider slug-based (not title-based) lesson upsert, or
+    a title-alias map, so non-canonical Education: titles can't dup.
+  - board-api: BODY_MAX=20000 silently truncates lesson bodies — either
+    raise it, reject >cap writes with an error, or document the cap.
+  - lesson-polish-run spec: document the html.escape resubmission
+    trick and the /wiki/page repair escape hatch for future passes.
