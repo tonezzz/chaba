@@ -1,7 +1,7 @@
 id: ada-voice-land-text-mode-session-persist
 title: 'ada-voice: land dispatch/text-mode-session-persist (c14758b) — push, merge, deploy idc03'
 column: doing
-updated: 2026-11-25 20:14
+updated: 2026-11-25 21:54
 brief: 'Fix for ada-voice-text-mode-sessions-never-call-e007bd exists but never landed: commit c14758b sits LOCAL-ONLY
   on tony-macbook worktree ~/CascadeProjects/ada-voice-wt-text-mode-persist (1 ahead/7 behind origin/main, never
   pushed). origin/main still has the bug — text-mode sessions produce no session-summary docs, so memory-distill/consolidate/merge-proposals
@@ -79,6 +79,13 @@ comms:
   text: 'Step 1+2 done: rebased c14758b->0f2212b on tony-macbook (clean), pushed dispatch/text-mode-session-persist
     to origin, merged to main as 5a5379a (merge commit, pushed from detached worktree — live checkout untouched,
     it is dirty on ada-consult-pr12-edit). Now running deploy-ada.sh on idc03.'
+- at: 2026-11-25 21:54
+  from: devin
+  text: 'DONE. (1) Rebased c14758b->0f2212b on tony-macbook, pushed dispatch/text-mode-session-persist to origin
+    — commit safe from GC. (2) Merged to main as 5a5379a via detached worktree (live dell checkout dirty on ada-consult-pr12-edit,
+    untouched). (3) Deployed idc03: deploy-ada.sh ff a060335->5a5379a, tool-lint clean, pytest 2022 passed, all
+    9 ada units active. GOTCHA: idc03 origin = tony-dell LOCAL main ref not GitHub — had to ff dell main via /tmp/ada-voice-ssot-get
+    worktree or deploy would have ga'
 action:
   type: dispatch
   status: running

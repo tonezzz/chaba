@@ -1,7 +1,7 @@
 id: ada-session-summary-inflow-stalled
 title: Ada session-summary feed stalled — recall-summary collections get no new docs since early Oct
 column: review
-updated: 2026-11-25 20:14
+updated: 2026-11-25 21:54
 spec: 'Found while shipping memory-extract-merge-proposals (2026-11-18): memory-distill.timer runs Sun 09:45 on
   idc03 and exits SUCCESS but reports 0 new session summary docs in every ada-ha-recall-summary-* collection. Verified
   newest docs: ada-ha-recall-summary-tony=2026-10-03, -dev=2026-10-09, -kk=2026-10-13, -ada-dev=empty. Downstream
@@ -278,6 +278,13 @@ comms:
 - at: 2026-11-25 20:14
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 21:54
+  from: devin
+  text: 'Root cause fixed + deployed via card ada-voice-land-text-mode-session-persist: OpenRouterTextProvider.close()
+    never called conversation.persist() — text-mode sessions wrote transcripts but no session-summary docs. Landed
+    as ada-voice 0f2212b, merged 5a5379a, deployed idc03 2026-11-25 ~21:20 +07 (all gates pass, 9 units active).
+    Verified: ?mode=text session on ada-kk-dev produced MDDB doc session-2026-11-25-1b315de0ac in ada-ha-recall-summary-kk-dev.
+    Inflow restored for tony/michael/kk/dev/ada-de'
 action:
   type: dispatch
   status: done
