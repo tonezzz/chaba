@@ -1,7 +1,7 @@
 id: devin-bank-distill-oauth-token-type
 title: devin-bank-distill fails — ACCESS_TOKEN_TYPE_UNSUPPORTED (Google OAuth)
 column: review
-updated: 2026-11-25 11:20
+updated: 2026-11-25 14:00
 priority: low
 tags:
 - oauth
@@ -265,6 +265,12 @@ comms:
   from: tony
   text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch branch already in origin/master and verified;
     held in review for its open request (human decision required). No further merge needed.'
+- at: 2026-11-25 14:00
+  from: tony
+  text: 'answered merge-conflict: resolve — let devin resolve the conflict and land it ★'
+- at: 2026-11-25 14:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -287,7 +293,7 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261125-103904-devin-bank-distill-service-on-: 2 commit(s) conflict with
     origin/master in chaba — conflicted paths: docs/ssot/infrastructure/ssot.audit.hosts.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261125-103904-devin-bank-distill-service-on-
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-25 10:55
   from: chaba
   options:
@@ -301,4 +307,6 @@ requests:
     action: hold
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
+  answer: resolve — let devin resolve the conflict and land it ★
 review_kind: verify
+awaiting_action: true
