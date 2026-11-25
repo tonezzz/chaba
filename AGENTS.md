@@ -165,6 +165,10 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 3. If no procedure exists or it's partial — say so plainly, then per the idea-pipeline duty the default is to **define it** (SSOT doc + card + Ada mirror where she acts on it), not improvise one.
 4. Same for Ada: her mirror carries the duty — "how do we handle X" gets the system's real answer or a proposal, never a made-up rule.
 
+   Fleet/host/service changes (Ansible) are governed by `docs/ssot/infrastructure/ssot.ansible-change-procedure.yml` +
+   `docs/kb/ansible-fleet-change-procedure.md`: locate playbook → confirm target →
+   diagnose → `--check --diff` → approval → backup → converge → verify → file evidence.
+
 ## Devin workflow & error-handling standard (added 2026-11-19 — DEV-0253)
 
 Codified from the live lane machinery (kanban-dispatch, runner-agent,

@@ -1,0 +1,93 @@
+# ssot.ansible-change-procedure.yml
+# Standard procedure for remote-host / fleet / service / repeatable-config
+# changes. Codified 2026-11-25 after the runner-agent drift converge:
+# all 7 Linux hosts ran a stale installed snapshot, the board-api drift gate
+# marked every host ineligible, and 16 queued cards were stuck. The existing
+# playbook fixed it; what was missing was one governed way to get there.
+ref: "2026-11-25 runner-agent drift converge (queue 16 -> 7, 11 claimed)"
+status: active
+created: 2026-11-25
+authority: "AGENTS.md procedure-lookup duty — answer from the system, define partial procedure"
+
+applies_to:
+  - "remote host config"
+  - "service / timer / container changes"
+  - "fleet-wide or repeatable configuration"
+  - "tool-snapshot deployment to ~/.local/bin"
+
+excludes:
+  - "board-api-owned mutations — use the /card, /comment, /action, /publish, /wiki/page write door; Ansible is not a writer of board state"
+  - "local repo edits, tests, docs — normal tools"
+  - "read-only host diagnosis — MCP debug / plain SSH is fine; --check optional"
+
+# Controller is the host with ansible-playbook on PATH and a checkout whose
+# scripts/board/*.py is the source of truth. Do not run from idc03 (no ansible).
+controller:
+  host: tony-dell
+  checkout: /home/tony/CascadeProjects/chaba
+  note: "tony-dell's runner-agent-converge.timer already invokes deploy-runner-agent.yml nightly"
+inventory: ansible/inventory/hosts.yml
+target_policy: "always --limit or an explicit inventory group; never a blanket all: run"
+
+playbook_registry:
+  deploy-runner-agent.yml: "converge installed ~/.local/bin/runner-agent to repo copy (checksum-gated, restart handler)"
+  runner-cap.yml: "manage RUNNER_CAP / RUNNER_MAX_LOAD_PC drop-in per host"
+  verify-runner-tools-sync.yml: "read-only tool-pin/diff audit"
+  audit-runner-tools.yml: "read-only companion to sync-runner-tools.sh"
+  runner-fleet-health.py: "fleet health probe (not a playbook)"
+  site.yml: "baseline packages / security updates / docker check"
+  ada-ocb-upgrade.yml: "approval-gated pane upgrade (ocb_change_approved=false by default)"
+
+workflow:
+  - step: 1
+    name: locate
+    action: "grep ansible/playbooks + ansible/inventory + docs/ssot/infrastructure for an existing playbook; reuse it rather than writing ssh <host> 'sed -i ...'"
+    gate: "if no playbook exists, one-off = direct shell with explicit host + dry run + rollback note; repeatable = add a playbook with a card/job trail"
+  - step: 2
+    name: confirm_target
+    action: "identify target hosts from docs/ssot/infrastructure and ansible/inventory/hosts.yml, not from memory"
+    gate: "respect macos / disabled / portable groups"
+  - step: 3
+    name: diagnose
+    action: "read-only proof of the actual drift/fault: sha256 both src and dest, check service state and the consumer-side symptom (e.g. /queue blocked reasons)"
+    gate: "never mutate on an unverified symptom"
+  - step: 4
+    name: preflight
+    action: "ansible-playbook --check --diff --limit <host> <playbook> from the controller"
+    gate: "0 unreachable, 0 failed; review which hosts would change"
+  - step: 5
+    name: approval
+    action: "state the disruption and rollback note, then get explicit approval when the play restarts a service or touches edge/Caddy/DNS/firewall/packages"
+    gate: "oneshot timer services (e.g. runner-agent) still count as a restart — call it out"
+  - step: 6
+    name: backup
+    action: "copy current installed artifacts to a timestamped sibling before the run (ansible ad-hoc command module is fine)"
+    gate: "record the backup path in evidence"
+  - step: 7
+    name: converge
+    action: "ansible-playbook <playbook> --limit <host>; let restart handlers fire"
+    gate: "0 unreachable, 0 failed"
+  - step: 8
+    name: verify
+    action: "re-run the exact check from step 3; re-run --check to prove idempotency (all hosts in-sync, changed=0)"
+    gate: "consumer proof required — e.g. queue eligibility restored / card claimed, not just matching hashes"
+  - step: 9
+    name: file_evidence
+    action: "write a job SSOT under docs/ssot/jobs/<area>/ with hashes, check output, consumer proof, rollback path and lessons; mirror the lesson to KB/MDDB where Ada acts on it"
+    gate: "unverified changes are not closed"
+
+verification_standard:
+  - "same check that identified the fault, re-run after the change"
+  - "health endpoint / service status / per-host verdict"
+  - "consumer-level proof that the workload resumed"
+  - "idempotency: second --check shows changed=0 on every host"
+
+rollback:
+  default: "restore the timestamped pre-change copy over the installed artifact"
+  alternative: "re-run the playbook after the repo/checkout is corrected"
+  note: "never hand-edit a playbook-managed file outside the playbook once one exists"
+
+known_ground_truth:
+  runner_agent_pin: "scripts/devin/runner-tooling.manifest.json — both sync-runner-tools.sh and runner-agent._self_update gate on this sha256"
+  drift_semantics: "a drift flag is a lagging indicator between repo-sync and tool-sync; sha256 both sides before touching anything"
+  mtime_caveat: "'newer than repo' guards compare mtime, not content — a newer-mtime installed copy can still be missing features"
