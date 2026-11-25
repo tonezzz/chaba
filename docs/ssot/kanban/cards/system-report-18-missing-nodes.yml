@@ -1,7 +1,7 @@
 id: system-report-18-missing-nodes
 title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
-column: doing
-updated: 2026-11-25 09:50
+column: review
+updated: 2026-11-25 09:56
 priority: medium
 tags:
 - system-report
@@ -219,13 +219,40 @@ comms:
     report — patched _BADGE/_WORST; (2) watchdog ignored offline_ok (macbook) — patched + registry fallback; (3)
     ha-live on tony-omen dead post-reboot — started+enabled, :8444=200; (4) con01 ada-stt shed broke mn-bot STT
     — repointed TG_WHISPER_URL to idc03-local, relay restarted,'
+- at: 2026-11-25 09:56
+  from: tony-omen
+  text: 'finished (ok): exit=0 triage.yml` and `dispatch-outcome-20261125-093709-after-the-nov-8-delivery-fix-s.md`.
+    | devin-task-20261125-09370'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-093709-after-the-nov-8-delivery-fix-s'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 6 le'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: banked 69 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:56
+  from: chaba
+  text: pushed dispatch/20261125-093709-after-the-nov-8-delivery-fix-s to origin
+- at: 2026-11-25 09:56
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'worktree kept: dirty — 6 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  result: 'exit=0 triage.yml` and `dispatch-outcome-20261125-093709-after-the-nov-8-delivery-fix-s.md`. | devin-task-20261125-093709-after-the-nov-8-delivery-fix-s.service:
+    Consumed 5min 2.112s CPU time over 13min 34.010s wall clock time, 924.6M memory peak.'
 claim:
   since: 2026-11-25 09:35
+review_kind: verify

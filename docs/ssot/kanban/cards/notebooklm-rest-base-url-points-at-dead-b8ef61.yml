@@ -1,7 +1,7 @@
 id: notebooklm-rest-base-url-points-at-dead-b8ef61
 title: NOTEBOOKLM_REST_BASE_URL points at dead tony-dell:3011 — lane envs stale after notebooklm-rest moved/retired
-column: doing
-updated: 2026-11-25 09:55
+column: done
+updated: 2026-11-25 09:56
 priority: medium
 tags:
 - ada
@@ -87,14 +87,34 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-094135-found-during-ada-lanes-run-on- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: merged 4d07d554 (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-094135-found-during-ada-lanes-run-on-.md)
+    — auto-closed'
+- at: 2026-11-25 09:56
+  from: local
+  text: 'pub milestone: card verified: notebooklm-rest-base-url-points-at-dead-b8ef61 on idc03 — merged 4d07d554
+    (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master — verified — auto- — merged
+    4d07d554 (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master — verified —
+    auto-closed [evt-cd5a4a8b9d7a27a4]'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-094135-found-during-ada-lanes-run-on-,
+    branch dispatch/20261125-094135-found-during-ada-lanes-run-on- on idc02'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: kw
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-25 09:55
+  verified: true
 claim:
   since: 2026-11-25 09:40
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-094135-found-during-ada-lanes-run-on-.md
