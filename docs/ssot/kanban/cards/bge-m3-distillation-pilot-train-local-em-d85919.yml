@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
 column: doing
-updated: 2026-11-25 19:26
+updated: 2026-11-25 22:06
 priority: low
 tags:
 - embedding
@@ -440,6 +440,13 @@ comms:
     wheel and VRAM 75% committed; con01 is cleanest CPU worker (8c/23GB); kk-mac offline. Plan: rebuild teacher
     fixture on idc03 (fetch+gemini re-embed ~8.1k docs), write bge-distill-ft.py, launch detached CPU fine-tune
     on con01, eval = offline cosine vs teacher + qrels rerun follow-up'
+- at: 2026-11-25 22:06
+  from: devin
+  text: 'rebuild done + training launched. /tmp/embedeval rebuilt on idc03 (5,890 docs — corpus shrank post-compaction
+    — gemini teacher vecs via PAID key after FREE quota died; durable copy ~/data/embedeval-distill). Judged qrels
+    rebuilt: 4,800 judgments; new bge_dense baseline r@5 .315/MRR .656 (not comparable to Nov-7 gate — corpus+qrels
+    changed; student-vs-gemini on new qrels is the honest gate). Training: BGE-M3 top-12-layers+head, MSE on teacher,
+    con01 CPU detached (~20h, freeze-12 after full-FT OOM'
 action:
   type: dispatch
   status: running
