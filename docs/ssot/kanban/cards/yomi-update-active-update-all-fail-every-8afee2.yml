@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: doing
-updated: 2026-11-25 19:19
+updated: 2026-11-25 19:26
 priority: medium
 tags:
 - bug
@@ -242,6 +242,13 @@ comms:
     primer injected 8 lesson(s): [; [ops-1244d-janitor-merge] [sweep 2026-11-12] board-janitor is declared in ssot.j;
     mn01 still runs a disabled-but-active ada-ha-michael standby — "the lane moved t; [persona-name-leaks-tool-result]
     primer injected 8 lesson(s):'
+- at: 2026-11-25 19:26
+  from: devin
+  text: 'attempt 2 verified + landed trail. Live state on idc03: yomi-api.service enabled+active since attempt-1
+    fix (~14:53); podman yomi-api Up; /api/yomi/health ok:true; journal shows every yomi-update-active (15m) and
+    yomi-update-all (hourly) run Finished cleanly 15:22-19:08 +07, zero status=125 in ~5h. Committed on dispatch
+    branch: vendored canonical unit systemd/yomi-api.service (live unit was hand-installed, no repo copy), jobs
+    doc docs/ssot/jobs/infrastructure/2026-11-25-yomi-api-idc03-disabled-r'
 action:
   type: dispatch
   status: running
