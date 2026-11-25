@@ -30,6 +30,7 @@ QUEUED_TRIGGER = 15          # only top up when queue is this shallow
 MAX_INFLIGHT = 50            # queued + claimed ceiling
 VERIFY_REVIEW_MAX = 10       # review triage is the bottleneck
 HEARTBEAT_MAX_S = 900
+MIN_HEALTHY_HOSTS = 3       # a sleeping Mac must not block the whole fleet
 COOLDOWN_MIN = 14
 ALERT_CARD = "ops-kanban-commit-guard"
 
@@ -114,10 +115,12 @@ def load_ledger():
         try:
             d = json.loads(LEDGER.read_text())
             d.setdefault("dispatched", {})
+            d.setdefault("known_failures", ["ops-1025-remote-read-smoke-idc03"])
             return d
         except Exception:
             pass
     return {"dispatched": {cid: {"wave": 0, "at": "seed"} for cid in sorted(SEED)},
+            "known_failures": ["ops-1025-remote-read-smoke-idc03"],
             "last_wave": None, "wave": 0, "skips": 0, "last_skip": None, "alerted": None}
 
 
@@ -128,22 +131,22 @@ def save_ledger(d):
     os.replace(tmp, LEDGER)
 
 
-def skip(d, reason, alertable=True):
+def skip(d, reason, alertable=True, alert_key=None):
     log("SKIP: " + reason)
     if not alertable:
         # Full queue / in-flight ceiling is normal backpressure, not a fault.
-        d["skips"] = 0
-        d["alerted"] = None
-        save_ledger(d)
         return 0
+    key = alert_key or reason
     d["skips"] = d.get("skips", 0) + 1
     d["last_skip"] = reason
     save_ledger(d)
-    if d["skips"] >= 3 and d.get("alerted") != reason:
+    # One alert per distinct fault until a wave succeeds — benign skips must
+    # never clear the dedupe key (that caused 10 duplicate alerts overnight).
+    if d["skips"] >= 3 and d.get("alerted") != key:
         try:
             post("/comment", {"id": ALERT_CARD, "from": "chaba",
                   "text": f"[auto-dispatch] paused after 3 consecutive waves: {reason}"})
-            d["alerted"] = reason
+            d["alerted"] = key
             save_ledger(d)
             log("alert posted on " + ALERT_CARD)
         except Exception as e:
@@ -193,9 +196,13 @@ def main():
         return skip(d, f"queue depth {queued} > {QUEUED_TRIGGER}", alertable=False)
     if queued + claimed > MAX_INFLIGHT:
         return skip(d, f"in flight {queued + claimed} > {MAX_INFLIGHT}", alertable=False)
-    for host, v in (q.get("hosts") or {}).items():
-        if isinstance(v, dict) and (v.get("stale") or v.get("age_s", 0) > HEARTBEAT_MAX_S):
-            return skip(d, f"stale host {host}")
+    hosts = q.get("hosts") or {}
+    stale = [h for h, v in hosts.items()
+             if isinstance(v, dict) and (v.get("stale") or v.get("age_s", 0) > HEARTBEAT_MAX_S)]
+    healthy = len(hosts) - len(stale)
+    if healthy < MIN_HEALTHY_HOSTS:
+        return skip(d, f"only {healthy} healthy hosts; stale: {', '.join(stale)}",
+                    alert_key="stale-hosts")
 
     # Gate 2: card-level health and review backlog.
     try:
@@ -203,9 +210,10 @@ def main():
                  "awaiting_action,spec,brief,action,review_kind")["cards"]
     except Exception as e:
         return skip(d, f"cards API unavailable: {e}")
-    failed = [c["id"] for c in cs if c.get("action_status") == "failed"]
+    known = set(d.get("known_failures") or [])
+    failed = [c["id"] for c in cs if c.get("action_status") == "failed" and c["id"] not in known]
     if failed:
-        return skip(d, "failed cards present: " + ", ".join(failed[:5]))
+        return skip(d, "new failed cards: " + ", ".join(failed[:5]), alert_key="new-failures")
     verify = [c for c in cs if c.get("column") == "review" and c.get("review_kind") == "verify"]
     if len(verify) >= VERIFY_REVIEW_MAX:
         return skip(d, f"verify review backlog {len(verify)} >= {VERIFY_REVIEW_MAX}")
