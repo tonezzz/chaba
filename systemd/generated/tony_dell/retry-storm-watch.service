@@ -1,0 +1,7 @@
+[Unit]
+Description=Retry-storm / hot-container watch (podman CPU + log sigs) (job:retry-storm-watch, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=240
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs

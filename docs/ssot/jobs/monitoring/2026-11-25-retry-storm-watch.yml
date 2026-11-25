@@ -1,0 +1,85 @@
+title: retry-storm-watch — sustained hot-container / retry-storm detector
+subtitle: card ops-retry-storm-detection / MEM-1192 (2026-11-25, attempt 2)
+icon: timer
+
+decision:
+  summary: >
+    The mddb-embed OpenRouter retry storm ran ~6h before a load
+    investigation found it — nothing surfaced it. Cheap detector shipped
+    repo-side: scripts/ops/retry-storm-watch.py run as a 10min systemd
+    timer on the six container hosts, findings deduped into board-api
+    /inbox (6h per condition), never Telegram per the noise policy.
+  changes:
+    - id: script
+      detail: >
+        scripts/ops/retry-storm-watch.py — three checks, each gated by
+        --checks (default cpu,logs,mddb):
+        (a) cpu: streams `podman stats` for --stats-secs (6s) and keeps
+            the last row per container (true interval CPU%, unlike
+            --no-stream's lifetime-ish average). A container above
+            --cpu-threshold (50%) accumulates hot_since in
+            ~/.local/state/retry-storm-watch.json; alert fires only once
+            the streak reaches --sustain-min (30min) — one hot sample
+            never pages.
+        (b) logs: `podman logs --since 60m --tail 50000` per running
+            container (stderr merged — WARN/ERROR usually lands there),
+            30s per-container timeout. Lines matching
+            WARN|ERROR|ERR|FATAL|CRITICAL are normalized (hex/ids/numbers
+            stripped) into signatures; any signature x30+ alerts.
+        (c) mddb: for each MDDB_WATCH_URLS base URL, GET /v1/vector-stats
+            + /metrics, sum numeric counters matching
+            drop|error|retr|fail|reject|queue, alert when the sum climbs
+            >= --mddb-delta (10) since the previous tick. First tick only
+            baselines; a fully unreachable MDDB returns None and keeps
+            the old baseline so recovery can't fake a delta.
+        Findings POST to board-api /inbox {label, priority:high, tags,
+        owner:tony}, deduped --repeat-h (6h) per condition; exit 0
+        healthy / 1 when alerting (netdata-nodes-watch contract).
+    - id: jobs
+      detail: >
+        Six ssot.jobs.yml entries, all `dispatch: systemd`, `every:
+        10min`, `persistent: true`, `timeout: 4m`:
+        idc03 runs all three checks with MDDB_WATCH_URLS=
+        http://127.0.0.1:11023,http://127.0.0.1:11027 (primary + cms —
+        the mddb-embed storm signature lives on the leader); idc02,
+        tony_dell, tony_omen, mn01, con01 run `--checks cpu,logs` only.
+        Rendered units committed under systemd/generated/<host>/.
+  verified:
+    - >-
+      py_compile clean; live --no-alert run on this host sampled 5
+      containers (xmeye-vms-vnc 31% correctly below threshold), ok exit 0.
+    - >-
+      mddb leg verified over tailnet against the live leader
+      (100.102.134.91:11023) — baseline score=28068 established; dead
+      URL correctly skipped without poisoning baseline.
+    - >-
+      render-jobs.py --check OK (133 jobs, 8 hosts); units rendered for
+      all six hosts.
+    - >-
+      Prior attempt (2026-11-25 09:15) live-dry-ran on idc03 and caught
+      the CURRENT storm — 'embedding attempt failed' x119 (mddb) + x78
+      (mddb-cms) in 60m; signature detection proven against real data.
+
+deploy:
+  status: 'repo-side only — NOT installed (dispatch rules: no deploy).'
+  next_step: >
+    After merge + each host's chaba-repo-sync pull, run
+    `python3 scripts/render-jobs.py --host <h> --ids retry-storm-watch
+    --install` per host (or the standard jobs-install sweep). First idc03
+    tick baselines MDDB counters; cpu/log alerts can fire immediately.
+    First real tick is expected to file one consolidated inbox entry if
+    the storm signature is still present in the 60m log window.
+
+follow_ups:
+  - id: threshold-tuning
+    note: >
+      --cpu-threshold 50 / --sustain-min 30 / --log-threshold 30 /
+      --mddb-delta 10 are starting points from the incident shape; tune
+      after a week of ticks if legit workloads (ollama, backups) trip
+      them — consider a per-container ignore list (--log-skip exists;
+      cpu ignore would be a small follow-up).
+  - id: verify-after-install
+    note: >
+      Post-install verify = surface check, not just unit-active: confirm
+      ~/.local/state/retry-storm-watch.json appears on each host and the
+      first /inbox entry (if any) names the right condition.

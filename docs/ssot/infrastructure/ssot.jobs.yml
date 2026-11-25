@@ -755,6 +755,76 @@ jobs:
     State ~/.local/state/netdata-nodes-watch.json; alerts deduped 12h.
     Expected node list defaults to the 8-node fleet — edit --nodes or
     this note if the fleet changes.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs + MDDB queue)
+  host: idc03
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py
+  env:
+    MDDB_WATCH_URLS: http://127.0.0.1:11023,http://127.0.0.1:11027
+  note: 'card ops-retry-storm-detection (MEM-1192) — the mddb-embed
+    OpenRouter retry storm ran ~6h unnoticed. Checks: (a) podman stats
+    stream -> container >50% CPU sustained >=30min (state-tracked),
+    (b) podman logs 60m -> identical WARN/ERROR signature x30+ per
+    container, (c) MDDB /v1/vector-stats + /metrics drop/error/retry
+    counter deltas >=10 since last tick (idc03 only, via
+    MDDB_WATCH_URLS: primary :11023 + cms :11027). Findings -> deduped
+    board-api /inbox 6h per condition, never Telegram. State
+    ~/.local/state/retry-storm-watch.json. Trail doc
+    docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: idc02
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: tony_dell
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: tony_omen
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: mn01
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: con01
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
 - id: timer-timeline-update
   name: Timer timeline sweep (collects all hosts' timer/service states)
   host: tony_omen
