@@ -1,7 +1,7 @@
 id: notebooklm-rest-unreachable-from-idc03-k-c38158
 title: NotebookLM REST unreachable from idc03 (kraut session-close failures)
 column: backlog
-updated: 2026-11-25 09:52
+updated: 2026-11-25 16:50
 spec: 'Revalidated 2026-11-20; this is still live, not superseded by the service move. The idc03 ada-ai-kraut service
   is active, but its EnvironmentFile ~/.config/secrets/michael-ha/backend.env sets NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1
   (tony-dell). From idc03, GET http://100.68.142.13:3011/health/auth fails to connect (HTTP 000). The service is
@@ -98,3 +98,7 @@ comms:
     envs (incl. michael-ha/backend.env for ada-ai-kraut) repointed NOTEBOOKLM_REST_BASE_URL -> http://100.123.163.11:3011/v1,
     5 active lanes restarted, /proc environ verified, idc03->idc02:3011/health 200, scoped-key /v1/notebooks 200.
     This card can move to done after review.'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

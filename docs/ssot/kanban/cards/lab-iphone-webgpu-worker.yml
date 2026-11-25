@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: done
-updated: 2026-11-25 07:51
+updated: 2026-11-25 16:50
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -350,6 +350,10 @@ comms:
 - at: 2026-11-25 07:51
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

@@ -1,7 +1,7 @@
 id: ada-tool-voice-request-well-formed-kanba-56ba9f
 title: 'Ada tool: voice request -> well-formed kanban card spec'
-column: doing
-updated: 2026-11-25 16:46
+column: review
+updated: 2026-11-25 16:50
 ref: ADA-1202
 comms:
 - at: 2026-11-08 13:52
@@ -290,17 +290,46 @@ comms:
     -x -q = 1995 passed 7 skipped (via ~/CascadeProjects/ada-voice/.venv), tool-lint clean. Branch = origin/main
     + 4 commits, unpushed. Deliverables: kanban action=draft + file schema, tests/test_kanban_voice_draft.py, scenario
     kanban_voice_card.yaml, job record docs/ssot/jobs/ada/2026-11'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-164138-implement-the-ada-tool-capabil.service:
+    Failed to ope'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:50
+  from: chaba
+  text: banked 3 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:50
+  from: chaba
+  text: pushed dispatch/20261125-164138-implement-the-ada-tool-capabil to origin
+- at: 2026-11-25 16:50
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 206.8s)
+- at: 2026-11-25 16:50
+  from: chaba
+  text: auto-merged 42a2d93c (dispatch/20261125-164138-implement-the-ada-tool-capabil) → origin/main
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-164138-implement-the-ada-tool-capabil,
+    branch dispatch/20261125-164138-implement-the-ada-tool-capabil'
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 a/2026-11-25-kanban-voice-card-draft.yml`, and the card has been updated on the board. | devin-task-20261125-152559-implement-the-ada-tool-capabil.service:
-    Consumed 1min 52.785s CPU time over 10min 10.005s wall clock time, 1.3G memory peak.'
-  verified: false
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-164138-implement-the-ada-tool-capabil.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-164138-implement-the-ada-tool-capabil.service:
+    No such file or directory'
+  verified: true
   sweep:
     merge_err: 2026-11-25 15:39
     zero_commit: 2026-11-25 16:39
