@@ -1,7 +1,7 @@
 id: runner-pin-contract-merge-gate
 title: Block merges that leave runner tooling pins stale
 column: done
-updated: 2026-11-26 03:51
+updated: 2026-11-26 03:52
 brief: ops-1036 conflict resolution (da9798df42c) took source files from one side and runner-tooling.manifest.json
   pins from the other. The contract test failed and all 6 hosts showed tool drift. Pins were realigned in f13edd01d0d
   and tools resynced; add a gate so this cannot merge silently.
@@ -88,6 +88,10 @@ comms:
 - at: 2026-11-26 03:51
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
