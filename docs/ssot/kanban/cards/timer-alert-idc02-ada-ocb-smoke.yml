@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
 column: backlog
-updated: 2026-11-25 18:24
+updated: 2026-11-25 19:13
 priority: high
 tags:
 - timer-alert
@@ -447,6 +447,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 18:00) of `ada-ocb-smoke.service` on `idc02` result=exit-code — investigate
     journal: `journalctl --user -u ada-ocb-smoke.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-25 19:13
+  from: tony
+  text: '2026-11-25 19:11 (+07): FIXED — the find_card check was functionally correct (found ada-smoke-regressions-20261107,
+    ref=ADA-1110, col=backlog) but took 8.487s against the global CALL_LIMIT_S=8.0, so it was flagged SLOW. Added
+    a per-check limit=15 on idc02 ~/CascadeProjects/ada-voice/scripts/ocb-smoke.py (backup .bak-20261125), same
+    treatment previously given ada_context_pack. Rerun result=success exit=0; all checks PASS, benchmark written.'
 action:
   status: done
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
