@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
-column: doing
-updated: 2026-11-25 19:54
+column: review
+updated: 2026-11-25 19:55
 program: infrastructure
 tags:
 - ops
@@ -260,6 +260,29 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-190933-fix-the-stuck-system-report-ch on tony-dell still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 19:55
+  from: tony-dell
+  text: 'finished (ok): exit=0 gent-drift.yml`, with progress and final comms posted to the card. | devin-task-20261125-190933-fix-the-stuck-sys'
+- at: 2026-11-25 19:55
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 19:55
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-190933-fix-the-stuck-system-report-ch'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 19:55
+  from: chaba
+  text: banked 698 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:55
+  from: chaba
+  text: pushed dispatch/20261125-190933-fix-the-stuck-system-report-ch to origin
+- at: 2026-11-25 19:55
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 19:55
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
@@ -268,7 +291,7 @@ spec: Fix the stuck system-report chain by locating its generator on idc02 and r
   generator on idc02 resumes normal execution, and the generated_at timestamp advances past the stale threshold.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
@@ -276,5 +299,8 @@ action:
   sweep:
     stale_running: 2026-11-25 19:54
     dirty: 2
+  result: 'exit=0 gent-drift.yml`, with progress and final comms posted to the card. | devin-task-20261125-190933-fix-the-stuck-system-report-ch.service:
+    Consumed 48.390s CPU time over 42min 10.418s wall clock time, 813M memory peak, 656.3M memory swap peak.'
 claim:
   since: 2026-11-25 19:08
+review_kind: verify
