@@ -1,7 +1,7 @@
 id: ada-session-summary-inflow-stalled
 title: Ada session-summary feed stalled — recall-summary collections get no new docs since early Oct
 column: doing
-updated: 2026-11-25 15:02
+updated: 2026-11-25 15:14
 spec: 'Found while shipping memory-extract-merge-proposals (2026-11-18): memory-distill.timer runs Sun 09:45 on
   idc03 and exits SUCCESS but reports 0 new session summary docs in every ada-ha-recall-summary-* collection. Verified
   newest docs: ada-ha-recall-summary-tony=2026-10-03, -dev=2026-10-09, -kk=2026-10-13, -ada-dev=empty. Downstream
@@ -161,6 +161,13 @@ comms:
     gate every claim on installed==checkout-ref byt; `~/var/chaba/reports/timeline.jsonl` is the report-event timeline
     (node/layer/st; Every dead-claim path uses one rule: under the cap -> status=queued + column=bac; [ada-scenario-casting-service-failed-on-i-340465]
     attempt 5 o'
+- at: 2026-11-25 15:14
+  from: devin
+  text: 'ROOT CAUSE FOUND — memory-distill is healthy; the substrate stopped upstream. Session-summary docs are
+    written only by ada-voice _update_summary() at Gemini-Live session close (conversation_memory.py::_save_session_summary
+    -> ada-ha-recall-summary-<ADA_INSTANCE_ID>, unchanged). OpenRouterTextProvider.close() (text-mode sessions:
+    telegram/tg/line default, chat+web on ada-ha-tony via text-chat.conf drop-in, ADA_TEXT_ONLY_CALLERS, ?mode=text)
+    NEVER calls conversation.persist() — transcripts + sessi'
 action:
   type: dispatch
   status: running
