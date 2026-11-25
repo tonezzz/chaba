@@ -1,7 +1,7 @@
 id: cms-auto-health-stop-carding-powered-off-e11c7a
 title: 'cms-auto-health: stop carding powered-off/sleeping hosts'
 column: done
-updated: 2026-11-25 16:59
+updated: 2026-11-25 17:04
 brief: cms-auto-* cards reopen every time a portable host (tony-macbook) is powered off > interval+grace. nest-tony-macbook
   alone has auto-recovered 4x (11-18, 11-19, 11-21, 11-23) and each open card can burn a dispatch triage — dispatch
   20261123-202118 was triggered by exactly this. Host-down alerting already exists separately (ops-event reachability
@@ -205,6 +205,10 @@ comms:
 - at: 2026-11-25 16:59
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
