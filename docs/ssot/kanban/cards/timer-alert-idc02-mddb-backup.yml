@@ -1,7 +1,7 @@
 id: timer-alert-idc02-mddb-backup
 title: Timer mddb-backup on idc02 failing
 column: done
-updated: 2026-11-25 17:26
+updated: 2026-11-25 17:38
 priority: high
 tags:
 - timer-alert
@@ -67,6 +67,10 @@ comms:
 - at: 2026-11-25 17:26
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `mddb-backup.service` on `idc02` by inspecting the user journal via `journalctl
   --user -u mddb-backup.service` on host `idc02`. Target repo is `chaba` for runner alignment if needed, following

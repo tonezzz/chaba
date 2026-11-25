@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: done
-updated: 2026-11-25 17:26
+updated: 2026-11-25 17:38
 priority: high
 tags:
 - timer-alert
@@ -129,6 +129,10 @@ comms:
 - at: 2026-11-25 17:26
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Ensure the `chaba-jobs.timer` is enabled and active on `idc03` per the audit census critical list, or confirm
   if its disabled state is deliberate. If not deliberate, run `systemctl --user enable --now chaba-jobs.timer` on
