@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
-column: doing
-updated: 2026-11-25 09:15
+column: review
+updated: 2026-11-25 09:24
 priority: medium
 tags:
 - observability
@@ -212,13 +212,38 @@ comms:
     + dispatch-outcome md. Verified live on idc03: caught the CURRENT storm (embedding attempt failed x119 mddb
     / x78 mddb-cms in 60m). Remaining step: render-jobs --install per host after merge+sync — not deployed per dispatch
     rules.'
+- at: 2026-11-25 09:24
+  from: tony-macbook
+  text: 'finished (ok): exit=0  merge + repo sync, and the first real tick will file one expected consolidated inbox
+    entry. | devin-task-2026112'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:24
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-090624-the-mddb-embed-openrouter-retr
+    is 107 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 09:24
+  from: chaba
+  text: pushed dispatch/20261125-090624-the-mddb-embed-openrouter-retr to origin
+- at: 2026-11-25 09:24
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'worktree kept: dirty — 16 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0  merge + repo sync, and the first real tick will file one expected consolidated inbox entry. |
+    devin-task-20261125-090624-the-mddb-embed-openrouter-retr.service: Consumed 28.704s CPU time over 9min 31.995s
+    wall clock time, 355M memory peak.'
 claim:
   since: 2026-11-25 09:05
+review_kind: verify
