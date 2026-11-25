@@ -1,7 +1,7 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
-column: review
-updated: 2026-11-25 07:50
+column: done
+updated: 2026-11-25 07:55
 priority: medium
 tags:
 - idc03
@@ -231,6 +231,25 @@ comms:
 - at: 2026-11-25 07:50
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 07:55
+  from: chaba
+  text: 'merge-sweep: merged bd44ecf1 (dispatch/20261125-074725-re-run-install-sh-for-ada-scen from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-074725-re-run-install-sh-for-ada-scen.md)
+    — auto-closed'
+- at: 2026-11-25 07:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-074725-re-run-install-sh-for-ada-scen,
+    branch dispatch/20261125-074725-re-run-install-sh-for-ada-scen on tony-macbook'
+- at: 2026-11-25 07:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-074725-re-run-install-sh-for-ada-scen already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-074725-re-run-install-sh-for-ada-scen.md) — auto-closed'
+- at: 2026-11-25 07:55
+  from: local
+  text: 'pub milestone: card verified: idc03-re-run-ada-scenario-runner-install-a77c3c on idc03 — merged bd44ecf1
+    (dispatch/20261125-074725-re-run-install-sh-for-ada-scen from tony-macbook) -> origin/master — verified — merged
+    bd44ecf1 (dispatch/20261125-074725-re-run-install-sh-for-ada-scen from tony-macbook) -> origin/master — verified
+    — auto-closed [evt-76c3eac690ceea1b]'
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
   run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
@@ -247,7 +266,11 @@ action:
   result: 'exit=0 -074725-re-run-install-sh-for-ada-scen.md` and the card has progress + final comms entries. |
     devin-task-20261125-074725-re-run-install-sh-for-ada-scen.service: Consumed 9.520s CPU time over 1min 19.101s
     wall clock time, 379.3M memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 07:46
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 07:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-074725-re-run-install-sh-for-ada-scen.md
