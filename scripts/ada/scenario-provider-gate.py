@@ -69,6 +69,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -324,6 +325,23 @@ def check_unit_active(unit: str) -> tuple[bool, str]:
     return out == "active", out or "unknown"
 
 
+def check_remote_alive(live_url: str) -> tuple[bool, str]:
+    """(alive, detail) — any HTTP response means the backend answered;
+    refused/timeout means infra. ws:// normalizes to http:// and only
+    scheme://host:port is probed (GET / — a 403/404 still proves the
+    server is up; we only need 'something answered')."""
+    base = re.sub(r"^ws", "http", live_url.strip())
+    m = re.match(r"(https?://[^/?#]+)", base)
+    probe = (m.group(1) if m else base).rstrip("/")
+    try:
+        urllib.request.urlopen(probe + "/", timeout=8).read(256)
+        return True, f"{probe}/ answered"
+    except urllib.error.HTTPError as e:
+        return True, f"{probe}/ answered (HTTP {e.code})"
+    except Exception as e:
+        return False, f"{probe}/ unreachable: {e}"
+
+
 def check_free_lane(unit: str) -> tuple[str, str]:
     """(verdict, detail) — 'ok' | 'paid-lane' | 'unknown'.
     Compares sha256 of the unit's GEMINI_API_KEY against the FREE/PAID
@@ -429,6 +447,14 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--unit", default="ada-ha-tony",
                     help="backend unit the smoke tier targets")
+    ap.add_argument("--live-url", default="",
+                    help="remote provider base URL (http://host:port or "
+                         "ws://host:port/ws) — when set, the unit-active "
+                         "check becomes an HTTP reachability probe and the "
+                         "journal quota probe is skipped (local journal "
+                         "does not exist for a remote backend; the "
+                         "in-suite outage sentinel remains the backstop). "
+                         "For dev-lane FREE-key providers only.")
     ap.add_argument("--window", type=int, default=70,
                     help="journal window (minutes) for the quota probe")
     ap.add_argument("--tier", default="smoke",
@@ -465,8 +491,13 @@ def main() -> int:
     state = _load_state()
     checks: dict[str, str] = {}
 
-    active, active_detail = check_unit_active(args.unit)
-    checks["unit_active"] = f"{args.unit}={active_detail}"
+    remote = bool(args.live_url)
+    if remote:
+        active, active_detail = check_remote_alive(args.live_url)
+        checks["provider_alive"] = f"{args.live_url} -> {active_detail}"
+    else:
+        active, active_detail = check_unit_active(args.unit)
+        checks["unit_active"] = f"{args.unit}={active_detail}"
 
     lane, lane_detail = check_free_lane(args.unit)
     paid_card = check_paid_allow(args.paid_allow_file,
@@ -478,7 +509,14 @@ def main() -> int:
                        f"lane check was: {lane_detail}")
     checks["free_lane"] = lane_detail
 
-    quota, quota_detail = check_quota(args.unit, args.window)
+    if remote:
+        quota, quota_detail = "ok", {
+            "remote": True,
+            "note": "journal quota probe is local-only — remote provider "
+                    "has no local journal; in-suite outage sentinel is "
+                    "the backstop (dev lanes are FREE-key, no billing risk)"}
+    else:
+        quota, quota_detail = check_quota(args.unit, args.window)
     checks["quota_probe"] = json.dumps(quota_detail)
 
     churn = churn_scan(
@@ -489,7 +527,9 @@ def main() -> int:
         for u, c in churn.items())
 
     if not active:
-        status, reason = "infra", f"target unit {args.unit} is {active_detail}"
+        what = (f"provider {args.unit} @ {args.live_url}"
+                if remote else f"target unit {args.unit}")
+        status, reason = "infra", f"{what} is {active_detail}"
     elif lane in ("paid-lane", "unknown"):
         # fail-closed: an unmarked key may be a NEW paid key not yet added
         # to gemini-keys.env — a QA skip costs nothing, a wrong guess burns
