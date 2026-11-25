@@ -1,7 +1,7 @@
 id: ada-review-refresh-log-shipper-timeout
 title: ada-review-refresh fails — log-shipper.py subprocess exceeds 600s on tony-omen
-column: doing
-updated: 2026-11-25 10:54
+column: done
+updated: 2026-11-25 10:55
 priority: low
 tags:
 - log-shipper
@@ -227,14 +227,32 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-103752-ada-review-refresh-service-on- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 10:55
+  from: chaba
+  text: 'merge-sweep: merged 39b151bc (dispatch/20261125-103752-ada-review-refresh-service-on- from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-103752-ada-review-refresh-service-on-.md)
+    — auto-closed'
+- at: 2026-11-25 10:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-103752-ada-review-refresh-service-on-,
+    branch dispatch/20261125-103752-ada-review-refresh-service-on- on idc02'
+- at: 2026-11-25 10:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-103752-ada-review-refresh-service-on- already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-103752-ada-review-refresh-service-on-.md) — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
   sweep:
-    stale_running: 2026-11-25 10:54
+    stale_running: 2026-11-25 10:55
+  verified: true
 claim:
   since: 2026-11-25 10:37
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 10:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-103752-ada-review-refresh-service-on-.md
