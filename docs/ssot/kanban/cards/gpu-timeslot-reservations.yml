@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
 column: doing
-updated: 2026-11-25 20:46
+updated: 2026-11-25 20:53
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -87,6 +87,12 @@ comms:
   text: Implementation done in /home/tony/ansible on idc02 (queue_manager.py hold ledger gpu:hold:{host}:{idx} w/
     TTL + atomic Lua acquire, scheduler placement excludes held indices + acquires on dispatch, release on complete/fail/timeout/requeue,
     gpu_status.py HOLD column, playbook pins podman indices). Deploying + testing next.
+- at: 2026-11-25 20:53
+  from: devin
+  text: 'Live verify progressing: found+fixed a pre-existing bug — scheduler passed job_cmd via key=value -e which
+    splits on whitespace, so only the first word reached podman (every multi-word GPU command ran truncated, e.g.
+    podman got just "timeout"). Now passes job_cmd as JSON extra-var in scheduler.py + dispatch_job.py. Redeployed;
+    gpu-rsv2-a now running real nvidia-smi on omen holding gpu:hold:omen:0, gpu-rsv2-b correctly waiting.'
 ref: OPS-1407
 claim:
   since: 2026-11-25 20:35
