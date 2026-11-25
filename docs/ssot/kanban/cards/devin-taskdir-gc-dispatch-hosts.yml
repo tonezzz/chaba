@@ -1,7 +1,7 @@
 id: devin-taskdir-gc-dispatch-hosts
 title: 'Dispatch task-dir GC gap: hosts accumulate ~/.local/share/devin-dispatch/tasks forever (idc02: 917 dirs)'
 column: doing
-updated: 2026-11-25 09:40
+updated: 2026-11-25 09:52
 brief: 'DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed — devin-cleanup
   declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.'
 priority: medium
@@ -106,5 +106,12 @@ comms:
     requires re-running `scripts/render-jobs.py --host <h>` ; idc02''s kanban-dispatch.service was a linked unit
     running a stale scripts/-only ; [runner-dispatch-no-timeout] primer injected 8 lesson(s): idc02''s kanban-dispatc;
     [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, ton'
+- at: 2026-11-25 09:52
+  from: devin
+  text: 'DONE (dispatch 20261125-094030). Survey: idc02=928 dirs/no timers, idc03=165, mn01=107 (1.1G), dell=236
+    (devin-cleanup.timer NEVER installed — ssot was stale), omen=392 (sessions.db-only cleanup), macbook=286 (live
+    bug: ~/.local/bin copy GCd task dirs at 7d retention, corrupting the 30d usage window — fixed). con01 excluded:
+    no devin CLI/registry, not dispatch-capable. idc01 declared, host offline ~34d. Changes: new scripts/devin/taskdir-prune.py
+    (45d finished retention >=30d window + durable ta'
 claim:
   since: 2026-11-25 09:39
