@@ -1,0 +1,402 @@
+From 78bbfb5bf2f32cffca85335a86e14b160d17115a Mon Sep 17 00:00:00 2001
+From: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 23:04:17 +0700
+Subject: [PATCH] feat(control): add models.status action and
+ /api/openchamber/models/status route
+
+Adds a models.status control action that reports live availability of the
+location's model catalog. Providers on an OpenAI chat-completions package
+with a configured http(s) baseURL are probed with a minimal completion
+(max_tokens: 1, 10s timeout); every other model reports its catalog status.
+The bearer key resolves from the provider's configured apiKey ({env:NAME}
+references read the environment) with a fallback to the stored OpenCode
+credential. The result is also served as GET /api/openchamber/models/status.
+---
+ .../lib/openchamber-control/DOCUMENTATION.md  |  14 ++
+ .../server/lib/openchamber-control/actions.ts |   1 +
+ .../lib/openchamber-control/models-status.ts  | 128 ++++++++++++++++++
+ .../lib/openchamber-control/service.test.js   |  39 ++++++
+ .../server/lib/openchamber-control/service.ts |   4 +-
+ .../self-update/openchamber-routes.test.js    |  26 ++++
+ .../lib/self-update/openchamber-routes.ts     |  17 +++
+ .../lib/server-frame/bootstrap-runtime.ts     |   2 +
+ packages/web/server/runtime.ts                |   2 +-
+ 9 files changed, 230 insertions(+), 3 deletions(-)
+ create mode 100644 packages/web/server/lib/openchamber-control/models-status.ts
+
+diff --git a/packages/web/server/lib/openchamber-control/DOCUMENTATION.md b/packages/web/server/lib/openchamber-control/DOCUMENTATION.md
+index 0609b8f..cc128ac 100644
+--- a/packages/web/server/lib/openchamber-control/DOCUMENTATION.md
++++ b/packages/web/server/lib/openchamber-control/DOCUMENTATION.md
+@@ -378,6 +378,20 @@ constructor retains its existing `Object.assign` behavior.
+   They take the Chats defaults from Settings > Sessions in the project's place,
+   then the global ones. Membership compares the canonical directory and root, so
+   symlink aliases keep the same projectless behavior and the same Chats defaults.
++- `models.status` reports live availability of the location's model catalog.
++  A model whose provider or model `package` is an OpenAI chat-completions
++  package (`CHAT_COMPLETIONS_PROBE_PACKAGES`) and whose `settings.baseURL` is
++  an http(s) URL is probed with `POST {baseURL}/chat/completions`
++  (`max_tokens: 1`, a 10-second timeout, the provider's configured `headers`,
++  and a bearer key resolved from `settings.apiKey` — `{env:NAME}` references
++  read the environment and other placeholders stay unresolved — falling back
++  to the stored OpenCode credential). `active` means the endpoint answered
++  2xx, `unavailable` carries the provider's error message, and `error` a
++  transport failure. Every other model reports its catalog `status`, and
++  `catalogStatus` always echoes it so a probe result never hides the catalog
++  state. `provider` filters by provider id or name. The same result is served
++  over HTTP as `GET /api/openchamber/models/status`
++  (`../self-update/openchamber-routes.js`).
+ - Chats creation belongs to the session service. It reuses the directory allocator
+   in `../scheduled-tasks/chats-scope.js`, including the configured Chats root.
+   Failed creation removes only an empty directory. Once OpenCode creates the
+diff --git a/packages/web/server/lib/openchamber-control/actions.ts b/packages/web/server/lib/openchamber-control/actions.ts
+index 2a37f7a..ebadb36 100644
+--- a/packages/web/server/lib/openchamber-control/actions.ts
++++ b/packages/web/server/lib/openchamber-control/actions.ts
+@@ -2,6 +2,7 @@ export const OPENCHAMBER_CONTROL_ACTION_DEFINITIONS = Object.freeze([
+   { action: 'projects.list', title: 'List session destinations', description: 'Projects and Chats; use an id as projectId for session.create. No parameters' },
+   { action: 'models.list', title: 'Show model preferences', description: 'Default, favorite and recent models; no parameters' },
+   { action: 'models.search', title: 'Search models', description: 'The model catalog, favorites and recent models first; optional query, provider, all, limit, offset' },
++  { action: 'models.status', title: 'Model status', description: 'Live availability of catalog models: providers on an OpenAI-compatible endpoint are probed with a minimal completion, the rest report their catalog status; optional provider' },
+   { action: 'session.list', title: 'List sessions', description: 'Newest top-level sessions here; each has inWork (in the sidebar\'s In work) and doneSuggested (its last turn looks finished), and lead: true on a lead. Filters inWork, busy (running now), leads, mine (sessions you created with ownWork, with their status), query (title words); inWork, busy, leads and mine span every project unless scoped and return all matches. Optional limit, all, children, withStatus (status as in session.status)' },
+   { action: 'session.archive', title: 'Archive a session', description: 'Archive sessionId, a session you created with ownWork, once you used its result. Restoring one is the user\'s' },
+   { action: 'session.markDone', title: 'Mark a session done', description: 'Take sessionId (default: this session) out of In work, as the Done button does. Only on the user\'s word; a later message puts it back' },
+diff --git a/packages/web/server/lib/openchamber-control/models-status.ts b/packages/web/server/lib/openchamber-control/models-status.ts
+new file mode 100644
+index 0000000..efc8fe8
+--- /dev/null
++++ b/packages/web/server/lib/openchamber-control/models-status.ts
+@@ -0,0 +1,128 @@
++import { asNonEmptyString, isRecord, isString } from '../shared/guards.js';
++import type { JsonValue } from '../shared/json-values.js';
++import type { ModelInfo } from '@opencode/client';
++import { getProviderAuth } from '../opencode/auth.js';
++import { readLocationCatalog } from '../opencode/location-plugins.js';
++import type { ControlInput } from './contracts.js';
++import type { ControlClient } from './opencode-client.js';
++
++const MODELS_STATUS_PROBE_TIMEOUT_MS = 10_000;
++const CHAT_COMPLETIONS_PROBE_PACKAGES = new Set([
++  'aisdk:@ai-sdk/openai',
++  'aisdk:@ai-sdk/openai-compatible',
++  '@opencode/ai/providers/openai',
++  '@opencode/ai/providers/openai/chat',
++  '@opencode/ai/providers/openai-compatible',
++  '@opencode/ai/providers/openai-compatible-responses',
++]);
++
++const resolveConfiguredSecret = (value: JsonValue | undefined): string | null => {
++  const text = asNonEmptyString(value);
++  if (!text) return null;
++  const envName = /^\{env:([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(text)?.[1];
++  if (envName) return asNonEmptyString(process.env[envName]) ?? null;
++  return text.startsWith('{') ? null : text;
++};
++
++interface ModelsStatusProbeTarget {
++  baseURL: string;
++  apiKey: string | null;
++  headers: Record<string, string>;
++  modelID: string;
++}
++
++const probeChatCompletionsModel = async ({ baseURL, apiKey, headers, modelID }: ModelsStatusProbeTarget) => {
++  const base = baseURL.replace(/\/+$/, '');
++  const requestHeaders = { ...headers };
++  requestHeaders['content-type'] = 'application/json';
++  if (apiKey) requestHeaders.authorization = `Bearer ${apiKey}`;
++  try {
++    const response = await fetch(`${base}/chat/completions`, {
++      method: 'POST',
++      headers: requestHeaders,
++      body: JSON.stringify({ model: modelID, messages: [{ role: 'user', content: 'ok' }], max_tokens: 1 }),
++      signal: AbortSignal.timeout(MODELS_STATUS_PROBE_TIMEOUT_MS),
++    });
++    if (response.ok) return { status: 'active', detail: null };
++    const body: unknown = await response.json().catch(() => null);
++    const error = isRecord(body) ? body.error : null;
++    const detail = isRecord(error) ? error.message : error;
++    return { status: 'unavailable', detail: asNonEmptyString(detail) ?? String(response.status) };
++  } catch (error) {
++    return { status: 'error', detail: error instanceof Error ? error.message : String(error) };
++  }
++};
++
++export interface ModelsStatusDependencies {
++  getClient: (directory?: string | null) => Promise<ControlClient>;
++}
++
++export const createModelsStatusAction = ({ getClient }: ModelsStatusDependencies) => async (input: ControlInput, contextDirectory: ControlInput['directory']) => {
++  const client = await getClient(asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory) || '');
++  const [catalog, providerList] = await readLocationCatalog(client);
++  const providersByID = new Map(providerList.data.map((provider) => [provider.id, provider]));
++  const providerNames = new Map(providerList.data.map((provider) => [provider.id, provider.name]));
++  const providerFilter = asNonEmptyString(input.provider)?.toLowerCase();
++  const storedKeys = new Map<string, Promise<string | null>>();
++  const storedKey = (providerID: string) => {
++    let pending = storedKeys.get(providerID);
++    if (!pending) {
++      pending = getProviderAuth(providerID)
++        .then((auth) => (auth?.type === 'api' ? asNonEmptyString(auth.key) ?? null : null))
++        .catch(() => null);
++      storedKeys.set(providerID, pending);
++    }
++    return pending;
++  };
++  const probeTarget = (model: ModelInfo): ModelsStatusProbeTarget | null => {
++    const provider = providersByID.get(model.providerID);
++    const packageName = model.package ?? provider?.package;
++    if (!provider || !isString(packageName) || !CHAT_COMPLETIONS_PROBE_PACKAGES.has(packageName)) return null;
++    const baseURL = [model.settings?.baseURL, provider.settings?.baseURL]
++      .map((value) => asNonEmptyString(value))
++      .find((value) => value !== null && /^https?:\/\//.test(value));
++    if (!baseURL) return null;
++    const headers: Record<string, string> = {};
++    for (const source of [provider.headers, model.headers]) {
++      for (const [name, value] of Object.entries(source ?? {})) {
++        if (isString(value)) headers[name] = value;
++      }
++    }
++    return {
++      baseURL,
++      headers,
++      apiKey: resolveConfiguredSecret(model.settings?.apiKey) ?? resolveConfiguredSecret(provider.settings?.apiKey),
++      modelID: model.id,
++    };
++  };
++  const seen = new Set<string>();
++  const matching = catalog.data.filter((model) => {
++    const key = `${model.providerID}/${model.id}`;
++    if (seen.has(key)) return false;
++    seen.add(key);
++    if (!providerFilter) return true;
++    return model.providerID.toLowerCase() === providerFilter
++      || String(providerNames.get(model.providerID) ?? '').toLowerCase() === providerFilter;
++  });
++  const models = await Promise.all(matching.map(async (model) => {
++    const target = probeTarget(model);
++    const probe = target
++      ? await probeChatCompletionsModel({ ...target, apiKey: target.apiKey ?? await storedKey(model.providerID) })
++      : null;
++    return {
++      providerID: model.providerID,
++      modelID: model.id,
++      name: model.name,
++      status: probe?.status ?? String(model.status ?? 'active'),
++      detail: probe?.detail ?? null,
++      catalogStatus: String(model.status ?? 'active'),
++    };
++  }));
++  const summary = {
++    total: models.length,
++    unavailable: models.filter((model) => model.status === 'unavailable').length,
++    error: models.filter((model) => model.status === 'error').length,
++    active: models.filter((model) => model.status === 'active').length,
++  };
++  return { models, summary, provider: providerFilter };
++};
+diff --git a/packages/web/server/lib/openchamber-control/service.test.js b/packages/web/server/lib/openchamber-control/service.test.js
+index 3191b45..5a96a2e 100644
+--- a/packages/web/server/lib/openchamber-control/service.test.js
++++ b/packages/web/server/lib/openchamber-control/service.test.js
+@@ -390,6 +390,45 @@ describe('OpenChamber control service', () => {
+     expect(older.models.map(({ id }) => id)).toEqual(['z/glm-5.2']);
+   });
+ 
++  it('reports live status for chat-completions providers and catalog status for the rest', async () => {
++    const catalogModel = (providerID, id, status = 'active') => ({
++      providerID, id, modelID: id, name: id, time: { released: 1 }, variants: [], cost: [], status,
++    });
++    const { service, client } = createService();
++    client.model = { list: vi.fn(async () => ({ data: [
++      catalogModel('gw', 'alive'), catalogModel('gw', 'dead'), catalogModel('plain', 'catalog-only', 'beta'),
++    ] })) };
++    client.plugin = { list: async () => ({ data: [{ state: { status: 'active' } }] }) };
++    client.provider = { list: vi.fn(async () => ({ data: [
++      { id: 'gw', name: 'Gateway', package: 'aisdk:@ai-sdk/openai-compatible', settings: { baseURL: 'http://gw.test/v1', apiKey: '{env:GW_TEST_KEY}' } },
++      { id: 'plain', name: 'Plain', package: 'aisdk:@ai-sdk/anthropic' },
++    ] })) };
++    vi.stubEnv('GW_TEST_KEY', 'secret');
++    const fetchMock = vi.fn(async (url, init) => {
++      const model = JSON.parse(init.body).model;
++      if (model === 'dead') {
++        return new Response(JSON.stringify({ error: { message: 'model not found' } }), { status: 404 });
++      }
++      expect(url).toBe('http://gw.test/v1/chat/completions');
++      expect(init.headers.authorization).toBe('Bearer secret');
++      return new Response('{}', { status: 200 });
++    });
++    vi.stubGlobal('fetch', fetchMock);
++    try {
++      const result = await service.execute('models.status', {}, '/repo');
++      expect(result.models).toEqual([
++        { providerID: 'gw', modelID: 'alive', name: 'alive', status: 'active', detail: null, catalogStatus: 'active' },
++        { providerID: 'gw', modelID: 'dead', name: 'dead', status: 'unavailable', detail: 'model not found', catalogStatus: 'active' },
++        { providerID: 'plain', modelID: 'catalog-only', name: 'catalog-only', status: 'beta', detail: null, catalogStatus: 'beta' },
++      ]);
++      expect(result.summary).toEqual({ total: 3, unavailable: 1, error: 0, active: 1 });
++      expect(fetchMock).toHaveBeenCalledTimes(2);
++    } finally {
++      vi.unstubAllGlobals();
++      vi.unstubAllEnvs();
++    }
++  });
++
+   it('maps schedule creation into the shared scheduled-task service', async () => {
+     const { service, scheduledTaskService } = createService();
+     scheduledTaskService.upsert.mockResolvedValue({ task: { id: 'task-1' }, created: true });
+diff --git a/packages/web/server/lib/openchamber-control/service.ts b/packages/web/server/lib/openchamber-control/service.ts
+index 2bbfd65..161906d 100644
+--- a/packages/web/server/lib/openchamber-control/service.ts
++++ b/packages/web/server/lib/openchamber-control/service.ts
+@@ -12,7 +12,7 @@ import { createPageAnswers, createRenderPageAction, isAgentPrompt } from './rend
+ import { completeFormAnswer } from './form-answer.js';
+ import { createImageGenerationAction } from './generate-image.js';
+ import { createSecretRequests } from './secret-request.js';
+-import { createUsageReadAction } from './usage-read.js';
++import { createUsageReadAction } from './usage-read.js'; import { createModelsStatusAction } from './models-status.js';
+ import { createTerminalReadAction } from './terminal-read.js';
+ import { runWaitAction } from './waits.js';
+ import { readLocationCatalog } from '../opencode/location-plugins.js';
+@@ -1260,7 +1260,7 @@ export const createOpenChamberControlService = (dependencies: ControlDependencie
+       }
+       if (action === 'projects.list') return { projects: await projects() };
+       if (action === 'models.list') return models();
+-      if (action === 'models.search') return searchModels(input, contextDirectory);
++      if (action === 'models.search' || action === 'models.status') return action === 'models.status' ? createModelsStatusAction({ getClient })(input, contextDirectory) : searchModels(input, contextDirectory);
+       if (action === 'schedule.status') return scheduledTaskService.status();
+       if (action.startsWith('schedule.')) {
+         const taskID = asNonEmptyString(input.taskId);
+diff --git a/packages/web/server/lib/self-update/openchamber-routes.test.js b/packages/web/server/lib/self-update/openchamber-routes.test.js
+index a676ad9..3628350 100644
+--- a/packages/web/server/lib/self-update/openchamber-routes.test.js
++++ b/packages/web/server/lib/self-update/openchamber-routes.test.js
+@@ -30,6 +30,7 @@ const createApp = ({
+   plistExists = false,
+   openCodeVersion = '2.2.6',
+   uid = 1000,
++  controlService,
+ } = {}) => {
+   const app = express();
+   const dependencies = {
+@@ -76,6 +77,7 @@ const createApp = ({
+     getCachedZenModels: vi.fn(),
+     desktopUpdater,
+     getOpenCodeCompatibility: vi.fn(async () => ({ version: openCodeVersion })),
++    controlService,
+   };
+ 
+   registerOpenChamberRoutes(app, dependencies);
+@@ -738,3 +740,27 @@ describe('OpenChamber web update route on Windows', () => {
+     expect(logError).toHaveBeenCalledOnce();
+   });
+ });
++
++describe('OpenChamber models status route', () => {
++  it('returns the control service result and forwards the provider filter', async () => {
++    const result = {
++      models: [{ providerID: 'litellm', modelID: 'gpt-4o', name: 'GPT-4o', status: 'active', detail: null, catalogStatus: 'active' }],
++      summary: { total: 1, unavailable: 0, error: 0, active: 1 },
++      provider: 'litellm',
++    };
++    const execute = vi.fn(async () => result);
++    const { app } = createApp({ controlService: { execute } });
++
++    const response = await request(app).get('/api/openchamber/models/status?provider=litellm').expect(200);
++
++    expect(execute).toHaveBeenCalledWith('models.status', expect.objectContaining({ provider: 'litellm' }), '');
++    expect(response.body).toEqual(result);
++  });
++
++  it('answers 503 when the control service is not wired', async () => {
++    const { app } = createApp();
++    await request(app).get('/api/openchamber/models/status').expect(503, {
++      error: 'Model status is not available on this server',
++    });
++  });
++});
+diff --git a/packages/web/server/lib/self-update/openchamber-routes.ts b/packages/web/server/lib/self-update/openchamber-routes.ts
+index 7e8f784..b5c03c8 100644
+--- a/packages/web/server/lib/self-update/openchamber-routes.ts
++++ b/packages/web/server/lib/self-update/openchamber-routes.ts
+@@ -7,6 +7,7 @@ import type { JsonValue } from '../shared/json-values.js';
+ import type { UpdateCheckResult } from '../package-manager.js';
+ import type { DesktopUpdater } from '../../index.js';
+ import type { createNotificationTemplateRuntime } from '../notifications/template-runtime.js';
++import type { createOpenChamberControlService } from '../openchamber-control/service.js';
+ import { isString } from '../shared/object-guards.js';
+ 
+ export interface OpenChamberRouteDependencies {
+@@ -24,6 +25,7 @@ export interface OpenChamberRouteDependencies {
+   getCachedZenModels: ReturnType<typeof createNotificationTemplateRuntime>['getCachedZenModels'];
+   desktopUpdater?: DesktopUpdater | null | undefined;
+   getOpenCodeCompatibility: () => Promise<{ version: string | null }>;
++  controlService?: Pick<ReturnType<typeof createOpenChamberControlService>, 'execute'> | null | undefined;
+ }
+ 
+ type RouteUpdateInfo = Omit<UpdateCheckResult, 'currentVersion' | 'body'> & {
+@@ -107,6 +109,7 @@ export const registerOpenChamberRoutes = (app: Application, dependencies: OpenCh
+     getCachedZenModels,
+     desktopUpdater,
+     getOpenCodeCompatibility,
++    controlService,
+   } = dependencies;
+ 
+   let desktopRestartError: string | null = null;
+@@ -578,6 +581,20 @@ export const registerOpenChamberRoutes = (app: Application, dependencies: OpenCh
+     }
+   });
+ 
++  app.get('/api/openchamber/models/status', async (req, res) => {
++    if (!controlService) {
++      return res.status(503).json({ error: 'Model status is not available on this server' });
++    }
++    try {
++      const data = await controlService.execute('models.status', req.query, '');
++      return res.json(data);
++    } catch (error) {
++      console.warn('Failed to read model status via server:', error);
++      const statusCode = hasErrorName(error) && (error.name === 'TimeoutError' || error.name === 'AbortError') ? 504 : 502;
++      return res.status(statusCode).json({ error: 'Failed to retrieve model status' });
++    }
++  });
++
+   app.get('/api/zen/models', async (_req, res) => {
+     try {
+       const models = await fetchFreeZenModels();
+diff --git a/packages/web/server/lib/server-frame/bootstrap-runtime.ts b/packages/web/server/lib/server-frame/bootstrap-runtime.ts
+index 250723b..6771611 100644
+--- a/packages/web/server/lib/server-frame/bootstrap-runtime.ts
++++ b/packages/web/server/lib/server-frame/bootstrap-runtime.ts
+@@ -127,6 +127,7 @@ export const createBootstrapRuntime = (dependencies: BootstrapDependencies) => {
+       pluginNotificationEmitter,
+       desktopUpdater,
+       getOpenCodeCompatibility,
++      controlService,
+       skipBodyParsing,
+     } = options;
+ 
+@@ -235,6 +236,7 @@ export const createBootstrapRuntime = (dependencies: BootstrapDependencies) => {
+       getCachedZenModels,
+       desktopUpdater,
+       getOpenCodeCompatibility,
++      controlService,
+     });
+ 
+     registerExternalBridgeRoutes?.(app);
+diff --git a/packages/web/server/runtime.ts b/packages/web/server/runtime.ts
+index 070a017..d1b9e7a 100644
+--- a/packages/web/server/runtime.ts
++++ b/packages/web/server/runtime.ts
+@@ -2775,7 +2775,7 @@ async function main(options: WebUiServerOptions = {}) {
+     limitFailoverRuntime,
+     registerExternalBridgeRoutes: (expressApp) => managedConfigRuntime?.registerExternalBridgeRoutes(expressApp, sessionKnowledgeRuntime.isToolHost),
+     desktopUpdater,
+-    getOpenCodeCompatibility,
++    getOpenCodeCompatibility, controlService: openChamberControlService,
+     skipBodyParsing: (req) => spacesHost?.skipsBodyParsing(req) === true,
+   });
+   uiAuthController = bootstrapResult.uiAuthController;
+-- 
+2.53.0
+
