@@ -1,7 +1,7 @@
 id: devin-bank-distill-oauth-token-type
 title: devin-bank-distill fails — ACCESS_TOKEN_TYPE_UNSUPPORTED (Google OAuth)
 column: doing
-updated: 2026-11-25 10:39
+updated: 2026-11-25 10:48
 priority: low
 tags:
 - oauth
@@ -206,6 +206,12 @@ comms:
     needs LITELLM_KEY_BENCH/CHABA env or litellm-keys.env — t; no chaba-audit.service/chaba-audit-full.service entries
     exist in ssot.audit.host; [ada-consultant-tier] auto-merge not done: push: To github.com:tonezzz/chaba.git;
     [ada-ha-dashboard-live-view-drift] auto-merge not done: push:'
+- at: 2026-11-25 10:48
+  from: devin
+  text: 'diagnosed on tony-omen: not an OAuth-flow bug — ada-pi-pwa.env holds a stale GEMINI_API_KEY (AQ.Ab8RN6KKS…,
+    Sep 21) that Google rejects 401 ACCESS_TOKEN_TYPE_UNSUPPORTED. Same dead key also breaks ada-memory-rollup nightly.
+    Fixing key from local ada-paid slot + removing stale devin-bank-distill units (canonical job is on con01 per
+    ssot.jobs.yml).'
 action:
   type: dispatch
   status: running
