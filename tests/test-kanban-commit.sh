@@ -664,6 +664,57 @@ check "L3: fold sidecar consumed" \
 check "L3: orphan sidecar (deleted canonical) kept for review" \
   "ls '$TMP/served/docs/ssot/kanban/cards/card-pop2.yml.local-conflict-'* >/dev/null 2>&1"
 
+# --- M: autostash-pop conflict on a non-generated code file -----------
+# exec-sync-autostash-conflict-codefile (incident 2026-11-09): a dirty
+# tracked code file whose autostash pop conflicts used to keep
+# <<<<<<< markers in the live worktree — a SyntaxError for the systemd
+# job executing it — while safe-pull still exited 0 and chaba-repo-sync
+# reported success. Now the stash side is preserved as a
+# .local-conflict-* sidecar, the file resolves to HEAD (valid code),
+# the autostash stays retained for manual recovery, and the run exits
+# non-zero so the sync surfaces the manual-merge debt.
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  printf 'print("upstream-v1")\n' > tool.py
+  git add tool.py && git commit -qm "other: add tool.py v1" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+# the raced dirty write — uncommitted, exactly what autostash covers
+printf 'print("local-dirty")\n' > "$TMP/served/tool.py"
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  printf 'print("upstream-v2")\n' > tool.py
+  git commit -qam "other: tool.py v2" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/m.err"; rc_m=$?
+TOOLF="$TMP/served/tool.py"
+check "M: safe-pull exits non-zero when manual merge required" \
+  "[ $rc_m -ne 0 ]"
+check "M: failure logged for the non-generated pop conflict" \
+  "grep -q 'non-generated path tool.py' '$TMP/m.err'"
+check "M: no conflict markers left in the live code file" \
+  "! grep -qE '^(<{7}|={7}|>{7})' '$TOOLF'"
+check "M: file resolved to upstream (valid code)" \
+  "grep -q 'upstream-v2' '$TOOLF'"
+check "M: resolved file still compiles (no SyntaxError)" \
+  "python3 -m py_compile '$TOOLF'"
+check "M: stash side preserved as .local-conflict sidecar" \
+  "ls '$TMP/served/tool.py.local-conflict-'* >/dev/null 2>&1 && grep -q 'local-dirty' '$TMP/served/tool.py.local-conflict-'*"
+check "M: autostash retained for manual recovery" \
+  "git -C '$TMP/served' stash list | grep -qi autostash"
+check "M: HEAD contains upstream despite the failure" \
+  "git -C '$TMP/served' merge-base --is-ancestor origin/master HEAD"
+check "M: no unmerged entries left behind" \
+  "[ -z \"\$(git -C '$TMP/served' diff --name-only --diff-filter=U)\" ]"
+# keep the tree converged — drop the retained autostash + sidecars so a
+# later section (or a re-run) starts clean
+git -C "$TMP/served" stash drop -q 'stash@{0}' 2>/dev/null || true
+rm -f "$TMP/served/tool.py.local-conflict-"* 2>/dev/null || true
+
 echo
 echo "passed: $PASS  failed: $FAIL"
 [ $FAIL -eq 0 ]
