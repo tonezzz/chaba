@@ -1,7 +1,7 @@
 id: litellm-ledger-timer-enable
 title: Enable the litellm-ledger timer on idc03
-column: doing
-updated: 2026-11-25 10:55
+column: done
+updated: 2026-11-25 10:56
 spec: The published spend ledger (source ada-cms-pages/llm-gateway-spend-ledger) is stale — the report age was ~11.8
   days as of 2026-11-13, and litellm-ledger.timer is 'kept disabled until branch merges'. Enable litellm-ledger.timer
   so scripts/litellm/daily-ledger.py publishes daily from LiteLLM_SpendLogs to the CMS page. DONE when the timer
@@ -10,11 +10,12 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-25 10:55
+  verified: true
 ref: OPS-1361
 comms:
 - at: 2026-11-25 09:29
@@ -86,5 +87,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-103147-the-published-spend-ledger-sou no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'merge-sweep: merged aff9d182 (dispatch/20261125-103147-the-published-spend-ledger-sou from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-103147-the-published-spend-ledger-sou.md)
+    — auto-closed'
+- at: 2026-11-25 10:56
+  from: local
+  text: 'pub milestone: card verified: litellm-ledger-timer-enable on idc03 — merged aff9d182 (dispatch/20261125-103147-the-published-spend-ledger-sou
+    from idc02) -> origin/master — verified — auto- — merged aff9d182 (dispatch/20261125-103147-the-published-spend-ledger-sou
+    from idc02) -> origin/master — verified — auto-closed [evt-db694edcce294412]'
 claim:
   since: 2026-11-25 10:31
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 10:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-103147-the-published-spend-ledger-sou.md
