@@ -1,7 +1,7 @@
 id: timer-alert-idc02-kk-mac-model-status
 title: Timer kk-mac-model-status on idc02 failing
 column: backlog
-updated: 2026-11-25 07:56
+updated: 2026-11-25 09:09
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:09
+  from: devin
+  text: 'root cause found via nest-mgr-v2 soak review: unit is a static oneshot (1min timer) whose ExecStart points
+    at ~/CascadeProjects/chaba/scripts/devnest/kk_mac_model_status.py — that file does not exist in the repo or
+    on idc02 checkout (never committed or removed). Every run exits 2/INVALIDARGUMENT. Not a kk-mac reachability
+    issue — python cannot open the file at all. Fix = write the script + commit, or remove the orphaned unit+timer
+    on idc02. nest-mgr correctly refuses to auto-restart it (not-allo'

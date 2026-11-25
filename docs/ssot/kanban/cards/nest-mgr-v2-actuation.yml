@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-25 09:04
+updated: 2026-11-25 09:09
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -352,6 +352,13 @@ comms:
     was a linked unit running a stale scripts/-only ; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2,
     tony-omen). Done-condi; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; SSOT
     `known_failed[].action` is documentation-only — audit-ho'
+- at: 2026-11-25 09:09
+  from: devin
+  text: 'dispatch picked up (tony-dell). Phase 0 verified intact: c4a7ab375bb is ancestor, installed binary on idc02/con01/mn01
+    == landed commit exactly (md5 affd0aeb, no drift), all in recommend mode. Harvested ~6d soak: idc02 135 held
+    + kk-mac-model-status genuinely failed (orphaned unit, script missing — separate card OPS-1348); con01 15 held
+    (jev-bench, now parked); mn01 quiet. Found+fixed v2 defect: actuation.units never pruned — ghost ada-code.service
+    on idc02 + stale held residue. Ghost-prune + he'
 action:
   type: dispatch
   status: running
