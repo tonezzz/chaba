@@ -1,7 +1,7 @@
 id: raceman-php-placement-decision
 title: Raceman PHP placement — restore on omen or retire backend
 column: doing
-updated: 2026-11-25 09:05
+updated: 2026-11-25 09:08
 priority: medium
 tags:
 - ssot
@@ -212,6 +212,13 @@ comms:
     was a linked unit running a stale scripts/-only ; [idle-qa-and-backups-idc] primer injected 8 lesson(s): no
     chaba-audit.service/ch; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-21 opencode] Re-verif; [rebuild-gesture-controls-using-yolo-190356]
     DONE (attempt on'
+- at: 2026-11-25 09:08
+  from: devin
+  text: 'Investigated live state 2026-11-25: raceman-php is ACTIVE on tony-dell since 2026-11-16 (card premise stale
+    — it was restarted). PHP is required: app JS calls api/{list,load,save,save-course}.php for course persistence.
+    dell php-fpm listens 0.0.0.0:9001, reachable from omen over tailnet, no allowed_clients restriction. omen nginx
+    still fastcgi_passes 127.0.0.1:9001 → api/list.php returns 502. Decision: path 2 — keep php on dell, repoint
+    omen nginx to 100.68.142.13:9001. Executing repoint now.'
 action:
   type: dispatch
   status: running
