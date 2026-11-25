@@ -1,7 +1,7 @@
 id: omen-battery-charge-policy
 title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
 column: done
-updated: 2026-11-25 07:51
+updated: 2026-11-25 14:43
 tags:
 - hardware
 - omen
@@ -369,6 +369,9 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:43
+  from: tony
+  text: 'answered automation-is-deployed-and-live-on-tony-e51f7a: have-one'
 action:
   type: dispatch
   status: done
@@ -432,7 +435,7 @@ requests:
     failsafe, zero cloud dependency. Tuya Smart Life also works (coffee/bedside pattern) but needs local-key extraction
     and tuya-control.py is currently erroring in HA logs. Sonoff/eWeLink is a third option. Once paired, tell me
     and I wire entity switch.omen_plug + power-on-state + move the brick.'
-  status: open
+  status: answered
   at: 2026-11-24 16:26
   from: devin
   options:
@@ -444,4 +447,5 @@ requests:
     label: Sonoff/eWeLink plug
   - id: have-one
     label: Already have a spare — will say which
+  answer: have-one
 review_kind: verify
