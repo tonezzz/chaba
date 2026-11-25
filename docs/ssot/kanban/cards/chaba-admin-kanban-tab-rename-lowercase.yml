@@ -1,7 +1,7 @@
 id: chaba-admin-kanban-tab-rename-lowercase
 title: Rename chaba-admin dashboard tab "Kanban" to lowercase "kanban"
-column: doing
-updated: 2026-11-25 15:29
+column: review
+updated: 2026-11-25 15:33
 brief: The kanban tab in the ada-ha chaba-admin Lovelace dashboard (url_path chaba-admin) shows title "Kanban".
   Tony wants lowercase "kanban" for consistency. Change views[path=kanban].title in lovelace.chaba_admin over the
   HA websocket (push-dashboard.py --mutate), then re-run scripts/home-assistant/sync-ada-ha-chaba-admin.py and commit
@@ -221,6 +221,35 @@ comms:
     Commits 87bd3c7947c + 92bd6f5f397 pushed on dispatch/20261125-150802-the-goal-is-to-rename-the-chab. (2) Runner
     fleet: all 8 hosts installed+checkout ref now sha256 1514c75c (canonical pin). Repaired tony-macbook (6 empty
     git objects +'
+- at: 2026-11-25 15:33
+  from: tony-dell
+  text: 'finished (ok): exit=0 f-update — re-adding it is a credential change left for Tony. | devin-task-20261125-150802-the-goal-is-to-rename-'
+- at: 2026-11-25 15:33
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:33
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-150802-the-goal-is-to-rename-the-chab'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 15:33
+  from: chaba
+  text: banked 675 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 15:33
+  from: chaba
+  text: pushed dispatch/20261125-150802-the-goal-is-to-rename-the-chab to origin
+- at: 2026-11-25 15:33
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 15:33
+  from: chaba
+  text: auto-merged a4847df9 (dispatch/20261125-150802-the-goal-is-to-rename-the-chab) → origin/master
+- at: 2026-11-25 15:33
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: The goal is to rename the chaba-admin dashboard tab from "Kanban" to lowercase "kanban" within the chaba repository
   on a suitable runner host. Runners must first be synchronized with the latest runner-agent script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
   before execution. Constraints include verifying that all runner agents are updated to prevent drift issues reported
@@ -228,10 +257,14 @@ spec: The goal is to rename the chaba-admin dashboard tab from "Kanban" to lower
   updated to lowercase "kanban" and the code changes are committed and pushed.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 f-update — re-adding it is a credential change left for Tony. | devin-task-20261125-150802-the-goal-is-to-rename-the-chab.service:
+    Consumed 5min 35.234s CPU time over 21min 23.997s wall clock time, 1.3G memory peak, 822.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 15:07
+review_kind: verify
