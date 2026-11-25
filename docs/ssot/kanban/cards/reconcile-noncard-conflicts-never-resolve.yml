@@ -1,7 +1,7 @@
 id: reconcile-noncard-conflicts-never-resolve
 title: 'reconcile-local-conflicts: non-card .local-conflict files never fold back — re-flagged every run'
 column: doing
-updated: 2026-11-25 14:44
+updated: 2026-11-25 14:54
 priority: low
 tags:
 - git-safe-pull
@@ -208,6 +208,13 @@ comms:
     at 24h, but ORPHANS (focus-inbox entries moved to processed/ = no canonical) still re-flag forever, and deduped
     flags still print stderr+count leftover every run. Plan: orphan quarantine TTL (~7d, archive preserves the only
     copy) + quiet dedup so second run is silent.'
+- at: 2026-11-25 14:54
+  from: devin
+  text: 'DONE on dispatch branch (c87fc3a + outcome doc). Implemented card options (b)+(c): orphan non-card conflicts
+    now quarantine to ~/.local/share/chaba-reconcile-archive after NONCARD_ORPHAN_TTL_S (7d, env RECONCILE_NONCARD_ORPHAN_TTL_S)
+    — archive preserves the only copy; and flag_card returns a status so already-flagged files go fully quiet (no
+    stderr, no leftover, rc 0) inside the 48h dedup window. Card (.yml) conflict paths unchanged/loud. Verified:
+    selftest OK, pytest 6/6, scratch-repo e2e — run'
 action:
   type: dispatch
   status: running
