@@ -11,7 +11,7 @@ help: "1. dash.cloudflare.com → \"Add site\" → enter your domain → Free pl
   DNS only (grey)  — anything only tailnet/ssh should reach.\n7. SSL/TLS → set \"Full\" (upgrade to \"Full (strict)\"
   once the origin serves valid TLS).\nOptional later: `cloudflared` tunnel = public HTTPS with ZERO open ports on
   the VPS.\nDone when: DNS resolves + you can say which records are proxied vs grey. Then idc-vps-game unblocks."
-updated: 2026-11-25 07:50
+updated: 2026-11-25 16:50
 ref: OPS-0005
 comms:
 - at: 2026-10-11 08:35
@@ -173,4 +173,8 @@ comms:
 - at: 2026-11-25 07:50
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

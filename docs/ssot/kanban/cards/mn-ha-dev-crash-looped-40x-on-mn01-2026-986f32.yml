@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
 column: doing
-updated: 2026-11-25 15:47
+updated: 2026-11-25 16:50
 priority: medium
 tags:
 - mn01
@@ -57,6 +57,10 @@ comms:
     [still suspicious] Last run (11-11 07:45; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run
     (11-25 09:58; [devin-session-audit-2026-10-29] finished (failed): journal=exit-code -20261120-; [devin-session-audit-2026-10-29]
     finished (failed): journal=e'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: running
