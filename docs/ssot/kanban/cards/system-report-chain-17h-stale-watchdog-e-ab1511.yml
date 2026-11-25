@@ -256,6 +256,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-190933-fix-the-stuck-system-report-ch no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-25 19:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-190933-fix-the-stuck-system-report-ch on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
@@ -271,5 +275,6 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-25 19:54
+    dirty: 2
 claim:
   since: 2026-11-25 19:08
