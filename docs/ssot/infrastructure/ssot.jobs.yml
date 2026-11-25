@@ -1014,11 +1014,16 @@ jobs:
   on_calendar: hourly
   persistent: true
   timeout: 10m
-  exec: /usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
+  exec: /usr/bin/podman run --rm --name yomi-update-all -e HOME=/home/tony -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
     --add-host postgre:100.102.134.91 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
     node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs
-  note: podman one-shot; moved to idc03 2026-10-19 w/ pg constellation — postgre alias = idc03 tailnet IP
+  note: 'podman one-shot; moved to idc03 2026-10-19 w/ pg constellation — postgre
+    alias = idc03 tailnet IP. -e HOME=/home/tony (2026-11-25, OPS-1398): the
+    container runs as root so homedir()=/root and yomi resolves its data dir to
+    /root/.local/share/yomi — unmounted, empty — every LINE call failed with
+    "no_saved_auth_token"/resume_failed and 0 rows were written even though
+    ~/.local/share/yomi/line-credentials.json exists on the host.'
 - id: xiaomi-token-refresh
   name: Xiaomi Token Refresh
   host: tony_omen
@@ -1062,7 +1067,7 @@ jobs:
   dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 15m
   timeout: 120s
-  exec: /usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
+  exec: /usr/bin/podman run --rm --name yomi-update-active -e HOME=/home/tony --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
     docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs
   note: 'podman one-shot. dispatcher->systemd 2026-10-29 (OPS-0790) — the

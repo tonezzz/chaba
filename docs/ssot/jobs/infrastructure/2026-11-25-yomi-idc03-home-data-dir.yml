@@ -1,0 +1,80 @@
+title: "idc03 yomi LINE session — two-layer failure: expired LINE token AND podman HOME=/root hiding credentials"
+subtitle: "Kanban card yomi-line-session-expired-idc03 (OPS-1398, found during OPS-1382) — plumbing fixed and verified live; re-login is a Tony-phone gate"
+icon: plug
+
+planning:
+  goal: Restore yomi-update-all on idc03 so it writes >0 conversation/message rows to Postgres again.
+  scope: "idc03 yomi units (yomi-update-all, yomi-update-active, yomi-api), ssot.jobs.yml, LINE credential state. Out of scope: fleet-wide credential rotation policy."
+  owner: devin (dispatch on tony-macbook)
+  related_focus:
+    - label: yomi-line-session-expired-idc03
+      file: docs/ssot/kanban/cards/yomi-line-session-expired-idc03.yml
+
+processing:
+  status: blocked-on-tony
+  started_at: 2026-11-25T16:05:00+07:00
+  steps:
+    - id: 1
+      label: Reproduce and isolate failure layer
+      status: completed
+      notes: >-
+        journalctl showed "session.restore.skip reason=no_saved_auth_token"
+        every run since at least 2026-11-22 (journal vacuumed earlier). Root
+        cause #1 found: the podman one-shots run as container-root, so
+        os.homedir()=/root and yomi's data-dir resolver
+        (~/.yomi/mcpb/dist/util/data-dir.js, honours YOMI_DATA_DIR) points at
+        /root/.local/share/yomi — unmounted and empty — despite
+        -v %h/.local/share/yomi being mounted at /home/tony/.local/share/yomi.
+        Verified by re-running update-conversations.mjs manually with
+        -e HOME=/home/tony: credentials were found (session.restore.start,
+        e2ee.keys.imported) and the failure moved to genuine LINE auth.
+    - id: 2
+      label: Fix plumbing (HOME) — SSOT + live drop-ins
+      status: completed
+      notes: >-
+        docs/ssot/infrastructure/ssot.jobs.yml: added `-e HOME=/home/tony` to
+        yomi-update-all and yomi-update-active exec lines (rides the normal
+        dispatch merge + unit re-render). On idc03, added interim drop-ins
+        ~/.config/systemd/user/yomi-update-{all,active}.service.d/home.conf
+        overriding ExecStart with the same flag (comment says remove after
+        re-render), plus HOME=/home/tony appended to
+        ~/.config/yomi/yomi-api.env (yomi-api.service is a hand unit, not in
+        ssot.jobs.yml) and restarted it — /api/yomi/session-status now
+        responds {"valid":false,...,"canAttemptLogin":true} instead of
+        failing inside the container.
+    - id: 3
+      label: LINE re-login
+      status: blocked
+      notes: >-
+        With plumbing fixed, the Sep-2 line-credentials.json (identical
+        fleet-wide copy on idc03/idc02/tony-dell; tony-omen has an older Aug-26
+        one) is found but LINE rejects it: "Access token refresh required"
+        on getProfile/getMessageBoxes — refresh token also dead. Local yomi
+        MCP on tony-macbook fails identically, so no host holds a live
+        session. Passwordless re-login needs Tony's phone (PIN + approve,
+        ~3 min window; pwless patch x-lst=180000 already applied on idc03).
+        Command for Tony: `ssh idc03` then
+        `node /home/tony/.yomi/mcpb/run.mjs login --phone +66809006872 --region TH`
+        (or `npx @rikaidev/yomi login` anywhere and copy the resulting
+        line-credentials.json to the other hosts — files are fleet-shared).
+    - id: 4
+      label: Verify >0 rows
+      status: pending
+      notes: >-
+        After login, credentials refresh in ~/.local/share/yomi on idc03;
+        drop-ins already live so the next hourly yomi-update-all (or
+        `systemctl --user start yomi-update-all.service`) should log
+        session.resumed + Wrote N>0 conversations/message chats. Then remove
+        the two .d/home.conf drop-ins once ssot.jobs.yml re-render lands.
+
+deliverables:
+  - docs/ssot/infrastructure/ssot.jobs.yml (HOME=/home/tony on both yomi podman execs)
+  - idc03: ~/.config/systemd/user/yomi-update-all.service.d/home.conf
+  - idc03: ~/.config/systemd/user/yomi-update-active.service.d/home.conf
+  - idc03: ~/.config/yomi/yomi-api.env (HOME=/home/tony) + yomi-api restarted
+
+verification: |
+  ssh idc03 'journalctl --user -u yomi-update-all.service -n 30 --no-pager'
+  — after re-login expect "[Yomi] INFO session.resumed" and
+  "Wrote N conversations to Postgres" with N>0; yomi-refresh-active stops
+  reporting "No active Yomi chats".
