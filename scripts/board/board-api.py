@@ -77,7 +77,7 @@ Endpoints (after prefix strip):
       path "yes to the disk card" lands on the Yes option). Sets
       ask.status=answered + answer + answered_at, writes the resolved
       label to comms.
-  POST /comment  {id, from, text}    from: devin|ada|chaba|tony
+  POST /comment  {id, from, text}    from: devin|ada|chaba|tony|consultant
       {request_id?} stamps the comms entry so a retry after a client
       timeout dedupes instead of double-posting; without one, the same
       (from, text) inside BOARD_API_COMMENT_DEDUP_S (default 120s) also
@@ -314,7 +314,7 @@ LOCK_SLOW_S = float(os.environ.get("BOARD_API_LOCK_SLOW_S", "5"))
 # back-to-back queued writers for minutes).
 LOCK_REPO_SENTINEL = Path(str(LOCK) + ".repo")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
-ACTORS = {"devin", "ada", "chaba", "tony"}
+ACTORS = {"devin", "ada", "chaba", "tony", "consultant"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish", "archive", "unarchive"}
 
@@ -6920,6 +6920,15 @@ def _selftest() -> None:
     do_request(card, {"ask": "ada check this", "from": "devin", "to": "ada"})
     r2 = card["requests"][-1]
     assert r2["to"] == "ada" and not request_needs_notify(r2)
+    # consultant lane (ada-consultant-tier): valid target, quiet by design —
+    # only to:tony pushes the notify
+    do_request(card, {"ask": "boundary call", "from": "ada",
+                      "to": "consultant"})
+    r3 = card["requests"][-1]
+    assert r3["to"] == "consultant" and not request_needs_notify(r3)
+    do_respond(card, {"request_id": r3["id"], "from": "consultant",
+                      "answer": "verdict: keep it open"}, "consultant")
+    assert card["requests"][-1]["status"] == "answered"
     # batched summary format
     assert "•" in _req_line("c1", {"ask": "q" * 100,
                                    "options": [{"id": "a", "label": "A"}]})

@@ -6,16 +6,16 @@ jobs:
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
+  - id: ada-jobs-consultant
+    schedule: "*-*-* *:7,37:00"
+    dispatch: "systemd"
+    persistent: true
   - id: ada-jobs-verify
     schedule: "*-*-* *:0/30:00"
     dispatch: "systemd"
     persistent: true
   - id: ada-memory-merge-proposals
     schedule: "Sun *-*-* 10:30:00"
-    dispatch: "systemd"
-    persistent: true
-  - id: ada-morning-brief
-    schedule: "*-*-* 07:35:00"
     dispatch: "systemd"
     persistent: true
   - id: ada-nest-heartbeat-idc03
@@ -121,9 +121,6 @@ jobs:
     schedule: "*-*-* 04:20:00"
     dispatch: "systemd"
     persistent: true
-  - id: devin-dispatch-tg-watch
-    schedule: "every 5m"
-    dispatch: "systemd"
   - id: embed-lane-lessons
     schedule: "every 1d"
     dispatch: "systemd"
@@ -158,9 +155,6 @@ jobs:
   - id: log-shipper-severe
     schedule: "every 1h"
     dispatch: "systemd"
-  - id: mcp-fleet-report
-    schedule: "every 24h"
-    dispatch: "systemd"
   - id: media-inbox-update-kk
     schedule: "every 15m"
     dispatch: "systemd"
@@ -188,10 +182,6 @@ jobs:
     schedule: "*-*-* 07,19:20:00"
     dispatch: "systemd"
     persistent: true
-  - id: scenario-runner-drift-check
-    schedule: "hourly"
-    dispatch: "systemd"
-    persistent: true
   - id: served-checkout-watchdog
     schedule: "hourly"
     dispatch: "systemd"
@@ -208,20 +198,12 @@ jobs:
     schedule: "*-*-* 07:40:00"
     dispatch: "systemd"
     persistent: true
-  - id: wiki-talk-watch
-    schedule: "*-*-* *:07/15:00"
-    dispatch: "systemd"
-    persistent: true
   - id: wp-comment-sync
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
   - id: wp-lane-timeline
     schedule: "every 15m"
-    dispatch: "systemd"
-    persistent: true
-  - id: wp-news-morning-brief
-    schedule: "*-*-* 08:00:00"
     dispatch: "systemd"
     persistent: true
   - id: wp-news-situation
