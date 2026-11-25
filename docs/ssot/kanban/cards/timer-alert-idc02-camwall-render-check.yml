@@ -1,7 +1,7 @@
 id: timer-alert-idc02-camwall-render-check
 title: Timer camwall-render-check on idc02 disabled
 column: backlog
-updated: 2026-11-25 08:45
+updated: 2026-11-25 09:04
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,7 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:04
+  from: devin
+  text: '[still suspicious] `camwall-render-check.timer` on `idc02` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now camwall-render-check.timer`. See CMS `timer-timeline`.'
