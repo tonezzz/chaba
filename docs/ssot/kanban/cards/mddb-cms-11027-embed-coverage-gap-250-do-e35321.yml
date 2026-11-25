@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
-column: review
-updated: 2026-11-25 14:03
+column: backlog
+updated: 2026-11-25 14:09
 priority: medium
 tags:
 - mddb
@@ -175,17 +175,23 @@ comms:
 - at: 2026-11-25 14:03
   from: tony
   text: moved done -> review
+- at: 2026-11-25 14:09
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-25 14:09
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0 ull details in `dispatch-outcome-20261125-101035-found-by-cms-plane-bge-golden-.md`. | devin-task-20261125-101035-found-by-cms-plane-bge-golden-.service:
     Consumed 1min 13.514s CPU time over 32min 33.891s wall clock time, 438.2M memory peak.'
-  verified: false
   sweep:
     stale_running: 2026-11-25 10:56
     dirty: 2
@@ -205,4 +211,5 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-25 queue
 review_kind: verify
