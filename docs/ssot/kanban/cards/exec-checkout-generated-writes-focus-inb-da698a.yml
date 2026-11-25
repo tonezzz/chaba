@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: doing
-updated: 2026-11-25 20:54
+column: backlog
+updated: 2026-11-25 20:55
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -361,20 +361,31 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-125447-goal-generated-writes-from-non on mn01 still dirty —
     30 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 20:55
+  from: mn01
+  text: 'finished (failed): exit=1 261125-125447-goal-generated-writes-from-non.service: Failed with result ''exit-code''.
+    | devin-task-20261125-12544 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 20:55
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261125-125447-goal-generated-writes-from-non (throttl) — mn01
+    holds new claims ~30m
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 drift (mn01 ~145, dell ~431 inbox files) still needs a separate cleanup decision. | devin-task-20261125-154351-goal-generated-writes-from-non.service:
-    Consumed 4min 35.055s CPU time over 3h 19min 37.065s wall clock time, 561.6M memory peak.'
+  result: 'exit=1 261125-125447-goal-generated-writes-from-non.service: Failed with result ''exit-code''. | devin-task-20261125-125447-goal-generated-writes-from-non.service:
+    Consumed 2min 8.634s CPU time over 59min 17.276s wall clock time, 497.5M memory peak.'
   sweep:
     no_repo: 2026-11-25 19:09
     stale_running: 2026-11-25 19:54
     dirty: 30
   runner: mn01
+  last_failure: 'exit=1 261125-125447-goal-generated-writes-from-non.service: Failed with result ''exit-code''.
+    | devin-task-20261125-125447-goal-generated-writes-from-non.service: Consumed 2min 8.634s CPU time over 59min
+    17.276s wall clock time, 497.5M memory peak.'
 claim:
   since: 2026-11-25 19:53
 review_kind: verify
