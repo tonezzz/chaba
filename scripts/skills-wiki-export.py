@@ -68,6 +68,19 @@ REPOS = [
     },
 ]
 
+BENCHMARK = {
+    "name": "info-find efficiency A/B",
+    "ref": "PR #219 — evals/info-find-efficiency/",
+    "result": "8 offline tasks: direct grep 8/8 correct at ~92 narrow / 826 cross tokens vs info-find 0/8 at ~1700 tokens. Decision: keep info-find optional; no enforcement until routing improves. Card BEN-1359 closed.",
+}
+
+TOOLING = {
+    "name": "ansible-first",
+    "ref": "~/.claude/skills/ansible-first/SKILL.md",
+    "role": "Global OpenCode skill — advertised before each model step for host/fleet/deploy/restart/provision tasks",
+    "note": "30-second triage: skip for local/repo work; use board-api door for kanban/wiki/SSOT; check chaba ansible/ playbooks before ad-hoc SSH; --check --diff --limit, vault secrets, approval for disruptive plays.",
+}
+
 
 def _fm_block(text: str) -> str:
     if not text.startswith("---\n"):
@@ -203,6 +216,16 @@ def render_page(skills: list[dict], today: str, next_review: str,
         ])
     tail.extend([
         "|}", "",
+        "== Benchmarks ==",
+        "",
+        f"* '''{_cell(BENCHMARK['name'])}''' — {_cell(BENCHMARK['ref'])}: "
+        f"{_cell(BENCHMARK['result'])}",
+        "",
+        "== Related tooling ==",
+        "",
+        f"* '''{_cell(TOOLING['name'])}''' — {_cell(TOOLING['ref'])}: "
+        f"{_cell(TOOLING['role'])}. {_cell(TOOLING['note'])}",
+        "",
         "[[Category:Education]]",
         "[[Category:Education/Level/intro]]",
         "[[Category:Education/Status/open]]",
