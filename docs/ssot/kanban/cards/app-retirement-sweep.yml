@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
 column: done
-updated: 2026-11-25 07:50
+updated: 2026-11-25 14:32
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -276,6 +276,9 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:32
+  from: tony
+  text: 'answered job-input-app-retirement-sweep: answer'
 action:
   type: dispatch
   status: done
@@ -307,7 +310,7 @@ requests:
   executed: 2026-11-25 close
 - id: job-input-app-retirement-sweep
   ask: 'Job needs your input: Approve the app-retirement retire/keep list on card app-retirement-sweep?'
-  status: open
+  status: answered
   at: 2026-11-24 22:36
   from: chaba
   options:
@@ -317,3 +320,4 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+  answer: answer
