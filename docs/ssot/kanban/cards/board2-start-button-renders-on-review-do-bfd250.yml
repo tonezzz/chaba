@@ -1,7 +1,7 @@
 id: board2-start-button-renders-on-review-do-bfd250
 title: 'board2: Start button renders on review/done cards and re-queues verified work'
 column: doing
-updated: 2026-11-25 16:51
+updated: 2026-11-25 17:00
 priority: low
 tags:
 - board2
@@ -324,6 +324,16 @@ comms:
 - at: 2026-11-25 16:51
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: devin
+  text: 'done in dispatch worktree (commit 49ce84a): Start button now gates on column only — hidden in doing/done/verified/review
+    regardless of action.type, and on action.status verified. Also added modal write pending state (buttons disable+…
+    while board-api flock wait) and raised api() timeout 60s->300s for the ~5min convoy starvation. Verified: render-board2.py
+    regenerates clean (799 cards), node --check on emitted JS ok. Goes live on next chaba-board-render after merge.'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
