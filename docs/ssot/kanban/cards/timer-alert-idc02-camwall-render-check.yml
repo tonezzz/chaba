@@ -1,7 +1,7 @@
 id: timer-alert-idc02-camwall-render-check
 title: Timer camwall-render-check on idc02 disabled
 column: backlog
-updated: 2026-11-25 09:04
+updated: 2026-11-25 14:16
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,9 @@ comms:
   from: devin
   text: '[still suspicious] `camwall-render-check.timer` on `idc02` is disabled but expected active (audit census
     / critical list). Deliberate? If not: `systemctl --user enable --now camwall-render-check.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-25 14:16
+  from: tony
+  text: '2026-11-25 14:2x (+07): TRIAGE: policy decision, not a job bug. Unit is disabled by design (census entry
+    has no explicit expected_state, so sentinel treats absence as ''active''). MED-1351 was already auto-resolved/closed
+    once on 11-25 and reopened on the disabled condition. Need Tony to decide: either add expected_state: inactive
+    to the census, or enable the timer.'

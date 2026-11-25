@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-retention-dev
 title: Timer ada-retention-dev on idc03 failing
 column: backlog
-updated: 2026-11-25 10:24
+updated: 2026-11-25 14:16
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:57) of `ada-retention-dev.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u ada-retention-dev.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 14:16
+  from: tony
+  text: '2026-11-25 14:2x (+07): TRIAGE: shared code bug across four cards (ADA-1373 dev, ADA-1374 kk, ADA-1375
+    michael, ADA-1376 tony) - all four fail with the same ''TypeError: expected string or bytes-like object, got
+    tuple'' from the shared retention path. One code fix clears four timer-alert cards. Journal evidence pulled
+    2026-11-25 from idc03.'
