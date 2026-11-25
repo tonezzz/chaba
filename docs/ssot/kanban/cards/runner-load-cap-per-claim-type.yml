@@ -1,7 +1,7 @@
 id: runner-load-cap-per-claim-type
 title: runner-agent load gate is one-size-fits-all — trivial script probes starve with heavyweight claims
-column: doing
-updated: 2026-11-25 11:32
+column: review
+updated: 2026-11-25 11:34
 priority: medium
 tags:
 - runner-agent
@@ -280,16 +280,37 @@ comms:
     gap: verdict_pass /ready reported script cards blocked under partial overload while claim_pass claimed them
     — now mirrors the exception. +3 tests (46 green), pin bumped, job doc docs/ssot/jobs/board/2026-11-25-runner-load-cap-per-claim-type.yml.
     Committed on dispatch br'
+- at: 2026-11-25 11:34
+  from: mn01
+  text: 'finished (ok): exit=0 ush per dispatch rules — installed runners self-update from origin/master after merge.
+    | devin-task-20261125-0425'
+- at: 2026-11-25 11:34
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:34
+  from: chaba
+  text: 'session-end checkpoint b5775936: 1 leftover file(s) committed'
+- at: 2026-11-25 11:34
+  from: chaba
+  text: banked 645 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:34
+  from: chaba
+  text: pushed dispatch/20261125-042530-the-claim-pass-load-check-5m-l to origin
+- at: 2026-11-25 11:34
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:34
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
-    XDG_SESSION_TYPE ='x11' UID=1000 PID=3555875 PPID=3555788 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
-    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
+  result: 'exit=0 ush per dispatch rules — installed runners self-update from origin/master after merge. | devin-task-20261125-042530-the-claim-pass-load-check-5m-l.service:
+    Consumed 2min 57.271s CPU time over 7min 5.951s wall clock time, 460.1M memory peak.'
   last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
     XDG_SESSION_TYPE ='x11' UID=1000 PID=3555875 PPID=3555788 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
     SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT
@@ -297,5 +318,7 @@ action:
     stale_running: 2026-11-25 09:39
     dirty: 4
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 11:24
+review_kind: verify
