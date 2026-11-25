@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: doing
-updated: 2026-11-25 11:09
+updated: 2026-11-25 11:14
 priority: medium
 tags:
 - idc03
@@ -305,6 +305,13 @@ comms:
   text: attempt 2 picked up on mn01. Attempt-1 infra work already landed remotely (idc03 MemAvailable 6.5Gi); the
     only failure was a merge conflict on dispatch/20261125-090408 in scripts/ada/scenario-provider-gate.py. Tony
     answered resolve+land — merging that branch into this session branch now and resolving.
+- at: 2026-11-25 11:14
+  from: devin
+  text: 'DONE — conflict resolved, branch ready to land. Merged origin/dispatch/20261125-090408 into this session
+    branch (commit 53d9ef90db): kept BOTH master''s live_probe (zombie-backend) and the branch''s --live-url remote
+    mode, plus a semantic fix the textual merge missed — live_probe now skips in remote mode (provider_alive is
+    the liveness check; local ada-dev is intentionally stopped on idc03, else every remote run would gate infra).
+    Verified: py_compile clean, 9/9 provider-gate unit tests pass, chec'
 action:
   type: dispatch
   status: running
