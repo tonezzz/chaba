@@ -1,7 +1,7 @@
 id: notebooklm-rest-base-url-points-at-dead-b8ef61
 title: NOTEBOOKLM_REST_BASE_URL points at dead tony-dell:3011 — lane envs stale after notebooklm-rest moved/retired
 column: doing
-updated: 2026-11-25 09:41
+updated: 2026-11-25 09:44
 priority: medium
 tags:
 - ada
@@ -71,6 +71,11 @@ comms:
     AUD-0021 complete: OPS-0732 was revalidated as ; mn01 still runs a disabled-but-active ada-ha-michael standby
     — "the lane moved t; [board-gantt-timeline-view] primer injected 8 lesson(s): idc02''s kanban-dispatch; [runner-per-executor-caps]
     primer injected 8 lesson(s): Check'
+- at: 2026-11-25 09:44
+  from: devin
+  text: 'dispatch on idc02: confirmed REST is NOT retired — notebooklm-rest.service active on idc02 :3011 (tailnet
+    100.123.163.11), /health/auth ok:true. SSOT services.yml tailnet_url already says http://100.123.163.11:3011/v1;
+    values.yml mcp_host_note "retired" is stale. Now enumerating idc03/mn01 env files.'
 action:
   type: dispatch
   status: running
