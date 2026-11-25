@@ -1,7 +1,7 @@
 id: render-board-real-cost-git-subprocesses
 title: render-board real cost is load_cards YAML + compute_checks git subprocesses, not _outcome_index (~2min on
   tony-omen)
-column: review
+column: done
 updated: 2026-11-25 09:56
 brief: 'Measured while fixing render-board-worktree-rglob-slow (2026-11-17): on tony-omen a full render is 2m8s
   — load_cards 43s (900 YAML parses), compute_checks 76s (a `git merge-base` + `git cherry` subprocess per dispatch
@@ -234,6 +234,16 @@ comms:
 - at: 2026-11-25 09:56
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-022627'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: merged f933fe9c (dispatch/20261125-022627-optimize-the-real-render-hot-p from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-022627-optimize-the-real-render-hot-p.md)
+    — auto-closed'
+- at: 2026-11-25 09:56
+  from: local
+  text: 'pub milestone: card verified: render-board-real-cost-git-subprocesses on idc03 — merged f933fe9c (dispatch/20261125-022627-optimize-the-real-render-hot-p
+    from mn01) -> origin/master — verified — auto-c — merged f933fe9c (dispatch/20261125-022627-optimize-the-real-render-hot-p
+    from mn01) -> origin/master — verified — auto-closed [evt-5e02fc3a14d26115]'
 action:
   type: dispatch
   status: done
@@ -243,10 +253,14 @@ action:
   attempts: 1
   result: 'exit=0 -20261125-022627-optimize-the-real-render-hot-p.md`; final comms posted to the card. | devin-task-20261125-022627-optimize-the-real-render-hot-p.service:
     Consumed 2min 59.894s CPU time over 20min 47.106s wall clock time, 639.8M memory peak.'
-  verified: false
+  verified: true
   sweep:
     stale_running: 2026-11-25 09:56
     no_repo: 2026-11-25 09:56
 claim:
   since: 2026-11-25 09:25
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-022627-optimize-the-real-render-hot-p.md
