@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-bench-casting
 title: Timer ada-bench-casting on idc03 failing
-column: backlog
-updated: 2026-11-25 17:43
+column: done
+updated: 2026-11-25 19:38
 priority: high
 tags:
 - timer-alert
@@ -1366,9 +1366,20 @@ comms:
   from: tony
   text: '2026-11-25: pre-flight gate is doing its job — load 8.10–13.19 >= 2 on idc03, so the casting suite is correctly
     NOT READY. Not a code defect; rerun when host load is below the gate.'
+- at: 2026-11-25 19:38
+  from: tony
+  text: '2026-11-25 19:35 (+07): CONFIRMED WORKING-AS-DESIGNED. Unit ExecStart=scripts/preflight-bench.sh; its gate
+    at line 56 requires load < 2.0 and idc03 is persistently 6.2-8.1 (node-MainThread 92% + podman 80% + litellm
+    79%). Previously annotated at 17:43 that the gate is correctly NOT READY, not a code defect. Reruns still exit
+    1 on the same gate. Closing with root cause documented — rerun the casting suite only in a maintenance window
+    when host load drops under 2.0.'
+- at: 2026-11-25 19:38
+  from: tony
+  text: moved backlog -> done
 spec: Investigate the failure of `ada-bench-casting.service` on host idc03 which resulted in an exit-code on 11-09
   02:00. Inspect the systemd user journal using `journalctl --user -u ada-bench-casting.service` on idc03 and cross-reference
   the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the service failure is identified
   and documented in the card comments or CMS timeline.
 action:
   status: done
+claim: {}
