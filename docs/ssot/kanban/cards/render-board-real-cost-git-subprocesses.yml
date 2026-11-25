@@ -1,8 +1,8 @@
 id: render-board-real-cost-git-subprocesses
 title: render-board real cost is load_cards YAML + compute_checks git subprocesses, not _outcome_index (~2min on
   tony-omen)
-column: doing
-updated: 2026-11-25 09:47
+column: review
+updated: 2026-11-25 09:49
 brief: 'Measured while fixing render-board-worktree-rglob-slow (2026-11-17): on tony-omen a full render is 2m8s
   — load_cards 43s (900 YAML parses), compute_checks 76s (a `git merge-base` + `git cherry` subprocess per dispatch
   run branch per card). _outcome_index itself is now ~0.15s after the flat-glob fix. kanban-dispatch runs this inline
@@ -211,12 +211,32 @@ comms:
     tip sha; merged-set batch + disk cache from #197 kept. (2) load_cards — stat-keyed (size,mtime_ns) pickle cache
     .render-cards-cache.pkl re-parses only changed cards; render-board2 archive loop (1176 files) shares it. mn01
     measured: render-board 2.7-2.9s -> 1.3s warm, boar'
+- at: 2026-11-25 09:49
+  from: mn01
+  text: 'finished (ok): exit=0 -20261125-022627-optimize-the-real-render-hot-p.md`; final comms posted to the card.
+    | devin-task-20261125-022627'
+- at: 2026-11-25 09:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:49
+  from: chaba
+  text: pushed dispatch/20261125-022627-optimize-the-real-render-hot-p to origin
+- at: 2026-11-25 09:49
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:49
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: mn01
   attempts: 1
+  result: 'exit=0 -20261125-022627-optimize-the-real-render-hot-p.md`; final comms posted to the card. | devin-task-20261125-022627-optimize-the-real-render-hot-p.service:
+    Consumed 2min 59.894s CPU time over 20min 47.106s wall clock time, 639.8M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 09:25
+review_kind: verify
