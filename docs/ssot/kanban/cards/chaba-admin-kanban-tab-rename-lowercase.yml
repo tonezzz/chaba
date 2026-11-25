@@ -1,7 +1,7 @@
 id: chaba-admin-kanban-tab-rename-lowercase
 title: Rename chaba-admin dashboard tab "Kanban" to lowercase "kanban"
 column: done
-updated: 2026-11-25 17:07
+updated: 2026-11-25 17:13
 brief: The kanban tab in the ada-ha chaba-admin Lovelace dashboard (url_path chaba-admin) shows title "Kanban".
   Tony wants lowercase "kanban" for consistency. Change views[path=kanban].title in lovelace.chaba_admin over the
   HA websocket (push-dashboard.py --mutate), then re-run scripts/home-assistant/sync-ada-ha-chaba-admin.py and commit
@@ -268,6 +268,10 @@ comms:
 - at: 2026-11-25 17:07
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to rename the chaba-admin dashboard tab from "Kanban" to lowercase "kanban" within the chaba repository
   on a suitable runner host. Runners must first be synchronized with the latest runner-agent script from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py

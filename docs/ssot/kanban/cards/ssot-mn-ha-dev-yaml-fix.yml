@@ -1,7 +1,7 @@
 id: ssot-mn-ha-dev-yaml-fix
 title: Fix SSOT YAML error in ssot.home-assistant.mn-ha-dev.yml
 column: done
-updated: 2026-11-25 17:05
+updated: 2026-11-25 17:13
 brief: 'New regression after KNB-0039: published_ports scalar contains ": " so YAML parses it as a mapping and ssot-validate-all
   fails.'
 priority: medium
@@ -42,6 +42,10 @@ comms:
 - at: 2026-11-25 17:05
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
