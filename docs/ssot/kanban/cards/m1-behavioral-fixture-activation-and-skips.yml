@@ -1,7 +1,7 @@
 id: m1-behavioral-fixture-activation-and-skips
 title: Activate prepared M1 fixture hook and expose skipped required tests
-column: backlog
-updated: 2026-11-25 07:47
+column: doing
+updated: 2026-11-25 07:48
 brief: OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still
   skips its fourth required idle-follower case.
 priority: medium
@@ -199,9 +199,16 @@ comms:
 - at: 2026-11-25 07:47
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
+- at: 2026-11-25 07:48
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-25 07:48
