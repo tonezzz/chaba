@@ -1,7 +1,7 @@
 id: session-capture-c2-router
 title: 'Session capture C.2: idempotent capture-router CLI/lib'
 column: doing
-updated: 2026-11-25 11:40
+updated: 2026-11-25 11:45
 priority: medium
 tags:
 - dev-0038-followup
@@ -109,6 +109,13 @@ comms:
   text: '[devin] C.2 in progress: extending scripts/chaba/capture-router.py with an events-consumer mode (normalize
     C.1-envelope events.jsonl -> route() -> dedupe -> router-audit.jsonl -> capture-ledger.yml proposal upsert).
     No sink writes; apply stays behind capture-apply.py/board-api.'
+- at: 2026-11-25 11:45
+  from: devin
+  text: 'DONE (dispatch worktree, commits 600804b8d9 + 874648d0cb on dispatch/20261125-043641-goal-implement-capture-router-
+    — not pushed). capture-router.py gained an events mode: consumes C.1-contract events.jsonl (capture-event.py
+    C.3 + capture-harvest.py C.4 spools), normalizes->route()->dedupes (event dedupe_key + router dedupe_key + ledger
+    keys), audits to router-audit.jsonl (dry_run=true always), upserts new proposals into runtime capture-ledger.yml
+    preserving applied:. NO sink writes, no network '
 action:
   type: dispatch
   status: running
