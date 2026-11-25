@@ -1,7 +1,7 @@
 id: session-capture-c2-router
 title: 'Session capture C.2: idempotent capture-router CLI/lib'
-column: doing
-updated: 2026-11-25 11:45
+column: review
+updated: 2026-11-25 11:47
 priority: medium
 tags:
 - dev-0038-followup
@@ -116,13 +116,39 @@ comms:
     C.3 + capture-harvest.py C.4 spools), normalizes->route()->dedupes (event dedupe_key + router dedupe_key + ledger
     keys), audits to router-audit.jsonl (dry_run=true always), upserts new proposals into runtime capture-ledger.yml
     preserving applied:. NO sink writes, no network '
+- at: 2026-11-25 11:47
+  from: mn01
+  text: 'finished (ok): exit=0 he idc02 `chaba-capture-harvest` job is the natural host) is a separate ops decision.
+    | devin-task-20261125-04364'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'session-end checkpoint c3c815d4: 1 leftover file(s) committed'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: banked 45 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:47
+  from: chaba
+  text: pushed dispatch/20261125-043641-goal-implement-capture-router- to origin
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0 he idc02 `chaba-capture-harvest` job is the natural host) is a separate ops decision. | devin-task-20261125-043641-goal-implement-capture-router-.service:
+    Consumed 1min 55.170s CPU time over 8min 44.200s wall clock time, 681.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 11:35
+review_kind: verify
