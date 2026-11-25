@@ -1,0 +1,20 @@
+id: tony-omen-post-reboot-dead-user-units-pl-9d08a4
+title: 'tony-omen post-reboot dead user units: plug-watch, ha-stall-watchdog, playlive-chrome, yolo-detect still
+  disabled+inactive'
+column: backlog
+updated: 2026-11-25 09:47
+priority: medium
+tags:
+- tony-omen
+- services
+- post-reboot
+spec: 'Found during system-report-18-missing-nodes triage (2026-11-25). tony-omen rebooted ~2026-11-23 18:00; ha-live.service
+  was dead (fixed this session: started+enabled, edge :8444 now 200). Still down, all disabled+inactive: plug-watch.service,
+  ha-stall-watchdog.service, playlive-chrome.service, yolo-detect.service. The 2026-11-23 yt-live-api-omen-restore
+  job explicitly left these for audit lanes. For each: verify still wanted (check ssot.jobs.yml/health SSOT), then
+  enable+start or document retirement. yolo-detect relates to card vcast-gesture-control-with-yolo-detectio-bd5d28.'
+ref: OPS-1367
+comms:
+- at: 2026-11-25 09:47
+  from: tony
+  text: card captured via board-api
