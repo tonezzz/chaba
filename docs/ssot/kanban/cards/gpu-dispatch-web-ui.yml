@@ -1,7 +1,7 @@
 id: gpu-dispatch-web-ui
 title: Web UI for GPU dispatch queue management
-column: backlog
-updated: 2026-11-25 20:57
+column: doing
+updated: 2026-11-25 21:03
 brief: 'Add a small read-mostly web UI for the dispatch queue: per-host GPU capacity, queued/running jobs, priority,
   and enqueue/cancel controls behind an explicit confirmation. Done when the UI renders live Redis/sidecar data
   and one job can be enqueued and cancelled through it with audited actions.'
@@ -31,9 +31,11 @@ spec: 'Context: /home/tony/ansible — gpu_status.py, queue_manager.py, schedule
   card mutations; keep the CLI as the authoritative fallback.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-dell
+  attempts: 1
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -73,4 +75,9 @@ comms:
   from: chaba
   text: 'mn01 defers: provider rate-limited (throttl on devin-task-20261125-125447-goal-generated-writes-from-non)
     — claims held ~28m'
+- at: 2026-11-25 21:03
+  from: tony-dell
+  text: claimed
 ref: OPS-1409
+claim:
+  since: 2026-11-25 21:03
