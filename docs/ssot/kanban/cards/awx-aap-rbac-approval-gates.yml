@@ -1,7 +1,7 @@
 id: awx-aap-rbac-approval-gates
 title: AWX/AAP integration for RBAC and approval gates
 column: doing
-updated: 2026-11-25 21:04
+updated: 2026-11-25 21:05
 brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
   and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
   without breaking the current scheduler.
@@ -103,6 +103,13 @@ comms:
   text: 'Survey done: dispatch system lives at /home/tony/ansible on idc02 (Redis queue + scheduler.py + dispatch_job.yml,
     untracked prototype, no git remote). No AWX/AAP/Tower found on idc02/idc03/con01/mn01/tony-dell/tony-omen (docker+podman+systemd
     clean). Writing decision record now.'
+- at: 2026-11-25 21:05
+  from: devin
+  text: 'DONE — decision: do-not-adopt-AWX-now. Survey: zero AWX/AAP on fleet (6 hosts checked); dispatch queue
+    is an untracked prototype at /home/tony/ansible on idc02, scheduler running, Redis queue open to any Tailscale
+    host. Deliverable: docs/ssot/jobs/infrastructure/2026-11-25-awx-aap-rbac-approval-gates-decision.yml (survey
+    + hypothetical AWX org/team/template map + approval-gate semantics + revisit criteria). Follow-up implementation
+    card filed: OPS-1411 dispatch-queue-approval-gate (backlog) — in'
 ref: OPS-1408
 claim:
   since: 2026-11-25 21:02
