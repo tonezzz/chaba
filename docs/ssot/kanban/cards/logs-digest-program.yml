@@ -10,7 +10,7 @@ metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships bot
 note: 'Epic for the kanban-in-logs work (2026-10-04). Detection layer live: log-shipper posts per-host ship-state
   docs (reachable/scanned/shipped/ journals), logs-report posts report/24h, logs-kanban turns gaps into auto cards
   inside kanban-sync on dell. Remaining work = the child cards.'
-updated: 2026-11-25 15:46
+updated: 2026-11-25 15:47
 comms:
 - at: 2026-10-06 08:13
   from: tony
@@ -312,6 +312,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 15:47
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 ref: OPS-0094
 requests:
 - id: the-logs-digest-program-epic-t-8bb097
