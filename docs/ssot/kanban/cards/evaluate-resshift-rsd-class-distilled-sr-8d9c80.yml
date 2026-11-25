@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 13:26
+updated: 2026-11-25 14:52
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -167,6 +167,11 @@ comms:
     it OOMs in VQGAN encode conv. Running CPU path instead (chop256). RSD one-step in flight; ResShift v3(4-step)/v1(15-step)
     queued next. Added --backend precomputed to upscale-eval.py so external-engine outputs score through the same
     metric matrix.'
+- at: 2026-11-25 14:52
+  from: devin
+  text: 'GPU path unblocked: hybrid CPU-VAE + GPU-UNet patches applied (VAE encode/decode on CPU, diffusion on cuda).
+    ResShift v3-s4 chop128 running on tony-omen now; v1-s15 and RSD-one-step queued next (GPU is 4GB shared with
+    bge-rerank+ollama, sequential only). CPU-only runs were earlyoom-killed.'
 action:
   type: dispatch
   status: running
