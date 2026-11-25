@@ -1,7 +1,7 @@
 id: kanban-retention-archive-done-cards-olde-bba115
 title: 'Kanban retention: archive done cards older than 7 days'
-column: backlog
-updated: 2026-11-25 15:48
+column: doing
+updated: 2026-11-25 15:54
 brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
   archive stale done cards to a separate store/page, keep board fast and searchable.'
 spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
@@ -34,9 +34,11 @@ spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
+  runner: idc02
+  attempts: 1
 ref: KNB-1178
 comms:
 - at: 2026-11-08 12:33
@@ -237,4 +239,8 @@ comms:
 - at: 2026-11-25 15:48
   from: chaba
   text: 'tony-macbook defers: runner at cap (4/4)'
-claim: {}
+- at: 2026-11-25 15:54
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-25 15:54
