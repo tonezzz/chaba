@@ -8,7 +8,8 @@ Create a Session Handoff Packet for this session$ARGUMENTS.
 1. Gather facts (SSOT-first, pointer-first): objective, current state, canonical refs, open asks/decisions, next action, and where each item was filed. Do not invent evidence.
 2. Generate the packet using the required template below. Fill known values; mark unknowns explicitly.
 3. Save it durably: OpenChamber project knowledge note preferred (and/or card comms refs). Do not leave chat-only.
-4. Report `where_filed` in the response.
+4. Emit the router event (dry-run, idempotent): `python3 scripts/chaba/capture-event.py --type handoff --source opencode --session <session-id-or-slug> --subject <packet-id-or-as_of> --summary "<objective + current_state>" --ref <packet sink ref> --where-filed "<item -> sink/ID/path>" [--where-filed ...]`. Re-emit is a noop+audit; the emitter never writes canonical sinks.
+5. Report `where_filed` in the response.
 
 ## Required template
 ```md
