@@ -15,6 +15,9 @@
 #   2. pull --rebase --autostash; conflicts limited to generated paths
 #      (SAFE_PULL_GENERATED_RE) resolve upstream-wins (--ours mid-rebase),
 #      preserving the dropped local side as <path>.local-conflict-<ts>.
+#      Default generated set includes stacks/web/public/apps/ha/ssot.ui.ha.yml:
+#      network-scan-tony rebuilds it every 15m in the exec checkout, so it
+#      otherwise wedges chaba-repo-sync on every upstream refresh.
 #      Conflicts outside generated paths abort the rebase and exit 1 —
 #      manual resolution, next run retries.
 #   3. autostash-pop conflicts resolve EVERY contested path to HEAD.
@@ -190,7 +193,7 @@ for _st in rebase-merge rebase-apply; do
       && echo "git-safe-pull: cleared phantom $_st state -> ${_st}.phantom-$TS" >&2
   fi
 done
-GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$}"
+GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$|^stacks/web/public/apps/ha/ssot\.ui\.ha\.yml$}"
 GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
 ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
 
