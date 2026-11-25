@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
 column: review
-updated: 2026-11-25 17:39
+updated: 2026-11-25 18:28
 priority: medium
 tags:
 - mn01
@@ -135,6 +135,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 18:28
+  from: tony
+  text: 'answered mn01-has-no-swap-and-earlyoom-keeps-sigt-dc1d1d: proceed'
+- at: 2026-11-25 18:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -156,10 +162,12 @@ requests:
     collateral. Fix? Options: ★A) add ~4G zram swap on mn01 (mirror tony-dell zram-swap.service — proven pattern,
     no disk wear) B) earlyoom -m 5 threshold only C) reduce mn01 load (dispatch cap 2->1 / consolidate yolo) D)
     leave as-is (accept periodic HA restarts)'
-  status: open
+  status: answered
   at: 2026-11-25 17:04
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
