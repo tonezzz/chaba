@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
 column: backlog
-updated: 2026-11-25 07:50
+updated: 2026-11-25 14:46
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -161,10 +161,20 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:46
+  from: chaba
+  text: classified as free_lane (kw:unit test conf 1.00)
+- at: 2026-11-25 14:46
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
   repo: ada-voice
+  status: queued
+  lane: free_lane
+  lane_source: kw
 spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository. The implementation
   must enforce strict limits on individual tool usage to prevent runaway costs and provide a clear status readout
   of remaining daily budgets. Verify the implementation by running local unit tests and checking that the budget
   readout correctly queries and displays current spending totals. Execute the work targeting the ada-voice repository.
+claim: {}
