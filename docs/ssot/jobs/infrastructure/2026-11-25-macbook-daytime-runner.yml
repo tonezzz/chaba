@@ -1,0 +1,117 @@
+title: "tony-macbook daytime-elastic runner — day-hours sleep inhibitor deployed"
+subtitle: "Kanban card tony-macbook-daytime-runner (OPS-0059) — runner-agent already live and claiming (cap 4/4); added a conditioned logind sleep:idle block inhibitor 07:00-23:00 so the host stays awake as a second runner slot while home; battery+lid-closed and night keep normal suspend"
+icon: power-plug
+
+planning:
+  goal: "If tony-macbook stays awake during day at home, inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting), then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics preserved — joins/leaves cleanly."
+  scope: "tony-macbook host power policy + repo artifacts + SSOT mirror. Out of scope: LAN backup-target role (optional per card comms — no consumer defined yet), hibernate-resume repair (separate defect, flagged below)."
+  owner: devin (dispatch on tony-macbook)
+  related_focus:
+    - label: tony-macbook-daytime-runner
+      file: docs/ssot/kanban/cards/tony-macbook-daytime-runner.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-25T19:10:00+07:00
+  steps:
+    - id: 1
+      label: Establish real state
+      status: completed
+      notes: >-
+        runner-agent.timer enabled+active, 60s poll, RUNNER_LABELS=
+        macbook,local-8c,always-home RUNNER_CAP=4 RUNNER_MAX_LOAD_PC=1.0 —
+        installed ~/.local/bin/runner-agent sha256 == repo
+        scripts/board/runner-agent.py (no drift; ansible redeployed 19:06).
+        Actively claiming: this card + 2 others at cap 4/4. devin-dispatch-watch.timer
+        every 5min. lid-blank-watch.service blanks panels on lid-close.
+        Suspend exposure found: /etc/systemd/logind.conf.d has
+        headless-crd.conf (HandleLidSwitch=ignore,
+        HandleLidSwitchExternalPower=ignore) overridden for HandleLidSwitch
+        by hibernate.conf (suspend-then-hibernate) — on AC lid-close is
+        ignored (stays awake), on battery lid-close suspends then hibernates.
+        Journal shows suspend->hibernate->"Unable to resume" cold boots
+        2026-11-21 07:14, 2026-11-23 16:51+16:55, 2026-11-25 09:38 — every
+        battery suspend cycle ends in a cold boot, not a resume.
+        GNOME power: sleep-inactive-ac-type=nothing, battery=suspend 900s.
+        mem_sleep=s2idle persisted.
+    - id: 2
+      label: Choose mechanism
+      status: completed
+      notes: >-
+        systemd-inhibit --what=sleep:idle --mode=block held by a daemon —
+        covers every suspend entry point (lid, idle, manual, suspend-then-
+        hibernate) regardless of which session requests it. Conditioned:
+        hold only when in_daytime (07:00-23:00 local, env) AND (AC online
+        OR (lid open AND battery>=30%)). Night, battery+lid-closed (bag
+        safety), and low battery all keep today's suspend behaviour —
+        offline_ok preserved: the runner simply leaves the fleet when it
+        sleeps and rejoins <=60s after wake (runner-agent.timer
+        OnUnitActiveSec=60s, monotonic — unaffected by suspend).
+        Rejected: gnome power setting (per-session, doesn't cover
+        logind lid path); unconditional day inhibit (battery-in-bag
+        hazard); AC-only inhibit (misses unplugged-at-home lid-open).
+    - id: 3
+      label: Polkit constraint discovered + delivery path
+      status: completed
+      notes: >-
+        First deploy as systemd --user service failed: block-mode
+        inhibitors need polkit org.freedesktop.login1.inhibit-block-sleep,
+        allow_any=auth_admin_keep; user@1000.service processes have NO
+        logind session -> denied (and auth_admin ungrantable — the
+        unix-group:admin identity doesn't exist on this host, polkitd logs
+        it every attempt). Verified empirically: user service, ssh
+        localhost session, and user-bus dbus activation all denied.
+        allow_active=yes AND allow_inactive=yes — any real logind session
+        works. Delivered via XFCE autostart
+        (~/.config/autostart/macbook-day-awake.desktop -> sh -c respawn
+        loop -> macbook-day-awake.sh) so the daemon runs inside
+        session-c1.scope (xfce4-session child, Active=yes). Engages at
+        next XFCE/CRD login; until then no inhibitor is held (status quo,
+        safe). Repo copies: scripts/ops/macbook-day-awake.sh,
+        scripts/ops/macbook-day-awake.desktop, systemd/
+        macbook-day-awake.service (for the session-free variant).
+        Board request raised for the one-sudo-command polkit rule
+        /etc/polkit-1/rules.d/50-macbook-day-awake.rules granting tony
+        inhibit-block-sleep+idle — after which
+        `systemctl --user enable --now macbook-day-awake.service` gives
+        session-independent coverage (unit file kept in repo; host copy
+        removed to avoid a disabled-unit half-state per R2).
+    - id: 4
+      label: Verify logic + declare
+      status: completed
+      notes: >-
+        Condition matrix tested with stubbed systemd-inhibit + fake
+        power_supply/lid sysfs: daytime+AC=hold, night=release,
+        battery+lid-closed=release, battery+lid-open+80%=hold — all
+        correct. Inhibitor grant itself is polkit-gated (step 3); verify
+        post-login via `systemd-inhibit --list` showing the
+        'tony-macbook daytime runner' block entry, or after the polkit
+        rule via the user service. lid-blank-watch script+unit versioned
+        into repo (scripts/ops/lid-blank-watch.sh, systemd/
+        lid-blank-watch.service — was declared in audit hosts but
+        host-local only, R1/R8 gap). ssot.kanban.yml runner_fleet
+        mirrored to live unit (cap 4 gate 1.0 — was prose-stale at
+        cap 3 gate 0.8), ssot.audit.hosts.yml macbook block documents the
+        autostart artifact, ssot.mysystem.macbook.yml runner/power
+        sections refreshed.
+
+outcome:
+  result: fixed
+  evidence:
+    - "~/.config/autostart/macbook-day-awake.desktop installed -> ~/.local/bin/macbook-day-awake.sh; engages next XFCE login"
+    - "scripts/ops/macbook-day-awake.sh condition tests: T1 daytime+AC flag=hold, T2 night=release, T3 batt+lidclosed=release, T4 batt+lidopen+80%=hold"
+    - "systemd-inhibit --list polkit probe: user-service/ssh/user-bus callers all 'Access denied ... interactive authentication' — root cause documented"
+    - "runner-agent live proof: journal shows 'tony-macbook-daytime-runner: claimed + started devin-task-20261125-190949-...' 19:12 + 2 sibling claims at cap 4/4"
+    - "sha256 ~/.local/bin/runner-agent == scripts/board/runner-agent.py (no drift)"
+  residual:
+    - "Inhibitor not yet HELD — needs next XFCE/CRD login (autostart) or the polkit rule (board request day-awake-inhibit-deployed-via-xfce-auto-544ad5). Verify: systemd-inhibit --list | grep 'daytime runner' should show mode=block after login."
+    - "NEW DEFECT found (not fixed, needs own card): hibernate-resume is broken — every suspend->hibernate cycle ends 'Unable to resume from device ... continuing boot process' = cold boot (journal 11-21, 11-23 x2, 11-25). Options: disable hibernate (HandleLidSwitch=suspend only) or fix resume path — the day-awake inhibit reduces exposure but lid-close-on-battery still reaches it."
+    - "LAN-fast backup target role not implemented — optional per card; no consumer defined. fleet-restic-backup already covers macbook->dell direction."
+    - "runner cap drift: live unit cap 4 gate 1.0 vs card-era prose cap 3 gate 0.8 — SSOT now mirrors live; if cap 4 wasn't deliberate, adjust via scripts/board/runner-cap.sh tony-macbook 3 0.8."
+
+lessons:
+  - "logind block-mode inhibitors (systemd-inhibit --mode=block) require a polkit session subject — allow_active/allow_inactive=yes but allow_any=auth_admin_keep; user@1000.service, ssh sessions, and user-bus dbus activation are all session-less and get denied. Only a process inside a real logind session (XFCE autostart) or root passes."
+  - "auth_admin_keep polkit actions are ungrantable on tony-macbook — 'unix-group:admin' identity doesn't exist, so interactive auth can never succeed; headless inhibitor attempts just time out (~25s) instead of failing fast."
+  - "tony-macbook suspend-then-hibernate resume is broken — every cycle cold-boots; treat any suspend on this host as a fleet-offline event, which is the real cost the day-awake inhibit mitigates."
+  - "Card specs age: fleet prose said cap 3/gate 0.8 but live unit was rewritten to cap 4/1.0 same-day — always sha256/grep the live unit before mirroring or 'installing' fleet changes."
+  - "Conditioned inhibit > blanket inhibit for laptops: hold sleep:idle block only while (daytime AND (AC OR lid-open+charge>=floor)) so bag-suspend and low-battery paths stay intact — offline_ok semantics preserved by construction."
