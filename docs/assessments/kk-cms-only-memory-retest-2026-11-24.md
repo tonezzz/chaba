@@ -161,6 +161,24 @@ CMS page deterministically (a producer/out-of-band write asserted before
 the reconnect) instead of asking the model to perform publish+confirm in
 one scenario; that is a new experiment, not another prompt tweak.
 
+## Post-deploy verification and bench hygiene (2026-11-25)
+
+After deploy to `678b960`, two runs scored 0.667 / 0.833. Transcripts showed
+two distinct issues, neither a CMS-recall regression:
+
+1. A stale October page `garden-watering-schedule` in `ada-cms-pages-kk-dev`
+   was being read instead of the ZETA seed (produced a "Tuesday" answer).
+2. The repeated recall turn sometimes answered from retained session
+   context without a second `cms_read`, failing `calls_any`.
+
+ada-voice branch `bench/kk-cms-only-bench-hygiene-20261125` (commit
+`a1e00ea`) fixes both: `seed_evict:` purges stale same-topic pages before
+seeding; `response_contains_all_any` asserts day + pump with language
+alternates and forbids Tuesday; only the FIRST recall must prove a CMS
+read — the repeat is judged on correctness. Two runs after the fix: 0.833
+(one flaky first-recall turn with no tool call but a correct answer) and
+**1.000**. Harness tests: 6 passed; schema: 204 files clean.
+
 Probe documents created during triage were deleted; the dev env is left
 with the reconciled `kk-cms-only` profile applied and healthy.
 
