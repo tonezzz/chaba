@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: review
-updated: 2026-11-24 22:38
+updated: 2026-11-25 07:28
 priority: medium
 tags:
 - embedding
@@ -285,6 +285,13 @@ comms:
 - at: 2026-11-24 22:38
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''bge-serving-cutover-pick-the-a''] block close)'
+- at: 2026-11-25 07:28
+  from: tony
+  text: 'answered bge-serving-cutover-pick-the-architectur-3728d5: probes-first — Probes first (recommended) — idle-GPU
+    rerank re-measure + lighter-reranker eval, then re-ask with real numbers'
+- at: 2026-11-25 07:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -308,7 +315,7 @@ requests:
     rerank_ms was 1.1-1.4s for top-10 vs the 565ms eval estimate — sync top-10 lands ~1.4-1.7s added, ~3x over the
     ~500ms voice budget. Dense-only BGE is worse than Gemini (MRR .767 vs .893) so async-refine alone cannot fix
     the current turn. Full brief: docs/ssot/jobs/ada/2026-11-24-bge-serving-cutover-decision.yml'
-  status: open
+  status: answered
   at: 2026-11-24 22:27
   from: devin
   options:
@@ -322,4 +329,7 @@ requests:
   - id: stay-gemini
     label: Stay on current sync path + keep shadow soaking; revisit with data
   suggested: probes-first
+  answer: probes-first — Probes first (recommended) — idle-GPU rerank re-measure + lighter-reranker eval, then re-ask
+    with real numbers
 review_kind: verify
+awaiting_action: true
