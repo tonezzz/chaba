@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
 column: doing
-updated: 2026-11-25 10:58
+updated: 2026-11-25 11:03
 priority: medium
 tags:
 - observability
@@ -290,6 +290,13 @@ comms:
   from: devin
   text: 'attempt 2: prior run built the deliverable but never committed (worktree 107 behind, dirty salvage). Rebuilding
     scripts/ops/retry-storm-watch.py + ssot.jobs.yml entries + trail doc in this worktree.'
+- at: 2026-11-25 11:03
+  from: devin
+  text: 'DONE (attempt 2, committed 0f3056f87d): scripts/ops/retry-storm-watch.py + 6 ssot.jobs.yml entries (idc03
+    cpu+logs+mddb via MDDB_WATCH_URLS :11023/:11027; idc02/tony_dell/tony_omen/mn01/con01 cpu+logs) + rendered units
+    + trail doc docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml + dispatch-outcome md. Verified: live
+    --no-alert run (5 containers, ok), MDDB baseline vs live leader over tailnet, render-jobs --check OK 133 jobs.
+    NOT installed per dispatch rules — after merge+repo-sync run '
 action:
   type: dispatch
   status: running
