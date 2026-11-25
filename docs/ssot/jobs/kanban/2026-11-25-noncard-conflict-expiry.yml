@@ -6,6 +6,11 @@ version: 1
 card: reconcile-local-conflicts-expire-stale-n-00974b
 date: 2026-11-25
 dispatch: 20261125-091036-focus-inbox-and-other-generate
+redispatch: >-
+  20261125-105702-focus-inbox-and-other-generate (attempt 2 —
+  cherry-picked e405de247b; fixed non-hermetic selftest: FLAG_STATE
+  dedup leaked between runs and suppressed the flag writes the alert-
+  card assertions need; added tests/board/test_reconcile_local_conflicts.py)
 
 summary: |
   reconcile-local-conflicts.py resolved card conflicts but only ever

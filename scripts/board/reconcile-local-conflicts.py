@@ -664,6 +664,12 @@ def _selftest() -> None:
     real_flag_api, real_served = flag_via_api, SERVED
     globals()["flag_via_api"] = lambda cid, text: False
     globals()["SERVED"] = REPO
+    # FLAG_STATE dedup (48h) must not leak between selftest runs — the
+    # real ~/.local/share file would suppress the flag writes these
+    # cases assert on after the first run marks them.
+    real_flag_state, real_archive = FLAG_STATE, ARCHIVE_ROOT
+    flag_tmp = tempfile.TemporaryDirectory()
+    globals()["FLAG_STATE"] = Path(flag_tmp.name) / "flags.json"
     try:
         # orphan conflict: file stays, alert card flagged in review
         with tempfile.TemporaryDirectory() as td:
@@ -691,7 +697,6 @@ def _selftest() -> None:
 
         # non-card expiry: stale + canonical -> archived, consumed;
         # fresh or orphan -> kept and flagged
-        real_archive = ARCHIVE_ROOT
         with tempfile.TemporaryDirectory() as td, \
                 tempfile.TemporaryDirectory() as adir:
             repo = Path(td)
@@ -726,10 +731,12 @@ def _selftest() -> None:
             orphan.write_text("a: 3\n")
             assert run(repo, dry=False) == 1
             assert fresh.exists() and orphan.exists()
-        globals()["ARCHIVE_ROOT"] = real_archive
     finally:
         globals()["flag_via_api"] = real_flag_api
         globals()["SERVED"] = real_served
+        globals()["FLAG_STATE"] = real_flag_state
+        globals()["ARCHIVE_ROOT"] = real_archive
+        flag_tmp.cleanup()
 
     print("reconcile-local-conflicts: selftest OK")
 
