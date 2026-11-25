@@ -26,19 +26,19 @@ servers:
   mn_ha_dev:
     name: mn-ha-dev
     instance_ssot: ssot.home-assistant.mn-ha-dev.yml
-    endpoint: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
+    endpoint: http://mn01:9585/private_B3WMIAChoseTpDS7fwgwRw
     server_port: 9585
     local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-    tailnet_url: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
+    tailnet_url: http://mn01:9585/private_B3WMIAChoseTpDS7fwgwRw
     webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
     custom_component: ha_mcp_tools
     status: active
     verified_at: '2026-10-26'
     notes: |
-      Container migrated tony-dell -> idc03 2026-10-09; MCP URL stayed on
-      tony-dell:9585 (dead) until repointed 2026-10-26. Quadlet on idc03
+      Container migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26
+      -> mn01 2026-11-25. Quadlet on mn01
       (~/.config/containers/systemd/mn-ha-dev.container) publishes
-      127.0.0.1:9585 and 100.123.163.11:9585 (tailnet-only; moved idc03 -> idc02 2026-10-26). Same ha_mcp_tools
+      127.0.0.1:9585 and 100.106.196.22:9585 (tailnet-only; moved idc03 -> idc02 2026-10-26 -> mn01 2026-11-25). Same ha_mcp_tools
       timeout patch as tony-ha applied to
       ~/.config/mn-ha-dev/custom_components/ha_mcp_tools/embedded_server.py
       (_READY_STALL_TIMEOUT_SECONDS=300s, _READY_TOTAL_CAP_SECONDS=900s).

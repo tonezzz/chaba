@@ -467,12 +467,12 @@ servers:
       '
   mn-ha-dev:
     name: Michael Dev Home Assistant
-    description: Development Home Assistant instance MCP bridge on idc03 (container
-      migrated tony-dell -> idc03 2026-10-09)
-    implementation: http://idc02:9585/<PRIVATE_TOKEN>
+    description: Development Home Assistant instance MCP bridge on mn01 (container
+      migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25)
+    implementation: http://mn01:9585/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://idc02:9585/<PRIVATE_TOKEN>
+    url: http://mn01:9585/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
     scope: agent-lanes
@@ -480,8 +480,8 @@ servers:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
-      Repointed tony-dell -> idc03 2026-10-26 (card ha-mcp-endpoint-repoint); port
-      9585 published on idc02 tailnet IP + loopback via mn-ha-dev quadlet (moved from idc03 2026-10-26).
+      Repointed idc02 -> mn01 2026-11-25 (card michael-dev-migrate-mn01); port
+      9585 published on mn01 tailnet IP + loopback via mn-ha-dev quadlet (moved idc03 -> idc02 2026-10-26 -> mn01 2026-11-25).
 
       '
   michael-ha:

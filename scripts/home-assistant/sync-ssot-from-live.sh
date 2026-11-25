@@ -57,7 +57,7 @@ if [[ "${1:-}" == "--instance" ]]; then
     exit 2
 fi
 
-HOST=idc02   # mn-ha-dev lives on idc02 since 2026-10-26 (was tony-dell, idc03)
+HOST=mn01     # mn-ha-dev lives on mn01 since 2026-11-25 (idc02 2026-10-26, idc03 2026-10-09, tony-dell before)
 DEV_CONFIG=/home/tony/.config/mn-ha-dev
 STORAGE_REMOTE=${DEV_CONFIG}/.storage/lovelace.tony_test
 WWW_REMOTE=${DEV_CONFIG}/www

@@ -83,13 +83,13 @@ instances:
     auth: {kind: refresh, client_name: tony-devin}
 
   mn-ha-dev:
-    ssh: idc02                              # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26
-    config: /home/tony/.config/mn-ha-dev    # path on idc02
-    url: https://idc02.taila0626a.ts.net:8124
+    ssh: mn01                              # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25
+    config: /home/tony/.config/mn-ha-dev    # path on mn01
+    url: https://mn01.taila0626a.ts.net:8124
     container: mn-ha-dev
     auth: {kind: env, file: /home/tony/.config/secrets/ha-mn-ha-dev.env, var: HASS_TOKEN}
     # ~/.config/mn-ha-dev still exists on tony-dell — it is the STALE
-    # pre-migration copy; scripts must go through ssh idc02, never the local dir.
+    # pre-migration copy; scripts must go through ssh mn01, never the local dir.
 
   michael-ha:
     ssh: michael-ha
