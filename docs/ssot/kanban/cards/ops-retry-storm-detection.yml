@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
 column: backlog
-updated: 2026-11-25 09:27
+updated: 2026-11-25 10:08
 priority: medium
 tags:
 - observability
@@ -249,13 +249,18 @@ comms:
 - at: 2026-11-25 09:27
   from: tony
   text: put on hold
+- at: 2026-11-25 10:08
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-25 10:08
+  from: chaba
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0  merge + repo sync, and the first real tick will file one expected consolidated inbox entry. |
     devin-task-20261125-090624-the-mddb-embed-openrouter-retr.service: Consumed 28.704s CPU time over 9min 31.995s
