@@ -16,7 +16,7 @@ from google.genai import types
 HOST = os.environ.get('GEV_GEMINI_HOST', '0.0.0.0')
 PORT = int(os.environ.get('GEV_GEMINI_PORT', '8789'))
 CMD_PORT = int(os.environ.get('GEV_CMD_PORT', '8790'))
-MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
+MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.8-live')
 
 # Connected GEV browser clients — the same sockets Gemini tool calls are
 # forwarded to. /command pushes function_call frames into these.

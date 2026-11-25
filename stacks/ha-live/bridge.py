@@ -536,7 +536,7 @@ async def client_handler(websocket):
 
                 try:
                     live_ctx = client.aio.live.connect(
-                        model='gemini-3.1-flash-live-preview',
+                        model='gemini-3.8-live',
                         config=config,
                     )
                     session = await live_ctx.__aenter__()
@@ -548,7 +548,7 @@ async def client_handler(websocket):
                         save_session_handle(None)
                         config.session_resumption = types.SessionResumptionConfig()
                         live_ctx = client.aio.live.connect(
-                            model='gemini-3.1-flash-live-preview',
+                            model='gemini-3.8-live',
                             config=config,
                         )
                         session = await live_ctx.__aenter__()

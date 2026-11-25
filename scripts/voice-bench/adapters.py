@@ -230,7 +230,7 @@ def openai_realtime(combo, fx, timeout):
 
 GEMINI_MODEL = os.environ.get(
     "GEMINI_LIVE_MODEL",
-    os.environ.get("GEV_GEMINI_MODEL", "gemini-3.1-flash-live-preview"))
+    os.environ.get("GEV_GEMINI_MODEL", "gemini-3.8-live"))
 
 
 def _clean_schema(schema):
@@ -259,6 +259,12 @@ def gemini_live(combo, fx, timeout):
     Tool surface is the harness's HA_TOOLS (not GEV's tools.json) so
     tool_call_match scores the same hass_* calls as every other combo.
     This is the golden baseline row the fallbacks are compared against.
+
+    Since gemini-3.8-live, a tool call can be followed by an early
+    turnComplete and then a SECOND spoken turn after the toolResponse. Skip
+    at most one such early completion so the spoken confirmation is counted.
+    Latency is anchored to end-of-speech (input transcription), not to the
+    end of the trailing silence, so fast models are not penalised.
 
       transcript      <- server_content.input_transcription (accumulated)
       tool_call       <- msg.tool_call.function_calls (first; answered with
@@ -324,6 +330,9 @@ def gemini_live(combo, fx, timeout):
                 "tools": [{"functionDeclarations": declarations}],
             }}))
             send_done = None
+            speech_end = None
+            awaiting_final = False
+            early_skipped = False
             done_ev = asyncio.Event()
 
             async def sender():
@@ -339,6 +348,7 @@ def gemini_live(combo, fx, timeout):
                 send_done = time.monotonic()
 
             async def receiver():
+                nonlocal speech_end, awaiting_final, early_skipped
                 while not done_ev.is_set():
                     try:
                         raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
@@ -353,19 +363,33 @@ def gemini_live(combo, fx, timeout):
                     if it.get("text"):
                         out["events_seen"].append("input_transcription")
                         transcripts.append(it["text"])
+                        if speech_end is None:
+                            speech_end = time.monotonic()
                     ot = sc.get("outputTranscription") or {}
                     if ot.get("text"):
                         out["events_seen"].append("output_transcription")
                         assistant_parts.append(ot["text"])
+                        awaiting_final = False
                     for part in ((sc.get("modelTurn") or {}).get("parts") or []):
                         if part.get("inlineData", {}).get("data"):
-                            if out["first_audio_ms"] is None and send_done:
+                            # VAD-anchored latency: fast models may answer
+                            # before the trailing silence finishes streaming.
+                            anchor = speech_end or send_done
+                            if out["first_audio_ms"] is None and anchor:
                                 out["first_audio_ms"] = round(
-                                    (time.monotonic() - send_done) * 1000)
+                                    (time.monotonic() - anchor) * 1000)
+                            awaiting_final = False
                             out["events_seen"].append("audio")
                     if sc.get("interrupted"):
                         out["events_seen"].append("interrupted")
                     if sc.get("turnComplete"):
+                        # 3.8-live can emit an early turnComplete with a tool
+                        # call, then a final spoken turn after toolResponse.
+                        # Skip at most one such early completion per tool.
+                        if awaiting_final and not early_skipped:
+                            out["events_seen"].append("early_turn_complete")
+                            early_skipped = True
+                            continue
                         out["events_seen"].append("turn_complete")
                         done_ev.set()
                         return
@@ -388,6 +412,9 @@ def gemini_live(combo, fx, timeout):
                                     "functionResponses": responses}}))
                             except Exception as e:
                                 out["tool_response_error"] = str(e)
+                        if responses:
+                            awaiting_final = True
+                            early_skipped = False
                     if m.get("error"):
                         out["server_error"] = m["error"]
                         done_ev.set()

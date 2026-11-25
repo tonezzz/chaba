@@ -2,7 +2,7 @@
 title: Home Assistant Voice (Gemini Live)
 subtitle: Speech-to-speech voice pipeline, ha-live bridge, and live-model integration knowledge
 version: 1
-last_updated: 2026-09-08
+last_updated: 2026-11-25
 
 # ---------------------------------------------------------------
 # Current state (tony-ha, container tony-ha, HA 2026.8.3)
@@ -27,7 +27,7 @@ state:
       source: https://github.com/matt123p/ha-gemini-live v1.0.6
       path: /home/tony/.config/home-assistant/custom_components/gemini_live
       provider: gemini
-      model: gemini-3.1-flash-live-preview
+      model: gemini-3.8-live
       voice: Puck
       credentials: reuses the google_generative_ai_conversation config-entry key (no new secret stored)
       requirement_patch: 'manifest relaxed to google-genai>=1.59.0 (container ships 1.59.0; pin ==2.21.0 would break the official google_generative_ai_conversation integration)'
@@ -132,8 +132,15 @@ live_api_knowledge:
     tts_placeholder: conversation entity returns '-- gemini live --' so HA's TTS cache never replays stale audio
     stage_decoupling: asyncio.Queue producers (AudioStream/TextStream) decouple STT->conversation->TTS stages
   models:
-    default: gemini-3.1-flash-live-preview
+    default: gemini-3.8-live
+    fallback: gemini-3.1-flash-live-preview
     alternate: gemini-2.5-flash-native-audio-preview-12-2025
+    promotion_note: >-
+      Promoted 2026-11-25 on the voice eval gate (job
+      2026-11-24-gemini-38-live-eval). 3.8-live emits an early turnComplete
+      with a toolCall, then a final spoken turn after toolResponse; clients
+      must not treat the first completion as the end of the interaction.
+      Keep 3.1-flash-live-preview as the real fallback.
   sdk_version: google-genai 1.59.0 (container) already has client.aio.live, send_realtime_input, send_tool_response, SessionResumptionConfig, RealtimeInputConfig — do not upgrade pin.
 
 # ---------------------------------------------------------------

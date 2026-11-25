@@ -3,7 +3,7 @@ subtitle: Gemini 2 model registry with free-tier rate limits and usage assignmen
 icon: 🧠
 config:
   version: 1
-  last_updated: 2026-08-15
+  last_updated: 2026-11-25
   maintainer: tony
   status: active
 source:
@@ -11,6 +11,10 @@ source:
   last_verified: "2026-08-15"
   input_file: /tmp/rate-limits.txt
   note: Free-tier limits captured from the Google AI Studio rate-limits dashboard
+access_notice: >-
+  Official catalog verified 2026-11-24: the Gemini 2.0 family is SHUT DOWN and
+  absent from v1beta /models; this file is a legacy snapshot only. Do not add
+  to new work. Live voice moved to gemini-3.8-live (see ssot.llm-gateway.yml).
 models:
   gemini-2.0-flash-live:
     display_name: Gemini 2.0 Flash Live
@@ -19,10 +23,11 @@ models:
     category: Live API
     free_tier:
       status: unverified
-    status: active
-    primary_for:
-      - rview-live
-    notes: Gemini 2.0 Flash Live API for real-time audio/video. Add free-tier RPM/TPM/RPD from AI Studio.
+    status: deprecated
+    notes: >-
+      Legacy Live API snapshot. No longer primary for rview-live as of
+      2026-11-24 — Gemini 2.0 Flash Live is shut down; gemini-3.8-live is the
+      sole primary and gemini-3.1-flash-live-preview is the fallback.
   gemini-2.0-flash-001:
     display_name: Gemini 2.0 Flash 001
     api_name: gemini-2.0-flash-001
@@ -30,8 +35,10 @@ models:
     category: Gemini 2
     free_tier:
       status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.
+    status: deprecated
+    notes: >-
+      NOT PRESENT in the v1beta /models catalog on 2026-11-24. Legacy snapshot
+      only — do not route to this ID. Gemini 2.0 Flash is shut down.
   gemini-2.0-flash:
     display_name: Gemini 2 Flash
     api_name: gemini-2.0-flash
@@ -41,17 +48,22 @@ models:
       rpm: 0
       tpm: 0
       rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: "2026-08-15"
+    status: deprecated
+    notes: >-
+      NOT PRESENT in the v1beta /models catalog on 2026-11-24 — shut down.
+      Retained only as a 2026-08-15 rate-limit snapshot; do not route here.
+    last_verified: "2026-11-24"
   gemini-2.0-flash-lite:
     display_name: Gemini 2 Flash Lite
+    api_name: gemini-2.0-flash-lite
     family: Gemini 2
     category: Text-out models
     free_tier:
       rpm: 0
       tpm: 0
       rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: "2026-08-15"
+    status: deprecated
+    notes: >-
+      NOT PRESENT in the v1beta /models catalog on 2026-11-24 — shut down.
+      Retained only as a 2026-08-15 rate-limit snapshot; do not route here.
+    last_verified: "2026-11-24"
