@@ -1,7 +1,7 @@
 id: litellm-proxy-wide-30d-budget-exhausted-04049d
 title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
-column: backlog
-updated: 2026-11-25 19:06
+column: doing
+updated: 2026-11-25 19:07
 tags:
 - litellm
 - budget
@@ -83,9 +83,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 19:07
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-25 19:07
