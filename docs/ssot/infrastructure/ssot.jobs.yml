@@ -1677,6 +1677,29 @@ jobs:
     unit exactly. env_file supplies LITELLM_* for the SpendLogs admin-API
     fallback; USAGE_FEED_* overrides (target, token) live in
     ~/.config/secrets/usage-feed.env.'
+- id: litellm-budget-watch
+  name: LiteLLM budget watch — near-cap warn/alert per virtual key
+  host: idc03
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/litellm/budget-watch.py
+  cwd: '%h/CascadeProjects/chaba'
+  env_file: '%h/.config/secrets/litellm.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/litellm/budget-watch.py'
+  note: 'SEC-0962 / card litellm-budget-watch-enable (born of the 2026-10-24
+    chaba-key $5-cap 422 storm, model-key-usage-control audit pending item 6).
+    Reads LiteLLM_VerificationToken via `podman exec litellm-db psql`
+    (LiteLLM spend/cap/reset per key_alias) with /key/list admin-API fallback
+    via LITELLM_MASTER_KEY from env_file; judges warn >=80% / alert >=100%
+    (BUDGET_WATCH_WARN_PCT), uncapped keys noted not judged. Sinks: one
+    kind=ops-event doc per run in ada-ha-events-tony (mddb-ops :11025),
+    LINE push via ada-line-relay :8912/send (quiet 00-07 ICT, 240min resend
+    dedup by key+level hash), incident card via board-api on alert only.
+    Script live-smoked on idc03 2026-10-28 (verdict alert: bench at cap,
+    chaba 99%); timer installed 2026-11-25. Hourly cadence — psql read is
+    one query; LINE noise bounded by the resend gap.'
 - id: consumer-canary
   name: Consumer canary — retired-hostname audit of live surfaces
   host: idc03
