@@ -1,7 +1,7 @@
 id: dispatch-prompt-budget-measure
 title: 'Dispatch session bloat: measure per-session prompt-token drivers and propose caps'
 column: backlog
-updated: 2026-11-25 07:49
+updated: 2026-11-25 09:19
 brief: DEV-0044 lever 4. Avg dispatch session ~4.4M prompt tokens, top decile 10-17M, 97% cached — burn scales with
   turns x context size. Nothing measures the drivers yet.
 priority: medium
@@ -38,6 +38,9 @@ spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-1
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: devin
+  lane_source: fallback
 ref: DEV-1334
 comms:
 - at: 2026-11-24 22:59
@@ -47,3 +50,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as devin (fallback conf 0.06)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+claim: {}
