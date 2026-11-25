@@ -1,7 +1,7 @@
 id: idc02-audit-census-reconcile
 title: idc02 audit-hosts census reconcile — expected_services drift red
 column: backlog
-updated: 2026-11-25 07:53
+updated: 2026-11-25 14:11
 priority: low
 tags:
 - audit
@@ -44,3 +44,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:11
+  from: chaba
+  text: classified as codemod (kw:drift conf 1.00)
+- at: 2026-11-25 14:11
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: codemod
+  lane_source: kw
+claim: {}
