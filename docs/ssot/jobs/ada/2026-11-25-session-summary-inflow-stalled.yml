@@ -1,0 +1,129 @@
+date: 2026-11-25
+title: session-summary inflow stalled — text-mode sessions never call conversation.persist()
+domain: ada
+job: ada-session-summary-inflow-stalled
+cards: [ada-session-summary-inflow-stalled, ada-voice-text-mode-sessions-never-call-e007bd, ada-voice-land-text-mode-session-persist]
+refs: [ADA-0209, ADA-1400]
+host: idc03 (distill timer) / idc03 prod ada-voice lanes
+repo: chaba (this doc) + ada-voice (fix)
+summary: >
+  memory-distill.timer (idc03, Sun 09:45) exits 0 but finds 0 new
+  kind=session-summary docs in every ada-ha-recall-summary-<instance>
+  collection. Investigation (attempt 1, 2026-11-25 ~15:14 + this
+  re-verification ~19:30+07): the distill job is healthy and reads the
+  correct source — the upstream writer died lane-by-lane when sessions
+  moved to the OpenRouter text provider, whose close() never invokes
+  conversation.persist(). Fix exists (ada-voice c14758b) but is
+  LOCAL-ONLY on tony-macbook, unpushed and undeployed.
+
+symptom:
+  observed: "systemctl --user status ada-memory-distill on idc03: last
+    run 2026-11-15 09:45 status=0, '0 new session summary doc(s)' in all
+    recall-summary collections; downstream no source=extract drafts
+    since ~2026-10-17 (~480 drafts unreviewed), consolidate +
+    merge-proposals starved."
+  reverified_2026-11-25: >
+    MDDB search kind=session-summary, meta.date >= 2026-10-15:
+    ada-ha-recall-summary-tony=0 (newest 2026-10-01..03 window),
+    -michael=28 docs all dated 2026-10-16/17 (newest 10-17),
+    -kk/-kk-dev/-dev/-shared=0. Stall is live, not a one-off.
+
+root_cause:
+  writer_path: >
+    ada-voice ConversationMemory.persist() (backend/conversation_memory.py:949)
+    -> _update_summary() (:960) -> _save_session_summary() (:633) writes
+    kind=session-summary, key session-<date>-<sid>, meta.date/source to
+    ada-ha-recall-summary-{ada_instance_id()} (:128). persist() also
+    writes transcript file, NotebookLM source, extract candidates/actions
+    and reports/*.json — all dark for text-mode sessions.
+  live_only_path: "GeminiLiveProvider.close() fires
+    asyncio.create_task(conversation.persist()) at
+    backend/realtime_provider.py:6712 — the ONLY caller of persist() at
+    session end."
+  dead_path: >
+    OpenRouterTextProvider.close() (backend/openrouter_provider.py:638 on
+    origin/main) sets _closed + cancels _pending — never calls
+    conversation.persist(). Verified: `git show
+    origin/main:backend/openrouter_provider.py` has no persist call.
+  text_mode_routing: >
+    Sessions land on OpenRouterTextProvider via ?mode=text
+    (backend/line_relay.py:883, backend/tg_relay.py:558),
+    ADA_TEXT_ONLY_CALLERS, ADA_TEXT_ONLY_CHANNELS (default
+    telegram,tg,line; ada-ha-tony text-chat.conf drop-in adds chat,web
+    per fix card spec).
+  lane_timeline: >
+    Last kind=session-summary doc per collection: tony 2026-10-03,
+    dev 10-09, kk 10-13, kk-dev 10-14, michael 10-17 — consistent with
+    each lane's cutover to text mode, not a single outage. LiteLLM
+    SpendLogs show zero tool=session_summary/session_report calls since
+    2026-10-17 15:19 UTC (fix card evidence).
+
+reader_verdict:
+  memory_distill: >
+    scripts/ada/memory-distill.py reads ada-ha-recall-summary-<instance>
+    filtered kind=session-summary, incremental via
+    ~/.cache/ada-memory-distill.json — the CORRECT source. No code
+    change needed; it is a victim of the upstream writer gap, not the
+    bug. Once the ada-voice fix deploys, the next Sun 09:45 run picks up
+    every new session automatically.
+  alternative_sources: >
+    Considered and rejected: (a) reading transcripts/reports directly —
+    those are raw, un-summarized, and per-session rollup semantics live
+    in _update_summary; (b) a new collection — would orphan recall,
+    which reads the same recall-summary collections. The collection
+    contract is fine; the writer was incomplete.
+
+fix_status:
+  landed_in_repo: false
+  detail: >
+    ada-voice branch dispatch/text-mode-session-persist, commit c14758b
+    ("text provider: persist conversation on close — restore
+    summary/extract inflow"), exists ONLY as a local branch in worktree
+    ~/CascadeProjects/ada-voice-wt-text-mode-persist on tony-macbook —
+    1 ahead / 7 behind origin/main, `git ls-remote origin` shows no such
+    branch. origin/main still carries the bug. +2 regression tests were
+    written; full suite 1982 passed per fix-card comms.
+  process_gap: >
+    Card ada-voice-text-mode-sessions-never-call-e007bd auto-closed
+    2026-11-25 16:24 via merge-sweep on the CHABA dispatch branch merge
+    (outcome doc + job trail) — the ada-voice artifact itself never
+    pushed/merged/deployed. Card shows done/verified while the fix is
+    stranded. Follow-up card filed: see cards below / board.
+  urgency: >
+    The branch is local-only — if the tony-macbook worktree is GC'd
+    before landing, c14758b is lost. Push the branch FIRST.
+
+residual_gap:
+  window: "2026-10-17 -> fix deploy date"
+  detail: >
+    Text-mode sessions in this window wrote transcripts + session-end
+    markers but will never produce kind=session-summary docs. ~124 Ada
+    transcripts exist since 10-17 (AUD-0021 comm on this card). A
+    one-off backfill (replay transcripts through _summarize_session or
+    feed raw transcripts to memory-distill with a --since window) is a
+    possible follow-up — not required for pipeline health.
+  related: >
+    Session REPORTS (reports/*.json) share the same persist() gate and
+    are equally dark for text-mode sessions — the AUD-0021 evidence
+    (34 JSON reports, newest 10-17) is the same root cause.
+
+verify:
+  mddb_recheck: "search_documents kind=session-summary date>=2026-10-15
+    per collection (done 2026-11-25 ~19:30+07 — see symptom)."
+  post_deploy: >
+    After deploy-ada.sh on idc03: run a ?mode=text session to close,
+    then MDDB search ada-ha-recall-summary-<instance>
+    kind=session-summary date=today returns a new doc; next Sun 09:45
+    memory-distill reports >0 new docs.
+
+followups:
+  - "CARD FILED 2026-11-25 (ADA-1405): land
+    dispatch/text-mode-session-persist —
+    push branch from tony-macbook first (local-only), rebase onto
+    origin/main (7 behind), merge per ada-voice flow, deploy-ada.sh
+    idc03, verify summary doc appears."
+  - "optional backfill card: replay 10-17->now transcripts through
+    summary extraction so the gap window reaches memory-distill."
+  - "watch first Sunday run post-deploy: memory-distill should report
+    new docs; if still 0, check ADA_INSTANCE_ID/env on the lane and
+    _report_failure('session_summary_mddb') journal rows."
