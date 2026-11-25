@@ -1,7 +1,7 @@
 id: system-report-18-missing-nodes
 title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
-column: doing
-updated: 2026-11-25 12:50
+column: review
+updated: 2026-11-25 13:10
 priority: medium
 tags:
 - system-report
@@ -310,19 +310,43 @@ comms:
     alive producers (delivery gap fixed 11-18 by pull-report-metas); real fixes = report-system.py no-config KeyError
     (reproduced again this morning 06:48 CET — served report still frozen 11-20), watchdog offline_ok gap for macbook,
     ada-stt-con01 disabled flag. ha-live verified active+2'
+- at: 2026-11-25 13:10
+  from: mn01
+  text: 'finished (ok): exit=0 ed, per dispatch rules; the runner''s checkpoint handles that). Outcome posted to
+    the card. | devin-task-20261125-'
+- at: 2026-11-25 13:10
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 13:10
+  from: chaba
+  text: 'session-end checkpoint b0eaef61: 1 leftover file(s) committed'
+- at: 2026-11-25 13:10
+  from: chaba
+  text: banked 662 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 13:10
+  from: chaba
+  text: pushed dispatch/20261125-054445-after-the-nov-8-delivery-fix-s to origin
+- at: 2026-11-25 13:10
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 13:10
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 triage.yml` and `dispatch-outcome-20261125-093709-after-the-nov-8-delivery-fix-s.md`. | devin-task-20261125-093709-after-the-nov-8-delivery-fix-s.service:
-    Consumed 5min 2.112s CPU time over 13min 34.010s wall clock time, 924.6M memory peak.'
+  result: 'exit=0 ed, per dispatch rules; the runner''s checkpoint handles that). Outcome posted to the card. |
+    devin-task-20261125-054445-after-the-nov-8-delivery-fix-s.service: Consumed 27.659s CPU time over 5min 59.016s
+    wall clock time, 494.6M memory peak.'
   sweep:
     stale_running: 2026-11-25 09:56
     dirty: 6
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 12:43
 review_kind: verify
