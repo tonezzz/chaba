@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
 column: backlog
-updated: 2026-11-25 09:10
+updated: 2026-11-25 09:11
 priority: medium
 tags:
 - ops
@@ -176,6 +176,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:11
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
