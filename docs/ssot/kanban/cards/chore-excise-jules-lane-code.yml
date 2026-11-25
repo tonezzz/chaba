@@ -1,7 +1,7 @@
 id: chore-excise-jules-lane-code
 title: Excise retired jules lane code from runner-agent/dispatch/board-api
 column: doing
-updated: 2026-11-25 15:41
+updated: 2026-11-25 15:42
 ref: OPS-0026
 comms:
 - at: 2026-11-20 18:38
@@ -164,6 +164,12 @@ comms:
     BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip; Dispatch worktrees share one dirty harness-artifact
     file per host (idc02: a stal; The chaba merge test gate runs a FIXED file list in dispatch_repos.py REPO_TESTS;
     [board-tests-control-pane-lane-failures] checkpoint failed: c'
+- at: 2026-11-25 15:42
+  from: devin
+  text: 'dispatch picked up: runner-agent.py already clean on master (0 refs); excising remaining refs in ssot.devnest-lanes.yml
+    (lane block + JULES_LANES env), dispatch_repos.py tombstone comment, kanban-dispatch.py lane tuples, board-api.py
+    selftest strings, lane-savings.py sets, plus stale comments in repo-lint.yml/runner-fleet-health/onboard script
+    and card-ops-sweep skill'
 spec: Goal is to excise retired jules lane code across runner-agent.py, kanban-dispatch.py, dispatch_repos.py, board-api.py,
   and ssot.devnest-lanes.yml in the chaba repo, including associated tests and deployment. Host is tony-dell or
   idc02 where the installed runner-agent drifted from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py.
