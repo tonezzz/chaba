@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 10:24
+updated: 2026-11-25 14:43
 priority: medium
 tags:
 - tony-omen
@@ -240,6 +240,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-095124-find-why-snap-snapd-desktop-in on tony-macbook still
     dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 14:43
+  from: tony
+  text: 'answered job-input-tony-omen-snap-desktop-restart-loop: answer'
+- at: 2026-11-25 14:43
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
@@ -256,7 +262,7 @@ requests:
 - id: job-input-tony-omen-snap-desktop-restart-loop
   ask: 'Job needs your input: Reboot tony-omen now to verify the snapd-desktop-integration fix post-boot, or wait
     for the next natural reboot?'
-  status: open
+  status: answered
   at: 2026-11-25 10:08
   from: chaba
   options:
@@ -266,3 +272,4 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+  answer: answer
