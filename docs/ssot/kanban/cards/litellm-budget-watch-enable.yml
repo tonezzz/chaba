@@ -1,7 +1,7 @@
 id: litellm-budget-watch-enable
 title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
 column: doing
-updated: 2026-11-25 10:24
+updated: 2026-11-25 10:26
 spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
   on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
   caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
@@ -68,5 +68,10 @@ comms:
     primer injected 8 lesson(s): [board-api-wiki-read-s; [ada-ha-dashboard-live-view-drift] merge-sweep: no session/worktree
     found for de; [education-maintenance-consolidated-report] DEPLOYED end-to-end: #75 (BGE sugges; [lesson-audit-scheduled]
     LIVE (2026-10-25): chaba-lessons-aud'
+- at: 2026-11-25 10:26
+  from: devin
+  text: 'Dispatch started on idc02 worktree. Plan: declare litellm-budget-watch job in ssot.jobs.yml (host idc03,
+    every 1h, env_file litellm.env), render units, install on idc03 ~/.config/systemd/user, then --selftest + --dry-run
+    on idc03. Script + litellm.env + litellm-db container all confirmed present on idc03.'
 claim:
   since: 2026-11-25 10:23
