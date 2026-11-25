@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 15:00
+updated: 2026-11-25 15:01
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -176,6 +176,16 @@ comms:
   from: tony
   text: 'infra note: use run-cpu-job.sh for CPU-heavy omen runs'
 - at: 2026-11-25 15:00
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:01
+  from: tony
+  text: 'Load-guard follow-up (2026-11-25 incident): the earlier nohup CPU-only runs drove 1m load ~57 on 12 cores,
+    swap 15/15 GiB and OOM-killed open-jev. For any CPU-heavy step on tony-omen, launch through /home/tony/.local/bin/run-cpu-job.sh
+    <name> <cmd...> — e.g. run-cpu-job.sh resshift-v1-s15 ./venv/bin/python inference_resshift.py -i ../src/comparison-b-sharp-leaves.png
+    -o ../out/resshift-v1-s15 --task realsr --scale 4 --version v1 --chop_size 256 --seed 12345. It wraps the job
+    in a systemd --user '
+- at: 2026-11-25 15:01
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
 action:
