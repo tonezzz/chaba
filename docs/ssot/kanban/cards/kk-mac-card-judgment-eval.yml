@@ -1,7 +1,7 @@
 id: kk-mac-card-judgment-eval
 title: kk-mac card-judgment eval — can its local models replace paid side-call lanes?
-column: doing
-updated: 2026-11-25 08:29
+column: review
+updated: 2026-11-25 08:31
 priority: medium
 tags:
 - kk-mac
@@ -225,13 +225,40 @@ comms:
     (pin lost ground vs 11-13); qwen3:8b 0.745/0.830/16 parse-fails still fragile; qwen2.5vl:7b 0.755/0.840 misses
     all. Local models still crush paid flash-lite (0.49-0.57 acc on sibling corpora). Routing proposal updated (results_2026_11_25
     + current_state — suggests tracking T3'
+- at: 2026-11-25 08:31
+  from: tony-macbook
+  text: 'finished (ok): exit=0 corpus case-count discrepancy, and untested new pulls `qwen3:30b-a3b`/`gpt-oss:20b`.
+    | devin-task-20261125-074813'
+- at: 2026-11-25 08:31
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 08:31
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-074813-evaluate-whether-kk-mac-m4-max
+    is 306 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 08:31
+  from: chaba
+  text: banked 566 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 08:31
+  from: chaba
+  text: pushed dispatch/20261125-074813-evaluate-whether-kk-mac-m4-max to origin
+- at: 2026-11-25 08:31
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 08:31
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 corpus case-count discrepancy, and untested new pulls `qwen3:30b-a3b`/`gpt-oss:20b`. | devin-task-20261125-074813-evaluate-whether-kk-mac-m4-max.service:
+    Consumed 1min 19.589s CPU time over 41min 28.994s wall clock time, 394.1M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 07:47
+review_kind: verify
