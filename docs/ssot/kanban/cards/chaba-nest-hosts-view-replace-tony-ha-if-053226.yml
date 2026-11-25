@@ -1,7 +1,7 @@
 id: chaba-nest-hosts-view-replace-tony-ha-if-053226
 title: chaba-nest hosts view — replace tony-ha iframe with native/mobile-friendly cards
 column: done
-updated: 2026-11-25 17:39
+updated: 2026-11-26 03:50
 priority: medium
 spec: 'https://ada-ha.surf-thailand.com/chaba-nest/hosts is a panel view with one iframe -> https://tony-ha.surf-thailand.com/chaba-admin/hosts
   (lovelace.chaba_nest on ada-ha :8125). Problems: (1) double sidebar — full HA page iframed inside HA; (2) iframe
@@ -260,12 +260,20 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-25 18:55
   from: tony
-  text: '[verify final] kk-mac gate uses max(cpu_temp_c,gpu_temp_c)>55C with sticky temp_cooldown until <=50C
-    (KK_ADMISSION_RESUME_C/TEMP_STATE); deployed to kk-mac worker + idc03 shim and restarted shim. Live sticky-deny
-    proven (cooling=true + 50.5C => eligible=false temp_cooldown), then state cleared and gate reopened at ~47C.
-    Redeployed fixed ada-nest-heartbeat.sh to kk-mac (old copy lacked smctemp retry + gpu_temp_c); mddb heartbeat
-    now carries cpu_temp_c=40.0/gpu_temp_c=49.9. Devices were SSD-hot from MDDB bge-m3 embeds admitted through the
-    shim at the old sharp 55C threshold; hysteresis stops the admit/reheat oscillation. 26 admission tests pass.'
+  text: '[verify final] kk-mac gate uses max(cpu_temp_c,gpu_temp_c)>55C with sticky temp_cooldown until <=50C (KK_ADMISSION_RESUME_C/TEMP_STATE);
+    deployed to kk-mac worker + idc03 shim and restarted shim. Live sticky-deny proven (cooling=true + 50.5C =>
+    eligible=false temp_cooldown), then state cleared and gate reopened at ~47C. Redeployed fixed ada-nest-heartbeat.sh
+    to kk-mac (old copy lacked smctemp retry + gpu_temp_c); mddb heartbeat now carries cpu_temp_c=40.0/gpu_temp_c=49.9.
+    Devices were SSD-hot from MDDB bge-m3 embeds admitted through the shim at the old sharp 55C threshold; hysteresis
+    stops the admit/reheat oscillation. 26 admission tests pass.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
