@@ -28,7 +28,7 @@ MDDB = "http://100.102.134.91:11023/v1"
 
 ENDPOINTS = {
     "vcast_api":  "https://tony-dell.taila0626a.ts.net/api/input-bridge/displays",
-    "camwall":    "https://tony-dell.taila0626a.ts.net/apps/camwall/",
+    "camwall":    "https://tony-dell.taila0626a.ts.net/apps/camwall/data/zones.json",
     "gev":        "https://tony-dell.taila0626a.ts.net/apps/gev/",
 }
 

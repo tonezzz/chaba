@@ -1,0 +1,63 @@
+title: camwall retirement phase 2 — ada-snapshot-only executed
+subtitle: >-
+  Tony picked ada-snapshot-only; wall/CMS/vcast surface retired, the
+  pull-vps → camwall-edge → /apps/camwall/data/* plane kept alive for
+  ada-voice stale_snapshot. Runbook: docs/kb/retired-apps/camwall.md
+icon: camera
+job: camwall-retire-phase2-ada-snapshot
+date: 2026-11-25
+card: camwall-retire-to-wiki
+host: mn01 (dispatch worktree)
+status: done-awaiting-merge
+summary: >-
+  Phase 2 executed live on 2026-11-25 after Tony answered the Phase-1
+  board request with ada-snapshot-only. Deviation: edge+route could not
+  be fully stopped because ada-voice stale_snapshot/_camwall_fallback
+  fetch thumbs over HTTP through them — the data plane was narrowed
+  instead of removed. Verified live: /apps/camwall/data/* 200,
+  non-data paths 404, pull-vps+edge still active on idc02/idc03.
+key_decision: >-
+  Option (b) literally said stop edge+route, but the fallback it protects
+  rides exactly that path (ADA_CAMWALL_BASE → tony-dell/apps/camwall →
+  edge :8380 → ~/.local/share/camwall/data). Chose intent over letter:
+  data plane kept, everything else stopped. Flagged on card comms.
+stopped_live:
+  - idc03: cam-wall-cms-vps.timer+.service disable --now
+  - idc02: camwall-render-check.timer+.service disable --now
+  - tony-omen: cam-wall-cms.timer, cam-wall-cms-kk.timer, cam-wall-roster-audit.timer (+services) disable --now (all were live)
+  - tony-dell: already parked/disabled — verified only
+kept_running:
+  - cam-wall-pull-vps.timer idc02+idc03 (30s, OWN/PUSH lane split, cross-rsync full data set)
+  - camwall-edge.service idc02+idc03 (:8380 static file_server of ~/.local/share/camwall)
+  - input-bridge /camwall GET+POST (pull gating + ada zone list + cctv_wall zone-enable)
+  - zones.yml, all data dirs, ~/.config/camwall.env, ~/.ssh/camwall-push, ~/.venvs/camwall
+retired_surface:
+  - route narrowed /apps/camwall/* -> /apps/camwall/data/* (ssot.routes.yml + stacks/web/Caddyfile; live-applied on tony-dell web + idc02 web-srv)
+  - public/apps/camwall/{index.html,tour-th001.html} deleted (live copies moved aside on idc02)
+  - CMS publishing dead fleet-wide; existing MDDB camwall-* pages stale (left in place)
+  - vcast wall casts of camwall pages dead (404)
+  - ci.camwall-smoke + workflow removed; chaba-audit probe -> data/zones.json; ssot.audit.hosts.yml updated
+repo_changes:
+  - docs/ssot/infrastructure/ssot.routes.yml (camwall path narrowed + retirement note)
+  - stacks/web/Caddyfile (narrowed block)
+  - stacks/web/public/apps/routes.json (re-rendered)
+  - stacks/web/public/apps/camwall/ static UI deleted
+  - docs/ssot/apps/ssot.apps.camwall.yml (PARTIALLY RETIRED banner)
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml (expected units pruned)
+  - docs/ssot/infrastructure/ssot.quality.yml (ci.camwall-smoke removed)
+  - .github/workflows/camwall-smoke.yml deleted
+  - scripts/audit/chaba-audit.py (probe -> /apps/camwall/data/zones.json)
+  - docs/kb/retired-apps/camwall.md (status + executed checklist)
+live_apply_notes:
+  - tony-dell web container runs narrowed config in memory after restart; on-disk mirror Caddyfile still old until served-mirror sync — restart web.service once after sync (or leave; both configs serve /data/*)
+  - idc02 ~/web-srv/caddy/Caddyfile patched + caddy reload (backup .bak-camwall-retire-20261125); static files moved to ~/web-srv/public/apps/camwall-retired-bak/ (web-srv-sync has no --delete)
+  - single-file bind-mounted Caddyfiles: caddy reload can report "config is unchanged" on stale inode — restart the unit instead (same lesson as 2026-11-25 mn-ha-dev move)
+do_not:
+  - do NOT enable cam-wall-pull on tony-dell (empty CAMWALL_OWN races VPS manifests; data stale since 2026-10-05)
+  - do NOT delete data dirs or scripts/cam-wall/zones.yml
+  - do NOT stop camwall-edge or pull-vps while ada-snapshot fallback is wanted
+verify: >-
+  curl https://tony-dell.taila0626a.ts.net/apps/camwall/data/zones.json -> 200;
+  /apps/camwall/yolov8n.onnx -> 404; systemctl --user list-timers on
+  idc02/idc03 shows only cam-wall-pull-vps; podman ps shows camwall-edge up.
+restore_doc: docs/kb/retired-apps/camwall.md

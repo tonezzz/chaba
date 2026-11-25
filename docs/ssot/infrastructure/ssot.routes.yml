@@ -199,7 +199,7 @@ routes:
   - {id: chaba-h3,         kind: static, path: /chaba-h3/*,            owner: chaba}
   - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "idc02.taila0626a.ts.net:8092", owner: chaba, custom: true, note: "docs-site route set + / root fallthrough; upstream idc02 since 2026-10-18"}
   - {id: map,              kind: static, path: /apps/map/*,            owner: chaba}
-  - {id: camwall,          kind: proxy,  path: /apps/camwall/*,        strip: /apps/camwall, upstream: ["http://100.102.134.91:8380", "http://100.123.163.11:8380"], lb: least_conn, owner: camwall}
+  - {id: camwall,          kind: proxy,  path: /apps/camwall/data/*,   strip: /apps/camwall, upstream: ["http://100.102.134.91:8380", "http://100.123.163.11:8380"], lb: least_conn, owner: camwall, note: "RETIRED wall UI 2026-11-25 (card camwall-retire-to-wiki, option ada-snapshot-only): only the /data/* thumb+manifest plane survives — ada-voice stale_snapshot/_camwall_fallback + eye snap: links fetch it. Wall index/vcast/CMS surface gone; runbook docs/kb/retired-apps/camwall.md"}
   - {id: yomi,             kind: proxy,  path: /api/yomi/*,            upstream: "100.102.134.91:3000", owner: yomi}
   - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.123.163.11:8084", owner: weaviate}
   - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.123.163.11:3001", owner: gpu}

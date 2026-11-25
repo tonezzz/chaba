@@ -407,10 +407,13 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
-	handle /apps/camwall {
-		redir * /apps/camwall/ 308
+	# camwall wall UI retired 2026-11-25 (camwall-retire-to-wiki, ada-snapshot-only)
+	# — only the /data/* thumb+manifest plane stays for ada-voice stale_snapshot
+	handle /apps/camwall/data {
+		redir * /apps/camwall/data/ 308
 	}
-	handle_path /apps/camwall/* {
+	handle /apps/camwall/data/* {
+		uri strip_prefix /apps/camwall
 		reverse_proxy http://100.102.134.91:8380 http://100.123.163.11:8380 {
 			lb_policy least_conn
 			lb_retries 2

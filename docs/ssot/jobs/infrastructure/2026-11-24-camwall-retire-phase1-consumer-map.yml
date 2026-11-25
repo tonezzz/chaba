@@ -1,0 +1,46 @@
+title: camwall retirement phase 1 — consumer map complete, awaiting sign-off
+subtitle: >-
+  Every camwall producer/reader mapped in-repo; restore runbook drafted at
+  docs/kb/retired-apps/camwall.md; Phase 2 blocked on full-stop vs
+  keep-Ada-snapshot-only decision
+icon: camera
+job: camwall-retire-phase1-consumer-map
+date: 2026-11-24
+card: camwall-retire-to-wiki
+host: tony-omen (dispatch worktree)
+status: phase1-complete-awaiting-signoff
+summary: >-
+  Phase 1 consumer map for camwall retirement completed in-repo. Full map,
+  stop checklist, and restore runbook live at
+  docs/kb/retired-apps/camwall.md. Sign-off request raised on the card
+  (request id phase-1-consumer-map-done-docs-kb-retire-b94876) with options
+  full-stop vs keep-Ada-snapshot-only; suggested=ada-snapshot-only.
+  Phase 2 (stop/disable units, remove routes, finalize doc status) is
+  blocked on Tony's answer.
+producers:
+  - cam-wall-pull.timer/.service — tony-dell (systemd/cam-wall-pull.*)
+  - cam-wall-pull-vps.timer/.service — idc02+idc03 (systemd/cam-wall-pull-vps.*)
+  - cam-wall-cms.timer/.service — tony-dell
+  - cam-wall-cms-vps.timer/.service — idc02+idc03
+  - cam-wall-cms-kk.timer — already dark since OPS-0749
+  - camwall-edge.service quadlet :8380 — idc02+idc03 (idc01 masked standby)
+  - cam-wall-roster-audit.timer — tony-dell+tony-omen (no repo unit file)
+  - camwall-render-check.timer — idc02 (no repo unit file)
+readers_will_break:
+  - /apps/camwall Caddy route + routes.json + ssot.routes.yml
+  - eye.js ?src=snap:<zone>/<key>
+  - input-bridge /camwall + vcast-auto-health probe_lease
+  - vcast wall casts (gev-cast-verify WALL_URL)
+  - ada-cms-pages camwall-*/cam-*/cctv-walls/dvr-wall (HA tabs, nest tiles)
+  - chaba-audit /apps/camwall probe; camwall-smoke CI workflow
+  - ada-voice (external repo): vms_camera.stale_snapshot, cctv_wall, ADA_CAMWALL_BASE
+do_not_stop:
+  - mn01 vms-snap.py:8377 (shared shim — ada_camera_snapshot, /apps/vms-snap, eye vms:)
+  - traffic-snap.py:8378
+  - wp-cam-snapshot job (go2rtc->WP cam CPT, independent)
+keep:
+  - scripts/cam-wall/zones.yml
+  - data dirs (tony-dell public/apps/camwall/data, idc02/03 ~/.local/share/camwall/data)
+  - ~/.config/camwall.env (restore input)
+restore_doc: docs/kb/retired-apps/camwall.md
+verify: card comms + board request on camwall-retire-to-wiki; doc renders consumer map + per-host stop checklist + 10-step restore
