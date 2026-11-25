@@ -1,7 +1,7 @@
 id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
 title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
 column: backlog
-updated: 2026-11-25 07:36
+updated: 2026-11-25 07:37
 spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
   (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
   tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
@@ -40,6 +40,13 @@ comms:
     (retire/ops-1310-helm-leftovers tip 9c942d006a); checkout now master at origin/master, behind 0, dirty 0. tony-omen
     mostly converged — stash@{1} "OPS-1330 pre-convergence tony-omen 20261125-072211" preserves 153 preflight dirty
     files; ahead 1 commit prese'
+- at: 2026-11-25 07:37
+  from: devin
+  text: 'Final: both hosts converged to origin/master c9e971c521, behind 0. idc02 dirty 0, stash@{0} OPS-1330 pre-convergence
+    idc02 20261125-073302 preserves 56 files, ahead backup ops-1330/idc02-ahead-backup=9c942d006a. tony-omen dirty
+    1 (rescued untracked docs/ssot/focus-inbox/2026-11-25-003242-gh-run-tonezzz-chaba-45518383969.yml, not in any
+    stash - preserved), stash@{1} OPS-1330 pre-convergence tony-omen 20261125-072211 preserves 153 files, ahead
+    backup ops-1330/tony-omen-ahead-backup=f97afaa1c1c. Ar'
 requests:
 - id: how-should-the-dirty-in-flight-work-on-i-11feb4
   ask: How should the dirty in-flight work on idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox
