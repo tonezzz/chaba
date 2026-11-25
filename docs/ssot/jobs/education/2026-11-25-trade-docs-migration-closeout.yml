@@ -1,0 +1,58 @@
+title: trade docs -> Education migration — closeout record
+subtitle: '62-page corpus fully covered by 9 lesson topics; wiki Education
+  series live; hub-title fork found + fixed'
+icon: education
+version: 1
+
+card: trade-docs-education-migration
+ref: OPS-0102
+date: 2026-11-25
+dispatch: 20261125-095725-migrate-the-trade-system-docs-
+parent: trade-docs-education-migration (OPS-0102)
+
+job:
+  id: trade-docs-migration-closeout
+  manual: true
+  host: tony-macbook (dispatch worktree); API ops ran on idc03
+    (~/CascadeProjects/chaba-tony-dell served checkout — tailnet
+    board-api route from macbook was timing out under load)
+
+end_state: |
+  - 9 trade-* lessons live (op:list source=wiki, 225 total): trade-map
+    (hub, lesson-f429ea4f886c -> Education:Trade) + getting-started,
+    architecture, data-sources, ui, signals-backtest, workflows,
+    knowledge, gold-thb.
+  - trade-lesson-map.yml covers all 62 docs-mcp pages, 0 uncovered
+    (verified --dry-run on idc03 against the real index).
+  - lesson-drift-map.yml pages == map pages for every topic (added
+    core/DECISION_LOG + intermittent-availability-plan to
+    trade-architecture, DATA_QUALITY_SYSTEM to trade-data-sources —
+    the daily drift check now watches them).
+  - Wiki Education:Trade hub carries the 8-topic inventory + generated
+    == Series == links; Education:Index/Due rebuilt by lessons-due
+    --dest wiki (rev 516/517).
+  - News milestone evt-b20bb9e92e66c8b7 -> WP news post 7673
+    (members/private), board comm delivered; telegram queued->dead
+    (no bound topic for project=education — relay binding gap, cosmetic).
+
+found_fixed: |
+  wiki-lesson-migrate --apply --only trade forked trade-map into TWO
+  Education: pages: Education:Trade (series hub, door-minted title via
+  meta.wiki_title) AND Education:Trade-Map (lesson_wiki_title(topic)).
+  Both carried the Education template topic=trade-map -> op:list
+  double-counted the slug. Consolidated live: fresh inventory + series
+  block published onto Education:Trade (rev 519), -Map deleted via
+  /lesson op:delete, MDDB mirror restored via lesson-mddb-backfill
+  --only. Root cause fixed in code: publication.py gains
+  LESSON_SERIES_HUBS {ada-nest:Ada-Nest, trade:Trade} and
+  lesson_wiki_title resolves '<stem>-map' -> hub title; SERIES in
+  wiki-lesson-migrate.py now aliases that table. EFFECTIVE ONLY AFTER
+  board-api restart on idc03 (running process predates the change) —
+  until then a trade-map re-file still writes Education:Trade-Map;
+  delete it again if it reappears.
+
+verify: |
+  ssh idc03 'curl -X POST $API/lesson -d "{\"op\":\"list\",\"source\":\"wiki\"}"'
+    -> exactly one lesson-f429ea4f886c row, wiki_title Education:Trade
+  python3 scripts/trade-lesson-migrate.py --dry-run   # on idc03/toney-dell
+    -> 9 topics 'exists -> skip', no UNCOVERED block

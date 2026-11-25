@@ -327,11 +327,28 @@ def html_to_wikitext(markup: str) -> str:
     return text.strip()
 
 
+# Series-hub convention (plan doc 2026-11-06-wiki-member-knowledge-
+# surface, scripts/wiki-lesson-migrate.py): a '<stem>-map' lesson's
+# Education: page IS the series hub — '<stem>-map' -> '<Hub>'. The door
+# must mint the hub title or every /lesson re-file forks a '-Map' twin
+# beside the hub (seen live 2026-11-25: trade-map dual-existed as
+# Education:Trade + Education:Trade-Map; card
+# trade-docs-education-migration). wiki-lesson-migrate SERIES aliases
+# this table — extend here, not there.
+LESSON_SERIES_HUBS = {"ada-nest": "Ada-Nest", "trade": "Trade"}
+
+
 def lesson_wiki_title(topic: str, prefix: str = "Education:") -> str:
     """Readable Education: page title from a lesson topic — the
     lesson-<md5> slug never leaks to readers. First letter of each
     lowercase (hyphen-)word is capitalized; acronyms survive;
-    MediaWiki-forbidden title chars fold to spaces."""
+    MediaWiki-forbidden title chars fold to spaces. '<stem>-map'
+    topics resolve to their series hub (LESSON_SERIES_HUBS)."""
+    if prefix == "Education:":
+        topic_l = str(topic or "").strip().lower()
+        for stem, hub in LESSON_SERIES_HUBS.items():
+            if topic_l == f"{stem}-map":
+                return f"{prefix}{hub}"
     t = _LESSON_TITLE_BAD.sub(" ", str(topic or ""))
     words = []
     for w in re.split(r"\s+", t):

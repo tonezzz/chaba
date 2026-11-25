@@ -36,8 +36,10 @@ except Exception:
     API = "https://idc03.taila0626a.ts.net:10000"
 
 # topic-stem -> hub page name. '<stem>-map' lessons carry the hub's
-# curated content; other '<stem>-*' topics are series members.
-SERIES = {"ada-nest": "Ada-Nest", "trade": "Trade"}
+# curated content; other '<stem>-*' topics are series members. Canonical
+# table lives in publication.py (LESSON_SERIES_HUBS) so the /lesson
+# door mints the same hub titles — extend there, not here.
+SERIES = pub.LESSON_SERIES_HUBS
 
 META_KEYS = ("level", "source", "learned_at", "next_review", "status",
              "updated", "no_th")
