@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-25 10:13
+updated: 2026-11-25 10:17
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -431,6 +431,13 @@ comms:
     dispatch picked up (tony-dell). Phase 0 verified intact:; idc02''s kanban-dispatch.service was a linked unit
     running a stale scripts/-only ; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi;
     [runner-load-cap-per-claim-type] primer injected 8 lesson(s):'
+- at: 2026-11-25 10:17
+  from: devin
+  text: 'attempt 2 done (idc02). Recovered attempt-1 stranded commit: cherry-picked 0e8730d0e8e -> c0b7265cd3 (ghost-prune
+    fix + soak evidence doc + 4 tests; 31/31 pytest, 21/21 gate matrix pass on merged master). Recorded Tony''s
+    stay-recommend decision in the soak doc (a2bc839931). Re-verified pilots live ~10:20 ICT: idc02/con01/mn01 all
+    recommend mode, installed md5 affd0aeb == c4a7ab375bb, zero drift, 137 actions on idc02 all held/not-allowlisted,
+    zero executions. Phase 0 complete; Phase 1 deferred pe'
 action:
   type: dispatch
   status: running
