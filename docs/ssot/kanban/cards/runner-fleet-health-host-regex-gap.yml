@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
-column: doing
-updated: 2026-11-25 20:51
+column: review
+updated: 2026-11-25 20:52
 priority: medium
 tags:
 - ops
@@ -33,9 +33,11 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules. | devin-task-20261125-203735-goal-close-the-host-discovery-.service:
+    Consumed 2min 17.437s CPU time over 13min 44.324s wall clock time, 821.4M memory peak.'
 note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
 ref: OPS-1406
 comms:
@@ -106,5 +108,30 @@ comms:
     runner-fleet-health.py: probe dispatch ssh|board-api; kk-mac probed via /ready heartbeat on /queue (stale=note,
     missing=>7d=violation); judge skips devin checks when devin:false; queue_satisfiability uses declared labels
     for heartbeat hosts. con01 git-identity fixed live (fleet Dev'
+- at: 2026-11-25 20:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules.
+    | devin-task-20261125-203735'
+- at: 2026-11-25 20:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:52
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-203735-goal-close-the-host-discovery-
+    is 17 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 20:52
+  from: chaba
+  text: banked 713 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:52
+  from: chaba
+  text: pushed dispatch/20261125-203735-goal-close-the-host-discovery- to origin
+- at: 2026-11-25 20:52
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 20:52
+  from: chaba
+  text: 'worktree kept: dirty — 7 uncommitted file(s)'
 claim:
   since: 2026-11-25 20:36
+review_kind: verify
