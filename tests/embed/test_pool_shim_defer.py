@@ -40,7 +40,10 @@ def _stub(delay_s, tag):
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.wfile.write(body)
+            except OSError:
+                pass  # client (race loser) already hung up
 
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -161,6 +164,113 @@ class DeferTier(unittest.TestCase):
                     s.send(b"x")
         finally:
             shim._abort_inflight = real_abort
+
+
+def _flaky_stub():
+    """Ollama-shaped stub that 500s while state['fail'] is set and 200s
+    after — exercises the dead-cooldown breaker without real network
+    failures. Returns (url, state, server)."""
+    state = {"fail": True, "hits": 0}
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_POST(self):
+            state["hits"] += 1
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            if state["fail"]:
+                body, code = b'{"error":"boom"}', 500
+            else:
+                body = json.dumps({"embeddings": [[2]]}).encode()
+                code = 200
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except OSError:
+                pass  # client (race loser) already hung up
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{srv.server_address[1]}", state, srv
+
+
+class DeadCooldown(unittest.TestCase):
+    """Circuit breaker (card embed-pool-shim-fast-fail-for-dead-upstr,
+    soak 2026-11-08): DEAD_AFTER consecutive failures parks an upstream
+    for DEAD_COOLDOWN_S — it is excluded from races while parked, gets a
+    half-open retry after the cooldown, and a win resets the streak."""
+
+    def setUp(self):
+        self._saved = {k: getattr(shim, k) for k in
+                       ("UPSTREAMS", "DEFER_UPSTREAMS", "DEFER_AFTER_S",
+                        "TIMEOUT", "DEAD_AFTER", "DEAD_COOLDOWN_S")}
+        self._stats_saved = dict(shim._stats)
+        shim.TIMEOUT = 5
+        shim.DEFER_UPSTREAMS = []
+        shim.DEFER_AFTER_S = 60
+        shim.DEAD_AFTER = 2
+        shim.DEAD_COOLDOWN_S = 0.4
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            setattr(shim, k, v)
+        shim._stats.clear()
+        shim._stats.update(self._stats_saved)
+
+    def _wire(self, primaries, deferred):
+        shim.UPSTREAMS = primaries
+        shim.DEFER_UPSTREAMS = deferred
+        shim._stats.clear()
+        for u in primaries + deferred:
+            shim._stats[u] = {"wins": 0, "fails": 0, "last_ms": 0,
+                              "consec": 0, "dead_until": 0.0}
+
+    def test_failing_upstream_parks_and_sits_out(self):
+        flaky, state, srv = _flaky_stub()
+        fast, _ = _stub(0.05, 1)
+        self._wire([flaky, fast], [])
+        try:
+            for _ in range(shim.DEAD_AFTER):
+                u, st, _ = shim._race("/api/embed", b"{}")
+                self.assertEqual(st, 200)
+                self.assertEqual(u, fast)  # 500s never win the race
+            self.assertEqual(state["hits"], shim.DEAD_AFTER)
+            self.assertGreater(shim._stats[flaky]["dead_until"],
+                               time.time())
+            # Parked: further races must not spawn it at all.
+            for _ in range(3):
+                shim._race("/api/embed", b"{}")
+            self.assertEqual(state["hits"], shim.DEAD_AFTER)
+            self.assertEqual(shim._stats[flaky]["fails"],
+                             shim.DEAD_AFTER)
+        finally:
+            srv.shutdown()
+
+    def test_parked_upstream_half_opens_and_recovers(self):
+        flaky, state, srv = _flaky_stub()
+        fast, _ = _stub(0.05, 1)
+        self._wire([flaky, fast], [])
+        try:
+            for _ in range(shim.DEAD_AFTER):
+                shim._race("/api/embed", b"{}")
+            parked_hits = state["hits"]
+            state["fail"] = False  # upstream recovers during cooldown
+            time.sleep(shim.DEAD_COOLDOWN_S + 0.15)
+            u, st, _ = shim._race("/api/embed", b"{}")
+            self.assertEqual(st, 200)
+            # Recovered upstream answers instantly — wins the half-open race.
+            self.assertEqual(u, flaky)
+            self.assertGreater(state["hits"], parked_hits)
+            st_flaky = shim._stats[flaky]
+            self.assertEqual(st_flaky["consec"], 0)
+            self.assertEqual(st_flaky["dead_until"], 0.0)
+            self.assertEqual(st_flaky["wins"], 1)
+        finally:
+            srv.shutdown()
 
 
 if __name__ == "__main__":

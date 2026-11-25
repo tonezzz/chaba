@@ -21,6 +21,10 @@ Config (env):
   EMBED_POOL_ADDR       listen addr           (default 127.0.0.1:11436)
   EMBED_POOL_TIMEOUT_S  per-upstream timeout  (default 8 — must stay under
                         mddb's internal embed deadline ~10s)
+  EMBED_POOL_DEAD_AFTER       consecutive failures before an upstream is
+                        parked                          (default 3)
+  EMBED_POOL_DEAD_COOLDOWN_S  park duration; half-open retry after
+                                                          (default 60)
   EMBED_POOL_LANE       optional lane marker forwarded to upstreams as the
                         `x-embed-lane` header — set "bulk" on pool serving
                         backfill banks so gemini-ollama-proxy budgets can
@@ -254,8 +258,11 @@ class H(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
+            now = time.time()
             with _lock:
                 st = {u: dict(s) for u, s in _stats.items()}
+            for s in st.values():
+                s["dead"] = s["dead_until"] > now
             return self._send(200, json.dumps(
                 {"ok": True, "upstreams": UPSTREAMS,
                  "defer_upstreams": DEFER_UPSTREAMS,
