@@ -1,8 +1,8 @@
 id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
-column: review
-updated: 2026-11-24 23:28
+column: backlog
+updated: 2026-11-25 07:31
 priority: high
 tags:
 - devnest
@@ -35,7 +35,7 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: idle
   sweep:
     failed_noted: 2026-11-09 20:34
     session_gone: 2026-11-24 22:24
@@ -442,6 +442,14 @@ comms:
     292L + outcome doc, +705/-96) was never committed and is NOT on master (master only has single-pool RUNNER_CAP).
     Preserved as commit on local branch dispatch/20261124-211725-problem-observed-2026-11-09-re @ tony-dell:~/CascadeProjects/chaba
     — the per-ex'
+- at: 2026-11-25 07:31
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 07:31
+  from: tony
+  text: put on hold
 claim:
   since: 2026-11-24 21:16
 review_kind: verify
