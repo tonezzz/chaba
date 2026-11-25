@@ -1,7 +1,7 @@
 id: session-capture-c1-spec
 title: 'Session capture C.1: router/harvester contract spec (SSOT)'
 column: doing
-updated: 2026-11-25 10:07
+updated: 2026-11-25 10:09
 priority: medium
 tags:
 - dev-0038-followup
@@ -96,6 +96,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-094612-goal-define-capture-router-har,
     branch dispatch/20261125-094612-goal-define-capture-router-har'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094612-goal-define-capture-router-har no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-094612-goal-define-capture-router-har on
+    idc02 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: running
@@ -103,5 +111,8 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:09
+    session_gone: 2026-11-25 10:09
 claim:
   since: 2026-11-25 09:45

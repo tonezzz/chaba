@@ -1,7 +1,7 @@
 id: session-capture-c3-hooks
 title: 'Session capture C.3: wire hooks/commands to capture-router'
 column: doing
-updated: 2026-11-25 09:58
+updated: 2026-11-25 10:09
 priority: medium
 tags:
 - dev-0038-followup
@@ -71,6 +71,10 @@ comms:
     wired into /session-capture + /handoff-packet (opencode cmd/instructions/skill), .devin session-capture + finish-and-close
     skills, devin-session-end.sh (focus_session + pinned open asks), ansible chaba-session-capture helper. Acceptance:
     dedupe_key replay = no'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094719-goal-wire-session-capture-and- no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -78,5 +82,7 @@ action:
   lane_source: fallback
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:09
 claim:
   since: 2026-11-25 09:46
