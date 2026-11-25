@@ -1,7 +1,7 @@
 id: michael-dev-migrate-mn01
 title: Migrate michael-dev HA instance from idc02:8124 to mn01
 column: backlog
-updated: 2026-11-24 21:12
+updated: 2026-11-25 07:46
 brief: 'Tony 2026-11-09: move michael-dev to mn01 (currently on idc02 since 2026-10-26 migration).'
 priority: medium
 tags:
@@ -160,3 +160,15 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:46
+  from: chaba
+  text: classified as devin (fallback conf 0.07)
+- at: 2026-11-25 07:46
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
