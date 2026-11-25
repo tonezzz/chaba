@@ -1,7 +1,7 @@
 id: explore-yolo-for-gesture-control-in-apps-8e27eb
 title: Explore YOLO for gesture control in /apps/eye/
 column: doing
-updated: 2026-11-25 20:16
+updated: 2026-11-25 21:58
 priority: medium
 note: Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime Web/WebGPU) for hand gesture detection on
   /apps/eye/
@@ -128,6 +128,13 @@ comms:
     DONE (attempt on tony-omen). runner; "test_merge_sweep fixture relied on global git identity — tony-dell has
     none (re; The session-audit marker and summary corpus live on tony-macbook (`~/.local/shar; `/home/tony/ada-nest-videos`
     in card text is stale — real arc'
+- at: 2026-11-25 21:58
+  from: devin
+  text: 'DONE (attempt 2, worktree commit c2a9396). Prototype live: /apps/eye/?det=yolo runs YOLO26n HaGRID 12-class
+    gesture model fully in-browser via vendored onnxruntime-web@1.31.1 (WebGPU EP preferred, WASM fallback). Verified
+    headless Chrome: hagrid-call imgs → call 0.88-0.90; WebGPU EP functional under SwiftShader. Bench (CPU wasm,
+    i7-6700HQ): YOLO p50 ~419ms/2.4fps vs MediaPipe p50 ~103-116ms/~9fps — ~4x slower on CPU; int8 dynamic-quant
+    rejected (6.5x slower). Eval + numbers: docs/ssot/jobs/eye/2'
 spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/WebGPU for hand gesture detection
   within the /apps/eye/ project of the chaba repository. The work must be performed on host tony-dell. Constraints
   include ensuring all dependencies are compatible with the existing browser-based stack and maintaining local execution
