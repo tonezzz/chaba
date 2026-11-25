@@ -1,7 +1,7 @@
 id: reconcile-noncard-conflicts-never-resolve
 title: 'reconcile-local-conflicts: non-card .local-conflict files never fold back — re-flagged every run'
 column: doing
-updated: 2026-11-25 14:39
+updated: 2026-11-25 14:44
 priority: low
 tags:
 - git-safe-pull
@@ -202,6 +202,12 @@ comms:
     (canonical deleted upstream) are NEVER expired — the c; cards.json is gitignored and rendered on the served
     checkout — local verify need; board-api derives REPO from `__file__`, so bind-mounting the checkout at its rea;
     [board-api-queue-write-verify-lost-race-f85f2f] primer inject'
+- at: 2026-11-25 14:44
+  from: devin
+  text: 'dispatch started on tony-dell worktree. Found: expire_noncard (landed today) covers canonical-backed files
+    at 24h, but ORPHANS (focus-inbox entries moved to processed/ = no canonical) still re-flag forever, and deduped
+    flags still print stderr+count leftover every run. Plan: orphan quarantine TTL (~7d, archive preserves the only
+    copy) + quiet dedup so second run is silent.'
 action:
   type: dispatch
   status: running
