@@ -1,7 +1,7 @@
 id: prune-old-docs-log-expired-count-separat-fb03e3
 title: 'prune-old-docs: log expired count separately from deleted'
 column: backlog
-updated: 2026-11-25 16:49
+updated: 2026-11-25 16:50
 brief: Sweep log line reads deleted N/M where M=scanned - under the offset race a run can print deleted 0/25313
   while thousands of stale docs exist, misleading operators into thinking the collection is clean. Add expired_seen
   counter (docs matching the stale predicate during enumeration, independent of delete attempts) so the line reads
@@ -247,6 +247,11 @@ comms:
 - at: 2026-11-25 16:49
   from: chaba
   text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
 action:
   type: dispatch
   status: queued
