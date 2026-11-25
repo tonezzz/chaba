@@ -326,3 +326,31 @@ sections:
         text: >-
           Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
           ledger. Update this section only from a fresh report; state the report path and date.
+  - title: Capture Router Contract (Phase C.1)
+    icon: "🧭"
+    layout: list
+    items:
+      - label: Event envelope
+        text: >-
+          Normalized input: event_id (UUID/ULID), event_type (discovery|decision|open_ask|lesson|outcome|handoff|focus_decision|focus_session),
+          as_of, source (devin|opencode|ada-voice|script|manual), actor, subject, pointer-first summary, refs[], dedupe_key, volatility
+          (canonical|branch|live_runtime|pointer), sink_hint?, small payload (no secrets, no volatile snapshots), evidence[], provenance.
+      - label: Routing and idempotency
+        text: >-
+          Router emits target_sink (approved only), action (create|upsert|append|comment|noop), matrix reason, dedupe_status (new|duplicate|conflict),
+          and audit. Same event_id/dedupe_key is replay-safe (noop+audit). Conflicts surface loudly; never silently overwrite canonical SSOT.
+          Default mode: --dry-run until sink-by-sink enablement (low-risk append sinks may be explicitly enabled later).
+      - label: Audit metadata
+        text: >-
+          Append-only audit JSONL (pointers/IDs only; no secrets/volatile content): event_id, dedupe_key, event_type, source, actor, as_of,
+          target_sink, action, result, ref_written, error?, dry_run. Proposed location: reports/session-capture/audit.jsonl (runtime/gitignored)
+          unless SSOT-approved committed artifact is needed.
+      - label: Guards and sink constraints
+        text: >-
+          Reject/flag: secrets, raw volatile snapshots as truth, Ada ada-* writes from Chaba, non-approved sinks, missing handoff where_filed,
+          SSOT rewrite attempts, missing dedupe key. Board writes go through board-api and respect mutation door/single-writer/role/card-union rules.
+          Focus logs stay append-only; prefer mcp-debug mcp_focus where available.
+      - label: Harvester/index-refresh contract
+        text: >-
+          Bounded, idempotent, read-mostly scan of approved capture sources emits normalized events; checkpoint cursor, since/limit, dry-run.
+          Writes only pointer/index refresh artifacts to approved sinks; no canonical-body duplication. Rerun-safe by dedupe.
