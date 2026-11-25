@@ -25,6 +25,22 @@ eval_basis:
     qwen2.5vl:7b: "0.745 / 0.867 / 0.737 / 0.933 / 0"
     qwen3:8b: "0.674 / 0.806 / 0.862 / 0.833 / 16 parse-fails — parse-fragile,
       excluded from judgment-shaped routing"
+  results_2026_11_25:
+    corpus: "corpus.jsonl at 94 cases (prior run reported 98; file unchanged
+      since 2026-11-09 — case-count delta unexplained, treat cross-run
+      deltas as approximate)"
+    llama3.2:3b: "0.851 acc / 0.947 def / 0.938 prec / 1.0 rec / 0
+      parse-fails — ALL THREE T3 bars PASS; only qualifying model this run"
+    qwen2.5:32b: "0.840 acc / 0.872 def / 0.968 prec / 1.0 rec / 0
+      parse-fails — misses acc AND deference bars (was best on 11-13)"
+    qwen3:8b: "0.745 / 0.830 / 0.897 / 0.867 / 16 parse-fails — still
+      parse-fragile, confirms exclusion"
+    qwen2.5vl:7b: "0.755 / 0.840 / 0.794 / 0.900 / 0 — misses all bars"
+    read: >-
+      On the current corpus llama3.2:3b is both the strongest and the only
+      T3-qualifying local model — it now beats the pinned qwen2.5:32b on
+      accuracy AND deference. Both still beat paid flash-lite on this bench
+      (flash-lite scored 0.49-0.57 acc on sibling corpora).
   honest_read: >-
     qwen2.5:32b wins action accuracy but UNDER-DEFERS vs both the bar and
     llama3.2:3b. For defer-critical judgment the existing llama3.2:3b leg
@@ -152,12 +168,14 @@ rerun_cadence:
     Queue via jevnest-kk-mac-capacity-loop (it already gates on
     heartbeat) or run manually on any tailnet host. Post each
     run-kkmac-qwen2532b.{md,json} to card kk-mac-card-judgment-eval.
-  current_state: "1 run in hand (2026-11-13): acc+precision+recall
-    pass, deference 0.878 fails the T3 bar — legs 1/2 for
-    non-defer-critical classes are live on that basis; tool-call
-    leg-3 waits for 3 clean runs AND deference >=0.90. Next pass
-    should try a defer-biased prompt variant to see if the gap is
-    prompt- or model-level."
+  current_state: "2 runs in hand. 2026-11-13 (98-case): qwen2.5:32b acc+
+    precision pass, deference 0.878 fails T3. 2026-11-25 (94-case):
+    llama3.2:3b is the ONLY qualifying run (all bars pass); pinned
+    qwen2.5:32b misses acc+deference — consider tracking the T3 streak on
+    llama3.2:3b instead of the pin. tool-call leg-3 still waits for 3
+    consecutive qualifying runs AND deference >=0.90. Next pass should
+    try a defer-biased prompt variant to see if the gap is prompt- or
+    model-level."
   also_rerun_on: "ollama upgrade, qwen2.5:32b repull, corpus rebuild,
     or any prompt/template change in score.py"
 

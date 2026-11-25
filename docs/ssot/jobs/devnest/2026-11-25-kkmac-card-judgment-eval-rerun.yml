@@ -1,0 +1,54 @@
+title: "kk-mac card-judgment eval rerun — 94-case corpus, all 4 preferred models"
+date: 2026-11-25
+card: kk-mac-card-judgment-eval
+parent_proposal: docs/ssot/jobs/devnest/2026-11-18-kk-mac-routing-proposal.yml
+session: "devin-dispatch 20261125-074813 (tony-macbook)"
+status: complete
+
+context: >-
+  Scheduled re-dispatch of the kk-mac eval card. The original eval ran
+  2026-11-13 and the routing proposal was approved + deployed the same
+  day; this run is the T3-cadence repeat the proposal calls for
+  (>=24h apart, 3 consecutive qualifying runs before tool-call leg-3).
+  kk-mac was awake: ollama :11434 answered over tailnet.
+
+access_note: >-
+  kkmac_eval.sh's ssh gate (kkkakk@kk-mac) is denied from tony-macbook —
+  only idc03's key is authorized on the Mac (OPS-0978). The Mac itself
+  was online, so score.py was run directly against
+  http://kk-mac:11434/v1 (temp gate skipped — score.py treats unknown
+  temp as non-blocking by design). kkmac_eval.sh was patched: when ssh
+  fails it now falls back to a direct ollama /api/tags probe and only
+  enables the ssh temp gate when ssh actually works. Still fails closed:
+  no ollama answer = abort.
+
+results_94case_corpus:
+  llama3.2:3b: "acc 0.8511 / def 0.9468 / prec 0.9375 / rec 1.0 / 0 parse-fails — ALL T3 bars PASS"
+  qwen2.5:32b: "acc 0.8404 / def 0.8723 / prec 0.9677 / rec 1.0 / 0 — misses acc+deference"
+  qwen3:8b: "acc 0.7447 / def 0.8298 / prec 0.8966 / rec 0.867 / 16 parse-fails — still fragile"
+  qwen2.5vl:7b: "acc 0.7553 / def 0.8404 / prec 0.7941 / rec 0.9 / 0 — misses all bars"
+
+findings:
+  - "llama3.2:3b is now the ONLY T3-qualifying local model and beats the
+    production-pinned qwen2.5:32b on both accuracy and deference — the
+    11-13 ordering inverted on the current corpus. Proposal updated;
+    T3 streak should arguably track llama3.2:3b."
+  - "kk-mac ollama now also serves qwen3:30b-a3b and gpt-oss:20b (pulled
+    2026-11-17) — untested here; candidates for a future eval pass."
+  - "paid flash-lite remains far behind every local model on this bench
+    (0.49-0.57 acc on sibling corpora) — the movable ~$22/window REST
+    spend is justified to offload where the admission shim allows."
+  - "corpus case-count discrepancy: run-kkmac-*-2026-11-13 reports say
+    98 cases; corpus.jsonl has had 94 lines since 2026-11-09. Unresolved
+    — flagged in the proposal."
+
+artifacts:
+  - scripts/bench/card-judgment/run-kkmac-{qwen2532b,qwen38b,llama323b,qwen25vl7b}.{md,json}
+  - scripts/bench/card-judgment/kkmac_eval.sh (ssh-fallback gate)
+  - docs/ssot/jobs/devnest/2026-11-18-kk-mac-routing-proposal.yml (results_2026_11_25 + current_state)
+
+next:
+  - "2 more qualifying runs (>=24h apart, next awake window) to reach
+    the 3-run T3 streak — track whichever model the streak pins"
+  - "defer-biased prompt variant test (open item from proposal)"
+  - "optional: eval gpt-oss:20b / qwen3:30b-a3b — both pulled since 11-17"

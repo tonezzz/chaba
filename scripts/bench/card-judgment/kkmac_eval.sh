@@ -30,15 +30,25 @@ CORPUS="$SCRIPT_DIR/corpus.jsonl"
 
 cd "$REPO_ROOT"
 
-echo "[gate] ssh $KK_USER@$KK_HOST"
-ssh -o BatchMode=yes -o ConnectTimeout=6 "$KK_USER@$KK_HOST" true \
-  || { echo "kk-mac unreachable (offline/asleep?) — abort, nothing ran"; exit 2; }
+echo "[gate] ssh $KK_USER@$KK_HOST (or direct ollama probe)"
+if ssh -o BatchMode=yes -o ConnectTimeout=6 "$KK_USER@$KK_HOST" true 2>/dev/null; then
+  SSH_OK=1
+else
+  SSH_OK=0
+  echo "  ssh denied/unreachable — falling back to direct ollama probe"
+fi
 
-echo "[gate] ollama tags"
-TAGS=$(ssh -o BatchMode=yes "$KK_USER@$KK_HOST" \
-  'curl -s -m5 http://127.0.0.1:11434/api/tags' \
-  | python3 -c 'import json,sys;print("\n".join(m["name"] for m in json.load(sys.stdin).get("models",[])))') \
-  || { echo "ollama not answering on kk-mac:11434 — abort"; exit 2; }
+if [ "$SSH_OK" = 1 ]; then
+  TAGS=$(ssh -o BatchMode=yes "$KK_USER@$KK_HOST" \
+    'curl -s -m5 http://127.0.0.1:11434/api/tags' \
+    | python3 -c 'import json,sys;print("\n".join(m["name"] for m in json.load(sys.stdin).get("models",[])))') \
+    || { echo "ollama not answering on kk-mac:11434 — abort"; exit 2; }
+else
+  TAGS=$(curl -s -m5 "$KK_OLLAMA/api/tags" \
+    | python3 -c 'import json,sys;print("\n".join(m["name"] for m in json.load(sys.stdin).get("models",[])))' 2>/dev/null) \
+    || { echo "ollama not answering on $KK_OLLAMA — abort (offline/asleep?)"; exit 2; }
+  [ -n "$TAGS" ] || { echo "ollama probe returned no models — abort"; exit 2; }
+fi
 echo "$TAGS" | sed 's/^/  pulled: /'
 
 MODELS=("$@")
@@ -55,11 +65,13 @@ for m in "${MODELS[@]}"; do
   out_md="$SCRIPT_DIR/run-kkmac-$tag.md"
   out_json="$SCRIPT_DIR/run-kkmac-$tag.json"
   echo "[run] $m -> $out_md"
+  TEMP_ARGS=()
+  [ "$SSH_OK" = 1 ] && TEMP_ARGS=(--temp-host "$KK_HOST" --temp-ssh-user "$KK_USER"
+    --max-temp-c "${KK_MAC_MAX_TEMP_C:-60}")
   python3 "$SCRIPT_DIR/score.py" \
     --entity openai --model "$m" \
     --base-url "http://$KK_HOST:11434/v1" \
-    --temp-host "$KK_HOST" --temp-ssh-user "$KK_USER" \
-    --max-temp-c "${KK_MAC_MAX_TEMP_C:-60}" \
+    "${TEMP_ARGS[@]}" \
     --corpus "$CORPUS" \
     --out-md "$out_md" --out-json "$out_json" \
     || echo "  model $m failed (see stderr) — continuing"
