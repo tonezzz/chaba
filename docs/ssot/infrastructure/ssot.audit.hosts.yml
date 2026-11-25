@@ -1000,6 +1000,14 @@ hosts:
         note: "retired with the suite move — watchdog is undeclared in
           ssot.jobs.yml on every host (suite-freshness coverage now rests on
           card job-health-sweep-consecutive-failure-alerts)"
+      - name: yolo-xiaomi.service
+        scope: user
+        note: "superseded 2026-11-25 — yolo-detect.service owns HA's
+          127.0.0.1:8780 consumer (rest_command.yolo_set_source + /detect
+          sensor); /set-source switches cameras at runtime so a second
+          detector is redundant. Also cannot bind: 0.0.0.0:8780 collides
+          with jev-student.service on 100.75.102.88:8780 (migrated
+          2026-11-18). Unit left installed+disabled on omen."
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"

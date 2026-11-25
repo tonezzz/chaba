@@ -1,0 +1,82 @@
+title: "tony-omen post-reboot dead user units — plug-watch, ha-stall-watchdog, playlive-chrome, yolo-detect restored"
+subtitle: "Kanban card tony-omen-post-reboot-dead-user-units-pl-9d08a4 (OPS-1367) — all four were disabled before the 11-23 reboot, not reboot casualties; verified wanted via SSOT + live consumers, enable+started, verified by surface"
+icon: power-plug
+
+planning:
+  goal: For each of plug-watch.service, ha-stall-watchdog.service, playlive-chrome.service, yolo-detect.service on tony-omen — verify still wanted (ssot.jobs.yml / health / audit SSOT), then enable+start or document retirement.
+  scope: "tony-omen user units + SSOT declarations. Out of scope: camera/stream outages found upstream of yolo (ip_cam_65@.71, xiaomi_c201@.77 unreachable; xiaomi_c100@.81 up but xiaomi:// producer returns empty frames), re-provisioning the dead dell->omen CDP tunnel."
+  owner: devin (dispatch on tony-dell)
+  related_focus:
+    - label: tony-omen-post-reboot-dead-user-units-pl-9d08a4
+      file: docs/ssot/kanban/cards/tony-omen-post-reboot-dead-user-units-pl-9d08a4.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-25T10:25:00+07:00
+  steps:
+    - id: 1
+      label: Establish real state
+      status: completed
+      notes: >-
+        All 4 units disabled+inactive on omen (linger=yes so disabled = never
+        starts at boot). Key correction to the card framing: archive card
+        audit-auto-tony-omen (processed 2026-11-12) already listed this whole
+        "live-vision stack" as deliberately-disabled expected-missing — the
+        disable predates the 2026-11-23 ~18:51 reboot; the reboot only kept
+        them dead. ha-live + yt-live-api were already restored by earlier
+        lanes; these 4 were the remainder.
+    - id: 2
+      label: Per-unit wanted-check
+      status: completed
+      notes: >-
+        plug-watch: forensic logger attributing switch.plug_tv flips via HA
+        websocket; declared expected (ssot.audit.hosts.yml omen cohort), deps
+        OK (home-assistant-token.env, HA :8123 -> 200). Wanted.
+        ha-stall-watchdog: HA event-loop stall profiler forensics on
+        127.0.0.1:8123; declared expected; tony-ha lives on omen post-migration
+        so placement is correct. Wanted.
+        playlive-chrome: headless Chrome CDP on 127.0.0.1:9223; declared
+        expected; real consumer = omen-local chaba-playwright-mcp auto mode
+        (tries :9223 then :9222). Wanted.
+        yolo-detect: YOLOv8 detector serving HA at 127.0.0.1:8780
+        (/detect sensor + rest_command.yolo_set_source in omen HA
+        configuration.yaml); declared expected; go2rtc :1984 + HA :8123 both
+        local. Wanted. The related card vcast-gesture-control-*-bd5d28 is on
+        hold and is actually served by yolo-gesture.service (already
+        enabled+active on :8785) — not by yolo-detect.
+        yolo-xiaomi (adjacent, also disabled): NOT declared expected on omen;
+        binds 0.0.0.0:8780 which collides with jev-student.service
+        (100.75.102.88:8780, migrated 2026-11-18) — cannot start; /set-source
+        makes a second detector redundant. Documented retirement in
+        ssot.audit.hosts.yml expected_absent.
+    - id: 3
+      label: Enable + start + verify by surface
+      status: completed
+      notes: >-
+        systemctl --user enable --now on all 4 (symlinks into
+        default.target.wants). Verified: plug-watch.log "subscribed" 10:31:57;
+        ha-stall-watchdog.sh process live; Chrome/158 CDP answers
+        127.0.0.1:9223/json/version; yolo-detect "Serving YOLO ip_cam_65_low
+        results on http://127.0.0.1:8780" and /detect returns JSON. All 4
+        is-enabled=enabled is-active=active.
+
+outcome:
+  result: fixed
+  evidence:
+    - "plug-watch.log tail: '2026-11-25 10:31:57 subscribed' (HA websocket auth_ok)"
+    - "pgrep ha-stall-watchdog.sh -> pid live; probes HA :8123 every 15s"
+    - "curl 127.0.0.1:9223/json/version -> Chrome/158.0.8127.88"
+    - "curl 127.0.0.1:8780/detect -> JSON {person_count, counts, source: ip_cam_65_low}"
+    - "systemctl --user is-enabled/is-active -> enabled/active for all 4"
+  residual:
+    - "yolo-detect /detect currently returns error=imdecode empty-buffer: ALL remote go2rtc sources are frameless — ip_cam_65@192.168.2.71 and xiaomi_c201@192.168.2.77 do not ping (offline), xiaomi_c100@192.168.2.81 pings but xiaomi:// producer yields 0B (token/producer issue; xiaomi-token-refresh.timer exists). omen_cam local source works (31KB frames). Camera-side outage is a separate lane — yolo-detect itself is correctly deployed and will report detections when frames return."
+    - "HA template image.yolo_annotated still points at http://192.168.2.86:8780/image — yolo-detect binds 127.0.0.1 only, so the LAN-IP image stays broken (pre-existing; likely dead since jev-student took tailnet :8780 ~11-18 and yolo-xiaomi was already disabled). Fix = repoint template to 127.0.0.1:8780 (HA is host-networked) or give yolo a second bind — left for a follow-up card."
+    - "omen playlived REMOTE_CDP=http://127.0.0.1:9222 and the dell->omen tunnel (playlive-omen-cdp-tunnel.service, repo systemd/) are both dead ends: tunnel unit absent on dell, nothing serves omen:9222. omen's own playlive-chrome is :9223. Remote chrome-live path needs re-provisioning or config alignment — documented in playlive-hosts.yml (tony-omen now available:false for remote clients)."
+    - "Port :8780 on omen is now triple-booked conceptually: jev-student bound 100.75.102.88:8780 (11-18), yolo-detect 127.0.0.1:8780, yolo-xiaomi wanted 0.0.0.0:8780 (impossible). If jev-student's :8780 was not a deliberate pick it should move — flagged, not changed."
+
+lessons:
+  - "'Post-reboot dead units' can be stale-disabled, not reboot casualties — audit-auto-tony-omen (2026-11-12) already recorded this stack as deliberately disabled; check the audit trail before assuming the reboot killed them."
+  - "User journal on omen only retains the current boot (first entry 2026-11-24) — journalctl cannot prove pre-reboot unit state; use service logs (~/.local/share/*.log mtimes) and archived audit cards instead."
+  - "systemd user journal 'No entries' for never-run-this-boot units is expected — verify last-run via the service's own log file, not the journal."
+  - "Port collisions across binds: 0.0.0.0:PORT fails if ANY specific-addr:PORT is bound (jev-student 100.75.102.88:8780 blocks yolo-xiaomi), but specific-addr binds coexist fine (yolo-detect 127.0.0.1:8780)."
+  - "Verify-by-surface caught a real upstream outage: yolo-detect serves /detect correctly but every remote camera source returns 0-byte frames — unit health != pipeline health."
