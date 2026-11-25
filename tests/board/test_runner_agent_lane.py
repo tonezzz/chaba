@@ -603,5 +603,104 @@ class ClaimPassScriptOnlyTest(unittest.TestCase):
         self.assertEqual(self.defers, [])
 
 
+class VerdictPassLoadTest(unittest.TestCase):
+    """OPS-1182 follow-through: /ready verdicts must mirror the
+    script-only pass — under a partial overload a script card is
+    claimable, not 'host overloaded' blocked (the pre-fix verdict
+    reported every queued card blocked while claim_pass claimed
+    scripts)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("DISPATCH", "RETRY_FILE", "READY_REPORT",
+                        "READY_FORCE_S", "WAITING_GATE")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("api", "push_capable", "gpu_preflight",
+                           "classify_lane", "dr_module", "overloaded",
+                           "note_defer")}
+        m.DISPATCH = str(SCRIPT)
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
+        m.READY_REPORT = Path(self._tmpdir.name) / "ready.json"
+        m.READY_FORCE_S = 0
+        m.WAITING_GATE = "off"
+        m.dr_module = lambda: None
+        m.push_capable = lambda repo: True
+        m.gpu_preflight = lambda card: ""
+        m.classify_lane = lambda card: "paid_frontier"
+        m.note_defer = lambda *a, **k: None
+        self.posts = []
+        self.cards = []
+
+        def fake_api(path, body=None):
+            if path == "/cards":
+                return {"cards": self.cards}
+            self.posts.append((path, dict(body or {})))
+            return {}
+        m.api = fake_api
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in self._saved.items():
+            setattr(m, k, v)
+        for k, v in self._saved_fn.items():
+            setattr(m, k, v)
+        self._tmpdir.cleanup()
+
+    def _two_cards(self):
+        sc = _card(type="script")
+        sc["id"] = "script-card"
+        sc["action"]["script"] = {"repo": "chaba", "cmd": "true"}
+        dc = _card()
+        dc["id"] = "dispatch-card"
+        self.cards = [sc, dc]
+
+    def _verdicts(self):
+        self.mod.verdict_pass({})
+        for p, b in self.posts:
+            if p == "/ready":
+                return b["verdicts"]
+        self.fail("no /ready report posted")
+
+    def test_partial_overload_script_card_not_blocked(self):
+        # strict cap exceeded, script ceiling ok -> script-only pass:
+        # the script card reports eligible, the dispatch card blocked
+        self.mod.overloaded = lambda pc=None: pc is None
+        self._two_cards()
+        v = self._verdicts()
+        self.assertTrue(v["script-card"]["ok"], v["script-card"])
+        self.assertFalse(v["dispatch-card"]["ok"])
+        self.assertIn("overloaded", v["dispatch-card"]["reason"])
+
+    def test_full_overload_blocks_script_too(self):
+        # script ceiling also exceeded -> whole pass skips, script
+        # card reports blocked like everything else
+        self.mod.overloaded = lambda pc=None: True
+        self._two_cards()
+        v = self._verdicts()
+        self.assertFalse(v["script-card"]["ok"])
+        self.assertIn("overloaded", v["script-card"]["reason"])
+
+    def test_non_load_capacity_reason_blocks_script(self):
+        # disk/cap/ratelimit/kill still hold every claim type — only
+        # the overload reason has the script exception
+        self.mod.overloaded = lambda pc=None: False
+        self._two_cards()
+        import shutil as _sh
+        real = _sh.disk_usage
+        _sh.disk_usage = lambda p: types.SimpleNamespace(free=1)
+        try:
+            v = self._verdicts()
+        finally:
+            _sh.disk_usage = real
+        self.assertFalse(v["script-card"]["ok"])
+        self.assertIn("disk headroom", v["script-card"]["reason"])
+
+
 if __name__ == "__main__":
     unittest.main()

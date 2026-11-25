@@ -5261,8 +5261,17 @@ def verdict_pass(st: dict) -> None:
             # capacity -> blocked_by -> gpu preflight
             cap = _capacity_reason(st)
             if cap:
-                verdicts[cid] = {"ok": False, "reason": cap}
-                continue
+                # OPS-1182 mirror: under a partial overload (strict cap
+                # exceeded, script ceiling still ok) claim_pass runs a
+                # script-only pass, so a script card is NOT blocked
+                # here even though the pass-level reason fired. Other
+                # capacity reasons (cap count, ratelimit, kill switch,
+                # disk) still hold every claim type.
+                if not (cap.startswith("host overloaded")
+                        and typ == "script"
+                        and not overloaded(SCRIPT_MAX_LOAD_PC)):
+                    verdicts[cid] = {"ok": False, "reason": cap}
+                    continue
             # retry gate mirrors claim_pass position (before blocked_by)
             # so /queue shows a held card's real reason, not 'eligible'
             rg = retry_gate(c)

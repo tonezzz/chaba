@@ -1,0 +1,62 @@
+id: runner-load-cap-per-claim-type
+title: per-claim-type load gate — script ceiling + /ready verdict mirror
+date: 2026-11-25
+card: runner-load-cap-per-claim-type
+ref: OPS-1182
+host: fleet (runner-agent.py claim_pass / verdict_pass)
+status: implemented
+
+goal: >
+  Card runner-load-cap-per-claim-type: the claim-pass load check
+  (5m load/core > RUNNER_MAX_LOAD_PC, 0.85 on idc03) skipped the
+  ENTIRE pass regardless of claim cost — a 2s script probe starved
+  identically to a heavyweight devin claim (256 skipped passes
+  2026-11-08 while mddb-embed's OpenRouter retry storm held
+  load/core ~1.05).
+
+state_found: >
+  The core fix was already merged 2026-11-08 (e353fc8359,
+  "OPS-1182 + KNB-1183: per-type load cap and host-gate card
+  visibility"): overloaded(pc) takes a per-call ceiling,
+  SCRIPT_MAX_LOAD_PC (RUNNER_SCRIPT_MAX_LOAD_PC, default 2.0)
+  gives script claims a higher cap, claim_pass degrades to a
+  script-only pass under partial overload, _note_capacity_skip
+  exempts script cards from the hostgate defer note, and
+  executor=script dispatch cards resolve to typ "script" in
+  _claimable so they are covered too. Dispatch/container claims
+  stay at the strict cap. kanban-dispatch.py needs no change — it
+  only ever claims action.type=dispatch, so its load gate already
+  only guards heavyweight work.
+
+gap_found: >
+  verdict_pass (/ready projection) did NOT mirror the script
+  exception: under partial overload every queued card — including
+  script cards claim_pass was actively claiming — reported
+  'host overloaded' blocked. Same OPS-1107 class the function's
+  own comment warns about, inverted.
+
+fix:
+  runner-agent.py verdict_pass: >
+    the capacity block now exempts typ == "script" when the reason
+    is the overload gate AND load is still under
+    SCRIPT_MAX_LOAD_PC. Non-load capacity reasons (runner cap,
+    rate-limit cooldown, kill switch, disk floor) still block
+    every claim type, matching claim_pass.
+  tests/board/test_runner_agent_lane.py: >
+    new VerdictPassLoadTest — 3 cases: partial overload leaves
+    script card ok / dispatch card blocked; full overload blocks
+    both; disk-floor reason blocks script too.
+  scripts/devin/runner-tooling.manifest.json: >
+    runner_agent sha256 pin bumped in the same commit (the
+    tooling-contract test enforces pin==source).
+
+verify: >
+  python3 -m unittest tests.board.test_runner_agent_lane
+  tests.board.test_runner_tooling_contract — 46 tests OK;
+  full tests/board/test_runner*.py discovery 192 tests, only
+  unrelated pre-existing failure none after pin bump.
+
+deploy_note: >
+  runner-agent self-updates from origin/master via the installed
+  copy's _self_update / sync-runner-tools.sh — no manual scp
+  needed once this merges; fleet drift flag clears on next sync.
