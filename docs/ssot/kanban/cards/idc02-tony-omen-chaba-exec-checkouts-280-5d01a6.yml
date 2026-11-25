@@ -1,7 +1,7 @@
 id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
 title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
 column: backlog
-updated: 2026-11-25 07:28
+updated: 2026-11-25 07:35
 spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
   (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
   tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
@@ -29,6 +29,10 @@ comms:
 - at: 2026-11-25 07:28
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 07:35
+  from: tony
+  text: '[triage] 2026-11-25 (Tony): decision recorded (stash-u-ff). Card is manual - execute the stash+pull on
+    idc02 and tony-omen when ready; not auto-dispatched.'
 requests:
 - id: how-should-the-dirty-in-flight-work-on-i-11feb4
   ask: How should the dirty in-flight work on idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox
