@@ -1,7 +1,7 @@
 id: tony-omen-snap-desktop-restart-loop
 title: Fix tony-omen snap desktop integration restart loop
 column: doing
-updated: 2026-11-25 14:52
+updated: 2026-11-25 14:54
 priority: medium
 tags:
 - tony-omen
@@ -257,6 +257,10 @@ comms:
   text: 'attempt 2: fix still holding — NRestarts=0 since 09:54:57 +07 (~12h, ~3600 loop-restarts avoided), drop-in
     intact, no journal errors. Remaining: post-reboot verification. Assessing whether tony-omen can be rebooted
     safely now.'
+- at: 2026-11-25 14:54
+  from: devin
+  text: 'raised request snap-reboot-verify-window: snapd-desktop-integration fix verified stable 12h on tony-omen
+    (NRestarts=0). Done-condition still needs a post-reboot c'
 action:
   type: dispatch
   status: running
@@ -284,3 +288,21 @@ requests:
     label: Hold — leave blocked
     action: hold
   answer: answer
+- id: snap-reboot-verify-window
+  ask: snapd-desktop-integration fix verified stable 12h on tony-omen (NRestarts=0). Done-condition still needs
+    a post-reboot check. Host is busy (devin-desktop GUI session, llama-server, docker jobs) so I will not reboot
+    unattended. Pick a window?
+  status: open
+  at: 2026-11-25 14:54
+  from: devin
+  options:
+  - id: reboot-now
+    label: Reboot tony-omen now — I verify NRestarts post-boot
+    action: none
+  - id: wait-natural
+    label: Wait for next natural reboot — check is one command
+    action: none
+  - id: tony-reboots
+    label: Tony reboots at his convenience — card notes the check command
+    action: hold
+  suggested: wait-natural
