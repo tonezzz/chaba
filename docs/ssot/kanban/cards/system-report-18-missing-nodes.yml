@@ -1,7 +1,7 @@
 id: system-report-18-missing-nodes
 title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
 column: backlog
-updated: 2026-11-25 11:20
+updated: 2026-11-25 12:20
 priority: medium
 tags:
 - system-report
@@ -259,13 +259,18 @@ comms:
 - at: 2026-11-25 11:20
   from: tony
   text: put on hold
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-omen
   attempts: 1
   result: 'exit=0 triage.yml` and `dispatch-outcome-20261125-093709-after-the-nov-8-delivery-fix-s.md`. | devin-task-20261125-093709-after-the-nov-8-delivery-fix-s.service:
     Consumed 5min 2.112s CPU time over 13min 34.010s wall clock time, 924.6M memory peak.'
