@@ -1,7 +1,7 @@
 id: provider-gate-zombie-backend-blind
 title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
 column: doing
-updated: 2026-11-25 09:04
+updated: 2026-11-25 09:05
 brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
   passes as healthy, then the whole suite fails in 0s.
 priority: medium
@@ -184,6 +184,16 @@ comms:
 - at: 2026-11-25 09:04
   from: idc02
   text: claimed
+- at: 2026-11-25 09:05
+  from: chaba
+  text: started devin-task-20261125-090509-found-during-timer-alert-idc03 on idc02 (dispatch)
+- at: 2026-11-25 09:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [unattended-pilot-health-probe] first live gate run: claimed on idc03 12:45
+    once; [timer-alert-idc03-ada-scenario-smoke] 2026-11-13: run published spend-ledger + ; [kk-mac-live-jev-probe3]
+    finished (failed): no exit record — unit not-found repo; `unit_active()`-style liveness probes must be runtime-aware:
+    systemd-only checks; chaba merge test gate (240s smoke set) times out on loaded idc03 even for doc-on; idc02''s
+    kanban-dispatch.service was a linked unit running a s'
 action:
   type: dispatch
   status: running
