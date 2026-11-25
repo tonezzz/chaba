@@ -1,7 +1,7 @@
 id: ada-engine-self-report
 title: Engine self-report — advertise {engine_line, engine_version, contract_version} in /api/health + session hello
 column: doing
-updated: 2026-11-25 16:19
+updated: 2026-11-25 16:22
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): engines dont announce who they are, so which engine answered
   a turn is not auditable and engine swaps cant be verified mechanically. Deliverable in ada-voice: /api/health
@@ -309,6 +309,11 @@ comms:
     under `dispatch/*` are the established landing path ; runner-agent `_self_update()` ignores the manifest pin
     (mtime-guard only) while ; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] session produced no commits — ;
     [devin-session-audit-2026-10-29] AUD-0973 independent re-chec'
+- at: 2026-11-25 16:22
+  from: devin
+  text: 'in progress: ada-voice worktree dispatch/engine-self-report — /api/health + both ws ready events now carry
+    {engine_line:ada, engine_version:<git sha|ADA_ENGINE_VERSION>, contract_version:v1}; 6 new unit tests pass,
+    full suite running'
 action:
   type: dispatch
   status: running
