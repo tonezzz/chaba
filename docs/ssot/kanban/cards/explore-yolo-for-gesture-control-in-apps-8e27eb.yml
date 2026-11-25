@@ -1,7 +1,7 @@
 id: explore-yolo-for-gesture-control-in-apps-8e27eb
 title: Explore YOLO for gesture control in /apps/eye/
-column: doing
-updated: 2026-11-25 22:09
+column: review
+updated: 2026-11-25 22:11
 priority: medium
 note: Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime Web/WebGPU) for hand gesture detection on
   /apps/eye/
@@ -143,6 +143,29 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261125-201656-evaluate-replacing-mediapipe-w on tony-macbook still
     dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 22:11
+  from: tony-macbook
+  text: 'finished (ok): exit=0 h-outcome-20261125-201656-evaluate-replacing-mediapipe-w.md` written with lessons.
+    | devin-task-20261125-201656-e'
+- at: 2026-11-25 22:11
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 22:11
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-201656-evaluate-replacing-mediapipe-w
+    is 135 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 22:11
+  from: chaba
+  text: banked 706 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 22:11
+  from: chaba
+  text: pushed dispatch/20261125-201656-evaluate-replacing-mediapipe-w to origin
+- at: 2026-11-25 22:11
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-25 22:11
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/WebGPU for hand gesture detection
   within the /apps/eye/ project of the chaba repository. The work must be performed on host tony-dell. Constraints
   include ensuring all dependencies are compatible with the existing browser-based stack and maintaining local execution
@@ -151,13 +174,13 @@ spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/W
   of performance compared to MediaPipe.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''. | devin-task-20261125-123658-evaluate-replacing-mediapipe-w.service:
-    Consumed 1min 30.560s CPU time over 14min 37.652s wall clock time, 2.5G memory peak.'
+  result: 'exit=0 h-outcome-20261125-201656-evaluate-replacing-mediapipe-w.md` written with lessons. | devin-task-20261125-201656-evaluate-replacing-mediapipe-w.service:
+    Consumed 22min 56.054s CPU time over 1h 51min 23.629s wall clock time, 3.6G memory peak.'
   last_failure: 'exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''.
     | devin-task-20261125-123658-evaluate-replacing-mediapipe-w.service: Consumed 1min 30.560s CPU time over 14min
     37.652s wall clock time, 2.5G memory peak.'
@@ -167,3 +190,4 @@ action:
     dirty: 1
 claim:
   since: 2026-11-25 20:16
+review_kind: verify
