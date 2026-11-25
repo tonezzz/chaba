@@ -69,7 +69,7 @@
       ignore_unreachable: true
 
 - name: Diff snapshots against ssot.audit.hosts.yml (controller-side)
-  hosts: localhost
+  hosts: all:!macos:!disabled
   gather_facts: false
   become: false
   vars:
@@ -89,6 +89,9 @@
     hash_unit_re: '^[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service$'
     fleet_sys_re: '(chaba|ada[-_.]|home-?assist|michael|ollama|mddb|vcast|go2rtc|nest|jev|kanban|cms|mcp[-_.]|cloudflared|cast-|camwall|sunsynk|devin|litellm|openjev|caddy|rclone|notebooklm|workflows|yomi|obsidian|input-bridge|barrier|gods-eye|gev[-_.]|playwright|yolo|xmeye|vms|raceman|helm|node-red|dnsmasq|gesture|plug-watch|secrets-console|status-data|trade-api|websockify|xvfb|bserver|redis|postgres|weaviate)'
     failed_noise_re: '^(apport.*|NetworkManager-wait-online.*|xdg-desktop-portal.*|xfce4-notifyd.*|snapd\..*|grub-initrd-fallback.*)$'
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
 
   tasks:
     - name: Ensure the report dir exists
@@ -96,11 +99,15 @@
         path: "{{ benchmark_out }}"
         state: directory
         mode: "0755"
+      delegate_to: localhost
+      run_once: true
 
     - name: Load the audit SSOT
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../../docs/ssot/infrastructure/ssot.audit.hosts.yml"
         name: audit_ssot
+      delegate_to: localhost
+      run_once: true
 
     - name: Render per-host delta reports
       ansible.builtin.template:
@@ -110,6 +117,8 @@
       loop: "{{ audited_hosts }}"
       loop_control:
         loop_var: target
+      delegate_to: localhost
+      run_once: true
 
     - name: Show deltas per host
       ansible.builtin.debug:
@@ -117,3 +126,133 @@
           {{ item }}: {{ (lookup('file', benchmark_out + '/' + item + '.yml')
              | from_yaml).deltas | length }} delta(s)
       loop: "{{ audited_hosts }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute fleet-service drift summary and fingerprint
+      ansible.builtin.set_fact:
+        fleet_service_drift_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set deltas = y.get('deltas', []) -%}
+              {%- if deltas | length > 0 -%}
+                {%- set _ = out.append({'host': h, 'count': (deltas | length)}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        fleet_service_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set deltas = y.get('deltas', []) -%}
+              {%- if deltas | length > 0 -%}
+                {%- set _ = out.append(h ~ ':' ~ (deltas | length)) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when fleet service drift found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-fleet-service-drift
+          title: "Ansible audit: fleet service drift detected"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml.
+            Hosts: {{ fleet_service_drift_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/services/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (fleet_service_drift_hosts | length) > 0
+      register: fleet_drift_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected fleet drift card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ fleet_drift_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (fleet_service_drift_hosts | length) > 0
+        - fleet_drift_card.status not in [200, 201]
+        - "'already exists' not in (fleet_drift_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch fleet drift card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-fleet-service-drift"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: fleet_drift_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (fleet_service_drift_hosts | length) > 0
+
+    - name: Compute fleet drift comment dedupe
+      ansible.builtin.set_fact:
+        fleet_drift_comment_text: >-
+          ansible audit-fleet-services: {{ fleet_service_drift_hosts | length }} host(s) with drift.
+          fp={{ fleet_service_fingerprint }}. {{ fleet_service_drift_hosts | to_json }}
+        fleet_drift_comment_is_dup: >-
+          {{
+            (fleet_drift_card_for_comment.status | default(404)) == 200
+            and (
+              ((fleet_drift_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (fleet_service_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (fleet_service_drift_hosts | length) > 0
+
+    - name: Comment fleet drift summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-fleet-service-drift
+          from: "{{ board_from }}"
+          text: "{{ fleet_drift_comment_text }}"
+      when:
+        - board_notify | bool
+        - (fleet_service_drift_hosts | length) > 0
+        - not (fleet_drift_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          drift_hosts: "{{ fleet_service_drift_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ fleet_drift_comment_is_dup | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true
