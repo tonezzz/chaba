@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
 column: doing
-updated: 2026-11-25 09:06
+updated: 2026-11-25 09:15
 priority: medium
 tags:
 - observability
@@ -198,6 +198,13 @@ comms:
     Found in board sweep 2026-10-1; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1 -pipel;
     [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1 RE | d; [dispatch-lane-classifier-codemod-keyword-false-positive]
     fin'
+- at: 2026-11-25 09:15
+  from: devin
+  text: 'progress: retry-storm-watch.py built (scripts/ops/) — (a) podman stats stream -> >50% CPU sustained >=30min
+    via state samples, (b) podman logs 60m -> identical WARN/ERROR sig x30+, (c) MDDB /v1/vector-stats + /metrics
+    embedding dropped/error/retried deltas (idc03 only via MDDB_WATCH_URLS). Findings -> deduped board-api /inbox
+    6h, never Telegram. Live dry-run on idc03 already caught the CURRENT storm: embedding attempt failed x119 (mddb)
+    + x78 (mddb-cms) in 60m. Declared 6 jobs in ssot.jobs.yml ('
 action:
   type: dispatch
   status: running
