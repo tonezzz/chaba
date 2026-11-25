@@ -1,7 +1,7 @@
 id: ada-engine-runtimes
 title: Per-engine runtimes — parallel engine versions on idc03 (checkout+venv or quadlet per line@version)
 column: done
-updated: 2026-11-26 04:01
+updated: 2026-11-26 04:07
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): every ada-* instance shares the one idc03 ada-voice checkout
   + .venv, so the fleet-wide engine version is single — lanes cant run DIFFERENT engine versions simultaneously.
@@ -331,6 +331,10 @@ comms:
 - at: 2026-11-26 04:01
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
