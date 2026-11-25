@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
 column: doing
-updated: 2026-11-25 10:13
+updated: 2026-11-25 10:22
 priority: medium
 tags:
 - mddb
@@ -87,6 +87,10 @@ comms:
     empty), same class as devin-kb/ssot.focus. Non-force /v1/vector-reindex is synchronous inline embed (~6s/doc
     on degraded pool): chaba-archive skipped=14/14 (nothing to embed), kb-development embedded=5 skipped=15 failed=0.
     Running reindex per affected collection now; will report which gaps are real content vs meta-only.'
+- at: 2026-11-25 10:22
+  from: devin
+  text: 'raised request meta-only-docs-devin-kb-chaba-archive-st-1f3513: Meta-only docs (devin-kb/*, chaba-archive
+    stubs, ssot.focus, + meta-only fraction of chaba-docs/kb-*/documents — content'
 action:
   type: dispatch
   status: running
@@ -97,3 +101,16 @@ action:
   attempts: 1
 claim:
   since: 2026-11-25 10:09
+requests:
+- id: meta-only-docs-devin-kb-chaba-archive-st-1f3513
+  ask: 'Meta-only docs (devin-kb/*, chaba-archive stubs, ssot.focus, + meta-only fraction of chaba-docs/kb-*/documents
+    — contentMd empty by design, content lives in git repos) can NEVER embed. Options: (A) declare keyword-only
+    — recommended, they are pointer/index docs and vector search was never their surface; (B) backfill contentMd
+    from source repos into MDDB so they embed (duplicates repo content, bigger DB); (C) backfill only selected high-value
+    collections. Which way?'
+  status: open
+  at: 2026-11-25 10:22
+  from: devin
+  options:
+  - proceed
+  - hold
