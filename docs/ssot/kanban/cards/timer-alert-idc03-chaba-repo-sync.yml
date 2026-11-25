@@ -1,6 +1,6 @@
 id: timer-alert-idc03-chaba-repo-sync
 title: Timer chaba-repo-sync on idc03 failing
-column: backlog
+column: done
 updated: 2026-11-25 19:42
 priority: high
 tags:
@@ -411,6 +411,9 @@ comms:
     git-safe-pull preserved the local side as .local-conflict-* and retained the stash. The next run at 19:40:17
     completed result=success exit=0. Manual merge is still advisable for the retained stash, but the timer itself
     is healthy; closing.'
+- at: 2026-11-25 19:42
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
 spec: Investigate the recurring timeout failure of `chaba-repo-sync.service` on host idc03 by checking the systemd
@@ -418,3 +421,4 @@ spec: Investigate the recurring timeout failure of `chaba-repo-sync.service` on 
   the underlying cause of the timeout and ensure subsequent runs of the timer execute successfully without timing
   out. The done-condition is verified when a manual or scheduled run of `chaba-repo-sync.service` completes with
   a success status and no timeout errors in the journal.
+claim: {}
