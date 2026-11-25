@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 17:40
+updated: 2026-11-25 18:32
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -239,6 +239,16 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 18:32
+  from: tony
+  text: '18:31 +07 update: v1 resshift finished rc=0 at 17:14; v3 hit its 2h wrapper timeout at 17:24 and produced
+    no output (needs rerun with longer timeout or smaller chunks). New rsd-one-step-g128c job started 17:49 and
+    is correctly inside cpu-jobs.slice (aggregate cap). Enabled existing zram-swap.service (24G lzo-rle, prio 100):
+    now 15.8G used, disk swap down 16G -> 10.8G. Load 51/39/35, RAM 9G available. open-jev 8777 CPUQuota=200%, restarted
+    16:57, health 200s; Netdata load alarm still routes to in'
+- at: 2026-11-25 18:32
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
