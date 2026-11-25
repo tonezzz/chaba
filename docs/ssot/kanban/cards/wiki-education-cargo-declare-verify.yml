@@ -1,7 +1,7 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
 column: done
-updated: 2026-11-25 15:40
+updated: 2026-11-25 15:48
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
 priority: low
@@ -123,6 +123,13 @@ comms:
   from: chaba
   text: 'auto-merge not done: no session repo for 20261125-153507-do-not-start-until-python3-scr — close will block
     until merged'
+- at: 2026-11-25 15:48
+  from: devin
+  text: 'COMPLETED by wiki-education-cargo-table-setup dispatch (2026-11-25): gate passed — python3 scripts/wiki-cargo-check.py
+    exits 0 (Education table present, topic ada-ocb-skills found, 229 rows). Declare/store re-applied to แม่แบบ:Education
+    (revid 525, same wikitext as reverted revid 481), table created via CargoUtils::recreateDBTablesForTemplate
+    through FTP-placed PHP helper, all 228 template links populated via CargoPopulateTableJob. No purge needed —
+    populate jobs do the storing; future lesson sa'
 action:
   type: dispatch
   status: done
