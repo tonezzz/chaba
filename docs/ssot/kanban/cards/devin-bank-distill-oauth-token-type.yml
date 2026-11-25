@@ -223,6 +223,14 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-103904-devin-bank-distill-service-on- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 10:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-103904-devin-bank-distill-service-on- conflicts with origin/master: docs/ssot/infrastructure/ssot.audit.hosts.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-25 10:55
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261125-103904-devin-bank-distill-service-on-:
+    2 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: running
@@ -232,5 +240,25 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-25 10:55
+    conflict_sig: 220c64fde14b|docs/ssot/infrastructure/ssot.audit.hosts.yml
 claim:
   since: 2026-11-25 10:38
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261125-103904-devin-bank-distill-service-on-: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/infrastructure/ssot.audit.hosts.yml. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261125-103904-devin-bank-distill-service-on-
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-25 10:55
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
