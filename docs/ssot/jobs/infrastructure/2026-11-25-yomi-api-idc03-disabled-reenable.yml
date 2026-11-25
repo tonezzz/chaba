@@ -1,0 +1,72 @@
+title: "idc03 yomi-api.service disabled+dead — yomi-update-active failing status=125 every 15m"
+subtitle: "Kanban card yomi-update-active-update-all-fail-every-8afee2 (OPS-1382) — unit was disabled before a user-manager restart, so it never came back; re-enabled, verified by surface"
+icon: power-plug
+
+planning:
+  goal: yomi-update-active.service (15m) and yomi-update-all.service (hourly) on idc03 failed status=125 "no container with name or ID yomi-api found". Determine whether the yomi-api workload moved/was retired (then retire or re-point the ssot.jobs.yml jobs) or the unit needed reinstalling.
+  scope: "idc03 yomi-api.service + yomi-update-* rendered units. Out of scope: the separate yomi LINE session-expiry defect (card yomi-line-session-expired-idc03 / OPS-1398 HOME drop-ins)."
+  owner: devin (dispatch attempt 2 on mn01; host fix applied by attempt 1 on tony-omen)
+  related_focus:
+    - label: yomi-update-active-update-all-fail-every-8afee2
+      file: docs/ssot/kanban/cards/yomi-update-active-update-all-fail-every-8afee2.yml
+    - label: yomi-line-session-expired-idc03
+      file: docs/ssot/kanban/cards/yomi-line-session-expired-idc03.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-25T14:50:00+07:00
+  steps:
+    - id: 1
+      label: Establish real state (attempt 1, tony-omen)
+      status: completed
+      notes: >-
+        yomi-api.service EXISTS on idc03 at ~/.config/systemd/user/yomi-api.service
+        (hand-installed unit, not a quadlet, not repo-rendered) but was
+        is-enabled=disabled, is-active=dead since 2026-11-23 ~19:50 — a
+        systemd daemon-reexec / user-manager restart stopped it and, being
+        disabled, it never returned. `podman ps -a` therefore had no
+        yomi-api container and yomi-update-active's
+        --network=container:yomi-api one-shot failed status=125 every 15m.
+        Workload NOT retired: ssot.services.yml declares yomi-api host=idc03
+        (migrated from tony-dell 2026-10-19), ssot.audit.hosts.yml lists the
+        unit as expected, and Caddy/edge still proxies /api/yomi/* to
+        idc03:3000. Card spec was slightly wrong: yomi-update-all never used
+        --network=container:yomi-api and was exiting 0 — only
+        yomi-update-active (and its ExecStartPre podman rm) depended on the
+        container.
+    - id: 2
+      label: Fix on host (attempt 1)
+      status: completed
+      notes: >-
+        systemctl --user enable --now yomi-api.service on idc03. WantedBy
+        default.target symlink created, podman container yomi-api up,
+        ExecMainStatus=0.
+    - id: 3
+      label: Verify by surface (attempt 2, mn01)
+      status: completed
+      notes: >-
+        Re-verified live over ssh idc03 ~19:25 +07: is-enabled=enabled,
+        is-active=active; podman ps shows yomi-api Up; curl
+        127.0.0.1:3000/api/yomi/health -> {"ok":true,...}. journalctl shows
+        every yomi-update-active run Finished cleanly 15:22→19:08 and every
+        yomi-update-all run Finished 15:48→18:48 — zero status=125 since the
+        14:53 fix (~5h, 20+ successful cycles). All four yomi timers
+        (update-active, update-all, mddb-digest, backup) enabled.
+
+outcome:
+  result: fixed
+  evidence:
+    - "systemctl --user is-enabled yomi-api.service -> enabled; is-active -> active (idc03)"
+    - "podman ps -> yomi-api Up; curl 127.0.0.1:3000/api/yomi/health -> ok:true"
+    - "journalctl --user -u yomi-update-active.service since 14:50 -> all Finished, no failures; Result=success ExecMainStatus=0 on both services"
+    - "systemd/yomi-api.service vendored into repo — the live unit at ~/.config/systemd/user/yomi-api.service is hand-installed and had no canonical copy"
+  residual:
+    - "yomi-update-active/update-all rendered units on idc03 carry interim .d/home.conf drop-ins (-e HOME=/home/tony) from OPS-1398; the matching ssot.jobs.yml env edit belongs to card yomi-line-session-expired-idc03 — if that card's branch does not land, re-rendered units would lose HOME and the LINE-session writes regress to /root/.local/share/yomi."
+    - "Root cause of the original disable is unproven — likely a manual/older disable that a user-manager restart exposed. ssot.audit.hosts.yml expected_state could pin yomi-api.service active on idc03 if recurrence is a worry; not added (audit treats missing expected_state as active-by-default for declared units)."
+    - "ssot.yomi-failover.yml still describes tony_dell as primary — stale vs ssot.services.yml (idc03 primary since 2026-10-19). Separate doc-rot, flagged not fixed."
+
+lessons:
+  - "A 'no container found' status=125 from --network=container:X means the DEPENDENCY container's unit is dead — check is-enabled as well as is-active; a disabled unit stays dead across user-manager restarts/daemon-reexec."
+  - "Dispatch verify counted attempt 1 as failed purely because it produced zero commits — host-side fixes still need a repo trail (jobs doc + vendored unit) to count as landed work."
+  - "systemd/user hand-installed units (~/.config/systemd/user/*.service) are NOT repo-rendered and had no vendored copy — vendor canonical units into systemd/ when touching them so a lost host unit is recoverable."
+  - "Card specs written from journal symptoms can misattribute which unit failed — yomi-update-all was green; only yomi-update-active used --network=container:yomi-api."
