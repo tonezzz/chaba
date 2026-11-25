@@ -1,7 +1,7 @@
 id: runner-load-cap-per-claim-type
 title: runner-agent load gate is one-size-fits-all — trivial script probes starve with heavyweight claims
 column: doing
-updated: 2026-11-25 11:25
+updated: 2026-11-25 11:32
 priority: medium
 tags:
 - runner-agent
@@ -273,6 +273,13 @@ comms:
     on disk headroom (<2048MB floor, ~1.4GB free) — ; tony-dell runner gates heavy claims at 5m load/core > 0.85
     ("script claims only"; chaba merge test gate (240s smoke set) times out on loaded idc03 even for doc-on; [ada-scenario-quadlets-exit-contract]
     primer injected 8 lesso'
+- at: 2026-11-25 11:32
+  from: devin
+  text: 'attempt 2: core OPS-1182 fix was already merged 2026-11-08 (e353fc8359 — script claims get RUNNER_SCRIPT_MAX_LOAD_PC=2.0
+    ceiling, script-only pass under partial overload, dispatch/container stay strict). Found+fixed the remaining
+    gap: verdict_pass /ready reported script cards blocked under partial overload while claim_pass claimed them
+    — now mirrors the exception. +3 tests (46 green), pin bumped, job doc docs/ssot/jobs/board/2026-11-25-runner-load-cap-per-claim-type.yml.
+    Committed on dispatch br'
 action:
   type: dispatch
   status: running
