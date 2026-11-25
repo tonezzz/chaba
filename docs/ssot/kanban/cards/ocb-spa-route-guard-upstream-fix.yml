@@ -1,7 +1,7 @@
 id: ocb-spa-route-guard-upstream-fix
 title: 'Remove caddy SPA route guard when opencode ships #61001 fix'
-column: review
-updated: 2026-11-25 14:30
+column: done
+updated: 2026-11-25 14:38
 brief: 'idc02 caddy-edge carries a temporary redirect guard (@ocbUnknownRoute) on ada-code.surf-thailand.com + opencode-ada.surf-thailand.com
   that bounces document requests for unknown SPA paths to / — workaround for upstream opencode web crash anomalyco/opencode#61001
   (SPA dies ''Cannot read properties of undefined (reading type)'' when mounted on unrecognised path, e.g. post-login
@@ -160,6 +160,9 @@ comms:
 - at: 2026-11-25 14:30
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 14:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -173,3 +176,7 @@ action:
 claim:
   since: 2026-11-25 14:12
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 14:38
+  note: verified — evidence checks green, closing itself
