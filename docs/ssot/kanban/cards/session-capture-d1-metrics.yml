@@ -1,7 +1,7 @@
 id: session-capture-d1-metrics
 title: 'Session capture D.1: repeat-ask/miss/stale-pointer metrics'
 column: backlog
-updated: 2026-11-25 14:11
+updated: 2026-11-25 14:15
 priority: medium
 tags:
 - dev-0038-followup
@@ -202,21 +202,22 @@ comms:
 - at: 2026-11-25 14:11
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-25 14:15
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 2
-  result: 'exit=0 nch (`2081b351da`), and posted the final card comms — no further code changes were needed. | devin-task-20261125-052707-goal-measure-repeat-ask-miss-r.service:
-    Consumed 15.280s CPU time over 1min 18.253s wall clock time, 478.1M memory peak.'
+  attempts: 0
   sweep:
     stale_running: 2026-11-25 09:56
     dirty: 4
-  runner: mn01
-  verified: true
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+  last_failure: 'exit=0 nch (`2081b351da`), and posted the final card comms — no further code changes were needed.
+    | devin-task-20261125-052707-goal-measure-repeat-ask-miss-r.service: Consumed 15.280s CPU time over 1min 18.253s
+    wall clock time, 478.1M memory peak.'
 claim:
   since: 2026-11-25 12:26
 review_kind: verify
