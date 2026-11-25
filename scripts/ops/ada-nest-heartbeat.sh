@@ -96,15 +96,32 @@ cpu_cores() {
   esac
 }
 
+# smctemp occasionally emits 0.0 with a "could not get valid sensor value"
+# hint — retry briefly and reject implausible readings instead of posting
+# null on a transient SMC miss.
+smctemp_read() {
+  n=0
+  while [ "$n" -lt 3 ]; do
+    v=$("$1" -c 2>/dev/null | head -1)
+    case "$v" in
+      ''|*[!0-9.]*) ;;
+      *) awk -v v="$v" 'BEGIN{exit !(v>0 && v<150)}' && { echo "$v"; return 0; } ;;
+    esac
+    n=$((n+1))
+    [ "$n" -lt 3 ] && sleep 0.4
+  done
+  return 1
+}
+
 cpu_temp_c() {
   # Apple Silicon: smctemp (user-built, no root). launchd gives a minimal
   # PATH that omits ~/.local/bin — check the absolute path independently
   # of `command -v` so a beat under launchd still carries a number.
   if command -v smctemp >/dev/null 2>&1; then
-    smctemp -c 2>/dev/null && return
+    smctemp_read smctemp && return
   fi
   if [ -x "$HOME/.local/bin/smctemp" ]; then
-    "$HOME/.local/bin/smctemp" -c 2>/dev/null && return
+    smctemp_read "$HOME/.local/bin/smctemp" && return
   fi
   if [ "$(uname -s)" = "Linux" ]; then
     for z in /sys/class/thermal/thermal_zone*/temp; do
