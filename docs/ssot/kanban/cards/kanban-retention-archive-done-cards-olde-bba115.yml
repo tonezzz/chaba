@@ -1,7 +1,7 @@
 id: kanban-retention-archive-done-cards-olde-bba115
 title: 'Kanban retention: archive done cards older than 7 days'
 column: doing
-updated: 2026-11-25 15:55
+updated: 2026-11-25 15:57
 brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
   archive stale done cards to a separate store/page, keep board fast and searchable.'
 spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
@@ -252,5 +252,10 @@ comms:
     was a linked unit running a stale scripts/-only ; Done+verified cards leave /cards dump — archived cards live
     in docs/ssot/kanban/; File new kanban cards via POST /card on board-api — never edit card YAML directl; cards.json
     is gitignored and rendered on the served checkout '
+- at: 2026-11-25 15:57
+  from: devin
+  text: 'dispatch 2026-11-25: verified archive lane already live (PRs #120/#121 + cap ext + archive.html/archive.json
+    + done paging #125). Found one spec gap: /cards?id=<archived> returns empty — only /card/<id> resolves via archive
+    index. Fixing the /cards id-filter fallback now.'
 claim:
   since: 2026-11-25 15:54
