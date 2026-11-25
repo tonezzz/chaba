@@ -1,7 +1,7 @@
 id: ops-retry-storm-detection
 title: Surface sustained retry storms / hot containers on the ops board
 column: doing
-updated: 2026-11-25 10:56
+updated: 2026-11-25 10:58
 priority: medium
 tags:
 - observability
@@ -286,6 +286,10 @@ comms:
     is unrelated producer snapshots (ssh-canary logs); r; [ops-retry-storm-detection] checkpoint failed: commit:
     ⚠️ single-writer: /home/t; [ops-retry-storm-detection] session produced no commits — the branch head is jus;
     `~/var/chaba/health/*.json` holds unrelated producer snapshot'
+- at: 2026-11-25 10:58
+  from: devin
+  text: 'attempt 2: prior run built the deliverable but never committed (worktree 107 behind, dirty salvage). Rebuilding
+    scripts/ops/retry-storm-watch.py + ssot.jobs.yml entries + trail doc in this worktree.'
 action:
   type: dispatch
   status: running
