@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
-column: doing
-updated: 2026-11-25 20:18
+column: review
+updated: 2026-11-25 20:29
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -281,12 +281,44 @@ comms:
     174.6/34.85/0.9837; ResShift v3-s4: 213.2/33.84/0.9806. Verdict: ResShift v1-s15 = quality tier between realesrgan
     default and rented SUPIR (best generative fidelity, +3.4dB vs Real-ESRGAN, low hallucination risk — non-T2I
     prior); RSD = throughput tier on bigger GPUs; v3-s4'
+- at: 2026-11-25 20:29
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    Failed to ope'
+- at: 2026-11-25 20:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:29
+  from: chaba
+  text: banked 653 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:29
+  from: chaba
+  text: pushed dispatch/20261125-123106-follow-up-from-adobe-stock-ups to origin
+- at: 2026-11-25 20:29
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 20:29
+  from: chaba
+  text: auto-merged b3603f1c (dispatch/20261125-123106-follow-up-from-adobe-stock-ups) → origin/master
+- at: 2026-11-25 20:29
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-123106-follow-up-from-adobe-stock-ups,
+    branch dispatch/20261125-123106-follow-up-from-adobe-stock-ups'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: idc02
   attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    No such file or directory'
+  verified: true
 claim:
   since: 2026-11-25 12:30
+review_kind: verify
