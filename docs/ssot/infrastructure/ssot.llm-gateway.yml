@@ -108,7 +108,7 @@ providers:
     Reuses
     scripts/devnest/kk_mac_admission.snapshot(): 503s instantly when the
     heartbeat is stale (>900s), ollama unhealthy, disk <20G, load_1m >4,
-    cpu_temp_c >60, or the node is busy (tmux_jobs/load_ok/load1-per-core
+    cpu_temp_c >55, or the node is busy (tmux_jobs/load_ok/load1-per-core
     >1.0) — member device is owner-first, LiteLLM falls back to the paid
     leg instead of queueing slow calls. GET /health exposes the snapshot;
     drain switch: touch the file at KK_ADMISSION_FORCE_DENY.
