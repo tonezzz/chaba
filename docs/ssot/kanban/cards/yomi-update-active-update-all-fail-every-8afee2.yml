@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: backlog
-updated: 2026-11-25 19:16
+column: doing
+updated: 2026-11-25 19:18
 priority: medium
 tags:
 - bug
@@ -229,18 +229,22 @@ comms:
   from: chaba
   text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 19:18
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-25 14:55
     dirty: 2
   result: 'exit=0 4959-idc03-yomi-update-active-servi.md` in this worktree; final status posted to the card. | devin-task-20261125-144959-idc03-yomi-update-active-servi.service:
     Consumed 59.083s CPU time over 3min 57.228s wall clock time, 830.3M memory peak.'
+  runner: mn01
 claim:
-  since: 2026-11-25 14:47
+  since: 2026-11-25 19:18
 review_kind: verify
