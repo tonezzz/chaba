@@ -1,7 +1,7 @@
 id: ssot-validation-errors-cleanup
 title: Fix 5 pre-existing SSOT validation errors
 column: doing
-updated: 2026-11-25 09:33
+updated: 2026-11-25 09:36
 brief: 'ssot-validate-all.mjs reports 5 errors unrelated to the skills/wiki work: missing title in 4 cards and a
   YAML syntax error in ssot.devnest-lanes.yml.'
 priority: medium
@@ -85,6 +85,10 @@ comms:
     AUD-0020 CI result: PR #196''s validate check fa; The 750-line SSOT card-bloat gate blocks merge commits that
     pull in board-api ca; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha; [nest-percussion]
     primer injected 8 lesson(s): [devnest-queue'
+- at: 2026-11-25 09:36
+  from: devin
+  text: 'Validation re-run on dispatch worktree: node scripts/ssot-validate-all.mjs reports 0 errors across 6,417
+    files — the listed focus-inbox/job/lane errors are already resolved upstream. No changes needed; worktree clean.'
 action:
   type: dispatch
   status: running
