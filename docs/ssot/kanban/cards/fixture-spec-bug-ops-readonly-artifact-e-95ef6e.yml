@@ -1,7 +1,7 @@
 id: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
 title: 'Fixture spec bug: ops-readonly artifact expect.required_keys mismatch'
-column: doing
-updated: 2026-11-25 16:22
+column: review
+updated: 2026-11-25 16:24
 ref: OPS-1176
 comms:
 - at: 2026-11-08 12:26
@@ -223,17 +223,43 @@ comms:
     == required_fields == verify.py req == prompt fields and runs verify() end-to-end (7/7 OK). (2) runner-agent
     already synchronized — sha256 1514c75c on installed+checkout copies on idc02, idc03, tony-macbook, tony-dell,
     all == origin/master; no scp needed. Trail: docs/ssot/j'
+- at: 2026-11-25 16:24
+  from: mn01
+  text: 'finished (ok): exit=0 -fixture-spec-bug-regar.md`; card comms posted with progress and the final summary.
+    | devin-task-20261125-090740-'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'session-end checkpoint d18d9e93: 4 leftover file(s) committed'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: banked 94 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:24
+  from: chaba
+  text: pushed dispatch/20261125-090740-fix-the-fixture-spec-bug-regar to origin
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the chaba repository
   on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
   and needs redeployment via scp. The done-condition is verified when the test suite passes without required_keys
   mismatches in the ops-readonly artifact fixture and the runner-agent script is synchronized.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0 -fixture-spec-bug-regar.md`; card comms posted with progress and the final summary. | devin-task-20261125-090740-fix-the-fixture-spec-bug-regar.service:
+    Consumed 11min 21.820s CPU time over 14min 46.840s wall clock time, 514.9M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 16:06
+review_kind: verify
