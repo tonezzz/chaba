@@ -85,3 +85,20 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:23
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: all-registered-runner-agents-c-eba883
+  ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks
+    because the installed runner-agent script has drifted from the repository version. Additionally, the
+    card notes that the GEV shortcut fails with a 404 on screen 6, but does not specify which repository
+    contains the frontend code or screen definitions for Gods-Eye-View.
+  options:
+  - ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV
+    shortcut in the gods-eye-view repo
+  - Postpone this card until the runner-agent infrastructure drift is resolved independently
+  - Investigate and fix the GEV shortcut within the mddb-fork repository
+  status: open
+  at: 2026-11-25 19:23
+  from: backlog-spec-enrich
