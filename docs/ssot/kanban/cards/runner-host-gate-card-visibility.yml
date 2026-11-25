@@ -1,7 +1,7 @@
 id: runner-host-gate-card-visibility
 title: host-level claim gates skip before per-card eval — no defer note reaches the card
-column: doing
-updated: 2026-11-25 09:32
+column: backlog
+updated: 2026-11-25 09:38
 priority: medium
 tags:
 - runner-agent
@@ -213,13 +213,22 @@ comms:
   text: 'investigating: runner-agent already notes capacity-gate skips via _note_capacity_skip (e353fc8359); gap
     is kanban-dispatch claim_pass_gate (load/kill/quiet-hours/preflight/ratelimit) + per-card budget/host-cap skips
     which go silent. Implementing rate-limited pass-gate defer notes there.'
+- at: 2026-11-25 09:38
+  from: tony-macbook
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY=''profile''
+    XDG_SESSION_ — auto-retry queued (attempt 2/2) (column -> backlog)'
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-macbook
   attempts: 1
+  result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
+    XDG_SESSION_TYPE ='x11' UID=1000 PID=3554464 PPID=3554381 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
+    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
+  last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
+    XDG_SESSION_TYPE ='x11' UID=1000 PID=3554464 PPID=3554381 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
+    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT
 claim:
   since: 2026-11-25 09:26
