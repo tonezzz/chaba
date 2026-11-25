@@ -1,7 +1,7 @@
 id: ada-tool-voice-request-well-formed-kanba-56ba9f
 title: 'Ada tool: voice request -> well-formed kanban card spec'
-column: backlog
-updated: 2026-11-25 15:24
+column: doing
+updated: 2026-11-25 15:25
 ref: ADA-1202
 comms:
 - at: 2026-11-08 13:52
@@ -209,16 +209,23 @@ comms:
 - at: 2026-11-25 15:24
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:25
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
 spec: Implement the Ada tool capability to convert a voice request into a well-formed kanban card spec in the ada-voice
   repository. The runner must deploy on host tony-dell, ensuring it operates within the local development environment
   without drifting from repository scripts. Constraints include using existing voice-to-text pipeline definitions
   and validating the generated card structure against standard Chaba board schemas. The testable done-condition
   is a passing integration test where a recorded voice input successfully generates a correctly formatted card JSON
   in the board queue.
-claim: {}
+claim:
+  since: 2026-11-25 15:25
