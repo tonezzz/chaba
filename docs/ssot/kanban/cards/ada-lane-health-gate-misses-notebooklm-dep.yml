@@ -1,7 +1,7 @@
 id: ada-lane-health-gate-misses-notebooklm-dep
 title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
 column: backlog
-updated: 2026-11-25 14:54
+updated: 2026-11-25 14:58
 brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
   NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
   covered by no gate on any lane. Dead dell:3011 ran ~5 weeks (2026-10-17 migration -> 2026-11-25 repoint) with
@@ -62,6 +62,9 @@ comms:
 - at: 2026-11-25 14:54
   from: chaba
   text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 14:58
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.48 > 0.8)'
 action:
   type: dispatch
   status: queued
