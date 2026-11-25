@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
-column: doing
-updated: 2026-11-25 08:36
+column: review
+updated: 2026-11-25 08:39
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -313,9 +313,16 @@ comms:
     — all were live); dell was already parked. Kept the data plane end-to-end: pull-vps+camwall-edge on idc02/idc03,
     route narrowed to /apps/camwall/data/* only (wall UI/vcast/CMS dead — /apps/camwall/ non-data now 404, data/zones.json
     200). Deviation flagged earlier: literal stop of edge+'
+- at: 2026-11-25 08:39
+  from: mn01
+  text: 'finished (ok): exit=0 teps. zones.yml and all data dirs/env files untouched; outcome doc and card comms
+    posted. | devin-task-20261125-0'
+- at: 2026-11-25 08:39
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -324,6 +331,9 @@ action:
     stale_running: 2026-11-24 23:09
     dirty: 1
   runner: mn01
+  result: 'exit=0 teps. zones.yml and all data dirs/env files untouched; outcome doc and card comms posted. | devin-task-20261125-012443-phase-1-required-before-any-st.service:
+    Consumed 54.181s CPU time over 12min 19.235s wall clock time, 507.4M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 08:23
 requests:
@@ -360,3 +370,4 @@ requests:
     label: Hold — leave blocked
     action: hold
 awaiting_action: true
+review_kind: verify
