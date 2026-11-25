@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: done
 priority: medium
 created: 2026-10-10
-updated: 2026-11-24 23:28
+updated: 2026-11-25 07:49
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -703,6 +703,10 @@ comms:
   text: 'worktree-triage 2026-11-24: dispatch-wt-20261123-202412 dropped — uncommitted scripts/ops/stick-find.sh
     (7.3KB) + mn01-stick-standard.md/jobs-yml updates preserved on branch dispatch/20261123-202412-the-goal-is-to-stop-the-tony-u
     (tony-dell local ref).'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
