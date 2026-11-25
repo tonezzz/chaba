@@ -1,7 +1,7 @@
 id: devin-bank-distill-oauth-token-type
 title: devin-bank-distill fails — ACCESS_TOKEN_TYPE_UNSUPPORTED (Google OAuth)
 column: doing
-updated: 2026-11-25 10:48
+updated: 2026-11-25 10:51
 priority: low
 tags:
 - oauth
@@ -212,6 +212,13 @@ comms:
     Sep 21) that Google rejects 401 ACCESS_TOKEN_TYPE_UNSUPPORTED. Same dead key also breaks ada-memory-rollup nightly.
     Fixing key from local ada-paid slot + removing stale devin-bank-distill units (canonical job is on con01 per
     ssot.jobs.yml).'
+- at: 2026-11-25 10:51
+  from: devin
+  text: 'DONE — root cause was a dead GEMINI_API_KEY in omen ada-pi-pwa.env (Google 401 ACCESS_TOKEN_TYPE_UNSUPPORTED
+    = revoked AQ.* key, not OAuth). Fixes applied live: (1) rotated omen ada-pi-pwa.env to local ada-paid key —
+    also repairs nightly ada-memory-rollup which was failing identically (verified: rerun succeeded, 35 rollups,
+    0 auth errors); (2) removed stale devin-bank-distill units on omen AND dell — canonical job is con01 per ssot.jobs.yml.
+    SSOT updated: audit.hosts.yml expected_absent on both '
 action:
   type: dispatch
   status: running
