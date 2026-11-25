@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-weaviate-index
 title: Timer weaviate-index on tony-omen failing
 column: backlog
-updated: 2026-11-25 19:07
+updated: 2026-11-25 21:32
 priority: high
 tags:
 - timer-alert
@@ -1461,6 +1461,12 @@ comms:
     so not OOM). Raised exec timeout to 10800000ms, kept the 256MB maxBuffer; patched live tony-omen (backup .bak-20261125)
     and repo (commit 7a6e7e8388). Restarted weaviate-index.service at 19:03:36 +07 and it is activating/running.
     Leaving card open until the full SSOT rebuild reports succes'
+- at: 2026-11-25 21:32
+  from: tony
+  text: '2026-11-25 21:32 (+07): FIXED — full SSOT rebuild completed, service result=success exit=0 after 8909s
+    (2h28m) under the raised 3h allowance. Root cause was auto-index.mjs''s own 1h exec() cap plus Node''s 1MB stdout
+    maxBuffer; both raised (commit 7a6e7e8388, deployed tony-omen) to 10800000ms / 256MB. SSOTDocument corpus now
+    ~7.7k chunks and the indexer reports ''Automatic indexing completed''. Closing.'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `weaviate-index.service` on the host `tony-omen`. Run `journalctl
