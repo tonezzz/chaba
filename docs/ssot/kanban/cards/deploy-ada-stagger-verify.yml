@@ -1,7 +1,7 @@
 id: deploy-ada-stagger-verify
 title: deploy-ada.sh exits 7 when staggered units are still in start-pre
-column: doing
-updated: 2026-11-25 19:13
+column: review
+updated: 2026-11-25 19:17
 brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
   9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
   post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
@@ -356,13 +356,39 @@ comms:
     to ADA_VERIFY_S=180s; failed fast-fails, activating/inactive waits, deadline reports state. Stub-verified all
     three cases. Outcome doc: dispatch-outcome-20261125-191051-in-scripts-deploy-ada-sh-ada-v.md in the chaba dispatch
     worktree; trail docs/ssot/jobs/ada/2026-11-25-deploy-ada-stagger-verify.yml.'
+- at: 2026-11-25 19:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .local/bin/deploy-ada.sh` on idc03 (the self-drift gate refuses the stale installed
+    copy). | devin-task-20261125-'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'session-end checkpoint 4d54c1a4: 1 leftover file(s) committed'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: banked 612 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:17
+  from: chaba
+  text: pushed dispatch/20261125-191051-in-scripts-deploy-ada-sh-ada-v to origin
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 19:17
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 .local/bin/deploy-ada.sh` on idc03 (the self-drift gate refuses the stale installed copy). | devin-task-20261125-191051-in-scripts-deploy-ada-sh-ada-v.service:
+    Consumed 13.839s CPU time over 2min 27.071s wall clock time, 376.4M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 19:09
+review_kind: verify
