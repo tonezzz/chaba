@@ -1,7 +1,7 @@
 id: awx-aap-rbac-approval-gates
 title: AWX/AAP integration for RBAC and approval gates
 column: review
-updated: 2026-11-25 21:08
+updated: 2026-11-25 21:09
 brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
   and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
   without breaking the current scheduler.
@@ -41,6 +41,8 @@ action:
   result: 'exit=0 , outcome written to `dispatch-outcome-20261125-210313-context-home-tony-ansible-disp.md`. | devin-task-20261125-210313-context-home-tony-ansible-disp.service:
     Consumed 31.115s CPU time over 2min 28.774s wall clock time, 555.4M memory peak.'
   verified: false
+  sweep:
+    dirty: 1
 comms:
 - at: 2026-11-25 20:13
   from: chaba
@@ -136,6 +138,10 @@ comms:
 - at: 2026-11-25 21:08
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-210313-context-home-tony-ansible-disp on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 ref: OPS-1408
 claim:
   since: 2026-11-25 21:02
