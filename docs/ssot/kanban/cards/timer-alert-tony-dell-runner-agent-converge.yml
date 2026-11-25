@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-agent-converge
 title: Timer runner-agent-converge on tony-dell failing
 column: done
-updated: 2026-11-25 17:50
+updated: 2026-11-25 19:40
 priority: high
 tags:
 - timer-alert
@@ -155,6 +155,16 @@ comms:
 - at: 2026-11-25 17:50
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
+- at: 2026-11-25 19:40
+  from: tony
+  text: '[timer-alert] RESOLVED 2026-11-25 (Tony): the 03:31 runner-agent-converge failure was the stale installed
+    snapshot fixed by the governed deploy-runner-agent.yml converge. tony-dell journal: 11:05 run TERM''d at 11:07
+    by the playbook restart handler (expected), re-ran 11:07:32 and FINISHED 11:07:56; timer active/enabled, next
+    trigger 2026-11-26 03:34. sha256 installed == checkout == 1514c75c4679a0. Card was already in done but kept
+    a stale queued action flag — closing properly so it stops counting'
+- at: 2026-11-25 19:40
+  from: tony
+  text: closed by tony
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
@@ -163,7 +173,7 @@ spec: Investigate and resolve the failure of runner-agent-converge.service on ho
   when runner-agent-converge.service runs successfully on tony-dell without exiting with an error code.
 action:
   type: dispatch
-  status: queued
+  status: done
   lane: free_lane
   lane_source: timer-alert
   executor: devin
