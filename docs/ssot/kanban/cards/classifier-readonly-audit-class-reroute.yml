@@ -1,7 +1,7 @@
 id: classifier-readonly-audit-class-reroute
 title: 'Classifier: route bounded read-only audit/assessment cards to free_lane (ops-readonly profile)'
 column: doing
-updated: 2026-11-25 10:12
+updated: 2026-11-25 10:23
 brief: 'DEV-0044 lever 1 first pick: bounded read-only audit/assessment/review/investigate cards -> free_lane. 56.8M
   prompt/30d on idc02 alone; ''audit'' is not a classifier keyword so these fall to jevos/devin.'
 priority: medium
@@ -62,6 +62,8 @@ action:
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:23
 ref: DEV-1335
 comms:
 - at: 2026-11-24 22:59
@@ -116,5 +118,9 @@ comms:
     free_lane slot — after manual/compare/paid_frontier/codemod, before devin; explicit lane + timer-alert pin still
     win. Title-scoped only, mutation-verb veto on title, NOT a LANE_KW entry. Hyphen-slug form needs >=2 hyphens
     so component names (audit-cast) dont match — vcast-audit-cast veri
+- at: 2026-11-25 10:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-093311-parent-card-devin-usage-reduct no longer active on tony-dell but
+    card still says running — sweeping its branch'
 claim:
   since: 2026-11-25 09:31
