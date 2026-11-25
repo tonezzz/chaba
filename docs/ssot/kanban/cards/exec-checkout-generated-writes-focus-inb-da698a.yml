@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
 column: doing
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:01
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -276,6 +276,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: devin
+  text: 'DONE (pending merge): all focus-inbox producers are now role-aware via new scripts/lib/{chaba_role,boardapi}.py/.mjs
+    — non-writer checkouts POST to board-api /inbox (dedup_key + throttle) instead of writing dead files. Verified:
+    test alert fired on omen landed in idc03 served focus-inbox (2026-11-25-183751-exec-writes-verify-omen.yml);
+    render-handoff-inbox skips cleanly off-writer. ada-memory git dumps moved to new ada-memory-backup-writer job
+    on idc03 (install post-merge); exec copies declared '
 action:
   type: dispatch
   status: running

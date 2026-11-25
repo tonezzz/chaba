@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
 column: backlog
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:01
 priority: high
 tags:
 - timer-alert
@@ -2042,6 +2042,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: '2026-11-25 18:59 (+07): stale-chain cause FIXED — con01 chaba-system-report.service failed with KeyError:
+    ''no-config'' in scripts/report-system.py (_BADGE/_WORST lacked that status, emitted by MCP inventory metas).
+    Patched repo + con01 (backup .bak-20261125), reran producer: success, generated_at 2026-11-25T12:49:02+01:00,
+    delivered to both idc02 paths (web-srv + exec checkout). Watchdog rerun now reports ''chain ok - generated 0.0h
+    ago''; it still exits 1 on GENUINE red nodes (audit-hosts/macbook,'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`

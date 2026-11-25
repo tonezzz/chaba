@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
 column: review
-updated: 2026-11-25 17:40
+updated: 2026-11-25 19:01
 priority: low
 tags:
 - embedding
@@ -405,6 +405,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: 'answered distillation-pilot-already-ran-2026-11-0-5dd74e: proceed'
+- at: 2026-11-25 19:01
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -428,10 +434,12 @@ requests:
     is pending on sync-rerank latency. Options: (a) close card — pilot answered it, full FT only if sync rerank
     fails the budget [recommended]; (b) park until the serving decision lands; (c) authorize rebuild + full SBERT
     fine-tune anyway.'
-  status: open
+  status: answered
   at: 2026-11-25 17:02
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
