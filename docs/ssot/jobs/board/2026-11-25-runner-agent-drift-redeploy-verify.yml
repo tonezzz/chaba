@@ -48,6 +48,21 @@ notes: >
   a persistent fault. _self_update/sync-runner-tools healed it within
   one sync cycle as designed.
 
+timer_converge_followup:
+  card: timer-alert-tony-dell-runner-agent-converge
+  symptom: "03:31 run exited status=1/FAILURE; timer sentinel filed an alert card"
+  timeline:
+    - "2026-11-25 03:31:09+07 runner-agent-converge.service exited 1/FAILURE (stale installed snapshot)"
+    - "2026-11-25 11:05:00+07 started again; terminated 11:07:03 by the deploy-runner-agent.yml restart handler during the governed fleet converge — expected, not a new fault"
+    - "2026-11-25 11:07:32+07 re-started and FINISHED successfully at 11:07:56+07"
+    - "next trigger 2026-11-26 03:34:06+07; timer active/enabled, 7h left at check"
+  verified:
+    - "sha256 ~/.local/bin/runner-agent == checkout scripts/board/runner-agent.py == 1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210"
+    - "no drift defers for tony-dell in the 24h journal after the converge"
+  card_defect: "card was moved to done without closing through /action, so action.status stayed 'queued' and it counted as a zombie claimable entry"
+  resolution: "/action do=close with evidence comment; queue count 5 -> 4"
+  lesson: "when a timer-alert card is closed by hand, close through /action (or /card-set action.status) so the dispatch queue does not keep a done card claimable"
+
 lessons:
   - "Drift-defer cards are often already healed by the time a dispatch lands — sha256 BOTH ~/.local/bin/runner-agent and <checkout>/scripts/board/runner-agent.py before touching anything; a manual cp is a byte-no-op on converged hosts."
   - "Transient drift window = repo-sync pull lands new runner-agent.py before sync-runner-tools/_self_update installs it; expect flap, not persistent drift, after any runner-agent.py commit."
