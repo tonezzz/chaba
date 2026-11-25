@@ -1,7 +1,7 @@
 id: timer-alert-idc02-single-writer-fleet-audit
 title: Timer single-writer-fleet-audit on idc02 failing
 column: backlog
-updated: 2026-11-26 05:56
+updated: 2026-11-26 06:04
 priority: high
 tags:
 - timer-alert
@@ -38,3 +38,7 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:04
+  from: devin
+  text: '[still suspicious] Last run (11-26 05:45) of `single-writer-fleet-audit.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u single-writer-fleet-audit.service` on the host. See CMS `timer-timeline-idc02`.'
