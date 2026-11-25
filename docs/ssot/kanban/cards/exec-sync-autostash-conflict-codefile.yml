@@ -1,7 +1,7 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
 column: done
-updated: 2026-11-25 17:39
+updated: 2026-11-26 03:50
 priority: medium
 tags:
 - infra
@@ -312,6 +312,10 @@ comms:
 - at: 2026-11-25 17:39
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
