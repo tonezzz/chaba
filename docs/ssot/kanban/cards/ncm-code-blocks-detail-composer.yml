@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 09:46
+updated: 2026-11-25 15:35
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -81,3 +81,10 @@ comms:
     fixed it with qwen3:0.6b digest 7df6b6e0... + format:json: 36/36 parseable glue, 9/12 Jev Choice ok (3 local
     4b CPU timeouts fell back to hand-labelled block, recorded). 144 rows, replay PASS (0 identity mismatches, 0
     provider calls at replay), 0 guard violations. A_jev_llm_glue '
+- at: 2026-11-25 15:35
+  from: devin
+  text: 'Baseline robustness check done — INCONCLUSIVE. Re-ran arm A at seed 42 with pinned qwen3:4b (digest 359d7dd4...)
+    + JSON mode, num_predict 128: 11/12 calls hit the 180s cap on the local CPU host; the single completed call
+    scored fidelity 0.5368 vs 0.467 for qwen3:0.6b — both far below the 0.75 floor. So there is no evidence a stronger
+    local model would close the gap, but n=1 cannot validate the Phase B +1.000 delta. Recommendation: treat Phase
+    B as watch/unvalidated; do NOT cite +1.000 as an NCM '
