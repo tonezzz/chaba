@@ -1,7 +1,7 @@
 id: deploy-ada-stagger-verify
 title: deploy-ada.sh exits 7 when staggered units are still in start-pre
-column: review
-updated: 2026-11-25 19:17
+column: done
+updated: 2026-11-25 19:24
 brief: deploy-ada.sh reported exit 7 after gates on 2026-11-18 twice (36828b1 and a2a2026 deploys). Both times all
   9 services came up active ~2min later — ada-start-stagger.sh sleeps up to ~95s in ExecStartPre, and the script's
   post-restart verify doesn't account for it. Deploy looks failed when it actually succeeded; also leaves a window
@@ -378,6 +378,14 @@ comms:
 - at: 2026-11-25 19:17
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 19:24
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-191051-in-scripts-deploy-ada-sh-ada-v,
+    branch dispatch/20261125-191051-in-scripts-deploy-ada-sh-ada-v on tony-macbook'
+- at: 2026-11-25 19:24
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-191051-in-scripts-deploy-ada-sh-ada-v already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-191051-in-scripts-deploy-ada-sh-ada-v.md) — auto-closed'
 action:
   type: dispatch
   status: done
@@ -388,7 +396,11 @@ action:
   attempts: 1
   result: 'exit=0 .local/bin/deploy-ada.sh` on idc03 (the self-drift gate refuses the stale installed copy). | devin-task-20261125-191051-in-scripts-deploy-ada-sh-ada-v.service:
     Consumed 13.839s CPU time over 2min 27.071s wall clock time, 376.4M memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 19:09
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 19:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-191051-in-scripts-deploy-ada-sh-ada-v.md
