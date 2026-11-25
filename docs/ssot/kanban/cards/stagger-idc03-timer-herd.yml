@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: review
-updated: 2026-11-25 10:54
+updated: 2026-11-25 10:55
 priority: medium
 tags:
 - ops
@@ -276,6 +276,13 @@ comms:
 - at: 2026-11-25 10:54
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 10:55
+  from: devin
+  text: 'Credential file verified 2026-11-25: ~/.config/secrets/plesk-ssh.env is mode 600 with all three fields
+    set; FTP login to h3.gizmo-thailand.com (103.99.11.249) succeeded. SSH is NOT reachable from agent hosts: ports
+    22 and 2222 time out; only 21 (FTP) and 8443 (Plesk HTTPS) are open. Use the Plesk panel at 8443 (Terminal/File
+    Manager) or the FTP path for the Cargo maintenance; do not rely on SSH from here. No credential values were
+    printed or stored in the repo/card.'
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
