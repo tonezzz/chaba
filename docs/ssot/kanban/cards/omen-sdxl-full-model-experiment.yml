@@ -1,7 +1,7 @@
 id: omen-sdxl-full-model-experiment
 title: Test non-Lightning SDXL checkpoint on omen sd-server
 column: doing
-updated: 2026-11-25 07:55
+updated: 2026-11-25 09:37
 brief: Determine whether omen painterly output is the Lightning checkpoint or Q4 quantization.
 priority: medium
 program: adobe-stock
@@ -205,6 +205,13 @@ comms:
     sd-server has NO hot model swap (single -m at startup; routes verified in source). Recovered verbatim candidate-C
     prompt from ~/adobe-stock-gemini-c.7wBI1T/sd_submit.py (actually 8 steps cfg1.0 on Lightning — card says 20/cfg7,
     correcting). Running controlled re-run: par'
+- at: 2026-11-25 09:37
+  from: devin
+  text: '[done] Experiment complete. Controlled re-run: parallel sd-server :8400 + sdxl-base-1.0-Q8_0.gguf, verbatim
+    candidate-C prompt, 20 steps cfg7 euler_a seed 20261106, 93min -> landed comparison-h-omen-sdxl-q8-cprompt (1344x768,
+    sha 13ab4de2, qc pending_tony). VERDICT: painterly = Lightning distillation, NOT Q4 quantization — Q8 gives
+    +26-37% Laplacian detail (C 1218/D 1670/H 1531) but CPU SDXL still not stock-photo. omen sd lane = ILLUSTRATION-TIER.
+    GATE: no hot model swap in sd-server (single -m,'
 action:
   type: dispatch
   status: running
