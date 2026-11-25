@@ -1,0 +1,136 @@
+title: mddb-cms :11027 embed coverage gap — remediation (reindex + CMS sweep + warm-ping)
+subtitle: ~250-doc gap decomposed into meta-only stubs vs real drops;
+  daily CMS reindex sweep and bge-m3 warm-ping declared
+icon: layers
+version: 1
+
+card: mddb-cms-11027-embed-coverage-gap-250-do-e35321
+ref: MEM-1336, MEM-0204 (found by cms-plane-bge-golden-set-eval)
+repo: chaba
+branch: dispatch/20261125-101035-found-by-cms-plane-bge-golden-
+host: tony-macbook (driver); targets idc03 :11027 + embed-pool :11436
+date: 2026-11-25
+status: reindex-applied-live, infra-declared-pending-deploy
+
+# ------------------------------------------------------------- findings
+context: >-
+  vector-stats on mddb-cms :11027 showed embedded_documents <
+  total_documents in 12 collections (~250 docs) with queue
+  dropped=910 retried=753 at eval time. Re-measured 2026-11-25 03:10 UTC:
+  dropped=1762, queue depth ~3000/4000 — drops continued after the eval.
+
+root_cause_split: |
+  The "coverage gap" is TWO different problems, and the bigger one is
+  NOT queue drops:
+
+  1. META-ONLY DOCS (structurally un-embeddable). Non-force
+     POST /v1/vector-reindex (synchronous, content-hash skip) returned
+     totalChunks=0 / skipped=all for: chaba-archive (14/14),
+     chaba-docs (40/40), kb-system (34/34), kb-operations (289/289),
+     kb-features (145/145), documents (275/275), devin-kb (9/9),
+     ssot (1/1). Their contentMd is EMPTY — they are docs-sync stubs
+     carrying only meta (title, rel_path, repo, content_md5,
+     last_used/use_count). Vector search over them can never work;
+     keyword search on meta is the intended surface. devin-kb/* and
+     ssot.focus confirmed meta-only by direct /v1/search read.
+     kb-development embedded=5 of its 13 "missing" — the other 8 are
+     meta-only too (12/20 is the real ceiling pending content-bearing
+     docs). chaba-lessons embedded=3 (content changed since last embed);
+     its 1 remaining gap is meta-only.
+
+  2. REAL DROPPED EMBEDS (small). Only ~8 docs actually re-embedded
+     this session (kb-development +5, chaba-lessons +3 — some may be
+     re-embeds of changed content). The 2026-11-19 queue pin at
+     4000/4000 plus degraded embed-pool windows is what dropped them.
+
+  3. QUEUE DROPS MECHANISM (verified live): embed jobs are dropped
+     when queue depth hits the 4000 cap during degraded-pool windows.
+     Ops proof: ops-embed-probe-embed_queue_drops-20261125080010 on
+     ada-ha-events-tony (:11023) — "cms embed queue droppedTotal
+     1716->1729 (+13 docs lost vectors); cms queue depth=4000/4000".
+     The tripwire (scripts/ada/embed-probe.py check_queue, per-plane
+     since 2026-11-19) DOES alert on dropped>0 for :11027 — alerting
+     was already in place; what was missing was automated REMEDIATION.
+
+  4. DEGRADED POOL (root enabler): embed-pool-shim :11436 health at
+     03:10 UTC — idc03 ollama consec=5 fails near 8s timeout,
+     tony-omen consec=118 dead_until flapping, defer tier
+     (127.0.0.1:11447 nest-bridge) fails=55903 vs wins=15876.
+     Cold bge-m3 load measured live: omen needed >30s (up to ~90s)
+     to answer a one-token /api/embed — exactly the spike gotcha.
+
+# ------------------------------------------------------------- actions
+reindex_applied: |
+  Non-force POST /v1/vector-reindex per affected collection on
+  :11027 (synchronous inline embed, ~6s/doc on degraded pool):
+    chaba-archive skipped=14/14, chaba-docs 0, chaba-lessons embedded=3,
+    devin-kb 0, documents 0, kb-development embedded=5, kb-features 0,
+    kb-operations 0, kb-system 0, ssot 0 — all totalChunks=0 except the
+    embedders above (meta-only docs skip clean).
+    ada-cms-pages: embedded=200 skipped=1391 failed=8 (504s during a
+    pool flap; 597 chunks, 1279s) — non-force also re-embeds docs whose
+    content changed since last embed, so "missing" was understated:
+    coverage went 1598->1599/1599. infrastructure-ssot reindex was
+    still running at write time (9025 docs to scan).
+
+infra_declared: |
+  1. ssot.jobs.yml + systemd/generated/: NEW job mddb-cms-vector-reindex
+     (con01, daily 06:10, MDDB_BASE_URL=:11027, 60m timeout) — the
+     existing mddb-vector-reindex sweep only covered the :11023 leader,
+     which is why CMS drops accumulated silently. PENDING DEPLOY:
+     merge + chaba-repo-sync on con01 + render-jobs --install.
+  2. NEW script scripts/nest/embed-pool-warm-ping.py + job
+     embed-pool-warm-ping (idc03, every 4min) — pings each PRIMARY
+     ollama upstream's /api/embed (bge-m3, keep_alive 30m) so models
+     never cold-load past the shim's 8s timeout. Defer-tier device
+     workers excluded on purpose. Verified live: idc03 ok 1024d,
+     omen cold-loaded then ok. PENDING DEPLOY: same merge+sync path;
+     idc03 exec checkout picks it up via chaba-repo-sync.
+
+alerting: |
+  Already existed — embed-probe.py check_queue covers BOTH planes and
+  emits embed_queue_drops / embed_queue_saturated / embed_queue_drained
+  to ada-ha-events-tony (rate-limited 30min on drop growth). Verified
+  the cms-plane drop event fired today. No code change needed; the gap
+  was remediation, not detection.
+
+# ------------------------------------------------------------- decision_needed
+meta_only_collections: |
+  devin-kb/* (9 docs), chaba-archive stubs (12 of 14), ssot.focus,
+  and the meta-only fraction of chaba-docs/kb-*/documents can NEVER
+  embed — contentMd is empty by design (docs-sync/SSOT pointer docs;
+  content lives in git repos). Board request raised on the card:
+  backfill contentMd vs declare keyword-only. Recommendation:
+  keyword-only — these are index docs; vector search was never their
+  surface, and backfilling duplicates repo content into MDDB.
+
+followups:
+  - "After merge+deploy of the two new jobs, verify: systemctl --user
+    list-timers | grep -E 'mddb-cms-vector|embed-pool-warm' on con01/idc03,
+    and next-day vector-stats embedded==total on content-bearing docs."
+  - "embed-pool-shim defer tier fail rate (56k fails) is mostly the
+    nest-bridge device worker being offline — expected for an
+    opportunistic lane, but worth a look if lane B is meant to pull
+    weight (card lab-iphone-webgpu-worker follow-ups)."
+  - "Leader :11023 queue also near cap (depth ~2572, dropped=151) —
+    same warm-ping benefits it if it shares the pool; check its
+    MDDB_EMBEDDING_API_URL before assuming."
+
+verify: |
+  # live reindex results are in card comms; spot-check coverage:
+  curl -s -X POST http://idc03.taila0626a.ts.net:11027/v1/vector-stats \
+    -H 'content-type: application/json' -d '{}' | jq '.collections | to_entries[] | select(.value.embedded_documents < .value.total_documents) | {(.key): "\(.value.embedded_documents)/\(.value.total_documents)"}'
+  # warm-ping script smoke (already run live):
+  python3 scripts/nest/embed-pool-warm-ping.py
+  # rendered units match manifest:
+  python3 -m unittest tests.ops.test_render_jobs   # 27 tests OK
+
+changes: |
+  - file: scripts/nest/embed-pool-warm-ping.py
+    what: new — concurrent /api/embed warm pings for primary ollama
+      upstreams (env-overridable), 60s timeout for cold loads.
+  - file: docs/ssot/infrastructure/ssot.jobs.yml
+    what: +mddb-cms-vector-reindex (con01 daily :11027 sweep),
+      +embed-pool-warm-ping (idc03 every 4min).
+  - file: systemd/generated/{con01,idc03}/<new units>
+    what: render-jobs.py output for the two jobs.

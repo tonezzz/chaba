@@ -488,6 +488,45 @@ jobs:
     via mddb-vector-reindex.service(.d) — lost with that host 2026-10-12;
     declared here 2026-10-22 (OPS-0763). Same script stays wired to
     mddb.service ExecStartPost + mddb-embed-probe on idc03.
+- id: mddb-cms-vector-reindex
+  name: MDDB CMS vector reindex — daily re-embed sweep for :11027 dropped embeddings
+  host: con01
+  dispatch: systemd
+  on_calendar: '*-*-* 06:10:00'
+  persistent: true
+  timeout: 90m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mddb/vector-reindex.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11027
+    MDDB_REINDEX_HEALTH_WAIT: '1200'
+    MDDB_REINDEX_TIMEOUT: '1800'
+  note: >-
+    CMS-plane sibling of mddb-vector-reindex (card
+    mddb-cms-11027-embed-coverage-gap-250-do-e35321, 2026-11-25): the
+    leader sweep never covered :11027, so embed-queue drops on the CMS
+    plane accumulated silently until the bge golden-set eval found
+    ~250 unembedded docs. Non-force reindex skips content-hash matches
+    and meta-only docs (empty contentMd — devin-kb, chaba-archive
+    stubs, ssot.focus) chunk to zero and skip cheap. Offset 30min
+    after the leader sweep; same con01 driver off saturated idc03.
+- id: embed-pool-warm-ping
+  name: Embed pool warm-ping — keep bge-m3 loaded on ollama upstreams
+  host: idc03
+  dispatch: systemd
+  every: 4m
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/nest/embed-pool-warm-ping.py
+  condition_path: '%h/CascadeProjects/chaba/scripts/nest/embed-pool-warm-ping.py'
+  note: >-
+    Spike gotcha (docs/ssot/jobs/mddb/2026-11-18-cms-plane-bge-m3-migration-runbook.yml):
+    a cold bge-m3 upstream takes ~21-90s to load > shim's 8s timeout =>
+    consec fails => 60s dead_until flap; warming omen manually moved
+    drain 2->14 docs/min. Pings each PRIMARY ollama upstream's
+    /api/embed every 4min (keep_alive 30m); defer-tier device workers
+    (EMBED_POOL_DEFER_UPSTREAMS, nest-bridge) are excluded on purpose.
+    Defaults match the live shim pool (idc03 + tony-omen ollama);
+    override via EMBED_POOL_WARM_UPSTREAMS if the pool changes.
 - id: embed-lane-news
   name: Embed lane — news title vectors (nomic) refresh
   host: idc03
