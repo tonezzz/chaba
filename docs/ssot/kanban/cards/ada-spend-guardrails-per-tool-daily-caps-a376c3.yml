@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
 column: review
-updated: 2026-11-25 15:42
+updated: 2026-11-25 15:54
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -251,6 +251,11 @@ comms:
 - at: 2026-11-25 15:42
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-25 15:54
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261125-152510-implement-per-tool-daily-spend failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
 action:
   type: dispatch
   repo: ada-voice
@@ -264,6 +269,8 @@ action:
     devin-task-20261125-152510-implement-per-tool-daily-spend.service: Consumed 56.119s CPU time over 14min 9.804s
     wall clock time, 636M memory peak.'
   verified: false
+  sweep:
+    merge_err: 2026-11-25 15:54
 spec: Implement per-tool daily spending caps and a budget readout for Ada in the ada-voice repository. The implementation
   must enforce strict limits on individual tool usage to prevent runaway costs and provide a clear status readout
   of remaining daily budgets. Verify the implementation by running local unit tests and checking that the budget
