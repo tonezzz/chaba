@@ -111,18 +111,30 @@
               run_py render-memory.py "$@" || true
               ;;
             session-end)
-              # Best-effort aid: recent event + render. Immediate pin requires task/next context.
+              # Best-effort aid: recent event + capture-router event + render.
+              # Immediate pin requires task/next context.
               # Usage: chaba-session-capture session-end <session_id> [reason]
               sid="${1:-${DEVIN_SESSION_ID:-unknown}}"
               reason="${2:-unknown}"
               run_py recent-event.py --kind lifecycle "Session end ${sid} (${reason})" || true
+              # Phase C.3 (OPS-1356): dry-run router event; emitter dedupes by
+              # dedupe_key, refuses evidence-free events, never writes sinks.
+              run_py capture-event.py --type focus_session --source script \
+                --session "$sid" --actor chaba-session-capture \
+                --summary "Session ${sid} ended (${reason})." \
+                --ref "session-capture:${sid}" || true
               run_py render-memory.py --if-stale || true
+              ;;
+            capture-event|router-event)
+              # Usage: chaba-session-capture capture-event --type <t> --source <s> --summary "..." [args]
+              run_py capture-event.py "$@" || true
               ;;
             help|*)
               cat <<'EOF'
           Usage:
             chaba-session-capture recent-event [args...]   # scripts/chaba/recent-event.py
             chaba-session-capture immediate-pin [args...]  # scripts/chaba/immediate-pin.py
+            chaba-session-capture capture-event [args...]  # scripts/chaba/capture-event.py (dry-run router events)
             chaba-session-capture render [--if-stale]      # scripts/chaba/render-memory.py
             chaba-session-capture session-end <sid> [reason]
           Notes: pointer-first aids only; follow ssot.knowledge-capture.yml sweep/handoff packet.

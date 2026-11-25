@@ -13,6 +13,9 @@ Follow `docs/ssot/ssot.knowledge-capture.yml` and the `session-capture` procedur
 4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history).
 5. **Evidence:** attach outcomes/evidence to cards/reports; capture only reusable deltas.
 6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
+7. **Router event (dry-run, idempotent):** emit ONE capture-router event for the packet —
+   `python3 scripts/chaba/capture-event.py --type handoff --source opencode --session <session-id-or-slug> --subject <packet-id-or-as_of> --summary "<objective + current_state>" --ref <packet sink ref> --where-filed "<item -> sink/ID/path>" [--where-filed ...] [--open-ask ...]`
+   The emitter is dry-run only (events.jsonl + audit.jsonl under `~/.local/share/chaba/capture`), dedupes by `dedupe_key` (re-emit = noop+audit, never a second packet), refuses handoff events without refs/`where_filed`, and never writes canonical sinks — gated writes stay behind `capture-apply.py`. Safe to re-run.
 
 ## Guardrails
 - SSOT-first retrieval; SSOT/designated live authority wins on conflict.

@@ -52,7 +52,8 @@ Procedures: `knowledge-capture`, `pointer-note`, `session-capture` in `docs/ssot
 4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history).
 5. **Outcomes/evidence:** attach to card/report/artifacts; capture only reusable deltas.
 6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and include it in the response.
-7. **Report (mandatory):** always list `where_filed` (`item -> sink/ID/path`) — never end with chat-only outcomes.
+7. **Router event (dry-run, idempotent):** emit ONE capture-router event for the packet — `python3 scripts/chaba/capture-event.py --type handoff --source devin --session <id> --subject <packet-id-or-as_of> --summary "<objective + current_state>" --ref <packet sink ref> --where-filed "<item -> sink/ID/path>" [--where-filed ...] [--open-ask ...]`. Dry-run only (events/audit JSONL under `~/.local/share/chaba/capture`), dedupes by `dedupe_key` (re-emit = noop+audit, never a second packet), refuses handoff events without refs/`where_filed`, never writes canonical sinks — gated writes stay behind `capture-apply.py`.
+8. **Report (mandatory):** always list `where_filed` (`item -> sink/ID/path`) — never end with chat-only outcomes.
 
 ## Session Handoff Packet (required)
 - `objective` — what this session/task was doing
