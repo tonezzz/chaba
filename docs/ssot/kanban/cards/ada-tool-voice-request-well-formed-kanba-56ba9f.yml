@@ -1,6 +1,6 @@
 id: ada-tool-voice-request-well-formed-kanba-56ba9f
 title: 'Ada tool: voice request -> well-formed kanban card spec'
-column: backlog
+column: doing
 updated: 2026-11-25 16:40
 ref: ADA-1202
 comms:
@@ -270,14 +270,17 @@ comms:
 - at: 2026-11-25 16:40
   from: chaba
   text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 16:40
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   result: 'exit=0 a/2026-11-25-kanban-voice-card-draft.yml`, and the card has been updated on the board. | devin-task-20261125-152559-implement-the-ada-tool-capabil.service:
     Consumed 1min 52.785s CPU time over 10min 10.005s wall clock time, 1.3G memory peak.'
   verified: false
@@ -286,6 +289,7 @@ action:
     zero_commit: 2026-11-25 16:39
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
   executor: devin
+  runner: idc02
 spec: Implement the Ada tool capability to convert a voice request into a well-formed kanban card spec in the ada-voice
   repository. The runner must deploy on host tony-dell, ensuring it operates within the local development environment
   without drifting from repository scripts. Constraints include using existing voice-to-text pipeline definitions
@@ -293,5 +297,5 @@ spec: Implement the Ada tool capability to convert a voice request into a well-f
   is a passing integration test where a recorded voice input successfully generates a correctly formatted card JSON
   in the board queue.
 claim:
-  since: 2026-11-25 15:25
+  since: 2026-11-25 16:40
 review_kind: verify
