@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-harden
 title: 'Harden ansible disk-headroom.yml: controller-local conn, dry-run, trend feeding'
 column: done
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:08
 brief: 'From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection:
   local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.'
 priority: low
@@ -169,6 +169,10 @@ comms:
 - at: 2026-11-25 17:02
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
