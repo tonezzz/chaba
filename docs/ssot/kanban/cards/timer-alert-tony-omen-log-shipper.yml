@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-log-shipper
 title: Timer log-shipper on tony-omen failing
-column: backlog
+column: done
 updated: 2026-11-25 22:39
 priority: high
 tags:
@@ -3671,6 +3671,9 @@ comms:
     batch (''mddb add failed — stopping'', 0 shipped). Reduced BATCH 100->20 (~13s, 2x headroom), committed/pushed
     (cb22f4ed42e) and deployed via ansible/playbooks/log-shipper.yml. Verified: one-shot shipped 1130 docs / 0 failed;
     systemd unit Result=success exit=0; timeline sweep now resul'
+- at: 2026-11-25 22:39
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
 spec: Investigate the recurring timeout failures of the `log-shipper.service` user service on the `tony-omen` host
@@ -3678,3 +3681,4 @@ spec: Investigate the recurring timeout failures of the `log-shipper.service` us
   under `timer-timeline-tony-omen` to determine the root cause of the timeouts. The done-condition is verified when
   the underlying issue causing the service timeout is identified and resolved, and a subsequent manual or automated
   run of `log-shipper.service` completes successfully without timing out.
+claim: {}
