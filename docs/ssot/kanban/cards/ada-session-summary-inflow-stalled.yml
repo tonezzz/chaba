@@ -1,7 +1,7 @@
 id: ada-session-summary-inflow-stalled
 title: Ada session-summary feed stalled — recall-summary collections get no new docs since early Oct
-column: doing
-updated: 2026-11-25 20:10
+column: review
+updated: 2026-11-25 20:14
 spec: 'Found while shipping memory-extract-merge-proposals (2026-11-18): memory-distill.timer runs Sun 09:45 on
   idc03 and exits SUCCESS but reports 0 new session summary docs in every ada-ha-recall-summary-* collection. Verified
   newest docs: ada-ha-recall-summary-tony=2026-10-03, -dev=2026-10-09, -kk=2026-10-13, -ada-dev=empty. Downstream
@@ -259,17 +259,34 @@ comms:
     dead upstream: only GeminiLiveProvider.close() calls conversation.persist() — OpenRouterTextProvider.close()
     never does, so text-mode sessions (?mode=text, telegram/tg/line/chat/web) write transcripts but no summary docs.
     Live MDDB re-check today: tony newest ~10-03, michael 10-17,'
+- at: 2026-11-25 20:14
+  from: tony-macbook
+  text: 'finished (ok): exit=0 emory-distill itself needs no change and resumes automatically once the fix deploys.
+    | devin-task-20261125-192120'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:14
+  from: chaba
+  text: banked 703 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:14
+  from: chaba
+  text: pushed dispatch/20261125-192120-found-while-shipping-memory-ex to origin
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   attempts: 2
-  result: 'exit=0 dispatch-outcome-20261125-150157-found-while-shipping-memory-ex.md`. | devin-task-20261125-150157-found-while-shipping-memory-ex.service:
-    Consumed 37.698s CPU time over 13min 15.427s wall clock time, 1G memory peak, 372.2M memory swap peak.'
+  result: 'exit=0 emory-distill itself needs no change and resumes automatically once the fix deploys. | devin-task-20261125-192120-found-while-shipping-memory-ex.service:
+    Consumed 1min 42.848s CPU time over 51min 10.700s wall clock time, 742.8M memory peak.'
   sweep:
     no_repo: 2026-11-25 15:24
   runner: tony-macbook
+  verified: false
 claim:
   since: 2026-11-25 19:20
 review_kind: verify
