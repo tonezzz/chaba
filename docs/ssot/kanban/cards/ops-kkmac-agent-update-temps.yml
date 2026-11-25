@@ -1,7 +1,7 @@
 id: ops-kkmac-agent-update-temps
 title: 'kk-mac: update device-telemetry agent (semantic temps)'
-column: doing
-updated: 2026-11-25 19:13
+column: review
+updated: 2026-11-25 19:19
 priority: low
 spec: 'kk-mac is offline (ssh timeout). Its launchd beacon still runs the pre-a4504a72 agent (zoneN temp labels,
   no semantic zone names). Also its MDDB latest slot was polluted by tony-dell beacon misconfig (fixed on dell 2026-11-17).
@@ -307,13 +307,39 @@ comms:
     two newer commits a3ed8fd+63b2fa9 landed since — already updated on-host ~18:56 today, backups agent.py.bak-20261125/.bak-retry
     present). launchd com.telemetry.agent runs every 300s; ran once manually -> posted kk-mac/latest ts=1795608787
     with temp_zones {"cpu":40.0}, temp_c'
+- at: 2026-11-25 19:19
+  from: tony-macbook
+  text: 'finished (ok): exit=0 1125-191149-kk-mac-is-offline-ssh-timeout-.md` and a final comms entry posted to
+    the card. | devin-task-20261125-'
+- at: 2026-11-25 19:19
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 19:19
+  from: chaba
+  text: 'session-end checkpoint 6614192a: 1 leftover file(s) committed'
+- at: 2026-11-25 19:19
+  from: chaba
+  text: banked 439 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:19
+  from: chaba
+  text: pushed dispatch/20261125-191149-kk-mac-is-offline-ssh-timeout- to origin
+- at: 2026-11-25 19:19
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 19:19
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 1125-191149-kk-mac-is-offline-ssh-timeout-.md` and a final comms entry posted to the card. | devin-task-20261125-191149-kk-mac-is-offline-ssh-timeout-.service:
+    Consumed 15.323s CPU time over 1min 47.587s wall clock time, 700.4M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 19:10
+review_kind: verify
