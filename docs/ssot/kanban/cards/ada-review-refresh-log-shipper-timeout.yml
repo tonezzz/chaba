@@ -1,7 +1,7 @@
 id: ada-review-refresh-log-shipper-timeout
 title: ada-review-refresh fails — log-shipper.py subprocess exceeds 600s on tony-omen
 column: doing
-updated: 2026-11-25 10:38
+updated: 2026-11-25 10:50
 priority: low
 tags:
 - log-shipper
@@ -216,6 +216,13 @@ comms:
   from: devin
   text: dispatched on idc02 worktree; ssh to tony-omen works — reproducing journalctl --user -u ada-review-refresh
     and tracing log-shipper invocation in export-transcripts.py
+- at: 2026-11-25 10:50
+  from: devin
+  text: 'DONE (branch dispatch/20261125-103752-ada-review-refresh-service-on-, 4 commits, unpushed). RCA: export-transcripts.py
+    runs log-shipper.py fleet-wide (8 hosts, 500 docs/host) with sequential per-doc /add posts under a 600s subprocess
+    timeout; TimeoutExpired was uncaught -> exit 1 killed the whole digest chain. Same wedge as OPS-1153 — its fix
+    (0ffe452274: /v1/ingest batching + per-batch cursor checkpoint) sat UNMERGED on a Nov-8 dispatch branch; cherry-picked
+    it clean (e1914574f6) and hardened e'
 action:
   type: dispatch
   status: running
