@@ -69,6 +69,39 @@
     - board_card_create.status not in [200, 201]
     - "'already exists' not in (board_card_create.content | default(''))"
 
+- name: Fetch card for comment dedupe
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/card/{{ board_card_id }}"
+    method: GET
+    return_content: true
+    status_code: [200, 404]
+  register: board_card_for_comment
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+  when:
+    - board_comment_dedupe | default(true) | bool
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0
+
+- name: Compute comment dedupe
+  ansible.builtin.set_fact:
+    board_comment_is_dup: >-
+      {{
+        (board_comment_dedupe | default(true) | bool)
+        and (board_card_for_comment.status | default(404)) == 200
+        and (
+          ((board_card_for_comment.json.card.comms | default([]))
+            | selectattr('from', 'defined')
+            | selectattr('text', 'defined')
+            | selectattr('from', 'equalto', board_from)
+            | selectattr('text', 'equalto', board_comment_text)
+            | list | length) > 0
+        )
+      }}
+  when:
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0
+
 - name: Comment on kanban card
   ansible.builtin.uri:
     url: "{{ board_api_base }}/comment"
@@ -85,3 +118,4 @@
   when:
     - board_comment_text is defined
     - (board_comment_text | length) > 0
+    - not (board_comment_is_dup | default(false) | bool)

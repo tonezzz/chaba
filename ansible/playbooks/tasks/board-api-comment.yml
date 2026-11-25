@@ -8,13 +8,48 @@
 #   board_comment_text
 #
 # Optional vars:
-#   board_notify_when - bool, default true
-#   board_delegate_to - default localhost
-#   board_run_once    - default false
+#   board_notify_when      - bool, default true
+#   board_delegate_to      - default localhost
+#   board_run_once         - default false
+#   board_comment_dedupe   - bool, default true; skip if same from+text in last N comms
+#   board_comment_dedupe_n - int, default 10
 
 - name: Skip board-api comment when disabled
   ansible.builtin.meta: end_host
   when: not (board_notify_when | default(true) | bool)
+
+- name: Fetch card for comment dedupe
+  ansible.builtin.uri:
+    url: "{{ board_api_base }}/card/{{ board_card_id }}"
+    method: GET
+    return_content: true
+    status_code: [200, 404]
+  register: board_card_for_comment
+  delegate_to: "{{ board_delegate_to | default('localhost') }}"
+  run_once: "{{ board_run_once | default(false) }}"
+  when:
+    - board_comment_dedupe | default(true) | bool
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0
+
+- name: Compute comment dedupe
+  ansible.builtin.set_fact:
+    board_comment_is_dup: >-
+      {{
+        (board_comment_dedupe | default(true) | bool)
+        and (board_card_for_comment.status | default(404)) == 200
+        and (
+          ((board_card_for_comment.json.card.comms | default([]))
+            | selectattr('from', 'defined')
+            | selectattr('text', 'defined')
+            | selectattr('from', 'equalto', board_from)
+            | selectattr('text', 'equalto', board_comment_text)
+            | list | length) > 0
+        )
+      }}
+  when:
+    - board_comment_text is defined
+    - (board_comment_text | length) > 0
 
 - name: Comment on kanban card
   ansible.builtin.uri:
@@ -32,3 +67,4 @@
   when:
     - board_comment_text is defined
     - (board_comment_text | length) > 0
+    - not (board_comment_is_dup | default(false) | bool)
