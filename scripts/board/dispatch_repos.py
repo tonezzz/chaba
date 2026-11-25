@@ -393,6 +393,31 @@ LANE_KW = {
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
+# Read-only audit-class lead-in (classifier-readonly-audit-class-
+# reroute, parent devin-usage-reduction DEV-0044 lever 1): titles that
+# LEAD with an audit/assessment/review/investigate/sweep marker are
+# bounded read-only triage — free_lane's ops-readonly contract covers
+# them (kanban-free-lane-routing-contract §3). Title-scoped ONLY: the
+# spec body is never scanned here, and a mutation verb anywhere in the
+# TITLE vetoes the reroute ('audit X then fix Y' stays on the normal
+# path). The bare keyword must be followed by space/punctuation, and
+# the hyphenated-slug form needs >=2 hyphens — component names like
+# 'audit-cast' (vcast-audit-cast) are not audit tasks. Explicit
+# action.lane and the timer-alert pin still win (both evaluated
+# earlier). Deliberately NOT a LANE_KW entry: a raw 'audit' substring
+# would match spec bodies fleet-wide.
+_AUDIT_RO_STEM = r"(?:audit|assess|review|investigat|sweep)"
+AUDIT_RO_TITLE_RE = re.compile(
+    r"^\s*(?:\[[^\]\n]*\]\s*)*(?:"
+    r"\[[^\]\n]*\b" + _AUDIT_RO_STEM + r"\w*\b[^\]\n]*\]"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?=[\s:;,.!?)\]]|$)"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?:-\w+){2,}(?=[\s:;,.!?)\]]|$))",
+    re.I)
+AUDIT_RO_MUTATION_RE = re.compile(
+    r"\b(?:fix(?:es|ed|ing)?|implement\w*|deploy\w*|migrat\w*|"
+    r"merg\w*|repair\w*|patch\w*|clean[\s-]?up\w*|build\w*|creat\w*)\b",
+    re.I)
+
 
 def _kw_hit(kw: str, text: str) -> bool:
     """Word-boundary keyword match — 'lock' hits 'lock' but not
@@ -432,7 +457,10 @@ def classify_lane(card: dict, with_detail: bool = False):
     card onto Tony's hands (dispatch-lane-classifier-spend-false-manual
     false positives, 2026-11-17). Codemod keywords are word-boundary
     TITLE hits, or >=2 distinct hits counting codemod_body phrases in
-    the spec (OPS-0028 — see _codemod_hit). Other lanes still read the
+    the spec (OPS-0028 — see _codemod_hit). Audit-class lead-in titles
+    route to free_lane unless the title carries a mutation verb
+    (classifier-readonly-audit-class-reroute — see AUDIT_RO_TITLE_RE).
+    Other lanes still read the
     spec as raw substrings."""
     a = _act(card)
     declared = str(a.get("lane") or "").strip()
@@ -459,6 +487,11 @@ def classify_lane(card: dict, with_detail: bool = False):
         return ("paid_frontier", "kw:compare", 1.0) if with_detail \
             else "paid_frontier"
     codemod_kw = _codemod_hit(title, text)
+    # Read-only audit-class lead-in — evaluated at the free_lane slot
+    # of the lane loop below (after manual/compare/paid_frontier/
+    # codemod, before devin) so every earlier gate keeps precedence.
+    audit_ro = bool(AUDIT_RO_TITLE_RE.search(title)
+                    and not AUDIT_RO_MUTATION_RE.search(title))
     # DEV-0045 reroute: free_lane is evaluated BEFORE devin, matching
     # the lane catalog's cheapest-capable-first entry rule. The old
     # order let one broad devin keyword pre-empt a cheaper lane on
@@ -467,6 +500,9 @@ def classify_lane(card: dict, with_detail: bool = False):
                       ("codemod", LANE_KW["codemod"]),
                       ("free_lane", LANE_KW["free_lane"]),
                       ("devin", LANE_KW["devin"])):
+        if lane == "free_lane" and audit_ro:
+            return ("free_lane", "kw:audit-ro", 1.0) if with_detail \
+                else "free_lane"
         kw = codemod_kw if lane == "codemod" else next(
             (k for k in kws if k in text), None)
         if kw:

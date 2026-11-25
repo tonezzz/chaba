@@ -448,6 +448,25 @@ LANE_KW = {
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
+# Read-only audit-class lead-in — lockstep with dispatch_repos
+# (classifier-readonly-audit-class-reroute): titles that LEAD with an
+# audit/assessment/review/investigate/sweep marker are bounded
+# read-only triage -> free_lane. Title-scoped ONLY; a mutation verb in
+# the TITLE vetoes; the hyphenated-slug form needs >=2 hyphens so
+# component names like 'audit-cast' don't match. See dispatch_repos
+# for the full rationale.
+_AUDIT_RO_STEM = r"(?:audit|assess|review|investigat|sweep)"
+AUDIT_RO_TITLE_RE = re.compile(
+    r"^\s*(?:\[[^\]\n]*\]\s*)*(?:"
+    r"\[[^\]\n]*\b" + _AUDIT_RO_STEM + r"\w*\b[^\]\n]*\]"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?=[\s:;,.!?)\]]|$)"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?:-\w+){2,}(?=[\s:;,.!?)\]]|$))",
+    re.I)
+AUDIT_RO_MUTATION_RE = re.compile(
+    r"\b(?:fix(?:es|ed|ing)?|implement\w*|deploy\w*|migrat\w*|"
+    r"merg\w*|repair\w*|patch\w*|clean[\s-]?up\w*|build\w*|creat\w*)\b",
+    re.I)
+
 
 def _kw_hit(kw: str, text: str) -> bool:
     """Word-boundary keyword match — 'lock' hits 'lock' but not
@@ -479,7 +498,10 @@ def classify_lane(card: dict) -> str:
     only so spec-body spend/hardware discussion can't force Tony's
     hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17);
     codemod needs a title hit or >=2 distinct hits via _codemod_hit
-    (OPS-0028)."""
+    (OPS-0028). Audit-class lead-in titles route to free_lane at the
+    free_lane slot unless the title carries a mutation verb — lockstep
+    with dispatch_repos.classify_lane (classifier-readonly-audit-class-
+    reroute)."""
     a = card.get("action") or {}
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
@@ -498,11 +520,17 @@ def classify_lane(card: dict) -> str:
     if re.search(LANE_COMPARE, text):
         return "paid_frontier"
     codemod_kw = _codemod_hit(title, text)
+    # audit-ro — lockstep: evaluated at the free_lane slot, after
+    # manual/compare/paid_frontier/codemod, before devin.
+    audit_ro = bool(AUDIT_RO_TITLE_RE.search(title)
+                    and not AUDIT_RO_MUTATION_RE.search(title))
     # DEV-0045 reroute — lockstep: free_lane before devin.
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
                       ("free_lane", LANE_KW["free_lane"]),
                       ("devin", LANE_KW["devin"])):
+        if lane == "free_lane" and audit_ro:
+            return "free_lane"
         kw = codemod_kw if lane == "codemod" else next(
             (k for k in kws if k in text), None)
         if kw:

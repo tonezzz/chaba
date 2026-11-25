@@ -82,6 +82,13 @@ class LockstepTest(_Base):
         self.assertEqual(self.dr.LANE_KW, self.ra.LANE_KW)
         self.assertEqual(self.dr.LANE_COMPARE, self.ra.LANE_COMPARE)
 
+    def test_audit_ro_patterns_in_lockstep(self):
+        """The audit-ro lead/veto regexes are vendored into
+        runner-agent too — same drift hazard as LANE_KW."""
+        for name in ("AUDIT_RO_TITLE_RE", "AUDIT_RO_MUTATION_RE"):
+            self.assertEqual(getattr(self.dr, name).pattern,
+                             getattr(self.ra, name).pattern, name)
+
     def test_codemod_body_entries_are_multiword(self):
         """Body-eligible codemod entries must be multi-word phrases —
         single words in the spec body are context, not transforms."""
