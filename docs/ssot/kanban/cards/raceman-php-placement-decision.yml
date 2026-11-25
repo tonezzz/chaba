@@ -1,7 +1,7 @@
 id: raceman-php-placement-decision
 title: Raceman PHP placement — restore on omen or retire backend
 column: doing
-updated: 2026-11-25 09:14
+updated: 2026-11-25 09:25
 priority: medium
 tags:
 - ssot
@@ -230,6 +230,14 @@ comms:
   from: devin
   text: 'Correction to previous comms: omen backup file is nginx.conf.bak-20261125 (not .bell-). Rollback: cp it
     back over nginx.conf on omen then systemctl --user restart raceman-web.service.'
+- at: 2026-11-25 09:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090520-found-while-reconciling-knb-00 no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 09:25
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-090520-found-while-reconciling-knb-00 on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -237,5 +245,8 @@ action:
   lane_source: kw
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:25
+    dirty: 1
 claim:
   since: 2026-11-25 09:04
