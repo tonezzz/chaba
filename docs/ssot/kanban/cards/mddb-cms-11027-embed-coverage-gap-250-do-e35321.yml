@@ -1,7 +1,7 @@
 id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
 title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
 column: doing
-updated: 2026-11-25 10:10
+updated: 2026-11-25 10:13
 priority: medium
 tags:
 - mddb
@@ -81,6 +81,12 @@ comms:
     [progress] root causes found: ; embed-pool-shim :11436 504s on 1500-char batches when upstreams are cold/degrade;
     [audit-miss-ada-voice-job-records] merge-sweep: no session/worktree found for de; [embed-lane-banks-search-pagination]
     DONE on dispatch branch:'
+- at: 2026-11-25 10:13
+  from: devin
+  text: 'progress: vector-stats rechecked — gap is ~250 docs but chaba-archive docs are ALL meta-only (contentMd
+    empty), same class as devin-kb/ssot.focus. Non-force /v1/vector-reindex is synchronous inline embed (~6s/doc
+    on degraded pool): chaba-archive skipped=14/14 (nothing to embed), kb-development embedded=5 skipped=15 failed=0.
+    Running reindex per affected collection now; will report which gaps are real content vs meta-only.'
 action:
   type: dispatch
   status: running
