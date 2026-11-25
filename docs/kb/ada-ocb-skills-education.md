@@ -27,6 +27,7 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 | `info-find` | `.agents/skills` | user, model | Unified retrieval across SSOT, code, MDDB, health, MCP and web, with citations; first stop for "how is X defined / find X". |
 | `ssot-search` | `.agents/skills` | user, model | Find the canonical SSOT YAML key/path before reading the source. |
 | `ssot-validate` | `.agents/skills` | user, model | Validate SSOT YAML syntax/structure after edits. |
+| `ansible-first` | `.agents/skills` | user, model | Ansible-first triage + governed 9-step fleet-change procedure: locate playbook, check/diff, approval, backup, converge, verify, file evidence. |
 | `auto-kb` | `.agents/skills` | session end | Verified findings → `docs/kb/` entries → MDDB; never for hypotheses or session narrative. |
 | `session-capture` | `.opencode/skills` | session end/handoff | Route decisions, lessons and evidence to durable sinks (card, SSOT, docs/kb) and write a handoff packet. |
 | `git-status` | `.agents/skills` | user | Branch / dirty tree / diff / recent commits when editing ada-ocb. |
@@ -72,7 +73,7 @@ Recorded alongside the skills in the same session history; the wiki page carries
 
 ## Related tooling
 
-- **`ansible-first`** (`~/.claude/skills/ansible-first/SKILL.md`): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
+- **`ansible-first`** (`.agents/skills/ansible-first/SKILL.md`, repo-canonical; `~/.claude/skills/ansible-first` is a symlink on OpenCode hosts): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
 
 ## Wiki education record
 

@@ -20,6 +20,7 @@ export = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(export)
 
 EXPLORED_SKILLS = {
+    "ansible-first",
     "auto-kb",
     "docker-restart",
     "git-status",

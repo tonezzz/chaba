@@ -9,6 +9,12 @@ status: active
 created: 2026-11-25
 authority: "AGENTS.md procedure-lookup duty — answer from the system, define partial procedure"
 
+skill_mirror:
+  canonical: ".agents/skills/ansible-first/SKILL.md"
+  local_install: "~/.claude/skills/ansible-first -> <repo>/.agents/skills/ansible-first/SKILL.md (symlink)"
+  discovery: "scripts/skills-wiki-export.py TOOLING ref + docs/kb/ada-ocb-skills-education.md inventory + tests/test_agents_skills_explored.py pin"
+  reason: "single source of truth — edit the repo copy, every OpenCode host with the symlink inherits the procedure"
+
 applies_to:
   - "remote host config"
   - "service / timer / container changes"

@@ -31,6 +31,7 @@ SKILL_DIRS = (".agents/skills", ".opencode/skills")
 
 # Recorded from the session history: when to invoke each skill in ada-ocb.
 USAGE = {
+    "ansible-first": "Triage host/fleet jobs for an existing playbook, then run the governed 9-step converge: check/diff, approval, backup, converge, verify, evidence.",
     "auto-kb": "Session-end capture of verified findings into docs/kb (MDDB-indexed); not for hypotheses.",
     "code-decision": "Jev decision door before applying a change with a construct/template/library/replacement choice; skip mechanical edits.",
     "docker-restart": "Restart the chaba web stack, with confirmation; verify localhost:8080/8081 after.",
@@ -76,7 +77,7 @@ BENCHMARK = {
 
 TOOLING = {
     "name": "ansible-first",
-    "ref": "~/.claude/skills/ansible-first/SKILL.md",
+    "ref": ".agents/skills/ansible-first/SKILL.md (repo-canonical; ~/.claude/skills/ansible-first is a symlink on OpenCode hosts)",
     "role": "Global OpenCode skill — advertised before each model step for host/fleet/deploy/restart/provision tasks",
     "note": "30-second triage: skip for local/repo work; use board-api door for kanban/wiki/SSOT; check chaba ansible/ playbooks before ad-hoc SSH; --check --diff --limit, vault secrets, approval for disruptive plays.",
 }
