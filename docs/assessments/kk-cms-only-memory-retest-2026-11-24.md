@@ -207,3 +207,25 @@ bench result: prod Kaewta still has `persons.kk.tools` (bank + web_search),
 her public writes go to `wp_*`/`cpt_post`, and CMS pages are TTL'd. A
 pilot should be a deliberate, reversible env-profile change on `ada-kk`
 with KK's acceptance — not an automatic promotion of this bench surface.
+
+## Session-prime isolation (2026-11-25, final)
+
+Post-deploy runs exposed a flaw in "CMS-only": session prime injected
+`Recent sessions:` and channel tails with stale October watering content,
+so the model answered "Tuesday" even after a `cms_read`. Turning the whole
+prime off (`ADA_SESSION_PRIME=0`) was worse — 0.5 — because it also removed
+the CMS catalog and identity, so the model never thought to read a page.
+
+`ADA_PRIME_SKIP_HISTORY=1` (ada-voice cceb7f5, PR #25) skips only the
+stale-prone parts — recent-sessions summary, channel tails, headlines and
+prime-flagged facts — while keeping identity, CMS catalog and persona
+style. `kk-cms-only` now sets `ADA_SESSION_PRIME=1` +
+`ADA_PRIME_SKIP_HISTORY=1` via the managed env-knob block; `kk-parity`
+restores both to defaults. `kk-bench-env.py` gained that block with the
+same backup/diff/check/verify/rollback safety as the tool block (12 tests).
+
+Final runs after the fine-grained knob: 1.0, 0.833, 0.833. `seeded_recall`
+is green in every run; residual flakes are benign live-state tool calls
+(`tasks`, `ada_persona`), not bank leakage or fabrication. The read-side
+case is now solid; production remains a product decision with KK.
+
