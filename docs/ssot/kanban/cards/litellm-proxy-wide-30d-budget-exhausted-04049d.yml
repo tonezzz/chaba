@@ -1,7 +1,7 @@
 id: litellm-proxy-wide-30d-budget-exhausted-04049d
 title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
-column: doing
-updated: 2026-11-25 20:15
+column: review
+updated: 2026-11-25 20:23
 tags:
 - litellm
 - budget
@@ -110,12 +110,42 @@ comms:
     — not a SpendLogs window). Someone had already bumped live to $75 at 18:28; I raised further to $120 (window
     spend $62 with ~$8/day burn → projected ~$110, would have re-capped before reset). Applied live ~/.config/litellm/config.yaml
     + repo stacks config + restarted litellm.service'
+- at: 2026-11-25 20:23
+  from: tony-dell
+  text: 'finished (ok): exit=0 watcher update goes live on idc03 after merge + repo-sync. | devin-task-20261125-190752-verify-live-max-budget-vs'
+- at: 2026-11-25 20:23
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:23
+  from: chaba
+  text: banked 698 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:23
+  from: chaba
+  text: pushed dispatch/20261125-190752-verify-live-max-budget-vs-ssot to origin
+- at: 2026-11-25 20:23
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 20:23
+  from: chaba
+  text: auto-merged 1ebf232f (dispatch/20261125-190752-verify-live-max-budget-vs-ssot) → origin/master
+- at: 2026-11-25 20:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-190752-verify-live-max-budget-vs-ssot,
+    branch dispatch/20261125-190752-verify-live-max-budget-vs-ssot'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 watcher update goes live on idc03 after merge + repo-sync. | devin-task-20261125-190752-verify-live-max-budget-vs-ssot.service:
+    Consumed 7min 53.813s CPU time over 1h 11min 47.543s wall clock time, 1.2G memory peak, 549.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 19:07
+review_kind: verify
