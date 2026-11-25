@@ -1,0 +1,413 @@
+{
+  "tasks": [
+    {
+      "id": "narrow-1",
+      "kind": "narrow",
+      "query": "Which card authorized the Education wiki publish?",
+      "a": {
+        "bytes": 7083,
+        "tokens_est": 1698,
+        "duration_ms": 7907,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 449,
+        "tokens_est": 112,
+        "duration_ms": 26,
+        "tool_calls": 1,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "ada-ocb-skills-wiki-education-2026-11-24",
+          "ADA-0031"
+        ],
+        "found": []
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "ada-ocb-skills-wiki-education-2026-11-24",
+          "ADA-0031"
+        ]
+      }
+    },
+    {
+      "id": "narrow-2",
+      "kind": "narrow",
+      "query": "Where is the published_ports configuration for the mn-ha-dev host?",
+      "a": {
+        "bytes": 7119,
+        "tokens_est": 1707,
+        "duration_ms": 7326,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 465,
+        "tokens_est": 115,
+        "duration_ms": 11,
+        "tool_calls": 1,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "ssot.home-assistant.mn-ha-dev.yml"
+        ],
+        "found": [
+          "published_ports"
+        ]
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "ssot.home-assistant.mn-ha-dev.yml",
+          "published_ports"
+        ]
+      }
+    },
+    {
+      "id": "narrow-3",
+      "kind": "narrow",
+      "query": "Where was the Cargo declare/store attempt recorded and reverted?",
+      "a": {
+        "bytes": 7114,
+        "tokens_est": 1706,
+        "duration_ms": 6545,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 214,
+        "tokens_est": 54,
+        "duration_ms": 14,
+        "tool_calls": 1,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "polish_attempt",
+          "revid 483"
+        ],
+        "found": []
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "polish_attempt",
+          "revid 483"
+        ]
+      }
+    },
+    {
+      "id": "narrow-4",
+      "kind": "narrow",
+      "query": "Which revision published the 13-skill Education page?",
+      "a": {
+        "bytes": 7095,
+        "tokens_est": 1701,
+        "duration_ms": 8002,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 286,
+        "tokens_est": 72,
+        "duration_ms": 23,
+        "tool_calls": 1,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "revid 501"
+        ],
+        "found": [
+          "13-skill"
+        ]
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "revid 501",
+          "13-skill"
+        ]
+      }
+    },
+    {
+      "id": "cross-1",
+      "kind": "cross",
+      "query": "How do we publish an Education wiki lesson through board-api?",
+      "a": {
+        "bytes": 7113,
+        "tokens_est": 1705,
+        "duration_ms": 6246,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 3031,
+        "tokens_est": 756,
+        "duration_ms": 29,
+        "tool_calls": 2,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "wiki-education",
+          "/publish",
+          "source=wiki"
+        ],
+        "found": []
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "wiki-education",
+          "/publish",
+          "source=wiki"
+        ]
+      }
+    },
+    {
+      "id": "cross-2",
+      "kind": "cross",
+      "query": "What skills exist and how are they used in ada-ocb?",
+      "a": {
+        "bytes": 7083,
+        "tokens_est": 1698,
+        "duration_ms": 5542,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 1046,
+        "tokens_est": 260,
+        "duration_ms": 35,
+        "tool_calls": 2,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "auto-kb",
+          "session-capture",
+          "wiki-education-publish"
+        ],
+        "found": [
+          "info-find"
+        ]
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "auto-kb",
+          "info-find",
+          "session-capture",
+          "wiki-education-publish"
+        ]
+      }
+    },
+    {
+      "id": "cross-3",
+      "kind": "cross",
+      "query": "How does SSOT govern wiki writes?",
+      "a": {
+        "bytes": 7024,
+        "tokens_est": 1683,
+        "duration_ms": 4577,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "skipped",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 7012,
+        "tokens_est": 1750,
+        "duration_ms": 1315,
+        "tool_calls": 2,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "ssot.file-control.yml",
+          "pointer-first",
+          "wiki-private"
+        ],
+        "found": []
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "ssot.file-control.yml",
+          "pointer-first",
+          "wiki-private"
+        ]
+      }
+    },
+    {
+      "id": "cross-4",
+      "kind": "cross",
+      "query": "Where are the Education audit, drift and due checks defined?",
+      "a": {
+        "bytes": 7096,
+        "tokens_est": 1701,
+        "duration_ms": 5432,
+        "tool_calls": 1,
+        "results": 10,
+        "sources": {
+          "ssot": "ok",
+          "code": "ok",
+          "health": "skipped",
+          "mddb": "ok",
+          "mcp": "skipped",
+          "web": "skipped",
+          "github": "skipped"
+        },
+        "error": ""
+      },
+      "b": {
+        "bytes": 3595,
+        "tokens_est": 895,
+        "duration_ms": 574,
+        "tool_calls": 1,
+        "error": ""
+      },
+      "grade_a": {
+        "correct": false,
+        "missing": [
+          "education-report.py",
+          "lessons-due.py",
+          "lessons-drift.py"
+        ],
+        "found": []
+      },
+      "grade_b": {
+        "correct": true,
+        "missing": [],
+        "found": [
+          "education-report.py",
+          "lessons-due.py",
+          "lessons-drift.py"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "narrow": {
+      "a": {
+        "tokens_est": 1703.5,
+        "duration_ms": 7616.5,
+        "tool_calls": 1.0,
+        "correct_rate": 0.0
+      },
+      "b": {
+        "tokens_est": 92.0,
+        "duration_ms": 18.5,
+        "tool_calls": 1.0,
+        "correct_rate": 1.0
+      }
+    },
+    "cross": {
+      "a": {
+        "tokens_est": 1699.5,
+        "duration_ms": 5487.0,
+        "tool_calls": 1.0,
+        "correct_rate": 0.0
+      },
+      "b": {
+        "tokens_est": 825.5,
+        "duration_ms": 304.5,
+        "tool_calls": 2.0,
+        "correct_rate": 1.0
+      }
+    }
+  },
+  "decision": {
+    "cross_source_adopt": false,
+    "narrow_direct_better": true,
+    "recommendation": "keep direct tools for narrow lookups; no evidence for cross-source adoption",
+    "adopt_ratio": 0.7
+  }
+}
