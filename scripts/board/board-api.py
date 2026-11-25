@@ -6774,8 +6774,54 @@ def _selftest() -> None:
     fcntl.flock(held_fd, fcntl.LOCK_UN)
     got = acquire_lock(lpath, 1)
     assert got is not None
+    assert str(lpath) in _held_locks      # watchdog sees the hold
     got[0].close()
+    assert str(lpath) not in _held_locks  # ...and clears on release
     held_fd.close()
+
+    # lock-hold watchdog — a hold past the alert threshold dumps all
+    # thread stacks once per episode (the 2026-11-25 wedge left zero
+    # journal trace; the dump names the culprit next time)
+    real_alert = LOCK_HOLD_ALERT_S
+    globals()["LOCK_HOLD_ALERT_S"] = 0.01
+    dumps = []
+    real_dump = faulthandler.dump_traceback
+    faulthandler.dump_traceback = lambda *a, **k: dumps.append(1)
+    try:
+        lf3 = acquire_lock(lpath, 1)[0]
+        time.sleep(0.02)
+        _lock_watchdog_tick()
+        _lock_watchdog_tick()          # alerted -> one dump per episode
+        assert len(dumps) == 1
+        lf3.close()
+    finally:
+        faulthandler.dump_traceback = real_dump
+        globals()["LOCK_HOLD_ALERT_S"] = real_alert
+
+    # render() bounded acquire — a busy render flock skips the pass
+    # instead of parking the process (the wedge: an unbounded flock
+    # held the GIL on py<=3.13 and froze every thread)
+    noop = tmp / "noop-render.py"
+    noop.write_text("pass\n")
+    real_r, real_r2 = RENDER, RENDER2
+    real_rl, real_rlw = RENDER_LOCK, RENDER_LOCK_WAIT_S
+    globals()["RENDER"] = noop
+    globals()["RENDER2"] = noop
+    rlk = tmp / "board-render.lock"
+    rfd = rlk.open("w")
+    fcntl.flock(rfd, fcntl.LOCK_EX)
+    globals()["RENDER_LOCK"] = rlk
+    globals()["RENDER_LOCK_WAIT_S"] = 0.4
+    t0 = time.monotonic()
+    render()                       # busy -> skip, returns fast
+    assert time.monotonic() - t0 < 5
+    fcntl.flock(rfd, fcntl.LOCK_UN)
+    render()                       # free -> runs both (harmless) renders
+    rfd.close()
+    globals()["RENDER"] = real_r
+    globals()["RENDER2"] = real_r2
+    globals()["RENDER_LOCK"] = real_rl
+    globals()["RENDER_LOCK_WAIT_S"] = real_rlw
 
     # /patch-relay (runner-push-cred-gap): a runner that can't push
     # relays its session head as a git bundle into PATCH_INBOX; the

@@ -8,11 +8,13 @@ event). No network: sinks are mocked, state dirs are tmp.
 
 from __future__ import annotations
 
+import fcntl
 import importlib.util
 import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -315,6 +317,73 @@ class OutboxTest(PubTestBase):
         self.box._write_pending(entries)
         res = self.box.drain({})   # registry lost the sink
         self.assertEqual(res["dead"], 1)
+
+
+class HangSink(pub.Sink):
+    """Sink that hangs — proves the per-sink deadline bounds it."""
+
+    def __init__(self, name="hang", sleep_s=30):
+        super().__init__(name=name, surface="private", kinds=pub.KINDS)
+        self.sleep_s = sleep_s
+        self.events = []
+
+    def publish(self, ev):
+        time.sleep(self.sleep_s)
+        self.events.append(dict(ev))
+        return {"ref": "hang:done"}
+
+
+class DeadlineTest(PubTestBase):
+    """Card board-api-wedged-8min-on-hung-outbound-h-389be8: urllib's
+    timeout is per-socket-op, not a deadline — run_bounded + the
+    per-sink deadline + the drain budget keep one hung peer from
+    parking the write door."""
+
+    def test_run_bounded_returns_and_times_out(self):
+        self.assertEqual(pub.run_bounded(lambda: 42, 5, "ok"), 42)
+        t0 = time.monotonic()
+        with self.assertRaises(pub.DeadlineError):
+            pub.run_bounded(lambda: time.sleep(30), 0.2, "slow")
+        self.assertLess(time.monotonic() - t0, 10)
+
+    def test_hung_sink_queues_not_wedges(self):
+        real = pub.PUB_SINK_DEADLINE_S
+        pub.PUB_SINK_DEADLINE_S = 0.3
+        try:
+            hang = HangSink()
+            res = pub.publish_event(
+                ev(sinks=["hang"]), {"hang": hang},
+                self.box, self.noise, "t")
+            self.assertEqual(
+                res["receipts"]["hang"]["status"], "queued")
+            self.assertIn("deadline", res["receipts"]["hang"]
+                          .get("reason", ""))
+            self.assertEqual(self.box.pending_count(), 1)
+        finally:
+            pub.PUB_SINK_DEADLINE_S = real
+
+    def test_drain_budget_defers_backlog(self):
+        # two due entries; a zero budget must defer every launch
+        rec = RecSink()
+        for i in range(2):
+            self.box.enqueue(
+                pub.validate_event(ev(title=f"t{i}", sinks=["mock"])),
+                "mock", "seed", now="2020-01-01T00:00:00+00:00")
+        res = self.box.drain({"mock": rec}, budget_s=0)
+        self.assertEqual(res["deferred"], 2)
+        self.assertEqual(res["pending"], 2)
+        self.assertEqual(rec.events, [])
+
+    def test_flock_bounded_times_out(self):
+        f = self.tmp / "held.lock"
+        fd = f.open("w")
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            with f.open("a") as fh, self.assertRaises(TimeoutError):
+                pub._flock_bounded(fh, timeout_s=0.2)
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
 
 
 class NoiseTest(PubTestBase):
