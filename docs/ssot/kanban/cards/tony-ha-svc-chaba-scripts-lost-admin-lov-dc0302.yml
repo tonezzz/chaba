@@ -1,7 +1,7 @@
 id: tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302
 title: 'tony-ha: svc-chaba-scripts lost admin — lovelace saves unauthorized'
 column: backlog
-updated: 2026-11-25 16:59
+updated: 2026-11-25 17:02
 program: infrastructure
 tags:
 - ops
@@ -171,8 +171,20 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: classified as devin (fallback conf 0.09)
+- at: 2026-11-25 17:02
+  from: chaba
+  text: queued for processing
 spec: Fix the Home Assistant admin permission issue for the svc-chaba-scripts user on tony-omen HA so that Lovelace
   dashboard and configuration saves succeed without unauthorized errors. The target host is tony-omen and the relevant
   repo context involves the chaba infrastructure scripts. The runner must verify that the token or user account
   successfully authenticates with administrative privileges against the Home Assistant API on tony-omen. The done-condition
   is a successful API execution of build-dossier-devices.py or a config save test returning a 200 OK status.
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}

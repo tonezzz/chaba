@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
 column: doing
-updated: 2026-11-25 17:00
+updated: 2026-11-25 17:02
 priority: low
 tags:
 - embedding
@@ -349,6 +349,10 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: devin
+  text: 'raised request distillation-pilot-already-ran-2026-11-0-5dd74e: Distillation pilot already ran 2026-11-08
+    (linear closed-form BGE-M3 1024d -> Gemini 768d map on the same 8,109 doc pair'
 action:
   type: dispatch
   status: running
@@ -359,3 +363,18 @@ action:
   attempts: 1
 claim:
   since: 2026-11-25 16:45
+requests:
+- id: distillation-pilot-already-ran-2026-11-0-5dd74e
+  ask: 'Distillation pilot already ran 2026-11-08 (linear closed-form BGE-M3 1024d -> Gemini 768d map on the same
+    8,109 doc pairs): mean cosine .9493, expanded-qrels r@5 .235 / MRR .871, English .216/.848 — meets this card''s
+    success gate (>=.235 r@5, >=.83 MRR, no EN regression). The /tmp/embedeval teacher vectors are gone fleet-wide,
+    so a full fine-tune would need an API re-embed + GPU run; reranker already beats Gemini and the serving decision
+    is pending on sync-rerank latency. Options: (a) close card — pilot answered it, full FT only if sync rerank
+    fails the budget [recommended]; (b) park until the serving decision lands; (c) authorize rebuild + full SBERT
+    fine-tune anyway.'
+  status: open
+  at: 2026-11-25 17:02
+  from: devin
+  options:
+  - proceed
+  - hold
