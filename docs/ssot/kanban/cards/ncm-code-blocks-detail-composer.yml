@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 17:39
+updated: 2026-11-25 19:01
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -137,3 +137,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: devin
+  text: 'Best-of-k + adaptive depth probe (stable workspace /home/tony/tony-projects/ncm-code-blocks) ran to completion
+    but is INCOMPLETE: 36 local glue calls made (34 ok, 2 timeout), 21 returned empty content under host load, so
+    only 5/12 tasks were analysable. On that n=5 subset: A glue fidelity 0.411 / pass 0.000; B detail fidelity 1.000
+    / pass 1.000; per-level A L1 0.503 L2 0.217 L3 0.513 vs B 1.0 throughout. Delta +1.000 at both k=1 and k=3;
+    adaptive L1 accept 5/5. Best-of-k changed nothing because '
