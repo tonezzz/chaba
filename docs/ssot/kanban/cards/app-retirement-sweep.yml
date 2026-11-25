@@ -1,7 +1,7 @@
 id: app-retirement-sweep
 title: Retire likely-dead apps — wiki docs + restore steps each
-column: doing
-updated: 2026-11-25 07:27
+column: backlog
+updated: 2026-11-25 07:35
 brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
   steps + status:retired markers; cline and node-red confirmed first.
 priority: medium
@@ -258,9 +258,20 @@ comms:
 - at: 2026-11-25 07:27
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 07:35
+  from: tony
+  text: '[verify] triage 2026-11-25 (Tony): stuck running since 2026-11-24 22:38 - user answered ''retire-as-proposed''
+    at 07:27 but session delivery was skipped (bad task_id) and the devin session is gone. Worktree has 1 dirty
+    file. Holding to backlog; re-dispatch to re-ask or finish manually.'
+- at: 2026-11-25 07:35
+  from: tony
+  text: put on hold
+- at: 2026-11-25 07:35
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
-  status: running
+  status: idle
   lane: codemod
   lane_source: kw
   runner: tony-omen
