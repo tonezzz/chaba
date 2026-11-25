@@ -139,6 +139,14 @@ comms:
   text: 'ansible audit-stale-checkouts: 7 stale host(s): con01, idc02, idc03, mn01, tony-dell, tony-macbook, tony-omen.
     fp=con01:dirty|idc02:dirty+ahead|idc03:dirty|mn01:dirty|tony-dell:dirty|tony-macbook:dirty|tony-omen:dirty.
     Reasons per host in reports/ansible-benchmark/stale-checkouts/. Read-only; no host writes.'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request con01-chaba-exec-checkout-is-stale-dirty-bd709a: con01 chaba exec checkout is stale/dirty
+    (dirty; behind=14, ahead=0, dirty=4). How should it be brought current? No work'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-89c8ce: idc02 chaba exec checkout is stale/dirty
+    (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought current?'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
   ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
@@ -155,4 +163,32 @@ requests:
   suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
     (recommended, reversible)
   answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: con01-chaba-exec-checkout-is-stale-dirty-bd709a
+  ask: con01 chaba exec checkout is stale/dirty (dirty; behind=14, ahead=0, dirty=4). How should it be brought current?
+    No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: idc02-chaba-exec-checkout-is-stale-dirty-89c8ce
+  ask: idc02 chaba exec checkout is stale/dirty (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought
+    current? No work will be destroyed.
+  status: open
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
     (recommended, reversible)
