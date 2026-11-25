@@ -1,7 +1,7 @@
 id: timer-alert-idc02-mddb-lab-pull
 title: Timer mddb-lab-pull on idc02 disabled
 column: done
-updated: 2026-11-25 17:12
+updated: 2026-11-25 17:26
 priority: high
 tags:
 - timer-alert
@@ -106,6 +106,10 @@ comms:
 - at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to verify and enable the mddb-lab-pull.timer on idc02 because it is disabled but expected active
   per the audit census. The target host is idc02 and the relevant repo is mddb-fork. Constraints include redeploying
