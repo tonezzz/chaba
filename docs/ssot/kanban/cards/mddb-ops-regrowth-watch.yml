@@ -1,7 +1,7 @@
 id: mddb-ops-regrowth-watch
 title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
 column: doing
-updated: 2026-11-25 17:13
+updated: 2026-11-25 17:24
 spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
   outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
   — review at ~10G.
@@ -231,6 +231,13 @@ comms:
   text: 'analysis done: freelist is 6.6MB/8.1G (non-issue); real driver = host-logs 660k docs because prune-old-docs
     has failed daily since ~Nov 23 (unfiltered /v1/search exceeds server deadline -> 0 deletes). Fixed script (server-side
     filter + page-cap + retries), catch-up prune running on idc03 now. Trail: docs/ssot/jobs/mddb/2026-11-25-ops-regrowth-watch.yml'
+- at: 2026-11-25 17:24
+  from: devin
+  text: 'DONE: freelist is a non-issue (6.6MB/8.1G measured via bbolt stats on a DB copy). Real cause: prune-old-docs
+    silently failing since ~Nov 23 — unfiltered /v1/search of the 660k-doc host-logs collection exceeds the server
+    write deadline -> 0 deletes/day. Fix committed on dispatch branch (server-side filter, 1000-doc page cap, retries).
+    Catch-up prune running on idc03 (~12k docs deleted in first 15min, ETA ~8-11h for ~520k expired). Trail: docs/ssot/jobs/mddb/2026-11-25-ops-regrowth-watch.yml;
+    outc'
 action:
   type: dispatch
   status: running
