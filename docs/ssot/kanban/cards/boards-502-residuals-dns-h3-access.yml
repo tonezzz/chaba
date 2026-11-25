@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: review
-updated: 2026-11-25 07:28
+updated: 2026-11-25 07:31
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -302,6 +302,10 @@ comms:
 - at: 2026-11-25 07:28
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 07:31
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch branch already in origin/master and verified;
+    held in review for its open request (human decision required). No further merge needed.'
 action:
   type: dispatch
   status: done
