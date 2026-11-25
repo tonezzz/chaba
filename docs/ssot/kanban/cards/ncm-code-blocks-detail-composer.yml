@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-25 19:11
+updated: 2026-11-25 19:27
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -158,3 +158,10 @@ comms:
     needs -> L2 kinds -> L3 schema -> content values. Token-set F1: learned 0.6159 vs fixed 0.6106 (marginal +0.0053).
     Mixed: learned recovers the timeout group (0.437 vs 0.000 in fixed, where it is emitted last and lost to cascade)
     but degrades first-token hit (0.437 vs 0.732) and schema F1'
+- at: 2026-11-25 19:27
+  from: devin
+  text: 'Depth ablation done locally (71 packs, 57 detail tokens, 0 provider calls/$0): token-set F1 = 0.6600 for
+    1 group (all parallel), 0.6538 for 2 groups (structure→content), 0.6665 for 4 groups (needs→kinds→schema→content).
+    My hypothesis that a shallower hierarchy reduces error was NOT supported: differences are tiny (<=0.013) and
+    4 groups is slightly best on nearly every per-group F1 (need 0.756, schema 0.703). Likely because only 4 levels
+    and early groups are high precision, so the hcr-core-style '
