@@ -41,9 +41,10 @@ ADA_OPS_MDB = os.environ.get("MDDB_ADA_OPS_URL",
                              "http://100.123.163.11:11025/v1").rstrip("/")
 
 # host-logs is ~260k docs across both DBs — 100-doc pages made the list
-# phase alone take ~30min (0.7s/page). 5000-doc pages stay ~1s even at
-# deep offsets, and /delete-batch collapses the delete phase likewise.
-PAGE_SIZE = 5000
+# phase alone take ~30min (0.7s/page). The server caps /v1/search pages
+# at 1000 docs regardless of the requested limit, so PAGE_SIZE is the
+# effective page.
+PAGE_SIZE = 1000
 DELETE_CHUNK = 1000
 
 # collection -> (timestamp meta key, retention days)
@@ -82,12 +83,28 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
     t0 = time.monotonic()
     skip, deleted, scanned = 0, 0, 0
     while True:
-        try:
-            page = post("/search", {"collection": collection, "query": "",
-                                    "limit": PAGE_SIZE, "offset": skip},
-                        base)
-        except Exception as e:
-            return f"{collection}: list failed — {e}"
+        # Server-side meta filter is load-bearing: an unfiltered scan
+        # of a ~660k-doc collection blows the ~50s request deadline
+        # and the whole sweep deletes 0 (observed 2026-11-23..25 on
+        # mddb-ops host-logs). With the filter, only expired docs are
+        # returned — typically ~1 day of churn — and offsets stay
+        # near zero because kept≈0. Even filtered, a page can exceed
+        # the server's ~30s write timeout when the host is loaded, so
+        # retry a few times before giving up on the sweep.
+        page = None
+        for attempt in range(4):
+            try:
+                page = post("/search", {"collection": collection,
+                                        "query": "",
+                                        "limit": PAGE_SIZE,
+                                        "offset": skip,
+                                        "filter": {ts_key: {"lt": cutoff}}},
+                            base)
+                break
+            except Exception as e:
+                if attempt == 3:
+                    return f"{collection}: list failed — {e}"
+                time.sleep(15 * (attempt + 1))
         if not page:
             break
         scanned += len(page)

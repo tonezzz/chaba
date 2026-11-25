@@ -1,0 +1,104 @@
+title: mddb-ops regrowth analysis — freelist vs live-data vs broken prune
+subtitle: 8.1G is ~all live data; host-logs sweeper silently failing since ~Nov 23
+icon: database
+id: 2026-11-25-ops-regrowth-watch
+card: mddb-ops-regrowth-watch
+date: 2026-11-25
+runner: tony-macbook dispatch (read-only probes + idc03 ssh)
+summary: |
+  mddb-ops (idc03 :11026) was bbolt-compacted 2026-11-24 17:21
+  (76G -> 6.2G) and is back at ~8.1G within ~23h. Verified: freelist is
+  6.6MB of 8.1GB (0.08%) — NOT a freelist/FREELIST_SYNC problem. The
+  file is ~all live b+tree data, dominated by host-logs (640,819 docs,
+  ~45k/day ingest vs a 3d retention that should hold ~135k). Root
+  cause: prune-old-docs.service has failed daily since ~Nov 23 —
+  unfiltered /v1/search paging of the 660k-doc collection exceeds the
+  server write deadline, so it deletes 0 docs every run. Fixed the
+  script (server-side meta filter + real 1000-doc page cap + retries),
+  launched a catch-up prune on idc03.
+
+freelist_measurement: |
+  Copied live mddb.db to /tmp on idc03, opened read-write on the copy
+  with bbolt v1.4.3 (go.etcd.io/bbolt, golang:1.23-bookworm image):
+  db.Stats() -> FreePageN=1614 (~6.6MiB), PendingPageN=0. ReadOnly
+  open reports zeros — the freelist is only populated on a normal
+  open (which is exactly what MDDB_FREELIST_SYNC persists).
+  MDDB_FREELIST_SYNC=true confirmed on the mddb-ops quadlet; it is a
+  restart-latency knob (skip freelist rescan on open), not a capacity
+  knob. Delete-rewrite cycles do NOT "outrun" it — bbolt reuses freed
+  pages; the file tracks the live-data high-water mark.
+
+live_state_2026_11_25: |
+  /v1/stats on :11026: databaseSize 8,109,551,616; host-logs 640,819
+  docs / 859,633 revs / 3,215,879 meta indices; device-telemetry
+  20,590 docs (healthy — its own prune deletes daily); host-logs-state
+  50; ada-nest-heartbeats 6. Aggregate day-histogram on meta ts:
+  continuous ~45k docs/day 2026-11-11 -> 11-25. 3d retention should
+  hold ~135k — collection is ~5x over, i.e. ~12 days of zero pruning.
+
+broken_sweeper_evidence: |
+  journalctl --user -u prune-old-docs.service on idc03 (journal only
+  retains 3 runs post-vacuum):
+    11-23 09:31 host-logs: list failed — timed out
+    11-24 09:31 host-logs: list failed — timed out
+    11-25 09:30 host-logs: list failed — Remote end closed connection
+           -> unit exit 1
+  Script (scripts/ada/prune-old-docs.py) paged the entire collection
+  with /v1/search {query:"", limit:5000, offset:N} and filtered ts
+  client-side. Two latent bugs: (a) unfiltered scan of ~660k docs
+  exceeds the ~30-50s server write deadline; (b) server caps pages at
+  1000 docs so limit:5000 + len(page)<PAGE_SIZE break would exit after
+  page 1 even without the timeout. Same failure class as MEM-0871
+  (2026-11-07): retention window sized for ~114k docs, sweeper broken
+  lets collection regrow past the paging limit — vicious cycle.
+
+verified_server_side_filter: |
+  POST /v1/search accepts "filter": {"<meta_key>": {"lt": "<iso>"}}
+  (operator syntax) evaluated server-side via meta indices — returns
+  only expired docs, ~5-9s/page at low load. filter_meta does NOT
+  accept operators (exact {key:[values]} match only). delete_where
+  exists in the MCP surface but mddb-ops runs MDDB_MCP_ENABLED=false
+  and REST /v1/delete-where is not routed on 2.18.10 — HTTP
+  search+delete-batch remains the path. Manually verified one
+  1000-doc filtered page -> /v1/delete-batch {"deleted":1000} ->
+  refetch offset 0 returns the next batch (loop advances correctly).
+
+fix_applied: |
+  scripts/ada/prune-old-docs.py (dispatch worktree, pending merge):
+  - /v1/search payload gains "filter": {ts_key: {"lt": cutoff}};
+    client-side ts check kept as safety net.
+  - PAGE_SIZE 5000 -> 1000 (actual server cap).
+  - List phase retries 4x, sleep 15s*(attempt+1) — filtered pages can
+    still exceed the ~30s write timeout under load (observed 52.7s
+    elapsed -> "handler finished after the HTTP write timeout" at
+    idc03 load ~17).
+  Reaches idc03's exec checkout via chaba-repo-sync after merge;
+  tomorrow's 09:30 timer self-heals.
+
+catchup_prune: |
+  Patched script copied to idc03:/tmp/prune-old-docs.py; running
+  `nice -n 10 python3 -u ... --only host-logs` (launched ~16:50 +07,
+  log /tmp/prune-host-logs.log). Deletes all host-logs ts < now-3d
+  (~520k docs, ~520 rounds, est. hours under load). This is the
+  standing daily policy executing late — journald keeps raw originals
+  (docs/kb/mddb-prune-compact.md). If still running at next 09:30 the
+  timer fires a second instance — deletes are idempotent, just stop
+  the timer for a day if needed.
+
+answers_to_card: |
+  - "Do delete-rewrite cycles outrun FREELIST_SYNC?" No — wrong model.
+    FREELIST_SYNC = restart latency, not capacity. Freelist measured
+    at 0.08% of file.
+  - "telemetry-prune retention vs periodic compaction?" Retention is
+    the right lever AND was already the plan — it was silently broken.
+    After catch-up drains (~135k docs steady state, est. ~1.5-2.5G
+    live), one Procedure-C bbolt compact can still drop the file from
+    ~8G to live size if desired; schedule like the 11-24 window.
+
+watch_items:
+  - "/tmp/prune-host-logs.log on idc03 — one summary line at completion."
+  - "Steady-state cost ~= daily ingest ~45k docs/day of delete-batch;
+    if too heavy, levers: shorter retention, lower log-shipper
+    --max-docs, or sampling."
+  - "idc03 load was 17+ during analysis; write-timeout retries are
+    load-bearing on this host."
