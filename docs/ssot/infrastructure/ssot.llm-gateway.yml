@@ -95,7 +95,7 @@ budgets:
 providers:
   gemini-paid: "gemini/* via GEMINI_API_KEY_PAID (billing project — no 20/day wall)"
   gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
-  openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
+  openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated fleet key, $5/wk since 2026-11-25) — paid or-* chat/model routes moved to OPENROUTER_BENCH_API_KEY (idc03-litellm-bench, $30/wk) on 2026-11-25 so eval weeks can't cap prod resilience lanes; :free variants stay on the fleet key"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
   ollama-kkmac: >-
     ollama_chat/* @ http://127.0.0.1:11447 on idc03 —
@@ -324,9 +324,20 @@ free_lane_aliases:
     - gemini-2.5-flash-lite-free # free Gemini key: 404 "no longer available to new users" for 2.5 family
   openrouter_paid:
     # paid OR routes — explicit-call only, no job-class chains.
+    # 2026-11-25 (card dedicated-openrouter-key-for-bench-eval-7ff299):
+    # all paid or-* chat/model entries now ride OPENROUTER_BENCH_API_KEY
+    # ($30/wk dedicated bench key) — fleet OPENROUTER_API_KEY keeps only
+    # or-gemini-embedding-2, or-gemini-3.1-flash-image, consult-claude and
+    # the :free routes. SpendLogs proved all paid-OR spend is direct
+    # or-* alias calls by dev-class keys; chain fallback spend is zero.
+    - or-claude-fable-5.1      # anthropic/claude-fable-5.1 — paid_frontier dispatch + supervised bench lane
+    - or-gemini-3.1-pro-preview # google/gemini-3.1-pro-preview — supervised strong-model bench route
+    - or-gemini-3.5-flash       # google/gemini-3.5-flash — chat-chain OR leg + explicit calls
+    - or-gemini-3.5-flash-lite  # google/gemini-3.5-flash-lite — tool-call/chat/summary/etc OR leg + explicit calls
+    - or-gemini-2.5-flash       # DEAD upstream 2026-10-11 — stale callers only
+    - or-gemini-2.5-flash-lite  # DEAD upstream — same retirement
     - or-deepseek-v4-flash     # deepseek/deepseek-v4-flash $0.09/$0.18 per Mtok — cheap-code-brain
                                # bench lane (OPS-1256, 2026-11-23); added to chaba key allowlist.
-                               # OR key is $1/wk capped — keep bench traffic small.
   cloudflare_workers_ai:       # deployed, opencode-verified in part
     note: >-
       OpenAI-compatible api_base .../accounts/<acct>/ai/v1, CF_API_WORKER_TOKEN.
