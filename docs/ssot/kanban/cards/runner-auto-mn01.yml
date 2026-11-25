@@ -17,7 +17,7 @@ help: 'Per-check fixes:
 
   - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
   on missing dispatch_repos helpers (idc01, 860 behind).'
-updated: 2026-11-25 16:51
+updated: 2026-11-25 16:57
 review_kind: triage
 action:
   status: done
@@ -191,6 +191,10 @@ comms:
 - at: 2026-11-25 16:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-0301
 claim: {}
