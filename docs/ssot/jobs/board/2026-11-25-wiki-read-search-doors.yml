@@ -1,0 +1,79 @@
+id: board-api-wiki-read-search-doors-20261125
+title: board-api /wiki/page mode=read|parse + /wiki/search recall doors
+card: board-api-wiki-read-search-doors
+date: 2026-11-25
+host: tony-macbook (dispatch worktree)
+status: landed-on-dispatch-branch
+
+goal: >
+  ada-voice ships wiki_read/wiki_search tools.d modules that POST
+  /wiki/page {mode:read,title} and /wiki/search {query}; the doors did
+  not exist (page was write-only, search 404'd), so the tools fell back
+  to narrower sinks. Add generic wiki recall + redeploy drifted
+  runner-agent to tony-dell/idc02.
+
+what-landed:
+  scripts/board/board-api.py:
+    - >-
+      do_wiki_page gains mode=read|parse (default stays write).
+      mode=read -> action=query prop=revisions rvprop=content (raw
+      wikitext, missing-> {missing:true} not an error); mode=parse ->
+      action=parse prop=text|wikitext|revid redirects=1 formatversion=2
+      (html + wikitext + revid). Both ride _wiki_login so
+      Lockdown-protected namespaces (Education: et al.) resolve, and
+      deliberately SKIP the write allowlist — recall is governed by the
+      wiki's own read ACLs, not the support-page write gate.
+    - >-
+      do_wiki_search(body): POST /wiki/search {query|q, limit|srlimit
+      (clamp 1..50, default 10), srnamespace?} -> action=query
+      list=search; results carry title, HTML-stripped+unescaped
+      snippet, timestamp, wordcount, index.php?title= url.
+    - >-
+      Routing: /wiki/search added to REMOTE_WRITE_PATHS (WP_LOCK +
+      run_bounded deadline like the other remote doors), _remote_dispatch,
+      and the job_actor frm tuple (wiki doors accept host/daemon names).
+      import html added for snippet unescape.
+  tests/board/test_publication.py:
+    - >-
+      _fake_wiki_read_api seam + 6 tests: read returns wikitext for a
+      non-allowlisted title (Main Page) with no edit/siteinfo calls,
+      missing page -> missing:true, parse returns html+wikitext+revid,
+      bad mode/missing title refused pre-flight, search flattens
+      snippets and clamps srlimit, empty query refused.
+
+verified:
+  - >-
+    python3 -m unittest tests.board.test_publication (90 tests OK) +
+    test_board_api_mutations/reads/test_wiki_extension (89 tests OK).
+  - >-
+    Live MediaWiki contract probe on idc03 (bot login, read-only):
+    Education:Index read -> 23803-char wikitext; parse -> 44KB html +
+    wikitext, revid populated once prop=revid added (was None without
+    it); list=search -> hits with HTML/entity snippets as expected.
+  - >-
+    _remote_dispatch("/wiki/search") wiring exercised with stubbed
+    WIKI_API_CALL — returns flattened results.
+  - >-
+    runner-agent redeployed via scp to tony-dell and idc02
+    (~/.local/bin/runner-agent, chmod 755); sha256
+    1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210
+    identical to each host's ~/CascadeProjects/chaba checkout copy —
+    drift had already self-healed; scp was a verified no-op rewrite.
+
+notes:
+  - >-
+    Endpoints go live when this branch merges — board-api serves from
+    the idc03 served checkout; no deploy was performed per dispatch
+    rails. ada-voice wiki_read/wiki_search start hitting real doors
+    post-merge.
+  - >-
+    idc02's ~/CascadeProjects/chaba-tony-dell checkout carries a
+    different runner-agent.py (adfa0c57…) — outside this card's scope
+    (constraint named ~/CascadeProjects/chaba); flagged in case the
+    stale mirror matters.
+
+verify: >-
+  after merge+board-api restart on idc03:
+  curl -X POST https://idc03.taila0626a.ts.net:10000/wiki/page
+  -d '{"mode":"read","title":"Education:Index","from":"devin"}'
+  and /wiki/search {"query":"..."} — both 200, no 404.

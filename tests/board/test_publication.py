@@ -1327,6 +1327,121 @@ class BoardApiWiringTest(PubTestBase):
         self.assertTrue(edits)
         self.assertIs(edits[0][0], sentinel)
 
+    def _fake_wiki_read_api(self, calls, page=None, search=None,
+                            parsed=None):
+        def fake(params, post=False):
+            calls.append(dict(params))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("action") == "parse":
+                return {"parse": parsed or {}}
+            if params.get("list") == "search":
+                return {"query": {"search": search or []}}
+            if params.get("action") == "query" and params.get("titles"):
+                return {"query": {"pages": page or {}}}
+            return {}
+        self.ba.WIKI_API_CALL = fake
+
+    def test_wiki_page_mode_read(self):
+        # card board-api-wiki-read-search-doors: mode=read returns raw
+        # wikitext for ANY title — recall is not write-allowlisted.
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_read_api(calls, page={"1": {
+            "pageid": 1, "title": "Main Page",
+            "revisions": [{"revid": 9,
+                           "timestamp": "2026-11-25T00:00:00Z",
+                           "slots": {"main": {"*": "= Hi ="}}}]}})
+        r = self.ba.do_wiki_page(
+            {"mode": "read", "title": "Main Page"}, "ada")
+        self.assertEqual(r["wikitext"], "= Hi =")
+        self.assertEqual(r["wiki_title"], "Main Page")
+        self.assertEqual(r["revid"], 9)
+        self.assertNotIn("missing", r)
+        self.assertFalse(any(c.get("action") == "edit" for c in calls))
+        self.assertFalse(any(c.get("siprop") == "namespaces"
+                             for c in calls))
+
+    def test_wiki_page_mode_read_missing(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_read_api(calls, page={"-1": {"missing": ""}})
+        r = self.ba.do_wiki_page(
+            {"mode": "read", "title": "Nope:Nothing"}, "ada")
+        self.assertTrue(r["missing"])
+        self.assertEqual(r["wikitext"], "")
+
+    def test_wiki_page_mode_parse(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_read_api(calls, parsed={
+            "title": "Education:Foo", "pageid": 3, "revid": 8,
+            "text": "<p>rendered</p>", "wikitext": "rendered"})
+        r = self.ba.do_wiki_page(
+            {"mode": "parse", "title": "Education:Foo"}, "ada")
+        self.assertEqual(r["html"], "<p>rendered</p>")
+        self.assertEqual(r["wikitext"], "rendered")
+        self.assertEqual(r["revid"], 8)
+        parse_calls = [c for c in calls if c.get("action") == "parse"]
+        self.assertEqual(parse_calls[0]["page"], "Education:Foo")
+
+    def test_wiki_page_bad_mode_and_missing_title(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_read_api(calls)
+        try:
+            self.ba.do_wiki_page({"mode": "bogus", "title": "X"}, "ada")
+        except ValueError as e:
+            self.assertIn("mode", str(e))
+        else:
+            raise AssertionError("expected bad-mode refusal")
+        # read/parse still require a sane title, and never touch wikitext
+        try:
+            self.ba.do_wiki_page({"mode": "read"}, "ada")
+        except ValueError as e:
+            self.assertIn("title", str(e))
+        else:
+            raise AssertionError("expected title required")
+        self.assertFalse(calls)
+
+    def test_wiki_search(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_read_api(calls, search=[
+            {"title": "Education:Ada-Nest-Map",
+             "snippet": "…<span class=\"searchmatch\">nest</span> map…",
+             "timestamp": "2026-11-20T00:00:00Z", "wordcount": 42},
+            {"title": "Reports:Q3", "snippet": "plain &amp; simple",
+             "timestamp": "", "wordcount": 7}])
+        r = self.ba.do_wiki_search({"query": "nest map"}, "ada")
+        self.assertEqual(r["count"], 2)
+        self.assertEqual(r["results"][0]["title"], "Education:Ada-Nest-Map")
+        self.assertNotIn("<span", r["results"][0]["snippet"])
+        self.assertIn("nest map", r["results"][0]["snippet"])
+        self.assertEqual(r["results"][1]["snippet"], "plain & simple")
+        self.assertIn("index.php?title=", r["results"][0]["url"])
+        search_calls = [c for c in calls if c.get("list") == "search"]
+        self.assertEqual(search_calls[0]["srsearch"], "nest map")
+        self.assertEqual(search_calls[0]["srlimit"], "10")
+        # limit clamps at WIKI_SEARCH_LIMIT_MAX
+        r = self.ba.do_wiki_search({"query": "x", "limit": 500}, "ada")
+        self.assertEqual(
+            [c for c in calls if c.get("list") == "search"][-1]
+            ["srlimit"], str(self.ba.WIKI_SEARCH_LIMIT_MAX))
+
+    def test_wiki_search_requires_query(self):
+        self._wiki_env()
+        try:
+            self.ba.do_wiki_search({}, "ada")
+        except ValueError as e:
+            self.assertIn("query", str(e))
+        else:
+            raise AssertionError("expected query required")
+
     def test_report_wp_read_modes(self):
         posts = []
 

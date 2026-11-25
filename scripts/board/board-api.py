@@ -228,6 +228,7 @@ import fcntl
 import faulthandler
 import gzip
 import hashlib
+import html
 import hmac
 import json
 import os
@@ -3279,7 +3280,7 @@ MDDB_LESSONS = os.environ.get("BOARD_API_MDDB_LESSONS",
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
                       "/wiki/news-diagnose", "/wiki/page",
-                      "/opencode-command"}
+                      "/wiki/search", "/opencode-command"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -3753,12 +3754,20 @@ def do_wiki_page(body: dict, frm: str) -> dict:
     verify the namespace is actually registered (siteinfo) so a premature
     call can't litter main space with 'Education:Foo' pages — and
     Infrastructure: edits still have to pass the wiki-side Lockdown
-    group check (inhouse/sysop), the prefix gate is not an ACL grant."""
+    group check (inhouse/sysop), the prefix gate is not an ACL grant.
+    mode=read returns the page's current wikitext, mode=parse returns
+    rendered HTML + wikitext (action=parse); both skip the write
+    allowlist — recall is governed by the wiki's own read ACLs."""
     title = str(body.get("title") or body.get("wiki_title") or "").strip()
-    text = str(body.get("wikitext") or body.get("text") or "")
     if not title or "\n" in title or "\r" in title \
             or len(title) > WIKI_PAGE_TITLE_MAX:
         raise ValueError("title required (<=150 chars, single line)")
+    mode = str(body.get("mode") or "write").strip().lower()
+    if mode in ("read", "parse"):
+        return _wiki_page_read(title, mode, frm)
+    if mode != "write":
+        raise ValueError("mode must be write, read, or parse")
+    text = str(body.get("wikitext") or body.get("text") or "")
     if not text.strip():
         raise ValueError("wikitext required")
     if len(text) > WIKI_PAGE_TEXT_MAX:
@@ -3797,6 +3806,101 @@ def do_wiki_page(body: dict, frm: str) -> dict:
             "actor": frm,
             "message": f"wiki page {edited.get('result', '?').lower()}: "
                        f"{title}"}
+
+
+def _wiki_page_read(title: str, mode: str, frm: str) -> dict:
+    """mode=read|parse on /wiki/page — the generic recall half of the
+    door (card board-api-wiki-read-search-doors). Reads ride the bot
+    login so Lockdown-protected namespaces (Education: et al.) resolve;
+    the write allowlist does NOT apply — read ACLs are the wiki's own,
+    and this is a recall door, not a write backdoor."""
+    env, api_url = _wiki_env()
+    opener, _csrf = _wiki_login(api_url, env)
+    if mode == "parse":
+        result = _wiki_api_call(
+            api_url, opener,
+            {"action": "parse", "page": title,
+             "prop": "text|wikitext|revid", "redirects": "1",
+             "format": "json", "formatversion": "2"})
+        parsed = result.get("parse") or {}
+        if not parsed:
+            err = result.get("error") or {}
+            raise ValueError(
+                f"wiki parse failed: {err.get('info') or title}")
+        canon = str(parsed.get("title") or title)
+        return {"wiki_title": canon,
+                "pageid": parsed.get("pageid"),
+                "revid": parsed.get("revid"),
+                "html": parsed.get("text") or "",
+                "wikitext": parsed.get("wikitext") or "",
+                "url": _wiki_page_url(env, canon),
+                "actor": frm,
+                "message": f"wiki page parsed: {title}"}
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "titles": title,
+         "prop": "revisions", "rvprop": "ids|timestamp|content",
+         "rvslots": "main", "format": "json"})
+    page = next(iter(result.get("query", {}).get("pages", {}).values()), {})
+    if "missing" in page:
+        return {"wiki_title": title, "missing": True, "wikitext": "",
+                "url": _wiki_page_url(env, title), "actor": frm,
+                "message": f"wiki page missing: {title}"}
+    rev = (page.get("revisions") or [{}])[0]
+    canon = str(page.get("title") or title)
+    return {"wiki_title": canon,
+            "pageid": page.get("pageid"),
+            "revid": rev.get("revid"),
+            "timestamp": rev.get("timestamp"),
+            "wikitext": str((rev.get("slots") or {})
+                            .get("main", {}).get("*", "")),
+            "url": _wiki_page_url(env, canon),
+            "actor": frm,
+            "message": f"wiki page read: {title}"}
+
+
+WIKI_SEARCH_LIMIT_MAX = 50
+
+
+def _wiki_snippet_text(snippet: str) -> str:
+    """list=search snippets are HTML (<span class=searchmatch>…) —
+    flatten to plain text for voice/tool consumers."""
+    return html.unescape(re.sub(r"<[^>]+>", "", snippet)).strip()
+
+
+def do_wiki_search(body: dict, frm: str) -> dict:
+    """POST /wiki/search — full-text recall over the readable wiki
+    (card board-api-wiki-read-search-doors; ada-voice wiki_search posts
+    {query}). Bot-login opener so Lockdown namespaces are searchable."""
+    query = str(body.get("query") or body.get("q") or "").strip()
+    if not query:
+        raise ValueError("query required")
+    try:
+        limit = int(body.get("limit") or body.get("srlimit") or 10)
+    except (TypeError, ValueError):
+        raise ValueError("limit must be an integer")
+    limit = max(1, min(limit, WIKI_SEARCH_LIMIT_MAX))
+    env, api_url = _wiki_env()
+    opener, _csrf = _wiki_login(api_url, env)
+    params = {"action": "query", "list": "search",
+              "srsearch": query, "srlimit": str(limit),
+              "format": "json"}
+    ns = body.get("srnamespace")
+    if ns not in (None, ""):
+        params["srnamespace"] = str(ns)
+    result = _wiki_api_call(api_url, opener, params)
+    out = []
+    for s in (result.get("query", {}).get("search") or []):
+        title = str(s.get("title") or "")
+        out.append({"title": title,
+                    "snippet": _wiki_snippet_text(
+                        str(s.get("snippet") or "")),
+                    "timestamp": s.get("timestamp") or "",
+                    "wordcount": s.get("wordcount"),
+                    "url": _wiki_page_url(env, title)})
+    return {"query": query, "count": len(out), "results": out,
+            "actor": frm,
+            "message": f"wiki search '{query}': {len(out)} hits"}
 
 
 def wp_api(route: str, data=None, method: str | None = None):
@@ -5439,6 +5543,8 @@ def _remote_dispatch(path: str, body: dict, frm: str) -> dict:
         return do_wiki_news_diagnose(body, frm)
     if path == "/wiki/page":
         return do_wiki_page(body, frm)
+    if path == "/wiki/search":
+        return do_wiki_search(body, frm)
     if path == "/opencode-command":
         return do_opencode_command(body, frm)
     return do_report(body, frm)
@@ -6181,7 +6287,8 @@ class H(BaseHTTPRequestHandler):
                 frm = (job_actor(body, ident)
                        if path in ("/job", "/publish", "/wiki/extension",
                                    "/wiki/news-review",
-                                   "/wiki/news-diagnose", "/wiki/page")
+                                   "/wiki/news-diagnose", "/wiki/page",
+                                   "/wiki/search")
                        else actor(body))
                 got = acquire_lock(
                     WP_LOCK,
