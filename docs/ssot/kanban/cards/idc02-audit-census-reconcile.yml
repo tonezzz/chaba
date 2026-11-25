@@ -1,7 +1,7 @@
 id: idc02-audit-census-reconcile
 title: idc02 audit-hosts census reconcile — expected_services drift red
 column: doing
-updated: 2026-11-25 14:35
+updated: 2026-11-25 14:43
 priority: low
 tags:
 - audit
@@ -85,6 +85,13 @@ comms:
     vcast-real-macbook unit gone (superseded by vcast-real@6/@7). Real drift found: mddb-embed down since 09:20
     reboot (quadlet lacks [Install] WantedBy — no auto-start), gev-cmd-relay dead since boot (BindsTo dependency
     race). Restoring both + reconciling census next.'
+- at: 2026-11-25 14:43
+  from: devin
+  text: 'DONE — audit-hosts.py --host idc02 now reports NO deltas (was 28). Census reconciled in ssot.audit.hosts.yml:
+    11 entries -> expected_absent (mn-ha-dev+mha-state-push moved to mn01 verified active there, camwall-render-check
+    retired per camwall-retire-to-wiki, vcast-real-macbook superseded by vcast-real@6/@7, 6 retired ada-code/jack
+    quadlets, mddb-lab-pull.timer), 8 OPS-0725 migration services declared, 3 oneshots retyped, ada-stt -> expected_state:inactive,
+    7 failed oneshots whitelisted in known'
 action:
   type: dispatch
   status: running
