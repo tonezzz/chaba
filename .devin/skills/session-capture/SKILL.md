@@ -65,6 +65,12 @@ Procedures: `knowledge-capture`, `pointer-note`, `session-capture` in `docs/ssot
 - `where_filed` — **mandatory**: `item -> sink/ID/path`
 - `notes` — risks/gaps/refresh queries if any (label state `canonical(served)`, `branch/unmerged`, or `live runtime` when relevant)
 
+## Stale-pointer incidents (Phase D telemetry — OPS-1368)
+- When a lookup/pointer resolves STALE in this session — a cited path, SSOT key, KB ref, or pointer-note entry that no longer resolves to the canonical source — record it once:
+  `python3 scripts/chaba/pointer-stale-add.py --pointer-ref <stale-ref> --canonical-ref <where-it-points-now> [--as-of <YYYY-MM-DD>] [--fix <text>] [--fix-ref <card-or-comm-ref>]`
+- Local-only telemetry (`~/.local/share/chaba/capture/pointer-incidents.yml`), deduped by pointer_ref+canonical_ref+found_at; `--init` creates the schema. Never a canonical write — incidents are evidence for the stale-pointer metric, not fixes.
+- `capture-metrics.py` reads the local log when present (else reports the proxy candidate count, labelled proxy). 3+ hits on one pointer_ref -> promote to a kanban card; promotion is a separate decision, not this helper's job.
+
 ## Pointer-note template (body)
 - `scope`, `as_of`, `volatility` (static|pointer|live-mix), `owner`, `promote_to`
 - **Canonical refs (authoritative):** SSOT/procedure/KB/lesson/report/card refs with why

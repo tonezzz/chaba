@@ -15,6 +15,12 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ### 2026-11-25
 
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/infrastructure/ssot.jobs.yml, AGENTS.md, scripts/{chaba,devnest}/*, .devin/skills/*, .agents/skills/info-find/SKILL.md
+- **Change Type**: minor
+- **Description**: OPS-1368 Phase D follow-ups — (a) added "Phase D Refresh (2026-11-25)" section to ssot.knowledge-capture.yml recording the d1-metrics measurement and resolutions; (b) declared daily job chaba-capture-harvest (idc02 05:30) as the canonical capture-ledger regeneration + metrics refresh, rendered to systemd/generated/idc02/; (c) capture-apply.py now mirrors each applied audit to a card comm (board = durable record, ledger = regenerable cache); (d) info_find.py run audit renamed resolved_ref -> top_result_ref and record gained --elapsed-ms/--resolved; info-find.mjs emits the same typed contract; capture-metrics.py reports run_* vs session_* samples with top_result_pct/verified_resolved_pct; (e) pointer-stale-add.py wired into session-capture + both info-find skills; (f) AGENTS.md sweep duty gained a repeat-ask register freshness check (>14d stale_days).
+- **Impact**: Phase D telemetry now measures the real skill path end-to-end; capture ledger has a declared durable home; applied audit survives ledger regeneration; stale-pointer incidents have a recording path.
+- **Rollback**: git revert the OPS-1368 commit(s); remove systemd/generated/idc02/chaba-capture-harvest.* if the job is unwanted (it was declare-only, never installed by this change).
+
 - **File**: docs/ssot/ssot.knowledge-capture.yml
 - **Change Type**: minor
 - **Description**: Added the Capture Router Contract (Phase C.1) sections — candidate/proposal event envelope, approved sink namespace and write-approved (kanban/create only) posture, sink-native dedupe_key format, ledger/audit metadata, idempotency and dry-run defaults, reject/guard list, plus worked examples. Documents the contract already implemented by scripts/chaba/{capture-router,harvester,capture-apply}.py; no runtime behavior change.

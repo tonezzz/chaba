@@ -22,7 +22,9 @@ Gates (all must pass, in order):
   5. no card with that id or a matching title already exists on the board.
   6. the card is created via board-api with bounded retries (3 attempts).
   7. the created card is read back (GET) and the title verified.
-  8. an audit record is appended to the ledger's `applied:` block.
+  8. an audit record is appended to the ledger's `applied:` block AND
+     mirrored as a comm on the created card — the ledger is regenerable
+     runtime state, the board comm is the durable audit (OPS-1368).
 
 Dry-run is the DEFAULT: no flags prints the exact card payload, the gate
 results and the rollback command, and writes nothing.
@@ -298,7 +300,23 @@ def apply_one(key: str, entry: dict[str, Any], card: dict[str, str]) -> int:
 
     artifact = BOARD_URL + card["id"]
     append_applied(LEDGER, entry, card, artifact)
-    print(f"applied: {key} -> {artifact} (verified GET, audit appended)")
+    # Durable audit mirror (OPS-1368): capture-ledger.yml is regenerable
+    # runtime state — a fresh harvest drops the applied: block. The card
+    # comm survives any ledger loss and is the board-native audit record.
+    applied_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    audit_text = (
+        f"capture-apply audit: dedupe_key={entry.get('dedupe_key')} "
+        f"applied_at={applied_at} sink={entry.get('proposed_sink')}/"
+        f"{entry.get('action')} source={entry.get('source')}/"
+        f"{entry.get('source_id')} run_id={entry.get('run_id')} "
+        f"artifact={artifact}")
+    rc2, out2 = _board("comment", card["id"], audit_text, "--from", "devin")
+    if rc2:
+        print(f"warning: applied audit comm failed ({out2[:160]}); "
+              f"ledger record stands — mirror the audit manually",
+              file=sys.stderr)
+    comm_note = " + card comm" if rc2 == 0 else ""
+    print(f"applied: {key} -> {artifact} (verified GET, audit appended{comm_note})")
     print(f"rollback: board-cli --ssh {BOARD_SSH} action {card['id']} close --from devin")
     return 0
 

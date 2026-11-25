@@ -79,6 +79,8 @@ A "sweep" — status check, board hygiene, multi-ask morning batch, "finish my k
 4. **Close** what's verified done; move cards honestly (never claim completion without evidence).
 5. **Report** once, at the end: fixed / carded / awaiting-Tony.
 
+**Register freshness (added 2026-11-25, OPS-1368):** during any sweep, check the newest `at:` in `docs/ssot/ssot.repeat-asks.yml` `topics[].history` — `capture-metrics.py` reports it as `stale_days`. If >14d old, decide which it is: genuinely zero repeats (fine — say so in the report) or a capture gap (Tony re-asked and nobody incremented — that IS a repeat-ask process failure; card it). Same check applies to the `misses:` block: misses recorded only when agents file them, so an empty log is weak evidence, not proof.
+
 Stop only at real gates (same list as the idea-pipeline): destructive/irreversible ops, prod changes without precedent, spend, Tony-declared decisions. Asking "should I fix this?" mid-sweep for a safe fix is a process failure — fix it, then report.
 
 ## Idea-pipeline duty (added 2026-10-09 — Tony's standing order)

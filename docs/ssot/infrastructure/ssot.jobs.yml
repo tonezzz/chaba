@@ -2046,6 +2046,33 @@ jobs:
     tick ~7min from kanban-commit''s drifting 15-min cycle. Install:
     render-jobs.py --host idc03 --ids wiki-talk-watch --install after
     merge.'
+- id: chaba-capture-harvest
+  name: Capture ledger harvest + Phase D metrics refresh (daily)
+  host: idc02
+  dispatch: systemd
+  on_calendar: '*-*-* 05:30:00'
+  persistent: true
+  timeout: 10m
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/harvester.py
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/capture-metrics.py --out %h/.local/share/chaba/capture/metrics-latest.md
+  note: 'card session-capture-d-1-follow-ups-ledger-du-78e13f (OPS-1368) —
+    declares the durable home + regeneration job for the capture ledger.
+    Correction to the d1 sweep: the 2026-11-23 baseline ledger AND its
+    applied: block were never lost — they live on idc02 at
+    ~/.local/share/chaba/capture/ (2220 entries + the wiki-login-polish
+    apply record); the measuring session checked 6 hosts but not idc02.
+    Decision: idc02 is the declared canonical capture host — entries[]
+    are regenerable but applied[] history already lives here, so no
+    migration. This job keeps the canonical copy fresh (harvest ->
+    capture-metrics --out metrics-latest.md, chained ExecStart so metrics
+    only runs after a successful harvest) and makes the home explicit.
+    capture-apply.py now also mirrors each apply to a card comm, so the
+    board is the durable audit even if this host-local ledger is lost.
+    Runs in the job-exec checkout (%h/CascadeProjects/chaba, kept current
+    by chaba-repo-sync). 05:30 is clear of the daily jobs. Declare +
+    render only — install with render-jobs.py --host idc02 --ids
+    chaba-capture-harvest --install after merge.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py
