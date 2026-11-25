@@ -1,0 +1,18 @@
+id: ssot-mn-ha-dev-yaml-fix
+title: Fix SSOT YAML error in ssot.home-assistant.mn-ha-dev.yml
+column: backlog
+updated: 2026-11-25 08:58
+brief: 'New regression after KNB-0039: published_ports scalar contains ": " so YAML parses it as a mapping and ssot-validate-all
+  fails.'
+priority: medium
+program: chaba-ci
+tags:
+- ssot
+- validation
+spec: Quote the published_ports value in docs/ssot/infrastructure/ssot.home-assistant.mn-ha-dev.yml line 26; verify
+  node scripts/ssot-validate-all.mjs reports 0 errors; PR merge; close card with commit ref.
+ref: KNB-1352
+comms:
+- at: 2026-11-25 08:58
+  from: tony
+  text: card captured via board-api
