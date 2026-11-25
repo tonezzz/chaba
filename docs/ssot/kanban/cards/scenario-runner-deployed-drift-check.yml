@@ -1,7 +1,7 @@
 id: scenario-runner-deployed-drift-check
 title: Detect deployed-vs-repo drift of ada-scenario-runner wrapper on idc03
 column: doing
-updated: 2026-11-25 09:28
+updated: 2026-11-25 09:40
 priority: medium
 tags:
 - ops
@@ -206,6 +206,13 @@ comms:
     chaba-repo-sync updates the checkout copy, and unt; Deploy note: hosts need the new file via their chaba checkout
     sync (chaba-repo-s; [runner-agent-deploy-propagation-gap-repo-56a255] primer injected 8 lesson(s): D; [runner-agent-deploy-propagation-gap-repo-56a255]
     primer inje'
+- at: 2026-11-25 09:40
+  from: devin
+  text: 'DEPLOYED + verified on idc03. scripts/ops/scenario-runner-drift-check.py (hourly timer scenario-runner-drift-check.timer,
+    rendered from ssot.jobs.yml) sha256-compares ~/.local/share/ada-scenario-runner/scenario-suite-run.sh vs the
+    exec-checkout repo source; missing/not-executable/content-drift/reference-missing -> deduped board-api /inbox
+    alert (6h/condition). Exit 0 on completed checks per OPS-0581 — findings ride inbox, not exit code. Live run:
+    ok rc=0; drift/missing/not-exec paths verified vi'
 spec: Deploy a light drift check on idc03 to detect discrepancies between the repo source and the copy-on-install
   ada-scenario-runner wrapper located at ~/.local/share/ada-scenario-runner/. The host is idc03 and the relevant
   repository is chaba. Constraints include preserving the copy-on-install isolation design while closing the detection
