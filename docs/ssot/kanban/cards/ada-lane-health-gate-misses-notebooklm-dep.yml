@@ -1,7 +1,7 @@
 id: ada-lane-health-gate-misses-notebooklm-dep
 title: Ada lane ExecStartPre health gate checks MDDB, not notebooklm-rest — :3011 dependency ungated
 column: doing
-updated: 2026-11-25 15:12
+updated: 2026-11-25 15:18
 brief: Only ada-ai-kraut + ada-ha-tony have an ExecStartPre gate and it curls MDDB http://100.102.134.91:11023/health;
   NOTEBOOKLM_REST_BASE_URL (:3011 on idc02) is a hard runtime dep of ConversationMemory->NotebooklmClient but is
   covered by no gate on any lane. Dead dell:3011 ran ~5 weeks (2026-10-17 migration -> 2026-11-25 repoint) with
@@ -78,6 +78,11 @@ comms:
     2026-11-25 14:35 (+07): Bank-inspect reads ; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] checkpoint failed:
     commit: ⚠️ ; [doc-draft-verifier-semantic-gap] primer injected 8 lesson(s): idc02''s kanban-di; [runner-per-executor-caps]
     primer injected 8 lesson(s): Check'
+- at: 2026-11-25 15:18
+  from: devin
+  text: 'claimed — live state mapped: mddb-gate.conf (ad-hoc, untracked, dated Oct 5) exists only on idc03 ada-ai-kraut
+    + ada-ha-tony; other idc03 lanes have stagger.conf only; tony-omen ada-dev/ada-kk-dev have NO drop-ins at all
+    (migrated 11-18, gates did not follow). Implementing (a)+(b) per spec.'
 action:
   type: dispatch
   status: running
