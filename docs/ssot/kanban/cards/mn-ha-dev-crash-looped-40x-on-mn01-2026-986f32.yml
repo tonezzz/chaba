@@ -1,7 +1,7 @@
 id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
 title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
 column: doing
-updated: 2026-11-25 17:02
+updated: 2026-11-25 17:03
 priority: medium
 tags:
 - mn01
@@ -69,6 +69,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: 'ROOT CAUSE FOUND: earlyoom.service (userspace OOM killer), not HA/podman/sqlite. mn01 has 7.3GB RAM + ZERO
+    swap, so earlyoom''s mem<=10% AND swap<=10% arm is permanently true; it SIGTERMs python3 -m homeassistant whenever
+    MemAvailable dips under ~600MiB (dispatch tasks, yolo x3, gnome, ada-standby, netdata, XMEye VMS all share the
+    box). journalctl -u earlyoom shows a kill at EVERY mn-ha-dev exit — 44 of 51 kills since 11-24 were HA python.
+    HA exits gracefully on SIGTERM (code 0) -> Restart=always'
 action:
   type: dispatch
   status: running
