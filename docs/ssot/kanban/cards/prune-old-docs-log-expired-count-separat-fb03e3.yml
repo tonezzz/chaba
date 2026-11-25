@@ -1,7 +1,7 @@
 id: prune-old-docs-log-expired-count-separat-fb03e3
 title: 'prune-old-docs: log expired count separately from deleted'
 column: doing
-updated: 2026-11-25 19:30
+updated: 2026-11-25 19:31
 brief: Sweep log line reads deleted N/M where M=scanned - under the offset race a run can print deleted 0/25313
   while thousands of stale docs exist, misleading operators into thinking the collection is clean. Add expired_seen
   counter (docs matching the stale predicate during enumeration, independent of delete attempts) so the line reads
@@ -304,6 +304,16 @@ comms:
 - at: 2026-11-25 19:30
   from: mn01
   text: claimed
+- at: 2026-11-25 19:31
+  from: chaba
+  text: started devin-task-20261125-123109-prune-old-docs-log-expired-cou on mn01 (dispatch executor=devin)
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ansible-benchmark-ssot-duplicate-action-430] primer injected 8 lesson(s):
+    `docs; [prune-old-docs-sweep-exits-in-223ms-veri-6e0db7] Root cause found: the /v1/sear; ada-voice dispatch
+    branches under `dispatch/*` are the established landing path ; idc02''s kanban-dispatch.service was a linked
+    unit running a stale scripts/-only ; [app-retirement-sweep] primer injected 8 lesson(s): idc02''s kanban-dispatch.serv;
+    [camwall-retire-to-wiki] primer injected 8 lesson(s): no chab'
 action:
   type: dispatch
   status: running
