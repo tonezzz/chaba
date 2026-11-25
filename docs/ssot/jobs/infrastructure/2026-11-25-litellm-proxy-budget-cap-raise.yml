@@ -1,0 +1,83 @@
+title: LiteLLM proxy-wide 30d budget cap raised $50 → $120 on idc03
+subtitle: card litellm-proxy-wide-30d-budget-exhausted-04049d — verify, raise, reconcile SSOT, close the watcher gap
+icon: shield
+version: 1
+
+card: litellm-proxy-wide-30d-budget-exhausted-04049d
+ref: OPS-1349
+date: 2026-11-25
+dispatch: 20261125-190752-verify-live-max-budget-vs-ssot
+
+question: |
+  Card claimed live ~/.config/litellm/config.yaml AND repo
+  stacks/idc03/litellm/config.yaml both had litellm_settings.max_budget=50
+  while ssot.llm-gateway.yml budgets.proxy_cap claimed "$75 raised
+  2026-11-07" — every litellm/* route was returning 422 budget_exceeded.
+  Verify live vs SSOT, decide cap raise vs wait-for-reset, update both
+  configs + restart litellm.service if raised, reconcile SSOT, land
+  budget-watch alerting.
+
+decision: |
+  Verified: the 2026-11-07 raise was SSOT-only — live config really did
+  still say max_budget=50. Proxy-wide budget is NOT a SpendLogs window
+  sum: LiteLLM keeps it as LiteLLM_UserTable row user_id=
+  'litellm-proxy-budget' (spend accumulates, budget_reset_at=2026-12-01
+  00:00 UTC, reset by proxy ResetBudgetJob). Window spend crossed $50 at
+  ~2026-11-24 23:00 ICT; journal shows "Budget has been exceeded!
+  Current cost: 50.011…, Max budget: 50.0" (no Key= → proxy-wide, not
+  per-key) 422ing every route at auth — before fallback chains, so even
+  free/local legs died.
+
+  Someone raised live config to 75 at 18:28 ICT and restarted the
+  container before this dispatch ran — proxy recovered (200s in journal,
+  smoke-verified). But $75 had only ~$13 headroom: window spend was
+  $62.01 with ~5.8 days left and recent burn ~$8/day → projected ~$110,
+  i.e. re-cap before the Dec 1 reset was likely. Raised to $120 instead
+  of waiting: covers the projection with margin, stays below the ~$150
+  sum of capped per-key budgets (proxy remains outer brake), and is the
+  only bound on uncapped LITELLM_KEY_BENCH.
+
+  Applied: live ~/.config/litellm/config.yaml 75→120 (backup
+  config.yaml.bak-budget-20261125) + systemctl --user restart
+  litellm.service; repo stacks/idc03/litellm/config.yaml 50→120;
+  ssot.llm-gateway.yml proxy_cap rewritten with the real history.
+  Post-restart verified: LiteLLM_UserTable shows max_budget=120,
+  spend=62.01 carried, reset 2026-12-01; real /v1/chat/completions call
+  via LITELLM_KEY_CHABA returned 200.
+
+  Watcher gap closed: litellm-budget-watch.timer (hourly, enabled earlier
+  today by card litellm-budget-watch-enable) only judged
+  LiteLLM_VerificationToken rows — today's incident was the proxy-wide
+  row, which nothing watched. budget-watch.py now appends the
+  litellm-proxy-budget row as a synthetic 'proxy-wide' finding (psql
+  source; /key/list API fallback doesn't expose it). daily-ledger.py
+  budget table UNIONs the same row and its published "Proxy ceiling"
+  footer is now live-read instead of hardcoded $50. Live dry-run on
+  idc03 shows proxy-wide $62.05/$120 (52%) ok. Takes effect on idc03's
+  exec checkout after branch merge + chaba-repo-sync.
+
+verification: |
+  ssh idc03 'systemctl --user status litellm.service' active; container
+  StartedAt 2026-11-25 ~19:15 +07 after restart.
+  psql LiteLLM_UserTable litellm-proxy-budget → max_budget=120,
+  budget_duration=30d, spend=62.0097, budget_reset_at=2026-12-01.
+  curl /v1/chat/completions model=ollama-llama3.2 (CHABA key) → 200 with
+  content "Ok".
+  python3 scripts/litellm/budget-watch.py --selftest → OK (proxy-wide row
+  judged ok at 52%); 13 unittest tests green; live --dry-run on idc03
+  shows the proxy-wide finding.
+  UNION query for daily-ledger budgets verified against live psql.
+
+notes: |
+  Live ~/.config/litellm/config.yaml still drifts from repo beyond the
+  cap (agent-local route + fallback live-only; consult-* routes
+  repo-only) — pre-existing condition already flagged in
+  ssot.llm-gateway.yml live_audit; not reconciled here.
+  budget-watch.py API fallback (/key/list) cannot see the proxy row —
+  psql is the only source that covers it; the idc03 timer uses psql.
+  Per-key caps unchanged: chaba $31.06/$40 (78%) and ada-dev-2 $10.004/$10
+  (at cap, still 422ing — separate card budget-watch-ada-dev-2 already
+  filed by the watcher).
+  If November burn stays ~$8/day the window lands ~$105-115 — inside
+  $120 but tight; re-check proxy_cap after the 2026-12-01 reset against
+  December's actual run-rate.
