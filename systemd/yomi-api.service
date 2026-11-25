@@ -1,0 +1,17 @@
+[Unit]
+Description=Yomi API server (Podman on idc03)
+After=network.target
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/tailscale serve --bg --tcp 3000 127.0.0.1:3000
+ExecStart=/usr/bin/podman run --rm --replace --name yomi-api -p 127.0.0.1:3000:3000 -v /home/tony/CascadeProjects/chaba-tony-dell:/home/tony/CascadeProjects/chaba-tony-dell:Z -v /home/tony/.yomi/mcpb:/home/tony/.yomi/mcpb:Z -v /home/tony/.local/share/yomi:/home/tony/.local/share/yomi:Z -w /home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi --add-host postgre:100.102.134.91 --env-file /home/tony/.config/yomi/yomi-api.env docker.io/library/node:22-slim node /home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-api.mjs
+ExecStopPost=-/usr/bin/tailscale serve --tcp 3000 off
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+
+[Install]
+WantedBy=default.target
