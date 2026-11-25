@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: doing
-updated: 2026-11-25 14:50
+updated: 2026-11-25 14:52
 priority: medium
 tags:
 - bug
@@ -121,6 +121,13 @@ comms:
     2026-11-25 12:40 (+07): diagnosed the ; Quadlet .timer files pair with a same-named .container''s generated
     .service — on; idc03''s `~/CascadeProjects/chaba` exec checkout had dirty unrelated files but ca; mn01 still
     runs a disabled-but-active ada-ha-michael standby '
+- at: 2026-11-25 14:52
+  from: devin
+  text: 'investigating: yomi-api.service on idc03 exists but is disabled+dead since Nov 23 19:50 (user-manager restart
+    after systemd daemon-reexec; unit was disabled so it never came back). SSOT still declares idc03 as yomi-api
+    primary and Caddy proxies /api/yomi/* to :3000 — workload not retired. Plan: re-enable+start yomi-api.service,
+    verify health, then confirm yomi-update-active succeeds. Note: card spec slightly off — yomi-update-all does
+    NOT use --network=container:yomi-api and actually completes ('
 action:
   type: dispatch
   status: running
