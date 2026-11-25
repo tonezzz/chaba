@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: backlog
-updated: 2026-11-25 10:11
+column: doing
+updated: 2026-11-25 10:13
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -418,9 +418,12 @@ comms:
 - at: 2026-11-25 10:11
   from: chaba
   text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 10:13
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
   sweep:
@@ -429,10 +432,11 @@ action:
     no_repo: 2026-11-24 18:09
   result: 'exit=0 atch-outcome-20261125-090427-goal-improve-devnest-throughpu.md`. | devin-task-20261125-090427-goal-improve-devnest-throughpu.service:
     Consumed 2min 12.092s CPU time over 7min 47.727s wall clock time, 1G memory peak, 339.5M memory swap peak.'
-  attempts: 1
+  attempts: 2
+  runner: idc02
 review_kind: design
 claim:
-  since: 2026-11-25 09:03
+  since: 2026-11-25 10:13
 requests:
 - id: phase-0-soak-review-done-6d-idc02-con01-d5e260
   ask: 'Phase-0 soak review done (6d, idc02/con01/mn01, recommend mode): detection/gating/audit all correct, zero
