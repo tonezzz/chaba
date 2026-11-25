@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: review
-updated: 2026-11-25 09:31
+column: backlog
+updated: 2026-11-25 09:39
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -400,9 +400,12 @@ comms:
 - at: 2026-11-25 09:31
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'answer-sweep: executed ''stay-recommend — Stay recommend (recommended)'' -> put on hold'
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: devin
   lane_source: fallback
   sweep:
@@ -444,4 +447,4 @@ requests:
     d: Fastest soak coverage, widest blast radius if a gate is wrong; still needs allowlist entries to do anything.
   suggested: stay-recommend
   answer: stay-recommend — Stay recommend (recommended)
-awaiting_action: true
+  executed: 2026-11-25 hold
