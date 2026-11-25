@@ -1,7 +1,7 @@
 id: board-api-wiki-read-search-doors
 title: 'board-api: /wiki/page mode=read + /wiki/search — generic wiki recall doors'
-column: doing
-updated: 2026-11-25 15:43
+column: review
+updated: 2026-11-25 15:45
 ref: KNB-0017
 comms:
 - at: 2026-11-20 13:42
@@ -174,6 +174,20 @@ comms:
     on idc03 (read/parse/search all return real data; revid needed prop=revid). runner-agent scp-redeployed to tony-dell+idc02,
     sha256 1514c75c… verified == repo checkout on both (drift had self-healed). Endpoints go live on merge — no
     deploy per rails. Trail: docs/ssot/jo'
+- at: 2026-11-25 15:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 026-11-25-wiki-read-search-doors.yml` and the outcome doc; final comms posted to
+    the card. | devin-task-20261125-'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 15:45
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 15:45
+  from: chaba
+  text: pushed dispatch/20261125-153937-goal-implement-mode-read-parse to origin
 spec: 'Goal: Implement mode=read|parse on do_wiki_page and add /wiki/search in scripts/board/board-api.py on the
   chaba repo, while also redeploying runner-agent to tony-dell and idc02 via scp from the repo. Constraints: Ensure
   installed runner-agent matches /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py on host targets.
@@ -181,11 +195,15 @@ spec: 'Goal: Implement mode=read|parse on do_wiki_page and add /wiki/search in s
   query results without 404s, and runner-agent is successfully redeployed to tony-dell and idc02.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 026-11-25-wiki-read-search-doors.yml` and the outcome doc; final comms posted to the card. | devin-task-20261125-153937-goal-implement-mode-read-parse.service:
+    Consumed 40.789s CPU time over 3min 45.185s wall clock time, 810.3M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 15:38
+review_kind: verify
