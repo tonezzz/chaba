@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: doing
-updated: 2026-11-25 21:08
+updated: 2026-11-25 21:09
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -331,6 +331,13 @@ comms:
 - at: 2026-11-25 21:08
   from: tony-dell
   text: claimed
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-125447-goal-generated-writes-from-non no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-125447-goal-generated-writes-from-non'
 action:
   type: dispatch
   status: running
@@ -339,5 +346,8 @@ action:
   executor: devin
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 21:09
+    no_repo: 2026-11-25 21:09
 claim:
   since: 2026-11-25 21:08
