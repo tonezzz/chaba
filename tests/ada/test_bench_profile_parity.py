@@ -77,6 +77,11 @@ def test_cms_only_is_prod_minus_declared_drops() -> None:
     )
 
 
+def test_session_prime_knob_matches_profile_purpose() -> None:
+    assert _profile("kk-cms-only")["env_knobs"]["ADA_SESSION_PRIME"] == "0"
+    assert _profile("kk-parity")["env_knobs"]["ADA_SESSION_PRIME"] == "1"
+
+
 def test_no_tool_is_both_included_and_excluded() -> None:
     for name in BENCH_PROFILES:
         prof = _profile(name)

@@ -494,6 +494,11 @@ bench_profiles:
     env_file: ada-kk-dev.env
     host: idc03
     port: 8009  # health probe after --apply (/api/health)
+    # Session prime injects "Recent sessions:" + channel tails into every
+    # new session regardless of the tool surface — with it on, "CMS-only
+    # memory" is false. Off for the experiment; parity restores it.
+    env_knobs:
+      ADA_SESSION_PRIME: "0"
     include:
       # --- production surface, minus the five experimental drops ---
       - cms_read
@@ -567,6 +572,8 @@ bench_profiles:
     env_file: ada-kk-dev.env
     host: idc03
     port: 8009  # health probe after --apply (/api/health)
+    env_knobs:
+      ADA_SESSION_PRIME: "1"  # restore default prime on parity
     include:
       - ada_memory_search
       - ada_remember

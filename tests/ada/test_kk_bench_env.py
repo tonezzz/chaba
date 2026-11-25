@@ -82,6 +82,22 @@ def test_block_status_and_changes() -> None:
     assert "unchanged" == kk.describe_changes(BLOCK, BLOCK)
 
 
+def test_env_knobs_block_round_trip() -> None:
+    prof = {**PROF, "env_knobs": {"ADA_SESSION_PRIME": "0"}}
+    knob_block = kk.render_knobs_block("kk-cms-only", prof)
+    assert "ADA_SESSION_PRIME=0" in knob_block
+    wanted = kk.desired_text(kk.render_block("kk-cms-only", PROF), knob_block)
+    base = "ADA_OTHER=keep\nADA_SESSION_PRIME=1\n"
+    merged = kk.merge_knobs_block(kk.merge_block(base,
+                                                 kk.render_block("kk-cms-only", PROF)),
+                                  knob_block)
+    assert "ADA_OTHER=keep" in merged
+    assert "# migrated to managed block below: ADA_SESSION_PRIME=1" in merged
+    assert kk.block_status(merged, wanted) is True
+    assert "env knobs: ADA_SESSION_PRIME=0" in kk.describe_changes(
+        kk.managed_text(base), wanted)
+
+
 def test_dev_lane_guard() -> None:
     kk.assert_dev_profile("kk-cms-only", PROF)  # no raise
     with pytest.raises(SystemExit, match="-dev env"):

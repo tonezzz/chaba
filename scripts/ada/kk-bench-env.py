@@ -39,6 +39,8 @@ import yaml
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-persons.yml"
 BLOCK_BEGIN = "# >>> chaba-rendered: ada-tool-profile"
 BLOCK_END = "# <<< chaba-rendered: ada-tool-profile"
+KNOB_BEGIN = "# >>> chaba-rendered: ada-env-knobs"
+KNOB_END = "# <<< chaba-rendered: ada-env-knobs"
 _MANAGED_VARS = ("ADA_INCLUDED_TOOLS", "ADA_EXCLUDED_TOOLS")
 _BACKUP_KEEP = 5
 _HEALTH_PATH = "/api/health"
@@ -60,6 +62,74 @@ def render_block(name: str, prof: dict) -> str:
         lines.append("ADA_EXCLUDED_TOOLS=" + ",".join(exc))
     lines.append(BLOCK_END)
     return "\n".join(lines) + "\n"
+
+
+def render_knobs_block(name: str, prof: dict) -> str:
+    """Render the second managed block: non-tool env knobs for the lane.
+
+    Session prime injects past-session context even when every memory tool
+    is stripped, so a bench profile can declare e.g.
+    `env_knobs: {ADA_SESSION_PRIME: "0"}` to make the "CMS-only" claim real.
+    """
+    knobs = prof.get("env_knobs") or {}
+    if not knobs:
+        return ""
+    lines = [f"{KNOB_BEGIN} (bench_profiles.{name} @ {SSOT.name})"]
+    for key in sorted(knobs):
+        lines.append(f"{key}={knobs[key]}")
+    lines.append(KNOB_END)
+    return "\n".join(lines) + "\n"
+
+
+def managed_text(text: str) -> str:
+    """Both managed blocks, in file order, or '' when neither exists."""
+    out = extract_block(text)
+    knobs = ""
+    lines: list[str] = []
+    inside = False
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped.startswith(KNOB_BEGIN):
+            inside, lines = True, [line]
+            continue
+        if inside:
+            lines.append(line)
+            if stripped.startswith(KNOB_END):
+                knobs = "".join(lines)
+                break
+    return out + knobs
+
+
+def desired_text(tool_block: str, knob_block: str) -> str:
+    return tool_block + knob_block
+
+
+def merge_knobs_block(text: str, block: str) -> str:
+    """Replace/append the env-knob block; retire hand-written copies."""
+    knob_keys: list[str] = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if "=" in stripped and not stripped.startswith("#"):
+            knob_keys.append(stripped.split("=", 1)[0])
+    out, skipping = [], False
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped.startswith(KNOB_BEGIN):
+            skipping = True
+            continue
+        if stripped.startswith(KNOB_END):
+            skipping = False
+            continue
+        if not skipping and any(stripped.startswith(k + "=") for k in knob_keys):
+            out.append(f"# migrated to managed block below: {stripped}\n")
+            continue
+        if not skipping:
+            out.append(line)
+    if out and not out[-1].endswith("\n"):
+        out[-1] += "\n"
+    if not block:
+        return "".join(out)
+    return "".join(out) + ("\n" if out and out[-1].strip() else "") + block
 
 
 def merge_block(text: str, block: str) -> str:
@@ -120,12 +190,29 @@ def parse_block(block: str) -> tuple[set[str], set[str], str]:
 
 
 def block_status(current: str, desired: str) -> bool:
-    """True iff the live managed block already matches the declared one."""
-    return extract_block(current) == desired
+    """True iff BOTH live managed blocks match the declared profile."""
+    return managed_text(current) == desired
+
+
+def parse_knobs(text: str) -> dict[str, str]:
+    """Only the env-knob block's KEY=value lines — not tool-list vars."""
+    out: dict[str, str] = {}
+    inside = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(KNOB_BEGIN):
+            inside = True
+            continue
+        if inside and stripped.startswith(KNOB_END):
+            break
+        if inside and "=" in stripped and not stripped.startswith("#"):
+            key, value = stripped.split("=", 1)
+            out[key] = value
+    return out
 
 
 def describe_changes(current: str, desired: str) -> str:
-    """Secret-free, tool-level description of what an --apply would change."""
+    """Secret-free description of tool-list and env-knob changes."""
     if current == desired:
         return "unchanged"
     ci, ce, cl = parse_block(current)
@@ -139,6 +226,12 @@ def describe_changes(current: str, desired: str) -> str:
             out.append(f"{title} +: {', '.join(added)}")
         if removed:
             out.append(f"{title} -: {', '.join(removed)}")
+    co, dn = parse_knobs(current), parse_knobs(desired)
+    if co != dn:
+        changes = [f"{k}={dn[k]}" if k in dn else f"{k}=removed"
+                   for k in sorted(set(co) | set(dn))
+                   if co.get(k) != dn.get(k)]
+        out.append("env knobs: " + ", ".join(changes))
     return "; ".join(out) or "block text changed (tool lists identical)"
 
 
@@ -220,22 +313,22 @@ def restart(host: str, service: str, port: int | None = None) -> None:
     _ssh(host, cmd, capture=False)
 
 
-def check(host: str, env_file: str, block: str, name: str) -> int:
+def check(host: str, env_file: str, desired: str, name: str) -> int:
     try:
         current = remote_read(host, env_file)
     except subprocess.CalledProcessError as exc:
         print(f"cannot read {env_file} on {host}: {exc}", file=sys.stderr)
         return 2
-    if block_status(current, block):
-        print(f"OK {name}: live managed block matches {env_file}@{host}")
+    if block_status(current, desired):
+        print(f"OK {name}: live managed blocks match {env_file}@{host}")
         return 0
     print(f"DRIFT {name}: "
-          f"{describe_changes(extract_block(current), block)}",
+          f"{describe_changes(managed_text(current), desired)}",
           file=sys.stderr)
     return 1
 
 
-def apply(host: str, env_file: str, block: str, name: str, prof: dict,
+def apply(host: str, env_file: str, desired: str, name: str, prof: dict,
           *, no_restart: bool, no_auto_restore: bool) -> int:
     service = f"ada-{prof.get('instance') or name}.service"
     try:
@@ -244,12 +337,12 @@ def apply(host: str, env_file: str, block: str, name: str, prof: dict,
         print(f"cannot read {env_file} on {host}: {exc}", file=sys.stderr)
         return 2
 
-    if block_status(current, block):
+    if block_status(current, desired):
         print(f"UNCHANGED {env_file}@{host}")
         return 0
 
     print(f"CHANGE {name}: "
-          f"{describe_changes(extract_block(current), block)}")
+          f"{describe_changes(managed_text(current), desired)}")
     try:
         backup = remote_backup(host, env_file)
     except subprocess.CalledProcessError as exc:
@@ -257,8 +350,10 @@ def apply(host: str, env_file: str, block: str, name: str, prof: dict,
         return 1
 
     try:
-        remote_write(host, env_file, merge_block(current, block))
-        if not block_status(remote_read(host, env_file), block):
+        merged = merge_knobs_block(merge_block(current, render_block(
+            name, prof)), render_knobs_block(name, prof))
+        remote_write(host, env_file, merged)
+        if not block_status(remote_read(host, env_file), desired):
             raise RuntimeError("post-write verification failed")
         if no_restart:
             print(f"applied config only (--no-restart); backup {backup}")
@@ -311,16 +406,17 @@ def main() -> int:
     prof = profiles[name]
     assert_dev_profile(name, prof)
     block = render_block(name, prof)
+    desired = desired_text(block, render_knobs_block(name, prof))
 
     if not args.apply and not args.check:
-        sys.stdout.write(block)
+        sys.stdout.write(desired)
         return 0
 
     host = prof.get("host") or "idc03"
     env_file = prof["env_file"]
     if args.check:
-        return check(host, env_file, block, name)
-    return apply(host, env_file, block, name, prof,
+        return check(host, env_file, desired, name)
+    return apply(host, env_file, desired, name, prof,
                  no_restart=args.no_restart,
                  no_auto_restore=args.no_auto_restore)
 
