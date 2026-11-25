@@ -1,7 +1,7 @@
 id: ada-engine-self-report
 title: Engine self-report — advertise {engine_line, engine_version, contract_version} in /api/health + session hello
 column: doing
-updated: 2026-11-25 16:22
+updated: 2026-11-25 16:25
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): engines dont announce who they are, so which engine answered
   a turn is not auditable and engine swaps cant be verified mechanically. Deliverable in ada-voice: /api/health
@@ -314,6 +314,13 @@ comms:
   text: 'in progress: ada-voice worktree dispatch/engine-self-report — /api/health + both ws ready events now carry
     {engine_line:ada, engine_version:<git sha|ADA_ENGINE_VERSION>, contract_version:v1}; 6 new unit tests pass,
     full suite running'
+- at: 2026-11-25 16:25
+  from: devin
+  text: 'done: ada-voice branch dispatch/engine-self-report @0b034a1 (worktree ~/CascadeProjects/ada-voice-wt-engine-self-report,
+    NOT pushed — same landing path as dispatch/engine-contract-suite). /api/health (both branches) + both ws ready
+    events now carry {engine_line:ada, engine_version:<ADA_ENGINE_VERSION|git sha>, contract_version:v1}. Full pytest
+    1986 passed/7 skipped, tool-lint clean. Job trail: docs/ssot/jobs/ada/2026-11-25-engine-self-report.yml in ada-voice.
+    Outcome doc committed on chaba dispa'
 action:
   type: dispatch
   status: running
