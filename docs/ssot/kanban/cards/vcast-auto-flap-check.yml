@@ -12,7 +12,7 @@ note: 'Auto-recovered 2026-11-24: `flap-check` check passing again.'
 help: 'Runs stacks/web/input-bridge/vcast-flap-check.mjs inside the relay''s podman image on idc03 — exercises the
   stale-socket race against the DEPLOYED server.mjs. A FAIL means the deployed bundle regressed vs repo: diff ~/apps/input-bridge/server.mjs
   on idc03 against the repo copy.'
-updated: 2026-11-26 03:55
+updated: 2026-11-26 04:00
 comms:
 - at: 2026-11-24 11:38
   from: chaba
@@ -89,4 +89,8 @@ comms:
 - at: 2026-11-26 03:55
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

@@ -11,7 +11,7 @@ priority: medium
 note: 'Auto-recovered 2026-11-23: `yt-live-api` check passing again.'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-26 03:55
+updated: 2026-11-26 04:00
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -318,6 +318,10 @@ comms:
 - at: 2026-11-26 03:55
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
