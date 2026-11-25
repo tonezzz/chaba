@@ -1,0 +1,19 @@
+id: yomi-line-session-expired-idc03
+title: 'idc03: yomi LINE session expired — update-conversations writes 0 chats'
+column: backlog
+updated: 2026-11-25 14:53
+priority: medium
+tags:
+- yomi
+- idc03
+- bug
+spec: 'yomi-update-all.service on idc03 completes exit=0 but logs [Yomi] WARN session.resume_failed "No persisted
+  LINE session. Call the `login` tool, or run `npx @rikaidev/yomi login` in a terminal." and writes 0 conversations/message
+  chats to Postgres. yomi-refresh-active consequently reports no active chats. Fix: interactive re-login on idc03
+  (npx @rikaidev/yomi login inside the yomi mcpb env, or the login tool) so the persisted session token is restored;
+  then verify next hourly yomi-update-all writes >0 rows. Found during OPS-1382 (yomi-update-active-update-all-fail-every-8afee2).'
+ref: OPS-1398
+comms:
+- at: 2026-11-25 14:53
+  from: devin
+  text: card captured via board-api
