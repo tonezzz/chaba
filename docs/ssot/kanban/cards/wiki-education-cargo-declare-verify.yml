@@ -1,6 +1,6 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
-column: doing
+column: done
 updated: 2026-11-25 15:39
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
@@ -102,14 +102,29 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-153507-do-not-start-until-python3-scr no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 15:39
+  from: chaba
+  text: 'merge-sweep: merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-153507-do-not-start-until-python3-scr.md)
+    — auto-closed'
+- at: 2026-11-25 15:39
+  from: local
+  text: 'pub milestone: card verified: wiki-education-cargo-declare-verify on idc03 — merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr
+    from idc02) -> origin/master — verified — auto- — merged 0b52a7f5 (dispatch/20261125-153507-do-not-start-until-python3-scr
+    from idc02) -> origin/master — verified — auto-closed [evt-07ab4edbbd197847]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-25 15:39
+  verified: true
 claim:
   since: 2026-11-25 15:34
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 15:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-153507-do-not-start-until-python3-scr.md
