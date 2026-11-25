@@ -1,7 +1,7 @@
 id: kk-mac-card-judgment-eval
 title: kk-mac card-judgment eval — can its local models replace paid side-call lanes?
 column: doing
-updated: 2026-11-25 07:48
+updated: 2026-11-25 08:29
 priority: medium
 tags:
 - kk-mac
@@ -218,6 +218,13 @@ comms:
   from: devin
   text: 'dispatch 2026-11-25: eval already ran 2026-11-13 + routing proposal approved/deployed same day; this run
     re-checks liveness and runs kkmac_eval.sh if kk-mac is awake (T3 cadence wants repeat runs).'
+- at: 2026-11-25 08:29
+  from: devin
+  text: 'T3 rerun done 2026-11-25 (kk-mac awake; 94-case corpus, zero spend). acc/def/prec/rec/parse-fails: llama3.2:3b
+    0.851/0.947/0.938/1.0/0 — ALL T3 bars PASS, only qualifier; qwen2.5:32b 0.840/0.872/0.968/1.0/0 — misses acc+def
+    (pin lost ground vs 11-13); qwen3:8b 0.745/0.830/16 parse-fails still fragile; qwen2.5vl:7b 0.755/0.840 misses
+    all. Local models still crush paid flash-lite (0.49-0.57 acc on sibling corpora). Routing proposal updated (results_2026_11_25
+    + current_state — suggests tracking T3'
 action:
   type: dispatch
   status: running
