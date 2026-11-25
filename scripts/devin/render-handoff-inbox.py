@@ -44,6 +44,9 @@ MARKER = "render-handoff-inbox"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INBOX = REPO_ROOT / "docs/ssot/focus-inbox"
 
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+import inbox_door  # noqa: E402
+
 
 def _first(meta: dict, name: str) -> str | None:
     v = (meta or {}).get(name)
@@ -128,6 +131,15 @@ def main() -> int:
     ap.add_argument("--inbox", type=Path, default=DEFAULT_INBOX)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    if not args.dry_run and not inbox_door.local_writes_ok(REPO_ROOT):
+        # exec/readonly checkouts can't commit — rendered files would be
+        # invisible litter (card omen-chaba-checkout-focus-inbox-writers).
+        # The served checkout renders via kanban-commit.sh instead.
+        print(f"handoff inbox: skipped — {REPO_ROOT} is chaba-role "
+              f"{inbox_door.checkout_role(REPO_ROOT) or 'unmarked'} "
+              "(non-committable); served checkout renders instead")
+        return 0
 
     mddb = ada_sync.Mddb(args.mddb, timeout=30)
     docs = mddb.list_docs(COLLECTION)
