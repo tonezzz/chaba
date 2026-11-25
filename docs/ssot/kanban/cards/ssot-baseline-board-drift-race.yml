@@ -1,7 +1,7 @@
 id: ssot-baseline-board-drift-race
 title: SSOT warnings baseline races live board writes
-column: backlog
-updated: 2026-11-25 11:23
+column: doing
+updated: 2026-11-25 11:48
 brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
   auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
   nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
@@ -137,13 +137,16 @@ comms:
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:48
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
     XDG_SESSION_TYPE ='x11' UID=1000 PID=3558750 PPID=3558625 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
     SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
@@ -153,5 +156,6 @@ action:
   sweep:
     stale_running: 2026-11-25 09:39
     fetch_failed: 2026-11-25 09:39
+  runner: mn01
 claim:
-  since: 2026-11-25 09:28
+  since: 2026-11-25 11:48
