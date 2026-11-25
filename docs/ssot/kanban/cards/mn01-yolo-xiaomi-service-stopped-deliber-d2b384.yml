@@ -1,7 +1,7 @@
 id: mn01-yolo-xiaomi-service-stopped-deliber-d2b384
 title: mn01 yolo-xiaomi.service stopped — deliberate capacity stop or restart?
-column: doing
-updated: 2026-11-25 15:02
+column: review
+updated: 2026-11-25 15:06
 priority: medium
 tags:
 - mn01
@@ -79,12 +79,45 @@ comms:
     mn01). Unit stayed enabled; live consumers confirmed (/apps/yolo page+api on tony-dell+idc02 edges, /tvs /cast
     -> HA media_players verified end-to-end). yolo-xiaomi active+enabled on mn01 since 07:58 UTC; /detect imdecode
     error = known xiaomi_c201 camera outage, not service. Trail'
+- at: 2026-11-25 15:06
+  from: tony-dell
+  text: 'finished (ok): exit=0 UTC, root cause unknown — worth a look given mn01 has no swap). | devin-task-20261125-145237-found-during-idc02-a'
+- at: 2026-11-25 15:06
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 15:06
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-145237-found-during-idc02-audit-censu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 15:06
+  from: chaba
+  text: banked 671 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 15:06
+  from: chaba
+  text: pushed dispatch/20261125-145237-found-during-idc02-audit-censu to origin
+- at: 2026-11-25 15:06
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 15:06
+  from: chaba
+  text: auto-merged 42f3e8d8 (dispatch/20261125-145237-found-during-idc02-audit-censu) → origin/master
+- at: 2026-11-25 15:06
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 UTC, root cause unknown — worth a look given mn01 has no swap). | devin-task-20261125-145237-found-during-idc02-audit-censu.service:
+    Consumed 2min 22.381s CPU time over 10min 12.422s wall clock time, 1G memory peak, 581.2M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 14:51
+review_kind: verify
