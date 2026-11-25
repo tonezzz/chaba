@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
-column: backlog
-updated: 2026-11-25 20:24
+column: doing
+updated: 2026-11-25 20:36
 priority: medium
 tags:
 - ops
@@ -33,7 +33,9 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: tony-macbook
+  attempts: 1
 note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
 ref: OPS-1406
 comms:
@@ -78,4 +80,8 @@ comms:
 - at: 2026-11-25 20:24
   from: chaba
   text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
-claim: {}
+- at: 2026-11-25 20:36
+  from: tony-macbook
+  text: claimed
+claim:
+  since: 2026-11-25 20:36
