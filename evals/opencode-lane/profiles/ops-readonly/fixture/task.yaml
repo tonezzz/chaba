@@ -20,6 +20,24 @@ contract:
     disk_root_pct: "int 0..100, used percent of the / filesystem"
     failed_units: "list of failed systemd unit names (may be empty)"
     read_only: "must be true"
+  # Flat key list — the canonical value for a card's
+  # action.expect.required_keys on ops-readonly runs. The 2026-11-07
+  # ada-opencode-live-demo failure copied the branch-code shape
+  # [artifact, tests, verifier]; read_only artifacts are the health
+  # JSON below, verified by fixture/verify.py, not by expect keys.
+  required_keys:
+  - host
+  - collected_at
+  - uptime_seconds
+  - load1
+  - load5
+  - load15
+  - cpu_count
+  - mem_total_mb
+  - mem_available_mb
+  - disk_root_pct
+  - failed_units
+  - read_only
   tolerances:
     disk_root_pct: 3
     mem_total_mb_pct: 5

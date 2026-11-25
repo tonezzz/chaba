@@ -1,0 +1,60 @@
+title: ops-readonly fixture spec — canonical required_keys + runner-agent drift verify
+id: ops-readonly-fixture-required-keys
+date: 2026-11-25
+card: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
+ref: OPS-1176
+domain: devnest
+status: done
+summary: >-
+  The ops-readonly fixture now exposes a flat contract.required_keys
+  list — the canonical value for a card's action.expect.required_keys —
+  and a new regression test pins it against both the held-out
+  verifier's `req` tuple and the prompt field list. The
+  [artifact, tests, verifier] expect shape that failed the
+  2026-11-07 ada-opencode-live-demo run was the branch-code/devin
+  result-review contract, never valid for a health-JSON artifact.
+  Separately, the runner-agent drift the card also described was
+  already healed fleet-wide: installed ~/.local/bin/runner-agent and
+  each host's checkout copy are byte-identical (sha256
+  1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210)
+  to origin/master on idc02, idc03, tony-macbook and tony-dell —
+  verified live over ssh; no redeploy was needed.
+
+context: >-
+  Card comms from 2026-11-07 diagnosed the verified:false closeout as
+  "card expect.required_keys=[artifact,tests,verifier] doesn't match
+  the ops-readonly artifact shape". In current code action.expect is
+  only consumed by the kk_mac_local executor
+  (scripts/devnest/kk_mac_executor.py); the opencode lane verifies via
+  the profile's held-out fixture/verify.py. The durable fix is to make
+  the fixture spec itself carry the correct flat key list so card
+  authors stop copying the branch-code expect shape, and to pin the
+  three declarations (task.yaml required_fields, verify.py req,
+  prompt.md fields, host_snapshot output) together in tests.
+
+changes:
+  - file: evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml
+    notes: >-
+      Added contract.required_keys — the 12 health-JSON keys — with a
+      comment marking it the canonical action.expect.required_keys
+      value for ops-readonly cards and naming the branch-code shape as
+      the 2026-11-07 bug.
+  - file: tests/devnest/test_ops_readonly_fixture.py
+    notes: >-
+      New suite (7 tests): required_keys == required_fields keys ==
+      verify.py `req` tuple (ast-extracted), every key appears in
+      prompt.md, the branch-code expect shape is absent, and
+      verify() passes on a real host_snapshot.collect() artifact while
+      failing on a dropped key or wrong host.
+
+verification: >-
+  python3 -m unittest tests.devnest.test_ops_readonly_fixture — 7/7 OK.
+  python3 -m unittest discover -s tests/devnest — 406 tests, only
+  pre-existing environmental error (test_ada_result_review needs the
+  pytest module, unrelated). runner-agent sha256 triple-checked on
+  idc02/idc03/tony-macbook/tony-dell; git blob 09cebebf matches
+  origin/master.
+
+lessons:
+  - Drift-defer cards are often already healed by the time a dispatch lands — sha256 BOTH ~/.local/bin/runner-agent and <checkout>/scripts/board/runner-agent.py before touching anything; a manual cp is a byte-no-op on converged hosts.
+  - action.expect.required_keys is only consumed by executor=kk_mac_local (kk_mac_executor.py); opencode/profile lanes verify via the held-out fixture verify.py — expect blocks on opencode cards are inert metadata, so "expect mismatch" diagnoses should check which executor actually reads the field.
