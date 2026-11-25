@@ -1,7 +1,7 @@
 id: litellm-budget-watch-enable
 title: Enable the LiteLLM near-cap watcher (scripts/litellm/budget-watch.py) on idc03
 column: doing
-updated: 2026-11-25 10:26
+updated: 2026-11-25 10:27
 spec: 'The near-cap watcher (scripts/litellm/budget-watch.py) has never had a timer: it was live-smoked on idc03
   on 2026-10-28 and only reported then. Per verification-token near-cap: warn >=80%, alert >=100%. Live per-key
   caps read via /key/info (master key in ~/.config/secrets/litellm.env on idc03) and psql on litellm-db (LiteLLM_SpendLogs).
@@ -73,5 +73,11 @@ comms:
   text: 'Dispatch started on idc02 worktree. Plan: declare litellm-budget-watch job in ssot.jobs.yml (host idc03,
     every 1h, env_file litellm.env), render units, install on idc03 ~/.config/systemd/user, then --selftest + --dry-run
     on idc03. Script + litellm.env + litellm-db container all confirmed present on idc03.'
+- at: 2026-11-25 10:27
+  from: devin
+  text: 'DONE. litellm-budget-watch declared in ssot.jobs.yml (idc03, every 1h, env_file litellm.env) + rendered
+    units committed on dispatch branch; installed live on idc03 ~/.config/systemd/user and enabled. First timer
+    run already fired on enable: exit 0, psql source postgres:VerificationToken, verdict ok (0 alert/0 warn), ops-event
+    emitted to ada-ha-events-tony. --selftest OK and --dry-run OK on idc03; 13 unit tests green. Trail: docs/ssot/jobs/infrastructure/2026-11-25-litellm-budget-watch-timer.yml;'
 claim:
   since: 2026-11-25 10:23
