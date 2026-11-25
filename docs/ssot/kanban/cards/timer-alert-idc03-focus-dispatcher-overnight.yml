@@ -1,7 +1,7 @@
 id: timer-alert-idc03-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on idc03 failing
 column: done
-updated: 2026-11-25 15:54
+updated: 2026-11-25 16:21
 priority: high
 tags:
 - timer-alert
@@ -1194,6 +1194,13 @@ comms:
 - at: 2026-11-25 15:54
   from: tony
   text: closed by tony
+- at: 2026-11-25 16:21
+  from: tony
+  text: '2026-11-25 16:22 (+07): RESOLVED + VERIFIED. Two causes: (1) the 09:59 status=signal was collateral from
+    the earlier MDDB/Ollama SIGTERM cluster; (2) the overnight job''s SSOT pre-validation aborts on any invalid
+    YAML. Found jobs/devnest/2026-11-25-adobe-stock-multirun-opencode-models.yml with an unquoted '': '' in a findings
+    bullet (commit 9c677a6564, 14:46). Converted the bullet to a folded block (wording unchanged), deployed to both
+    idc03 checkouts (backups .bak-20261125-154735); validator now 0'
 spec: Investigate the failure of focus-dispatcher-overnight.service on idc03 from the 11-08 03:00 run, which exited
   with code 1 during the mddb-embed runaway window. Examine the journal via journalctl --user -u focus-dispatcher-overnight.service
   on idc03 and cross-reference CMS timer-timeline-idc03. The done-condition is confirming successful completion
