@@ -1,0 +1,69 @@
+# SSOT Job: land + deploy ada-voice text-mode session persist fix
+
+date: 2026-11-25
+title: >
+  dispatch/text-mode-session-persist landed on ada-voice main and deployed
+  to idc03 — text-mode sessions now produce session-summary docs again
+domain: ada
+job: text-mode-session-persist-land
+cards: [ada-voice-land-text-mode-session-persist]
+parent_cards: [ada-session-summary-inflow-stalled, ada-voice-text-mode-sessions-never-call-e007bd]
+refs: [ADA-1405, ADA-1400]
+host: tony-dell (dispatch worktree), tony-macbook (branch rescue), idc03 (deploy)
+summary: >
+  The fix for the stalled session-summary inflow existed only as a
+  local-only commit on tony-macbook. This dispatch rebased it onto
+  origin/main, pushed the branch (rescuing it from merge-sweep GC),
+  merged to main, and deployed to idc03. Verified end-to-end: a
+  ?mode=text session on ada-kk-dev produced a kind=session-summary doc
+  in MDDB ada-ha-recall-summary-kk-dev.
+
+steps:
+  - "tony-macbook ~/CascadeProjects/ada-voice-wt-text-mode-persist: git fetch origin && git rebase origin/main (clean, c14758b -> 0f2212b) && git push origin dispatch/text-mode-session-persist"
+  - "tony-dell: detached worktree /tmp/ada-voice-land-tmp off origin/main, merge --no-ff -> 5a5379a, push HEAD:main (live ~/CascadeProjects/ada-voice checkout was dirty on ada-consult-pr12-edit — untouched)"
+  - "idc03: ~/.local/bin/deploy-ada.sh — ff a060335 -> 5a5379a, tool-lint clean, pytest 2022 passed, 9 services restarted + active"
+
+deploy_topology_gotcha:
+  summary: >
+    idc03's ada-voice `origin` is NOT github.com/tonezzz/ada-voice — it is
+    `ssh://tony-dell/home/tony/CascadeProjects/ada-voice`, i.e. deploys pull
+    tony-dell's LOCAL `main` ref. Pushing to GitHub alone does not make the
+    commit deployable: dell's `main` must be fast-forwarded to origin/main
+    first (it was 9 behind because the edit-point checkout sits on a
+    feature branch). deploy-ada.sh reported 'already at origin/main
+    (a060335)' on the first run — a stale-ref false negative that would
+    have restarted prod on old code.
+  fix_applied: >
+    `git -C /tmp/ada-voice-ssot-get merge --ff-only origin/main` on tony-dell
+    (that worktree has `main` checked out and was clean) moved refs/heads/main
+    a060335 -> 5a5379a; idc03's next fetch saw it.
+  lesson: >
+    After pushing ada-voice to GitHub, verify `git -C
+    ~/CascadeProjects/ada-voice rev-parse main` == `git rev-parse
+    origin/main` on tony-dell before running deploy-ada.sh on idc03.
+
+verification:
+  positive: >
+    ws://127.0.0.1:8009/ws?mode=text on ada-kk-dev (instance kk-dev, key
+    user-kk-dev), one text turn -> response_completed -> ws close.
+    Journal showed session 1b315de0ac closed then daily rollup
+    regenerated over 1 session(s). MDDB POST /v1/search on
+    ada-ha-recall-summary-kk-dev filterMeta kind=session-summary returns
+    key session-2026-11-25-1b315de0ac, date 2026-11-25, contentMd a real
+    LLM summary of the exchange.
+  negative: >
+    Same flow on ada-dev (:8005) — LiteLLM key ada-dev-2 is at cap
+    ($10.004/$10, resets 2026-12-01, card budget-watch-ada-dev-2). Turn
+    failed 422, session closed, persist() ran and _report_failure logged
+    'summary failed'/'session_summary failed' as ERRORs — no crash, service
+    stayed active. Confirms persist is invoked on close and fails soft
+    when the summarization LLM is unavailable.
+  pending: >
+    'next Sun 09:45 memory-distill reports >0 new docs' — time-based,
+    cannot verify until 2026-11-30 09:45 +07. Inflow doc exists; distill
+    reads the same collections.
+
+notes:
+  - "ada-voice repo carries its own job doc: docs/ssot/jobs/ada/2026-11-25-text-mode-session-persist.yml (in commit 0f2212b)"
+  - "chaba card referenced docs/ssot/jobs/ada/2026-11-25-session-summary-inflow-stalled.yml as evidence — that file does not exist in chaba; the RCA lives in the ada-voice repo job doc above"
+  - "idc03 ada-voice checkout is now at 5a5379a = github origin/main = dell local main — all three refs converged"
