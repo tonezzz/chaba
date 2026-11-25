@@ -1,0 +1,22 @@
+id: litellm-proxy-wide-30d-budget-exhausted-04049d
+title: LiteLLM proxy-wide 30d budget exhausted — every litellm/* route returns 422 budget_exceeded
+column: backlog
+updated: 2026-11-25 08:11
+tags:
+- litellm
+- budget
+- gateway
+- ops
+spec: Verify live max_budget vs SSOT claim; decide cap raise vs wait-for-reset; if raised, update BOTH ~/.config/litellm/config.yaml
+  on idc03 and stacks/idc03/litellm/config.yaml in repo + restart litellm.service; reconcile ssot.llm-gateway.yml
+  budgets.proxy_cap with reality; land budget-watch.py timer or equivalent alerting.
+note: 'Found 2026-11-25 during opencode-as-bench-challenger dispatch (litellm/* smoke failed). Live ~/.config/litellm/config.yaml
+  on idc03 AND repo stacks/idc03/litellm/config.yaml both have litellm_settings.max_budget: 50 / budget_duration:
+  30d — but ssot.llm-gateway.yml budgets.proxy_cap claims "$75 / 30d (raised 2026-11-07 from $50)". Live+repo disagree
+  with SSOT: the raise apparently never reached the mounted config. All virtual keys tested (CHABA, ADA/serve, BENCH
+  on both idc02 and tony-dell) retu'
+ref: OPS-1349
+comms:
+- at: 2026-11-25 08:11
+  from: devin
+  text: card captured via board-api
