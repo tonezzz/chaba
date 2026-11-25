@@ -23,7 +23,7 @@ environments:
     network: podman (was host-net on tony-dell)
     port: 8124
     host_port: 127.0.0.1:8124
-    published_ports: 127.0.0.1:8124 (UI), 127.0.0.1:9585 + 100.106.196.22:9585 (ha_mcp_tools, tailnet-only) — 9585 published 2026-10-26; moved idc02 -> mn01 2026-11-25. NOTE: no tailnet-IP :8124 publish — tailscale serve owns :8124 (a podman publish on the tailnet IP conflicts with serve's bind; that conflict is what killed idc02's serve mount after the 2026-11-24 tailnet-IP publish was added)
+    published_ports: "127.0.0.1:8124 (UI), 127.0.0.1:9585 + 100.106.196.22:9585 (ha_mcp_tools, tailnet-only) — 9585 published 2026-10-26; moved idc02 -> mn01 2026-11-25. NOTE: no tailnet-IP :8124 publish — tailscale serve owns :8124 (a podman publish on the tailnet IP conflicts with serve's bind; that conflict is what killed idc02's serve mount after the 2026-11-24 tailnet-IP publish was added)"
     quadlet:
       container_unit: ~/.config/containers/systemd/mn-ha-dev.container
       service_unit: ~/.config/systemd/user/mn-ha-dev.service
