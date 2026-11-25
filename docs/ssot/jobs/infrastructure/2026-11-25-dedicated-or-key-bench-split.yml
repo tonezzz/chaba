@@ -1,0 +1,79 @@
+title: Dedicated OpenRouter key for LiteLLM bench/eval or-* routes
+subtitle: card dedicated-openrouter-key-for-bench-eval-7ff299 (SEC-1384) — fleet key $5/wk cap was shared by bench bursts and prod resilience
+icon: shield
+
+decision:
+  summary: >
+    Chose option (a): minted a dedicated OR key and split the LiteLLM
+    config. SpendLogs forensics showed the burst weeks were NOT fallback
+    traffic — every paid OR dollar in the last 7 weeks came through
+    direct or-* alias calls by dev-class virtual keys (chaba $20.17
+    fable wk 11-02, ada $13.14 fable + chaba $13.68 gemini-3.5-flash
+    wk 10-19). Zero paid-OR spend ever flowed through job-class fallback
+    chains. So the split is by model entry, not by caller: the 7 paid
+    or-* chat/model routes now use OPENROUTER_BENCH_API_KEY while every
+    production-resilience OR route stays on the fleet OPENROUTER_API_KEY.
+  implementation: >
+    1. Minted OR key "idc03-litellm-bench" (label sk-or-v1-0e2…579,
+       hash 4a3a30c2…) via POST /api/v1/keys using the or-management
+       provisioning key — limit $30/week, expires 2026-12-25. Stored as
+       OPENROUTER_BENCH_API_KEY in ~/.config/secrets/litellm.env on
+       idc03 (already mounted into the litellm container).
+    2. Live ~/.config/litellm/config.yaml + repo
+       stacks/idc03/litellm/config.yaml: repointed api_key on
+       or-gemini-2.5-flash, or-gemini-2.5-flash-lite, or-gemini-3.5-flash,
+       or-gemini-3.5-flash-lite, or-claude-fable-5.1,
+       or-gemini-3.1-pro-preview, or-deepseek-v4-flash to
+       os.environ/OPENROUTER_BENCH_API_KEY. Restarted litellm; liveliness
+       green.
+    3. Fleet OPENROUTER_API_KEY retained on: or-gemini-embedding-2 (embed
+       resilience tier), or-gemini-3.1-flash-image (prod image fallback),
+       consult-claude (repo-only staged alias), vision + all or-free-*
+       (:free, $0), plus every non-LiteLLM consumer (gemini-ollama-proxy
+       embed fallback, openclaw sqlite key, tony-dell/omen
+       openrouter.env, ada-*.env degraded mode).
+  sizing: >
+    $30/week covers the observed peak ($26.87 wk 10-19, $23.76 wk 11-02)
+    with ~11% headroom. Weekly reset matches the fleet key's cadence so
+    key-watch/weekly-budget reviews compare like-for-like. Tunable via
+    PATCH /api/v1/keys/{hash} with or-management.txt.
+  verified: >
+    - POST /api/v1/keys returned the key once; GET /api/v1/key with the
+      stored value shows limit=30 weekly, remaining 29.99964.
+    - e2e through the gateway: master key -> or-claude-fable-5.1 OK;
+      OR-side usage moved 0 -> $0.00036 on the BENCH key while fleet
+      usage stayed flat at $1.0413 — attribution proven.
+    - or-free-nemotron-nano (fleet route) still OK post-restart.
+    - litellm.service active, /health/liveliness "I'm alive!".
+    - Config backup at ~/.config/litellm/config.yaml.bak-20261125-orbench.
+  residuals: >
+    - Virtual-key allowlists are unchanged and orthogonal: chaba can
+      only reach or-deepseek-v4-flash/or-gemini-embedding-2/or-free-*;
+      or-claude-fable-5.1 + or-gemini-3.1-pro-preview are reachable by
+      ada/ada-sec1286 (unrestricted), ada-branch-pilot, and
+      LITELLM_KEY_BENCH (unrestricted {}). If a future eval week needs a
+      lane that 403s, fix the LiteLLM virtual-key allowlist — the OR
+      upstream split does not change that layer.
+    - If the bench key caps mid-eval-week, the moved or-* routes 402
+      for everyone — prod job-class chains still have paid+free Gemini,
+      colab and ollama legs (observed chain->OR spend is zero, so the
+      or-gemini-3.5-* entries' fallback-leg role is theoretical).
+    - Live config.yaml still drifts from repo in unrelated areas
+      (agent-local, consult-* staged, max_budget 75 vs 50, tool-call
+      chain) — pre-existing drift, not touched here.
+  alternatives_rejected:
+    - "(b) raise fleet limit for announced bench windows: manual, doesn't scale, and eval weeks are frequent enough (~2/7 weeks at $20+) that the fleet cap would have to sit near bench levels permanently — defeating the isolation."
+    - "(c) accept fail-soft: evals would silently degrade to free models mid-run; spend logs show the bursts are wanted spend, not leaks."
+    - "Reuse spare keys (tony-or-devnest-fable $2 total exp 12-04, cline-or $1 exp 11-27): far below the $27/wk observed peak and both expire within days."
+    - "Split by LiteLLM virtual key instead of model entry: LiteLLM cannot map a caller's virtual key to a different upstream api_key — per-entry api_key is the only lever."
+
+files:
+  - stacks/idc03/litellm/config.yaml                      # 7 or-* entries -> OPENROUTER_BENCH_API_KEY
+  - idc03:~/.config/litellm/config.yaml                  # live copy, same repoint (backup .bak-20261125-orbench)
+  - idc03:~/.config/secrets/litellm.env                  # +OPENROUTER_BENCH_API_KEY (not in repo)
+  - docs/ssot/infrastructure/ssot.secrets.yml            # openrouter-litellm-bench entry
+  - docs/ssot/infrastructure/ssot.llm-gateway.yml        # providers.openrouter + openrouter_paid notes
+
+followups:
+  - "key-watch.py OR slot coverage: the bench key is not a declared probe slot — add it to ssot.secrets.yml consumers if per-key expiry/quota watches are wanted (expires 2026-12-25)."
+  - "rotate-or-key.sh rotates only the fleet key across 4 stores — the bench key is litellm-only; re-mint via POST /api/v1/keys + update litellm.env + restart litellm when it expires."
