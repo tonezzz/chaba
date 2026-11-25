@@ -1,0 +1,96 @@
+# Job: nest-mgr v2 — recommend-mode soak review + ghost-state fix
+title: nest-mgr v2 actuation plane — Phase 0 soak evidence (monitor vs guarded decision)
+subtitle: card nest-mgr-v2-actuation, dispatch on tony-dell
+icon: chart-line
+
+planning:
+  goal: >-
+    Phase 0 shipped 2026-11-19 (commit c4a7ab375bb): monitor/recommend/
+    guarded modes, gated restart planner, audit trail — deployed to pilot
+    hosts idc02/con01/mn01 in `recommend` mode, zero execution by design.
+    This job harvests the ~6-day soak, fixes the one defect it exposed,
+    and packages the evidence for Tony's monitor-vs-guarded decision.
+  scope: >-
+    In: read-only harvest of pilot manager-state.json + unit state,
+    root-cause of observed failures, ghost-unit prune fix in
+    nest-mgr.py + tests, this evidence doc, decision request on the card.
+    Out: any mode flip, any actuation.on/allowlist creation, any deploy —
+    all remain Tony's explicit call (leash principle).
+  success_criteria:
+    - pilot mode/binary drift verified (installed == c4a7ab375bb everywhere)
+    - every held/recommended action in the soak explained by a gate
+    - ghost-unit defect fixed with test coverage
+    - monitor-vs-guarded decision packaged as a board request with options
+  owner: tony
+  approval: >-
+    spec APPROVED by Tony 2026-11-18. This job changes repo code only —
+    no deploy, no mode flip, no flag files created on any host.
+  related_focus:
+    - label: this card
+      file: docs/ssot/kanban/cards/nest-mgr-v2-actuation.yml
+    - label: phase-0 spec
+      file: docs/ssot/jobs/devnest/2026-11-18-nest-mgr-v2-actuation.yml
+    - label: orphaned unit card
+      file: docs/ssot/kanban/cards/timer-alert-idc02-kk-mac-model-status.yml
+
+findings:
+  deployment_state: >-
+    All three pilots verified 2026-11-25 ~09:05 ICT: nest-mgr.service
+    active, mode=recommend, installed nest-mgr.py md5 affd0aeb… ==
+    commit c4a7ab375bb exactly (no drift). No actuation.on, no
+    actuation.off, no host-circuit.open, no restart-allowlist, no
+    manual-units, no circuit/ flags on any pilot.
+  idc02: >-
+    136 actions[] entries: 1 mode-change (monitor->recommend) + 135 held
+    (re-emitted ≤hourly per standing gate). Live signal: only
+    kk-mac-model-status.service is genuinely failed — a oneshot timer
+    unit (1min cadence) exiting 2 because its ExecStart script
+    scripts/devnest/kk_mac_model_status.py does not exist in the repo or
+    on the host checkout; orphaned static unit, already carded as
+    timer-alert-idc02-kk-mac-model-status (OPS-1348). fail_ticks=60.
+    ada-code.service showed fail_ticks=56 but the unit no longer exists
+    — ghost state (see defect). open-jev.service correctly held as
+    production while it was failed (leash works; it has since recovered,
+    Restart=always, active since 2026-11-24 09:21 +07).
+  con01: >-
+    16 actions: 1 mode-change + 15 held, all jev-bench.service
+    not-allowlisted while it was failing; now parked, fail_ticks=0.
+    Nodes: cline-intake, jev-bench only.
+  mn01: >-
+    1 action total (the mode-change). Sole node: runner-agent. Quietest
+    host — nothing to act on.
+  defect_found: >-
+    actuation.units entries were never pruned: a unit leaving discovery
+    kept stale fail_ticks/held/attempts forever (ada-code.service ghost
+    on idc02; held residue on recovered units on idc02+con01). Fixed in
+    this dispatch: missed-tick counter, prune after UNIT_PRUNE_MISSES=30
+    (~30min, survives transient systemctl show gaps + the 5min restart
+    cooldown), and held verdicts now clear when fail_ticks drops below
+    threshold. 4 new tests; 31/31 pytest + 21/21 gate matrix pass.
+  guarded_readiness: >-
+    Zero units fleet-wide are restart-allowlisted (no NEST_RESTART_OK=1,
+    no restart-allowlist files). In guarded mode every candidate would
+    hold at not-allowlisted — guarded today is recommend + overhead.
+    The real Phase-1 decision is therefore per-unit: name the units
+    worth auto-restarting (long-running daemons with Restart=always that
+    crash-loop), not just flip the mode.
+
+recommendation: >-
+    Keep pilots in recommend. The soak proved detection+gating+audit are
+    correct, but produced exactly one persistent failure and it is a
+    missing-script bug a restart cannot fix. Suggested Phase-1 path:
+    (1) land this ghost-prune fix on next nest-mgr deploy, (2) resolve
+    timer-alert-idc02-kk-mac-model-status (write the script or remove
+    the orphaned unit), (3) Tony names 1-2 allowlist candidates per
+    pilot, then flip guarded on ONE host first (mn01 is quietest —
+    cleanest signal, or idc02 where real failures occur), soak 1 week,
+    then widen.
+
+decision: >-
+    Tony answered the board request 2026-11-25 09:31 ICT: "stay-recommend
+    — Stay recommend (recommended)". Pilots remain in recommend mode;
+    Phase 1 (guarded auto-restart) is deferred until Tony names
+    allowlist candidates per the path above. The ghost-prune fix landed
+    via dispatch 20261125-101355 (cherry-pick of stranded 0e8730d0e8e)
+    and ships to pilots on the next nest-mgr install/deploy — no deploy
+    was performed by either dispatch.
