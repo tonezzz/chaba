@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-cms-h3-publish
 title: Timer cms-h3-publish on tony-dell failing
 column: done
-updated: 2026-11-25 07:44
+updated: 2026-11-25 16:49
 priority: high
 tags:
 - timer-alert
@@ -211,6 +211,10 @@ comms:
 - at: 2026-11-25 07:44
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `cms-h3-publish.service` on `tony-dell` by examining the systemd user journal via
   `journalctl --user -u cms-h3-publish.service` and referencing the CMS `timer-timeline-tony-dell`. Resolve the
