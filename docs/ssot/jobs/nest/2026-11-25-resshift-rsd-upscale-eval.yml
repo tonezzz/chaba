@@ -1,0 +1,75 @@
+title: ResShift/RSD distilled-SR eval — mid-tier upscale lane for Adobe Stock
+card: evaluate-resshift-rsd-class-distilled-sr-8d9c80
+date: 2026-11-25
+session: dispatch-wt-20261125-123106-follow-up-from-adobe-stock-ups (idc02 -> tony-omen)
+ref: SYS-0210
+parent: OPS-1077 (2026-11-18-upscaler-eval.yml)
+report: reports/resshift-rsd-upscale-eval-2026-11-25.md   # gitignored; durable copy:
+  # gdrive:ada-nest-adobe-stock/campaigns/AS-2026-11-05-REMOTE-WORK-001/60-upscale-eval/
+  #   resshift-rsd-upscale-eval-2026-11-25.md, diffusion-outputs.tgz (3 PNGs),
+  #   resshift-rsd-eval/ (patches + receipts)
+artifacts: reports/resshift-rsd-eval/   # repo patches + JSON receipts (gitignored)
+
+what:
+  asset: same comparison-b-sharp-leaves 1024x576 -> x4 as OPS-1077
+  harness: scripts/adobe-stock/upscale-eval.py + new `precomputed` backend
+           (verified bit-exact vs prior bicubic receipt)
+  models:
+    - ResShift v1 s15 (zsyOAOA/ResShift, realsr x4, 15-step, journal=no)
+    - ResShift v3 s4 (4-step variant, journal config)
+    - RSD one-step (Daniil-Selikhanovych/RSD, ema_model_2800)
+  host_constraint: tony-omen GTX1650 4GB shared — bge-rerank 2.19GB +
+    ollama ~0.66GB resident -> ~0.7-0.9GB free VRAM. UNet fits on cuda;
+    VQGAN autoencoder does not -> hybrid split (UNet cuda, VAE cpu,
+    chop_size 128 tiles). All runs via run-cpu-job.sh (load-guard).
+
+measured:                        # comparison-b x4, metric matrix identical
+  resshift_v1_s15:  {wall_s: 6483, lap: 193.6, psnr_db: 35.60, ssim: 0.9788}
+  rsd_one_step:    {wall_s: 3596, lap: 174.6, psnr_db: 34.85, ssim: 0.9837}
+  resshift_v3_s4:  {wall_s: 3840, lap: 213.2, psnr_db: 33.84, ssim: 0.9806}
+  # wall_s contention-inflated (load 40-86); uncontended est. ~3-6min/img
+  prior_matrix:    # from 2026-11-18-upscaler-eval.yml
+    realesrgan_vulkan: {wall_s: 32.4, lap: 130.5, psnr_db: 32.20, ssim: 0.9718}
+    swinir_m:          {wall_s: 480,  lap: 55.2,  psnr_db: 46.87, ssim: 0.9981}
+    bicubic:           {wall_s: 0.7,  lap: 5.35,  psnr_db: 45.44, ssim: 0.9967}
+
+decision:
+  quality_tier: ResShift v1-s15 — best generative fidelity measured
+    (+3.4dB PSNR / +0.007 SSIM vs Real-ESRGAN) with equal-or-more texture
+    energy; non-T2I prior => low hallucination surface vs SeeSR/OSEDiff
+  throughput_tier: RSD one-step — ~95% of v1 quality at 1/15 steps;
+    advantage only materializes on GPUs where VAE also fits (not GTX1650)
+  rejected: ResShift v3-s4 — max texture invention (lap 213) with lowest
+    generative fidelity (33.8dB); step-count tradeoff confirmed
+  unchanged: realesrgan-x4plus stays default (32s/img); classical SR
+    stays fidelity alternate; SUPIR stays rented-hero lane
+
+failure_modes_observed:
+  - "pure-CPU inference of either model is impractical on omen (>2h,
+     earlyoom-killed, load ~57 incident) — GPU-UNet/CPU-VAE hybrid is
+     the enabling configuration on a shared 4GB card"
+  - "VAE on cuda OOMs even at chop64: encode activations need >1GB;
+     the autoencoder must live on CPU with device-crossing patches"
+  - "RSD chop256 peaked 7.6GB RSS -> kernel OOM (killed openjev too);
+     chop128 keeps peak ~1-2GB"
+  - "upstream inference writes output only at end — cpu-job timeout
+     loses all tile progress; no checkpointing"
+  - "an external actor twice relaunched v3 as pure-CPU cpu-jobs
+     (no SR_DEVICE=cuda) — coordinate eval reruns via card comms"
+
+reusable:
+  patches: reports/resshift-rsd-eval/patch-{resshift,rsd}-hybrid-gpu.diff
+    # numpy2 np.int, torchvision import, SR_DEVICE env, autoencoder->cpu
+    # + device-crossing encode/decode_first_stage, chop_size 128 opts
+  runner_pattern: "run-cpu-job.sh <name> env SR_DEVICE=cuda
+    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True <venv-python>
+    inference*.py ..."  # nice10/6thr/2-4h timeout, systemd scope
+  weights: ResShift realsrx4_s15_v1/s4_v3 + autoencoder_vq_f4.pth;
+    RSD logs/pretrained_rsd/ema_model_2800.pth (~450-480MB each)
+
+next:
+  - "if adopted: wrap hybrid inference as upscale-worker variant; on any
+     host with >=4GB free VRAM the same patches give all-GPU ~min/image"
+  - "perceptual check (CLIP drift / human QC) on the three outputs —
+     metrics say anchored, eyes confirm texture plausibility"
+  - "optional: RSD on a bigger GPU would show its real 1-step advantage"
