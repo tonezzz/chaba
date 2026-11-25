@@ -1,7 +1,7 @@
 id: mddb-ops-regrowth-watch
 title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
 column: backlog
-updated: 2026-11-25 15:45
+updated: 2026-11-25 15:46
 spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
   outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
   — review at ~10G.
@@ -163,6 +163,9 @@ comms:
 - at: 2026-11-25 15:45
   from: chaba
   text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.06 > 0.7)'
 action:
   type: dispatch
   status: queued
