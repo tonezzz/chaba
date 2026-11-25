@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: doing
-updated: 2026-11-25 14:53
+updated: 2026-11-25 14:55
 priority: medium
 tags:
 - bug
@@ -135,6 +135,14 @@ comms:
     still declare idc03 primary. Fix applied on idc03: systemctl --user enable+start yomi-api.service; health ok:true;
     manual yomi-update-active run -> Result=success exit 0. Spec correction: yomi-update-all never used --network=container:yomi-api
     and was exiting 0; its real defect'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-144959-idc03-yomi-update-active-servi no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-144959-idc03-yomi-update-active-servi on tony-omen still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -143,5 +151,8 @@ action:
   model: swe-2-flash-medium
   runner: tony-omen
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 14:55
+    dirty: 2
 claim:
   since: 2026-11-25 14:47
