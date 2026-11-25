@@ -1,7 +1,7 @@
 id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
 title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
 column: doing
-updated: 2026-11-25 18:48
+updated: 2026-11-25 18:56
 brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
   assets.
 priority: low
@@ -259,6 +259,12 @@ comms:
 - at: 2026-11-25 18:48
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 18:56
+  from: devin
+  text: 'First results in (comparison-b x4, same upscale-eval.py matrix): ResShift v1-s15 -> lap 193.6 / rtPSNR
+    35.6dB / rtSSIM 0.9788 (~108min wall under host contention, GPU+CPU-VAE hybrid). RSD one-step -> lap 174.6 /
+    34.85dB / 0.9837 (60min, chop128). Both beat Real-ESRGAN fidelity (32.2dB/0.9718) with equal-or-more texture
+    energy (130.5) — the predicted mid-tier. ResShift v3-s4 bonus run on GPU now; report+receipts to follow.'
 action:
   type: dispatch
   status: running
