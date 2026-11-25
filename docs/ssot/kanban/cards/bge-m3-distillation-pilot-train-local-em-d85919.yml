@@ -1,7 +1,7 @@
 id: bge-m3-distillation-pilot-train-local-em-d85919
 title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
-column: review
-updated: 2026-11-25 19:01
+column: backlog
+updated: 2026-11-25 19:09
 priority: low
 tags:
 - embedding
@@ -411,13 +411,15 @@ comms:
 - at: 2026-11-25 19:01
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 19:09
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   executor: devin
-  runner: tony-dell
   attempts: 1
   result: 'exit=0 h-outcome-20261125-164653-distillation-experiment-option.md`. | devin-task-20261125-164653-distillation-experiment-option.service:
     Consumed 5min 13.552s CPU time over 16min 29.468s wall clock time, 1.1G memory peak, 545.8M memory swap peak.'
@@ -441,5 +443,5 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-25 queue
 review_kind: verify
-awaiting_action: true
