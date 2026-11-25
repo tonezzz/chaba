@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kanban-dispatch
 title: Timer kanban-dispatch on idc03 disabled
 column: backlog
-updated: 2026-11-25 07:43
+updated: 2026-11-25 14:50
 priority: high
 tags:
 - timer-alert
@@ -3814,6 +3814,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:50
+  from: tony
+  text: '2026-11-25 14:52 (+07): CONFIRMED INTENTIONAL OFF. idc03 `kanban-dispatch.timer` was stopped+disabled 2026-11-08
+    after it spawned duplicate unattended Devin sessions (cards diagnose-unattended-devin-session-storm-20261108,
+    devnest-queue-consolidation); per-job rendered timers are the replacement. Tony''s 2026-11-09 answer was to
+    leave the other automation running — only Devin dispatch sessions stay paused. Census updated with `expected_state:
+    inactive` + rationale; sentinel patched to honour it. '
 action:
   status: done
 spec: Ensure the runner-agent on idc03 is up to date by deploying scripts/board/runner-agent.py from the chaba repo

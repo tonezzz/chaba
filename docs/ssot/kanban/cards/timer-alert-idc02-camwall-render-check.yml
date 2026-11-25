@@ -1,7 +1,7 @@
 id: timer-alert-idc02-camwall-render-check
 title: Timer camwall-render-check on idc02 disabled
 column: backlog
-updated: 2026-11-25 14:16
+updated: 2026-11-25 14:50
 priority: high
 tags:
 - timer-alert
@@ -28,3 +28,9 @@ comms:
     has no explicit expected_state, so sentinel treats absence as ''active''). MED-1351 was already auto-resolved/closed
     once on 11-25 and reopened on the disabled condition. Need Tony to decide: either add expected_state: inactive
     to the census, or enable the timer.'
+- at: 2026-11-25 14:50
+  from: tony
+  text: '2026-11-25 14:52 (+07): CONFIRMED INTENTIONAL OFF. `camwall-render-check.timer` on idc02 was stopped+disabled
+    2026-11-25 08:36 by camwall-retire-to-wiki Phase 2 (ada-snapshot-only) — live data plane is cam-wall-pull-vps
+    + camwall-edge :8380 feeding /apps/camwall/data/*. Census updated with `expected_state: inactive` + rationale;
+    sentinel patched to honour it. Do NOT re-enable.'

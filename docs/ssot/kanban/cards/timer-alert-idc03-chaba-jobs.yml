@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: backlog
-updated: 2026-11-25 14:16
+updated: 2026-11-25 14:50
 priority: high
 tags:
 - timer-alert
@@ -92,6 +92,13 @@ comms:
     puts chaba-jobs in its hardcoded CRITICAL set and fires disabled timers regardless of the explicit inactive
     state. Recommended fix: make the sentinel honour an explicit expected_state: inactive before the CRITICAL fallback,
     then close this card. Do NOT re-enable the tim'
+- at: 2026-11-25 14:50
+  from: tony
+  text: '2026-11-25 14:52 (+07): CONFIRMED FALSE POSITIVE — intentional inactive. `chaba-jobs.timer` on idc03 was
+    RETIRED 2026-10-29 by OPS-0790 (all dispatch:dispatcher jobs moved to per-job rendered timers); census already
+    said `expected_state: inactive, critical: false`, but timer-sentinel hardcoded it in CRITICAL and ignored that.
+    Patched scripts/ada/timer-sentinel.py so explicit `expected_state: inactive` overrides CRITICAL for both the
+    disabled-timer and missing-timer rules, and counts disabled-as-'
 spec: Ensure the `chaba-jobs.timer` is enabled and active on `idc03` per the audit census critical list, or confirm
   if its disabled state is deliberate. If not deliberate, run `systemctl --user enable --now chaba-jobs.timer` on
   `idc03`. Additionally, redeploy the drifted runner-agent by copying the repository script via `scp /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
