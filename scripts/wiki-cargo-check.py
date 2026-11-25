@@ -93,8 +93,10 @@ def main() -> int:
         tables = fetch(args.api, {"action": "cargotables"})
         query = fetch(args.api, {"action": "cargoquery",
                                  "tables": args.table,
-                                 "fields": "_pageName,topic,next_review",
-                                 "limit": 20})
+                                 # cargoquery API rejects bare underscore field
+                                 # names as aliases — alias _pageName explicitly.
+                                 "fields": "_pageName=page,topic,next_review",
+                                 "limit": 500})
     result = check(tables, query, args.table, args.topic)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["ok"] else 1
