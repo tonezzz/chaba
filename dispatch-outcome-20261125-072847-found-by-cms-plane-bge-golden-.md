@@ -21,7 +21,7 @@ Gap decomposition — every `embedded < total` delta is now explained:
 | class | docs | collections |
 |---|---|---|
 | meta-only stubs (contentMd empty by design) | 83 | chaba-archive 12, chaba-docs 15, devin-kb 9, documents 1, kb-development 8, kb-features 11, kb-operations 12, kb-system 14, ssot 1 |
-| real dropped embeds | 131→0* | infrastructure-ssot (147 missing w/ content; non-force reindex running, 8894+/9025 at last stats) |
+| real dropped embeds | 35 left* | infrastructure-ssot (8990/9025 — last ~35 docs 504'd in a live pool-degraded window; embed jobs queued, draining; daily job is backstop) |
 
 All other collections at embedded==total (chaba-lessons 207/207,
 ada-cms-pages 1599/1599 — attempt-1 re-embeds held).
@@ -58,10 +58,13 @@ no new alert needed.
 ## Server-side actions taken (no deploy)
 
 - `PATCH /v1/update` ×83 — keyword-only meta stamps (live, done).
-- `POST /v1/vector-reindex {collection: infrastructure-ssot}` — running
-  in background at time of writing (~25s/doc synchronous; see card
-  comms for final count). If it stalls, the new daily
-  `mddb-cms-vector-reindex` job covers the residue.
+- `POST /v1/vector-reindex {collection: infrastructure-ssot}` ×2 —
+  8878 → 8990 embedded. Final ~35 docs hit a live degraded window
+  (tony-omen cold bge-m3, 69s load vs 8s shim timeout; kk-mac deferred
+  also failing). Their jobs are queued (depth ~250, retried growing,
+  dropped flat at 1762) and drain as the pool recovers; manually warmed
+  tony-omen once (69s) → shim shows wins resuming, dead=false.
+  `mddb-cms-vector-reindex` daily job is the backstop.
 
 ## Not done / follow-ups
 

@@ -51,8 +51,16 @@ findings:
 actions:
   reindex: >-
     Non-force POST /v1/vector-reindex per affected collection — done
-    across two attempts. Residual infrastructure-ssot sweep re-run by
-    attempt 2 (see verify). All other gaps were meta-only skips.
+    across two attempts plus a same-day resume. Final state: every
+    collection at embedded==total EXCEPT infrastructure-ssot 8990/9025 —
+    the last ~35 docs are content-bearing but their embed calls 504'd
+    during a LIVE pool-degraded window (tony-omen bge-m3 cold-unloaded,
+    69s cold load vs the shim's 8s timeout; kk-mac admission shim also
+    failing). Their embed jobs are queued (queue depth ~250, retried
+    counter growing, dropped NOT growing) and drain as the pool
+    recovers; mddb-cms-vector-reindex (declared below) is the daily
+    backstop. Manually warming tony-omen (one 69s /api/embed) restored
+    the primary upstream — direct demonstration of the warm-ping fix.
   keyword_only: >-
     Tony answered request meta-only-docs-devin-kb-chaba-archive-st-1f3513
     = "proceed" (recommended option A). Implemented as a machine-readable
