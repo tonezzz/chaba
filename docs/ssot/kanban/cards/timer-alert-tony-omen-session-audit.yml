@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-session-audit
 title: Timer session-audit on tony-omen failing
 column: done
-updated: 2026-11-25 17:27
+updated: 2026-11-25 17:37
 priority: high
 tags:
 - timer-alert
@@ -91,6 +91,11 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:37
+  from: tony
+  text: 'RESOLVED 2026-11-25: service/timer unit files were missing from ~/.config/systemd/user although the script
+    exists. Reinstalled via `render-jobs.py --host tony_omen --install --ids session-audit`; rerun Result=success
+    16:49.'
 spec: Investigate the failure of session-audit.service on host tony-omen by inspecting the systemd user journal
   using journalctl --user -u session-audit.service. Resolve the root cause of the exit-code failure and ensure the
   service runs successfully. The done-condition is verified when journalctl confirms a subsequent successful execution
