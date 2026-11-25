@@ -1,7 +1,7 @@
 id: prune-old-docs-log-expired-count-separat-fb03e3
 title: 'prune-old-docs: log expired count separately from deleted'
 column: backlog
-updated: 2026-11-25 19:10
+updated: 2026-11-25 19:11
 brief: Sweep log line reads deleted N/M where M=scanned - under the offset race a run can print deleted 0/25313
   while thousands of stale docs exist, misleading operators into thinking the collection is clean. Add expired_seen
   counter (docs matching the stale predicate during enumeration, independent of delete attempts) so the line reads
@@ -295,6 +295,9 @@ comms:
 - at: 2026-11-25 19:10
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 19:11
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
 action:
   type: dispatch
   status: queued
