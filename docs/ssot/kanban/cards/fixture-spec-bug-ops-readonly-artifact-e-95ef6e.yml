@@ -245,6 +245,14 @@ comms:
 - at: 2026-11-25 16:24
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090740-fix-the-fixture-spec-bug-regar no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-090740-fix-the-fixture-spec-bug-regar on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: Fix the fixture spec bug regarding the ops-readonly artifact expect.required_keys mismatch in the chaba repository
   on host tony-dell. The runner-agent across hosts (idc02, idc03, tony-macbook) shows drift from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
   and needs redeployment via scp. The done-condition is verified when the test suite passes without required_keys
@@ -260,6 +268,9 @@ action:
   result: 'exit=0 -fixture-spec-bug-regar.md`; card comms posted with progress and the final summary. | devin-task-20261125-090740-fix-the-fixture-spec-bug-regar.service:
     Consumed 11min 21.820s CPU time over 14min 46.840s wall clock time, 514.9M memory peak.'
   verified: false
+  sweep:
+    stale_running: 2026-11-25 16:24
+    dirty: 1
 claim:
   since: 2026-11-25 16:06
 review_kind: verify
