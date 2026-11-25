@@ -1,0 +1,61 @@
+title: idc03 stale mddb-embed DB — verify-gone + close
+subtitle: dated-reminder card MEM-0071 — retention window ended
+  2026-11-19; stale dir already absent on idc03, live bank healthy on
+  idc02
+icon: trash
+version: 1
+
+card: idc03-stale-embed-db-delete
+ref: MEM-0071
+date: 2026-11-25
+dispatch: 20261125-155419-config-containers-mddb-embed-d (idc02)
+
+state_on_pickup: |
+  Card spec (captured 2026-11-12): ~/.config/containers/mddb-embed/
+  data/mddb.db (2.8G) on idc03 = pre-relocation copy of the embed bank;
+  live bank on idc02 verified (501 docs, 0 fail); keep until
+  ~2026-11-19 as instant rollback, then delete dir + close. Today is
+  past the retention date.
+
+finding: |
+  Nothing left to delete — the end state was already reached before
+  this dispatch ran:
+    - idc03 ~/.config/containers/ contains only caddy, mddb,
+      mddb-cms, mddb-ops, postgres, redis, systemd — no mddb-embed
+      dir at all (ls: No such file or directory).
+    - idc03 ~/.config/containers/systemd/mddb-embed.container.retired
+      (dated Nov 8) confirms the retired quadlet's Volume was
+      /home/tony/.config/containers/mddb-embed/data:/app/data:U —
+      i.e. the data dir that is now absent.
+    - find /home/tony -xdev for *.db >100M on idc03: only the live
+      idc03 banks (mddb 5.6G, mddb-cms 19.6G, mddb-ops 8.1G, all
+      mtime today) plus ~/mddb-backups/ nightly dumps of those same
+      banks (declared backup tier) and unrelated HA/device DBs. No
+      embed-bank copy anywhere.
+    - podman ps -a / volume ls on idc03: no mddb-embed container or
+      volume.
+  When the dir was removed is not recorded (no bash-history hit, no
+  journal entries for the retired unit); consistent with a post-
+  2026-11-19 cleanup once rollback was no longer needed.
+
+live_bank_verify: |
+  Consumer-proof on idc02 (this host), not just unit state:
+    - systemctl --user status mddb-embed.service: active (running)
+      since 2026-11-25 14:35 +07; container mddb-embed up ~1h;
+      ~/.config/containers/mddb-embed/data/mddb.db = 3.77G, mtime
+      15:50 today (actively written).
+    - GET http://100.123.163.11:11028/health -> 200
+      {"status":"healthy","mode":"wr","durable":true,
+      "persistence":{"filesystem":"ext4","writable":true,
+      "freeBytes":104510570496}}.
+
+verify_cmds: |
+  ssh idc03 'ls ~/.config/containers/mddb-embed'   # -> No such file
+  ssh idc03 'find /home/tony -xdev -name "*.db" -size +100M'
+  curl -s http://100.123.163.11:11028/health       # -> healthy/wr
+
+lessons:
+  - Dated-reminder delete cards can arrive after the target is already
+    gone — verify absence (ls + find for stray copies) rather than
+    assuming the delete still needs doing; the card still closes on
+    verified end-state.
