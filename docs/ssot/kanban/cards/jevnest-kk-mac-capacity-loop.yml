@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-25 07:44
+updated: 2026-11-25 10:19
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -242,5 +242,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 10:19
+  from: tony
+  text: 'Deployed 2026-11-25 10:20 (+07): per-core gate patch is live on both hosts. kk-mac: installed master''s
+    scripts/devnest/kk_mac_admission.py and scripts/ops/ada-nest-heartbeat.sh in ~/CascadeProjects/chaba; the LaunchDaemon
+    actually runs root-owned /Users/adanest/bin/ada-nest-heartbeat.sh, so that copy was replaced too (backup .bak-20261125-101855).
+    idc03: canonical files already matched master (local heartbeat_ts addition preserved); restarted kkmac-admission-shim.service
+    to load them. Verified: '
 action:
   status: done
