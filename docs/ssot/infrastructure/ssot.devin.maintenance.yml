@@ -17,11 +17,19 @@ hosts:
   tony-dell:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Secondary workstation, headless browser/cast target
-    current_size: 1.1Gi
-    service: devin-cleanup.timer
+    current_size: 5.2Gi
+    service: none (devin-cleanup.timer declared but never installed — verified 2026-11-25)
     retention_days: 7
     notes:
-      - Cleanup timer runs Sundays at 04:00.
+      - CORRECTION 2026-11-25 (card devin-taskdir-gc-dispatch-hosts) —
+        devin-cleanup.timer is NOT installed on tony-dell —
+        `systemctl --user status` returns "unit could not be found" and
+        no devin-*/prune-* timer was active (only devin-dispatch-prune,
+        which GCs worktrees/branches, not sessions.db or task dirs).
+        sessions.db has had no declared prune path; 5.2G as of
+        2026-11-25. devin-taskdir-prune.timer (ssot.jobs.yml) now covers
+        dispatch task dirs only — sessions.db cleanup on dell remains a
+        gap worth a card if wanted.
       - Service skips VACUUM if Devin code.lock is present.
       - Manual cleanup/VACUUM ran 2026-09-25; deleted 1 preserved 7-day-old session and kept local backup sessions-pre-cleanup-20260925-203510.db.
       - Devin desktop updated to 3.10.23-1789035177 on 2026-09-12.
@@ -45,16 +53,54 @@ hosts:
         seemly-graffiti, invincible-avatar, abundance-cattle, olive-lamb,
         blush-action, valuable-windflower) archived and deleted manually.
 
+dispatch_task_dirs:
+  purpose: |
+    ~/.local/share/devin-dispatch/tasks/<id>/ dirs are the dispatch
+    registry — transcript.json + meta.json feed devin-usage.py fleet
+    reporting. They are NOT covered by sessions.db cleanup above.
+  job: devin-taskdir-prune (ssot.jobs.yml, one entry per dispatch host)
+  script: scripts/devin/taskdir-prune.py
+  schedule: daily 04:40 host-local, Persistent
+  retention_days: 45
+  retention_reason: |
+    devin-usage.py's longest reporting window is 30d (--days 30); 45d
+    keeps a 15d margin. Before any finished dir is deleted its metrics
+    (prompt/cached/completion/model/finished_at) are appended to
+    ~/.local/share/devin-dispatch/taskdir-usage.jsonl so retention can
+    shrink later without losing history.
+  stale_rule: |
+    Dirs with no exit_code (task died before finishing) are collected
+    only when ALL hold: last activity >14d, no needs-input.txt pending,
+    and no live devin-task-<id>*/devin-task-<id>-fu* systemd --user unit.
+  coverage_2026_11_25:
+    tony_dell: 'declared+installed; sweep pruned 80 dirs (56 finished, 24 stale)'
+    tony_omen: 'declared+installed; sweep pruned 24 stale dirs'
+    idc01: 'declared; host tailscale-offline since ~2026-10-22 — activates on return'
+    idc02: 'declared+installed; sweep pruned 36 dirs (27 finished, 9 stale) — was the worst gap (928 dirs, no prune units at all)'
+    idc03: 'declared+installed; sweep pruned 105 dirs (81 finished, 24 stale)'
+    mn01: 'declared+installed; sweep pruned 30 dirs (21 finished, 9 stale)'
+    macbook: 'declared+installed; 0 pruned (all dirs <45d)'
+    con01: 'EXCLUDED — verified not dispatch-capable: no devin CLI binary, no ~/.local/share/devin-dispatch registry; only a chaba checkout with the dispatch script present'
+  notes:
+    - prune-devin-sessions.sh no longer GCs task dirs inline at the
+      sessions retention (3-7d) — that would have corrupted the 30d
+      usage window; it delegates to taskdir-prune.py (non-fatal).
+    - tony-macbook's hand-installed devin-cleanup.service ran a
+      ~/.local/bin copy with the old 7d inline GC — updated to the repo
+      version 2026-11-25.
+    - devin-usage.py --fleet now also scans the invoking host locally
+      (ssh-to-self is not set up on tony-macbook).
+
 cleanup:
   timer_schedule:
-    tony-dell: "Sun *-*-* 04:00:00"
+    tony-dell: "none installed (verified 2026-11-25)"
     tony-omen: "*-*-* 03:00:00 (RandomizedDelaySec=1h)"
   service:
-    tony-dell: devin-cleanup.service
+    tony-dell: none installed (verified 2026-11-25)
     tony-omen: devin-cleanup.service
   script:
-    tony-dell: /home/tony/.local/bin/devin-cleanup.sh
-    tony-omen: /home/tony/CascadeProjects/chaba/scripts/prune-devin-sessions.sh
+    tony-dell: /home/tony/.local/bin/devin-cleanup.sh (unit not installed)
+    tony-omen: /home/tony/.local/bin/devin-cleanup.sh (python sessions.db pruner; task-dir GC is job:devin-taskdir-prune)
   retention_days:
     tony-dell: 7
     tony-omen: 3

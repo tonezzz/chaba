@@ -94,16 +94,22 @@ fi
 AFTER=$(du -sh "$DB" | awk '{print $1}')
 echo "After:  $AFTER"
 
-# Finished dispatch task dirs are archived state — GC those past retention
-# so the registry doesn't grow forever (learned 2026-10-11: 235 dirs/137M
-# accumulated with no cleanup path). exit_code present = task finished.
-TASKS_DIR="/home/tony/.local/share/devin-dispatch/tasks"
-if [ -d "$TASKS_DIR" ]; then
-  mapfile -t OLD_TASKS < <(find "$TASKS_DIR" -mindepth 2 -maxdepth 2 \
-      -name exit_code -mtime +"$RETENTION_DAYS" -printf '%h\n')
-  if [ "${#OLD_TASKS[@]}" -gt 0 ]; then
-    echo "Task-dir GC: removing ${#OLD_TASKS[@]} finished task dir(s) older than ${RETENTION_DAYS}d ..."
-    rm -rf "${OLD_TASKS[@]}"
-  fi
+# Finished dispatch task dirs are archived state — GC those via the shared
+# taskdir-prune.py (card devin-taskdir-gc-dispatch-hosts). Retention there is
+# 45d, NOT $RETENTION_DAYS: devin-usage.py computes fleet usage from these
+# dirs over a 30d window, so pruning at the 3-7d sessions retention would
+# corrupt usage reporting. taskdir-prune.py also handles stale dirs that
+# never wrote exit_code (dead tasks) and exports per-task metrics to a
+# durable ledger before deleting. Non-fatal: a GC failure must not fail the
+# sessions.db prune.
+TASKDIR_PRUNE=""
+for _c in "$(dirname "$0")/devin/taskdir-prune.py" \
+           "$HOME/CascadeProjects/chaba/scripts/devin/taskdir-prune.py"; do
+  [ -f "$_c" ] && TASKDIR_PRUNE="$_c" && break
+done
+if [ -n "$TASKDIR_PRUNE" ]; then
+  python3 "$TASKDIR_PRUNE" || echo "Warning: taskdir-prune.py failed (non-fatal)" >&2
+else
+  echo "taskdir-prune.py not found; skipping task-dir GC" >&2
 fi
 echo "Done."

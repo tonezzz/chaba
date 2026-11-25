@@ -1,0 +1,119 @@
+title: Devin dispatch task-dir GC — fleet coverage, retention, sweep
+subtitle: card devin-taskdir-gc-dispatch-hosts — every dispatch host now has a
+  declared, active prune path for ~/.local/share/devin-dispatch/tasks
+icon: trash_2
+version: 1
+
+card: devin-taskdir-gc-dispatch-hosts
+date: 2026-11-25
+dispatch: 20261125-094030-parent-card-devin-usage-reduct
+program: devnest
+
+survey_2026_11_25: |
+  Task-dir counts / prune coverage / sessions.db size, verified over ssh
+  (tony-macbook surveyed locally):
+
+  host        dirs  exit_code  stale-noexit>7d  sessions.db   prune path before
+  tony-dell    236    204            0            5.2G         NONE — devin-cleanup.timer
+                        (claimed in ssot.devin.maintenance) was never installed;
+                        only devin-dispatch-prune.timer (worktrees/branches)
+  tony-omen    392    345            0            1.6G         sessions.db only
+                        (devin-cleanup.timer -> ~/.local/bin/devin-cleanup.sh python
+                        pruner; devin-session-prune.timer -> session-prune.py) —
+                        NO task-dir GC
+  idc01        —      —              —            —            offline ~34d
+  idc02        928    918            ~9           1.4G         NONE — no devin-*
+                        timers at all (the card's evidence host)
+  idc03        165    141            0            176M         NONE for task dirs
+  mn01         107     97            0            313M         NONE — 1.1G of task dirs
+  con01        —      —              —            —            NOT dispatch-capable:
+                        no devin CLI binary, no task registry — excluded
+  tony-macbook 286    278            0            6.0G         devin-cleanup.service ->
+                        ~/.local/bin/prune-devin-sessions.sh 7 — HAD inline task-dir
+                        GC but at the 7d sessions retention (see bug below)
+
+root_causes: |
+  1. The only task-dir GC that ever existed was an inline block in
+     scripts/prune-devin-sessions.sh using the SAME retention as
+     sessions.db (3-7d). devin-usage.py computes fleet usage from these
+     dirs over a 30d window — that block would corrupt reporting, and on
+     tony-macbook it was live via a hand-installed ~/.local/bin copy.
+  2. The repo systemd/devin-cleanup.{service,timer} pair was never
+     installed on idc02/idc03/mn01/macbook/dell; ssot.jobs.yml had no
+     task-dir job at all.
+  3. prune-devin-sessions.sh is not the ExecStart on omen/dell anyway —
+     those hosts run a different ~/.local/bin/devin-cleanup.sh python
+     script that never touched task dirs.
+
+changes: |
+  * scripts/devin/taskdir-prune.py (new, canonical): finished dirs
+    (exit_code present) pruned past --days 45; stale no-exit_code dirs
+    past --stale-days 14 only when no live devin-task-<id>*/-fu* unit
+    and no needs-input.txt; per-task metrics ledgered to
+    ~/.local/share/devin-dispatch/taskdir-usage.jsonl before delete;
+    timeline.jsonl audit line per run.
+  * scripts/prune-devin-sessions.sh: inline GC block replaced with a
+    non-fatal delegation to taskdir-prune.py (45d, not $RETENTION_DAYS).
+  * scripts/devin/devin-usage.py: --fleet now also scans the invoking
+    host locally — ssh-to-self is not set up on tony-macbook, so the
+    fleet report silently missed it.
+  * ssot.jobs.yml: job devin-taskdir-prune declared for tony_dell,
+    tony_omen, idc01, idc02, idc03, mn01, macbook (daily 04:40,
+    Persistent, condition_path on the script so units stay inert until
+    chaba-repo-sync delivers it post-merge). con01 deliberately absent.
+  * ssot.devin.maintenance.yml: new dispatch_task_dirs section +
+    corrected stale tony-dell/tony-omen cleanup claims.
+  * systemd/generated/<host>/devin-taskdir-prune.{service,timer}
+    rendered for all 7 hosts.
+
+retention_constraint: |
+  devin-usage.py's longest window is 30d (--days 30). Chosen retention
+  is 45d (15d margin) AND metrics are exported to the durable ledger
+  before every finished-dir delete, so retention can shrink later
+  without losing fleet-usage history.
+
+deployed: |
+  taskdir-prune.py installed into each host's exec checkout
+  (~/CascadeProjects/chaba/scripts/devin/) ahead of merge — untracked
+  until this branch lands; git-safe-pull's untracked-collision handling
+  covers the transition. devin-taskdir-prune.timer enabled on
+  tony-dell, tony-omen, idc02, idc03, mn01, tony-macbook (next fire
+  2026-11-26 04:40 local). idc01 declared only (offline).
+  tony-macbook ~/.local/bin/prune-devin-sessions.sh updated to the repo
+  version, ending the live 7d task-dir GC bug.
+
+sweep_results: |
+  One-time run per host after install (finished+stale pruned / kept):
+    tony-dell   80 pruned (56+24), 157 kept, 25.4MB freed, 55 ledgered
+    tony-omen   24 pruned (0+24),  368 kept,  0.4MB freed
+    idc02       36 pruned (27+9),  895 kept, 11.6MB freed, 25 ledgered
+    idc03      105 pruned (81+24),  60 kept, 33.7MB freed, 74 ledgered
+    mn01        30 pruned (21+9),   77 kept,  6.5MB freed, 16 ledgered
+    macbook      0 pruned,         288 kept
+  (ledger_appended < finished-pruned where transcript.json/meta.json
+  were absent or unparseable — expected for crashed tasks.)
+
+verification: |
+  * devin-usage.py --fleet --days 30 before sweep: 500 sessions /
+    1,957,761,562 tokens (macbook invisible — not in FLEET, no ssh-self).
+  * After sweep + code change: idc02 still reports 188 sessions /
+    884,877,331 tokens in-window; total 2,609,714,372 incl. 167
+    newly-visible tony-macbook sessions. All pruned finished dirs were
+    >45d old (outside the window); stale-unfinished dirs were >14d
+    inactive with no live unit — per spec.
+  * render-jobs.py --check: OK 131 jobs, 8 hosts.
+  * Every host: systemctl --user list-timers shows
+    devin-taskdir-prune.timer active, next 2026-11-26 04:40.
+
+rollback: |
+  systemctl --user disable --now devin-taskdir-prune.timer per host +
+  rm ~/.config/systemd/user/devin-taskdir-prune.* + daemon-reload;
+  script deletion optional (condition_path then skips anyway). Pruned
+  dirs are unrecoverable but were >45d finished or >14d dead — metrics
+  for finished ones live in taskdir-usage.jsonl.
+
+followups: |
+  * tony-dell sessions.db (5.2G) has NO cleanup path — devin-cleanup
+    was declared but never installed; worth a card if dell's DB matters.
+  * con01 exclusion assumes it stays non-dispatch; revisit if a devin
+    CLI is ever installed there.

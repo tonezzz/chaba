@@ -141,6 +141,11 @@ def main():
             per_host[h] = rows
             if err:
                 print(f"# {h}: {err}", file=sys.stderr)
+        # The invoking host is itself a dispatch runner — ssh-to-self is not
+        # set up on every runner (tony-macbook), so scan it directly. When
+        # the nodename matches an ssh alias the local scan simply replaces
+        # the identical remote result.
+        per_host[os.uname().nodename] = scan_local()
     else:
         per_host[os.uname().nodename] = scan_local()
 
