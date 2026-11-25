@@ -1,7 +1,7 @@
 id: ansible-vs-legacy-fleet-benchmark
 title: Benchmark Ansible vs legacy fleet tooling on 2-3 jobs
 column: done
-updated: 2026-11-25 17:39
+updated: 2026-11-26 03:49
 brief: 'Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit,
   disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.'
 priority: medium
@@ -276,6 +276,10 @@ comms:
 - at: 2026-11-25 17:39
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: BEN-0005
 claim:

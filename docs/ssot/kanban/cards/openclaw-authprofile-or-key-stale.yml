@@ -1,7 +1,7 @@
 id: openclaw-authprofile-or-key-stale
 title: '@myChabaBot silent — OpenClaw auth profile holds expired OR key'
 column: done
-updated: 2026-11-26 03:48
+updated: 2026-11-26 03:49
 brief: 'TG DM chat 8960073266 (@myChabaBot) has been failing every model turn since 2026-11-20: 401 API key expired
   → 401 User not found. Root cause: tony-omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
   profiles."openrouter:manual".key still holds sk-or-v1-e2c…f05528 (set 2026-10-12, expired 2026-11-11). The Nov-12/13
@@ -151,6 +151,10 @@ comms:
 - at: 2026-11-26 03:48
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: mint-a-fresh-openrouter-key-at-openroute-b13d22
