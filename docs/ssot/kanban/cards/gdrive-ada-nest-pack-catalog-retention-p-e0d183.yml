@@ -1,7 +1,7 @@
 id: gdrive-ada-nest-pack-catalog-retention-p-e0d183
 title: Gdrive ada-nest pack catalog + retention policy
-column: backlog
-updated: 2026-11-25 15:45
+column: doing
+updated: 2026-11-25 15:46
 ref: ADA-1185
 comms:
 - at: 2026-11-08 12:56
@@ -181,13 +181,19 @@ comms:
 - at: 2026-11-25 15:45
   from: chaba
   text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: idc02
+  text: claimed
 spec: Redeploy the drifted runner-agent script from the chaba repository to the affected hosts (idc02 and tony-dell)
   by copying scripts/board/runner-agent.py to ~/.local/bin/runner-agent. Ensure that the runner-agents on both idc02
   and tony-dell successfully execute without drifting from the repository version. The done-condition is met when
   both hosts run the updated runner-agent successfully and no longer defer execution due to script drift.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-25 15:46
