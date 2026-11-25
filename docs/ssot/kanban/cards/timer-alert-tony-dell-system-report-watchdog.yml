@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
 column: backlog
-updated: 2026-11-25 19:01
+updated: 2026-11-25 19:38
 priority: high
 tags:
 - timer-alert
@@ -2049,6 +2049,13 @@ comms:
     Patched repo + con01 (backup .bak-20261125), reran producer: success, generated_at 2026-11-25T12:49:02+01:00,
     delivered to both idc02 paths (web-srv + exec checkout). Watchdog rerun now reports ''chain ok - generated 0.0h
     ago''; it still exits 1 on GENUINE red nodes (audit-hosts/macbook,'
+- at: 2026-11-25 19:38
+  from: tony
+  text: '2026-11-25 19:36 (+07): FIXED. Last red node was mcp-inventory/michael-ha. Producer is mcp-fleet-report.service
+    on idc03, and idc03 had no SSH alias/key for michael-ha. Added con01''s and idc03''s id_ed25519.pub to michael-ha
+    root authorized_keys via tony-dell (backup ~/.ssh/authorized_keys.bak-20261125-mesh), added Host michael-ha
+    stanza (User root, IdentityFile ~/.ssh/id_ed25519) on idc03 with config backup + hashed known_hosts. Reran mcp-fleet-report:
+    success, meta now status=no-config/reachabl'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
