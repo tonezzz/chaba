@@ -1,7 +1,7 @@
 id: ada-spend-guardrails-per-tool-daily-caps-a376c3
 title: Ada spend guardrails — per-tool daily caps + budget readout
 column: doing
-updated: 2026-11-25 15:25
+updated: 2026-11-25 15:35
 ref: ADA-1200
 comms:
 - at: 2026-11-08 13:52
@@ -219,6 +219,12 @@ comms:
     was never the MDDB store — verify the store layer first; ; Card spec named tony-dell as ada-voice edit point,
     but dispatch ran on tony-macb; Card specs age: this card said "cap 2, labels cpu/dev/portable" but the fleet
     ha; OpenRouter account state is checkable cheaply: `/api/v1/auth/'
+- at: 2026-11-25 15:35
+  from: devin
+  text: 'implemented: backend/tool_budget.py (per-tool daily USD caps, UTC day, env+manifest config), enforcement
+    at ToolRunner._execute_gated + gemini_pool.generate pre-flight, gemini aux calls now metered into usage.jsonl,
+    ada_ops action=budget readout + conversation_health. 18 new tests green, 379 related tests green, tool-lint
+    clean.'
 action:
   type: dispatch
   repo: ada-voice
