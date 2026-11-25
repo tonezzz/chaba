@@ -1,7 +1,7 @@
 id: gpu-dispatch-web-ui
 title: Web UI for GPU dispatch queue management
 column: doing
-updated: 2026-11-25 21:04
+updated: 2026-11-25 21:56
 brief: 'Add a small read-mostly web UI for the dispatch queue: per-host GPU capacity, queued/running jobs, priority,
   and enqueue/cancel controls behind an explicit confirmation. Done when the UI renders live Redis/sidecar data
   and one job can be enqueued and cancelled through it with audited actions.'
@@ -91,6 +91,13 @@ comms:
 - at: 2026-11-25 21:04
   from: devin
   text: 'dispatch started: exploring queue/gpu stack + hosting options'
+- at: 2026-11-25 21:56
+  from: devin
+  text: 'DONE + live-verified. gpu-dispatch-webui.service on idc02 (systemd --user, tailnet :8795) — pane at http://idc02.taila0626a.ts.net:8795/.
+    Read-only: queue stats, per-job status, 6-host fleet GPU table from sidecar:*, gpu:hold reservations, scheduler
+    health. Mutations enqueue/cancel/requeue require confirm:true + audit to audit.jsonl + Redis queue:audit; queue_manager.py
+    gained cancel_job()+cancel CLI (patch in repo — ansible checkout is untracked). Verified: enqueued webui-test-001
+    (stayed queue'
 ref: OPS-1409
 claim:
   since: 2026-11-25 21:03
