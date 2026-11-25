@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper-severe
 title: Timer log-shipper-severe on idc03 failing
-column: backlog
-updated: 2026-11-25 21:54
+column: done
+updated: 2026-11-25 23:31
 priority: high
 tags:
 - timer-alert
@@ -1854,6 +1854,16 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 21:37) of `log-shipper-severe.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 23:30
+  from: tony
+  text: '2026-11-25 23:10 (+07): FIXED — same MDDB /v1/ingest cutoff as the other shipper lanes, but worse on this
+    loaded host: 20 docs took 33s and 20 took 63s before mddb-ops closed the socket (~30s server-side hard cutoff),
+    so the severe lane shipped 0/139. Lowered BATCH to 10 (10-16s, 2x headroom), committed/pushed (00f6030df5a)
+    and redeployed via ansible/playbooks/log-shipper.yml to tony-omen, idc03 and mn01. Unit now Result=success exit=0;
+    timeline sweep result=success failed_now=false. Closing.'
+- at: 2026-11-25 23:31
+  from: tony
+  text: moved backlog -> done
 action:
   status: done
   type: dispatch
@@ -1869,3 +1879,4 @@ spec: Investigate the recurring timeout failure of `log-shipper-severe.service` 
   `timer-timeline-idc03` to identify root causes for the intermittent timeouts. Apply a verifiable fix to stabilize
   the timer service on the target host. The done-condition is met when subsequent runs of `log-shipper-severe.service`
   on `idc03` complete successfully without timing out.
+claim: {}
