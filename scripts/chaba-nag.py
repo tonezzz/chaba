@@ -109,6 +109,31 @@ def overdue_reviews():
     return out
 
 
+def load_state():
+    """Missing/empty/corrupt state -> {} — a 0-byte STATE must not kill the
+    run before it can rewrite it (card
+    state-write-atomic-truncate-crash-loop)."""
+    try:
+        with open(STATE) as f:
+            st = json.load(f)
+        return st if isinstance(st, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_state(st):
+    """tmp + fsync + os.replace — a kill mid-write leaves STATE.tmp, never
+    a torn STATE (0-byte state -> json.load crash-loop; card
+    state-write-atomic-truncate-crash-loop)."""
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(st, f)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, STATE)
+
+
 def send_line(text):
     p = subprocess.run(RELAY, input=json.dumps({"text": text}),
                        capture_output=True, text=True, timeout=30)
@@ -136,9 +161,7 @@ def main():
 
     h = hashlib.sha1(
         json.dumps([tiles, reqs, inbox, maint], sort_keys=True).encode()).hexdigest()
-    st = {}
-    if os.path.exists(STATE):
-        st = json.load(open(STATE))
+    st = load_state()
     last = st.get("last_sent")
     gap = (datetime.datetime.now().timestamp()
            - (last or 0)) / 60
@@ -175,9 +198,7 @@ def main():
         return
     ok, info = send_line(text)
     print("LINE push:", "ok" if ok else f"FAILED {info}")
-    os.makedirs(os.path.dirname(STATE), exist_ok=True)
-    json.dump({"hash": h, "last_sent": now.timestamp(), "pending": n},
-              open(STATE, "w"))
+    save_state({"hash": h, "last_sent": now.timestamp(), "pending": n})
 
 
 main()
