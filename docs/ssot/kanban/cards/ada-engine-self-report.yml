@@ -1,7 +1,7 @@
 id: ada-engine-self-report
 title: Engine self-report — advertise {engine_line, engine_version, contract_version} in /api/health + session hello
-column: review
-updated: 2026-11-25 16:26
+column: done
+updated: 2026-11-25 16:39
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): engines dont announce who they are, so which engine answered
   a turn is not auditable and engine swaps cant be verified mechanically. Deliverable in ada-voice: /api/health
@@ -337,6 +337,16 @@ comms:
 - at: 2026-11-25 16:26
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 16:39
+  from: chaba
+  text: 'merge-sweep: merged 170ce081 (dispatch/20261125-161929-from-ai-engine-lines-ssot-apps from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-161929-from-ai-engine-lines-ssot-apps.md)
+    — auto-closed'
+- at: 2026-11-25 16:39
+  from: local
+  text: 'pub milestone: card verified: ada-engine-self-report on idc03 — merged 170ce081 (dispatch/20261125-161929-from-ai-engine-lines-ssot-apps
+    from tony-macbook) -> origin/master — verified — merged 170ce081 (dispatch/20261125-161929-from-ai-engine-lines-ssot-apps
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-8d041ec9fdea24bc]'
 action:
   type: dispatch
   status: done
@@ -347,7 +357,11 @@ action:
   attempts: 1
   result: 'exit=0  chaba; live verification (`curl /api/health` + one /ws session) is pending post-merge. | devin-task-20261125-161929-from-ai-engine-lines-ssot-apps.service:
     Consumed 1min 43.583s CPU time over 6min 11.245s wall clock time, 1.4G memory peak.'
-  verified: false
+  verified: true
 claim:
   since: 2026-11-25 16:18
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 16:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-161929-from-ai-engine-lines-ssot-apps.md
