@@ -1,7 +1,7 @@
 id: system-report-18-missing-nodes
 title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
 column: doing
-updated: 2026-11-25 12:44
+updated: 2026-11-25 12:50
 priority: medium
 tags:
 - system-report
@@ -303,6 +303,13 @@ comms:
     checkpoint failed: commit: Command ''[''git'', ''-C; editing `ssot.jobs.yml` requires re-running `scripts/render-jobs.py
     --host <h>` ; reports/* is gitignored — dry-run data only exists on producer hosts; dispatch w; [ansible-vs-legacy-fleet-benchmark]
     primer injected 8 lesson('
+- at: 2026-11-25 12:50
+  from: devin
+  text: 'DONE (attempt 2): recovered attempt-1 work from the dirty tony-omen worktree via git diff HEAD and committed
+    it on dispatch/20261125-054445 (303bb62e7a). Verdict unchanged + re-verified live: all 18 missing nodes are
+    alive producers (delivery gap fixed 11-18 by pull-report-metas); real fixes = report-system.py no-config KeyError
+    (reproduced again this morning 06:48 CET — served report still frozen 11-20), watchdog offline_ok gap for macbook,
+    ada-stt-con01 disabled flag. ha-live verified active+2'
 action:
   type: dispatch
   status: running
