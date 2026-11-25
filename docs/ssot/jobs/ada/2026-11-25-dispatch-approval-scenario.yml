@@ -1,0 +1,59 @@
+id: ada-dispatch-approval-scenario
+title: Ada dispatch approval-handshake live scenario
+date: 2026-11-25
+card: ada-dispatch-approval-scenario
+ref: ADA-1194
+repo: ada-voice (deliverable) + chaba (probe card + trail)
+status: done
+summary: >-
+  Live guard scenario for the taught OpenCode approval handshake
+  (ada-voice d27be7c / tool_guide.yml ada_opencode entries):
+  preflight -> kanban ask -> respond=yes -> ada_opencode_dispatch
+  confirmed=true inside the 600s receipt window -> status readback.
+  Smoke tier, transport text, targets the real idc02 opencode surface
+  (v2.2.5) via a dedicated bounded probe card.
+deliverables:
+  ada-voice (branch dispatch/20261125-102412-guard-the-taught-approval-flow):
+    - tests/scenarios-live/ada_opencode_approval.yaml — 4-turn live scenario;
+      needs_tools [ada_opencode, ada_opencode_dispatch, kanban]; asserts
+      preflight call, kanban ask w/ dispatch wording, dispatch confirmed=true,
+      queued-true result marker; verdict readback via kanban/ada_opencode.
+    - scripts/scenario-live.py — new board_respond driver turn (plays
+      Tony's owner-only /respond as 'tony' — GET card -> newest open request
+      -> POST /respond; reopen fallback for repeat runs; $ADA_BOARD_API_URL
+      override).
+    - tests/benchmark.yml — scenario added to write_allowed_in (kanban +
+      ada_opencode_dispatch writes).
+    - backend/tool_guide.yml — ada_opencode entries now teach RE-PREFLIGHT —
+      every card write (ask/respond/comment/move) bumps card.updated and
+      re-keys the receipt, so the pre-ask triple is stale; mismatch means
+      replay the FRESH triple, never retry stale.
+  chaba (this worktree, dispatch/20261125-102412-guard-the-taught-approval-flow):
+    - docs/ssot/kanban/cards/ada-opencode-approval-probe.yml — dedicated
+      bounded canary card — ops-readonly profile, litellm/or-free-nemotron-ultra
+      (free tier), read_only task_class, full S3 lane_envelope + artifact +
+      held_out_py verifier so idc02's staged-admission runner accepts it;
+      llm_key_alias=chaba (board-api allowlist); max_usd=0.05 as action
+      fields so ada_opencode preflight passes with no extra args.
+key_contracts:
+  - "runner-agent staged admission: executor=opencode claims require a
+     valid action.lane_envelope (prepare_profile_dispatch checks
+     profile/model/provider/task_class/stage/host/artifact/verifier/
+     escalation/rollback/heartbeat vs profile.yml) — a bare
+     executor+prompt card is NOT claimable on idc02."
+  - "ada_opencode preflight limits come from action.max_* fields when
+     present — staging them on the card means Ada never supplies args."
+  - "board-api /respond is owner-only for Ada -> scenario-live gains a
+     driver-side board_respond turn that plays Tony's click as 'tony'."
+  - "board writes through Caddy take ~45-75s; scenario timeouts sized
+     180-240s per write turn (kanban_review precedent)."
+verify: >-
+  python3 scripts/scenario-schema-check.py tests/scenarios-live/ (ada-voice);
+  python3 -c 'import yaml; yaml.safe_load(...)' probe card; live run
+  scripts/scenario-live.py --url ws://127.0.0.1:8005/ws --text on idc03
+  once merged+deployed (hourly smoke picks it up automatically).
+notes: >-
+  Watch items from card spec are documented in the scenario header:
+  model may skip the board ask for a voice confirm (acceptable deviation —
+  turn-1 kanban assert reads as behavior drift, not harness break); receipt
+  expiry on slow turns is handled by teaching re-preflight in tool_guide.
