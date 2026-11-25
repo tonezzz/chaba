@@ -1,23 +1,22 @@
 id: runner-auto-mn01
-title: Runner host `mn01` fails 2 dispatch bootstrap check(s)
+title: Runner host `mn01` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on mn01 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: done
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Auto-recovered 2026-11-25: all bootstrap checks pass.'
+note: 'Failing: chaba clone 221 commits behind origin/master (limit 200). Info: chaba origin is push-capable; ada-voice:
+  push probe fails (fatal: could not read Username for ''https://github.com'': No ) — ada-voice dispatches defer
+  to a pushable host; stranded work relays via board-api; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card
+  cards; no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
+  can''t take action.repo=gods-eye-view cards; repos.conf missing — devin-dispatch builtin repo table in use; devin:
+  /home/tony/.local/bin/devin (devin 3000.14.30821 (a09cd7f323ee)).'
 help: 'Per-check fixes:
 
-  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
-  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
-  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
-  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
-  as the tool.
-
-  - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
-  scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
+  - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
+  on missing dispatch_repos helpers (idc01, 860 behind).'
 updated: '2026-11-25'
 review_kind: triage
 action:

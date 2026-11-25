@@ -2,20 +2,13 @@ id: runner-auto-tony-macbook
 title: Runner host `tony-macbook` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note,
   fix on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: git fetch origin failed AND 193 commits behind last-fetched ref — clone can''t refresh (error: object
-  file .git/objects/7f/5e579fe488d2f02d5c7cca6209d1b30d5d7f73 is emp); ~/.local/bin/runner-agent sha 1514c75c4679a01b
-  != pin 0bc62e20bab2552b — installed build is stale. Info: chaba origin is push-capable; no sunsynk-card checkout
-  — host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout — host can''t take action.repo=mddb-fork
-  cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view cards; ada-voice: push probe ok
-  — declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates); dispatch_repos copy differs
-  from repo (sha 39983459e3bbe8ce vs 5c0d0225e602d43b) — functional attrs present; devin: /home/tony/.local/bin/devin
-  (devin 3000.14.30821 (a09cd7f323ee)).'
+note: 'Auto-recovered 2026-11-25: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - clone-fetch: git fetch origin fails on the host — check egress/DNS to github.com from <host>.
