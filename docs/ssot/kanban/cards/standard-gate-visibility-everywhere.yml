@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
-column: backlog
-updated: 2026-11-25 14:31
+column: doing
+updated: 2026-11-25 14:45
 priority: medium
 tags:
 - standard
@@ -360,21 +360,25 @@ comms:
 - at: 2026-11-25 14:31
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 14:45
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 0
+  attempts: 1
   sweep:
     stale_running: 2026-11-25 09:39
     dirty: 4
   last_failure: 'exit=0 ). Card comms posted; SSOT pre-commit validation passed; no code or deploy changes needed.
     | devin-task-20261125-053219-ops-1097-fixed-per-card-unclai.service: Consumed 26.151s CPU time over 7min 47.474s
     wall clock time, 382.1M memory peak.'
+  runner: tony-omen
 claim:
-  since: 2026-11-25 12:31
+  since: 2026-11-25 14:45
 review_kind: verify
 auto_close:
   by: merge-sweep
