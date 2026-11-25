@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-25 11:13
+updated: 2026-11-25 14:04
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -273,5 +273,11 @@ comms:
     kickstarted launchd label (running). Mac cannot git-fetch (host-key failure), so controller validated the pin
     from runner-tooling.manifest.json before scp. kk-mac-reonline-check.sh RESULT OK: runner-agent in sync, 14 cores,
     temp 40C, disk 60GB, heartbeat fresh, admiss'
+- at: 2026-11-25 14:04
+  from: tony
+  text: '2026-11-25 14:10 (+07): runner-agent on kk-mac re-converged to the current master pin 1514c75c... (md5
+    9b50a157...) with backup ~/.cache/chaba-deploy-backups/20261125-140345/runner-agent and launchd kickstart. This
+    supersedes the earlier 837040bd... pin noted at 11:10 after master advanced. kk-mac-reonline-check.sh RESULT
+    OK: in sync, 14 cores, temp 40C, disk 48GB, heartbeat fresh, admission eligible.'
 action:
   status: done
