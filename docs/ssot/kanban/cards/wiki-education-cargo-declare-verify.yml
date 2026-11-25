@@ -1,0 +1,23 @@
+id: wiki-education-cargo-declare-verify
+title: Re-apply Education Cargo declare/store after table exists
+column: backlog
+updated: 2026-11-25 08:35
+brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
+  table creation passes.'
+priority: low
+program: devnest
+tags:
+- wiki
+- education
+- cargo
+spec: 'DO NOT START until `python3 scripts/wiki-cargo-check.py` exits 0 (PR #215, merged). Then: (1) back up แม่แบบ:Education;
+  (2) put {{#cargo_declare:_table=Education ...}} on a dedicated page inside <noinclude> and {{#cargo_store:_table=Education}}
+  in the template; (3) purge Education: pages so rows populate; (4) re-run python3 scripts/wiki-cargo-check.py and
+  confirm topic ada-ocb-skills appears; (5) record event/revision in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml,
+  commit/push, close this card. Guardrails: no direct MediaWiki writes, keep wiki-private boundary, no half-configured
+  template.'
+ref: OPS-1350
+comms:
+- at: 2026-11-25 08:35
+  from: tony
+  text: card captured via board-api
