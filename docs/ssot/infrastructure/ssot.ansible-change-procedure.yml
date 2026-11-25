@@ -11,7 +11,8 @@ authority: "AGENTS.md procedure-lookup duty — answer from the system, define p
 
 skill_mirror:
   canonical: ".agents/skills/ansible-first/SKILL.md"
-  local_install: "~/.claude/skills/ansible-first -> <repo>/.agents/skills/ansible-first/SKILL.md (symlink)"
+  local_install: "~/.claude/skills/ansible-first/SKILL.md -> ~/.local/share/chaba-skills/ansible-first/SKILL.md (stable cache copy; workspace checkouts may lag origin/master)"
+  refresh: "git -C <chaba-checkout> show origin/master:.agents/skills/ansible-first/SKILL.md > ~/.local/share/chaba-skills/ansible-first/SKILL.md"
   discovery: "scripts/skills-wiki-export.py TOOLING ref + docs/kb/ada-ocb-skills-education.md inventory + tests/test_agents_skills_explored.py pin"
   reason: "single source of truth — edit the repo copy, every OpenCode host with the symlink inherits the procedure"
 

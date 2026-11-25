@@ -62,6 +62,15 @@ curl -s http://127.0.0.1:8787/queue | python3 -m json.tool   # eligible != []
 Result: 7/7 converged, drift-blocked hosts 0, queue 16 -> 7, 11 claimed.
 Evidence: `docs/ssot/jobs/board/2026-11-25-runner-agent-drift-redeploy-verify.yml`.
 
+## Keeping the agent procedure in sync
+
+The skill is repo-canonical at `.agents/skills/ansible-first/SKILL.md`. On OpenCode hosts `~/.claude/skills/ansible-first/SKILL.md` is a symlink to a stable cache copy. After a repo update, refresh it:
+
+```bash
+git -C ~/CascadeProjects/chaba show origin/master:.agents/skills/ansible-first/SKILL.md \
+  > ~/.local/share/chaba-skills/ansible-first/SKILL.md
+```
+
 ## Lessons that generalise
 
 - A "newer than repo" guard compares **mtime, not content** — a newer-mtime copy can
