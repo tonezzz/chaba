@@ -1,0 +1,51 @@
+title: git-safe-pull autostash-pop safe resolution for non-generated paths
+id: 2026-11-25-git-safe-pull-autostash-codefile-fix
+kind: fix
+card: exec-sync-autostash-conflict-codefile
+ref: SYS-1267
+followup_of: 2026-11-09-repo-sync-autostash-conflict
+date: 2026-11-25
+host: tony-omen
+repo: chaba
+summary: >-
+  Closes the systemic gap the 2026-11-09 timer-sentinel incident RCA
+  flagged: git-safe-pull's autostash-pop resolver used to leave
+  non-generated conflicts "for manual merge" — which wrote live
+  <<<<<<< markers into code files systemd jobs execute (SyntaxError
+  every tick) while the sync still exited 0. Now EVERY contested pop
+  path resolves to HEAD via _pop_resolve_to_head(): the stash side
+  (stage 3, stage 2 fallback) is preserved as <path>.local-conflict-<ts>
+  for ALL paths (previously only card YAMLs got a sidecar), and the
+  worktree file can never carry conflict markers. Non-generated pop
+  conflicts still flag bad=1, and a new _autostash_pending() check fails
+  the run whenever the pull's autostash entry stays retained (pop
+  conflict, untracked-restore failure, aborted rebase that never
+  popped) — so chaba-repo-sync.service / git-safe-push.sh exit 1 and
+  the timer-alert surface sees the manual-merge debt instead of
+  reporting success.
+changes:
+  - 'scripts/git-safe-pull.sh: new _pop_resolve_to_head() helper —
+    stage-3/2 sidecar + checkout HEAD/reset (rm on upstream-delete);
+    _resolve_autostash_pop() resolves every U path through it and
+    returns non-zero on non-generated conflicts; CARD_POP_RE removed
+    (all paths now keep a sidecar); _autostash_pending() detects a
+    retained pull-created autostash; PULL_NEEDS_MANUAL fails the run
+    after GC/tool-sync so the failure is still reported.'
+  - 'tests/test-kanban-commit.sh: section M simulates the incident —
+    dirty tracked tool.py + upstream v2 -> pop conflict; asserts exit
+    !=0, no markers, py_compile passes, sidecar keeps local-dirty,
+    autostash retained, HEAD contains upstream.'
+verify: |
+  bash tests/test-kanban-commit.sh
+  # section M: 9/9 ok with the fix; key checks FAIL on the old script
+  # (markers left, no sidecar, exit 0). Sections I/J fail identically
+  # before and after — pre-existing fixture/env drift, unrelated.
+notes: >-
+  Side effect worth knowing: generated NON-card pop conflicts now also
+  leave .local-conflict-* sidecars (previously dropped silently) —
+  reconcile-local-conflicts.py flags strays under docs/ssot on the
+  ops-local-conflict-guard card, which is the intended "nothing
+  silently lost" behavior. Sidecars outside docs/ssot (e.g.
+  scripts/*.py.local-conflict-*) are kept on disk and named in the
+  git-safe-pull stderr line + retained stash; reconcile does not scan
+  there — the exit-1 + timer-alert is the surfacing for those.
