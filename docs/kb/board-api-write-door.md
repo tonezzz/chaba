@@ -240,6 +240,13 @@ resolves those refs through its project topic registry (manifest-backed),
 so bound project events land in the project forum topic instead of
 General; explicit project/card refs with no active binding are refused,
 while unmatched non-project job refs keep the legacy General behavior.
+A refused delivery retries via the outbox then dead-letters — the fix is
+a binding, not a resend: create a `PRJ <project-id> — <title>` forum
+topic in DevNestHA and a
+`~/.local/share/devnest/projects/<id>/project.json` manifest with a
+`topic{thread_id,…}` block (the relay reconciles it into topics.json);
+card-scoped chaba-board lifecycle events carry `project:"chaba"` and
+land in the `PRJ chaba — board ops` topic (OPS-1386, thread 100).
 Artifact-style events should put Drive/file refs in `media[]` or
 `evidence[]` and QC/hash details in `meta` — the Telegram renderer shows
 short refs/metadata, never source binaries.

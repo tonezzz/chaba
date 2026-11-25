@@ -356,6 +356,7 @@ def publish(api_base: str, card_id: str, kind: str, title: str,
     ev = {"kind": kind, "title": title[:240], "body": body[:2000],
           "source": source, "confidence": confidence,
           "visibility": visibility, "card": card_id,
+          "project": "chaba",
           "meta": {"lane": "unattended"}}
     try:
         req = urllib.request.Request(
