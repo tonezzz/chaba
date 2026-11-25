@@ -1,7 +1,7 @@
 id: timer-alert-mn01-mn01-canary
 title: Timer mn01-canary on mn01 failing
 column: backlog
-updated: 2026-11-25 10:45
+updated: 2026-11-25 10:54
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,7 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 10:54
+  from: devin
+  text: '[still suspicious] Last run (11-25 03:30) of `mn01-canary.service` on `mn01` result=exit-code — investigate
+    journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
