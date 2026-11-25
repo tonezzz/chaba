@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-25 09:09
+updated: 2026-11-25 09:10
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -359,6 +359,10 @@ comms:
     + kk-mac-model-status genuinely failed (orphaned unit, script missing — separate card OPS-1348); con01 15 held
     (jev-bench, now parked); mn01 quiet. Found+fixed v2 defect: actuation.units never pruned — ghost ada-code.service
     on idc02 + stale held residue. Ghost-prune + he'
+- at: 2026-11-25 09:10
+  from: devin
+  text: 'raised request phase-0-soak-review-done-6d-idc02-con01-d5e260: Phase-0 soak review done (6d, idc02/con01/mn01,
+    recommend mode): detection/gating/audit all correct, zero executions by '
 action:
   type: dispatch
   status: running
@@ -375,3 +379,30 @@ action:
 review_kind: design
 claim:
   since: 2026-11-25 09:03
+requests:
+- id: phase-0-soak-review-done-6d-idc02-con01-d5e260
+  ask: 'Phase-0 soak review done (6d, idc02/con01/mn01, recommend mode): detection/gating/audit all correct, zero
+    executions by design. But guarded today would be a no-op — zero units fleet-wide are restart-allowlisted, so
+    every candidate holds at not-allowlisted. The only persistent real failure found (kk-mac-model-status on idc02)
+    is an orphaned unit missing its script — restart cannot fix it (already carded OPS-1348). How to proceed to
+    Phase 1?'
+  status: open
+  at: 2026-11-25 09:10
+  from: devin
+  options:
+  - id: stay-recommend
+    label: Stay recommend (recommended)
+    d: Keep recommend on all pilots; land the ghost-prune fix on next nest-mgr deploy; resolve OPS-1348; revisit
+      guarded once you name 1-2 allowlist candidates per host.
+  - id: guarded-mn01
+    label: Guarded on mn01 only
+    d: 'Quietest pilot (sole node: runner-agent). Needs actuation.on + mode=guarded + restart-allowlist entries
+      to act — cleanest signal, slowest proof.'
+  - id: guarded-idc02
+    label: Guarded on idc02
+    d: Where real failures occur, but its only persistent failure is the orphaned unit a restart cannot fix — guarded
+      would just trip that unit circuit.
+  - id: guarded-all-pilots
+    label: Guarded on all 3 pilots
+    d: Fastest soak coverage, widest blast radius if a gate is wrong; still needs allowlist entries to do anything.
+  suggested: stay-recommend
