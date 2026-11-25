@@ -2,8 +2,14 @@
 
 Card reconcile-local-conflicts-expire-stale-n-00974b: stale non-card
 .local-conflict-* files (generated paths — upstream-authoritative) are
-archived once their canonical base exists and they are older than
-RECONCILE_NONCARD_TTL_S; fresh and orphan files keep flag-on-recent.
+archived once they are older than RECONCILE_NONCARD_TTL_S; fresh files
+keep flag-on-recent.
+
+Card reconcile-noncard-conflicts-never-resolve: orphan non-card
+conflicts (canonical deleted upstream — e.g. a focus-inbox entry moved
+to processed/) quarantine on the longer RECONCILE_NONCARD_ORPHAN_TTL_S
+instead of re-flagging forever, and a file whose flag already landed
+inside the dedup window stays quiet on repeat runs.
 """
 import importlib.util
 import sys
@@ -67,16 +73,43 @@ def test_fresh_noncard_kept_and_flagged(rlc, tmp_path, monkeypatch):
     assert fresh.exists()
 
 
-def test_orphan_noncard_never_expires(rlc, tmp_path, monkeypatch):
+def test_orphan_noncard_quarantined_after_ttl(rlc, tmp_path, monkeypatch):
+    archive = tmp_path / "archive"
+    monkeypatch.setattr(rlc, "ARCHIVE_ROOT", archive)
+    monkeypatch.setattr(rlc, "flag_via_api", lambda cid, text: True)
+    monkeypatch.setattr(rlc, "FLAG_STATE", tmp_path / "flags.json")
+    repo, ssot = _tree(str(tmp_path / "repo"))
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    recent = ssot / f"recent-gone.yml.local-conflict-{ts}"
+    recent.write_text("a: 3\n")
+    ancient = ssot / "ancient-gone.yml.local-conflict-20200101-000000"
+    ancient.write_text("a: 4\n")
+
+    # recent orphan: kept + flagged (leftover); ancient orphan:
+    # archived out of the tree on the orphan TTL
+    assert rlc.run(repo, dry=False) == 1
+    assert recent.exists()
+    assert not ancient.exists()
+    assert (archive / ancient.relative_to(repo)).read_text() == "a: 4\n"
+
+
+def test_already_flagged_noncard_is_quiet(rlc, tmp_path, monkeypatch,
+                                        capsys):
     monkeypatch.setattr(rlc, "ARCHIVE_ROOT", tmp_path / "archive")
     monkeypatch.setattr(rlc, "flag_via_api", lambda cid, text: True)
     monkeypatch.setattr(rlc, "FLAG_STATE", tmp_path / "flags.json")
     repo, ssot = _tree(str(tmp_path / "repo"))
-    orphan = ssot / "gone.yml.local-conflict-20200101-000000"
-    orphan.write_text("a: 3\n")
+    (ssot / "x.yml").write_text("a: 1\n")
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    fresh = ssot / f"x.yml.local-conflict-{ts}"
+    fresh.write_text("a: 2\n")
 
     assert rlc.run(repo, dry=False) == 1
-    assert orphan.exists()
+    assert "non-card conflict kept" in capsys.readouterr().err
+    # second run inside the dedup window: no stderr, no leftover
+    assert rlc.run(repo, dry=False) == 0
+    assert capsys.readouterr().err == ""
+    assert fresh.exists()
 
 
 def test_dry_run_reports_but_keeps(rlc, tmp_path, monkeypatch):
@@ -92,11 +125,21 @@ def test_dry_run_reports_but_keeps(rlc, tmp_path, monkeypatch):
 
 def test_expire_noncard_statuses(rlc, tmp_path, monkeypatch):
     monkeypatch.setattr(rlc, "NONCARD_TTL_S", 3600)
+    monkeypatch.setattr(rlc, "NONCARD_ORPHAN_TTL_S", 7200)
+    monkeypatch.setattr(rlc, "ARCHIVE_ROOT", tmp_path / "archive")
     repo, ssot = _tree(str(tmp_path / "repo"))
     (ssot / "x.yml").write_text("a: 1\n")
+    # orphan inside the orphan TTL -> kept as 'orphan'
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    recent_orphan = ssot / f"gone.yml.local-conflict-{ts}"
+    recent_orphan.write_text("a: 3\n")
     assert rlc.expire_noncard(
-        ssot / "missing.yml.local-conflict-20200101-000000",
-        repo, dry=False) == "orphan"
+        recent_orphan, repo, dry=False) == "orphan"
+    # orphan past the orphan TTL -> archived -> 'expired'
+    old_orphan = ssot / "gone2.yml.local-conflict-20200101-000000"
+    old_orphan.write_text("a: 4\n")
+    assert rlc.expire_noncard(old_orphan, repo, dry=False) == "expired"
+    assert not old_orphan.exists()
     fresh = ssot / "x.yml.local-conflict-29990101-000000"
     fresh.write_text("a: 2\n")
     # future timestamp -> age clamps to 0 -> fresh
