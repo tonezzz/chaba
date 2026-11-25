@@ -1,7 +1,7 @@
 id: mn01-yolo-xiaomi-service-stopped-deliber-d2b384
 title: mn01 yolo-xiaomi.service stopped — deliberate capacity stop or restart?
-column: backlog
-updated: 2026-11-25 14:47
+column: doing
+updated: 2026-11-25 14:51
 priority: medium
 tags:
 - mn01
@@ -49,9 +49,18 @@ comms:
   text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:51
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 5.40 > 1.5)'
+- at: 2026-11-25 14:51
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-25 14:51
