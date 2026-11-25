@@ -195,6 +195,13 @@ tools:
     ada-voice: ada_render_image
     ada-dev: ada_render_image
   source: ada-voice:backend/tools.d/ada_render_image.py
+  notes: >-
+    tony-omen sdcpp lane is ILLUSTRATION-TIER for stock photorealism
+    (OPS-1078, 2026-11-25): Lightning 4-step Q4 reads painterly;
+    full sdxl-base Q8_0 is smoother but still short of photo on CPU.
+    sd-server has no hot model swap — parallel instance on another
+    port is the non-disruptive path (see
+    docs/ssot/jobs/nest/2026-11-25-omen-sdxl-q8-experiment.yml).
 - name: media.adobe_stock_qc
   kind: tool
   sig: action,asset,decision,note
