@@ -1,7 +1,7 @@
 id: camwall-retire-to-wiki
 title: Camwall retirement — map consumers, stop units, document restore in wiki
 column: doing
-updated: 2026-11-24 23:09
+updated: 2026-11-25 07:28
 brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
   is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
 priority: medium
@@ -254,6 +254,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261124-223438-phase-1-required-before-any-st on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 07:28
+  from: tony
+  text: 'answered phase-1-consumer-map-done-docs-kb-retire-b94876: ada-snapshot-only — Keep Ada snapshot fallback
+    only'
+- at: 2026-11-25 07:28
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
@@ -273,7 +280,7 @@ requests:
     all producers+edge+route+CMS; Ada loses cctv_wall, wall casts, and stale_snapshot camwall-thumb fallback (live
     vms-snap snaps still work). (b) keep-Ada-snapshot-only — stop wall/CMS/edge/vcast surface but keep cam-wall-pull
     thumbs+data so Ada camera snapshots keep their last-good fallback.
-  status: open
+  status: answered
   at: 2026-11-24 22:47
   from: devin
   options:
@@ -286,6 +293,7 @@ requests:
     v: stop CMS/edge/route/vcast/roster-audit; keep cam-wall-pull thumbs+zones data on tony-dell for ada_camera_snapshot
       cached/stale path
   suggested: ada-snapshot-only
+  answer: ada-snapshot-only — Keep Ada snapshot fallback only
 - id: job-input-camwall-retire-to-wiki
   ask: 'Job needs your input: Camwall retirement Phase 2 is blocked on Tony''s sign-off: full stop vs keep-Ada-snapshot-only
     (board request phase-1-consumer-map-done-docs-kb-retire-b94876 on card camwall-retire-to-wiki).'
