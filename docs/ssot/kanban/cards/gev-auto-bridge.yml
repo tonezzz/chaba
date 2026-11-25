@@ -12,7 +12,7 @@ note: 'Auto-recovered 2026-11-24: `bridge` check passing again.'
 help: 'Quadlet ~/.config/containers/systemd/gev-gemini.container on idc02 runs the Gemini Live bridge (image localhost/gev-gemini,
   Network=host, :8789 ws + :8790 cmd). Fix: ssh idc02 systemctl --user start gev-gemini. If the image is stale,
   rebuild on idc02 and restart the unit.'
-updated: 2026-11-26 04:00
+updated: 2026-11-26 04:02
 comms:
 - at: 2026-11-24 10:00
   from: chaba
@@ -93,4 +93,8 @@ comms:
 - at: 2026-11-26 04:00
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
