@@ -1,7 +1,7 @@
 id: tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302
 title: 'tony-ha: svc-chaba-scripts lost admin — lovelace saves unauthorized'
 column: doing
-updated: 2026-11-25 19:07
+updated: 2026-11-25 19:08
 program: infrastructure
 tags:
 - ops
@@ -225,6 +225,16 @@ comms:
 - at: 2026-11-25 19:07
   from: idc02
   text: claimed
+- at: 2026-11-25 19:08
+  from: chaba
+  text: started devin-task-20261125-190837-fix-the-home-assistant-admin-p on idc02 (dispatch)
+- at: 2026-11-25 19:08
+  from: chaba
+  text: 'primer injected 8 lesson(s): [timer-alert-tony-dell-network-scan-tony] REOPENING 2026-11-08 — recurrence
+    veri; Units migrated idc03→tony-omen 2026-11-18 lost ALL drop-ins (stagger + gates) — ; [devnest-queue-consolidation]
+    VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; The chaba merge test gate runs a FIXED file list in dispatch_repos.py
+    REPO_TESTS; `~/.config/home-assistant` on a standby host IS the tony-ha config path (ada-ha/; tony-macbook has
+    no pytest and no chaba .venv — chaba dispatc'
 spec: Fix the Home Assistant admin permission issue for the svc-chaba-scripts user on tony-omen HA so that Lovelace
   dashboard and configuration saves succeed without unauthorized errors. The target host is tony-omen and the relevant
   repo context involves the chaba infrastructure scripts. The runner must verify that the token or user account

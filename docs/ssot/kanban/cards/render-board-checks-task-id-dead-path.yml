@@ -1,7 +1,7 @@
 id: render-board-checks-task-id-dead-path
 title: compute_checks git chips are dead code — action.task_id is never populated anymore
 column: doing
-updated: 2026-11-25 19:07
+updated: 2026-11-25 19:08
 brief: 'Found while optimizing render-board-real-cost-git-subprocesses (2026-11-25): zero live cards carry action.task_id,
   so compute_checks never reaches _branch_merged/_run_branches matching — the code-merged and per-run outcome chips
   cannot fire. Runner-agent era: task ids live in runner state.json; done cards only carry the slug inside action.result
@@ -81,6 +81,16 @@ comms:
 - at: 2026-11-25 19:07
   from: tony-dell
   text: claimed
+- at: 2026-11-25 19:08
+  from: chaba
+  text: started devin-task-20261125-190842-decide-how-compute-checks-shou on tony-dell (dispatch)
+- at: 2026-11-25 19:08
+  from: chaba
+  text: 'primer injected 8 lesson(s): [dispatch-worktree-gc] done: gc_worktree guard helper in dispatch_repos (clean
+    +; [chaba-nest-hosts-view-replace-tony-ha-if-053226] [verify 2026-11-25] Live ada-h; [dispatch-worktree-gc]
+    done: dr.gc_worktree guard helper (clean + ancestor-of-me; [ada-ha-dashboard-live-view-drift] merge-sweep: no
+    session/worktree found for de; [ada-voice-text-mode-sessions-never-call-e007bd] primer injected 8 lesson(s):
+    [k; [ansible-vs-legacy-fleet-benchmark] MANUAL LANDING (devin ses'
 action:
   type: dispatch
   status: running
