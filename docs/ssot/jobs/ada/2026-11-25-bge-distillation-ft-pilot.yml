@@ -1,0 +1,82 @@
+date: 2026-11-25
+title: BGE-M3 distillation pilot — teacher rebuild + CPU fine-tune launch
+card: bge-m3-distillation-pilot-train-local-em-d85919
+domain: ada
+job: dispatch
+host: tony-macbook (coordination) / idc03 (fixture) / con01 (train)
+repo: chaba
+branch: dispatch/20261125-192217-distillation-experiment-option
+summary: >
+  Tony answered "proceed" on the disposition request = authorize rebuild
+  + full SBERT fine-tune. Rebuilt the lost /tmp/embedeval teacher fixture
+  on idc03 (5,890 docs — corpus shrank from 8,109 after bank compaction —
+  plus 48 queries, all gemini-embedding-2 vectors via PAID key after the
+  FREE key hit daily quota), relaunched the judged-union eval to rebuild
+  qrels (4,800 new judgments), and launched a detached fine-tune of
+  BAAI/bge-m3 on con01 CPU (top-12-layers + linear head, MSE on teacher
+  vectors, ~20h ETA). No usable GPU exists: omen GTX1650 is 75% VRAM
+  committed by ollama and ships a +cpu torch; kk-mac offline.
+
+findings:
+  prior_state:
+    - "/tmp/embedeval was wiped fleet-wide — teacher vecs AND judged qrels
+      lost. Durable copy now at idc03:~/data/embedeval-distill/ (4 files,
+      31MB) plus live /tmp/embedeval on idc03 and con01."
+    - "2026-11-08 closed-form linear-map pilot already met the old gate
+      (r@5 .235 / MRR .871 vs .235/.83) — full FT is the authorized
+      'does backbone training beat the map' experiment."
+    - "Reranker arm still dominates everything: bge+rera top-10 r@5 .262
+      / MRR .938 (2026-11-24 cutover brief)."
+  corpus_delta:
+    - "docs pool is 5,890 today vs 8,109 on 2026-10-15 — mddb bank
+      compaction/merge shrank collections (devin ~999, cms/infrastructure
+      capped at 1,000 by /v1/search). Train set after retracted/short
+      filter: 5,447 pairs + 291 holdout."
+  rebuilt_baseline_2026-11-25:
+    - "qrels-bge-hybrid.json rebuilt from scratch: 48 queries, 4,800 new
+      judgments, 499 relevant docs. Report: idc03
+      /tmp/embedeval/out/bge-hybrid-judged-20261025-*.md (stamp
+      20261125-144348)."
+    - "bge_dense r@5 .315 / MRR .656 on the NEW fixture — NOT comparable
+      to the Nov-7 gate numbers (.224/.767) because corpus+qrels both
+      changed. The honest gate comparison is student-vs-gemini on THIS
+      qrels set."
+  compute_reality:
+    - "con01 (AMD EPYC 8c, 23GB) is the only viable worker. Measured
+      BGE-M3 fwd+bwd: ~60-73s per batch-4x512 fp32; full-FT AdamW states
+      OOM-killed the first launch at 21GB RSS. Running config freezes
+      embeddings + bottom 12 of 24 layers (top-12 + head trainable),
+      batch 8 x accum 2 (eff. 16), fp32, lr 2e-5/head 1e-3, max_len 512,
+      ckpt every 50 opt steps -> /tmp/bge-m3-distill/{step*,epoch1,final}."
+    - "bf16 autocast is OFF by default in bge-distill-ft.py — con01 CPU
+      lacks AVX512_BF16; only enable --bf16 on capable hosts."
+    - "ETA ~18-24h for 1 epoch (nice -n 15, detached setsid on con01,
+      log /tmp/bge-m3-distill-train.log, pid file via pgrep)."
+
+artifacts:
+  scripts:
+    - scripts/ada/embedeval-rebuild.py   # fixture rebuild driver (fetch+select+gemini-only embed)
+    - scripts/ada/bge-distill-ft.py      # train/eval: CLS->Linear(1024->768)->L2n, MSE on unit sphere
+  data:
+    - "idc03:~/data/embedeval-distill/{docs,queries,vec-gemini,vec-gemini-queries}.jsonl"
+    - "idc03:/tmp/embedeval/qrels-bge-hybrid.json (rebuilt judged qrels)"
+    - "con01:/tmp/embedeval/ same 5 files (training + eval input)"
+  eval_command: >
+    ssh con01 '~/venvs/bge-distill/bin/python /tmp/bge-distill-ft.py eval
+    --work /tmp/embedeval --ckpt /tmp/bge-m3-distill/final'
+    — prints teacher-cosine, teacher-rank overlap@k, and recall/MRR vs
+    any qrels*.json in the workdir.
+
+followups:
+  - "After training: run eval; if teacher-cosine >> .9493 (closed-form
+    pilot) and/or qrels metrics beat gemini arm, card the serving
+    decision (second mddb-embed collection or offline cosine)."
+  - "Student top-10 candidates are NOT yet in qrels — judged union
+    covered bge_dense+bm25 only. Incremental judging of student pools
+    needed before final gate numbers (bge-hybrid-judged.py merges into
+    existing qrels-bge-hybrid.json)."
+  - "Full-FT (freeze_layers=0) needs ~21GB+ and OOM'd on con01; rerun on
+    a real GPU (kk-mac when online, or omen after VRAM frees / CUDA
+    torch) if top-12 result is promising."
+  - "GEMINI_API_KEY_FREE is over daily quota — rebuilds/judging used
+    GEMINI_API_KEY_PAID (~$1-2 total). Watch spend."
