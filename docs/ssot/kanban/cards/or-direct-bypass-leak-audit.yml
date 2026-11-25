@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
 column: doing
-updated: 2026-11-25 19:09
+updated: 2026-11-25 20:30
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -265,6 +265,13 @@ comms:
   text: 'dispatch picked up on tony-macbook. Prior state: openrouter_provider.py already gateway-first (0540fbb),
     bench key split done 11-25. Starting fresh audit of OPENROUTER_API_KEY holders across hosts, then repoint +
     rotate + verify.'
+- at: 2026-11-25 20:30
+  from: devin
+  text: 'DONE (dispatch 20261125-190856). Fleet OR key consolidated to gateway-only: new key idc03-litellm-fleet
+    (sk-or-v1-ca7…8545, $5/wk) lives ONLY in idc03 litellm.env; old fleet idc02-openclaw …f6c + leak key tony-mddb
+    …35b DELETED via OR provisioning API. gemini-ollama-proxy OR backup leg repointed to LiteLLM embedding alias
+    (EMBED_GATEWAY_*); mddb-gemini.env OR key removed; omen on dedicated tony-omen-openclaw-free $0.50/wk; dell
+    stripped. Also fixed: OR embeddings needed provider pin [Google] — A'
 action:
   type: dispatch
   status: running
