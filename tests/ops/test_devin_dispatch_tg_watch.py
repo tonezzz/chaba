@@ -141,8 +141,12 @@ class WatchTick(unittest.TestCase):
         old_catchup = mod.CATCHUP_MIN
         mod.CATCHUP_MIN = 30
         try:
+            # Fresh wall-clock time: main() computes the catchup cutoff
+            # at tick time, and a full-suite run can start this module
+            # minutes before the test executes.
             self.docs.append(job_doc("task-fresh", "done", "just now",
-                                     ts=NOW - timedelta(minutes=5)))
+                                     ts=datetime.now(timezone.utc)
+                                     - timedelta(minutes=5)))
             _, send = self.tick()
             titles = [c.args[0] for c in send.call_args_list]
             # only the in-window doc reports; history stays silent
