@@ -1,6 +1,6 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
-column: backlog
+column: doing
 updated: 2026-11-25 09:03
 priority: medium
 tags:
@@ -195,6 +195,9 @@ comms:
 - at: 2026-11-25 09:03
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:03
+  from: mn01
+  text: claimed
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
@@ -203,7 +206,11 @@ spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, br
   success when manual merge intervention is required.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-25 09:03
