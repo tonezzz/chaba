@@ -1,7 +1,7 @@
 id: reconcile-local-conflicts-expire-stale-n-00974b
 title: 'reconcile-local-conflicts: expire stale non-card .local-conflict files'
 column: doing
-updated: 2026-11-25 09:11
+updated: 2026-11-25 09:13
 priority: medium
 tags:
 - chaba
@@ -211,6 +211,12 @@ comms:
   from: devin
   text: 'picked up: adding RECONCILE_NONCARD_TTL_S expiry to reconcile-local-conflicts.py — stale non-card conflicts
     archived after upstream-wins verified, recent ones still flagged'
+- at: 2026-11-25 09:13
+  from: devin
+  text: 'done in worktree: expire_noncard() added — non-card conflicts older than RECONCILE_NONCARD_TTL_S (default
+    86400) are archived to ~/.local/share/chaba-reconcile-archive/ once canonical exists; fresh/orphan still flag.
+    Selftest OK. Deliverables: scripts/board/reconcile-local-conflicts.py + docs/ssot/jobs/kanban/2026-11-25-noncard-conflict-expiry.yml
+    + dispatch-outcome doc.'
 action:
   type: dispatch
   status: running
