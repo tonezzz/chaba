@@ -1,7 +1,7 @@
 id: ada-engine-runtimes
 title: Per-engine runtimes — parallel engine versions on idc03 (checkout+venv or quadlet per line@version)
 column: doing
-updated: 2026-11-25 12:22
+updated: 2026-11-25 12:24
 priority: low
 spec: 'From ai-engine-lines (ssot.apps.ada-engines.yml): every ada-* instance shares the one idc03 ada-voice checkout
   + .venv, so the fleet-wide engine version is single — lanes cant run DIFFERENT engine versions simultaneously.
@@ -243,6 +243,10 @@ comms:
     scripts/ada/engine-runtime.sh (provision/bind/unbind/lane/status, idempotent), ssot.apps.ada-engines.yml runtime_model
     + gap marked resolved, jobs record docs/ssot/jobs/ada/2026-11-25-ada-engine-runtimes.yml. No live changes —
     first runtime provisions on idc03 when ada-2 has a '
+- at: 2026-11-25 12:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-051119-from-ai-engine-lines-ssot-apps no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -251,5 +255,7 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 12:24
 claim:
   since: 2026-11-25 12:10
