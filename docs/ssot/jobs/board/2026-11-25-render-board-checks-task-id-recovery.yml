@@ -1,0 +1,87 @@
+id: render-board-checks-task-id-recovery-20261125
+title: compute_checks task-id recovery — git chips live again via card-local comms/result scan
+date: 2026-11-25
+card: render-board-checks-task-id-dead-path
+ref: KNB-1366
+host: tony-dell (dispatch worktree)
+status: landed-on-dispatch-branch
+
+goal: >
+  Decide how compute_checks should recover the task slug — (a) parse
+  action.result for devin-task-<id>, (b) claim.session / runner
+  state.json via merge-sweep task_id_for, or (c) delete the git
+  machinery — and verify the code-merged chip renders again on a card
+  with a real merged dispatch run.
+
+decision: >
+  Rejected (c): the chips carry real merge-truth signal (the
+  verify-by-surface evidence sweep duty relies on) and the git path was
+  already optimized — only the task-id leg was dead. Rejected (b)'s
+  state.json leg: per-card ssh to runner hosts is exactly the
+  subprocess cost the render path exists to avoid, and claim.session
+  is empty on 0/432 dispatch cards. Adopted a card-local variant of
+  merge-sweep.task_id_for's fallback chain plus (a) as last resort:
+  action.task_id -> claim.session -> comms devin-task-<id> (newest
+  first, extended to the longest same-run variant) -> action.result.
+  All sources are already-parsed card fields — zero subprocesses.
+
+what-landed:
+  scripts/render-board.py:
+    - >-
+      _TASK_ID_RE mirrors merge-sweep.TASK_ID_RE (devin-task-<ts>-<slug>
+      AND <card-id>-<epoch> opencode/kk_mac/nlm tids).
+    - >-
+      _task_id_for(c): the recovery chain above. Heuristic legs
+      (comms/result) are gated on action.type == "dispatch" — a
+      non-dispatch card mentioning devin-task-<id> is talking ABOUT a
+      run, not claiming one (cms-auto-nest-tony-macbook,
+      vcast-auto-yt-live-api, chaba-jobs-dispatcher-dead-fleet-wide-di
+      would otherwise borrow another card's chips).
+    - >-
+      Comms truncation handling: finish/merge-sweep comms cap text and
+      embed truncated ids — the newest mention can be a strict prefix
+      of the same run's full id on the 'started' line. The scan
+      collects all comms tids newest-first and extends the newest with
+      the longest prefix-variant (different runs differ at the
+      timestamp/epoch and never prefix-match).
+    - >-
+      _runs_for_slug(runs_by_slug, slug): exact lookup plus an
+      ambiguity-guarded prefix fallback — action.result is capped at
+      300 chars board-api-side, so a result-sourced tid can arrive
+      truncated mid-slug. Prefix match adopted only when exactly one
+      slug key qualifies.
+  tests/board/test_render_board_outputs.py: +7 tests (chain order,
+    newest-first retry, comms truncation extension, non-dispatch gate,
+    opencode tid form, prefix-match ambiguity, compute_checks
+    regression).
+
+measured: >-
+  Live corpus (800 cards, 82 run slugs): BEFORE 652 cards with checks,
+  0 code chips (dead path confirmed). AFTER 655 cards with checks,
+  76 code chips — 51 merged / 25 not-merged — plus 6 multi-run chips.
+  tid recovery coverage: 392/432 dispatch cards (comms 391 + result 1;
+  action.task_id and claim.session are 0). The 40 without a tid are
+  queued/idle/manual/non-devin-task lanes — correctly chip-less.
+
+verify: >-
+  python3 -m pytest tests/board/test_render_board_outputs.py
+  Card ada-session-summary-inflow-stalled (done run,
+  dispatch/20261125-150157-found-while-shipping-memory-ex merged into
+  origin/master): recovers full tid from comms despite truncated
+  finish/sweep mentions; chips render code=ok (branch on
+  origin/master), outcome=ok, deploy=ok, verify=ok.
+
+findings:
+  - >-
+    runner-agent claims never stamp action.task_id or claim.session —
+    finish_pass posts /action {do:finish} with no task_id and board-api
+    pops claim.session on finish. If chips or other consumers need the
+    tid durably, the durable fix is stamping action.task_id at claim
+    (runner-agent claim_pass has tid in scope) — worth a follow-up
+    card; the comms scan is the render-side workaround.
+  - >-
+    dispatch slugs derive from the first ~30 slugified chars of the
+    composed task text (devin-dispatch _slug), NOT the card id — so
+    cards with similar specs share run branches (audit-oc-* cards all
+    map to 'auto-filed-by-opencode-session'). Pre-existing behavior,
+    unchanged by this fix.
