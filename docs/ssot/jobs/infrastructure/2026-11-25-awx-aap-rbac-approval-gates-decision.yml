@@ -1,0 +1,157 @@
+id: awx-aap-rbac-approval-gates-decision-20261125
+title: AWX/AAP integration for dispatch queue RBAC + approval gates — decision record
+date: 2026-11-25
+card: awx-aap-rbac-approval-gates
+status: decided — do-not-adopt-awx-now; ship minimal in-queue gate instead
+
+# ─── Scope 1: AWX/AAP fleet survey ────────────────────────────────────────
+survey:
+  target_system:
+    path: /home/tony/ansible (on idc02 only)
+    components:
+      - queue/queue_manager.py   # Redis-backed priority queue + fair-share + DLQ + CLI
+      - queue/scheduler.py       # systemd --user service dispatch-scheduler.service (active since 2026-11-25 20:56 +07)
+      - playbooks/dispatch_job.yml  # container dispatch (podman/docker)
+      - playbooks/queue_operations.yml  # Ansible-driven enqueue/stats/requeue
+      - scripts/dispatch_job.py  # direct-dispatch CLI (bypasses queue)
+    state: >
+      Untracked prototype on idc02 — `git status` shows queue/, scripts/,
+      playbooks/dispatch_job.yml, playbooks/queue_operations.yml,
+      README-DISPATCH.md, GPU-JOBS.md, jobs/ all untracked; repo has NO
+      remote. Live queue has 4 gpu-rsv* test jobs; scheduler is running.
+  awx_aap_findings: >
+    None. Checked docker ps, podman ps, and systemctl (all units) on
+    idc02, idc03, con01, mn01, tony-dell, tony-omen for awx|tower|ansible
+    patterns — zero hits. No AWX/Tower/AAP controller, execution env, or
+    credentials exist anywhere on the fleet. kk-mac not checked (host
+    offline per 2026-11-25 dispatch comms). No awx secrets in
+    ~/.config/secrets/ on idc02.
+  exposure_note: >
+    Redis on 100.123.163.11:6379 is reachable over Tailscale with no auth;
+    queue_manager.enqueue() takes --user/--project as free-text CLI args.
+    Any Tailscale-reachable host can enqueue as any user today.
+
+# ─── Scope 2: mapping proposal (hypothetical, if AWX is ever adopted) ──────
+mapping:
+  awx_org: chaba
+  teams:
+    - name: dispatch-submitters
+      members: [tony]   # plus any future human operators
+      role: may launch job templates in org chaba
+    - name: dispatch-approvers
+      members: [tony]
+      role: execute approval step on gated job templates
+    - name: dispatch-admins
+      members: [tony]
+      role: manage templates/inventory/credentials
+  job_templates:
+    - name: dispatch-job-gated
+      playbook: playbooks/dispatch_job.yml
+      survey: job_id, job_image, job_cmd, job_gpus, job_min_vram_gb,
+        job_require_tags, job_exclude_tags, target_group, container_runtime,
+        job_timeout_sec, user, project, priority
+      approval: enabled — launch lands in AWX "pending approval" until an
+        approver clicks approve in the AWX UI
+    - name: queue-operations
+      playbook: playbooks/queue_operations.yml
+      survey: operation (enqueue|stats|list|requeue|dlq), job_spec_file
+  credentials: >
+    AWX credential type "Ansible Vault"/"Machine" for Redis host +
+    sidecar_redis_host extra-var; Tailscale SSH key already exists per-host.
+    Nothing new needed in repo/cards — AWX stores its own secrets.
+  gap: >
+    AWX job templates launch playbooks; they do NOT sit in the Redis
+    priority queue. Adopting AWX for gated dispatch means either
+    (a) bypassing the queue entirely — losing fair-share, retries, DLQ,
+    GPU reservations — or (b) writing an AWX-side integration that pushes
+    into queue_manager and polls approval state back. Either way the
+    enforcement point is custom code, not AWX.
+
+# ─── Scope 3: approval-gate semantics (recommended minimal design) ────────
+approval_semantics:
+  approver: tony   # single-operator fleet; approver != job.user unless self_approve=true
+  signal_lands: >
+    Redis hash fields on queue:job:{job_id} — NOT a card request, NOT AWX.
+    Rationale: the queue is the enforcement point; a card request would
+    require scheduler→board-api polling (new dependency, new failure mode).
+    Fields: approval_state ∈ {not_required, pending, approved, rejected,
+    expired}, approved_by, approved_at, approval_reason.
+  enqueue_flow: >
+    1. queue_manager.enqueue() resolves user from SSH-authenticated
+       identity ($USER / SUDO_USER), NOT free-text --user; --user remains
+       an override only when it matches the caller.
+    2. Policy check (queue/approval_policy.yml or inline): jobs require
+       approval when job_gpus>0 OR priority<=2 OR 'gpu' in require_tags.
+    3. If approval required: status=awaiting_approval, approval_state=
+       pending, job spec stored at queue:job:{id} with 24h TTL — and the
+       job_id is NOT LPUSHed to queue:jobs:{priority}. It lives in
+       queue:pending:{priority} instead.
+    4. approve(job_id, by): verifies by==approver, sets approved fields,
+       LPUSHes to queue:jobs:{priority}, publishes queue:events
+       {event:approved}. reject(job_id, by, reason): status=rejected,
+       event published, spec retained 7d for audit.
+    5. Expiry sweeper (inside scheduler tick, ~free): pending jobs older
+       than approval_ttl_sec → approval_state=expired, event published.
+  scheduler_observation: >
+    ZERO scheduler diff required — dequeue() only reads queue:jobs:{p}
+    lists, and pending jobs are never in those lists. This respects the
+    constraint "do not replace the scheduler". (Alternative considered:
+    approval_state check inside dequeue(); rejected because it adds a
+    hash read per candidate and complicates the atomic Lua claim.)
+  surfaces: >
+    - CLI: queue_manager.py approve|reject|pending subcommands.
+    - Ansible: queue_operations.yml gains operation=approve/-reject
+      mapping to the same CLI.
+    - Board: optional later — a thin board-api card-request bridge can
+      file `requests:` on a card when a pending job names one in
+      metadata.card; approval still lands in Redis first.
+
+# ─── Scope 4: decision ────────────────────────────────────────────────────
+decision:
+  verdict: stay-cli-only-now — do NOT adopt AWX/AAP for this queue.
+  reasons:
+    - No AWX exists on the fleet; standing one up is a multi-container
+      PostgreSQL-backed deployment (~hours of work, ongoing upgrade/backup
+      burden) to front a single-operator prototype that has never run
+      outside idc02.
+    - AWX cannot natively gate a third-party Redis queue; the approval
+      enforcement code must be written regardless — AWX would only add a
+      UI skin over the same custom integration.
+    - The actual gap (any Tailscale host can enqueue as any user) is
+      closed by ~80 lines in queue_manager.py + policy file, not by a
+      controller.
+  revisit_when: >
+    Re-evaluate AWX if (a) the queue graduates to multi-operator/multi-
+    tenant use, (b) more than ~2 people need submit/approve UX, or
+    (c) Ansible content grows enough that job-template RBAC pays for
+    itself. Until then the in-queue gate below is the whole answer.
+  implementation_status: >
+    Specified, not implemented — /home/tony/ansible is outside this
+    dispatch worktree and its queue/ files are untracked prototype;
+    implementation belongs in a follow-up card on the ansible repo.
+  followup_card_spec: |
+    Title: dispatch-queue approval gate (RBAC-lite)
+    Repo/host: /home/tony/ansible on idc02 (untracked — consider `git init`
+    + remote first so changes are reviewable)
+    Changes:
+      queue/queue_manager.py:
+        - enqueue(): resolve default user from getpass.getuser()/SUDO_USER;
+          reject --user that mismatches caller unless --as-user flag.
+        - new subcommands: approve <job_id> --by <user>,
+          reject <job_id> --by <user> --reason <text>, pending --redis.
+        - approval fields + queue:pending:{priority} list as specced above.
+        - approval_policy.yml (repo root): require_approval_when rules.
+      queue/scheduler.py: add expiry sweep in _tick (pending TTL → expired).
+      playbooks/queue_operations.yml: operation=approve/reject/pending.
+    Verify: enqueue gpu job as tony → status awaiting_approval, queue
+    empty; approve as tony → dispatched by scheduler; enqueue second job,
+    reject → never dispatched, status=rejected in `list --status rejected`.
+    Done when: dry-run-gated path verified with one approved + one
+    rejected job per card awx-aap-rbac-approval-gates spec.
+
+verification:
+  survey_commands:
+    - "ssh idc02 'systemctl --user status dispatch-scheduler' → active (running)"
+    - "ssh idc02 'cd /home/tony/ansible && git status -sb' → queue files untracked, no remote"
+    - "fleet docker/podman/systemctl sweep for awx|tower on 6 hosts → zero hits"
+    - "redis-cli keys 'queue:job:*' on 100.123.163.11 → 4 gpu-rsv* jobs present"
