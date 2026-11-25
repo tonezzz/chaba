@@ -1,7 +1,7 @@
 id: wiki-education-cargo-declare-verify
 title: Re-apply Education Cargo declare/store after table exists
 column: backlog
-updated: 2026-11-25 14:47
+updated: 2026-11-25 14:48
 brief: 'Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned
   table creation passes.'
 priority: low
@@ -53,6 +53,10 @@ comms:
   text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:48
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: queued
