@@ -5,10 +5,28 @@
  * findings into focus-inbox draft items, avoiding duplicates by file stem.
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import { execFileSync } from "child_process";
 import { join } from "path";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = "/home/tony/CascadeProjects/chaba-tony-dell";
+
+// exec/readonly checkouts can't commit focus-inbox files — writes there are
+// invisible litter (card omen-chaba-checkout-focus-inbox-writers-d993c4).
+// Mirrors scripts/lib/inbox_door.py BLOCKING_ROLES.
+function localWritesOk(root) {
+  try {
+    const gitdir = execFileSync(
+      "git", ["-C", root, "rev-parse", "--absolute-git-dir"],
+      { encoding: "utf8" }).trim();
+    const roleFile = join(gitdir, "chaba-role");
+    if (!existsSync(roleFile)) return true;
+    const role = readFileSync(roleFile, "utf8").trim();
+    return role !== "exec" && role !== "readonly";
+  } catch {
+    return true; // not a git worktree — can't determine, allow
+  }
+}
 const REPORTS_DIR = join(PROJECT_ROOT, "reports");
 const WARNINGS_FILE = join(REPORTS_DIR, "SSOT_OPTIMIZATION_WARNINGS.json");
 const INBOX_DIR = join(PROJECT_ROOT, "docs", "ssot", "focus-inbox");
@@ -57,6 +75,10 @@ function makeInboxItem(file, warnings) {
 }
 
 function main() {
+  if (!localWritesOk(PROJECT_ROOT)) {
+    console.log("[ssot-optimize-to-inbox] skipped — non-committable checkout");
+    return 0;
+  }
   if (!existsSync(WARNINGS_FILE)) {
     console.log("[ssot-optimize-to-inbox] no warnings file; nothing to do");
     return 0;

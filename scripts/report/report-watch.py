@@ -62,6 +62,14 @@ try:
 except Exception:  # pragma: no cover - re-probe optional
     goallib = None
 import report as rlib  # scripts/lib/report.py — cadence + artifact helpers
+import inbox_door  # noqa: E402 — exec/readonly checkouts can't commit
+
+# exec/readonly checkouts (job hosts' ~/CascadeProjects/chaba) can't commit
+# focus-inbox or card files — writes there are invisible litter (card
+# omen-chaba-checkout-focus-inbox-writers-d993c4). The canonical unit runs
+# on the served checkout; off-served runs still probe/report but skip
+# every local mutation.
+WRITES_OK = inbox_door.local_writes_ok(REPO)
 
 
 def meta_path(node: dict) -> Path | None:
@@ -126,6 +134,8 @@ def heal_item(raw: str, reason: str, dry_run: bool) -> str | None:
     """Auto-close an open flag whose condition cleared — the item's own
     text promises 'clears once the node reports ok'. Returns the healed
     filename for reporting, None when nothing was open."""
+    if not WRITES_OK:
+        return None
     p = open_item(raw)
     if not p:
         return None
@@ -327,13 +337,13 @@ def probe_done_goals(state: dict, now, quiet: bool, dry_run: bool,
         # card (flock protocol, same as kanban-dispatch) then requeue via
         # the API so comms + column transition stay consistent.
         if card.get("on_goal_rot") == "requeue" and not dry_run \
-                and rot_requeue(p, cid, failed):
+                and WRITES_OK and rot_requeue(p, cid, failed):
             if not quiet:
                 print(f"goal-rot {cid}: requeued")
             continue
         if open_item(f"goal-rot-{slug(cid)}"):
             continue
-        if not dry_run:
+        if not dry_run and WRITES_OK:
             fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                      f"report-watch-goal-rot-{slug(cid)}.yml")
             card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(
@@ -429,7 +439,7 @@ def main() -> int:
         if over:
             if not open_item(oid):
                 created.append(f"{nid}=overrun")
-                if not dry_run:
+                if not dry_run and WRITES_OK:
                     fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                              f"report-watch-{slug(oid)}.yml")
                     card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(
@@ -470,7 +480,7 @@ def main() -> int:
             active.append(f"{nid}={status}")
             if not open_item(nid):
                 created.append(f"{nid}={status}")
-                if not dry_run:
+                if not dry_run and WRITES_OK:
                     fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                              f"report-watch-{key}.yml")
                     card_io.atomic_write_text(INBOX / fname, yaml.safe_dump(

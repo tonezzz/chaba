@@ -9,6 +9,9 @@ import yaml
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent  # whichever checkout runs the job — drafts land next to the other inbox items it produces
 CLIENT = REPO / "scripts" / "mcp-health-client.py"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
@@ -106,6 +109,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    if not args.dry_run and not inbox_door.local_writes_ok(REPO):
+        # exec/readonly checkouts can't commit — drafts would be litter.
+        # Canonical run is the served checkout's overnight chain.
+        print("mcp-health-to-inbox: skipped — non-committable checkout "
+              f"({inbox_door.checkout_role(REPO) or 'unmarked'})")
+        return
 
     INBOX_DIR.mkdir(parents=True, exist_ok=True)
     crit_map = load_criticality_map()

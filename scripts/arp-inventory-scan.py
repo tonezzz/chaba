@@ -24,6 +24,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import inbox_door  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAC_SSOT = REPO_ROOT / "docs/ssot/infrastructure/ssot.mac-address-registry.yml"
 IP_SSOT = REPO_ROOT / "docs/ssot/infrastructure/ssot.ip-address-registry.yml"
@@ -432,7 +435,9 @@ def should_alert(results):
 
 
 def write_focus_inbox(results, ts):
-    """Create a focus-inbox YAML for review."""
+    """Create a focus-inbox alert — local file on committable checkouts,
+    board-api /inbox on exec/readonly checkouts that can't commit
+    (card omen-chaba-checkout-focus-inbox-writers-d993c4)."""
     FOCUS_INBOX_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{ts}-arp-inventory-alert.yml"
     path = FOCUS_INBOX_DIR / filename
@@ -513,6 +518,25 @@ def write_focus_inbox(results, ts):
         },
         "source": {"session": "", "date": datetime.date.today().isoformat()},
     }
+
+    if not inbox_door.local_writes_ok(REPO_ROOT):
+        payload = {
+            "label": doc["focus"]["label"],
+            "subtitle": doc.get("subtitle"),
+            "text": doc["focus"]["text"],
+            "priority": doc["focus"]["priority"],
+            "tags": doc["focus"]["tags"],
+            "owner": "tony",
+            "icon": "inbox",
+            "subtasks": doc["focus"]["subtasks"],
+        }
+        if inbox_door.post_inbox(payload):
+            print("Focus inbox alert posted via board-api /inbox "
+                  "(non-committable checkout)", file=sys.stderr)
+        else:
+            print("warn: board-api /inbox unreachable — alert dropped",
+                  file=sys.stderr)
+        return
 
     with open(path, "w", encoding="utf-8") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=1000)

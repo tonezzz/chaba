@@ -21,6 +21,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import inbox_door  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INBOX_DIR = REPO_ROOT / "docs" / "ssot" / "focus-inbox"
 STATE_FILE = Path(os.environ.get(
@@ -132,6 +135,27 @@ source:
   date: {stamp[:10]}
 """
     return fname, body
+
+
+def inbox_payload(repo, run):
+    """board-api /inbox payload — used when this checkout can't commit
+    (chaba-role exec/readonly); mirrors alert_yaml's content."""
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {
+        "label": f"Fix CI: {repo} / {run.get('workflowName', '?')}",
+        "subtitle": (f"{run.get('workflowName', '?')} failed on "
+                     f"{run.get('headBranch', '?')}"),
+        "text": (f"GitHub Actions run failed. "
+                 f"workflow={run.get('workflowName')} "
+                 f"branch={run.get('headBranch')} "
+                 f"sha-title={run.get('displayTitle')!r} "
+                 f"url={run.get('url')} "
+                 f"Detected {stamp} by gh-runs-watch."),
+        "priority": "high",
+        "tags": ["ci", "github-actions", repo.split("/")[-1]],
+        "owner": "tony",
+        "icon": "inbox",
+    }
 
 
 def existing_alert(repo, run):
@@ -253,10 +277,17 @@ def main():
         print(f"FAIL {run['_repo']} {run.get('workflowName')} "
               f"{run.get('headBranch')} -> {fname}")
         if not args.dry_run:
-            INBOX_DIR.mkdir(parents=True, exist_ok=True)
-            f = INBOX_DIR / fname
-            f.write_text(body)
-            written.append(f)
+            if inbox_door.local_writes_ok(REPO_ROOT):
+                INBOX_DIR.mkdir(parents=True, exist_ok=True)
+                f = INBOX_DIR / fname
+                f.write_text(body)
+                written.append(f)
+            elif inbox_door.post_inbox(inbox_payload(run["_repo"], run)):
+                print(f"  -> posted to board-api /inbox (non-committable "
+                      f"checkout)")
+            else:
+                print("warn: board-api /inbox unreachable — alert dropped",
+                      file=sys.stderr)
     print(f"polled {len(args.repos.split(','))} repo(s): "
           f"{len(failures)} new failure(s) ({suppressed} deduped), "
           f"{errors} error(s)")

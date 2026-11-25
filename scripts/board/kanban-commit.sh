@@ -233,6 +233,13 @@ git_lock_retry() {
     return 1
 }
 
+# Render Ada handoff specs into focus-inbox on the SERVED checkout before
+# the sweep — devin-dispatch-watch tails on exec checkouts used to do this
+# where files could never commit (card omen-chaba-checkout-focus-inbox-
+# writers-d993c4). Best-effort: renderer self-guards non-served roots.
+[ -f scripts/devin/render-handoff-inbox.py ] \
+    && python3 scripts/devin/render-handoff-inbox.py >/dev/null 2>&1 || true
+
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/ docs/reports/lesson-audit/; do
     [ -d "$d" ] && git_lock_retry git add "$d" >/dev/null 2>&1 || true
 done
