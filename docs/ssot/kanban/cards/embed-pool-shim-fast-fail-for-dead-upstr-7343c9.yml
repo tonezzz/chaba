@@ -1,7 +1,7 @@
 id: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
 title: embed-pool-shim fast-fail for dead upstreams (member loss costs 17x latency)
 column: doing
-updated: 2026-11-25 12:29
+updated: 2026-11-25 12:32
 priority: low
 tags:
 - ops
@@ -209,6 +209,13 @@ comms:
     was a linked unit running a stale scripts/-only ; [ada-capability-verb-wiring] primer injected 8 lesson(s):
     [board-api-wiki-read-s; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] session produced no commits — ; [nest-mgr-v2-actuation]
     dispatch picked up (tony-dell). Phase'
+- at: 2026-11-25 12:32
+  from: devin
+  text: 'picked up. Finding so far: the asked-for mechanism already shipped — PR #106 (5c767a3ccff, 2026-11-08)
+    added DEAD_AFTER=3/DEAD_COOLDOWN_S=60 circuit breaker to _race+_first; deployed copy on idc03 md5-matches repo
+    and live /health shows it working (idc03 upstream currently parked, consec=7). con01 itself was later dropped
+    from the pool entirely (zz-drop-con01.conf, 2026-11-24). Remaining delta I am adding: /health dead flag + regression
+    tests for the breaker (currently zero coverage — defer test'
 action:
   type: dispatch
   status: running
