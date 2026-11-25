@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: doing
-updated: 2026-11-25 09:12
+column: review
+updated: 2026-11-25 09:27
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -370,17 +370,41 @@ comms:
     (31/31 pytest, 21/21 gate) + soak evidence doc docs/ssot/jobs/devnest/2026-11-25-nest-mgr-v2-recommend-soak.yml
     + dispatch-outcome md. Soak verdict: recommend mode healthy on all 3 pilots, zero drift, gates correct; guarded
     is currently a no-op (nothing allowlisted). Decision reques'
+- at: 2026-11-25 09:27
+  from: tony-dell
+  text: 'finished (ok): exit=0 atch-outcome-20261125-090427-goal-improve-devnest-throughpu.md`. | devin-task-20261125-090427-goal-improve-devnes'
+- at: 2026-11-25 09:27
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:27
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-090427-goal-improve-devnest-throughpu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 09:27
+  from: chaba
+  text: banked 187 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:27
+  from: chaba
+  text: pushed dispatch/20261125-090427-goal-improve-devnest-throughpu to origin
+- at: 2026-11-25 09:27
+  from: chaba
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->
+    master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates
+    were rejected  — close will block until merged"
+- at: 2026-11-25 09:27
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   sweep:
     stale_running: 2026-11-18 21:27
     dirty: 1
     no_repo: 2026-11-24 18:09
-  result: 'exit=0 01 (lands monitor), then `echo recommend > ~/.local/share/nest/mode` per pilot host. | devin-task-20261118-210246-goal-improve-devnest-throughpu.service:
-    Consumed 2min 14.381s CPU time over 13min 46.302s wall clock time, 764.5M memory peak.'
+  result: 'exit=0 atch-outcome-20261125-090427-goal-improve-devnest-throughpu.md`. | devin-task-20261125-090427-goal-improve-devnest-throughpu.service:
+    Consumed 2min 12.092s CPU time over 7min 47.727s wall clock time, 1G memory peak, 339.5M memory swap peak.'
   runner: tony-dell
   attempts: 1
 review_kind: design
