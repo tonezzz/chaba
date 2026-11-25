@@ -1,7 +1,7 @@
 id: ada-ocb-ansible-audit-verify
 title: Ansible audit + verify for ada-ocb pane
 column: done
-updated: 2026-11-25 07:45
+updated: 2026-11-25 16:49
 brief: 'Ground Ansible as the declared-state/verification layer for ada-ocb: two read-only playbooks (surface audit
   + contract verify) plus an ocb_pane inventory group. The npm upgrade path already exists and stays the executor.'
 priority: medium
@@ -96,6 +96,10 @@ comms:
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
