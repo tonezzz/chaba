@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: doing
-updated: 2026-11-25 14:52
+updated: 2026-11-25 14:53
 priority: medium
 tags:
 - bug
@@ -128,6 +128,13 @@ comms:
     primary and Caddy proxies /api/yomi/* to :3000 — workload not retired. Plan: re-enable+start yomi-api.service,
     verify health, then confirm yomi-update-active succeeds. Note: card spec slightly off — yomi-update-all does
     NOT use --network=container:yomi-api and actually completes ('
+- at: 2026-11-25 14:53
+  from: devin
+  text: 'DONE: root cause = yomi-api.service on idc03 was disabled+dead since Nov 23 19:50 (stopped during systemd
+    daemon-reexec/user-manager restart; disabled so it never returned). Workload NOT retired — SSOT + Caddy /api/yomi/*
+    still declare idc03 primary. Fix applied on idc03: systemctl --user enable+start yomi-api.service; health ok:true;
+    manual yomi-update-active run -> Result=success exit 0. Spec correction: yomi-update-all never used --network=container:yomi-api
+    and was exiting 0; its real defect'
 action:
   type: dispatch
   status: running
