@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: doing
-updated: 2026-11-25 10:27
+updated: 2026-11-25 10:32
 priority: medium
 tags:
 - ops
@@ -242,6 +242,11 @@ comms:
   text: 'Template location updated: it is now ~/.config/secrets/plesk-cargo-maintenance-request.md (mode 600), not
     in the repo. Job yml updated via PR #222. Please have the Plesk admin fill that file; agent verification stays
     scripts/wiki-cargo-check.py.'
+- at: 2026-11-25 10:32
+  from: devin
+  text: SSH credentials template for the Plesk admin is at ~/.config/secrets/plesk-ssh.env (mode 600; blanks for
+    PLESK_HOST, PLESK_USER, PLESK_PASSWORD). Fill it locally — do not paste credentials in chat. The maintenance
+    request form remains at ~/.config/secrets/plesk-cargo-maintenance-request.md.
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
