@@ -1,7 +1,7 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
 column: doing
-updated: 2026-11-25 07:47
+updated: 2026-11-25 07:48
 priority: medium
 tags:
 - idc03
@@ -197,6 +197,11 @@ comms:
     chaba-repo-sync updates the checkout copy, and unt; Parked .service files do NOT stop quadlet zombies: podman-user-generator
     regener; [ada-scenario-casting-service-failed-on-i-340465] merge-sweep: verified gate fai; [timer-alert-idc03-chaba-lessons-audit]
     [still suspicious] La'
+- at: 2026-11-25 07:48
+  from: devin
+  text: 'Verified on idc03: units already carry :8005 for research/cms/reports (installed 11-24 21:39, matching
+    HEAD 1c56115c5). One quadlet drifted since (smoke.container TimeoutStartSec 7800 landed 21:48). Re-running install.sh
+    now to converge.'
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites
   run on dev instead of parking (exiting 0 with zero sessions) while leaving memory/tools/casting on :8002 as designed.
