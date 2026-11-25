@@ -1,7 +1,7 @@
 id: notebooklm-rest-base-url-points-at-dead-b8ef61
 title: NOTEBOOKLM_REST_BASE_URL points at dead tony-dell:3011 — lane envs stale after notebooklm-rest moved/retired
 column: doing
-updated: 2026-11-25 09:52
+updated: 2026-11-25 09:55
 priority: medium
 tags:
 - ada
@@ -83,6 +83,10 @@ comms:
     http://100.68.142.13:3011/v1 -> http://100.123.163.11:3011/v1 in 11 live env files: idc03 x7 (michael-ha/backend.env,
     ada-chaba.env, ada-ha/backend.env, tony-ha/backend.env, kk-ha/backend.env, ada-dev.env, ada-kk-dev.env), tony-omen
     x2 (ada-dev.env, ada-kk'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094135-found-during-ada-lanes-run-on- no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -90,5 +94,7 @@ action:
   lane_source: kw
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:55
 claim:
   since: 2026-11-25 09:40

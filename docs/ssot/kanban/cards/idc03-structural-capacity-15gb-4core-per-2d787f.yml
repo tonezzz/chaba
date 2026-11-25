@@ -1,7 +1,7 @@
 id: idc03-structural-capacity-15gb-4core-per-2d787f
 title: 'idc03: structural capacity — 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services'
 column: review
-updated: 2026-11-25 09:40
+updated: 2026-11-25 09:55
 priority: medium
 tags:
 - idc03
@@ -243,6 +243,14 @@ comms:
 - at: 2026-11-25 09:40
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-090408-idc03-runs-8-ada-services-4-5g conflicts with origin/master: scripts/ada/scenario-provider-gate.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261125-090408-idc03-runs-8-ada-services-4-5g:
+    3 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: done
@@ -254,6 +262,27 @@ action:
     | devin-task-20261125-090408-idc03-runs-8-ada-services-4-5g.service: Consumed 4min 56.602s CPU time, 419.3M
     memory peak, 0B memory swap peak.'
   verified: false
+  sweep:
+    conflict_sig: b54134f4ce42|scripts/ada/scenario-provider-gate.py
 claim:
   since: 2026-11-25 09:03
 review_kind: verify
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261125-090408-idc03-runs-8-ada-services-4-5g: 3 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/ada/scenario-provider-gate.py. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261125-090408-idc03-runs-8-ada-services-4-5g
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-25 09:55
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★

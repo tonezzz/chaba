@@ -1,7 +1,7 @@
 id: session-capture-d1-metrics
 title: 'Session capture D.1: repeat-ask/miss/stale-pointer metrics'
-column: doing
-updated: 2026-11-25 09:52
+column: review
+updated: 2026-11-25 09:55
 priority: medium
 tags:
 - dev-0038-followup
@@ -72,13 +72,36 @@ comms:
     updated (ssot.knowledge-capture.yml Phase D Refresh 2026-11-25); follow-ups carded as OPS-1368. Key finding:
     canonical capture ledger missing on all reachable hosts — regenerated in-worktree, durability gap carded. Read-only
     posture kept; no fake events (stale-pointer stays proxy, time-to-find n=3 real runs).'
+- at: 2026-11-25 09:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0  No fake events; YAML validated and prose-smell clean; final comms posted to the
+    card. | devin-task-20261125-0948'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:55
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/jobs/kanban/2026-11-25-session-capture-d1-metrics.yml\ndocs/ssot/ssot.knowledge-capture.yml"
+- at: 2026-11-25 09:55
+  from: chaba
+  text: pushed dispatch/20261125-094816-goal-measure-repeat-ask-miss-r to origin
+- at: 2026-11-25 09:55
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0  No fake events; YAML validated and prose-smell clean; final comms posted to the card. | devin-task-20261125-094816-goal-measure-repeat-ask-miss-r.service:
+    Consumed 1min 2.766s CPU time over 4min 30.697s wall clock time, 669.1M memory peak.'
 claim:
   since: 2026-11-25 09:47
+review_kind: verify
