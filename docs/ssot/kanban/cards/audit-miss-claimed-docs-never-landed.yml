@@ -1,7 +1,7 @@
 id: audit-miss-claimed-docs-never-landed
 title: Claimed reports/KB docs never landed
-column: doing
-updated: 2026-11-25 16:51
+column: done
+updated: 2026-11-25 16:56
 brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
   on master or any located copy.'
 priority: low
@@ -259,13 +259,66 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 o `dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md` with lessons.
+    | devin-task-20261125-162817'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:54
+  from: chaba
+  text: pushed dispatch/20261125-162817-docs-reports-ops0790-rollout-i to origin
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-162817-docs-reports-ops0790-rollout-i no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-162817-docs-reports-ops0790-rollout-i,
+    branch dispatch/20261125-162817-docs-reports-ops0790-rollout-i on tony-macbook'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep: merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md)
+    — auto-closed'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-162817-docs-reports-ops0790-rollout-i already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md) — auto-closed'
+- at: 2026-11-25 16:55
+  from: local
+  text: 'pub milestone: card verified: audit-miss-claimed-docs-never-landed on idc03 — merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    from tony-macbook) -> origin/master — verified — merged fe3939d7 (dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-ed7319778f9c18eb]'
+- at: 2026-11-25 16:56
+  from: local
+  text: 'pub milestone: card verified: audit-miss-claimed-docs-never-landed on idc03 — dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    already in origin/master — verified — auto-closed — dispatch/20261125-162817-docs-reports-ops0790-rollout-i
+    already in origin/master — verified — auto-closed [evt-150a0d06ede9b8d2]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 o `dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md` with lessons. | devin-task-20261125-162817-docs-reports-ops0790-rollout-i.service:
+    Consumed 1min 53.462s CPU time over 24min 44.713s wall clock time, 778.6M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-25 16:55
 claim:
   since: 2026-11-25 16:27
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 16:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-162817-docs-reports-ops0790-rollout-i.md

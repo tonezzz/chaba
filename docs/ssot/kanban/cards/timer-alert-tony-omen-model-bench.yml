@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-model-bench
 title: Timer model-bench on tony-omen failing
 column: done
-updated: 2026-11-25 16:53
+updated: 2026-11-25 16:54
 priority: high
 tags:
 - timer-alert
@@ -98,6 +98,10 @@ comms:
 - at: 2026-11-25 16:53
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the timeout failure of `model-bench.service` on the host `tony-omen` by inspecting the systemd
   user journal using `journalctl --user -u model-bench.service`. Cross-reference findings with the CMS entry `timer-timeline-tony-omen`.
