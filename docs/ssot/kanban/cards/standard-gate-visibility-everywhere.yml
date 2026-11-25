@@ -1,7 +1,7 @@
 id: standard-gate-visibility-everywhere
 title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
 column: backlog
-updated: 2026-11-25 14:11
+updated: 2026-11-25 14:15
 priority: medium
 tags:
 - standard
@@ -348,21 +348,22 @@ comms:
 - at: 2026-11-25 14:11
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-25 14:15
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 2
+  attempts: 0
   sweep:
     stale_running: 2026-11-25 09:39
     dirty: 4
-  result: 'exit=0 ). Card comms posted; SSOT pre-commit validation passed; no code or deploy changes needed. | devin-task-20261125-053219-ops-1097-fixed-per-card-unclai.service:
-    Consumed 26.151s CPU time over 7min 47.474s wall clock time, 382.1M memory peak.'
-  runner: mn01
-  verified: true
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+  last_failure: 'exit=0 ). Card comms posted; SSOT pre-commit validation passed; no code or deploy changes needed.
+    | devin-task-20261125-053219-ops-1097-fixed-per-card-unclai.service: Consumed 26.151s CPU time over 7min 47.474s
+    wall clock time, 382.1M memory peak.'
 claim:
   since: 2026-11-25 12:31
 review_kind: verify
