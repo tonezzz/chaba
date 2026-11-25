@@ -1,0 +1,79 @@
+title: chaba-nest hosts/services views — native entities instead of tony-ha iframe
+subtitle: new telemetry-ha-push-ada timer mirrors fleet vitals into ada-ha :8125;
+  or-panel iframe repointed to the Access-free idc02 web origin
+icon: server
+id: 2026-11-17-chaba-nest-hosts-native
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-11-17"
+card: chaba-nest-hosts-view-replace-tony-ha-if-053226
+
+problem:
+  - "ada-ha chaba-nest /hosts was a panel view iframing the full tony-ha
+    chaba-admin/hosts page: double sidebar, CF Access gate (blank on iPhone
+    until a separate Access login), aspect_ratio 50% unusable on mobile."
+  - "Same defect on the sibling /services view (iframes
+    tony-ha chaba-admin/services) and /or-panel (iframes
+    tony-ha.surf-thailand.com/apps/or-panel)."
+
+approach:
+  chosen: >
+    Option (a) from the card — native entities cards. The card's blocker
+    ("those entities live on tony-ha") was dissolved rather than worked
+    around: telemetry-ha-push.py on tony-omen already mirrors MDDB
+    device-telemetry/<dev>/latest docs into HA REST sensors, so a second
+    instance pointed at http://127.0.0.1:8125 mirrors the identical entity
+    ids into ada-ha. No code change — env-only second unit.
+  rejected:
+    - "static/embed page on idc02 (option b): system-report ?view=hosts
+      exists but shows only load/mem/disk/SSH-reachability — loses swap,
+      temps, uptime, users, top_proc, WAN geo, battery, net rx/tx, svc_*
+      detail; still an iframe."
+    - "keep iframe + mobile fixes (option c): does not remove the CF Access
+      dependency — fails the done-condition."
+
+changes:
+  infra:
+    - "ssot.jobs.yml + telemetry-ha-push-ada (host: tony_omen, *:0/5): same
+      script/env as telemetry-ha-push but HA_URL=http://127.0.0.1:8125 and
+      HA_TOKEN_FILE=%h/.config/secrets/ada-ha-token.env (pre-existing ada-ha
+      LLAT; verified POST /api/states). Rendered via render-jobs.py
+      --install; timer enabled. ~170 entities/5min pushed — entities appear
+      on first POST, no ada-ha-side config."
+    - "First run 2026-11-17 18:58 pushed all 8 devices fresh=on
+      (200 total states on ada-ha vs 32 before)."
+  dashboard:
+    - "ssot.chaba-nest-dashboard.yml extra_views /hosts + /services: native
+      masonry views replicated from tony-ha lovelace.chaba_admin (markdown
+      fleet table + per-host entities cards; custom:layout-card wrapper and
+      switch.mac_plug row dropped — neither exists on ada-ha). All 53
+      service-view entity refs verified present on ada-ha."
+    - "/or-panel: iframe repointed https://idc02.taila0626a.ts.net/
+      apps/or-panel/?v=2 and aspect_ratio dropped per the panel-iframe rule
+      in ssot.home-assistant.dashboards.yml (panel + bare iframe fills the
+      view). idc02 web origin is Tailscale-fronted — no CF Access."
+    - "Pushed live via scripts/home-assistant/chaba-nest-build.py --apply —
+      13 views saved; live config now has zero tony-ha.surf-thailand.com refs."
+
+verify:
+  - "ws lovelace/config chaba-nest on ada-ha: hosts=masonry×9 cards,
+    services=masonry×8, or-panel=panel+bare-iframe→idc02; aspect_ratio
+    count 0; tony-ha.surf-thailand.com count 0."
+  - "GET https://ada-ha.surf-thailand.com/chaba-nest/hosts -> 200."
+  - "systemctl --user status telemetry-ha-push-ada.timer — enabled,
+    next run on the 5-min mark; first manual run pushed all 8 hosts."
+  - "iPhone check for Tony: open /chaba-nest/hosts — single sidebar, live
+    fleet table + per-host cards, no Access prompt."
+
+residual:
+  - "sensor.dispatch_probe left 'unavailable' on ada-ha (API-state probe
+    from token verification; clears on ada-ha restart — it is not in the
+    entity registry)."
+  - "Topic views (nest/polity/security/traffic/flood) still iframe the CMS
+    tiles on idc03.taila0626a.ts.net — tailnet-only, no CF Access, single
+    sidebar already; left as designed."
+  - "telemetry-ha-push-ada doubles the MDDB /get rate for device-telemetry
+    (2 readers x 8 devices x 5min) — trivial."
+  - "If a device is added to TELEMETRY_DEVICES upstream, it must be added to
+    this job's env too (kept in lock-step with telemetry-ha-push)."

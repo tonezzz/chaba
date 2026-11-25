@@ -196,13 +196,23 @@ def _temps() -> tuple[float | None, dict]:
     if zones:
         return round(max(zones.values()), 1), zones
     if platform.system() == "Darwin":
-        # no sysfs on macOS — osx-cpu-temp (brew) reads SMC keys unprivileged
-        out = _run(["/opt/homebrew/bin/osx-cpu-temp"])
-        try:
-            t = float(out.split(":")[-1].strip().rstrip("C").strip())
-            return round(t, 1), {"cpu": round(t, 1)}
-        except (ValueError, IndexError):
-            return None, {}
+        # No sysfs on macOS. Prefer the user-built smctemp (unprivileged SMC
+        # read); launchd's minimal PATH misses ~/.local/bin, so try the
+        # absolute path first. osx-cpu-temp (brew) is a last resort — on
+        # kk-mac it reports 0.0°C, which must not become a fake reading.
+        for cmd in ([os.path.expanduser("~/.local/bin/smctemp"), "-c"],
+                    ["smctemp", "-c"],
+                    ["/opt/homebrew/bin/osx-cpu-temp"]):
+            out = _run(cmd).strip()
+            if not out:
+                continue
+            try:
+                t = float(out.split(":")[-1].strip().rstrip("°C").strip())
+            except ValueError:
+                continue
+            if 0 < t < 150:
+                return round(t, 1), {"cpu": round(t, 1)}
+        return None, {}
     return None, {}
 
 

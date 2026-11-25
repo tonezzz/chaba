@@ -97,12 +97,16 @@ cpu_cores() {
 }
 
 cpu_temp_c() {
-  # Apple Silicon: smctemp (user-built, no root). Linux: first thermal
-  # zone with a sane value, no root needed.
+  # Apple Silicon: smctemp (user-built, no root). launchd gives a minimal
+  # PATH that omits ~/.local/bin — check the absolute path independently
+  # of `command -v` so a beat under launchd still carries a number.
   if command -v smctemp >/dev/null 2>&1; then
     smctemp -c 2>/dev/null && return
-    [ -x "$HOME/.local/bin/smctemp" ] && "$HOME/.local/bin/smctemp" -c 2>/dev/null && return
-  elif [ "$(uname -s)" = "Linux" ]; then
+  fi
+  if [ -x "$HOME/.local/bin/smctemp" ]; then
+    "$HOME/.local/bin/smctemp" -c 2>/dev/null && return
+  fi
+  if [ "$(uname -s)" = "Linux" ]; then
     for z in /sys/class/thermal/thermal_zone*/temp; do
       [ -r "$z" ] || continue
       t=$(cat "$z" 2>/dev/null) || continue
