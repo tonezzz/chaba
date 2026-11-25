@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: backlog
-updated: 2026-11-24 21:13
+updated: 2026-11-25 07:29
 priority: medium
 tags:
 - ops
@@ -160,6 +160,13 @@ comms:
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:29
+  from: devin
+  text: '2026-11-25 recheck: Cargo is installed+approved on wiki.h3, but action=cargotables still returns [] — page
+    saves and action=purge did not create the Education table. Creating it needs shell/maintenance access on the
+    Plesk host (LocalSettings path /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com/extensions/Cargo)
+    or the admin/FTP path; not reachable through board-api /wiki/page or the available MCP hosts (tony_omen, tony_dell,
+    macbook, con01). Needs Tony/Plesk admin access. Le'
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
