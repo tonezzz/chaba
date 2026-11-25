@@ -188,6 +188,9 @@ comms:
 - at: 2026-11-25 09:12
   from: chaba
   text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.56 > 1.5)'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
