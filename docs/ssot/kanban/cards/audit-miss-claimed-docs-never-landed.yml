@@ -1,7 +1,7 @@
 id: audit-miss-claimed-docs-never-landed
 title: Claimed reports/KB docs never landed
 column: backlog
-updated: 2026-11-25 07:52
+updated: 2026-11-25 09:22
 brief: 'Session audit 2026-11-20 (AUD-0973): three doc paths referenced as produced/verified artifacts never existed
   on master or any located copy.'
 priority: low
@@ -83,3 +83,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 09:22
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
