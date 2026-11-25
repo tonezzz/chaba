@@ -1,7 +1,7 @@
 id: go2rtc-empty-frames-all-cams
 title: go2rtc returns empty frames for all 8 cams on tony-dell — cam pipeline dead
 column: doing
-updated: 2026-11-25 07:47
+updated: 2026-11-25 08:02
 priority: medium
 tags:
 - cams
@@ -190,6 +190,13 @@ comms:
 - at: 2026-11-25 07:47
   from: devin
   text: dispatch picked up — checking go2rtc service + upstream reachability on tony-dell from idc02
+- at: 2026-11-25 08:02
+  from: devin
+  text: 'DIAGNOSIS DONE. Dell has NO go2rtc (parked; job points at omen:1984 per ssot.jobs.yml). Real fault was
+    on omen: go2rtc-omen.service wedged 1d12h — frame.jpeg hung >100s while ffmpeg kept producing. RESTARTED go2rtc-omen.service
+    07:59 +07 → omen_cam now returns valid 640x480 JPEG ~30KB/1s, verified locally AND from dell via tailnet. Still
+    dead upstream: 6 xiaomi streams (passToken expired — xiaomi-token-refresh FAILED 00:00, needs Tony re-login
+    to account.xiaomi.com in Chrome on omen) + ip_cam_65'
 action:
   type: dispatch
   status: running
