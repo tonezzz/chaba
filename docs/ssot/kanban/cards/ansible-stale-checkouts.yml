@@ -1,7 +1,7 @@
 id: ansible-stale-checkouts
 title: 'Ansible audit: stale chaba exec checkouts detected'
 column: done
-updated: 2026-11-26 04:01
+updated: 2026-11-26 04:06
 spec: 'Read-only audit detected stale/dirty/diverged chaba exec checkouts. Hosts: idc02. Report dir: reports/ansible-benchmark/stale-checkouts/.
   No remediation performed; decide stash-u-ff / commit-wip / leave / abandon per host.'
 action:
@@ -129,6 +129,10 @@ comms:
 - at: 2026-11-26 04:01
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
