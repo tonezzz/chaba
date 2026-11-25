@@ -1,7 +1,7 @@
 id: state-write-atomic-truncate-crash-loop
 title: Non-atomic state writes -> 0-byte files -> permanent crash loops
-column: doing
-updated: 2026-11-25 09:41
+column: review
+updated: 2026-11-25 09:45
 priority: medium
 tags:
 - ops
@@ -216,6 +216,30 @@ comms:
     loads in scripts/chaba-nag.py, scripts/ada/line-chat-timeline.py, and NEW canonical scripts/rika-wx-alert.py
     (was unversioned, ~/.local/bin only). Deployed to idc03 ~/.local/bin (md5-verified); 0-byte states parked; all
     3 units now Result=success with valid JSON state — line-chat'
+- at: 2026-11-25 09:45
+  from: idc02
+  text: 'finished (ok): exit=0  same non-atomic write but tolerant loads (no crash-loop risk today), filed as follow-up
+    card OPS-1364. | devin-t'
+- at: 2026-11-25 09:45
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:45
+  from: chaba
+  text: pushed dispatch/20261125-092859-fix-non-atomic-state-writes-ac to origin
+- at: 2026-11-25 09:45
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 09:45
+  from: chaba
+  text: auto-merged b2884f45 (dispatch/20261125-092859-fix-non-atomic-state-writes-ac) → origin/master
+- at: 2026-11-25 09:45
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-092859-fix-non-atomic-state-writes-ac,
+    branch dispatch/20261125-092859-fix-non-atomic-state-writes-ac'
 spec: Fix non-atomic state writes across affected services to prevent 0-byte state files and subsequent crash loops.
   Modify state-saving logic to write to a temporary file (STATE.tmp) and atomically replace the target state file
   upon completion. Target services and files include chaba-nag.json, wp-timeline-state.json (line-chat-timeline),
@@ -223,10 +247,15 @@ spec: Fix non-atomic state writes across affected services to prevent 0-byte sta
   and services successfully load state files without JSON decode errors.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: idc02
   attempts: 1
+  result: 'exit=0  same non-atomic write but tolerant loads (no crash-loop risk today), filed as follow-up card
+    OPS-1364. | devin-task-20261125-092859-fix-non-atomic-state-writes-ac.service: Consumed 39.945s CPU time, 432.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-25 09:28
+review_kind: verify
