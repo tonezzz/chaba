@@ -88,10 +88,19 @@ override endpoints via `INFO_FIND_MDDB_URL`,
    Every claim carries its citation: `{path, lines}` for repo files,
    `{collection, id, path}` for mddb, `{url}` for web. If nothing
    matches, say so and offer: rephrase, broaden, or `--web`.
+   When a followed pointer/citation turns out STALE (path/key no longer
+   resolves to the canonical source), record the incident once:
+   `python3 scripts/chaba/pointer-stale-add.py --pointer-ref <stale-ref>
+   --canonical-ref <correct-ref>` — local telemetry only, feeds the
+   Phase D stale-pointer metric (OPS-1368).
 
 7. **Audit** — `python3 scripts/devnest/info_find.py record
-   --session <id> --result '<short json>'` appends the outcome to the
-   session's `audit.ndjson`.
+   --session <id> --result '<short json>' --elapsed-ms <ms>
+   --resolved yes|no` appends the outcome to the session's
+   `audit.ndjson`. Pass your measured wall time (query -> answer) and
+   the resolved verdict — these feed the session-level time-to-find and
+   verified-resolution metrics in capture-metrics.py; without them the
+   find is invisible to Phase D telemetry.
 
 ## Isolation contract
 

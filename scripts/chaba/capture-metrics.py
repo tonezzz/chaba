@@ -199,64 +199,110 @@ def stale_pointer_signal(entries: list[dict[str, Any]], max_age_days: int = 30,
     }
 
 
-def _audit_runs(root: Path) -> list[dict[str, Any]]:
-    """Read info_find.py run audits (local cache, one ndjson per session)."""
-    runs: list[dict[str, Any]] = []
+def _audit_records(root: Path) -> list[dict[str, Any]]:
+    """Read info_find audit.ndjson records (local cache, one per session)."""
+    recs: list[dict[str, Any]] = []
     if not root.exists():
-        return runs
+        return recs
     for path in root.rglob("audit.ndjson"):
         try:
             for line in path.read_text(encoding="utf-8").splitlines():
                 if '"kind"' not in line:
                     continue
                 rec = json.loads(line)
-                if rec.get("kind") == "run":
-                    runs.append(rec)
+                if isinstance(rec, dict) and rec.get("kind"):
+                    recs.append(rec)
         except (OSError, ValueError):
             continue  # one corrupt/removed audit must not break the report
-    return runs
+    return recs
 
 
 def time_to_find_signal(root: Path = INFO_FIND_AUDIT_ROOT) -> dict[str, Any]:
-    """Measured from info_find.py's per-session audit (local-only telemetry)."""
-    runs = [r for r in _audit_runs(root) if "total_elapsed_ms" in r]
-    if not runs:
+    """Measured from info_find audit.ndjson (local-only telemetry).
+
+    Two sample classes (OPS-1368):
+      * kind:"run" — `info_find.py run` records; elapsed covers LOCAL source
+        time only and top_result_ref means "top citation exists", NOT
+        verified correctness (reported as top_result_pct).
+      * kind:"result" — agent `record` outcomes carrying agent-measured
+        elapsed_ms + resolved verdict; this is the skill-path sample that
+        covers the whole find including agent-tool merge time.
+    """
+    recs = _audit_records(root)
+    runs = [r for r in recs if r.get("kind") == "run"
+            and "total_elapsed_ms" in r]
+    sessions = [r for r in recs if r.get("kind") == "result"
+                and isinstance(r.get("elapsed_ms"), (int, float))
+                and not isinstance(r.get("elapsed_ms"), bool)]
+    verdicts = [r for r in sessions if isinstance(r.get("resolved"), bool)]
+    if not runs and not sessions:
         return {
             "status": "unmeasurable",
-            "source": f"no info_find run audits with total_elapsed_ms under {root}",
+            "source": f"no info_find run/result audits with timing under {root}",
             "as_of": AS_OF,
             "proposal": (
-                "Run `python3 scripts/devnest/info_find.py run --query '...'` to "
-                "write audit.ndjson; the run record now carries total_elapsed_ms, "
-                "elapsed_by_source, source_sequence and resolved_ref."
+                "Run `python3 scripts/devnest/info_find.py run --query '...'` "
+                "for a source-time sample, or record the skill-path outcome "
+                "with `info_find.py record --session <id> --result '<json>' "
+                "--elapsed-ms <ms> --resolved yes|no`."
             ),
             "owner": "info-find skill",
         }
-    elapsed = sorted(int(r["total_elapsed_ms"]) for r in runs)
-    hops = [len(r.get("source_sequence") or []) for r in runs]
-    resolved = sum(1 for r in runs if r.get("resolved_ref"))
-    per_source: dict[str, list[int]] = collections.defaultdict(list)
-    for r in runs:
-        for src, ms in (r.get("elapsed_by_source") or {}).items():
-            per_source[str(src)].append(int(ms))
-    return {
+    out: dict[str, Any] = {
         "status": "measured",
         "source": f"info_find.py audit.ndjson under {root}",
-        "as_of": max(str(r.get("t") or "")[:10] for r in runs),
-        "count": len(runs),
-        "median_elapsed_ms": int(statistics.median(elapsed)),
-        "mean_elapsed_ms": round(sum(elapsed) / len(elapsed), 1),
-        "max_elapsed_ms": elapsed[-1],
-        "resolved_pct": round(100 * resolved / len(runs), 1),
-        "mean_source_hops": round(sum(hops) / len(hops), 2),
-        "mean_elapsed_by_source_ms": {
-            s: round(sum(v) / len(v), 1) for s, v in sorted(per_source.items())},
-        "caveat": (
-            "Local cache telemetry: clearing ~/.cache/devin/info-find resets the "
-            "sample. Covers info_find source time only, not agent-tool merge time."
-        ),
-        "refresh": "python3 scripts/devnest/info_find.py run --query '...'",
+        "as_of": max(str(r.get("t") or "")[:10] for r in runs + sessions)
+                if runs or sessions else AS_OF,
     }
+    if runs:
+        elapsed = sorted(int(r["total_elapsed_ms"]) for r in runs)
+        hops = [len(r.get("source_sequence") or []) for r in runs]
+        # top_result_ref (current schema) or legacy resolved_ref (pre-rename
+        # samples) both mean "top citation exists" — never verified correctness.
+        cited = sum(1 for r in runs
+                    if r.get("top_result_ref") or r.get("resolved_ref"))
+        per_source: dict[str, list[int]] = collections.defaultdict(list)
+        for r in runs:
+            for src, ms in (r.get("elapsed_by_source") or {}).items():
+                per_source[str(src)].append(int(ms))
+        out.update({
+            "run_count": len(runs),
+            "run_median_elapsed_ms": int(statistics.median(elapsed)),
+            "run_mean_elapsed_ms": round(sum(elapsed) / len(elapsed), 1),
+            "run_max_elapsed_ms": elapsed[-1],
+            "top_result_pct": round(100 * cited / len(runs), 1),
+            "mean_source_hops": round(sum(hops) / len(hops), 2),
+            "mean_elapsed_by_source_ms": {
+                s: round(sum(v) / len(v), 1)
+                for s, v in sorted(per_source.items())},
+        })
+    if sessions:
+        sel = sorted(int(r["elapsed_ms"]) for r in sessions)
+        out.update({
+            "session_count": len(sessions),
+            "session_median_elapsed_ms": int(statistics.median(sel)),
+            "session_mean_elapsed_ms": round(sum(sel) / len(sel), 1),
+            "session_max_elapsed_ms": sel[-1],
+        })
+    if verdicts:
+        resolved_n = sum(1 for r in verdicts if r.get("resolved") is True)
+        out.update({
+            "verified_samples": len(verdicts),
+            "verified_resolved_pct": round(100 * resolved_n / len(verdicts), 1),
+        })
+    out["caveat"] = (
+        "Local cache telemetry: clearing ~/.cache/devin/info-find resets the "
+        "sample. run_* covers local source time only; session_* is the "
+        "agent-reported end-to-end find (includes agent-tool merge time) and "
+        "only exists when the skill audit step passes --elapsed-ms/--resolved. "
+        "top_result_pct is 'top citation exists', NOT verified correctness; "
+        "verified_resolved_pct is the agent verdict."
+    )
+    out["refresh"] = (
+        "python3 scripts/devnest/info_find.py run --query '...'  or  "
+        "record --session <id> --result '<json>' --elapsed-ms <ms> "
+        "--resolved yes|no")
+    return out
 
 
 def matrix_precision(entries: list[dict[str, Any]]) -> dict[str, Any]:
@@ -320,8 +366,9 @@ def render(entries: list[dict[str, Any]], ledger: Path) -> str:
     for label, s in signals:
         value = ""
         for key in ("total_asks", "count", "asks_per_week", "misses_per_week",
-                    "median_elapsed_ms", "resolved_pct", "mean_source_hops",
-                    "stale_days"):
+                    "run_count", "run_median_elapsed_ms", "top_result_pct",
+                    "session_count", "session_median_elapsed_ms",
+                    "verified_resolved_pct", "mean_source_hops", "stale_days"):
             if key in s and s[key] is not None:
                 value += f"{key}={s[key]} "
         value = value.strip() or s["status"]
@@ -427,17 +474,36 @@ def self_test() -> int:
         audit.parent.mkdir(parents=True)
         audit.write_text("\n".join(json.dumps(r) for r in [
             {"kind": "run", "t": "2026-11-23T10:00:00+00:00", "total_elapsed_ms": 100,
-             "resolved_ref": "docs/ssot/a.yml", "source_sequence": ["mddb", "ssot"],
+             "top_result_ref": "docs/ssot/a.yml", "source_sequence": ["mddb", "ssot"],
              "elapsed_by_source": {"mddb": 80, "ssot": 20}},
             {"kind": "run", "t": "2026-11-23T11:00:00+00:00", "total_elapsed_ms": 200,
              "resolved_ref": None, "source_sequence": ["ssot"],
              "elapsed_by_source": {"ssot": 200}},
+            {"kind": "result", "t": "2026-11-24T09:00:00+00:00",
+             "elapsed_ms": 4200, "resolved": True, "result": "{\"n\":1}"},
+            {"kind": "result", "t": "2026-11-24T10:00:00+00:00",
+             "elapsed_ms": 800, "resolved": False, "result": "{\"n\":2}"},
+            {"kind": "result", "t": "2026-11-24T11:00:00+00:00",
+             "result": "no timing — must not count"},
         ]) + "\n", encoding="utf-8")
         tf = time_to_find_signal(root)
-        assert tf["status"] == "measured" and tf["count"] == 2, tf
-        assert tf["median_elapsed_ms"] == 150, tf
-        assert tf["resolved_pct"] == 50.0, tf
+        assert tf["status"] == "measured", tf
+        assert tf["run_count"] == 2 and tf["session_count"] == 2, tf
+        assert tf["run_median_elapsed_ms"] == 150, tf
+        assert tf["top_result_pct"] == 50.0, tf
+        assert tf["session_median_elapsed_ms"] == 2500, tf
+        assert tf["verified_resolved_pct"] == 50.0, tf
         assert time_to_find_signal(root / "missing")["status"] == "unmeasurable"
+        # result-only audits are measurable too (skill path, no `run` calls)
+        only = root / "only-results" / "s" / "audit.ndjson"
+        only.parent.mkdir(parents=True)
+        only.write_text(json.dumps(
+            {"kind": "result", "t": "2026-11-24T12:00:00+00:00",
+             "elapsed_ms": 900, "resolved": True, "result": "{}"}) + "\n",
+            encoding="utf-8")
+        tf2 = time_to_find_signal(root / "only-results")
+        assert tf2["status"] == "measured" and tf2["session_count"] == 1, tf2
+        assert "run_count" not in tf2 and tf2["verified_resolved_pct"] == 100.0, tf2
     print("self-test: 21/21 passed")
     return 0
 

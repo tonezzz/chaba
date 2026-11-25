@@ -21,6 +21,8 @@ function parseArgs() {
   const sIdx = args.indexOf("--session");
   const mIdx = args.indexOf("--max-results");
   const rIdx = args.indexOf("--record-result");
+  const eIdx = args.indexOf("--elapsed-ms");
+  const vIdx = args.indexOf("--resolved");
   const quick = args.includes("--quick");
   const forceWeb = args.includes("--web");
   const query = qIdx >= 0 ? args[qIdx + 1] : undefined;
@@ -28,7 +30,9 @@ function parseArgs() {
     sIdx >= 0 ? args[sIdx + 1] : process.env.DEVIN_SESSION_ID || process.pid.toString();
   const max = mIdx >= 0 ? parseInt(args[mIdx + 1], 10) || 5 : 5;
   const result = rIdx >= 0 ? args[rIdx + 1] : undefined;
-  return { query, session, quick, forceWeb, max, result };
+  const elapsedMs = eIdx >= 0 ? parseInt(args[eIdx + 1], 10) : undefined;
+  const resolved = vIdx >= 0 ? args[vIdx + 1] : undefined;
+  return { query, session, quick, forceWeb, max, result, elapsedMs, resolved };
 }
 
 function classify(query) {
@@ -97,28 +101,36 @@ function writeCacheAndAudit(plan) {
   ensureDir(plan.cache_dir);
   const key = sha(plan.query);
   fs.writeFileSync(path.join(plan.cache_dir, `${key}.json`), JSON.stringify(plan, null, 2));
-  const audit = { t: new Date().toISOString(), query: plan.query, intent: plan.intent, plan };
+  const audit = { t: new Date().toISOString(), kind: "plan", query: plan.query, intent: plan.intent, plan };
   fs.appendFileSync(plan.audit_path, JSON.stringify(audit) + "\n");
 }
 
-function recordResult({ session, result }) {
+function recordResult({ session, result, elapsedMs, resolved }) {
   const dir = path.join(CACHE_BASE, "sessions", session);
   ensureDir(dir);
+  // Same contract as `info_find.py record` (OPS-1368): kind:"result" plus
+  // optional agent-measured elapsed_ms / resolved verdict so
+  // capture-metrics.py can aggregate session-level time-to-find and
+  // verified resolution — the mjs path previously wrote untyped records
+  // that were invisible to the metric.
+  const rec = { t: new Date().toISOString(), kind: "result", result };
+  if (Number.isFinite(elapsedMs)) rec.elapsed_ms = elapsedMs;
+  if (resolved === "yes" || resolved === "no") rec.resolved = resolved === "yes";
   fs.appendFileSync(
     path.join(dir, "audit.ndjson"),
-    JSON.stringify({ t: new Date().toISOString(), result }) + "\n"
+    JSON.stringify(rec) + "\n"
   );
 }
 
 function main() {
-  const { query, session, quick, forceWeb, max, result } = parseArgs();
+  const { query, session, quick, forceWeb, max, result, elapsedMs, resolved } = parseArgs();
   if (result) {
-    recordResult({ session, result });
+    recordResult({ session, result, elapsedMs, resolved });
     return;
   }
   if (!query) {
     console.error(
-      'Usage: info-find.mjs --query "<query>" [--session <id>] [--quick] [--web] [--max-results N] [--record-result <json>]'
+      'Usage: info-find.mjs --query "<query>" [--session <id>] [--quick] [--web] [--max-results N] [--record-result <json> [--elapsed-ms N] [--resolved yes|no]]'
     );
     console.error(`Run this from a project root; detected project: ${PROJECT}`);
     process.exit(1);

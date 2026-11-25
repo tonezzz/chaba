@@ -280,8 +280,11 @@ sections:
           2026-11-23; empty at instrumentation, so 0 so far is not evidence of no misses).
           Stale-pointer incidents: measured from the local pointer-incidents.yml log; the
           old-as_of candidate count is retained as a proxy_candidates field, never as incidents.
-          Time-to-find: measured from info_find.py's per-session audit.ndjson (total_elapsed_ms,
-          elapsed_by_source, source_sequence, resolved_ref); local cache telemetry, cleared cache
+          Time-to-find: measured from info_find audit.ndjson — kind:"run" records carry
+          total_elapsed_ms, elapsed_by_source, source_sequence, top_result_ref (renamed from
+          resolved_ref 2026-11-25: it means "top citation exists", NOT verified correctness;
+          verified resolution comes from kind:"result" record --resolved verdicts), plus
+          agent-measured session elapsed_ms; local cache telemetry, cleared cache
           resets the sample. Empty logs mean the source exists, not that events never happened.
           Source: scripts/chaba/capture-metrics.py.
       - label: Unmeasurable signals (no durable source)
@@ -326,6 +329,53 @@ sections:
         text: >-
           Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
           ledger. Update this section only from a fresh report; state the report path and date.
+
+  - title: Phase D Refresh (2026-11-25)
+    icon: "📈"
+    layout: list
+    items:
+      - label: Measured signals
+        text: >-
+          Report: reports/capture/metrics-20261125.md (capture-metrics.py --ledger
+          reports/capture/capture-ledger.yml). Repeat-ask register unchanged: 9 topics / 15 asks /
+          3 open, last entry 2026-10-22 (34d stale). Miss rate 0 since instrumentation 2026-11-23.
+          Stale-pointer: proxy only, 35 ledger candidates older than 30d (oc-note 32, ssot 3) —
+          no pointer-incidents.yml exists on any reachable host. Time-to-find: 3 real
+          info_find.py run samples, median 1647ms / mean 2203ms / max 3320ms; resolved_pct 100%
+          but resolved_ref is only "top citation exists", not verified correctness.
+          Matrix precision on a freshly regenerated ledger: 8 kanban creates, 0 filed-artifact
+          creates (100% vs ~2% pre-fix) — caveat: fresh ledger lacks the applied: audit history.
+      - label: Ledger durability gap
+        text: >-
+          The canonical ledger (~/.local/share/chaba/capture/capture-ledger.yml) and its applied:
+          block were absent on idc03, tony-dell, tony-omen, con01, mn01 and tony-macbook on
+          2026-11-25; the 2026-11-23 baseline numbers survive only in this SSOT section. The
+          2026-11-25 measurement regenerated the ledger in-worktree (reports/capture/). Durable
+          home + declared regeneration job carded as OPS-1368.
+      - label: Thresholds (recorded 2026-11-25; tuning triggers, not enforced)
+        text: >-
+          repeat-ask register last entry >14d old -> sweep duty re-checks register freshness.
+          misses_per_week >2 -> lesson-capture adoption gap, card it. Stale-pointer proxy
+          candidates >30 -> initialise pointer-incidents.yml or declare the signal dead; 3+ hits
+          on one pointer_ref still promote to a card. Time-to-find: run median >5000ms or
+          verified_resolved_pct <80% over >=20 session samples -> tune source order; below 20
+          samples the sample is noise. Matrix precision <90% over >=50 kanban creates -> tighten FILED_RE / producer
+          gate before any --apply discussion.
+      - label: Follow-ups
+        text: >-
+          OPS-1368 (session-capture-d-1-follow-ups-ledger-du-78e13f) — RESOLVED 2026-11-25:
+          (1) ledger durable home = idc02 ~/.local/share/chaba/capture/ — CORRECTION: the d1
+          sweep missed idc02; the 2026-11-23 baseline ledger + applied: block (2220 entries,
+          wiki-login-polish apply) were never lost, they live there. Declared daily job
+          chaba-capture-harvest on idc02 refreshes the canonical copy + metrics-latest.md;
+          applied: audit now also mirrored to a card comm by capture-apply.py (board is the
+          durable record even if the host-local ledger is lost). (2) pointer-stale-add.py wired into session-capture
+          sweep + both info-find skills — agent-reported incidents, not auto-detected.
+          (3) resolved_ref renamed top_result_ref; verified resolution = record --resolved.
+          (4) repeat-ask register freshness check added to AGENTS.md sweep duty (>14d ->
+          decide zero-repeats vs capture gap). (5) skill-path instrumentation: info-find.mjs
+          + info_find.py record now accept --elapsed-ms/--resolved; capture-metrics reports
+          run_* (source time) and session_* (end-to-end) samples separately.
 
   - title: Capture Router Contract (Phase C.1)
     icon: "🔀"
