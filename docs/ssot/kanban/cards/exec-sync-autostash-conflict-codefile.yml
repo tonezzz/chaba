@@ -1,6 +1,6 @@
 id: exec-sync-autostash-conflict-codefile
 title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
-column: doing
+column: done
 updated: 2026-11-25 09:24
 priority: medium
 tags:
@@ -227,6 +227,37 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261125-020433-goal-prevent-git-safe-pull-aut no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-25 09:24
+  from: mn01
+  text: 'finished (ok): exit=0  outcome doc at `dispatch-outcome-20261125-020433-goal-prevent-git-safe-pull-aut.md`.
+    | devin-task-20261125-02043'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'session-end checkpoint 755ddc2c: 1 leftover file(s) committed'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: banked 174 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:24
+  from: chaba
+  text: pushed dispatch/20261125-020433-goal-prevent-git-safe-pull-aut to origin
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: merged a4cd2c18 (dispatch/20261125-020433-goal-prevent-git-safe-pull-aut from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-020433-goal-prevent-git-safe-pull-aut.md)
+    — auto-closed'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-020433-goal-prevent-git-safe-pull-aut,
+    branch dispatch/20261125-020433-goal-prevent-git-safe-pull-aut on mn01'
 spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, broken code files with conflict markers
   on execution checkouts. Host/Repo: tony-omen / chaba. Constraints: Only modify files within SAFE_PULL_GENERATED_RE
   or handle autostash conflicts safely without leaving SyntaxError-inducing markers in files executed by systemd
@@ -235,7 +266,7 @@ spec: 'Goal: Prevent git-safe-pull autostash pop conflicts from leaving live, br
   success when manual merge intervention is required.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -243,5 +274,13 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-25 09:24
+  result: 'exit=0  outcome doc at `dispatch-outcome-20261125-020433-goal-prevent-git-safe-pull-aut.md`. | devin-task-20261125-020433-goal-prevent-git-safe-pull-aut.service:
+    Consumed 1min 13.494s CPU time over 7min 56.222s wall clock time, 383.3M memory peak.'
+  verified: true
 claim:
   since: 2026-11-25 09:03
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-020433-goal-prevent-git-safe-pull-aut.md
