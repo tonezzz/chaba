@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: doing
-updated: 2026-11-25 19:26
+column: review
+updated: 2026-11-25 19:28
 priority: medium
 tags:
 - bug
@@ -249,9 +249,31 @@ comms:
     yomi-update-all (hourly) run Finished cleanly 15:22-19:08 +07, zero status=125 in ~5h. Committed on dispatch
     branch: vendored canonical unit systemd/yomi-api.service (live unit was hand-installed, no repo copy), jobs
     doc docs/ssot/jobs/infrastructure/2026-11-25-yomi-api-idc03-disabled-r'
+- at: 2026-11-25 19:28
+  from: mn01
+  text: 'finished (ok): exit=0 261125-121947-idc03-yomi-update-active-servi.md` and final status posted to the card.
+    | devin-task-20261125-12194'
+- at: 2026-11-25 19:28
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 19:28
+  from: chaba
+  text: 'session-end checkpoint dd3c6680: 2 leftover file(s) committed'
+- at: 2026-11-25 19:28
+  from: chaba
+  text: banked 706 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 19:28
+  from: chaba
+  text: pushed dispatch/20261125-121947-idc03-yomi-update-active-servi to origin
+- at: 2026-11-25 19:28
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 19:28
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -259,9 +281,10 @@ action:
   sweep:
     stale_running: 2026-11-25 14:55
     dirty: 2
-  result: 'exit=0 4959-idc03-yomi-update-active-servi.md` in this worktree; final status posted to the card. | devin-task-20261125-144959-idc03-yomi-update-active-servi.service:
-    Consumed 59.083s CPU time over 3min 57.228s wall clock time, 830.3M memory peak.'
+  result: 'exit=0 261125-121947-idc03-yomi-update-active-servi.md` and final status posted to the card. | devin-task-20261125-121947-idc03-yomi-update-active-servi.service:
+    Consumed 1min 13.833s CPU time over 6min 25.201s wall clock time, 631.1M memory peak.'
   runner: mn01
+  verified: false
 claim:
   since: 2026-11-25 19:18
 review_kind: verify
