@@ -6,7 +6,7 @@ version: 1
 config:
   status: active
   created: "2026-11-20"
-  last_updated: "2026-11-20"  # handoff packet + enforced sweep (priority 1)
+  last_updated: "2026-11-25"  # Phase C.1 capture-router/harvester contract (OPS-1355)
   maintainer: tony
   related_files:
     - docs/ssot/ssot.index.yml
@@ -326,3 +326,145 @@ sections:
         text: >-
           Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
           ledger. Update this section only from a fresh report; state the report path and date.
+
+  - title: Capture Router Contract (Phase C.1)
+    icon: "🔀"
+    layout: list
+    items:
+      - label: Scope and posture
+        text: >-
+          Contract for the Phase C capture pipeline (scripts/chaba/capture-router.py,
+          harvester.py, capture-apply.py). Spec only — no runtime behavior change.
+          Posture is propose-first and deterministic (no model calls): the router and
+          harvester are read-only and emit proposals plus audit records to a local
+          runtime dir; the only sink-write door is capture-apply.py, gated one
+          dedupe_key per invocation (OPS-0024, approved 2026-11-23).
+      - label: Event envelope (candidate -> proposal)
+        text: >-
+          Candidate (harvester -> router): source, source_id, text, as_of,
+          already_filed. source_id is the stable native id per surface:
+          "<card-slug>#comms[<i>]" for card comms, the focus-inbox file stem, or
+          the dispatch-outcome filename stem. Proposal (router output): run_id,
+          matrix_version ("ssot.knowledge-capture.yml@YYYY-MM"), source,
+          source_id, as_of, text_excerpt (<=200 chars), proposed_sink,
+          sink_key_type, dedupe_key, action, confidence, rule, already_filed;
+          the harvester adds a "duplicate" flag. Pointer-first: excerpts and
+          refs only — never copied SSOT bodies or volatile snapshots.
+      - label: Approved sinks and actions
+        text: >-
+          Sink namespace mirrors the 7-row Capture Matrix: ssot, kanban,
+          lesson, oc-note, kb, evidence, none (transient -> skip). Actions:
+          create | link | skip; upsert-in-place by dedupe_key, never fork.
+          Write-approved today: ONLY (kanban, create) via capture-apply ->
+          board-api. ssot/kb/lesson/oc-note apply paths are unimplemented and
+          must be refused, never improvised. link/skip need no sink write.
+      - label: Dedupe key
+        text: >-
+          dedupe_key = "<sink>:<native_key>". Native keys are sink-native
+          stable ids, never content blobs: kanban <- parent card id for
+          card-comms sources ("<slug>#comms[i]" collapses to "<slug>"), else
+          the first FILED_RE reference or sha1(source, source_id, normalized
+          text)[:12]; lesson <- topic slug; oc-note <- note-domain slug;
+          ssot/kb <- docs path reference or slug; evidence <- source_id or
+          artifact ref; none <- hash. Ledger dedupe is exact-match on
+          dedupe_key, both within a run and across runs.
+      - label: Audit metadata
+        text: >-
+          Ledger (capture-ledger.yml under $CHABA_CAPTURE_OUT, default
+          ~/.local/share/chaba/capture/ — runtime-local, not a canonical
+          sink): matrix_version, entries[] = {run_id, dedupe_key,
+          proposed_sink, action, source, source_id, as_of, confidence},
+          applied[] = {dedupe_key, applied_at, run_id, sink, action,
+          source_id, artifact_ref, verification: get-ok, actor}. Each run
+          also emits capture-proposal-<run_id>.md. Audit records carry
+          pointers/IDs only — no secrets, no volatile snapshots. Harvester
+          ledger rewrites preserve the applied: block.
+      - label: Idempotency
+        text: >-
+          Replay-safe by dedupe_key: a key already in entries[] is flagged
+          duplicate and adds no ledger entry; within-run duplicates collapse
+          through the ledger's known-key set, so reruns converge instead of
+          forking. Apply is idempotent: the already-applied gate blocks
+          re-applying a key, and a failed GET verification leaves the ledger
+          unmarked for manual reconcile rather than writing a false applied
+          record. There is deliberately no bulk apply mode.
+      - label: Dry-run default
+        text: >-
+          capture-router.py emits proposals only (JSON via --input/--text;
+          --self-test for deterministic rule checks). harvester.py writes
+          only inside $CHABA_CAPTURE_OUT (report + ledger) or nothing at all
+          with --stdout. capture-apply.py with no --apply prints the exact
+          card payload, per-gate PASS/BLOCK results, the apply command and
+          the rollback command, and writes nothing; --apply additionally
+          requires --confirm retyping the exact dedupe_key — no inferred
+          approval.
+      - label: Guards
+        text: >-
+          Source guards: OPS_RE drops ops ceremony from tony comms;
+          MIN_LEN=40; the focus-inbox scan is top-level only and
+          processed/archived/done/superseded entries are already_filed.
+          Precision guards: FILED_RE requires hyphenated card/lesson slugs
+          and excludes 8-digit dates, so "card spec" and "20261119" cannot
+          collapse proposals; scheduled-producer focus artifacts
+          (job-fail-*, *-report-watch-*, kanban-cards-*, handoff-*,
+          *-audit-*) and dispatch outcomes never produce kanban/create —
+          they route to evidence/link on the existing artifact. Apply gates,
+          in order: exact ledger dedupe_key; allowlisted sink/action; not
+          already applied; --confirm retype; source artifact still exists
+          and is non-terminal; no duplicate card id/title (fail-closed when
+          board-api is unreadable); <=3 bounded board-cli attempts via
+          --ssh idc03; GET verification; audit append. Always rejected:
+          secrets, volatile snapshots presented as truth, ada-* personal-
+          memory writes from Chaba, non-approved sinks, missing dedupe_key,
+          SSOT body duplication, writes outside the board-api mutation door.
+
+  - title: Capture Router Contract — Examples
+    icon: "🧪"
+    layout: text
+    items:
+      - label: Worked examples
+        text: |
+          # 1. Candidate -> proposal (real router output shape)
+          candidate: {"source":"card-comms","source_id":"ada-capture-hooks#comms[4]",
+                      "text":"Please wire the capture hooks on tony-dell next action",
+                      "as_of":"2026-11-23","already_filed":false}
+          proposal:  {"run_id":"20261125T094803","matrix_version":"ssot.knowledge-capture.yml@2026-11",
+                      "source":"card-comms","source_id":"ada-capture-hooks#comms[4]",
+                      "as_of":"2026-11-23",
+                      "text_excerpt":"Please wire the capture hooks on tony-dell next action",
+                      "proposed_sink":"kanban","sink_key_type":"card_or_request_id",
+                      "dedupe_key":"kanban:ada-capture-hooks","action":"link",
+                      "confidence":0.88,"rule":"actionable-work","already_filed":true}
+          # card-comms kanban candidates upsert the PARENT card — link, never create.
+
+          # 2. Focus-inbox create candidate (eligible for the gated apply door)
+          proposal: {"run_id":"20261125T094803","matrix_version":"ssot.knowledge-capture.yml@2026-11",
+                     "source":"focus-inbox","source_id":"2026-11-12-wiki-login",
+                     "as_of":"2026-11-12",
+                     "text_excerpt":"Fix the Google button label on the wiki login page",
+                     "proposed_sink":"kanban","sink_key_type":"card_or_request_id",
+                     "dedupe_key":"kanban:04e0aa363440","action":"create",
+                     "confidence":0.8,"rule":"actionable-work","already_filed":false}
+          # keys are sink-native; the kanban hash derives from
+          # sha1(source, source_id, normalized text)[:12] when no ref exists.
+
+          # 3. Ledger shape (capture-ledger.yml, runtime-local)
+          matrix_version: ssot.knowledge-capture.yml@2026-11
+          entries:
+            - {run_id: "20261125T094803", dedupe_key: "kanban:ada-capture-hooks",
+               proposed_sink: kanban, action: link, source: card-comms,
+               source_id: "ada-capture-hooks#comms[4]", as_of: "2026-11-23",
+               confidence: 0.88}
+          applied:
+            - {dedupe_key: "kanban:04e0aa363440", applied_at: "2026-11-24T02:14:09+00:00",
+               run_id: "20261123T112751", sink: kanban, action: create,
+               source_id: "2026-11-12-wiki-login",
+               artifact_ref: "https://idc03.taila0626a.ts.net/apps/board2/?card=2026-11-12-wiki-login",
+               verification: get-ok, actor: opencode}
+
+          # 4. Dry-run is the default — prints gates + payload, writes nothing
+          $ python3 scripts/chaba/capture-apply.py --key kanban:04e0aa363440
+          # capture-apply dry-run — kanban:04e0aa363440
+          # - gates: BLOCK
+          #   - BLOCK: already applied; ledger audit record present (idempotence gate)
+          # DRY-RUN: nothing was written.

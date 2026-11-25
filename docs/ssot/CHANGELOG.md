@@ -13,6 +13,14 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-11-25
+
+- **File**: docs/ssot/ssot.knowledge-capture.yml
+- **Change Type**: minor
+- **Description**: Added the Capture Router Contract (Phase C.1) sections — candidate/proposal event envelope, approved sink namespace and write-approved (kanban/create only) posture, sink-native dedupe_key format, ledger/audit metadata, idempotency and dry-run defaults, reject/guard list, plus worked examples. Documents the contract already implemented by scripts/chaba/{capture-router,harvester,capture-apply}.py; no runtime behavior change.
+- **Impact**: Canonical contract for the C.2 router CLI and C.4 harvester jobs; grounded in the OPS-0016/OPS-0024 approved design.
+- **Rollback**: Remove the two appended sections from docs/ssot/ssot.knowledge-capture.yml and revert the last_updated line and this entry.
+
 ### 2026-11-21
 
 - **File**: docs/ssot/infrastructure/ssot.docs-map.yml (+ scripts/ssot-docs-map-check.py, docs/ssot/ssot.index.yml)
