@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-retention-michael
 title: Timer ada-retention-michael on idc03 failing
 column: backlog
-updated: 2026-11-25 10:24
+updated: 2026-11-25 15:31
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 09:57) of `ada-retention-michael.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-retention-michael.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 15:31
+  from: tony
+  text: '2026-11-25 15:31 (+07): VERIFIED RESOLVED — no new code change was needed. The shared TypeError in sweep_ops
+    was already fixed (commit 2a4f3f2033, deployed on idc03 12:38) but the four units were never rerun, so the cards
+    kept the stale 09:57 exit-code. This session ran full dry-runs for all four lanes (rc=0), then started the real
+    units: dev/kk/michael/tony all Result=success, ExecMainStatus=0. tony lane: 3 extract groups -> canonical, 7
+    superseded; 0 transcript uploads, 0 ops docs swept. Force'
