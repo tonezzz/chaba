@@ -5,23 +5,35 @@ Scans ~/.local/share/devin-dispatch/tasks/*/transcript.json on each runner
 host (local + ssh), aggregates per-day per-model token metrics, and
 estimates $ where the model has a known price. Free-tier models are
 reported but costed at $0 — "Free" in `devin models list` means included
-in the plan, NOT unlimited; monthly allowance limits still apply and are
-not visible here.
+in the plan, NOT unlimited; the plan-quota remainder is probed separately
+(see Allowance below).
 
 Usage:
   devin-usage.py                     # local host only, last 7 days
   devin-usage.py --fleet             # all dispatch-capable hosts
   devin-usage.py --days 30 --json
+  devin-usage.py --no-allowance      # skip the plan-quota probe (offline)
+
+Allowance (plan quota) comes from the same Connect RPC the CLI's TUI
+/usage view uses: POST {api_server}/exa.seat_management_pb.
+SeatManagementService/GetUserStatus with the stored windsurf_api_key —
+read-only, no spend. Requires ~/.local/share/devin/credentials.toml on
+the host running the script.
 """
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
+import urllib.request
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 TASKS_DIR = os.path.expanduser("~/.local/share/devin-dispatch/tasks")
+CREDS_PATH = os.path.expanduser("~/.local/share/devin/credentials.toml")
+USER_STATUS_RPC = ("/exa.seat_management_pb.SeatManagementService/"
+                   "GetUserStatus")
 
 # Dispatch-capable runner hosts (ssh names).
 FLEET = ["tony-dell", "tony-omen", "idc01", "idc02", "idc03", "mn01"]
@@ -78,6 +90,102 @@ def norm_model(name):
     return (name or "unknown").lower().replace(" ", "-")
 
 
+def load_credentials(path=CREDS_PATH):
+    """Parse ~/.local/share/devin/credentials.toml (flat key = "value")."""
+    creds = {}
+    try:
+        with open(path) as f:
+            for line in f:
+                m = re.match(r'\s*(\w+)\s*=\s*"([^"]*)"', line)
+                if m:
+                    creds[m.group(1)] = m.group(2)
+    except OSError:
+        pass
+    return creds
+
+
+def _iso(unix):
+    try:
+        return datetime.fromtimestamp(int(unix), timezone.utc).strftime(
+            "%Y-%m-%d %H:%M UTC")
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_user_status(data):
+    """Normalize a GetUserStatusResponse into allowance fields."""
+    us = data.get("userStatus") or {}
+    ps = us.get("planStatus") or {}
+    pi = ps.get("planInfo") or {}
+    out = {
+        "plan": pi.get("planName") or data.get("planInfo", {}).get(
+            "planName"),
+        "billing_strategy": (ps.get("billingStrategy")
+                             or pi.get("billingStrategy")),
+        "plan_start": ps.get("planStart"),
+        "plan_end": ps.get("planEnd"),
+        "daily_remaining_pct": ps.get("dailyQuotaRemainingPercent"),
+        "weekly_remaining_pct": ps.get("weeklyQuotaRemainingPercent"),
+        "daily_reset": _iso(ps.get("dailyQuotaResetAtUnix")),
+        "weekly_reset": _iso(ps.get("weeklyQuotaResetAtUnix")),
+        "overage_usd": None,
+    }
+    micros = ps.get("overageBalanceMicros")
+    if micros not in (None, ""):
+        try:
+            out["overage_usd"] = round(int(micros) / 1e6, 2)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def fetch_allowance(creds_path=CREDS_PATH, timeout=15):
+    """Read-only plan-quota probe. Returns (allowance_dict, error_str)."""
+    creds = load_credentials(creds_path)
+    api_key = creds.get("windsurf_api_key")
+    server = (creds.get("api_server_url")
+              or "https://server.codeium.com").rstrip("/")
+    if not api_key:
+        return None, "no windsurf_api_key in credentials.toml"
+    # ide_version/extension_version must be semver — the server 500s on
+    # free-form strings (verified 2026-11-25).
+    meta = {"api_key": api_key, "ide_name": "devin-cli",
+            "ide_version": "0.1.0", "extension_name": "devin-cli",
+            "extension_version": "0.1.0", "locale": "en-US",
+            "os": sys.platform}
+    req = urllib.request.Request(
+        server + USER_STATUS_RPC,
+        data=json.dumps({"metadata": meta}).encode(),
+        headers={"Content-Type": "application/json",
+                 "Connect-Protocol-Version": "1"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read())
+    except Exception as e:
+        return None, str(e)[:120]
+    return parse_user_status(data), None
+
+
+def format_allowance(allowance):
+    """One footer line for a parsed allowance dict."""
+    bits = []
+    if allowance.get("plan"):
+        bits.append(str(allowance["plan"]))
+    if allowance.get("daily_remaining_pct") is not None:
+        bits.append(f"daily {allowance['daily_remaining_pct']}% left"
+                    + (f" (reset {allowance['daily_reset']})"
+                       if allowance.get("daily_reset") else ""))
+    if allowance.get("weekly_remaining_pct") is not None:
+        bits.append(f"weekly {allowance['weekly_remaining_pct']}% left"
+                    + (f" (reset {allowance['weekly_reset']})"
+                       if allowance.get("weekly_reset") else ""))
+    if allowance.get("overage_usd") is not None:
+        bits.append(f"overage ${allowance['overage_usd']:.2f}")
+    if allowance.get("plan_end"):
+        bits.append(f"plan ends {allowance['plan_end'][:10]}")
+    return ("allowance: " + " | ".join(bits)) if bits else None
+
+
 def scan_local():
     out = []
     for d in sorted(os.listdir(TASKS_DIR)) if os.path.isdir(TASKS_DIR) else []:
@@ -130,7 +238,13 @@ def main():
                     help="comma list override (default FLEET with --fleet)")
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--no-allowance", action="store_true",
+                    help="skip the plan-quota probe (offline / tests)")
     a = ap.parse_args()
+
+    allowance, allowance_err = (None, None)
+    if not a.no_allowance:
+        allowance, allowance_err = fetch_allowance()
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=a.days)
     per_host = {}
@@ -164,7 +278,9 @@ def main():
             rows.append(r)
 
     if a.json:
-        print(json.dumps(rows, indent=1, default=str))
+        print(json.dumps({"sessions": rows, "allowance": allowance,
+                          "allowance_error": allowance_err},
+                         indent=1, default=str))
         return
 
     # day x model aggregates
@@ -216,8 +332,15 @@ def main():
           f"(allowance-bound, not invoiced)")
     if unk:
         print(f"# unknown models (no price data): {', '.join(unk)}")
+    line = format_allowance(allowance) if allowance else None
+    if line:
+        print(line)
+    else:
+        why = allowance_err or "skipped (--no-allowance)"
+        print(f"allowance remaining: not retrievable ({why}) — "
+              "human view: `devin` TUI /usage or app.devin.ai settings")
     print("# est $ = uncached*in + cached*cached + out*out per 1M;"
-          " authoritative billing = devin /usage or app.devin.ai")
+          " allowance above is the authoritative plan-quota remainder")
 
 
 if __name__ == "__main__":
