@@ -1,0 +1,48 @@
+id: runner-fleet-health-host-regex-gap
+title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
+column: backlog
+updated: 2026-11-25 20:05
+priority: medium
+tags:
+- ops
+- dispatch
+- runner-fleet-health
+- bug
+spec: "Goal: close the host-discovery gap in the runner fleet health audit.\n\nFinding (2026-11-25 triage, verified
+  read-only):\n- scripts/board/runner-fleet-health.py:449 uses\n  re.findall(r\"\\b(tony-[\\w-]+|idc\\d+|mn\\d+)\\s*:\",
+  text), so fleet() returns\n  only 6 hosts. `con01` (cap 4, script+container, SSH-reachable) and\n  `kk-mac` (launchd,
+  ACTIVE per SSOT OPS-0220) are silently omitted.\n- scripts/board/dispatch_repos.py:973 was already fixed for kk-\n
+  \ (`kk-[\\w-]+`) but still misses `con01`.\n- Consequence: queue_satisfiability() builds its capability map from\n
+  \ probed hosts only, so any card pinned to kk-mac or con01 is reported\n  \"unsatisfiable by the live runner fleet\"
+  even when the host is live.\n  This kept `kk-mac-devin-decline-smoke` re-queued for days despite its\n  boundary
+  check being verified 2026-11-19 10:42 and re-confirmed\n  2026-11-25 15:26. That card is now closed as done.\n\nAdditional
+  facts to design around (do NOT just widen the regex):\n- Direct probe of con01 with the current judge() yields
+  3 violations:\n  git-identity unset (real), plus devin-dispatch missing and devin CLI\n  missing (BOTH false positives
+  — SSOT says con01 is script+container\n  only, no devin CLI by design). Make devin checks capability-aware.\n-
+  kk-mac is SSH-unreachable from idc03, tony-dell, idc02 and\n  tony-macbook (connect timeout), though its runner
+  heartbeats reach\n  board-api. Decide an alternate probe path or document the exclusion\n  explicitly in SSOT
+  rather than emitting a permanent \"unreachable\" card.\n\nDone conditions:\n1. Host parsing covers every declared
+  fleet host in both modules\n   (structured config preferred over another regex guess).\n2. judge() skips devin-only
+  checks on hosts that do not declare devin\n   capability; con01's genuine git-identity gap is fixed or filed.\n3.
+  kk-mac is either probed via a working path or explicitly excluded\n   with an SSOT-grounded reason (no permanent
+  false alert).\n4. Regression tests: fleet() includes con01 + kk-mac;\n   dispatch_repos.fleet_capabilities() includes
+  con01; a host:con01\n   card is not flagged unsatisfiable; no false devin violations.\n5. Re-run runner-fleet-health.py:
+  0 false violations, 0 unsatisfiable\n   cards, and the result recorded on this card.\n\nOut of scope: changing
+  the deliberate launchd decline behaviour on kk-mac."
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
+ref: OPS-1406
+comms:
+- at: 2026-11-25 20:05
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 20:05
+  from: tony
+  text: '[triage] Live evidence 2026-11-25: health.fleet() = [''tony-dell'',''tony-omen'',''idc02'',''idc03'',''mn01'',''tony-macbook''];
+    dispatch_repos.fleet_capabilities() = those six + kk-mac, no con01. con01 probe: git-identity unset (real) +
+    devin-dispatch and devin-cli missing (false positives, script-only host by design). kk-mac SSH times out from
+    every tested host. Do not just widen the regex — make the devin checks capability-aware and decide the kk-mac
+    probe path explicitly.'
