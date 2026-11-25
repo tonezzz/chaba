@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: doing
-updated: 2026-11-25 09:03
+updated: 2026-11-25 09:04
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -342,6 +342,16 @@ comms:
 - at: 2026-11-25 09:03
   from: tony-dell
   text: claimed
+- at: 2026-11-25 09:04
+  from: chaba
+  text: started devin-task-20261125-090427-goal-improve-devnest-throughpu on tony-dell (dispatch)
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [nest-mgr-v2-actuation] APPROVED by Tony (2026-11-18): spec accepted as written
+    ; [nest-mgr-v2-actuation] Phase 0 implemented in dispatch worktree (no deploy). ne; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2,
+    tony-omen). Done-condi; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; SSOT
+    `known_failed[].action` is documentation-only — audit-ho'
 action:
   type: dispatch
   status: running
