@@ -1,7 +1,7 @@
 id: m1-behavioral-fixture-activation-and-skips
 title: Activate prepared M1 fixture hook and expose skipped required tests
-column: doing
-updated: 2026-11-25 07:59
+column: review
+updated: 2026-11-25 08:01
 brief: OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still
   skips its fourth required idle-follower case.
 priority: medium
@@ -223,13 +223,41 @@ comms:
     denominator + names them + qualified=false on any skip; new verify/test_score.py 4/4 pytest pass. Controls:
     parent+hook 0.5 (2/4, 0 skips), fix+hook 1.0 (4/4 qualified). Run 20261109_022656_b016d7 + scores untouched;
     no paid reruns. Trail: docs/ssot/jobs/bench/2026-11-25-m1-fixture-acti'
+- at: 2026-11-25 08:01
+  from: tony-macbook
+  text: 'finished (ok): exit=0 l.md` in this worktree (committed on the dispatch branch), final status posted to
+    the card. | devin-task-20261125'
+- at: 2026-11-25 08:01
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 08:01
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-074902-actual-consumer-home-tony-eval
+    is 263 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 08:01
+  from: chaba
+  text: banked 563 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 08:01
+  from: chaba
+  text: pushed dispatch/20261125-074902-actual-consumer-home-tony-eval to origin
+- at: 2026-11-25 08:01
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 08:01
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 l.md` in this worktree (committed on the dispatch branch), final status posted to the card. |
+    devin-task-20261125-074902-actual-consumer-home-tony-eval.service: Consumed 36.438s CPU time over 10min 15.480s
+    wall clock time, 331M memory peak.'
+  verified: false
 claim:
   since: 2026-11-25 07:48
+review_kind: verify
