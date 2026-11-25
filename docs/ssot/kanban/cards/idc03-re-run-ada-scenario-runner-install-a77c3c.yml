@@ -1,7 +1,7 @@
 id: idc03-re-run-ada-scenario-runner-install-a77c3c
 title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
 column: done
-updated: 2026-11-25 17:27
+updated: 2026-11-25 17:39
 priority: medium
 tags:
 - idc03
@@ -278,6 +278,10 @@ comms:
 - at: 2026-11-25 17:27
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Re-run install.sh for ada-scenario-runner on host idc03 to update stale systemd unit files from the paid lane
   (:8002) to the dev lane (:8005) matching repo HEAD commit 1c56115c5. Ensure that research/cms/reports weekly suites

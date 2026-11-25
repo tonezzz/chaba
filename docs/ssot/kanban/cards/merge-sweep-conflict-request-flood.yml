@@ -1,7 +1,7 @@
 id: merge-sweep-conflict-request-flood
 title: merge-sweep reposts conflict requests every pass after they are answered
 column: done
-updated: 2026-11-25 17:27
+updated: 2026-11-25 17:39
 brief: 3 review cards carry 15-18 duplicate merge-conflict-* requests. open_conflict_req() counts only UNANSWERED
   ones, so once a human answers, the next 15-min pass posts a fresh request. Gate on conflict signature (head +
   paths), not answer state.
@@ -131,6 +131,10 @@ comms:
 - at: 2026-11-25 17:27
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done

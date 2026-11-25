@@ -1,7 +1,7 @@
 id: devnest-ada-mcp-bridge-sync
 title: Sync DevNest .opencode/ada_mcp.py with canonical ada-voice bridge
 column: done
-updated: 2026-11-25 17:27
+updated: 2026-11-25 17:39
 brief: DevNest local ada-control bridge has the context-pack port plus a large diff vs its old HEAD; canonical ada-voice
   opencode/ada_mcp.py is the deployed source of truth.
 priority: medium
@@ -192,6 +192,10 @@ comms:
 - at: 2026-11-25 17:27
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
