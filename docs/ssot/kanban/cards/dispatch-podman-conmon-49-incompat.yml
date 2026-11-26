@@ -1,7 +1,7 @@
 id: dispatch-podman-conmon-49-incompat
 title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
 column: review
-updated: 2026-11-26 13:24
+updated: 2026-11-26 15:31
 priority: high
 tags:
 - dispatch
@@ -97,6 +97,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-130316-found-during-dispatch-queue-ap on tony-macbook still
     dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 15:31
+  from: tony
+  text: '[triage 15:40 +07] The verified SSOT evidence stranded in staging on tony-macbook worktree dispatch-wt-20261126-130316
+    has been landed to origin/master as docs/ssot/jobs/infrastructure/2026-11-26-podman-conmon-log-tag-fix.yml (commit
+    5e52a39e75; full ssot validation 7175/7175 clean). It documents the live fix on con01/idc02/idc03 (log_tag removed
+    from containers.conf, detached podman runs OK, end-to-end dispatch job OK) plus rollback and residuals. The
+    outcome-doc scratch file was deliberately N'
 action:
   type: dispatch
   status: done
