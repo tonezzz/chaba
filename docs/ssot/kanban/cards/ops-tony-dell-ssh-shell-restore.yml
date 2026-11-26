@@ -1,6 +1,6 @@
 id: ops-tony-dell-ssh-shell-restore
 title: tony-dell - restore SSH shell via local Ansible bootstrap
-column: doing
+column: backlog
 priority: high
 created: '2026-11-26'
 updated: 2026-11-26 12:21
@@ -9,7 +9,7 @@ brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answ
   is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
 action:
   type: script
-  status: running
+  status: queued
   host: tony-dell
   executor: script
   script:
@@ -18,8 +18,11 @@ action:
     cmd: ANSIBLE_LOCALHOST_WARNING=False ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost
       ansible/playbooks/restore-ssh-shell.yml
     timeout: 600
-  runner: tony-dell
   attempts: 1
+  result: 'exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''. | runner-ops-tony-dell-ssh-shell-restore-1795670449.service:
+    Consumed 3.490s CPU time over 3.894s wall clock time, 119.6M memory peak, 320K memory swap peak.'
+  last_failure: 'exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''. | runner-ops-tony-dell-ssh-shell-restore-1795670449.service:
+    Consumed 3.490s CPU time over 3.894s wall clock time, 119.6M memory peak, 320K memory swap peak.'
 spec: 'Bootstrap only: run ansible/playbooks/restore-ssh-shell.yml with a local connection on tony-dell. The play
   removes only the global ForceCommand internal-sftp, keeps the commented Include untouched, takes a timestamped
   sibling backup, validates with sshd -t, reloads sshd and rolls back on failure. Post a comms result with the backup
@@ -36,5 +39,9 @@ comms:
 - at: 2026-11-26 12:21
   from: chaba
   text: started runner-ops-tony-dell-ssh-shell-restore-1795670449 on tony-dell (script executor=script)
+- at: 2026-11-26 12:21
+  from: tony-dell
+  text: 'finished (failed): exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''.
+    | runner-ops-tony-dell-ssh-she — auto-retry queued (attempt 2/2) (column -> backlog)'
 claim:
   since: 2026-11-26 12:20
