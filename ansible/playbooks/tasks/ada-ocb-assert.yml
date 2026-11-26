@@ -30,27 +30,29 @@
 - name: Producer contract on each pane host
   ansible.builtin.assert:
     that:
-      - "p.web_version == ocb_web_version or ocb_role_val not in ocb_strict_roles"
-      - "p.cli_version == ocb_cli_version or ocb_role_val not in ocb_strict_roles"
-      - "(required_units | difference(p.units.keys() | list)) | length == 0"
-      - "(required_units | map('extract', p.units) | reject('equalto', 'active') | list) | length == 0"
-      - "p.bind_3000 == ocb_bind"
-      - "p.local_http == '200'"
-      - "p.patch_present | bool or ocb_role_val not in ocb_strict_roles"
-      - "p.startup_env_mode == '600'"
-      - "p.litellm_dropin | bool"
+      - "p.get('web_version') == ocb_web_version or ocb_role_val not in ocb_strict_roles"
+      - "p.get('cli_version') == ocb_cli_version or ocb_role_val not in ocb_strict_roles"
+      - "(required_units | difference((p.get('units') or {}).keys() | list)) | length == 0"
+      - "(required_units | map('extract', p.get('units') or {}) | reject('equalto', 'active') | list) | length == 0"
+      - "p.get('bind_3000') == ocb_bind"
+      - "p.get('local_http') == '200'"
+      - "(p.get('patch_present', false) | bool) or ocb_role_val not in ocb_strict_roles"
+      - "p.get('startup_env_mode') == '600'"
+      - "(p.get('litellm_dropin', false) | bool)"
     success_msg: "{{ target }} ({{ ocb_role_val }}) producer contract OK"
     fail_msg: >-
-      {{ target }} ({{ ocb_role_val }}) producer drift: web={{ p.web_version }}
-      cli={{ p.cli_version }} required_units={{ required_units }}
-      units={{ p.units }} bind={{ p.bind_3000 }} local={{ p.local_http }}
-      patch={{ p.patch_present }} startup_mode={{ p.startup_env_mode }}
-      litellm={{ p.litellm_dropin }}
+      {{ target }} ({{ ocb_role_val }}) producer drift: web={{ p.get('web_version','?') }}
+      cli={{ p.get('cli_version','?') }} required_units={{ required_units }}
+      units={{ p.get('units', {}) }} bind={{ p.get('bind_3000','?') }}
+      local={{ p.get('local_http','?') }}
+      patch={{ p.get('patch_present','?') }} startup_mode={{ p.get('startup_env_mode','?') }}
+      litellm={{ p.get('litellm_dropin','?') }}
+      {{ '(no probe data — host unreachable or probe failed)' if (p | length == 0) else '' }}
   loop: "{{ groups['ocb_pane'] }}"
   loop_control:
     loop_var: target
   vars:
-    p: "{{ hostvars[target].ocb_probe }}"
+    p: "{{ hostvars[target].ocb_probe | default({}) }}"
     ocb_role_val: "{{ hostvars[target].ocb_role | default('fallback') }}"
     required_units: "{{ ocb_required_units + (ocb_primary_extra_units if ocb_role_val == 'primary' else []) }}"
 
@@ -58,9 +60,9 @@
   ansible.builtin.debug:
     msg: >-
       INFO {{ target }} is role={{ hostvars[target].ocb_role | default('fallback') }}
-      (not strict): observed web={{ hostvars[target].ocb_probe.web_version }}
-      cli={{ hostvars[target].ocb_probe.cli_version }}
-      patch={{ hostvars[target].ocb_probe.patch_present }} — reported,
+      (not strict): observed web={{ (hostvars[target].ocb_probe | default({})).get('web_version','?') }}
+      cli={{ (hostvars[target].ocb_probe | default({})).get('cli_version','?') }}
+      patch={{ (hostvars[target].ocb_probe | default({})).get('patch_present','?') }} — reported,
       not a gate failure (pre-migration soak copy pending Tony's retire
       decision).
   loop: "{{ groups['ocb_pane'] }}"

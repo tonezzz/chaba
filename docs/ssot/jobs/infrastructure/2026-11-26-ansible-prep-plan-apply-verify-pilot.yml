@@ -1,0 +1,60 @@
+title: OPS-1424 step 4 — prep→plan→apply→verify pilot dry-run + report-contract hardening
+subtitle: ADA-OCB wrapper exercised end-to-end on tony-dell controller; three report bugs found and fixed
+icon: flask
+
+card: ansible-prep-plan-apply-verify
+date: 2026-11-26
+status: done
+owner: devin
+
+context: |
+  Steps 1-3 of OPS-1424 landed earlier today (policy SSOT/KB/skill, shared
+  benchmark-report contract, ada-ocb-preflight/plan wrappers + apply gating).
+  This run executed step 4: a real dry-run of prep + plan(--check --diff) +
+  verify against the live fleet from the ansible controller (tony-dell).
+
+  Live finding during the pilot: idc02 (declared primary ocb_pane host,
+  100.123.163.11) refuses SSH — connection refused on port 22, confirmed via
+  both `ssh idc02` and direct IP. The pane's fallback tony-dell is healthy
+  (web=2.8.0, all units active, edge 200 + CSP ok). Any approved apply is
+  correctly blocked until idc02 is back; this needs a host-level look
+  (sshd/host down) outside Ansible scope.
+
+run:
+  controller: tony-dell ~/CascadeProjects/chaba/ansible (exec checkout)
+  scratch:    tony-dell ~/ocb-pilot/ (worktree ansible/ + ssot.audit.hosts.yml;
+              used because the exec checkout only carries merged master)
+  commands:
+    - ansible-playbook playbooks/ada-ocb-preflight.yml -e board_notify=true -e card_ref=ansible-prep-plan-apply-verify
+    - ansible-playbook playbooks/ada-ocb-plan.yml -e card_ref=ansible-prep-plan-apply-verify
+    - ansible-playbook playbooks/ada-ocb-upgrade.yml --check --diff -e card_ref=ansible-prep-plan-apply-verify
+    - ansible-playbook playbooks/ada-ocb-verify.yml -e board_notify=true -e card_ref=ansible-prep-plan-apply-verify
+  results:
+    preflight: "rc=4 (idc02 unreachable, tolerated per spec); reports ok"
+    plan:      "rc=4; printed gated apply command; no mutation"
+    upgrade_check_diff: "rc=4; DRY RUN verdict, rollback stated, traceability assert skipped (not approved), write play skipped, post-gate failed cleanly on idc02 no-probe"
+    verify:    "rc=4; assert failed on idc02 (no probe data), always-block still wrote reports + board comment"
+
+artifacts:
+  canonical: "tony-dell:~/CascadeProjects/chaba/reports/ansible-benchmark/<playbook>/<ts>/ (reports/* is gitignored — evidence lives on controller, path referenced in card comms)"
+  dirs:
+    - reports/ansible-benchmark/ada-ocb-preflight/20261126T054143Z/
+    - reports/ansible-benchmark/ada-ocb-plan/20261126T054202Z/
+    - reports/ansible-benchmark/ada-ocb-verify/20261126T054329Z/
+
+bugs_found_and_fixed:
+  - "benchmark_report_ts used lookup('pipe','date') in play vars — re-evaluated per task, so report dir and per-host template disagreed by a second and writes failed ('destination does not exist'). Fixed: pin once via set_fact in ada-ocb-preflight.yml and ada-ocb-verify.yml."
+  - "Unreachable hosts were reported probed:true/unreachable:false with all-? checks. Fixed: report builder now emits probed=false, unreachable=true, rc=4, empty checks, summary 'unreachable (no probe data)'."
+  - "ada-ocb-assert.yml crashed templating hostvars[h].ocb_probe for unprobed hosts (HostVarsVars has no attribute). Fixed: p defaults to {} and all conditions/fail_msg use .get(); missing probe fails the gate with an explicit '(no probe data — host unreachable or probe failed)' suffix."
+  - "ada-ocb-upgrade.yml preflight-state debug crashed on missing ocb_probe; now uses .get defaults."
+  - "Added ocb_report_hosts extra-var override so --limit previews don't emit bogus unreachable rows for out-of-scope hosts (documented in playbook headers)."
+
+lessons:
+  - "lookup('pipe', ...) inside play vars is re-templated on EVERY use — never use it for a run-identity value (timestamps, dirs); pin with set_fact first."
+  - "A playbook that probes remote hosts must treat 'host produced no facts' as unreachable/rc=4, not as an all-fail drift report — otherwise scheduled audits page on ghosts."
+  - "Shared assert includes must tolerate missing probe facts (default({}) + .get) — the gate is also the post-mortem path when the host is down."
+  - "ansible-playbook --limit does NOT shrink groups[...] or assert loops that iterate the full group — report/assert scope needs its own override var (ocb_report_hosts) or explicit group design."
+
+followups:
+  - "idc02 SSH refused — host/sshd-level check needed (not Ansible). Until then ocb_pane primary is down; tony-dell fallback carries the pane."
+  - "ada-ocb-assert producer loop iterates all of groups['ocb_pane'] regardless of --limit — acceptable for the contract gate, but a --limit verify still fails on out-of-scope unprobed hosts; consider scoping the loop to probed hosts when a limit-preview mode is wanted."

@@ -57,10 +57,10 @@
     - name: Preflight state
       ansible.builtin.debug:
         msg: >-
-          PREFLIGHT idc02: web={{ hostvars['idc02'].ocb_probe.web_version }}
-          cli={{ hostvars['idc02'].ocb_probe.cli_version }}
-          patch={{ hostvars['idc02'].ocb_probe.patch_present }}
-          units={{ hostvars['idc02'].ocb_probe.units }}
+          PREFLIGHT idc02: web={{ (hostvars['idc02'].ocb_probe | default({})).get('web_version','?') }}
+          cli={{ (hostvars['idc02'].ocb_probe | default({})).get('cli_version','?') }}
+          patch={{ (hostvars['idc02'].ocb_probe | default({})).get('patch_present','?') }}
+          units={{ (hostvars['idc02'].ocb_probe | default({})).get('units', {}) }}
           (declared pins: web={{ ocb_web_version }}, cli={{ ocb_cli_version }})
 
     - name: Rollback — stated BEFORE any destructive step

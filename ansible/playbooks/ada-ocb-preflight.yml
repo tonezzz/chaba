@@ -8,6 +8,9 @@
 #   ansible-playbook playbooks/ada-ocb-preflight.yml
 #   ansible-playbook playbooks/ada-ocb-preflight.yml --check --diff --limit idc02
 #   ansible-playbook playbooks/ada-ocb-preflight.yml -e board_notify=true -e card_ref=OPS-1424
+#   # --limit previews: pass the same subset as report hosts, e.g.
+#   ansible-playbook playbooks/ada-ocb-preflight.yml --limit tony-dell \
+#     -e '{"ocb_report_hosts":["tony-dell"]}'
 
 - name: Probe ada-ocb pane hosts (read-only)
   hosts: ocb_pane:!disabled
@@ -26,13 +29,17 @@
     benchmark_report_playbook: "{{ ocb_report_playbook | default('ada-ocb-preflight') }}"
     benchmark_report_ts: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
     benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts }}"
-    benchmark_report_hosts: "{{ groups['ocb_pane'] | default([]) | difference(groups['disabled'] | default([])) | sort }}"
+    benchmark_report_hosts: "{{ ocb_report_hosts | default(groups['ocb_pane'] | default([]) | difference(groups['disabled'] | default([])) | sort) }}"
     board_notify: false
     board_api_base: "https://idc03.taila0626a.ts.net:10000"
     board_from: "devin"
     card_ref: ""
 
   tasks:
+    - name: Pin the benchmark timestamp once
+      ansible.builtin.set_fact:
+        benchmark_report_ts: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
+
     - name: Load the declared pane contract
       ansible.builtin.include_vars: "{{ playbook_dir }}/../inventory/group_vars/ocb_pane.yml"
 
@@ -46,6 +53,7 @@
     - name: Build per-host benchmark reports
       ansible.builtin.set_fact:
         benchmark_host_report: >-
+          {%- set probed = hostvars[item].ocb_probe is defined -%}
           {%- set p = hostvars[item].ocb_probe | default({}) -%}
           {%- set role = hostvars[item].ocb_role | default('fallback') -%}
           {%- set strict = role in (ocb_strict_roles | default(['primary'])) -%}
@@ -64,7 +72,7 @@
             {'name': 'patch_present', 'status': ('ok' if (p.get('patch_present') | bool or not strict) else 'fail'), 'detail': 'actual=' ~ p.get('patch_present','?')},
             {'name': 'startup_env_mode', 'status': ('ok' if p.get('startup_env_mode') == '600' else 'fail'), 'detail': 'actual=' ~ p.get('startup_env_mode','?')},
             {'name': 'litellm_dropin', 'status': ('ok' if p.get('litellm_dropin') | bool else 'fail'), 'detail': 'actual=' ~ p.get('litellm_dropin','?')}
-          ] -%}
+          ] if probed else [] -%}
           {%- set deltas = checks | selectattr('status', 'in', ['drift','fail','error','missing','down']) | list -%}
           {%- set summary = ('ok' if (deltas | length == 0) else ('fail' if (checks | selectattr('status','equalto','fail') | list | length > 0) else 'drift')) -%}
           {{ {
@@ -72,11 +80,11 @@
             'inventory_host': item,
             'playbook': benchmark_report_playbook,
             'ts': benchmark_report_ts,
-            'probed': true,
-            'unreachable': false,
-            'rc': (0 if summary == 'ok' else 1),
+            'probed': probed,
+            'unreachable': (not probed),
+            'rc': (4 if not probed else (0 if summary == 'ok' else 1)),
             'elapsed_s': 0,
-            'summary': summary ~ ' role=' ~ role ~ ' web=' ~ p.get('web_version','?') ~ ' cli=' ~ p.get('cli_version','?') ~ ' local=' ~ p.get('local_http','?'),
+            'summary': ('unreachable (no probe data)' if not probed else summary ~ ' role=' ~ role ~ ' web=' ~ p.get('web_version','?') ~ ' cli=' ~ p.get('cli_version','?') ~ ' local=' ~ p.get('local_http','?')),
             'checks': checks,
             'deltas': deltas,
             'evidence': [
