@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: review
-updated: 2026-11-26 21:21
+updated: 2026-11-26 21:24
 priority: medium
 tags:
 - ops
@@ -376,6 +376,9 @@ comms:
 - at: 2026-11-26 21:21
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 21:24
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261126-204208-migrate-the-42-entries-'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
@@ -390,6 +393,7 @@ action:
     Consumed 4min 770ms CPU time over 34min 41.427s wall clock time, 1009.8M memory peak, 406.9M memory swap peak.'
   sweep:
     dirty: 16
+    no_repo: 2026-11-26 21:24
   runner: tony-dell
 claim:
   since: 2026-11-26 20:41
