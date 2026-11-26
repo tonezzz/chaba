@@ -28,6 +28,13 @@ verification:
     (`git cat-file -e origin/master:<path>` -> ABSENT); focused
     `git status --short docs/ssot/focus-inbox` empty."
   - "board-api health after removal: `{\"ok\": true}` on idc03 loopback."
+  - "Second approved pass removed the four 14:18/14:27 duplicates in scoped
+    commit 64880484a03, with backups in
+    /tmp/opencode/ha-auth-dup-backup-20261126/. A non-fast-forward push was
+    resolved by merging origin/master (board-api had advanced); final push
+    e5f972a5a84. All five targets are ABSENT in origin/master, focused inbox
+    status is clean, board-api still healthy, and unrelated dirty files
+    (.render-state-board2, review-digest.yml, untracked dirs) were untouched."
   - "No new invalid-auth lines in tony-ha's log after 14:33:40 +07, so the
     watcher's next tick has nothing false to alert on."
 rollback: >-
@@ -35,17 +42,14 @@ rollback: >-
   served checkout, then commit and push the restore. This re-creates the
   false-positive item.
 residual: >-
-  The watcher's dedupe state on tony-dell still holds the numeric-epoch key
-  for the 14:33 probe, so that exact log line cannot re-alert even if the
-  HA log is replayed. Four older duplicate alert files from the 14:18 timer
-  tick and my 14:27 verification run
-  (2026-11-26-141840-ha-auth-failure-michael-ha-*.yml,
-  2026-11-26-141840-ha-auth-failure-tony-ha-from-localhost.yml,
-  2026-11-26-142742-ha-auth-failure-michael-ha-*.yml,
-  2026-11-26-142743-ha-auth-failure-tony-ha-from-localhost.yml) remain in the served
-  checkout. They were left in place because the user's approval was scoped
-  to the 14:33 item; they should be triaged or removed in a separate,
-  explicitly approved pass.
+  None. The watcher's dedupe state on tony-dell still holds the
+  numeric-epoch keys for both re-alerted lines, so neither can re-alert
+  even if the HA log is replayed. All five duplicate alert files from the
+  14:18 tick, the 14:27 verification run and the 14:33 diagnostic sweep
+  have been removed from the served checkout and from origin/master. The
+  earlier 13:25/13:40/13:55/14:10 alert pairs from the original crash loop
+  were not touched — they predate this audit and remain as historical
+  board items.
 lesson: >-
   When a producer posts a false positive into a board-owned file and the
   write door has no delete operation, do not silently bypass it: get
