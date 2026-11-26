@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
 column: doing
-updated: 2026-11-26 19:04
+updated: 2026-11-26 19:07
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -60,6 +60,13 @@ comms:
     primer injected 8 lesson(s): idc02''s kanban-dispatc; [board-gantt-timeline-view] primer injected 8 lesson(s):
     idc02''s kanban-dispatch; [mddb-cms-11027-embed-coverage-gap-250-do-e35321] progress: vector-stats recheck;
     [mddb-cms-11027-embed-coverage-gap-250-do-e35321] update: rei'
+- at: 2026-11-26 19:07
+  from: devin
+  text: 'DONE (dispatch worktree): banks gained --budget wall-clock cap; rendered embed-lane-banks.service now runs
+    `banks --budget 2400` (40min < 45m TimeoutStartSec). Saturated-queue throttle waits are budget-bounded too,
+    so the run exits 0 with copied progress and the daily timer resumes via key-set diff. queue-hi 3000 / dropped=0
+    unchanged. Re-rendered idc02 unit + swept stale generated drift (cline retirement leftovers, wp-comment-sync,
+    ansible-runner-tool-guard) so test_render_jobs GeneratedTree is'
 action:
   type: dispatch
   status: running
