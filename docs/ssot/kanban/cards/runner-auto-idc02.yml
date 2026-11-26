@@ -2,7 +2,7 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
@@ -25,7 +25,7 @@ help: 'Per-check fixes:
 
   - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
   scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-11-26'
+updated: 2026-11-26 15:13
 review_kind: triage
 action:
   status: done
@@ -277,6 +277,14 @@ comms:
     1514c75c4679a01b on this host and all others; --check changed=0. See SSOT job 2026-11-26-runner-agent-stale-converge-retire.yml.
     Closing.'
 - at: 2026-11-26 09:29
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 15:13
+  from: tony
+  text: '[close 15:13 +07] Lifecycle bounce: card already carried "closed by tony". Verified installed ~/.local/bin/runner-agent
+    sha256 prefix 1514c75c matches repo scripts/board/runner-agent.py; runner-agent.timer firing each minute (15:10:34,
+    15:11:35, 15:12:35) with clean Finished, no Failed in last 20m. Provisioning gaps resolved; closing.'
+- at: 2026-11-26 15:13
   from: tony
   text: closed by tony
 ref: OPS-0406
