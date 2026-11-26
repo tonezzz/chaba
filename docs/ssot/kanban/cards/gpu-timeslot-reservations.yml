@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
 column: doing
-updated: 2026-11-26 12:34
+updated: 2026-11-26 12:38
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -205,6 +205,12 @@ comms:
     primer injected 8 lesson(s): [kk-mac-launc; [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-;
     [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; [ansible-vs-legacy-fleet-benchmark]
     MANUAL LANDING (devin ses'
+- at: 2026-11-26 12:38
+  from: devin
+  text: 'attempt 2 picked up: prior run implemented+verified reservations live on idc02:/home/tony/ansible but committed
+    nothing (staged mirror only) — that is why merge-sweep failed. This run: refresh the ansible mirror snapshot
+    (live tree now also has webui cancel_job), commit it in the worktree, and re-verify live on omen via the :8795
+    API.'
 ref: OPS-1407
 claim:
   since: 2026-11-26 12:33
