@@ -1361,6 +1361,14 @@ hosts:
       # ghost gone. nest-mgr.service runs intentionally (installed
       # 2026-11-17, card ops-macbook-nestmgr-install / SYS-0158) — declared.
       - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-25 (tony-macbook-daytime-runner): daytime sleep inhibitor is
+      # NOT a systemd unit — it runs inside the XFCE session via
+      # ~/.config/autostart/macbook-day-awake.desktop ->
+      # ~/.local/bin/macbook-day-awake.sh (repo: scripts/ops/). Block-mode
+      # logind inhibitors need an active/inactive session subject, so a
+      # user-service copy can't hold them; a polkit rule
+      # (/etc/polkit-1/rules.d/50-macbook-day-awake.rules) would let
+      # systemd/macbook-day-awake.service (repo) take over session-free.
     expected_absent:
       # stick-announce.service — pre-rebuild ghost (macOS-era carryover /
       # early-Ubuntu leftover); not installed on the rebuilt host. Its

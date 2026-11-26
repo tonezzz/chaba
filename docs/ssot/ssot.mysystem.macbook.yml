@@ -103,7 +103,7 @@ sections:
         text: "~/.config/devin/mcp_config.json — 19 servers; command-type re-exec on tony-dell over ssh (satellite pattern), URL-type direct over tailnet; mddb -> idc03:9000 (dell's stale idc01 URL fixed same day). Session hooks in ~/.config/devin/scripts/ + mcp-scripts/ ported from dell. Timers: devin-cleanup, devin-session-prune, devin-dispatch-watch, devin-dispatch-prune. devin-desktop watchdog via cron."
         status: active
       - label: Runner lane
-        text: "runner-agent.service+timer cap 2 labels cpu,dev,portable — enrolled in ssot.kanban.yml runner_fleet 2026-10-11 (script type only until devin CLI auth + podman)"
+        text: "runner-agent.service+timer cap 4 gate 1.0 labels macbook,local-8c,always-home — enrolled in ssot.kanban.yml runner_fleet (devin CLI + script lanes live; container lane N/A, no podman)"
         status: active
       - label: GPU tooling
         text: vulkan-tools, clinfo, mesa-utils, glmark2 (bench done 2026-10-10 — see hardware doc)
@@ -115,8 +115,11 @@ sections:
     layout: list
     items:
       - label: Lid-close suspend
-        text: "Disabled for headless use 2026-10-11 — /etc/systemd/logind.conf.d/headless-crd.conf sets HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore (lid close no longer suspends, needed for CRD)"
-        status: done
+        text: "Partial — /etc/systemd/logind.conf.d/headless-crd.conf sets HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore, but hibernate.conf (later drop-in) overrides HandleLidSwitch=suspend-then-hibernate: AC lid-close stays ignored (CRD-safe), battery lid-close suspends->hibernates and resume cold-boots (SYS-1410). Day-awake inhibit releases on battery+lid-closed by design (bag safety)."
+        status: active
+      - label: Daytime sleep inhibit
+        text: "macbook-day-awake (card tony-macbook-daytime-runner, 2026-11-25): holds a logind sleep:idle block inhibitor 07:00-23:00 while on AC or (lid open + battery>=30%) so the host stays up as a dispatch runner; battery+lid-closed and night keep normal suspend. Delivered via XFCE autostart (block inhibitors need a session subject); repo: scripts/ops/macbook-day-awake.{sh,desktop}"
+        status: active
 
   - title: Maintenance & Troubleshooting
     icon: 🔧
@@ -157,7 +160,7 @@ sections:
 
 config:
   version: 7
-  last_updated: 2026-10-11
+  last_updated: 2026-11-25
   maintainer: tony
   related_files:
     - ssot.mysystem.home.yml (home environment overview)

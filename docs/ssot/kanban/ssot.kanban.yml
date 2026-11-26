@@ -536,14 +536,20 @@ execution:
                CLI; onboarded 2026-11-24, runner-agent service+timer installed and
                push:chaba probe verified, e2e card con01-script-smoke claimed and
                finished exit=0; 8c/23Gi but 24/7 ollama load, hence load gate 1.6);
-               tony-macbook: cap 3
-               gate 0.8 labels macbook,local-8c,always-home (dispatch+script,
+               tony-macbook: cap 4
+               gate 1.0 labels macbook,local-8c,always-home (dispatch+script,
                no podman so no container; devin CLI enrolled — running
                devin-task dispatches since 2026-10-2x; runner + repo-sync
-               installed; cap raised 2->3 2026-11-24 via card tony-macbook-cap-raise
-               (systemd unit + .bak-cap2 backup, caffeinate 4h; 4-pinned-probe
-               test: 3 claimed concurrently, 4th waited for a slot);
-               suspend-prone member, don't park long sessions).
+               installed; cap 2->3 2026-11-24 via card tony-macbook-cap-raise,
+               unit rewritten to cap 4 gate 1.0 2026-11-25 — mirrored from the
+               live unit, flag if 4 wasn't deliberate); day-awake inhibit
+               live 2026-11-25 via card tony-macbook-daytime-runner —
+               scripts/ops/macbook-day-awake.sh holds a logind sleep:idle
+               block inhibitor 07:00-23:00 while on AC or (lid open +
+               battery>=30%), delivered via XFCE autostart
+               (scripts/ops/macbook-day-awake.desktop) since block inhibitors
+               require a session subject; suspend-prone member, don't park
+               long sessions).
                kk-mac: ACTIVE in fleet (OPS-0220 — launchd runner
                provisioned via scripts/ops/kk-mac-runner-onboard.sh
                and e2e-verified 2026-11-19: claimed+finished script
