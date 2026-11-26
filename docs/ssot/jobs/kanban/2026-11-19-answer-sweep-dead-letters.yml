@@ -55,6 +55,15 @@ options:
 
   2_auto_compose_spec:
     title: Auto-compose spec when all asks answered, gap is composition
+    phase1_status: >
+      IMPLEMENTED 2026-11-26 (card answer-sweep-auto-compose-spec,
+      dispatch worktree): answer-sweep.py spec_compose_ready() +
+      raise_spec_compose() — detects all-asks-resolved +
+      awaiting_action + action.type=dispatch unarmed + no spec:,
+      raises ONE spec-compose-<date> request inlining the answered
+      asks+answers (dict options spec-written/hold/close, none arm
+      dispatch). Re-raise guard = any spec-compose-* request id on the
+      card. Phase 2 template composition still open.
     design: >
       When every open request on a card is answered/executed and the
       card still lacks a dispatchable spec, answer-sweep raises ONE
