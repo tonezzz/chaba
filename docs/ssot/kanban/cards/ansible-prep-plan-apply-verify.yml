@@ -1,6 +1,6 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: backlog
+column: doing
 updated: 2026-11-26 12:32
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
@@ -85,9 +85,16 @@ comms:
 - at: 2026-11-26 12:32
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.65 > 0.8)'
+- at: 2026-11-26 12:32
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-26 12:32
