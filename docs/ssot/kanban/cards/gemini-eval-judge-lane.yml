@@ -107,5 +107,23 @@ comms:
     Virtual key minted ($10/30d, models=[eval-judge] only, no dependents) as LITELLM_KEY_EVAL_JUDGE. eval-budget.py
     owns EVAL_JUDGE_DAILY_MAX=10000 cap + JSONL ledger + service=eval spend tags. Tests 10/10 pass; smoke 200 +
     tagged SpendLogs row; cap test parks 3rd call with '
+- at: 2026-11-26 22:59
+  from: devin
+  text: 'raised request gemini-api-key-paid-project-gen-lang-cli-7350a6: GEMINI_API_KEY_PAID project gen-lang-client-0854236591
+    is monthly-spend-capped — every paid gemini/* leg 429s fleet-wide'
 claim:
   since: 2026-11-26 22:04
+requests:
+- id: gemini-api-key-paid-project-gen-lang-cli-7350a6
+  ask: 'GEMINI_API_KEY_PAID project gen-lang-client-0854236591 is monthly-spend-capped — every paid gemini/* leg
+    429s fleet-wide since ~20:41 +07 (prod chat lane degraded; eval-judge paid leg dark). ALSO: the 350k/day quota
+    capture motivating this card was project 0694401188, which is the ARCHIVED ops project — the serving project
+    0854236591 quota headroom is unverified. Options: (a) raise the monthly spend cap on 0854236591 in AI Studio
+    + re-check its daily quota in Console, (b) wait for the billing-cycle reset then re-run evals/eval-judge/run.py
+    --calls 100, (c) both. Spend decision is yours.'
+  status: open
+  at: 2026-11-26 22:59
+  from: devin
+  options:
+  - proceed
+  - hold
