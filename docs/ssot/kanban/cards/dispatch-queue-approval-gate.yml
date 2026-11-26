@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: backlog
-updated: 2026-11-26 04:04
+updated: 2026-11-26 12:31
 priority: medium
 tags:
 - dispatch
@@ -66,3 +66,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 12:31
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
