@@ -394,6 +394,33 @@ comms:
   text: 'pub milestone: card verified: video-queue-audit-opencode on idc03 — dispatch/20261126-152413-run-the-existing-read-only-vid
     already in origin/master — verified — auto-closed — dispatch/20261126-152413-run-the-existing-read-only-vid
     already in origin/master — verified — auto-closed [evt-41bc9b9f82094a74]'
+- at: 2026-11-26 15:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-152413-run-the-existing-read-only-vid conflicts with origin/master: reports/card-runner/video-queue-status-opencode.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-26 15:40
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261126-152413-run-the-existing-read-only-vid:
+    1 commit(s) conflict with origin/master '
 review_kind: verify
 claim:
   since: 2026-11-26 15:23
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261126-152413-run-the-existing-read-only-vid: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: reports/card-runner/video-queue-status-opencode.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261126-152413-run-the-existing-read-only-vid
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-26 15:40
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
