@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
-column: review
-updated: 2026-11-26 20:38
+column: done
+updated: 2026-11-26 21:24
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -276,6 +276,19 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 21:24
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 21:24
+  from: tony
+  text: '[verified 2026-11-26] Diagnosis complete and evidence checked: docs/reports/dev-1209-unattended-session-storm-diagnosis-2026-11-26.md
+    is on origin; root cause KNB-1196 (board-api /action claim/move/finish returned 200 without persisting, fixed
+    in 91f327ca/PR #128); persistence suite tests/board/test_board_api_action_persistence.py 7/7 pass. Re-enable
+    conditions recorded: runner-agent at manifest pin 1514c75c (md5 9b50a157) fleet-wide; any resume still requires
+    Tony separate approval (idc03-only '
+- at: 2026-11-26 21:24
+  from: tony
+  text: closed by tony
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
@@ -307,6 +320,5 @@ requests:
   suggested: Pause the Ada smoke now and disable its timer; also pause con01 Cline intake for tonight (recommended).
   answer: Leave both running; I only meant Devin dispatch sessions.
 action:
-  status: idle
+  status: done
 review_kind: verify
-awaiting_action: true
