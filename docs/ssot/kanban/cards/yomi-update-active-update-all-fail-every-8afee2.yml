@@ -314,21 +314,22 @@ comms:
 - at: 2026-11-26 20:41
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-26 20:41
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 2
+  attempts: 0
   sweep:
     stale_running: 2026-11-25 14:55
     dirty: 2
-  result: 'exit=0 261125-121947-idc03-yomi-update-active-servi.md` and final status posted to the card. | devin-task-20261125-121947-idc03-yomi-update-active-servi.service:
-    Consumed 1min 13.833s CPU time over 6min 25.201s wall clock time, 631.1M memory peak.'
-  runner: mn01
-  verified: false
-  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+  last_failure: 'exit=0 261125-121947-idc03-yomi-update-active-servi.md` and final status posted to the card. |
+    devin-task-20261125-121947-idc03-yomi-update-active-servi.service: Consumed 1min 13.833s CPU time over 6min
+    25.201s wall clock time, 631.1M memory peak.'
 claim:
   since: 2026-11-25 19:18
 review_kind: verify
