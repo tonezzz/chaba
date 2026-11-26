@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: backlog
-updated: 2026-11-26 08:35
+updated: 2026-11-26 12:31
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -421,13 +421,15 @@ comms:
 - at: 2026-11-26 08:35
   from: tony
   text: put on hold
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   executor: devin
-  runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-25 21:09
