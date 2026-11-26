@@ -1,7 +1,7 @@
 id: runner-agent-stale-answer-resume-churn-a-9f9ffe
 title: 'runner-agent stale-answer resume churn: answered job-input-* request auto-resumes every needs-input park
   forever'
-column: backlog
+column: doing
 updated: 2026-11-27 02:31
 brief: runner-agent._request_answer() returns the answer of card request job-input-<cid> whenever status==answered
   — forever. The request is answered once (generic option echo) and _raise_input_request dedupes on the same request_id
@@ -58,9 +58,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 02:31
+  from: con01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: con01
+  attempts: 1
+claim:
+  since: 2026-11-27 02:31
