@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 01:05
+updated: 2026-11-27 01:09
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -669,6 +669,13 @@ comms:
   text: 'attempt 8 (005450): re-verifying live state on idc02 — lane S0 boundary 15:58Z, staged S1 envelope+s1-watch.sh
     intact, inflight empty. Probing provider quota now; board request free-lane-providers-quota-capped-until-0-169f8f
     still open, no Tony answer.'
+- at: 2026-11-27 01:09
+  from: devin
+  text: 'attempt 8 wrap-up: BLOCKED, no gate run possible — same provider-quota wall, verified live ~01:10 +07.
+    Lane S0 (boundary 15:58Z, jobs_completed {S0:5} banked outage fails). Fresh lane_gate review @18:07:27Z -> HOLD
+    (verified 0/5, missing_artifact x5, human_minutes=0, zero safety flags) = evidence evals/opencode-lane/reports/2026-11-27-promotion-review.{json,md}.
+    Probe @18:06Z: all or-free-* 429 until 07:00 +07; agent-local 200 but 34.7s/8tok; gemini-2.5-flash-lite 200
+    in 3.0s (metered-vs-free un'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
