@@ -976,7 +976,7 @@ hosts:
       - {name: cast-ha-panel.timer, type: timer, scope: user}
       - {name: audit-cast.timer, type: timer, scope: user}
       - {name: wp-cam-snapshot.timer, type: timer, scope: user, note: "rendered from ssot.jobs — host now tony_omen"}
-      - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
+      - {name: xiaomi-token-refresh.timer, type: timer, scope: user, expected_state: inactive, note: "Masked 2026-11-26 (user chose retire over interactive re-login): refresh script had no valid passToken cookie, failing daily with exit-1. Unit files backed up to ~/.config/systemd/user/_retired-20261126/ and both .timer/.service masked to /dev/null. Cameras keep streaming on the stored token until it expires. Unmask only after logging in to account.xiaomi.com in the browser and verifying a fresh token."}
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
     expected_absent:
