@@ -1,7 +1,7 @@
 id: idc02-exec-checkout-117-staged-files-of-70de51
 title: 'idc02 exec checkout: 117 staged files of autostash-pop residue break repo-sync exit code'
 column: doing
-updated: 2026-11-26 23:06
+updated: 2026-11-26 23:10
 program: infrastructure
 tags:
 - ops
@@ -85,6 +85,10 @@ comms:
     first clean exit after the streak). Status now: only ?? untracked (sidecars/new job files) + 3 unstaged edits
     that are LIVE in-flight job work re-dirtied post-reset (ssot.jobs.yml expected_alert_exit, ssot.secrets.yml
     slot statuses, job-health-sweep.py alert markers — running idc02 job). '
+- at: 2026-11-26 23:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-223935-on-idc02-cascadeprojects-chaba no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -92,5 +96,7 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-26 23:10
 claim:
   since: 2026-11-26 22:38
