@@ -1,7 +1,7 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
 column: doing
-updated: 2026-11-26 23:34
+updated: 2026-11-26 23:39
 priority: low
 action:
   type: dispatch
@@ -10,6 +10,9 @@ action:
   attempts: 1
   repo: chaba
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 23:39
+    dirty: 1
 note: 'LINE_LANE_LOCK=kk,kk-dev,chaba rewrites chat_send targets to the lane group instead of 403 on bad targets
   — a stopgap until targeting stabilises. Gate: verify lane-targeting correctness first (LINE_LANE_ALLOW allowlist
   + last-room fallback), then remove lock entries. Risk: silent misdelivery if removed early.'
@@ -313,6 +316,14 @@ comms:
     chat -> LINE_LANE_DEFAULT -> first allowed user; LINE_LANE_LOCK rewrites to lane default BEFORE the LINE_LANE_ALLOW
     403 gate. Live config: ~/.config/secrets/line-bot.env on idc03 (LOCK=kk,kk-dev,chaba; all 3 defaults inside
     their allow sets — rewrite cannot self-403). Observed: 68 send'
+- at: 2026-11-26 23:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-232308-decision-2026-11-26-tony-verif no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-26 23:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-232308-decision-2026-11-26-tony-verif on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
