@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
-column: review
-updated: 2026-11-26 13:53
+column: done
+updated: 2026-11-26 13:54
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -99,6 +99,9 @@ comms:
 - at: 2026-11-26 13:53
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 13:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -129,3 +132,7 @@ requests:
   answer: proceed
 review_kind: verify
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 13:54
+  note: verified — evidence checks green, closing itself
