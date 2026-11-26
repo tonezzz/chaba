@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: backlog
-updated: 2026-11-26 13:54
+updated: 2026-11-26 15:34
 priority: medium
 tags:
 - cline-kanban
@@ -278,14 +278,21 @@ comms:
   text: 'Triage 2026-11-26: action.status=done is WRONG. Comms: dispatch produced zero commits, ''if the work was
     never pushed it may be gone'', and the 2026-10-29 canary notes the local qwen3:4b smoke exited 0 without the
     expected patch/artifact. Runner only claims status=queued; left open for a status reset + re-dispatch decision.'
+- at: 2026-11-26 15:34
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-26 15:34
+  from: devin
+  text: queued for processing
 action:
   type: dispatch
-  status: done
-  runner: idc02
+  status: queued
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-065757-after-knb-0932-is-deployed-and.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-065757-after-knb-0932-is-deployed-and.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-28 07:02
+  lane: paid_frontier
+  lane_source: kw
 review_kind: verify
 claim: {}
