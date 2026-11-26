@@ -1,7 +1,7 @@
 id: job-health-sweep-consecutive-failure-alerts
 title: Job-health sweep — alert when a declared job fails N consecutive runs
-column: backlog
-updated: 2026-11-26 21:23
+column: doing
+updated: 2026-11-26 21:37
 brief: 'Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had
   ZERO successful finishes in 30d on con01 — nobody knew until a human read journalctl. Dead jobs must surface themselves.'
 priority: medium
@@ -42,9 +42,10 @@ spec: 'Context: three con01 jobs sat dead up to a month — causes were per-host
   lands on idc03 board; healthy host produces no card.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
+  attempts: 1
+  runner: idc02
 ref: OPS-1015
 comms:
 - at: 2026-10-30 18:32
@@ -332,4 +333,8 @@ comms:
 - at: 2026-11-26 21:23
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
-claim: {}
+- at: 2026-11-26 21:37
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-26 21:37
