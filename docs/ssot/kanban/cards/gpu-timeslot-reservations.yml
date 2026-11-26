@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
 column: backlog
-updated: 2026-11-26 08:35
+updated: 2026-11-26 12:31
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -32,10 +32,9 @@ spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPA
   Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-dell
   attempts: 1
   result: 'exit=0 d GPU-JOBS.md/README-DISPATCH.md, and a final card comment posted. | devin-task-20261125-203632-context-home-tony-ansible-queu.service:
     Consumed 49.989s CPU time over 22min 43.892s wall clock time, 1.1G memory peak, 569.8M memory swap peak.'
@@ -167,6 +166,12 @@ comms:
 - at: 2026-11-26 08:35
   from: tony
   text: put on hold
+- at: 2026-11-26 12:31
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
 ref: OPS-1407
 claim:
   since: 2026-11-25 20:35
