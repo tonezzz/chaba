@@ -1,7 +1,7 @@
 id: job-auto-health-idc02
 title: Job health sweep — declared-job failures on idc02
 column: done
-updated: 2026-11-26 23:02
+updated: 2026-11-26 23:07
 brief: Automated per-host sweep (scripts/ops/job-health-sweep.py, ssot.jobs.yml job-health-sweep) found declared
   jobs that are failing, never firing, or running stale units. Each comment names the job, the journal/systemd evidence,
   and the consecutive-fail count. Fix on the host; the card auto-closes when green.
@@ -108,5 +108,12 @@ comms:
 - at: 2026-11-26 23:02
   from: chaba
   text: closed by chaba
+- at: 2026-11-26 23:07
+  from: tony
+  text: 'RESOLVED 2026-11-26: installed the 4 declared-but-missing idc02 units (chaba-capture-harvest, job-health-sweep,
+    opencode-models-sync, retry-storm-watch) via render-jobs.py --install from origin/master. Disabled+removed the
+    7 stale undeclared units (chaba-repo-mirror, devin-taskdir-prune, jev-bench, mddb-lab-pull, mddb-tier2-pull,
+    session-audit, single-writer-fleet-audit) with timestamped evidence in the sweep output. Root-caused retry-storm-watch''s
+    remaining flag: exit 1 is its deliberate alert '
 action:
   status: done
