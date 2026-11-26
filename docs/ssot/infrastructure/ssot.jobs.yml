@@ -2185,6 +2185,27 @@ jobs:
     by chaba-repo-sync). 05:30 is clear of the daily jobs. Declare +
     render only — install with render-jobs.py --host idc02 --ids
     chaba-capture-harvest --install after merge.'
+- id: ansible-runner-tool-guard
+  name: Ansible runner-tool drift guard (read-only fleet check)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 07:10:00'
+  persistent: true
+  timeout: 15m
+  cwd: '%h/CascadeProjects/chaba/ansible'
+  condition_path: '%h/CascadeProjects/chaba/ansible/playbooks/verify-runner-tools-sync.yml'
+  exec: /usr/bin/ansible-playbook playbooks/verify-runner-tools-sync.yml
+  note: 'Daily read-only guard for the required runner tools (runner-agent,
+    devin-dispatch) on the four runner hosts tony-dell/tony-omen/idc02/idc03.
+    Complements playbooks/audit-runner-tools.yml and disk-headroom.yml as the
+    Ansible "instant fleet guard" lane. Leaf tools are report-only and con01
+    (absorber tier, no dispatch provisioning) is excluded from the play pattern.
+    Runs with become:false and rsync --dry-run — nothing is written on any host.
+    Requires the collections from ansible/requirements.yml on the controller.
+    Decision + evidence: Education:Ansible-Galaxy-Collections-For-Chaba-Efficiency
+    (sections 7-10). Declare + render + install with
+    render-jobs.py --host tony_dell --ids ansible-runner-tool-guard --install.'
+
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py
