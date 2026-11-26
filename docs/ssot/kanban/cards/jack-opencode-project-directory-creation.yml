@@ -1,7 +1,7 @@
 id: jack-opencode-project-directory-creation
 title: Make project-directory creation clear and safe in Jack OpenCode
 column: doing
-updated: 2026-11-26 21:30
+updated: 2026-11-26 21:49
 brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
   as Tony expects.
 priority: medium
@@ -328,5 +328,12 @@ comms:
     dispatch done (commit f1ec86a574 on dispa; [oswe-eval-ada-test-tab] LangSmith naming recommendation: Organization
     ''Chaba La; Write-tool path typos can silently create stray directory trees outside the work; [jack-shared-workspace-repo-promotion]
     checkpoint failed: com'
+- at: 2026-11-26 21:49
+  from: devin
+  text: 'diagnosis in progress — key finding: the jack-ide container stack (jack-opencode/jack-enroll quadlets +
+    public routes) was RETIRED 2026-11-24 alongside ada-code; live check on idc02 confirms .retired-20261124 units,
+    empty backup workspace, zero enroll state. Card premise is stale. Verifying OpenCode project semantics on the
+    surviving v2.4.1 surface and preparing repo-side safe project-create path + docs; will raise a restore-vs-retire
+    decision request.'
 claim:
   since: 2026-11-26 21:29
