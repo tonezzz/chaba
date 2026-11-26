@@ -1,14 +1,14 @@
 id: cms-auto-cctv-roster
 title: CMS automation `cctv-roster` stale
 brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
-column: doing
+column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
 note: 'last_run 1554m overdue (interval 60m). last_run=2026-11-25T01:00:00+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-roster'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:26
+updated: 2026-11-26 15:29
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -142,13 +142,39 @@ comms:
     15:15 hold. Actions: (1) live registry ada-cms-automation/cctv-roster set enabled:false + disabled_reason so
     cms-auto-health judges ok and the card auto-closes; (2) ssot.audit.hosts.yml census corrected - dell roster-audit
     -> expected_absent, omen roster-audit + idc03 c'
+- at: 2026-11-26 15:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 same retirement class; the MDDB write-failure cause still open) are in the trail
+    doc. | devin-task-20261126-15184'
+- at: 2026-11-26 15:29
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 15:29
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-26 15:29
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:29
+  from: chaba
+  text: pushed dispatch/20261126-151845-cms-automation-cctv-roster-sta to origin
+- at: 2026-11-26 15:29
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 15:29
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 same retirement class; the MDDB write-failure cause still open) are in the trail doc. | devin-task-20261126-151845-cms-automation-cctv-roster-sta.service:
+    Consumed 1min 14.855s CPU time over 8min 34.262s wall clock time, 805.2M memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 15:17
