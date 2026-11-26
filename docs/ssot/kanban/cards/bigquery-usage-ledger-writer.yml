@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
 column: backlog
-updated: 2026-11-26 22:19
+updated: 2026-11-26 22:27
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -41,8 +41,18 @@ spec: "SCHEMA REFERENCE\n- infra/bigquery-ledger-schema-2026-11-26.md (this repo
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: free_lane
+  lane_source: kw
 ref: OPS-1460
 comms:
 - at: 2026-11-26 22:19
   from: tony
   text: card captured via board-api
+- at: 2026-11-26 22:27
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-26 22:27
+  from: ada
+  text: queued for processing
+claim: {}
