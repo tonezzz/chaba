@@ -1,0 +1,42 @@
+---
+# install-runner-tools-converge.yml — install the daily user timer that runs
+# scripts/devin/runner-tools-converge.sh (check -> apply -> audit -> re-arm).
+# Mac/off-net-disabled hosts are excluded; a host that is asleep simply misses
+# that day's run and picks it up at the next Persistent=true tick.
+- name: Install runner-tools convergence timer
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+  serial: 1
+  any_errors_fatal: false
+
+  tasks:
+    - name: Ensure user systemd directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_facts.user_dir }}/.config/systemd/user"
+        state: directory
+        mode: "0755"
+
+    - name: Install unit files
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../systemd/{{ item }}"
+        dest: "{{ ansible_facts.user_dir }}/.config/systemd/user/{{ item }}"
+        mode: "0644"
+      loop:
+        - runner-tools-converge.service
+        - runner-tools-converge.timer
+      register: units
+
+    - name: Reload user systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        scope: user
+      when: units.changed
+
+    - name: Enable and start the timer
+      ansible.builtin.systemd_service:
+        name: runner-tools-converge.timer
+        scope: user
+        enabled: true
+        state: started
+      ignore_errors: true

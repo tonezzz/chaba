@@ -1,0 +1,80 @@
+---
+# deploy-runner-tools.yml — canonical convergence for every pinned runner tool.
+#
+# Source of truth: scripts/devin/runner-tooling.manifest.json (tools map).
+# ansible.builtin.copy is checksum-gated, so a host already in sync is a no-op.
+# The pinned sha256 is verified after the copy (skipped in --check mode).
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/deploy-runner-tools.yml --check --diff
+#   ansible-playbook playbooks/deploy-runner-tools.yml
+#   ansible-playbook playbooks/deploy-runner-tools.yml --limit idc02
+#
+# serial:1 + any_errors_fatal:false + a non-blocking restart handler keep an
+# off-net laptop from stalling the fleet (same pattern as deploy-runner-agent).
+- name: Converge all pinned runner tools
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+  serial: 1
+  any_errors_fatal: false
+
+  vars:
+    repo_root: "{{ playbook_dir }}/../.."
+    manifest: "{{ lookup('file', repo_root + '/scripts/devin/runner-tooling.manifest.json') | from_json }}"
+
+  tasks:
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: "{{ ansible_facts.user_dir }}/.local/bin"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy pinned tool only if it drifted
+      ansible.builtin.copy:
+        src: "{{ repo_root }}/{{ item.value.source }}"
+        dest: "{{ ansible_facts.user_dir }}/.local/bin/{{ item.value.dest }}"
+        mode: "0755"
+      loop: "{{ manifest.tools | dict2items }}"
+      loop_control:
+        label: "{{ item.value.dest }}"
+      notify: restart runner-agent
+      register: tool_deploy
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'REDEPLOYED ' ~ (tool_deploy.results | selectattr('changed') | map(attribute='item') | list | length) ~ ' tool(s)' }}
+          {{ 'in-sync' if (tool_deploy.results | selectattr('changed') | list | length) == 0 else '' }}
+
+    - name: Read installed checksums
+      ansible.builtin.command:
+        cmd: "sha256sum {{ ansible_facts.user_dir }}/.local/bin/{{ item.value.dest }}"
+      loop: "{{ manifest.tools | dict2items }}"
+      loop_control:
+        label: "{{ item.value.dest }}"
+      register: installed_hash
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Assert installed checksum matches the pin
+      ansible.builtin.assert:
+        that:
+          - installed_hash.results[tool_idx].stdout.split()[0] == tool_item.value.sha256
+        fail_msg: "{{ tool_item.value.dest }} hash drift after deploy"
+      loop: "{{ manifest.tools | dict2items }}"
+      loop_control:
+        loop_var: tool_item
+        index_var: tool_idx
+        label: "{{ tool_item.value.dest }}"
+      when: not ansible_check_mode
+
+  handlers:
+    - name: restart runner-agent
+      ansible.builtin.systemd_service:
+        name: runner-agent
+        scope: user
+        state: restarted
+        no_block: true
+      ignore_errors: true
