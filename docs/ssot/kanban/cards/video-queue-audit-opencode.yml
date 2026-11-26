@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
 column: backlog
-updated: 2026-11-26 15:13
+updated: 2026-11-26 15:19
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -309,5 +309,12 @@ comms:
   text: 'Envelope staging blocked 2026-11-26: runner-agent on idc02 requires action.lane_envelope.stage=S3 (S3_STAGED_PROFILES
     includes ops-readonly), but idc02 lane_gate.admit requires stage == live stage S1; no envelope can satisfy both.
     Card remains queued pending a lane-promotion or runner-gate decision. Not a blind retry.'
+- at: 2026-11-26 15:19
+  from: devin
+  text: 'Promotion investigation 2026-11-26 (read-only): idc02 lane stage=S1 with quota 15/15 exhausted. Recomputed
+    lane_gate.review from the live stage.json + 440-line metrics ledger -> decision=ROLLBACK to S0, not promote:
+    4 scope_violation safety failures, verified rate 3/39 (7.7%) vs S1 gate 1.0. Even if the lane were at S2, 10/20
+    S2 jobs are pending independent review, so S3 (needed by the runner''s staged-dispatch gate) is unreachable.
+    No envelope can be staged legally; pin executor=devin or leave q'
 review_kind: verify
 claim: {}
