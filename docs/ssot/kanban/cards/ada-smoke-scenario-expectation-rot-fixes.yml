@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: review
-updated: 2026-11-26 22:37
+updated: 2026-11-26 22:40
 priority: medium
 tags:
 - ada
@@ -135,6 +135,12 @@ comms:
   text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nremote:
     error: refusing to update checked out branch: refs/heads/master        \nremote: error: By default, updating
     the current bran — close will block until merged"
+- at: 2026-11-26 22:40
+  from: tony
+  text: 'answered ok-to-delete-the-stray-public-page-ada-c-11e29f: proceed'
+- at: 2026-11-26 22:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -154,9 +160,11 @@ requests:
     It is scenario litter from the broken cleanup. Note: once the plane-routing fix deploys, the next cms_public_url_lane
     smoke run will delete it via cleanup anyway — say no if you want it kept/unpublished instead. Same question
     for leftover translate-probe{,-de} test docs in ada-cms-pages.'
-  status: open
+  status: answered
   at: 2026-11-26 22:19
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
+awaiting_action: true
