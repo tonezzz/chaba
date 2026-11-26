@@ -1,0 +1,63 @@
+icon: bug
+title: runner-agent stale-answer resume churn — per-park request ids + freshness gates
+date: 2026-11-27
+card: runner-agent-stale-answer-resume-churn-a-9f9ffe
+context: >-
+  opencode-lane-regraduation burned 12 dispatch attempts (2026-11-26
+  21:00 -> 2026-11-27 02:10, ~20min cadence). Every needs-input park
+  auto-resumed on the FIRST park's answer because all three answer
+  channels in runner-agent._job_answer_tick were stale-blind:
+  _request_answer matched the stable request_id job-input-<cid> whose
+  single answered entry never re-opened (_raise_input_request deduped
+  on the same id); _last_answer re-read the answer line the resume path
+  itself carries into each new task dir's answers.jsonl; _mddb_answer
+  re-read the upserted answer/<cid> voice doc forever.
+changes:
+  - "scripts/board/runner-agent.py: _enter_awaiting now stamps
+    job_awaiting.rid = job-input-<cid>-<epoch> (unique per park) and
+    _raise_input_request POSTs /request with that rid, so every park
+    gets a fresh OPEN board ask instead of deduping against the
+    answered entry. After a successful raise it supersedes still-open
+    job-input-<cid>* requests from earlier parks via /respond
+    'superseded — newer needs-input' (answer-sweep classifies
+    'superseded' -> none, no board transition), keeping exactly one
+    live ask per blocked job."
+  - "_request_answer(card, cid, rid) matches only the current park's
+    rid; legacy parks without rid fall back to the stable
+    job-input-<cid> id (at most one stale resume per in-flight park,
+    then self-heals)."
+  - "_last_answer(ent, since) and _mddb_answer(cid, since) are
+    freshness-gated against job_awaiting.at via _answer_is_fresh +
+    _parse_ts (ANSWER_FRESH_GRACE_S=300s cross-host skew allowance).
+    answers.jsonl rows use their `at`; MDDB docs use meta.ts, then
+    updatedAt epoch, then the (<ts>) in the contentMd header. An
+    unparseable park stamp disables the gate (legacy state); an
+    unparseable answer stamp fails closed."
+verification:
+  - "tests/board/test_runner_job_lifecycle.py: 22 passed, incl. new
+    test_second_park_does_not_resume_on_stale_answer (second park
+    holds with stale answers.jsonl line + answered old-rid request +
+    absent MDDB doc; resumes once the CURRENT rid is answered),
+    rid-uniqueness, supersede-sweep, and freshness unit tests."
+  - "tests/board runner-agent suite: 81 passed; full tests/board run
+    257 passed / 1 unrelated env failure
+    (test_control_pane_projection needs gitignored deployed
+    stacks/web artifact absent in worktrees)."
+rollback: >-
+  Revert the runner-agent.py + test diff; per-park rids already on card
+  requests[] are inert history (answered/open job-input-<cid>-* entries
+  simply stop being raised).
+residual: >-
+  The 'Answer — reply in chat' option (action:none) still marks the
+  request answered with an option-echo when clicked — a UX trap that
+  produced the junk answer 'answer — Answer — reply in chat' on
+  opencode-lane-regraduation. With per-park rids it can no longer
+  auto-churn (each park needs a fresh answer), but the option itself
+  may deserve a board-api/UX look. Live two-park verification on a real
+  dispatch job was not run from this worktree; the finish_pass
+  integration test simulates it.
+lesson: >-
+  'Dedupes forever' bugs hide in THREE places at once: the board
+  request id, the carried answers.jsonl line, and the upserted MDDB
+  doc. Fixing only the channel named in the report leaves the churn
+  alive via the other two.

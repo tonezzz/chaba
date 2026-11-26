@@ -193,6 +193,171 @@ class JobLifecycleTest(unittest.TestCase):
         self.assertEqual(req.full_url, "http://mddb.test/v1/get")
         self.assertEqual(json.loads(req.data)["key"], "answer/card-1")
 
+    # --- stale-answer churn (per-park rid + freshness gate) -----------
+
+    def test_answer_is_fresh(self):
+        park = "2026-11-27T02:00:00+00:00"
+        self.assertTrue(self.m._answer_is_fresh(
+            "2026-11-27T02:10:00+00:00", park))
+        # inside the clock-skew grace still counts
+        self.assertTrue(self.m._answer_is_fresh(
+            "2026-11-27T01:58:00+00:00", park))
+        self.assertFalse(self.m._answer_is_fresh(
+            "2026-11-27T01:00:00+00:00", park))
+        self.assertFalse(self.m._answer_is_fresh(None, park))
+        # unparseable park stamp disables the gate (legacy state)
+        self.assertTrue(self.m._answer_is_fresh(None, "not-a-date"))
+        self.assertTrue(self.m._answer_is_fresh(
+            "2026-11-27T01:00:00+00:00", ""))
+
+    def test_last_answer_skips_pre_park_lines(self):
+        td = self.taskdir()
+        park = "2026-11-27T02:00:00+00:00"
+        (td / "answers.jsonl").write_text("\n".join([
+            json.dumps({"at": "2026-11-27T01:50:00+00:00",
+                        "kind": "answer", "answer": "stale"}),
+            json.dumps({"at": "2026-11-27T02:05:00+00:00",
+                        "kind": "answer", "answer": "fresh"}),
+        ]) + "\n")
+        self.assertEqual(
+            self.m._last_answer({"tid": td.name}, park), "fresh")
+        (td / "answers.jsonl").write_text(json.dumps({
+            "at": "2026-11-27T01:50:00+00:00",
+            "kind": "answer", "answer": "stale"}) + "\n")
+        self.assertEqual(self.m._last_answer({"tid": td.name}, park), "")
+
+    def test_request_answer_scoped_to_park_rid(self):
+        card = self._card()
+        card["requests"] = [
+            {"id": "job-input-card-1-111", "status": "answered",
+             "answer": "old park answer"},
+            {"id": "job-input-card-1-222", "status": "open",
+             "ask": "new question?"},
+        ]
+        # the current park's rid has no answer -> the old park's
+        # answered request must not resolve it
+        self.assertEqual(
+            self.m._request_answer(card, "card-1",
+                                   "job-input-card-1-222"), "")
+        card["requests"][1].update({"status": "answered",
+                                    "answer": "use idc02"})
+        self.assertEqual(
+            self.m._request_answer(card, "card-1",
+                                   "job-input-card-1-222"), "use idc02")
+        # legacy parks (no rid) still read the original stable id
+        card["requests"].append({"id": "job-input-card-1",
+                                 "status": "answered",
+                                 "answer": "legacy"})
+        self.assertEqual(self.m._request_answer(card, "card-1"), "legacy")
+
+    def test_mddb_answer_stale_doc_rejected(self):
+        park = "2026-11-27T02:00:00+00:00"
+        doc = {"key": "answer/card-1",
+               "meta": {"ts": ["2026-11-27T01:00:00+00:00"]},
+               "contentMd": "Answer for job card-1 (x):\n\nold voice"}
+        with mock.patch.object(self.m.urllib.request, "urlopen",
+                               return_value=_Resp(doc)):
+            self.assertEqual(self.m._mddb_answer("card-1", park), "")
+        doc["meta"] = {"ts": ["2026-11-27T02:30:00+00:00"]}
+        with mock.patch.object(self.m.urllib.request, "urlopen",
+                               return_value=_Resp(doc)):
+            self.assertEqual(self.m._mddb_answer("card-1", park),
+                             "old voice")
+
+    def test_enter_awaiting_rid_unique_per_park(self):
+        rids = []
+        real = self.m._raise_input_request
+        with mock.patch.object(
+                self.m, "_raise_input_request",
+                side_effect=lambda c, q, r: rids.append(r) or
+                real(c, q, r)), \
+             mock.patch.object(self.m, "time") as mt:
+            mt.time.side_effect = [1000.0, 2000.0]
+            ent = {"tid": "t", "unit": "u", "type": "dispatch"}
+            self.m._enter_awaiting("card-1", ent, "q1")
+            rid1 = ent["job_awaiting"]["rid"]
+            ent.pop("job_awaiting")
+            self.m._enter_awaiting("card-1", ent, "q2")
+            rid2 = ent["job_awaiting"]["rid"]
+        self.assertEqual(rids, [rid1, rid2])
+        self.assertNotEqual(rid1, rid2)
+        self.assertTrue(rid1.startswith("job-input-card-1-"))
+        reqs = [b for p, b in self.posts if p == "/request"]
+        self.assertEqual([r["request_id"] for r in reqs], [rid1, rid2])
+
+    def test_raise_input_request_supersedes_stale_open(self):
+        card = self._card()
+        card["requests"] = [
+            {"id": "job-input-card-1", "status": "open", "ask": "old"},
+            {"id": "job-input-card-1-1000", "status": "answered",
+             "answer": "x"},
+            {"id": "other-req", "status": "open", "ask": "keep me"},
+        ]
+
+        def fake_api(p, b=None):
+            self.posts.append((p, b))
+            return {"card": card} if p == "/card/card-1" else {}
+
+        with mock.patch.object(self.m, "api", side_effect=fake_api):
+            self.m._raise_input_request("card-1", "new q",
+                                        "job-input-card-1-2000")
+        reqs = [b for p, b in self.posts if p == "/request"]
+        self.assertEqual(reqs[0]["request_id"], "job-input-card-1-2000")
+        responds = [b for p, b in self.posts if p == "/respond"]
+        self.assertEqual(len(responds), 1)
+        self.assertEqual(responds[0]["request_id"], "job-input-card-1")
+        self.assertEqual(responds[0]["from"], "chaba")
+
+    def test_second_park_does_not_resume_on_stale_answer(self):
+        """The 12-attempt churn regression: park -> stale answer resumes
+        -> task re-parks. The second park must hold — no channel may
+        resolve it with the first park's answer."""
+        td = self.taskdir("card-1-2000")
+        park = "2026-11-27T02:30:00+00:00"
+        # the resume path carried the first answer into this task dir —
+        # stamped before the second park, so it is stale now
+        (td / "answers.jsonl").write_text(json.dumps({
+            "at": "2026-11-27T02:10:00+00:00",
+            "card": "card-1", "from": "ada", "kind": "answer",
+            "answer": "answer — Answer — reply in chat"}) + "\n")
+        card = self._card()
+        card["requests"] = [
+            {"id": "job-input-card-1-1000", "status": "answered",
+             "answer": "answer — Answer — reply in chat"},
+            {"id": "job-input-card-1-2000", "status": "open",
+             "ask": "Job needs your input: still blocked?"},
+        ]
+        ent = {"type": "dispatch", "unit": "devin-task-x",
+               "tid": td.name,
+               "job_awaiting": {"question": "still blocked?",
+                                "at": park,
+                                "rid": "job-input-card-1-2000"}}
+        mddb_doc = {"error": "document not found"}
+        with mock.patch.object(
+                self.m, "api",
+                side_effect=lambda p, b=None: (
+                    {"cards": [card]} if p == "/cards" else {})), \
+             mock.patch.object(self.m.urllib.request, "urlopen",
+                               return_value=_Resp(mddb_doc)), \
+             mock.patch.object(self.m, "start_task") as st:
+            self.m.finish_pass({"card-1": ent})
+        st.assert_not_called()
+        self.assertIn("job_awaiting", ent)
+        # ...but an answer on the CURRENT rid does resume it
+        card["requests"][1].update({"status": "answered",
+                                    "answer": "use idc02"})
+        with mock.patch.object(
+                self.m, "api",
+                side_effect=lambda p, b=None: (
+                    {"cards": [card]} if p == "/cards" else {})), \
+             mock.patch.object(self.m.urllib.request, "urlopen",
+                               return_value=_Resp(mddb_doc)), \
+             mock.patch.object(self.m, "start_task",
+                               return_value=("u2", "t2", "")) as st2:
+            self.m.finish_pass({"card-1": ent})
+        st2.assert_called_once()
+        self.assertNotIn("job_awaiting", ent)
+
     # --- finish-pass integration -------------------------------------
 
     def _card(self, status="running"):
