@@ -1,7 +1,7 @@
 id: rebuild-gesture-control-using-yolo-83cf4a
 title: Rebuild gesture control using YOLO
-column: review
-updated: 2026-11-26 13:39
+column: done
+updated: 2026-11-26 16:24
 priority: medium
 spec: 'Goal: Replace MediaPipe hand tracking with a YOLO-based hand/gesture detection model in the client display
   app. Surface: display UI / vcast client. Sequence: evaluate YOLO pose/hand models suitable for browser/edge, integrate
@@ -16,7 +16,7 @@ action:
   attempts: 1
   result: 'exit=0 -20261126-130417-goal-replace-mediapipe-hand-tr.md`; final status posted to the card. | devin-task-20261126-130417-goal-replace-mediapipe-hand-tr.service:
     Consumed 1min 12.690s CPU time over 24min 5.231s wall clock time, 579.4M memory peak.'
-  verified: false
+  verified: true
   sweep:
     merge_err: 2026-11-26 13:40
 note: Rebuild gesture control using YOLO model instead of MediaPipe for the display interface
@@ -100,6 +100,23 @@ comms:
   text: "merge-sweep: landing devin-task-20261126-130417-goal-replace-mediapipe-hand-tr failed: push: Authorized
     access only. All activity may be monitored and reported.\nremote: error: refusing to update checked out branch:
     refs/heads/main        \nremote: error: By default, updating the current branch"
+- at: 2026-11-26 16:24
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-130417-goal-replace-mediapipe-hand-tr,
+    branch dispatch/20261126-130417-goal-replace-mediapipe-hand-tr on tony-macbook'
+- at: 2026-11-26 16:24
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-130417-goal-replace-mediapipe-hand-tr already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261126-130417-goal-replace-mediapipe-hand-tr.md) — auto-closed'
+- at: 2026-11-26 16:24
+  from: local
+  text: 'pub milestone: card verified: rebuild-gesture-control-using-yolo-83cf4a on idc03 — dispatch/20261126-130417-goal-replace-mediapipe-hand-tr
+    already in origin/main — verified — auto-closed — dispatch/20261126-130417-goal-replace-mediapipe-hand-tr already
+    in origin/main — verified — auto-closed [evt-07a3eeab4dae2967]'
 claim:
   since: 2026-11-26 13:03
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 16:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-130417-goal-replace-mediapipe-hand-tr.md
