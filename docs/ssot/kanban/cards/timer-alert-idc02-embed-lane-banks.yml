@@ -1,7 +1,7 @@
 id: timer-alert-idc02-embed-lane-banks
 title: Timer embed-lane-banks on idc02 failing
-column: done
-updated: 2026-11-26 18:47
+column: backlog
+updated: 2026-11-26 18:55
 priority: high
 tags:
 - timer-alert
@@ -39,6 +39,13 @@ comms:
 - at: 2026-11-26 18:47
   from: tony
   text: closed by tony
+- at: 2026-11-26 18:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 18:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 10:06) of `embed-lane-banks.service` on `idc02` result=timeout
+    — investigate journal: `journalctl --user -u embed-lane-banks.service` on the host. See CMS `timer-timeline-idc02`.'
 spec: Investigate the timeout failure of `embed-lane-banks.service` on `idc02` by inspecting the systemd user journal
   via `journalctl --user -u embed-lane-banks.service` and reviewing the CMS entry `timer-timeline-idc02`. Target
   host is `idc02`. The done-condition is verified when the root cause of the 11-26 10:06 timeout is identified and
