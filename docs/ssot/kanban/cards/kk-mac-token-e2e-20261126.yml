@@ -1,7 +1,7 @@
 id: kk-mac-token-e2e-20261126
 title: E2E kk-mac token attribution proof (read-only)
-column: doing
-updated: 2026-11-26 13:59
+column: review
+updated: 2026-11-26 14:01
 priority: low
 tags:
 - kk-mac
@@ -21,9 +21,13 @@ action:
     - KK-Mac
     - read-only
     - no mutations
-  status: running
+  status: done
   runner: tony-omen
   attempts: 1
+  result: '{"tokens":{"total":95,"input":56,"output":39}} exit=0 stem-wide memory free percentage: 79%\nMEMSTATUS=79",
+    "at": "2026-11-26T06:59:13.133234+00:00", "error": null}, "guard": {"resident_before": ["bge-m3"], "loaded_by_task":
+    true, "min_free_pct": 59.0, "abort_reason": null, "unloaded": true}}}'
+  verified: true
 ref: OPS-1439
 comms:
 - at: 2026-11-26 13:58
@@ -47,5 +51,26 @@ comms:
   from: chaba
   text: 'mn01 defers: executor=kk_mac_local declared and the lane is live, but this runner can''t serve it (KK_MAC_LANES=0)
     — the card stays queued for a kk_mac-capable runner'
+- at: 2026-11-26 14:01
+  from: tony-omen
+  text: 'finished (ok): {"tokens":{"total":95,"input":56,"output":39}} exit=0 stem-wide memory free percentage:
+    79%\nMEMSTATUS=79", "at": "2026-'
+- at: 2026-11-26 14:01
+  from: chaba
+  text: kk_mac_local artifact landed evals/kk-mac-lane/out/kk-mac-token-e2e-20261126.json — verifier pass (eval_tokens=39)
+- at: 2026-11-26 14:01
+  from: chaba
+  text: ran under executor=kk_mac_local provider=ollama model=qwen3:8b
+- at: 2026-11-26 14:01
+  from: chaba
+  text: banked 751 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 14:01
+  from: chaba
+  text: pushed dispatch/kk-mac-token-e2e-20261126-1795676336 to origin
+- at: 2026-11-26 14:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-kk-mac-token-e2e-20261126-1795676336,
+    branch dispatch/kk-mac-token-e2e-20261126-1795676336'
 claim:
   since: 2026-11-26 13:58
+review_kind: verify
