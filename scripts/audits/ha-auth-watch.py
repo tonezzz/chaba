@@ -231,7 +231,11 @@ def emit_meta(now_iso, failures, errors):
 
 
 def git_commit_push(files):
-    rels = [str(f.relative_to(REPO_ROOT)) for f in files]
+    # ``written`` holds Paths on the served checkout. The board-api path
+    # never writes local files and must not reach this function at all;
+    # accept strings too so a future mixed list cannot crash the timer.
+    rels = [str(f.relative_to(REPO_ROOT)) if isinstance(f, Path) else str(f)
+            for f in files]
     subprocess.run(["git", "-C", str(REPO_ROOT), "add", *rels], check=True)
     subprocess.run(["git", "-C", str(REPO_ROOT), "commit",
                     "-m", "chore(security): ha-auth-watch failure alerts"],
@@ -281,7 +285,7 @@ def main():
             failures.append((name, src, ts, text))
 
     writable = local_writable(REPO_ROOT)
-    written, suppressed = [], 0
+    written, api_emitted, suppressed = [], 0, 0
     for inst, src, ts, line in failures:
         # Local-glob dedupe only means something where the files can be
         # committed; on exec checkouts stale files would suppress forever.
@@ -300,7 +304,9 @@ def main():
                 except Exception:
                     res = "api-failed"
                 if res == "api":
-                    written.append(fname)
+                    # Delivered by board-api /inbox — there is no local
+                    # file to stage, so never pass this to git_commit_push.
+                    api_emitted += 1
                 else:
                     print(f"warn: /inbox emit {res} for {fname}",
                           file=sys.stderr)
@@ -316,12 +322,15 @@ def main():
     if not args.dry_run:
         save_state(seen)
         emit_meta(now_iso, failures, errors)
-        if written and args.git:
+        if written and args.git and writable:
             try:
                 git_commit_push(written)
                 print("pushed alert commit")
             except subprocess.CalledProcessError as e:
                 print(f"warn: git push failed: {e}", file=sys.stderr)
+        elif api_emitted:
+            print(f"alerted {api_emitted} failure(s) via board-api; "
+                  "no local commit on non-writer checkout")
     return 1 if errors else 0
 
 

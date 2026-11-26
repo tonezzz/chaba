@@ -1,0 +1,48 @@
+icon: shield
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch,exec-checkout-generated-writes-focus-inb-da698a
+context: >-
+  `ha-auth-watch.service` on tony-dell failed every 15 minutes (13:18,
+  13:33, 13:48, 14:03 +07) and raised a high-priority timer-alert card.
+  The service polls both HA instances, emits focus-inbox alerts through
+  the board-api door (tony-dell is a stamped `exec` / non-writer checkout),
+  then crashed before finishing. Each tick added two more auth-failure
+  entries to the focus-inbox — a live alert-spam loop, not a one-off.
+changes:
+  - "scripts/audits/ha-auth-watch.py: the 2026-11-26 inbox-door change
+    appended `fname` (a str) to `written` on the board-api path while the
+    local path appends a Path. `git_commit_push()` then called
+    `.relative_to()` on every item and died with `AttributeError: 'str'
+    object has no attribute 'relative_to'`."
+  - "Split the counter: `api_emitted` tracks board-api deliveries,
+    `written` stays Paths from local file writes only. `git_commit_push`
+    is now gated on `writable` as well as `args.git`, so a non-writer
+    checkout never attempts a local stage/commit/push for alerts it
+    already delivered over the API."
+  - "Hardened `git_commit_push()` to accept both Path and str inputs so a
+    future mixed list cannot crash a timer again."
+verification:
+  - "`python3 -m py_compile scripts/audits/ha-auth-watch.py` passed."
+  - "Unit check: imported the module and called `git_commit_push()` with
+    one str and one Path; both resolved to correct repo-relative names
+    (`git add docs/ssot/focus-inbox/...`)."
+  - "Live root cause confirmed from `journalctl --user -u
+    ha-auth-watch.service` on tony-dell: identical traceback at
+    13:48:41 and 14:03:40, next tick 14:18:39."
+  - "Consumer-side proof pending the next timer tick after master sync —
+    see residual. No service restart was needed: systemd executes the
+    script fresh on each oneshot invocation."
+rollback: >-
+  Revert the single script file. No host config, timer or service unit was
+  changed; the next tick simply runs the previous code again (and fails).
+residual: >-
+  tony-dell must ff-pull the fix via its repo-sync/converge path before the
+  next 15-minute tick. Until then the old code keeps failing. No restart
+  is required or performed — restarting an oneshot timer service would
+  kill an in-flight poll and needs explicit approval.
+lesson: >-
+  When routing a producer through the board-api write door, also remove
+  the local-commit tail: delivering an alert via the API and then trying
+  to `git add` a filename that was never written locally is a guaranteed
+  timer loop. Keep the local-write list typed as Paths and count API
+  deliveries separately; a mixed list hid the bug until runtime.
