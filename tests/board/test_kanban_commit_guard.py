@@ -121,6 +121,32 @@ class KanbanCommitGuardTest(unittest.TestCase):
                          "--format=", "HEAD").stdout
         self.assertIn("docs/ssot/kanban/cards/regular.yml", committed, committed)
 
+    def test_large_generated_path_survives_pipefail(self):
+        # Regression (idc03 20:54): `git ls-files -- docs/ssot/ | grep -q .`
+        # looks right but under `set -o pipefail` grep -q closes the pipe
+        # early on a large listing, git dies with SIGPIPE (141), and
+        # docs/ssot/ silently drops out of COMMIT_PATHS — its staged card
+        # edits then never commit while the sweep still exits 0.
+        src = SCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("| grep -q .", src,
+                         "pipefail + grep -q drops large pathspecs via SIGPIPE")
+        self.assertIn("--error-unmatch", src,
+                      "pathspec presence must be checked without a pipe")
+
+        bulk = self.served / "docs/ssot/bulk"
+        bulk.mkdir(parents=True, exist_ok=True)
+        for i in range(3000):
+            (bulk / f"f{i:04d}.yml").write_text("x: 1\n", encoding="utf-8")
+        _git(self.served, "add", "docs/ssot/bulk")
+        card = self.served / "docs/ssot/kanban/cards/regular.yml"
+        card.write_text("title: regular\n", encoding="utf-8")
+
+        proc = self._run()
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        committed = _git(self.served, "show", "--name-only",
+                         "--format=", "HEAD").stdout
+        self.assertIn("docs/ssot/kanban/cards/regular.yml", committed, committed)
+
 
 if __name__ == "__main__":
     unittest.main()

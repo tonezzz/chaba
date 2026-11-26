@@ -256,9 +256,13 @@ done
 # known to git" killed the sweep after the guard landed). An empty generated
 # dir is normal in a writer checkout, so keep only paths git knows about —
 # computed AFTER the `git add` loop so freshly staged files count too.
+# Use --error-unmatch, NOT `git ls-files … | grep -q`: under `set -o pipefail`
+# grep -q closes the pipe early on a large path (docs/ssot/ has thousands of
+# files), git dies of SIGPIPE (141) and the whole `if` reads as false — the
+# path silently drops out of COMMIT_PATHS and its staged edits never commit.
 COMMIT_PATHS=()
 for _p in "${GENERATED_PATHS[@]}"; do
-    if git ls-files -- "$_p" | grep -q .; then
+    if git ls-files --error-unmatch "$_p" >/dev/null 2>&1; then
         COMMIT_PATHS+=("$_p")
     fi
 done
