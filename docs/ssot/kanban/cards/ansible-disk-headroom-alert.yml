@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
 column: backlog
-updated: 2026-11-26 08:48
+updated: 2026-11-26 18:52
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
@@ -19,3 +19,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 18:52
+  from: tony
+  text: '[batch A 19:15 +07] Triage: still active, no safe automated cleanup left. Live `df -h /` on tony-dell =
+    85% (220G, 32G free), down from 87% at the 08:47 audit after today''s ~10G unused-image prune. Re-ran both read-only
+    playbooks: `disk-headroom.yml --limit tony-dell --check` → unreachable=0 failed=0, and `disk-remediate.yml --check
+    --diff --limit tony-dell` → "verify whether remediation is warranted" passed with uv/pip/journal all under caps,
+    so every fix task skipped. Podman is down to 11 imag'
