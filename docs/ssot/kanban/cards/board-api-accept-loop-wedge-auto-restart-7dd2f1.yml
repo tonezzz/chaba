@@ -1,8 +1,8 @@
 id: board-api-accept-loop-wedge-auto-restart-7dd2f1
 title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
   idc03)'
-column: doing
-updated: 2026-11-26 22:55
+column: review
+updated: 2026-11-26 22:59
 tags:
 - board-api
 - idc03
@@ -98,6 +98,28 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-221314-fix-chaba-board-api-on-idc03-w on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 22:59
+  from: tony-dell
+  text: 'finished (ok): exit=0 d-api` once — systemd doesn''t reload Python on file change. | devin-task-20261126-221314-fix-chaba-board-api-on-i'
+- at: 2026-11-26 22:59
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 22:59
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-221314-fix-chaba-board-api-on-idc03-w'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-26 22:59
+  from: chaba
+  text: banked 824 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 22:59
+  from: chaba
+  text: pushed dispatch/20261126-221314-fix-chaba-board-api-on-idc03-w to origin
+- at: 2026-11-26 22:59
+  from: chaba
+  text: 'auto-merge conflicts: scripts/devin/runner-tooling.manifest.json — card stays in review for manual resolution'
+- at: 2026-11-26 22:59
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
   Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
   make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
@@ -106,7 +128,7 @@ spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09
   the chaba gate suite passes, and the outcome records the deploy note.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   repo: chaba
@@ -114,5 +136,9 @@ action:
   sweep:
     stale_running: 2026-11-26 22:55
     dirty: 1
+  result: 'exit=0 d-api` once — systemd doesn''t reload Python on file change. | devin-task-20261126-221314-fix-chaba-board-api-on-idc03-w.service:
+    Consumed 4min 20.364s CPU time over 39min 6.897s wall clock time, 1005.2M memory peak, 470.4M memory swap peak.'
+  verified: false
 claim:
   since: 2026-11-26 22:12
+review_kind: verify
