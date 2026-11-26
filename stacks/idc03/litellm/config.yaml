@@ -113,6 +113,16 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen3:8b
       api_base: http://127.0.0.1:11447
+  - model_name: ollama-qwen330b-a3b-kkmac
+    litellm_params:
+      model: ollama_chat/qwen3:30b-a3b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
+  - model_name: ollama-gptoss20b-kkmac
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: ollama-qwen25vl7b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5vl:7b
@@ -189,6 +199,8 @@ model_list:
       model: openrouter/google/gemini-embedding-2
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
+      extra_body:
+        provider: {order: ["Google"], allow_fallbacks: false}
   - model_name: ollama-nomic-embed
     litellm_params:
       model: ollama/nomic-embed-text
@@ -260,6 +272,8 @@ model_list:
       model: openrouter/google/gemini-embedding-2
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
+      extra_body:
+        provider: {order: ["Google"], allow_fallbacks: false}
 
   # ── Cloudflare Workers AI — free neuron tier (added 2026-11-13) ──
   # OpenAI-compatible endpoint; CF_API_WORKER_TOKEN + CF_API_ACCOUNT_ID
