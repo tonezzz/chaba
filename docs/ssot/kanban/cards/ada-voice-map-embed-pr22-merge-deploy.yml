@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: backlog
-updated: 2026-11-26 21:39
+updated: 2026-11-26 22:05
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -137,6 +137,13 @@ comms:
     copy), (2) newly supplied private-card key. Headless Chrome on tony-dell loading maps/api/js with each key returned
     window.gm_authFailure / console ''Google Maps JavaScript API error: InvalidKeyMapError'' for both. Server-side
     Maps Embed and Static Maps returned 403 ''The'
+- at: 2026-11-26 22:05
+  from: tony
+  text: 'MAP KEY 2026-11-26 (private-card key, 39-char AIza, never printed): VALID key — headless Chrome on tony-dell
+    loaded Maps JavaScript API and rendered a real map (MAP_OK, no authFailure). Remaining APIs are NOT activated
+    on the key''s GCP project: Maps Embed API -> 403 ''This API is not activated on your API project''; Static Maps
+    API -> same 403; Geocode -> REQUEST_DENIED same reason; Routes -> 403 PERMISSION_DENIED. So the persona env
+    was NOT changed: map_embed interactive/static and GEV geocoding '
 action:
   type: dispatch
   status: idle
