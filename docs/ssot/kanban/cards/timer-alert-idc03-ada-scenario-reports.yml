@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-reports
 title: Timer ada-scenario-reports on idc03 failing
 column: backlog
-updated: 2026-11-26 06:44
+updated: 2026-11-26 10:18
 priority: high
 tags:
 - timer-alert
@@ -46,3 +46,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 10:18
+  from: devin
+  text: 'DEFERRED 2026-11-26 (not a code defect): weekly reports suite targets the free dev lane :8005 but abandoned
+    its slot after 30m because the shared :8199 lock is held by the long-running ada-scenario-smoke suite. Armed
+    ada-scenario-reports-retry.service on idc03 (waits for the lock, then starts the unit) — running and will fire
+    when smoke finishes. No paid-lane authorization needed. Card will reopen if the retried run fails.'
