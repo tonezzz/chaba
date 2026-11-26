@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: doing
-updated: 2026-11-26 12:43
+updated: 2026-11-26 12:44
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -120,6 +120,10 @@ comms:
   from: devin
   text: 'ada-ocb-verify 20261126T054329Z: ok=1 drift=0 fail=0 unreachable=1 probed=1/2. edge=200. artifact=/home/tony/ocb-pilot/ansible/playbooks/../../reports/ansible-benchmark/ada-ocb-verify/20261126T054329Z/summary.yml
     card=ansible-prep-plan-apply-verify'
+- at: 2026-11-26 12:44
+  from: devin
+  text: 'raised request idc02-primary-ocb-pane-100-123-163-11-re-6d8dd3: idc02 (primary ocb_pane, 100.123.163.11)
+    refuses SSH — connection refused :22, confirmed via alias+IP. tony-dell fallbac'
 action:
   type: dispatch
   status: running
@@ -133,3 +137,14 @@ action:
     no_repo: 2026-11-26 12:39
 claim:
   since: 2026-11-26 12:32
+requests:
+- id: idc02-primary-ocb-pane-100-123-163-11-re-6d8dd3
+  ask: idc02 (primary ocb_pane, 100.123.163.11) refuses SSH — connection refused :22, confirmed via alias+IP. tony-dell
+    fallback healthy. Needs a host-level check (sshd/host down); approved OCB apply stays blocked until it is back.
+    OK to leave as follow-up card, or is idc02 intentionally down?
+  status: open
+  at: 2026-11-26 12:44
+  from: devin
+  options:
+  - proceed
+  - hold
