@@ -2,7 +2,7 @@ id: runner-agent-stale-answer-resume-churn-a-9f9ffe
 title: 'runner-agent stale-answer resume churn: answered job-input-* request auto-resumes every needs-input park
   forever'
 column: doing
-updated: 2026-11-27 02:33
+updated: 2026-11-27 02:40
 brief: runner-agent._request_answer() returns the answer of card request job-input-<cid> whenever status==answered
   — forever. The request is answered once (generic option echo) and _raise_input_request dedupes on the same request_id
   so it is never re-opened. Every _enter_awaiting park therefore instantly sees a stale answer and _job_answer_tick
@@ -71,6 +71,12 @@ comms:
     was a linked unit running a stale scripts/-only ; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] [verify]
     OPS-0790 close-out (T; origin/master moves fast (24 commits during this session, mostly board-api churn; [ada-capability-verb-wiring]
     primer injected 8 lesson(s): [bo'
+- at: 2026-11-27 02:40
+  from: devin
+  text: 'investigating: confirmed all 3 answer channels can go stale — _request_answer (answered job-input-* dedupes
+    forever), _last_answer (resume writes stale answer into new taskdir answers.jsonl), _mddb_answer (answer/<cid>
+    doc persists). Plan: per-park request_id job-input-<cid>-<epoch> stored in job_awaiting + freshness-gate the
+    jsonl/mddb channels against job_awaiting.at'
 action:
   type: dispatch
   status: running
