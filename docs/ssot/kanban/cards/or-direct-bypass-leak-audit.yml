@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
-column: review
-updated: 2026-11-26 04:06
+column: done
+updated: 2026-11-26 08:35
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -326,6 +326,14 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-26): dispatch branch merged into origin/master as a8e253685be2
+    (generated SSOT snapshots kept from master, substantive code from branch). Deliverable: OpenRouter direct-bypass
+    audit + key-watch + gateway SSOT. Closing to clear the >10 verify brake.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
