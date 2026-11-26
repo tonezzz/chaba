@@ -2,26 +2,19 @@ id: runner-auto-kk-mac
 title: Runner host `kk-mac` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: runner-agent installed but no repo push-capable (no push:<repo> label, every probe fails) — this
-  host can only strand dispatch branches. Info: chaba fetch failed but clone was current at last fetch — transient?
-  (git@github.com: Permission denied (publickey).
-
-  fatal: Could not read from remote); chaba origin is fetch-only (by design — no push creds); merge-sweep salvage
-  path verified; devin-dispatch intentionally absent — declared lanes do not serve the devin executor; dispatch_repos
-  copy differs from repo (sha 5c0d0225e602d43b vs bf793805a0f943d2) — functional attrs present; devin CLI intentionally
-  absent — declared lanes do not serve the devin executor.'
+note: 'Auto-recovered 2026-11-26: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - no-push-creds: A dispatch runner that can''t push ANY repo only strands branches (relay salvages them, but the
   host is a liability). Give it a push-capable deploy key per repo and declare push:<repo> in RUNNER_LABELS, or
   drop it from the fleet.'
-updated: 2026-11-26 18:34
+updated: '2026-11-26'
 comms:
 - at: 2026-11-26 13:30
   from: devin

@@ -1,5 +1,5 @@
-title: kk-mac fleet probe uses the runner's Python; push creds remain blocked
-subtitle: The dispatch_repos import failure was a probe-interpreter mismatch, not a broken runner; the deploy key still needs GitHub enrollment
+title: kk-mac probe interpreter fix + deploy-key enrollment — fleet fully green
+subtitle: The dispatch_repos import failure was a probe-interpreter mismatch, not a broken runner; the deploy key is now enrolled and kk-mac is push-capable
 icon: terminal
 date: 2026-11-26
 status: deployed
@@ -31,27 +31,35 @@ changes:
     remote probe now runs /opt/homebrew/bin/python3, matching launchd"
   - "added test_probe_uses_kk_mac_runner_interpreter so the mapping
     cannot silently disappear in another generated board write"
-  - "no host files, runner units or keys were modified"
+  - "no host files or runner units were modified; the only key-side
+    change was enrolling kk-mac's existing PUBLIC key on GitHub (see
+    resolution)"
 
 verification:
   tests: "pytest -q tests/board/test_fleet_host_parsing.py
     tests/board/test_runner_tooling_contract.py -> 22 passed"
-  fleet_health: "runner-fleet-health.py -> 8 hosts, 7 ok; kk-mac's
-    dispatch-repos violation is gone. Exactly one finding remains:
-    kk-mac/no-push-creds."
+  fleet_health: "runner-fleet-health.py -> 8 hosts, 8 ok, 0 failing after
+    the deploy key was enrolled (see resolution below); 1 auto-closed
+    card. The dispatch-repos false violation was gone immediately after
+    the interpreter fix."
   consumer: "kk-mac's runner-agent was untouched; its launchd interpreter
-    already matched the new probe interpreter."
+    already matched the new probe interpreter. No launchd label change
+    was needed: runner-agent.push_capable() falls back to a live
+    `git push --dry-run`, so an enrolled key admits cards without an
+    explicit push:chaba label."
 
-blocked_on_tony:
-  action: "Enroll this PUBLIC key with WRITE access at
-    github.com/tonezzz/chaba -> Settings -> Deploy keys, then add
-    push:chaba to the kk-mac RUNNER_LABELS in
-    ~/Library/LaunchAgents/ai.chaba.runner-agent.plist (reload the agent)
-    — or leave the label off and accept the audit warning."
+resolution:
+  action: "With the user's explicit approval (openchamber choice), enrolled
+    kk-mac's PUBLIC deploy key with WRITE access on tonezzz/chaba via
+    authenticated `gh api` (gh logged in as tonezzz, repo scope)."
   key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyiwfNAWHG/xcxOAQn57pg6PIIhIBcE7w1Fi2kPJasB kk-mac chaba deploy key"
-  after_enrollment: "Re-run runner-fleet-health.py; the push probe should
-    pass and runner-auto-kk-mac should auto-close. Do not paste a token
-    into chat to do this."
+  key_id: "GitHub deploy key id 171204661, title 'kk-mac chaba deploy key
+    2026-11-26', read_only=false — matching the other fleet keys
+    (tony-dell, idc02, tony-macbook, mn01, tony-omen)."
+  verification: "`ssh kk-mac 'cd ~/CascadeProjects/chaba && git push
+    --dry-run origin HEAD:refs/heads/__fleet-push-probe'` -> '* [new
+    branch] HEAD -> __fleet-push-probe'. Fleet audit -> 0 hosts failing,
+    8 ok, 1 card auto-closed. runner-auto-kk-mac auto-closed by the audit."
 
 rollback:
   - "Revert this commit to restore `python3 -` for every host; the
