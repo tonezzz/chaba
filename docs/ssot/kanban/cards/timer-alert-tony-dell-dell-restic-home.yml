@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-dell-restic-home
 title: Timer dell-restic-home on tony-dell failing
 column: done
-updated: 2026-11-26 03:57
+updated: 2026-11-26 20:30
 priority: high
 tags:
 - timer-alert
@@ -214,6 +214,10 @@ comms:
 - at: 2026-11-26 03:57
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:30
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate why the user systemd service `dell-restic-home.service` failed with an exit code on host `tony-dell`
   during its run on 11-16 at 14:40. Inspect the logs using `journalctl --user -u dell-restic-home.service` on `tony-dell`
