@@ -1,7 +1,7 @@
 id: gemini-38-live-extended-thinking-bench-2026-11-26
 title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
 column: done
-updated: 2026-11-26 18:40
+updated: 2026-11-26 18:50
 brief: Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare
   to the promoted 3.8-live baseline before any pin decision.
 priority: medium
@@ -59,6 +59,13 @@ comms:
     vs ~6.2s (fillers+background reasoning = ~75% slower). ttfa_ms not comparable (anchor artifact ~10ms vs 330ms
     — inputTranscription final lands with first filler audio). Barge-in + soak probes running; harness gained thinking-mode
     support (thinkingConfig + NON_BLOCKING + interac'
+- at: 2026-11-26 18:50
+  from: devin
+  text: 'DONE — verdict: keep gemini-3.8-live pinned. Extended-thinking (LOW) passed all gates except latency: ~75%
+    slower round-trip (10.9s vs 6.2s mean), WER tied 0.01, tools 8e/6p/0n vs 7e/4p/3n, barge-in + 9-turn soak green
+    both. Protocol differs (thinkingLevel + NON_BLOCKING + interactionStatus IDLE); harness + probes committed on
+    dispatch/20261126-181728-bench-gemini-3-8-live-extended @ 5d3affcc13. Job doc: docs/ssot/jobs/voice/2026-11-26-gemini-38-live-extended-thinking-eval.yml.
+    Heads-up: shared '
 action:
   type: dispatch
   status: done
