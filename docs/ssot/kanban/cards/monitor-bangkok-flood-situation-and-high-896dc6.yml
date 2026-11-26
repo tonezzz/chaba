@@ -1,16 +1,16 @@
 id: monitor-bangkok-flood-situation-and-high-896dc6
 title: Monitor Bangkok flood situation and high tide warnings
 column: backlog
-updated: 2026-11-26 13:30
+updated: 2026-11-26 20:38
 priority: medium
-note: Tony requested ongoing monitoring of BMA flood & Chao Phraya high tide conditions until Dec 2; keep
-  flood-report current.
+note: Tony requested ongoing monitoring of BMA flood & Chao Phraya high tide conditions until Dec 2; keep flood-report
+  current.
 ref: OPS-1393
 comms:
 - at: 2026-11-25 13:38
   from: ada
-  text: Tony requested ongoing monitoring of BMA flood & Chao Phraya high tide conditions until Dec 2;
-    keep flood-report current.
+  text: Tony requested ongoing monitoring of BMA flood & Chao Phraya high tide conditions until Dec 2; keep flood-report
+    current.
 - at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -72,19 +72,18 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-26 12:26
   from: tony
-  text: 'answered tony-requested-ongoing-monitor-0ece05: Postpone flood monitoring until the runner-agent
-    drift is resolved independently.'
+  text: 'answered tony-requested-ongoing-monitor-0ece05: Postpone flood monitoring until the runner-agent drift
+    is resolved independently.'
 - at: 2026-11-26 12:26
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-11-26 12:40
   from: chaba
-  text: 'answer-sweep: executed ''Postpone flood monitoring until the runner-agent drift is re'' -> put
-    on hold'
+  text: 'answer-sweep: executed ''Postpone flood monitoring until the runner-agent drift is re'' -> put on hold'
 - at: 2026-11-26 13:30
   from: devin
-  text: 'Triage: canonical Bangkok flood monitoring card. Retained on hold per Tony''s answer (postpone
-    until infrastructure drift resolved); the three duplicate cards were closed.'
+  text: 'Triage: canonical Bangkok flood monitoring card. Retained on hold per Tony''s answer (postpone until infrastructure
+    drift resolved); the three duplicate cards were closed.'
 - at: 2026-11-26 13:30
   from: devin
   text: closed by devin
@@ -93,23 +92,25 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-26 13:30
   from: devin
-  text: 'Correction: batch triage closed this card by mistake. Reopened as the canonical Bangkok flood
-    monitoring card; it remains on hold per Tony''s answered request (postpone until infrastructure drift
-    resolved).'
+  text: 'Correction: batch triage closed this card by mistake. Reopened as the canonical Bangkok flood monitoring
+    card; it remains on hold per Tony''s answered request (postpone until infrastructure drift resolved).'
 - at: 2026-11-26 19:23
   from: backlog-spec-enrich
-  text: skipped — The card is explicitly marked on hold per Tony's request to postpone until infrastructure
-    drift is resolved.
+  text: skipped — The card is explicitly marked on hold per Tony's request to postpone until infrastructure drift
+    is resolved.
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: tony-requested-ongoing-monitor-0ece05
-  ask: Tony requested ongoing monitoring of Bangkok flood and Chao Phraya high tide conditions until Dec
-    2, maintaining a current flood-report, but the card specifies no target host or repository from the
-    permitted list (tony-dell, idc02, idc03, tony-omen, tony-macbook, mn01, con01 / chaba, ada-voice,
-    sunsynk-card, mddb-fork, gods-eye-view). Additionally, all available runners currently defer execution
-    due to a script drift issue that requires redeploying runner-agent from the chaba repo.
+  ask: Tony requested ongoing monitoring of Bangkok flood and Chao Phraya high tide conditions until Dec 2, maintaining
+    a current flood-report, but the card specifies no target host or repository from the permitted list (tony-dell,
+    idc02, idc03, tony-omen, tony-macbook, mn01, con01 / chaba, ada-voice, sunsynk-card, mddb-fork, gods-eye-view).
+    Additionally, all available runners currently defer execution due to a script drift issue that requires redeploying
+    runner-agent from the chaba repo.
   options:
-  - ★ Deploy monitoring to tony-dell using the chaba repo and redeploy the runner-agent across all hosts
-    first.
+  - ★ Deploy monitoring to tony-dell using the chaba repo and redeploy the runner-agent across all hosts first.
   - Deploy monitoring to con01 using the chaba repo and redeploy the runner-agent across all hosts first.
   - Postpone flood monitoring until the runner-agent drift is resolved independently.
   status: answered
