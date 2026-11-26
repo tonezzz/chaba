@@ -2,7 +2,7 @@ id: ansible-chaba-stale-quadlet-inventory
 title: ansible-chaba quadlet inventory is stale fleet-wide — mddb/mddb-cms/ollama/tony-ha/obsidian-vault quadlets
   on idc03 (and dell/idc02/mn01) would break services o
 column: doing
-updated: 2026-11-27 02:01
+updated: 2026-11-27 02:03
 priority: high
 tags:
 - ansible
@@ -59,6 +59,13 @@ comms:
     follower, notebooklm-rest, notebooklm-mcp stub; retired never-ran mddb-cms/mddb-panel + shadowed status-data-api),
     con01 (mddb-follower), mn01 (mn-ha-dev), tony-dell (chaba-postgres-16, raceman-php; retired 10 quadlets for
     services migrated off dell). Fixed invalid storage.conf TOML on al'
+- at: 2026-11-27 02:03
+  from: devin
+  text: 'DONE. All ansible-regenerated quadlets audited vs podman inspect + stacks/ and reconciled: restored live-truth
+    .container files on idc03 (mddb, mddb-cms, ollama, gemini-ollama-proxy), idc02 (mddb follower, notebooklm-rest,
+    notebooklm-mcp stub), con01 (mddb-follower), mn01 (mn-ha-dev), tony-dell (chaba-postgres-16, raceman-php). Retired
+    phantom/shadow/migrated quadlets on idc03 (obsidian-vault), idc02 (mddb-cms, mddb-panel, status-data-api), tony-dell
+    (10 units for services moved to idc03/idc02).'
 action:
   type: dispatch
   status: running
