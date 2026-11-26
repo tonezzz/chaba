@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
 column: doing
-updated: 2026-11-26 15:25
+updated: 2026-11-26 15:32
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -346,6 +346,13 @@ comms:
   from: devin
   text: 'Devin dispatch picked up: running scripts/devnest/video_queue_status.py read-only against both gdrive roots
     (kk-mac-video-pilot + ada-nest). No claim release, no Drive mutation.'
+- at: 2026-11-26 15:32
+  from: devin
+  text: 'DONE (read-only audit, devin dispatch). Ran video_queue_status.py on both roots: pilot 14 packs = 11 done/1
+    queued/2 failed; ada-nest 79 = 60 done/19 queued; 0 active + 0 stale claims; 39 residual claim files on done
+    packs aged 492-812h. Zero state delta vs 2026-11-24 report — queues idle ~48h. Sacred Father canonical final-preview
+    re-verified qc_pass=true (mp4+th/en srt). No claims released, no Drive writes. Deliverables committed on dispatch
+    branch: reports/card-runner/video-queue-status-openc'
 review_kind: verify
 claim:
   since: 2026-11-26 15:23
