@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-pilot-acceptance
 title: KK acceptance — CMS-only memory pilot for Kaewta
 column: review
-updated: 2026-11-26 13:14
+updated: 2026-11-26 13:24
 brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
   Bench read-side is proven; prod profile unchanged.
 priority: medium
@@ -120,6 +120,10 @@ comms:
 - at: 2026-11-26 13:14
   from: chaba
   text: 'worktree kept: dirty — 7 uncommitted file(s)'
+- at: 2026-11-26 13:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-124228-ask-kk-to-accept-a-reversible- on tony-macbook still
+    dirty — 7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 requests:
 - id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
   ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
@@ -143,6 +147,8 @@ action:
   attempts: 1
   result: 'exit=0 ms and `dispatch-outcome-20261126-124228-ask-kk-to-accept-a-reversible-.md` are posted. | devin-task-20261126-124228-ask-kk-to-accept-a-reversible-.service:
     Consumed 2min 49.733s CPU time over 30min 3.793s wall clock time, 1.4G memory peak.'
+  sweep:
+    dirty: 7
 claim:
   since: 2026-11-26 12:41
 review_kind: verify
