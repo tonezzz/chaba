@@ -1,0 +1,18 @@
+id: 2026-11-26-board-commit-guard-ci
+title: "CI regression gate for kanban-commit stale-write guard"
+date: 2026-11-26
+type: hardening
+status: done
+card: ops-kanban-commit-guard
+summary: >-
+  Added a focused CI test so the stale-write boundary from
+  2026-11-26-kanban-commit-stale-write-guard cannot be removed silently.
+  tests/board/test_kanban_commit_guard.py runs the real script against a
+  scratch git repo: staged code and staged ssot.kanban.yml are refused and
+  never committed, a clean generated card still commits, and the source
+  contract (pathspec-limited commit, protected-path exclusion,
+  --diff-filter=ACMD) is asserted. Wired into the repo-lint CI job.
+verification:
+  - "python3 -m pytest -q tests/board/test_kanban_commit_guard.py -> 4 passed"
+  - ".github/workflows/repo-lint.yml YAML parses; new test added to the existing tooling-contracts pytest step"
+  - "The full shell suite tests/test-kanban-commit.sh has known fixture failures, so it is not used as a CI gate"

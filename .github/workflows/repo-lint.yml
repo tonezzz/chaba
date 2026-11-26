@@ -73,8 +73,13 @@ jobs:
         run: >-
           python3 -m pytest -q
           tests/board/test_runner_tooling_contract.py
+          tests/board/test_kanban_commit_guard.py
           tests/devin/test_unit_exit_status.py
           tests/devnest/test_sync_opencode_models.py
+      # Stale-write guard (4af10b4c5c / 56aac6476c): a board sweep commit
+      # must be pathspec-limited and must refuse staged code, deletions or
+      # the hand-maintained ssot.kanban.yml. The full shell suite carries
+      # known fixture failures, so this focused scratch-repo test gates CI.
       # Model-route registration drift guard (card
       # model-route-registration-unify / OPS-1020): profile allowlists
       # and the jack-ide opencode provider map must only name routes the
