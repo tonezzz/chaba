@@ -1,7 +1,7 @@
 id: runner-tools-converge-apply-20261126
 title: Apply pinned runner-tool convergence fleet-wide
 column: done
-updated: 2026-11-26 18:08
+updated: 2026-11-26 18:43
 brief: 'Applied deploy-runner-tools.yml to all 7 managed hosts, installed the daily convergence timer, and re-audited:
   no DRIFT remaining.'
 priority: medium
@@ -25,3 +25,8 @@ comms:
   text: 'DONE 2026-11-26: convergence applied and daily timer active. Note: this closes the gap left by PR #229
     — the playbook existed but had never been applied; PR #236 corrected the timer unit section that hosts rejected
     on first install.'
+- at: 2026-11-26 18:43
+  from: devin
+  text: 'Re-verified 2026-11-26 after master moved dispatch_repos.py to bf7938: idc03 checkout was already at master
+    HEAD (0/0), no git nudge needed. Re-ran deploy-runner-tools.yml — all hosts in-sync, changed=0; audit shows
+    OK dispatch_repos.py src=bf793805a0f9 inst=bf793805a0f9 and no DRIFT lines. Daily timer remains active.'
