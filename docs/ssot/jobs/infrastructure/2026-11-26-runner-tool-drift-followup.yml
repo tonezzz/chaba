@@ -1,0 +1,116 @@
+title: Runner-tool drift follow-up — idc02 debug residue and con01 devin-dispatch pin
+subtitle: two post-converge drifts with different causes — a one-off debug patch to
+  idc02's installed snapshot, and con01's newer-but-stale devin-dispatch hotfix that
+  turned a successful dispatch into exit 2/INVALIDARGUMENT.
+icon: wrench
+
+date: 2026-11-26
+card: con01-runner-pilot-smoke-2
+related_cards:
+  - timer-alert-idc02-ada-ocb-agent-runner-converge
+  - runner-tooling-drift-recurs-installed-ru-3aad1e
+status: deployed
+
+context:
+  idc02_debug_residue:
+    symptom: "After the 08:41 fleet converge, idc02's installed runner-agent
+      drifted again: 2a2fdcaf7f8a8bba vs pin/repo 1514c75c4679a01b. Diff showed
+      five debug prints inserted into _devin_launch (`DEBUG dr_module`,
+      `DEBUG dr.__file__`, `DEBUG has lane_model`) around line 4223 of the
+      installed snapshot only."
+    investigation: "ada-ocb-agent-runner-converge.timer was already disabled and
+      inactive; no unit, cron entry, or repo source containing the debug lines
+      was found. The only matches were this session's own diagnostic output.
+      Root cause: a one-off manual patch to ~/.local/bin/runner-agent, not a
+      recurring writer. It was not authored by the canonical playbook or a timer."
+  con01_exit_two:
+    symptom: "con01-runner-pilot-smoke-2 completed the work and posted DONE at
+      05:12 CET, then the runner marked it failed: journal reported
+      status=2/INVALIDARGUMENT and the task dir's exit_code file was empty."
+    root_cause: "con01's installed devin-dispatch was 54db1f44eb1c9865, a
+      2026-11-24-era copy with `rc=${PIPESTATUS[0]}` in the systemd-run ExecStart
+      body. systemd expands ${VAR} in ExecStart itself, so PIPESTATUS[0] was
+      treated as an invalid environment variable name, `$rc` became empty, and
+      `exit "$rc"` returned 2. The repo/manifest pin c5fa39476cb27cad already
+      carried the fix (`set -o pipefail; rc=$?`, commit 237ec9b33a)."
+    why_sync_missed_it: "sync-runner-tools.sh's never-downgrade guard keeps an
+      installed copy when it differs and is newer by mtime. The stale copy was
+      stamped 02:42 CET, newer than the 2026-11-24 repo file, so every sync tick
+      warned and kept it. Content, not mtime, was the wrong side of the guard."
+
+changes:
+  - "idc02: backed up ~/.local/bin/runner-agent to
+    runner-agent.bak-20261126-112840 (hash 2a2fdcaf) before converging."
+  - "idc02: canonical ansible/playbooks/deploy-runner-agent.yml run with
+    --limit idc02; installed hash restored to 1514c75c4679a01b; the existing
+    restart handler refreshed runner-agent.service."
+  - "ansible/playbooks/deploy-devin-dispatch.yml — new idempotent playbook
+    (commit 58ee74cffe). It reads the sha256 from
+    scripts/devin/runner-tooling.manifest.json, asserts the controller source
+    matches that pin, deploys with backup=yes, post-verifies the installed hash,
+    and skips post-verify in --check mode."
+  - "con01: installed ~/.local/bin/devin-dispatch replaced from the pinned
+    source; hash now c5fa39476cb27cad04400aae37c5a18bd490a21113b532df9daa01dc5ea3ccde.
+    Ansible backup: /home/tony/.local/bin/devin-dispatch.3474921.2026-11-26@05:33:57~."
+
+procedure:
+  - "Step 1 locate: deploy-runner-agent.yml and verify-runner-tools-sync.yml were
+    found by grep; no existing deploy playbook for devin-dispatch, so a focused
+    one was added rather than an ad-hoc scp."
+  - "Step 2 confirm: SSOT/inventory placed idc02 in vps/ocb_pane and con01 in
+    vps; both runs used explicit --limit. macOS remains excluded."
+  - "Step 3 diagnose: sha256 of installed vs repo vs manifest for both tools;
+    journal + task-dir exit_code traced the con01 exit-2; diff traced the
+    idc02 debug residue."
+  - "Step 4 preflight: deploy-runner-agent --check --diff --limit idc02 -> 1
+    changed, 0 failed; deploy-devin-dispatch --check --diff --limit con01 -> 1
+    changed, 0 failed."
+  - "Step 5 approval: Tony selected the 'Unstick con01 + heal idc02 drift'
+    batch, which explicitly covered re-converging both tools. The idc02 handler
+    restarts the oneshot runner-agent.service; con01 has no service handler."
+  - "Step 6 backup: idc02 sibling backup 20261126-112840; con01 Ansible backup
+    2026-11-26@05:33:57."
+  - "Steps 7-8 converge + verify: see below."
+  - "Step 9 evidence: this job file, board comment on con01-runner-pilot-smoke-2,
+    and the content-pin lesson carried into the ansible-first procedure."
+
+verification:
+  - "idc02 hashes: installed = repo = pin 1514c75c4679a01b. Re-running
+    deploy-runner-agent --check --diff --limit idc02 -> changed=0, 0 failed."
+  - "con01 hashes: installed = pin c5fa39476cb27cad. Re-running
+    deploy-devin-dispatch --check --diff --limit con01 -> changed=0, 0 failed."
+  - "runner-fleet-health.py went from 6 failing / 2 ok to 5 failing / 3 ok;
+    idc02/tool-pin, idc02/runner-agent, con01/tool-pin and con01/devin-dispatch
+    failures disappeared and 1 stale drift card was auto-closed."
+  - "con01 wrapper `bash -n ~/.local/bin/devin-dispatch` exits 0 and the pinned
+    body contains `set -o pipefail; ... rc=$?`."
+  - "The pilot card was already closed by Tony at 11:19 before the repair, so
+    no re-dispatch was performed; the root cause and fix are posted to it."
+
+rollback:
+  - "idc02: cp ~/.local/bin/runner-agent.bak-20261126-112840
+    ~/.local/bin/runner-agent (restores the debug-patched build — do not keep)."
+  - "con01: cp '/home/tony/.local/bin/devin-dispatch.3474921.2026-11-26@05:33:57~'
+    ~/.local/bin/devin-dispatch (restores the exit-2 bug — only if the retired
+    ada-pi alias is needed until the alias is re-added deliberately)."
+
+residuals:
+  - "The author of the idc02 debug patch was not identified; no active writer
+    remains after the legacy timer was disabled. Monitor for recurrence."
+  - "tony-dell SSH now answers with 'Ubuntu 26.04.1 LTS / This service allows
+    sftp connections only.' to shell requests, so fleet-health marks it
+    unreachable and con01's push probe fails with the same banner. Separate
+    investigation needed; this job used idc02 as the Ansible controller."
+  - "Pre-existing fleet-health failures remain: idc03/no-push-creds,
+    mn01 and kk-mac unreachable."
+  - "OPS-1406 host-parsing gap is closed (commit e3bb2d5afaf plus d71b491170e)
+    and no longer blocks con01/kk-mac auditing."
+
+lessons:
+  - "A newer-mtime installed tool can still be older content. The
+    never-downgrade guard is safe only when the installed copy is known to
+    contain a deliberate hotfix; for manifest-pinned single-file tools, content
+    hash must win. deploy-devin-dispatch.yml now encodes that rule."
+  - "A task body can succeed while its wrapper fails: an empty exit_code file
+    plus status=2/INVALIDARGUMENT means the wrapper's rc expression was eaten
+    before bash saw it, not that the work failed."
