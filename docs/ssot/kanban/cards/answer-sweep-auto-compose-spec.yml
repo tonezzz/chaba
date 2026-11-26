@@ -1,7 +1,7 @@
 id: answer-sweep-auto-compose-spec
 title: 'Answer-sweep auto-compose: raise consolidated spec request when all asks answered (KNB-0180 option 2)'
 column: doing
-updated: 2026-11-26 21:28
+updated: 2026-11-26 21:30
 brief: 'Phase 1 of KNB-0180 option 2: when every open request on a card is answered/executed and the card still
   lacks a dispatchable spec, answer-sweep raises ONE consolidated spec request with the answers inlined — detection
   + raise only, no auto-queue. Spec: docs/ssot/jobs/kanban/2026-11-19-answer-sweep-dead-letters.yml'
@@ -236,5 +236,12 @@ comms:
     dispatch + no spec; raise_spec_compose() appends ONE spec-compose-<date> request inlining answered asks+answers
     (dict options spec-written/hold/close — none arm dispatch). spec-compose-* request id is the re-raise guard.
     36 answer-sweep tests + chaba gate (300) green; dry-run clean.'
+- at: 2026-11-26 21:30
+  from: devin
+  text: 'DONE (phase 1). answer-sweep.py: spec_compose_ready() detects all-asks-resolved + awaiting_action + action.type=dispatch
+    unarmed + no spec; raise_spec_compose() appends ONE spec-compose-<date> request inlining answered asks+answers.
+    Re-raise guard = spec-compose-* request id on card (any status). Never auto-arms — options spec-written/hold/close
+    only. Tests: 36 answer-sweep + 300 chaba-gate green; dry-run clean (0 current matches — pile cards lack action.type=dispatch).
+    Committed on dispatch bra'
 claim:
   since: 2026-11-26 21:02
