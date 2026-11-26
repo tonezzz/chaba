@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-2
 title: con01 runner pilot smoke 2 — runner-agent dispatch path
 column: backlog
-updated: 2026-11-26 10:14
+updated: 2026-11-26 10:15
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close on con01.
 priority: low
@@ -66,6 +66,11 @@ comms:
 - at: 2026-11-26 10:14
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-26 10:15
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
 ref: OPS-1428
