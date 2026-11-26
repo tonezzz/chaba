@@ -15,60 +15,37 @@ problem: |
   the single work list; comments are the front door).
 
 what_changed: |
-  - scripts/ada/wp-comment-sync.py — digest-bound comments (lesson, CMS
-    posts, cam/bench/render_job, unknown types) now get one chat-local
-    classification (WCS_BOARD_CLASSIFY, default on, model
-    WCS_BOARD_CLASSIFY_MODEL default chat-local):
+  - scripts/ada/wp-comment-sync.py — digest-bound comments now get one
+    chat-local classification (WCS_BOARD_CLASSIFY, default on; model
+    WCS_BOARD_CLASSIFY_MODEL):
       actionable -> kanban card via board-api POST /card, id
-                    wpc-<comment_id> (dedupes re-polls; "already exists"
-                    counts as filed), column backlog, priority medium,
-                    spec carries post_id + comment_id + permalink + the
-                    loop-close contract. Ack replies "Filed ... card
-                    wpc-N".
-      question   -> focus-inbox entry via board-api POST /inbox
-                    (tags wp-comment/wp-question, owner devin) + local
+                    wpc-<comment_id> (deduped), backlog/medium, spec
+                    carries post_id+comment_id+permalink+loop-close
+                    contract; ack "Filed ... card wpc-N"
+      question   -> focus-inbox via POST /inbox + local
                     ~/.local/share/wp-comment-sync/questions/q-<cid>.yml
-                    record + digest line. Questions are conversation,
-                    not work orders — no card; an agent answers
-                    in-thread via /wp-comment.
-      discussion -> digest.jsonl only (class field recorded).
-    Comments authored by the devin/ada/chaba WP agent identities are
-    skipped outright (marked processed, never re-routed) — they ARE the
-    loop-close replies. In-thread acks now post as the 'chaba' agent
-    identity when wp-agent-users.env exists (WCS_AGENT_ENV override),
-    falling back to the shared app user.
-    Env: WCS_BOARD_API (default http://127.0.0.1:8787 loopback ->
-    board-api 'local' write identity), WCS_AGENT_ENV.
-  - scripts/board/board-api.py — new remote-write endpoint
-    POST /wp-comment {post|post_id, parent?, content|text,
-    as: devin|ada|chaba}: posts an in-thread WP comment under a REAL
-    agent identity. devin/ada callers may only post `as` themselves;
-    chaba/tony/loopback may use any configured identity. Payload sends
-    status:"approve" — an identity missing moderate_comments gets a 403
-    instead of a silent hold. wp_api() gained an `agent` kwarg that
-    swaps in the per-identity app password from
-    ~/.config/secrets/wp-agent-users.env (BOARD_API_WP_AGENT_ENV
-    override). Identities: WP_AGENT_IDENTITIES = {devin, ada, chaba}.
+      discussion -> digest.jsonl only
+    agent-identity-authored comments skipped (they ARE the loop-close
+    replies); acks post as 'chaba' agent when wp-agent-users.env exists
+    (WCS_AGENT_ENV), else shared app user. Env: WCS_BOARD_API.
+  - scripts/board/board-api.py — new POST /wp-comment {post|post_id,
+    parent?, content|text, as: devin|ada|chaba}; devin/ada only `as`
+    themselves, chaba/tony/loopback any identity; status:"approve"
+    (missing moderate_comments -> 403 not silent hold); wp_api()
+    `agent` kwarg -> per-identity app password from wp-agent-users.env
+    (BOARD_API_WP_AGENT_ENV); WP_AGENT_IDENTITIES={devin,ada,chaba}.
   - integrations/wp-boards/chaba-boards.php v0.10.0 -> v0.11.0 —
-    registers the `chaba_agent` role on init (idempotent cap
-    convergence): read + read_private_posts + moderate_comments. No
-    post-edit, no unfiltered_html — agents comment, they don't author.
-    moderate_comments is what lets status:"approve" pass the REST
-    comments controller's cap check; read_private_posts lets agents
-    reply on private CPT posts (lesson/news are status=private).
-  - scripts/wp-boards/ensure-agent-users.py (new) — provisions the
-    devin/ada/chaba WP users + chaba_agent role + Application
-    Passwords, writes wp-agent-users.env (0600). Auth: wp-login cookie
-    + wp_rest nonce scraped off profile.php (the
-    boards-surf-thailand-com-wp-admin-credential file on tony-omen —
-    there is NO WP-CLI/SSH path to the h3 Plesk host), or
-    --admin-app-password Basic auth once an admin app password exists.
-    --check verifies identities; --rotate revokes+remints.
-  - scripts/ada/news-situation.py — transition comments now prefer the
-    'chaba' agent identity (real author, status=approve) with fallback
-    to the shared app user when wp-agent-users.env is absent.
-  - tests/board/test_board_api_wp_comment.py (new, 11 tests),
-    tests/ada/test_wp_comment_sync_board.py (new, 16 tests).
+    registers `chaba_agent` role on init: read + read_private_posts +
+    moderate_comments (approve + private-CPT replies); no post-edit,
+    no unfiltered_html.
+  - scripts/wp-boards/ensure-agent-users.py (new) — provisions agent
+    users + role + app passwords -> wp-agent-users.env (0600); auth
+    via wp-admin credential on tony-omen or --admin-app-password;
+    --check / --rotate.
+  - scripts/ada/news-situation.py — transition comments prefer 'chaba'
+    identity (status=approve) with shared-user fallback.
+  - tests/board/test_board_api_wp_comment.py (new, 11),
+    tests/ada/test_wp_comment_sync_board.py (new, 16).
 
 loop_close: |
   The contract the filing agent follows (also embedded in each auto
