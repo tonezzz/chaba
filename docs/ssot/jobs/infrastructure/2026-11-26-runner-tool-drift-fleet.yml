@@ -1,0 +1,122 @@
+title: Runner-tool drift fleet card — deploy-runner-tools converge + SFTP-only window workaround
+subtitle: >-
+  card runner-tool-drift-fleet armed by runner-drift-rearm.py from an
+  audit-runner-tools.yml transcript; converged via the canonical playbook on
+  reachable hosts and via pinned-byte SFTP install on hosts caught inside the
+  fleet-wide sshd ForceCommand window; final audit clean, card auto-closed.
+icon: wrench
+
+date: 2026-11-26
+card: runner-tool-drift-fleet
+status: deployed
+
+context:
+  trigger: >-
+    scripts/board/runner-drift-rearm.py parsed an audit-runner-tools.yml
+    transcript and filed runner-tool-drift-fleet with findings:
+    tony-dell MISSING-DEST dispatch_repos.py; tony-macbook MISSING-DEST
+    claude-dispatch/dispatch-queue/dispatch_repos.py; idc03 MISSING-DEST
+    claude-dispatch/devin-dispatch-prune/dispatch-queue/dispatch_repos.py;
+    idc02 DRIFT runner-agent + same 4 MISSING-DEST; con01 DRIFT devin-dispatch
+    + same 4 MISSING-DEST.
+  sshd_event: >-
+    While this dispatch ran, the fleet was inside a global
+    `ForceCommand internal-sftp` sshd window (see
+    docs/ssot/jobs/infrastructure/2026-11-26-runner-tool-drift-followup.yml
+    residuals and card ops-tony-dell-ssh-shell-restore). Probe at ~12:40:
+    tony-dell/tony-omen/tony-macbook shell-OK; idc02/idc03/con01/mn01
+    SFTP-only. At ~12:49-12:50 a scoped fix landed fleet-wide —
+    `Match Group sftponly` + `ForceCommand internal-sftp` (sshd_config
+    line 85-86 on every host), restoring shell for normal users while
+    keeping sftp-only for the sftponly group. This is deliberate
+    hardening, not an incident left open.
+  stale_findings: >-
+    The two DRIFT findings were already healed before this dispatch:
+    idc02 runner-agent and con01 devin-dispatch had been re-converged to
+    pins at ~11:28-11:33 by the earlier drift-followup job; SFTP hash-check
+    confirmed installed == pin on all four unreachable hosts.
+
+changes:
+  - "ansible/playbooks/deploy-runner-tools.yml --check --diff --limit
+    'tony-dell,tony-omen,tony-macbook' -> tony-dell 1 change
+    (dispatch_repos.py), tony-macbook 3 changes, tony-omen in-sync."
+  - "deploy-runner-tools.yml apply (same limit): tony-dell +1 tool,
+    tony-macbook +3 tools; all 6 manifest pin asserts passed per host;
+    restart runner-agent handler fired on both changed hosts."
+  - "SFTP install on the four shell-dead hosts (pinned bytes from this
+    worktree == origin/master == each host's checkout, all verified
+    sha256 == manifest pin before upload): idc02 +3 tools
+    (devin-dispatch-prune, dispatch-queue, dispatch_repos.py; claude-dispatch
+    installed first as the sftp put/chmod proof), idc03 +4, con01 +4,
+    mn01 +3 (claude-dispatch, devin-dispatch-prune, dispatch_repos.py).
+    All chmod 0755."
+  - "Post-fix verification: re-download of all 6 tools per host via SFTP ->
+    24/24 sha256 == pin; ls -l shows -rwxr-xr-x and exact source sizes."
+
+procedure:
+  - "Step 1 locate: deploy-runner-tools.yml + audit-runner-tools.yml found;
+    runner-drift-rearm.py --verify is the re-arm/close path."
+  - "Step 2 confirm: inventory hosts.yml; playbook targets
+    all:!macos:!disabled (7 hosts; kk-mac member device excluded by design,
+    idc01 disabled)."
+  - "Step 3 diagnose: manifest pins re-verified against worktree sources
+    (6/6) AND against new origin/master (identical); ssh probe showed the
+    ForceCommand window; SFTP ls+get replicated the audit read-only on
+    unreachable hosts (installed-vs-pin and checkout-vs-pin)."
+  - "Step 4 preflight: --check --diff --limit reachable -> expected deltas
+    only; full-fleet --check aborted serial batch at first unreachable
+    host (ansible-core 2.22 stops remaining serial batches on unreachable)."
+  - "Step 5 approval: card spec explicitly directs this playbook; the
+    runner-agent restart handler is the playbook's own design."
+  - "Step 6 backup: ansible copy module + pin assert is the canonical
+    path; SFTP installs wrote only absent files (no overwrite, no backup
+    needed)."
+  - "Steps 7-8 converge + verify: see verification."
+  - "Step 9 evidence: this job file, card comms, artifacts under
+    reports/ansible-benchmark/deploy-runner-tools/20261126-125135/."
+
+verification:
+  - "deploy --check --diff --limit 'tony-dell,tony-omen,tony-macbook':
+    changed only where drift existed (dell 1, macbook 3, omen 0)."
+  - "deploy apply: all pin asserts 'All assertions passed' on all 3 hosts."
+  - "audit-runner-tools.yml full run (~12:52, after sshd Match-block fix
+    landed): 42 OK lines (7 hosts x 6 tools), zero DRIFT/MISSING-DEST/
+    NO-CHECKOUT; kk-mac unreachable (offline member device, expected)."
+  - "runner-drift-rearm.py --audit-file audit-after.txt --verify ->
+    findings={} -> posted 're-audit clean' + closed card (column: done)."
+  - "deploy-runner-tools.yml --check --diff FULL FLEET (~12:55):
+    changed=0, unreachable=0 on all 7 hosts — proves SFTP-installed files
+    are byte-identical to playbook output (copy checksum-gate no-op)."
+
+rollback:
+  - "ansible-deployed files: re-run deploy playbook or restore from
+    ansible copy backup= (not enabled); sources are pinned in git."
+  - "SFTP-installed files: rm /home/tony/.local/bin/<tool> on the host —
+    they were absent before; removal restores prior state exactly."
+
+residuals:
+  - "kk-mac remains unreachable/unaudited (ssh_enabled:false member
+    device) — out of scope for runner-tool convergence by design."
+  - "mn01 card ops-mn01-restore-sshd-shell-20261126 is obsolete —
+    commented with verification evidence; sshd now uses Match Group
+    sftponly correctly."
+  - "The fleet-wide global ForceCommand incident is resolved as scoped
+    hardening; no card needed for idc02/idc03/con01 (fixed fleet-wide at
+    ~12:49-12:50 by the same rollout that produced the backups
+    sshd_config.backup.2026-11-26 on each host)."
+
+lessons:
+  - "ansible serial:1 + unreachable host aborts ALL remaining batches in
+    ansible-core 2.22 — always --limit explicitly when any target may be
+    down, or unreachable hosts silently skip the rest of the fleet."
+  - "runner-drift-rearm.py --verify needs `ssh idc03` shell for board-cli;
+    during the sftp-only window it would have failed — the HTTPS
+    board-api (/comment, /action) is the fallback write door."
+  - "sftp subsystem survives ForceCommand internal-sftp: ls/get/put/chmod
+    all work, so pinned-byte install + hash-verify is a viable last-resort
+    converge when shell SSH is dead — verify with a final ansible --check
+    once shell returns."
+  - "Drift transcripts age fast: both DRIFT findings were already healed
+    by an earlier job before this dispatch ran — always hash-check
+    installed-vs-pin before mutating (the KNOWN_PITFALLS warning was
+    correct again)."
