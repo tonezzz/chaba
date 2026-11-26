@@ -1,0 +1,77 @@
+title: gemini-ollama-proxy — reconcile live idc03 variant with repo master
+subtitle: merged free-key ring + LiteLLM gateway leg into repo on top of
+  free-lane budgets; quadlet env-drop hazard flagged
+icon: code-merge
+version: 1
+
+card: gemini-proxy-live-repo-divergence
+ref: MEM-1464
+date: 2026-11-26
+dispatch: 20261126-234625-reconcile-the-two-proxy-varian
+
+decision: |
+  Option (a): the repo file is canonical; the live idc03 variant's
+  uncommitted work (free-key ring + LiteLLM embed-gateway leg) was merged
+  INTO repo master on top of the repo's free-lane budgets. Live file was
+  pulled read-only from idc03
+  (~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs,
+  sha256 a8c3df805614b191009bb2990a72922734d248d66c470e9a4e6f481b8bb275ba)
+  and diffed against repo master (sha256 d58adf9b...1fda). Merged result
+  sha256 c2a618cb91fec6d7c168521b2e1237f6966a85ee038c371c41624b8c344576a8,
+  867 lines.
+
+merge_notes: |
+  - EMBED_GATEWAY_BASE/EMBED_GATEWAY_KEY|LITELLM_KEY/EMBED_GATEWAY_MODEL +
+    EMBED_VIA_GATEWAY + OR_LEG_CONFIGURED ported verbatim; gateway leg is
+    backup-only (OPENROUTER_PRIMARY still requires raw OPENROUTER_API_KEY).
+  - Free-key ring (GEMINI_API_KEY + GEMINI_FREE_KEYS + GEMINI_FREE_KEYS_NN,
+    per-key freeGeminiCircuits map, keyTag) replaces the single-key
+    freeGeminiCircuitOpenUntil. Budget gates (FREE_GEMINI_HOURLY_BUDGET,
+    FREE_GEMINI_BULK_DAILY_BUDGET, PAID_GEMINI_BULK_ALLOW, x-embed-lane:
+    bulk marker) kept and evaluated BEFORE key iteration; freeCallServed
+    counts once per served batch regardless of which ring key served.
+  - fetchBackupBatch keeps bulk param + paid bulk-skip; OR branch now
+    labels litellm:<model> when EMBED_VIA_GATEWAY.
+  - Repo-only extras kept: GEMINI_API_BASE env override (live hardcoded
+    the API base — this is what forced the fetch-intercept probe harness;
+    the env makes future probing trivial).
+  - "Is a free key configured" gates switched from GEMINI_API_KEY to
+    GEMINI_FREE_KEYS.length so ring-only configs still engage the free leg.
+  - /health now reports union: embed_gateway, circuit.free_keys plus all
+    budget counters.
+
+verification: |
+  - node --check clean.
+  - tests/embed/test_gemini_proxy_budget.mjs: 3/3 pass unchanged.
+  - NEW tests/embed/test_gemini_proxy_ring_gateway.mjs: 2/2 pass —
+    per-key failover (bad primary -> ring key serves, free_keys=2) and
+    gateway leg (all free keys dead -> provider litellm:embedding,
+    provider_mode stays gemini-primary).
+  - Manual probe (.dispatch-scratch/reconcile/, untracked): hourly budget
+    hit -> paid leg serves (gemini-embedding-2-paid, paid_calls=1);
+    x-embed-lane: bulk + PAID_GEMINI_BULK_ALLOW=0 -> paid skipped.
+
+restart_hazard: |
+  CRITICAL — worse than the card described. The ansible-regenerated
+  quadlet (~/.config/containers/systemd/gemini-ollama-proxy.container,
+  generated 2026-11-26T02:17Z, managed-by=ansible) mounts the repo file
+  at /app/proxy.mjs AND dropped EnvironmentFile=/home/tony/.config/secrets/
+  mddb-gemini.env (present in the quadlet the running container was built
+  from — its env carries GEMINI_API_KEY, GEMINI_API_KEY_PAID,
+  GEMINI_FREE_KEYS_01..10, EMBED_GATEWAY_BASE/MODEL, LITELLM_KEY,
+  GEMINI_PROXY_HOST). The proxy never reads GEMINI_API_KEY_FILE, so on the
+  next gemini-ollama-proxy.service restart the container would come up
+  with NO provider keys at all -> "no embedding provider configured" ->
+  total embed outage until env is restored. DO NOT restart the unit until
+  the quadlet template (chaba-ansible repo, not in this checkout) regains
+  the EnvironmentFile line. The merged code is restart-safe ONLY once env
+  delivery is fixed.
+
+followups: |
+  - Fix the ansible quadlet template to restore
+    EnvironmentFile=~/.config/secrets/mddb-gemini.env (or equivalent env
+    passthrough) for gemini-ollama-proxy on idc03 BEFORE any restart.
+  - After merge lands and chaba-repo-sync updates
+    ~/CascadeProjects/chaba on idc03, the next restart picks up merged
+    code + (once template fixed) full env — verify /health shows
+    free_keys:6, embed_gateway:embedding, budget counters present.
