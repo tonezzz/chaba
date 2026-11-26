@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 03:30) of `mn01-canary.service` on `mn01` result=exit-code — investigate journal: `journalctl
-  --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
+note: 'Last run (11-25 03:30) of `mn01-canary.service` on `mn01` result=exit-code — investigate journal:
+  `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
 ref: OPS-1385
 comms:
 - at: 2026-11-25 10:44
@@ -20,14 +20,14 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-25 10:54
   from: devin
-  text: '[still suspicious] Last run (11-25 03:30) of `mn01-canary.service` on `mn01` result=exit-code — investigate
-    journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
+  text: '[still suspicious] Last run (11-25 03:30) of `mn01-canary.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
 - at: 2026-11-25 14:16
   from: tony
-  text: '2026-11-25 14:2x (+07): TRIAGE: downstream, not an mn01 fault. mn01-canary correctly reports ''idc03 ada
-    services 1/3 active''; idc03 had the MDDB/Ollama incident and 09:59 SIGTERM cluster. system-report-watchdog
-    on tony-dell is likewise reporting macbook unreachable + overnight-assessment error. Keep these open as signals
-    until the idc03 cluster clears.'
+  text: '2026-11-25 14:2x (+07): TRIAGE: downstream, not an mn01 fault. mn01-canary correctly reports
+    ''idc03 ada services 1/3 active''; idc03 had the MDDB/Ollama incident and 09:59 SIGTERM cluster. system-report-watchdog
+    on tony-dell is likewise reporting macbook unreachable + overnight-assessment error. Keep these open
+    as signals until the idc03 cluster clears.'
 - at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -58,11 +58,11 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-25 19:01
   from: tony
-  text: '2026-11-25 18:58 (+07): FIXED — stale fixture in mn01-canary.sh checked retired ada-pi-pwa (SSOT expected_absent
-    since 11-17) and parked ada-ha-michael (no live unit/env on idc03); it now checks the one live critical service,
-    ada-ha-tony. Pulled the standby ada-voice checkout 678b960 -> 8a31a71 (clean tree, ff-only) to clear behind-origin.
-    Rerun result=success exit=0. Updated repo scripts/ops/mn01-canary.sh and live ~/.local/bin/mn01-canary.sh (live
-    backed up).'
+  text: '2026-11-25 18:58 (+07): FIXED — stale fixture in mn01-canary.sh checked retired ada-pi-pwa (SSOT
+    expected_absent since 11-17) and parked ada-ha-michael (no live unit/env on idc03); it now checks
+    the one live critical service, ada-ha-tony. Pulled the standby ada-voice checkout 678b960 -> 8a31a71
+    (clean tree, ff-only) to clear behind-origin. Rerun result=success exit=0. Updated repo scripts/ops/mn01-canary.sh
+    and live ~/.local/bin/mn01-canary.sh (live backed up).'
 - at: 2026-11-25 19:01
   from: tony
   text: moved backlog -> done
@@ -103,15 +103,24 @@ comms:
     — investigate journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
 - at: 2026-11-26 08:44
   from: devin
-  text: '[still suspicious] Last run (11-26 08:25) of `mn01-canary.service` on `mn01` result=exit-code — investigate
-    journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
+  text: '[still suspicious] Last run (11-26 08:25) of `mn01-canary.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
 - at: 2026-11-26 12:16
   from: devin
-  text: 'READ-ONLY RECHECK 2026-11-26 11:2x (+07) via SFTP + Ansible: mn01 itself is healthy; this card is stale.
-    Canary''s 08:25 failure was ''ada-voice behind origin (local 8a31a71 != remote 5a5379a)''. SFTP evidence: ~/.git/refs/heads/main
-    on mn01 now contains 5a5379a3eefb2c897fbfebc88b3dcc0f6806d896 and the loose object .git/objects/5a/5379a3...
-    exists, both mtime 08:25; GitHub origin/main verified as the same SHA from idc03. So the fast-forward was completed
-    at 08:25, the same minute /etc/ssh/sshd_conf'
+  text: 'READ-ONLY RECHECK 2026-11-26 11:2x (+07) via SFTP + Ansible: mn01 itself is healthy; this card
+    is stale. Canary''s 08:25 failure was ''ada-voice behind origin (local 8a31a71 != remote 5a5379a)''.
+    SFTP evidence: ~/.git/refs/heads/main on mn01 now contains 5a5379a3eefb2c897fbfebc88b3dcc0f6806d896
+    and the loose object .git/objects/5a/5379a3... exists, both mtime 08:25; GitHub origin/main verified
+    as the same SHA from idc03. So the fast-forward was completed at 08:25, the same minute /etc/ssh/sshd_conf'
+- at: 2026-11-26 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
 claim: {}
+spec: Investigate the recurring exit-code failure of user service mn01-canary.service on host mn01, specifically
+  addressing the root cause identified in Devin's recheck regarding the ada-voice sync state. Connect
+  to mn01 via Ansible or SFTP to inspect the journalctl logs and repository state. Verify whether the
+  canary script or local git/sync mechanism for ada-voice is fully resolved and stable. The done-condition
+  is verified when mn01-canary.service runs successfully with exit status 0 and the CMS timer-timeline-mn01
+  records a clean execution.

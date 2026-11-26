@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03` result=exit-code — investigate
+  journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: ADA-1419
 comms:
 - at: 2026-11-26 06:34
@@ -48,10 +48,11 @@ comms:
     — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-26 10:18
   from: devin
-  text: 'DEFERRED 2026-11-26 (not a code defect): weekly reports suite targets the free dev lane :8005 but abandoned
-    its slot after 30m because the shared :8199 lock is held by the long-running ada-scenario-smoke suite. Armed
-    ada-scenario-reports-retry.service on idc03 (waits for the lock, then starts the unit) — running and will fire
-    when smoke finishes. No paid-lane authorization needed. Card will reopen if the retried run fails.'
+  text: 'DEFERRED 2026-11-26 (not a code defect): weekly reports suite targets the free dev lane :8005
+    but abandoned its slot after 30m because the shared :8199 lock is held by the long-running ada-scenario-smoke
+    suite. Armed ada-scenario-reports-retry.service on idc03 (waits for the lock, then starts the unit)
+    — running and will fire when smoke finishes. No paid-lane authorization needed. Card will reopen if
+    the retried run fails.'
 - at: 2026-11-26 10:18
   from: devin
   text: closed by devin
@@ -60,17 +61,26 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-26 10:25
   from: devin
-  text: '[reopened — condition recurred] Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03`
+    result=exit-code — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the
+    host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-26 10:34
   from: devin
   text: '[still suspicious] Last run (11-26 06:25) of `ada-scenario-reports.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-26 11:20
   from: devin
-  text: 'EXPECTED REOPEN 2026-11-26 10:25: the sweep reopens from the stale failed last-run (lock contention at
-    08:38/06:25), not a new failure. The retry watcher is active and waiting for the shared :8199 lock held by the
-    long-running ada-scenario-smoke suite; no new run is due until that clears. Leave in backlog — it will turn
-    green and auto-close after the queued run.'
+  text: 'EXPECTED REOPEN 2026-11-26 10:25: the sweep reopens from the stale failed last-run (lock contention
+    at 08:38/06:25), not a new failure. The retry watcher is active and waiting for the shared :8199 lock
+    held by the long-running ada-scenario-smoke suite; no new run is due until that clears. Leave in backlog
+    — it will turn green and auto-close after the queued run.'
+- at: 2026-11-26 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: Investigate the failure of `ada-scenario-reports.service` on `idc03` by inspecting its user journal.
+  The target host is `idc03`. The constraint is to account for the known lock contention with the long-running
+  `ada-scenario-smoke` suite holding the shared :8199 lock as noted in the recent communications. The
+  verifiable done-condition is when the timer turns green and auto-closes after the queued run completes
+  successfully.
