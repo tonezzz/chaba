@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: backlog
-updated: 2026-11-26 13:44
+updated: 2026-11-26 14:13
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 13:18) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
     investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-26 14:13
+  from: tony
+  text: '[fix 2026-11-26] Root cause found and fixed. ha-auth-watch.py crashed every 15 min at git_commit_push:
+    the 2026-11-26 inbox-door change appended fname (str) to written on the board-api path, while the local path
+    appends Path; .relative_to() then raised AttributeError. tony-dell is a stamped exec (non-writer) checkout,
+    so every tick hit the API path. Split counters (api_emitted vs written Paths), gated git commit on writable,
+    hardened git_commit_push for both types. Merged to master (e45adace24) '
