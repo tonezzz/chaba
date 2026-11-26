@@ -1,0 +1,75 @@
+title: system-report chain verify + runner-agent fleet converge to pin 4259ca6f
+id: 2026-11-26-system-report-runner-drift-converge
+kind: ops-fix
+card: system-report-chain-17h-stale-watchdog-e-ab1511
+ref: OPS-1306
+date: 2026-11-26
+host: tony-dell
+repo: chaba
+summary: >-
+  Attempt-2 dispatch for the 17h-stale system-report card. Verified the
+  report chain is healthy end-to-end (generator lives on con01, delivers
+  to idc02), converged the runner-agent fleet to the new pinned build
+  4259ca6f (commit 264f9616881 "per-executor claim caps"), and cleared
+  the last red report nodes: audit-hosts/kk-mac (con01 missing host
+  key) and nest-lanes/kk-llm (producer units never installed on
+  tony-dell). Served system-report.yml now shows generated_at minutes
+  old and zero red nodes.
+changes:
+  - >-
+    runner-agent redeploy: installed scripts/board/runner-agent.py
+    (sha256 4259ca6f = runner-tooling.manifest.json pin) to
+    ~/.local/bin/runner-agent on idc02, tony-macbook (scp, chmod 755).
+    idc03, tony-dell, mn01, con01, tony-omen self-converged via
+    chaba-repo-sync + _self_update/sync-runner-tools once their
+    checkouts pulled 264f9616881 — verified sha256 on all seven runner
+    hosts. kk-mac still on old-but-consistent 1514c75c (checkout lacks
+    the commit; self-heals on next sync).
+  - >-
+    idc02 exec checkout repair (scoped): the 20:01 chaba-repo-sync
+    autostash-pop conflict left 119 staged files (index=old tree,
+    HEAD=new). Restored ONLY scripts/board/runner-agent.py +
+    scripts/devin/runner-tooling.manifest.json to HEAD so the
+    runner-tooling pin check reads the canonical bytes; the remaining
+    staged residue is unchanged and still breaks sync exit codes —
+    carded separately.
+  - >-
+    con01 ~/.ssh/known_hosts: ssh-keyscan kk-mac — the documented
+    prereq in ssot.jobs.yml chaba-system-report note; audit-hosts/kk-mac
+    probe was "unreachable — empty snapshot (ssh failed)".
+  - >-
+    tony-dell: installed the committed-but-never-deployed
+    systemd/generated/tony_dell/jevnest-kk-llm-metrics.{service,timer}
+    into ~/.config/systemd/user + enable --now — the declared
+    nest-lanes/kk-llm producer (ssot.jobs.yml jevnest-kk-llm-metrics,
+    15m) had no live unit, so the node rendered "missing". First run
+    published reports/kk-llm/meta.kk-llm.yml.
+  - >-
+    Triggered chaba-system-report.service on con01 twice (manual
+    systemctl --user start — same oneshot the report-api /refresh
+    path uses) to verify: pull-report-metas + render + scp delivery
+    all clean, 52 nodes.
+verify: |
+  # runner-agent fleet (all = 4259ca6f...b855 except kk-mac pending sync)
+  for h in idc02 idc03 tony-macbook; do ssh $h 'sha256sum ~/.local/bin/runner-agent ~/CascadeProjects/chaba/scripts/board/runner-agent.py'; done
+  # served report
+  ssh idc02 'python3 -c "import yaml;d=yaml.safe_load(open(\"$HOME/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/system-report.yml\"));print(d[\"generated_at\"],[n[\"id\"] for n in d[\"nodes\"] if n.get(\"status\") in (\"error\",\"missing\",\"unreachable\")])"'
+  # -> generated_at 2026-11-26T21:18:51+07:00, red list []
+notes: >-
+  Gotchas worth keeping: (1) the drift defer compares
+  ~/.local/bin/runner-agent BYTES vs the host checkout's worktree file —
+  scp-ing the new pin BEFORE the checkout pulls manufactures a
+  fail-closed drift window; pull checkout first, then install.
+  (2) ssh idc03 from tony-dell needs ProxyJump=none — the configured
+  ProxyJump tony-omen path is administratively prohibited right now;
+  direct tailscale works. (3) con01 has no ~/.ssh/config entry — use
+  `ssh tony@con01` (short name), the FQDN fails host-key verification.
+  (4) Attempt-1 of this card "failed" only because it produced zero
+  commits — merge-sweep needs a landed branch; always commit the
+  outcome doc on the dispatch branch.
+followups:
+  - >-
+    idc02 exec checkout carries ~117 staged files of pre-pull tree
+    residue from the 20:01 autostash-pop conflict (repo-sync exits 1
+    nightly; HEAD still advances). Needs a scoped cleanup — filed as
+    its own card.
